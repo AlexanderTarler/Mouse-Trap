@@ -69,6 +69,13 @@ shape = SubResource("Shape_ground")
 [node name="Cabins" parent="." unique_id=1282417259 instance=ExtResource("7_cabins")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.008804, -2.674697, 14.765074)
 
+; Floor collider inside the cabins so the player walks at the right height
+[node name="CabinFloor" type="StaticBody3D" parent="." unique_id=994229871]
+
+[node name="FloorCollision" type="CollisionShape3D" parent="CabinFloor" unique_id=180300365]
+transform = Transform3D(20, 0, 0, 0, 1, 0, 0, 0, 20, 0, 0, 0)
+shape = SubResource("Shape_ground")
+
 [node name="Player" type="CharacterBody3D" parent="." unique_id=92687399]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 script = ExtResource("1_player")
