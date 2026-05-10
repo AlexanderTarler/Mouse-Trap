@@ -1,0 +1,102 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="3D Game Experiment"
+run/main_scene="res://scenes/cottage_horror.tscn"
+config/features=PackedStringArray("4.6", "Forward Plus")
+config/icon="res://icon.svg"
+
+[autoload]
+
+GameTime="*res://scripts/npc/game_time.gd"
+NightManager="*res://scripts/night_manager.gd"
+EntityManager="*res://scripts/entity_manager.gd"
+HorrorSoundManager="*res://scripts/horror_sound_manager.gd"
+
+[filesystem]
+
+import/blender/enabled=false
+
+[input]
+
+move_forward={
+"deadzone": 0.5,
+"events": [{
+"keycode": "W",
+"type": "key"
+}, {
+"keycode": "Up",
+"type": "key"
+}]
+}
+move_back={
+"deadzone": 0.5,
+"events": [{
+"keycode": "S",
+"type": "key"
+}, {
+"keycode": "Down",
+"type": "key"
+}]
+}
+move_left={
+"deadzone": 0.5,
+"events": [{
+"keycode": "A",
+"type": "key"
+}, {
+"keycode": "Left",
+"type": "key"
+}]
+}
+move_right={
+"deadzone": 0.5,
+"events": [{
+"keycode": "D",
+"type": "key"
+}, {
+"keycode": "Right",
+"type": "key"
+}]
+}
+ui_shift={
+"deadzone": 0.5,
+"events": [{
+"keycode": "Shift",
+"type": "key"
+}]
+}
+ui_crouch={
+"deadzone": 0.5,
+"events": [{
+"keycode": "Control",
+"type": "key"
+}, {
+"keycode": "C",
+"type": "key"
+}]
+}
+ui_interact={
+"deadzone": 0.5,
+"events": [{
+"keycode": "E",
+"type": "key"
+}]
+}
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
+
+[rendering]
+
+rendering_device/driver.windows="d3d12"

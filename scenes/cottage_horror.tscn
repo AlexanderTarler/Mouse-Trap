@@ -1,0 +1,126 @@
+[gd_scene format=3 uid="uid://bc5qrh4dx4yi1"]
+
+[ext_resource type="Script" uid="uid://q6omui2prbth" path="res://scripts/player_controller.gd" id="1_player"]
+[ext_resource type="Script" uid="uid://be4erotljq8gt" path="res://scripts/interaction_manager.gd" id="2_interaction"]
+[ext_resource type="PackedScene" path="res://scenes/horror_hud.tscn" id="4_hud"]
+[ext_resource type="Script" uid="uid://cvaqel187lqwe" path="res://scripts/lamp_flicker.gd" id="5_lamp_flicker"]
+[ext_resource type="Script" uid="uid://c60kak8vfqobn" path="res://scripts/door.gd" id="6_door"]
+[ext_resource type="PackedScene" uid="uid://bbuuhqvaclokv" path="res://assets/Three Cabins/Three Izba Cabins.fbx" id="7_cabins"]
+[ext_resource type="Script" uid="uid://btrbyt718cpkx" path="res://scripts/psx_effect.gd" id="8_psx"]
+[ext_resource type="Script" uid="uid://bhpnnhf70fqs7" path="res://scripts/psx_detail_props.gd" id="9_psx_props"]
+[sub_resource type="Environment" id="Env_dark"]
+background_color = Color(0.02, 0.02, 0.03, 1)
+ambient_light_color = Color(0.05, 0.05, 0.08, 1)
+ambient_light_sky_contribution = 0.0
+tonemap_mode = 2
+glow_enabled = true
+glow_levels/1 = 0.01
+glow_levels/2 = 0.01
+glow_levels/3 = 0.01
+glow_levels/4 = 0.01
+glow_levels/5 = 0.01
+glow_levels/6 = 0.01
+glow_levels/7 = 0.01
+fog_enabled = true
+fog_light_color = Color(0.02, 0.02, 0.03, 1)
+fog_density = 0.015
+volumetric_fog_enabled = true
+
+[sub_resource type="StandardMaterial3D" id="Mat_ground"]
+albedo_color = Color(0.08, 0.06, 0.04, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_ground"]
+size = Vector3(1, 0.05, 1)
+
+[sub_resource type="BoxShape3D" id="Shape_ground"]
+size = Vector3(1, 0.05, 1)
+
+[sub_resource type="BoxShape3D" id="Shape_player"]
+size = Vector3(0.8, 1.8, 0.8)
+
+[sub_resource type="FogMaterial" id="Fog_basement"]
+density = 0.08
+
+[node name="CottageHorror" type="Node3D" unique_id=110475989]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=715701991]
+environment = SubResource("Env_dark")
+
+[node name="Moonlight" type="DirectionalLight3D" parent="." unique_id=720415209]
+transform = Transform3D(0.866, -0.5, 0, 0.5, 0.866, 0, 0, 0, 1, 0, 10, 0)
+light_color = Color(0.3, 0.3, 0.5, 1)
+light_energy = 0.4
+light_indirect_energy = 0.2
+shadow_enabled = true
+directional_shadow_max_distance = 30.0
+
+[node name="Ground" type="StaticBody3D" parent="." unique_id=1321973830]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="Ground" unique_id=508296006]
+transform = Transform3D(40, 0, 0, 0, 1, 0, 0, 0, 40, 0, 0, 0)
+material_override = SubResource("Mat_ground")
+mesh = SubResource("Mesh_ground")
+
+[node name="Collision" type="CollisionShape3D" parent="Ground" unique_id=1724641179]
+transform = Transform3D(40, 0, 0, 0, 1, 0, 0, 0, 40, 0, 0, 0)
+shape = SubResource("Shape_ground")
+
+[node name="Cabins" parent="." unique_id=1282417259 instance=ExtResource("7_cabins")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.008804, -2.674697, 14.765074)
+
+[node name="Player" type="CharacterBody3D" parent="." unique_id=92687399]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+script = ExtResource("1_player")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=1216635985]
+shape = SubResource("Shape_player")
+
+[node name="CameraHolder" type="Node3D" parent="Player" unique_id=745860990]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+
+[node name="Camera3D" type="Camera3D" parent="Player/CameraHolder" unique_id=1046583223]
+
+[node name="InteractionManager" type="Node3D" parent="Player" unique_id=247016920]
+script = ExtResource("2_interaction")
+
+[node name="Lamp" type="Node3D" parent="." unique_id=409032314]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, -3)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="Lamp" unique_id=6746865]
+light_color = Color(1, 0.85, 0.5, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 6.0
+
+[node name="LampFlicker" type="Node3D" parent="Lamp" unique_id=17860872]
+script = ExtResource("5_lamp_flicker")
+light_node_path = NodePath("../OmniLight3D")
+
+[node name="HUD" parent="." unique_id=1086543120 instance=ExtResource("4_hud")]
+
+[node name="CabinDoor" type="StaticBody3D" parent="." unique_id=940888406]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 4.96)
+script = ExtResource("6_door")
+door_label = "Cabin Door"
+
+[node name="DoorMesh" type="MeshInstance3D" parent="CabinDoor" unique_id=561770702]
+transform = Transform3D(0.8, 0, 0, 0, 2, 0, 0, 0, 0.08, 0, 0, 0)
+material_override = SubResource("Mat_ground")
+mesh = SubResource("Mesh_ground")
+
+[node name="DoorCollision" type="CollisionShape3D" parent="CabinDoor" unique_id=978981772]
+transform = Transform3D(0.8, 0, 0, 0, 2, 0, 0, 0, 0.08, 0, 0, 0)
+shape = SubResource("Shape_ground")
+
+[node name="BasementFog" type="FogVolume" parent="." unique_id=274711645]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.25, 0)
+size = Vector3(12, 2.5, 10)
+shape = 0
+material = SubResource("Fog_basement")
+
+[node name="PSXEffect" type="Node3D" parent="." unique_id=1536945848]
+script = ExtResource("8_psx")
+
+[node name="PSXDetailProps" type="Node3D" parent="." unique_id=1522720487]
+script = ExtResource("9_psx_props")

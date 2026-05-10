@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://c3fktf0xdps0g"
+path="res://.godot/imported/Ambient Wind (9).mp3-bcacd029e8585327e8417331a085a0b8.mp3str"
+
+[deps]
+
+source_file="res://horror_sfx_vol_1/Ambient Wind/Ambient Wind (9).mp3"
+dest_files=["res://.godot/imported/Ambient Wind (9).mp3-bcacd029e8585327e8417331a085a0b8.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

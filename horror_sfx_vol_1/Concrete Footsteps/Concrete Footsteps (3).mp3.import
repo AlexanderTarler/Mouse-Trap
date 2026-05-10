@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://ytgryum4exvq"
+path="res://.godot/imported/Concrete Footsteps (3).mp3-edd02b94d9a6196d69fbc889310425cf.mp3str"
+
+[deps]
+
+source_file="res://horror_sfx_vol_1/Concrete Footsteps/Concrete Footsteps (3).mp3"
+dest_files=["res://.godot/imported/Concrete Footsteps (3).mp3-edd02b94d9a6196d69fbc889310425cf.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

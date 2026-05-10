@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://6v10abo1cjhm"]
+
+[ext_resource type="Script" uid="uid://cn71jdvhocmt5" path="res://scripts/npc/npc_controller.gd" id="1_npc_controller"]
+[ext_resource type="Script" uid="uid://cnkjk1t8k75hm" path="res://scripts/npc/npc_scheduler.gd" id="2_npc_scheduler"]
+
+[sub_resource type="BoxShape3D" id="Shape_npc"]
+size = Vector3(0.8, 1.8, 0.8)
+
+[node name="NPCQuaternius" type="CharacterBody3D" unique_id=116372165]
+script = ExtResource("1_npc_controller")
+scheduler = NodePath("NPCScheduler")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1970479465]
+shape = SubResource("Shape_npc")
+
+[node name="NPCScheduler" type="Node" parent="." unique_id=1987509377]
+script = ExtResource("2_npc_scheduler")
