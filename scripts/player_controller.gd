@@ -1,5 +1,12 @@
 extends CharacterBody3D
 
+## Stair climbing settings
+@export var max_step_height: float = 0.7
+@export var step_check_distance: float = 0.5
+
+## Jump settings
+@export var jump_velocity: float = 4.5
+
 @export var walk_speed: float = 3.5
 @export var crouch_speed: float = 1.8
 @export var mouse_sensitivity: float = 0.002
@@ -16,8 +23,17 @@ extends CharacterBody3D
 @export var flashlight_energy: float = 5.0
 @export var flashlight_range: float = 10.0
 
-var _camera: Camera3D
-var _camera_holder: Node3D
+# Camera settings
+@export var camera_far: float = 500.0
+@export var camera_near: float = 0.1
+
+# References to scene nodes
+@onready var _camera: Camera3D = $CameraHolder/Camera3D
+@onready var _camera_holder: Node3D = $CameraHolder
+@onready var _collision_shape: CollisionShape3D = $CollisionShape3D
+@onready var _flashlight: SpotLight3D = $CameraHolder/Camera3D/Flashlight
+@onready var _interaction_manager: Node = $CameraHolder/InteractionManager
+
 var _mouse_captured: bool = false
 var _current_speed: float
 var _head_bob_time: float = 0.0
@@ -25,7 +41,6 @@ var _head_bob_active: bool = false
 var _is_crouching: bool = false
 
 # Flashlight
-var _flashlight: SpotLight3D = null
 var _flashlight_on: bool = true
 
 # Crosshair
@@ -35,10 +50,17 @@ var _crosshair: Control
 var _footstep_timer: float = 0.0
 var _footstep_interval: float = 0.5
 
+# Stair climbing state
+var _was_on_floor: bool = false
+
+
 func _ready() -> void:
-	_camera_holder = $CameraHolder as Node3D
-	_camera = $CameraHolder/Camera3D as Camera3D
 	_current_speed = walk_speed
+	
+	# Configure CharacterBody3D for stair climbing
+	floor_max_angle = deg_to_rad(60.0)
+	floor_snap_length = 1.2
+	
 	# Capture mouse immediately
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_mouse_captured = true
@@ -46,8 +68,21 @@ func _ready() -> void:
 	# Add to player group for entity tracking
 	add_to_group("player")
 	
-	# Create flashlight
-	_create_flashlight()
+	# Apply camera settings from exports
+	if _camera:
+		_camera.far = camera_far
+		_camera.near = camera_near
+	
+	# Apply flashlight settings from exports
+	if _flashlight:
+		_flashlight.light_energy = flashlight_energy
+		_flashlight.spot_range = flashlight_range
+	
+	# Pass camera reference to interaction manager
+	if _interaction_manager and _interaction_manager.has_method("set_camera"):
+		_interaction_manager.set_camera(_camera)
+	elif _interaction_manager:
+		_interaction_manager.set("_camera", _camera)
 	
 	# Create crosshair overlay
 	_create_crosshair()
@@ -58,21 +93,6 @@ func _ready() -> void:
 	# Initialize footstep interval based on speed
 	_footstep_interval = 1.0 / walk_speed
 
-func _create_flashlight() -> void:
-	_flashlight = SpotLight3D.new()
-	_flashlight.light_color = Color(1, 0.95, 0.8, 1)
-	_flashlight.light_energy = flashlight_energy
-	_flashlight.spot_range = flashlight_range
-	_flashlight.spot_angle = 45.0
-	_flashlight.spot_attenuation = 1.0
-	_flashlight.shadow_enabled = true
-	_flashlight.shadow_bias = 0.1
-	_camera.add_child(_flashlight)
-	# Set transform after adding as child
-	_flashlight.transform = Transform3D(
-		Basis().rotated(Vector3.RIGHT, deg_to_rad(5)),
-		Vector3(0.2, -0.1, -0.3)
-	)
 
 func _create_crosshair() -> void:
 	# Create a CanvasLayer for the crosshair
@@ -148,6 +168,7 @@ func _create_crosshair() -> void:
 	# Store reference to update on resize
 	_crosshair = container
 
+
 ## Rebuilds the crosshair when the window is resized.
 func _rebuild_crosshair() -> void:
 	if not _crosshair:
@@ -217,6 +238,7 @@ func _rebuild_crosshair() -> void:
 	)
 	_crosshair.add_child(right)
 
+
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and _mouse_captured:
 		# Horizontal mouse movement rotates the player
@@ -243,16 +265,22 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.keycode == KEY_Q and event.pressed:
 		_debug_raycast_collider()
 
+
 func _toggle_flashlight() -> void:
 	if not _flashlight:
 		return
 	_flashlight_on = not _flashlight_on
 	_flashlight.visible = _flashlight_on
 
+
 func _physics_process(delta: float) -> void:
 	# Add the gravity
 	if not is_on_floor():
 		velocity += get_gravity() * delta
+
+	# Handle jump (press Space to jump)
+	if Input.is_key_pressed(KEY_SPACE) and is_on_floor():
+		velocity.y = jump_velocity
 
 	# Handle crouch toggle (press Ctrl or C to toggle)
 	if Input.is_key_pressed(KEY_CTRL) or Input.is_key_pressed(KEY_C):
@@ -285,7 +313,16 @@ func _physics_process(delta: float) -> void:
 		velocity.z = move_toward(velocity.z, 0, _current_speed)
 		_head_bob_active = false
 
+	# --- Stair climbing: Step-up check ---
+	# Perform step-up BEFORE move_and_slide() to lift the player over steps
+	if _was_on_floor and direction.length() > 0 and is_on_floor():
+		_try_step_up(direction)
+
 	move_and_slide()
+
+	# Store floor state for next frame (after move_and_slide)
+	_was_on_floor = is_on_floor()
+
 	
 	# Handle crouch collision shape and camera height
 	_update_crouch(delta)
@@ -313,10 +350,99 @@ func _physics_process(delta: float) -> void:
 		# Smoothly return camera to center
 		_camera.position = _camera.position.lerp(Vector3.ZERO, delta * 10.0)
 
+
+## Attempts to step up onto stairs or small obstacles in the movement direction.
+## Uses a floor-height comparison approach:
+##   1. Casts down at the player's current position to get the floor height.
+##   2. Casts down ahead of the player to get the floor height on the step.
+##   3. If the floor ahead is higher (within max_step_height), applies a smooth
+##      vertical velocity boost so move_and_slide() carries the player up.
+##
+## This works with merged collision meshes (like the cabin FBX imports) where
+## the stairs are part of a single StaticBody and have horizontal normals on top.
+func _try_step_up(direction: Vector3) -> void:
+	var space_state = get_world_3d().direct_space_state
+	if not space_state:
+		return
+	
+	# Get the capsule shape info for positioning the raycasts
+	if not _collision_shape or not _collision_shape.shape:
+		return
+	var capsule: CapsuleShape3D = _collision_shape.shape as CapsuleShape3D
+	if not capsule:
+		return
+	
+	# Calculate the bottom of the capsule (where the player's "feet" are)
+	# The capsule's position is at its center, so bottom = pos.y - height/2
+	var capsule_center_y = global_position.y + _collision_shape.position.y
+	var capsule_bottom_y = capsule_center_y - capsule.height / 2.0
+	
+	# --- RAY 1: Cast down at current position to get the floor height ---
+	var down_here_start = Vector3(global_position.x, capsule_bottom_y + 0.1, global_position.z)
+	var down_here_end = Vector3(global_position.x, capsule_bottom_y - max_step_height - 0.5, global_position.z)
+	
+	var here_query = PhysicsRayQueryParameters3D.create(down_here_start, down_here_end)
+	here_query.collide_with_areas = false
+	here_query.collide_with_bodies = true
+	here_query.exclude = [self]
+	
+	var here_result = space_state.intersect_ray(here_query)
+	if here_result.is_empty():
+		return
+	
+	var floor_y = here_result.position.y
+	
+	# --- RAY 2: Cast down ahead of the player to check floor height on the step ---
+	var ahead_pos = global_position + direction * (step_check_distance + capsule.radius * 0.5)
+	var down_ahead_start = Vector3(ahead_pos.x, capsule_bottom_y + max_step_height + 0.5, ahead_pos.z)
+	var down_ahead_end = Vector3(ahead_pos.x, capsule_bottom_y - 0.5, ahead_pos.z)
+	
+	var ahead_query = PhysicsRayQueryParameters3D.create(down_ahead_start, down_ahead_end)
+	ahead_query.collide_with_areas = false
+	ahead_query.collide_with_bodies = true
+	ahead_query.exclude = [self]
+	
+	var ahead_result = space_state.intersect_ray(ahead_query)
+	if ahead_result.is_empty():
+		return
+	
+	var ahead_floor_y = ahead_result.position.y
+	
+	# Calculate the height difference
+	var step_height = ahead_floor_y - floor_y
+	
+	# Only step up if the floor ahead is higher (a step) and within max_step_height
+	if step_height <= 0.01 or step_height > max_step_height:
+		return
+	
+	# --- RAY 3: Check for headroom above the step ---
+	# Cast forward from above the step height to make sure there's space
+	var check_height = capsule_bottom_y + max_step_height + 0.1
+	var check_start = Vector3(global_position.x, check_height, global_position.z)
+	var check_end = check_start + direction * (step_check_distance + capsule.radius)
+	
+	var check_query = PhysicsRayQueryParameters3D.create(check_start, check_end)
+	check_query.collide_with_areas = false
+	check_query.collide_with_bodies = true
+	check_query.exclude = [self]
+	
+	var check_result = space_state.intersect_ray(check_query)
+	if not check_result.is_empty():
+		# Something is blocking the headroom - can't step up
+		return
+	
+	# --- Apply a smooth vertical velocity boost ---
+	# Calculate the velocity needed to reach the step height using physics
+	velocity.y = sqrt(2.0 * get_gravity().length() * step_height) * 1.2
+	# Nudge forward slightly to help clear the step edge
+	global_position += direction * 0.02
+
+
 func _play_footstep() -> void:
 	if Engine.has_singleton("HorrorSoundManager"):
 		var sm = Engine.get_singleton("HorrorSoundManager")
 		sm.play_footstep_at("wooden", global_position)
+
 
 ## DEBUG: Raycasts from the camera center and prints info about the hit collider.
 func _debug_raycast_collider() -> void:
@@ -375,19 +501,21 @@ func _debug_raycast_collider() -> void:
 	
 	print("==========================")
 
+
 func _update_crouch(delta: float) -> void:
 	var target_height = crouching_height if _is_crouching else standing_height
 	
 	# Smoothly interpolate the collision shape height
-	var shape: BoxShape3D = $CollisionShape3D.shape as BoxShape3D
-	var shape_size = shape.size
-	shape_size.y = lerp(shape_size.y, target_height, delta * crouch_transition_speed)
-	shape.size = shape_size
+	if not _collision_shape or not _collision_shape.shape:
+		return
+	var shape: CapsuleShape3D = _collision_shape.shape as CapsuleShape3D
+	shape.height = lerp(shape.height, target_height, delta * crouch_transition_speed)
 	
 	# Adjust the collision shape position so the bottom stays on the ground
-	var col_pos = $CollisionShape3D.position
-	col_pos.y = shape.size.y / 2.0
-	$CollisionShape3D.position = col_pos
+	# Capsule total height = height + 2 * radius, center is at half of that
+	var col_pos = _collision_shape.position
+	col_pos.y = shape.height / 2.0 + shape.radius
+	_collision_shape.position = col_pos
 	
 	# Smoothly move the camera holder to the correct eye height
 	var target_cam_height = target_height - 0.1

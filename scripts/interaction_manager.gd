@@ -6,12 +6,12 @@ extends Node3D
 @export var interaction_distance: float = 3.0
 @export var prompt_text: String = "[E] Interact"
 
-var _camera: Camera3D
+# Camera reference is set by the player controller when this node is created
+var _camera: Camera3D = null
 var _current_target: Node = null
 var _prompt_label: Label = null
 
 func _ready() -> void:
-	_camera = get_parent().get_node("CameraHolder/Camera3D") as Camera3D
 	_create_prompt()
 
 func _create_prompt() -> void:

@@ -1,18 +1,32 @@
 [gd_scene format=3 uid="uid://bc5qrh4dx4yi1"]
 
-[ext_resource type="Script" uid="uid://q6omui2prbth" path="res://scripts/player_controller.gd" id="1_player"]
-[ext_resource type="Script" uid="uid://be4erotljq8gt" path="res://scripts/interaction_manager.gd" id="2_interaction"]
-[ext_resource type="PackedScene" path="res://scenes/horror_hud.tscn" id="4_hud"]
+[ext_resource type="PackedScene" uid="uid://671uxsxwdrom" path="res://scenes/player.tscn" id="1_player"]
+[ext_resource type="PackedScene" uid="uid://bbgosppfttoh5" path="res://scenes/horror_hud.tscn" id="4_hud"]
+[ext_resource type="Texture2D" uid="uid://dy3y4yrk61pwv" path="res://assets/Textures/Grass/Grass_03-512x512.png" id="4_wvbas"]
 [ext_resource type="Script" uid="uid://cvaqel187lqwe" path="res://scripts/lamp_flicker.gd" id="5_lamp_flicker"]
-[ext_resource type="Script" uid="uid://c60kak8vfqobn" path="res://scripts/door.gd" id="6_door"]
-[ext_resource type="PackedScene" uid="uid://bbuuhqvaclokv" path="res://assets/Three Cabins/Three Izba Cabins.fbx" id="7_cabins"]
-[ext_resource type="Script" uid="uid://btrbyt718cpkx" path="res://scripts/psx_effect.gd" id="8_psx"]
-[ext_resource type="Script" uid="uid://bhpnnhf70fqs7" path="res://scripts/psx_detail_props.gd" id="9_psx_props"]
+[ext_resource type="PackedScene" uid="uid://cl2nlt2tucxol" path="res://scenes/cabin.tscn" id="7_cabins"]
+[ext_resource type="PackedScene" uid="uid://d2y7q3b6kf4g8" path="res://scenes/the_entity.tscn" id="10_entity"]
+[ext_resource type="PackedScene" uid="uid://dqnqvwoaib6mc" path="res://scenes/trees.tscn" id="10_mdrot"]
+[ext_resource type="Script" uid="uid://bcj4xvssnavaj" path="res://scripts/day_night_controller.gd" id="11_day_night"]
+[ext_resource type="PackedScene" uid="uid://ckrvmvftl68f5" path="res://assets/PSX Mega Pack [Demo]/PSX Mega Pack [Demo]/Models/brick.glb" id="12_03kcw"]
+[ext_resource type="PackedScene" uid="uid://b3akw7avnfbog" path="res://assets/PSX Mega Pack [Demo]/PSX Mega Pack [Demo]/Models/carpet_mp_1.glb" id="13_1ggpy"]
+[ext_resource type="Script" uid="uid://cpt5ap7n1ohgo" path="res://scripts/tree_spawner.gd" id="13_tree_spawner"]
+[ext_resource type="PackedScene" uid="uid://dbo06ox37uu4p" path="res://assets/PSX Mega Pack [Demo]/PSX Mega Pack [Demo]/Models/clock_2.glb" id="14_pee2b"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1iq60"]
+sun_angle_max = 5.0
+
+[sub_resource type="Sky" id="Sky_custom"]
+sky_material = SubResource("ProceduralSkyMaterial_1iq60")
 
 [sub_resource type="Environment" id="Env_dark"]
-background_color = Color(0.02, 0.02, 0.03, 1)
-ambient_light_color = Color(0.05, 0.05, 0.08, 1)
-ambient_light_sky_contribution = 0.0
+background_mode = 2
+background_color = Color(0.45, 0.7, 1, 1)
+sky = SubResource("Sky_custom")
+ambient_light_source = 2
+ambient_light_color = Color(0.020799998, 0.041519992, 0.08, 1)
+ambient_light_sky_contribution = 0.3
+ambient_light_energy = 0.05
 tonemap_mode = 2
 glow_enabled = true
 glow_levels/1 = 0.01
@@ -23,12 +37,21 @@ glow_levels/5 = 0.01
 glow_levels/6 = 0.01
 glow_levels/7 = 0.01
 fog_enabled = true
-fog_light_color = Color(0.02, 0.02, 0.03, 1)
-fog_density = 0.015
-volumetric_fog_enabled = true
+fog_light_color = Color(0.45, 0.7, 1, 1)
+fog_density = 0.0
+volumetric_fog_albedo = Color(0.12, 0.12, 0.12, 1)
+
+[sub_resource type="FogMaterial" id="Fog_basement"]
+density = 0.08
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_fl8v4"]
+vertices = PackedVector3Array(-99.75, 0.575, 5, -0.75, 0.575, 5, 0, 0.575, 4.5, 0, 0.575, -99.75, -99.75, 0.575, -99.75, 0.75, 0.575, 5, 2.75, 0.575, 7.25, 9.25, 0.575, 7.25, 9.25, 0.575, -99.75, 9.75, 1.075, 9.25, 9.25, 1.075, 9.5, 9.25, 1.075, 10, 9.75, 1.075, 10.25, 10, 0.575, 7.75, 15.75, 0.575, 13.5, 99.75, 0.575, 14.75, 9.75, 0.825, 13.75, 99.75, 0.575, -99.75, 16.25, 0.575, 14.25, 0.5, 0.575, 5.5, 2, 0.575, 7.75, 2.25, 0.825, 19.75, -0.5, 0.575, 5.5, -99.75, 0.575, 19.75, 5.75, 10.575, 17, 5, 10.575, 17.25, 5.75, 10.575, 18.5, 6.5, 10.575, 17.75, 6.5, 10.575, 17.25, 16, 10.575, 17.75, 16, 10.575, 17.25, 9.75, 7.325, 7.5, 6.25, 10.575, 7.25, 5.75, 10.575, 7.25, 6.5, 10.325, 16.75, 10, 7.325, 13.75, 7.980034, 8.575, 14.007965, 7.9749985, 8.575, 9.474998, 15.75, 10.075, 16.75, 15.75, 7.325, 13.75, 2.25, 7.325, 18.5, 4.5, 9.325, 18, 4.5, 9.325, 17, 5.25, 10.075, 16.75, 5.25, 10.075, 7.5, 2.25, 7.325, 7.5, 8.5, 1.075, 16.5, 9.25, 1.075, 16.25, 9.25, 1.075, 15.75, 8.5, 1.075, 15.5, 4.5, 1.075, 10, 4.75, 1.075, 9.25, 4, 1.075, 9.5, 3.75, 1.325, 10.25, 8.5, 1.075, 10.25, 8.5, 1.075, 9.25, 7.75, 1.075, 14, 7, 1.075, 13.75, 7.25, 1.075, 14.5, 7.75, 1.075, 14.5, 8.5, 1.075, 14.75, 3.75, 1.075, 8.5, 3.25, 1.075, 8.5, 8.5, 1.075, 13.75, 8.5, 1.075, 8.5, 4.75, 1.075, 8.5, 3.25, 1.075, 14.75, 3.25, 1.075, 20, 8.5, 1.075, 20, 4.75, 1.075, 13.75, 3.25, 4.075, 14.5, 3.75, 4.075, 14.5, 3.25, 1.075, 9.699997, 8.5, 4.075, 16.5, 9.25, 4.075, 16.25, 9.25, 4.075, 15.75, 7.75, 4.075, 14.5, 7.75, 4.075, 14, 7, 4.075, 13.75, 7.25, 4.075, 14.5, 3.25, 4.075, 20, 8.5, 4.075, 20, 8.5, 4.075, 13.75, 8.5, 4.075, 8.5, 4.75, 4.075, 8.5, 4.75, 4.075, 13.75, 7, 7.075, 13.75, 7, 7.075, 8.5, 4.75, 7.075, 8.5, 4.75, 7.075, 18.75, 15, 7.075, 18.5, 15, 7.075, 16.5, 7.5, 7.075, 16.25, 3.25, 1.075, 13, 3.25, 1.075, 13.75, 3.75, 1.075, 13.75, 3.75, 1.075, 13, 16.25, 0.575, 20.75, 99.75, 0.575, 20.75, 9.75, 1.075, 16.5, 15, 1.075, 14.75, 9.75, 1.075, 15.5, 9.75, 1.075, 20, 15, 1.075, 20, 9.75, 1.075, 14.75, 9.75, 4.075, 16.5, 15, 4.075, 14.75, 9.75, 4.075, 15.5, 9.75, 4.075, 20, 15, 4.075, 20, 9.75, 4.075, 14.75, 5.5, 9.325, 19, 5.25, 10.075, 18.25, 2.25, 7.325, 21.25, 15.75, 10.075, 18.25, 6.75, 10.075, 18.25, 6.5, 9.325, 19, 15.75, 7.325, 21.25, 14.000061, 8.075, 19.979935, 6.4749985, 8.075, 19.974998, 3.75, 0.575, 99.75, 3.75, 0.825, 21.25, 2.5, 0.575, 21.5, 2, 0.575, 21, -99.75, 0.575, 99.75, 15.75, 0.575, 21.5, 14.5, 0.825, 21.25, 14.5, 0.575, 99.75, 99.75, 0.575, 99.75)
+polygons = [PackedInt32Array(1, 0, 2), PackedInt32Array(2, 0, 3), PackedInt32Array(3, 0, 4), PackedInt32Array(7, 6, 5), PackedInt32Array(5, 2, 7), PackedInt32Array(7, 2, 3), PackedInt32Array(7, 3, 8), PackedInt32Array(10, 9, 11), PackedInt32Array(11, 9, 12), PackedInt32Array(15, 14, 13), PackedInt32Array(12, 9, 13), PackedInt32Array(12, 13, 16), PackedInt32Array(16, 13, 14), PackedInt32Array(13, 7, 15), PackedInt32Array(15, 7, 8), PackedInt32Array(15, 8, 17), PackedInt32Array(15, 18, 14), PackedInt32Array(19, 5, 20), PackedInt32Array(20, 5, 6), PackedInt32Array(22, 21, 1), PackedInt32Array(1, 21, 0), PackedInt32Array(0, 21, 23), PackedInt32Array(19, 20, 22), PackedInt32Array(22, 20, 21), PackedInt32Array(28, 27, 24), PackedInt32Array(24, 27, 25), PackedInt32Array(25, 27, 26), PackedInt32Array(28, 30, 27), PackedInt32Array(27, 30, 29), PackedInt32Array(34, 36, 35), PackedInt32Array(35, 37, 31), PackedInt32Array(31, 37, 32), PackedInt32Array(32, 37, 33), PackedInt32Array(33, 36, 24), PackedInt32Array(24, 36, 34), PackedInt32Array(36, 37, 35), PackedInt32Array(37, 36, 33), PackedInt32Array(39, 38, 35), PackedInt32Array(35, 38, 34), PackedInt32Array(24, 34, 28), PackedInt32Array(42, 41, 40), PackedInt32Array(44, 43, 42), PackedInt32Array(44, 42, 45), PackedInt32Array(45, 42, 40), PackedInt32Array(47, 46, 48), PackedInt32Array(48, 46, 49), PackedInt32Array(53, 52, 50), PackedInt32Array(50, 52, 51), PackedInt32Array(11, 54, 10), PackedInt32Array(10, 54, 55), PackedInt32Array(59, 58, 56), PackedInt32Array(56, 58, 57), PackedInt32Array(59, 60, 49), PackedInt32Array(61, 52, 62), PackedInt32Array(62, 52, 53), PackedInt32Array(59, 49, 46), PackedInt32Array(56, 57, 63), PackedInt32Array(63, 57, 54), PackedInt32Array(51, 65, 55), PackedInt32Array(55, 65, 64), PackedInt32Array(59, 46, 58), PackedInt32Array(58, 46, 68), PackedInt32Array(58, 68, 66), PackedInt32Array(66, 68, 67), PackedInt32Array(51, 55, 50), PackedInt32Array(50, 55, 54), PackedInt32Array(50, 54, 57), PackedInt32Array(50, 57, 69), PackedInt32Array(62, 53, 72), PackedInt32Array(72, 53, 71), PackedInt32Array(72, 71, 70), PackedInt32Array(74, 73, 75), PackedInt32Array(75, 73, 76), PackedInt32Array(76, 79, 77), PackedInt32Array(77, 79, 78), PackedInt32Array(80, 70, 71), PackedInt32Array(76, 73, 79), PackedInt32Array(79, 73, 81), PackedInt32Array(77, 78, 82), PackedInt32Array(82, 78, 83), PackedInt32Array(85, 84, 78), PackedInt32Array(78, 84, 83), PackedInt32Array(71, 79, 80), PackedInt32Array(80, 79, 81), PackedInt32Array(87, 86, 88), PackedInt32Array(88, 86, 89), PackedInt32Array(91, 90, 92), PackedInt32Array(92, 90, 89), PackedInt32Array(92, 89, 86), PackedInt32Array(96, 95, 93), PackedInt32Array(93, 95, 94), PackedInt32Array(98, 97, 15), PackedInt32Array(15, 97, 18), PackedInt32Array(48, 101, 47), PackedInt32Array(47, 101, 99), PackedInt32Array(99, 101, 100), PackedInt32Array(102, 99, 103), PackedInt32Array(103, 99, 100), PackedInt32Array(101, 104, 100), PackedInt32Array(75, 107, 74), PackedInt32Array(74, 107, 105), PackedInt32Array(105, 107, 106), PackedInt32Array(108, 105, 109), PackedInt32Array(109, 105, 106), PackedInt32Array(107, 110, 106), PackedInt32Array(112, 111, 41), PackedInt32Array(41, 111, 40), PackedInt32Array(40, 111, 113), PackedInt32Array(116, 115, 114), PackedInt32Array(116, 119, 113), PackedInt32Array(113, 119, 117), PackedInt32Array(117, 118, 114), PackedInt32Array(114, 118, 116), PackedInt32Array(116, 118, 119), PackedInt32Array(119, 118, 117), PackedInt32Array(113, 111, 116), PackedInt32Array(120, 122, 121), PackedInt32Array(122, 120, 123), PackedInt32Array(123, 120, 124), PackedInt32Array(123, 124, 23), PackedInt32Array(23, 21, 123), PackedInt32Array(127, 126, 125), PackedInt32Array(125, 97, 127), PackedInt32Array(127, 97, 98), PackedInt32Array(127, 98, 128), PackedInt32Array(121, 126, 120), PackedInt32Array(120, 126, 127)]
+agent_radius = 0.2
 
 [sub_resource type="StandardMaterial3D" id="Mat_ground"]
-albedo_color = Color(0.08, 0.06, 0.04, 1)
+albedo_texture = ExtResource("4_wvbas")
+uv1_scale = Vector3(200, 200, 1)
 
 [sub_resource type="BoxMesh" id="Mesh_ground"]
 size = Vector3(1, 0.05, 1)
@@ -36,90 +59,38 @@ size = Vector3(1, 0.05, 1)
 [sub_resource type="BoxShape3D" id="Shape_ground"]
 size = Vector3(1, 0.05, 1)
 
-[sub_resource type="BoxShape3D" id="Shape_player"]
-size = Vector3(0.8, 1.8, 0.8)
+[sub_resource type="StandardMaterial3D" id="Mat_road"]
+albedo_color = Color(0.25, 0.2, 0.15, 1)
+roughness = 0.9
 
-[sub_resource type="FogMaterial" id="Fog_basement"]
-density = 0.08
+[sub_resource type="BoxMesh" id="Mesh_road"]
+size = Vector3(8, 0.05, 50)
 
 [node name="CottageHorror" type="Node3D" unique_id=110475989]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=715701991]
 environment = SubResource("Env_dark")
 
+[node name="Sun" type="DirectionalLight3D" parent="." unique_id=720415210]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 0)
+light_color = Color(1, 0.95, 0.9, 1)
+light_energy = 5.0
+light_indirect_energy = 1.5
+shadow_enabled = true
+directional_shadow_max_distance = 500.0
+
 [node name="Moonlight" type="DirectionalLight3D" parent="." unique_id=720415209]
 transform = Transform3D(0.866, -0.5, 0, 0.5, 0.866, 0, 0, 0, 1, 0, 10, 0)
 light_color = Color(0.3, 0.3, 0.5, 1)
-light_energy = 0.4
-light_indirect_energy = 0.2
+light_energy = 0.0
+light_indirect_energy = 0.3
 shadow_enabled = true
 directional_shadow_max_distance = 30.0
+sky_mode = 1
 
-[node name="Ground" type="StaticBody3D" parent="." unique_id=1321973830]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.05, 0)
-
-[node name="Mesh" type="MeshInstance3D" parent="Ground" unique_id=508296006]
-transform = Transform3D(40, 0, 0, 0, 1, 0, 0, 0, 40, 0, 0, 0)
-material_override = SubResource("Mat_ground")
-mesh = SubResource("Mesh_ground")
-
-[node name="Collision" type="CollisionShape3D" parent="Ground" unique_id=1724641179]
-transform = Transform3D(40, 0, 0, 0, 1, 0, 0, 0, 40, 0, 0, 0)
-shape = SubResource("Shape_ground")
-
-[node name="Cabins" parent="." unique_id=1282417259 instance=ExtResource("7_cabins")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.009, 0, 14.765)
-
-[node name="CabinFloor" type="StaticBody3D" parent="." unique_id=994229871]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.3, 0)
-
-[node name="FloorCollision" type="CollisionShape3D" parent="CabinFloor" unique_id=180300365]
-transform = Transform3D(20, 0, 0, 0, 1, 0, 0, 0, 20, 0, 0, 0)
-shape = SubResource("Shape_ground")
-
-[node name="Player" type="CharacterBody3D" parent="." unique_id=92687399]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-script = ExtResource("1_player")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Player" unique_id=1216635985]
-shape = SubResource("Shape_player")
-
-[node name="CameraHolder" type="Node3D" parent="Player" unique_id=745860990]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
-
-[node name="Camera3D" type="Camera3D" parent="Player/CameraHolder" unique_id=1046583223]
-
-[node name="InteractionManager" type="Node3D" parent="Player" unique_id=247016920]
-script = ExtResource("2_interaction")
-
-[node name="Lamp" type="Node3D" parent="." unique_id=409032314]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, -3)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Lamp" unique_id=6746865]
-light_color = Color(1, 0.85, 0.5, 1)
-light_energy = 3.0
-shadow_enabled = true
-omni_range = 6.0
-
-[node name="LampFlicker" type="Node3D" parent="Lamp" unique_id=17860872]
-script = ExtResource("5_lamp_flicker")
-light_node_path = NodePath("../OmniLight3D")
+[node name="Player" parent="." unique_id=92687399 instance=ExtResource("1_player")]
 
 [node name="HUD" parent="." unique_id=1086543120 instance=ExtResource("4_hud")]
-
-[node name="CabinDoor" type="StaticBody3D" parent="." unique_id=940888406]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 4.96)
-script = ExtResource("6_door")
-door_label = "Cabin Door"
-
-[node name="DoorMesh" type="MeshInstance3D" parent="CabinDoor" unique_id=561770702]
-transform = Transform3D(0.8, 0, 0, 0, 2, 0, 0, 0, 0.08, 0, 0, 0)
-material_override = SubResource("Mat_ground")
-mesh = SubResource("Mesh_ground")
-
-[node name="DoorCollision" type="CollisionShape3D" parent="CabinDoor" unique_id=978981772]
-transform = Transform3D(0.8, 0, 0, 0, 2, 0, 0, 0, 0.08, 0, 0, 0)
-shape = SubResource("Shape_ground")
 
 [node name="BasementFog" type="FogVolume" parent="." unique_id=274711645]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.25, 0)
@@ -127,8 +98,71 @@ size = Vector3(12, 2.5, 10)
 shape = 0
 material = SubResource("Fog_basement")
 
-[node name="PSXEffect" type="Node3D" parent="." unique_id=1536945848]
-script = ExtResource("8_psx")
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1000000002]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3.0318398, -3.445414)
+navigation_mesh = SubResource("NavigationMesh_fl8v4")
 
-[node name="PSXDetailProps" type="Node3D" parent="." unique_id=1522720487]
-script = ExtResource("9_psx_props")
+[node name="Ground" type="StaticBody3D" parent="NavigationRegion3D" unique_id=1321973830]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 0, 0, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Ground" unique_id=508296006]
+transform = Transform3D(40, 0, 0, 0, 1, 0, 0, 0, 40, 0, 0, 0)
+material_override = SubResource("Mat_ground")
+mesh = SubResource("Mesh_ground")
+
+[node name="Collision" type="CollisionShape3D" parent="NavigationRegion3D/Ground" unique_id=1724641179]
+transform = Transform3D(40, 0, 0, 0, 1, 0, 0, 0, 40, 0, 0, 0)
+shape = SubResource("Shape_ground")
+
+[node name="Cabin" parent="NavigationRegion3D" unique_id=1282417259 instance=ExtResource("7_cabins")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.009, 0, 0.4094057)
+
+[node name="Lamp" type="Node3D" parent="NavigationRegion3D" unique_id=409032314]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.615746, 5.7159414, 11.382706)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="NavigationRegion3D/Lamp" unique_id=6746865]
+light_color = Color(1, 0.85, 0.5, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 6.0
+
+[node name="LampFlicker" type="Node3D" parent="NavigationRegion3D/Lamp" unique_id=17860872]
+script = ExtResource("5_lamp_flicker")
+light_node_path = NodePath("../OmniLight3D")
+
+[node name="Road" type="MeshInstance3D" parent="NavigationRegion3D" unique_id=447224741]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.025, -25)
+material_override = SubResource("Mat_road")
+mesh = SubResource("Mesh_road")
+
+[node name="DayNightController" type="Node" parent="." unique_id=1620074096 node_paths=PackedStringArray("world_environment", "sun_light", "moon_light", "player_node")]
+script = ExtResource("11_day_night")
+world_environment = NodePath("../WorldEnvironment")
+sun_light = NodePath("../Sun")
+moon_light = NodePath("../Moonlight")
+sky_material = SubResource("ProceduralSkyMaterial_1iq60")
+entity_scene = ExtResource("10_entity")
+player_node = NodePath("../Player")
+
+[node name="TreeSpawner" type="Node3D" parent="." unique_id=447224740]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -10, 0)
+script = ExtResource("13_tree_spawner")
+tree_scenes = Array[PackedScene]([ExtResource("10_mdrot")])
+tree_count = 200
+road_angle = 4.71239
+road_gap_width = 0.6
+
+[node name="Details" type="Node" parent="." unique_id=1144393623]
+
+[node name="Outside Cabin" type="Node" parent="Details" unique_id=689419320]
+
+[node name="brick2" parent="Details/Outside Cabin" unique_id=834796097 instance=ExtResource("12_03kcw")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.437813, -2.910169, 9.6944275)
+
+[node name="Inside Cabin" type="Node" parent="Details" unique_id=1602121845]
+
+[node name="carpet_mp_12" parent="Details/Inside Cabin" unique_id=1988414500 instance=ExtResource("13_1ggpy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.0613074, -2.34874, 14.013932)
+
+[node name="clock_22" parent="Details/Inside Cabin" unique_id=789661507 instance=ExtResource("14_pee2b")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.588918, -0.30728936, 11.067957)

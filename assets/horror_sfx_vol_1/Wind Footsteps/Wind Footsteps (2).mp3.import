@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cu864vplktku7"
+path="res://.godot/imported/Wind Footsteps (2).mp3-127260a0b61cdb4ec3a18e0c346fcf7f.mp3str"
+
+[deps]
+
+source_file="res://assets/horror_sfx_vol_1/Wind Footsteps/Wind Footsteps (2).mp3"
+dest_files=["res://.godot/imported/Wind Footsteps (2).mp3-127260a0b61cdb4ec3a18e0c346fcf7f.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

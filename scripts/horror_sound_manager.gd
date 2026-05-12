@@ -7,18 +7,18 @@ extends Node
 signal sound_played(sound_name: String)
 
 # Audio file paths
-const AMBIENT_WIND_DIR: String = "res://horror_sfx_vol_1/Ambient Wind/"
-const CARPET_FOOTSTEP_DIR: String = "res://horror_sfx_vol_1/Carpet Footstep/"
-const CONCRETE_FOOTSTEP_DIR: String = "res://horror_sfx_vol_1/Concrete Footsteps/"
-const GRAVEL_FOOTSTEP_DIR: String = "res://horror_sfx_vol_1/Gravel Footsteps/"
-const LEAVES_FOOTSTEP_DIR: String = "res://horror_sfx_vol_1/Leaves Footsteps/"
-const METAL_FOOTSTEP_DIR: String = "res://horror_sfx_vol_1/Metal Footsteps/"
-const MUD_FOOTSTEP_DIR: String = "res://horror_sfx_vol_1/Mud foosteps/"
-const STAIRS_FOOTSTEP_DIR: String = "res://horror_sfx_vol_1/Stairs Footsteps/"
-const WIND_FOOTSTEP_DIR: String = "res://horror_sfx_vol_1/Wind Footsteps/"
-const WOODEN_FOOTSTEP_DIR: String = "res://horror_sfx_vol_1/Wooden Foosteps/"
-const CREAKING_DOOR_DIR: String = "res://horror_sfx_vol_1/Creaking Door/"
-const MONSTER_GROWL_DIR: String = "res://horror_sfx_vol_1/Monster Growl/"
+const AMBIENT_WIND_DIR: String = "res://assets/horror_sfx_vol_1/Ambient Wind/"
+const CARPET_FOOTSTEP_DIR: String = "res://assets/horror_sfx_vol_1/Carpet Footstep/"
+const CONCRETE_FOOTSTEP_DIR: String = "res://assets/horror_sfx_vol_1/Concrete Footsteps/"
+const GRAVEL_FOOTSTEP_DIR: String = "res://assets/horror_sfx_vol_1/Gravel Footsteps/"
+const LEAVES_FOOTSTEP_DIR: String = "res://assets/horror_sfx_vol_1/Leaves Footsteps/"
+const METAL_FOOTSTEP_DIR: String = "res://assets/horror_sfx_vol_1/Metal Footsteps/"
+const MUD_FOOTSTEP_DIR: String = "res://assets/horror_sfx_vol_1/Mud foosteps/"
+const STAIRS_FOOTSTEP_DIR: String = "res://assets/horror_sfx_vol_1/Stairs Footsteps/"
+const WIND_FOOTSTEP_DIR: String = "res://assets/horror_sfx_vol_1/Wind Footsteps/"
+const WOODEN_FOOTSTEP_DIR: String = "res://assets/horror_sfx_vol_1/Wooden Foosteps/"
+const CREAKING_DOOR_DIR: String = "res://assets/horror_sfx_vol_1/Creaking Door/"
+const MONSTER_GROWL_DIR: String = "res://assets/horror_sfx_vol_1/Monster Growl/"
 
 # Ambient sound pool
 var _ambient_sounds: Array[AudioStreamPlayer3D] = []
@@ -163,11 +163,20 @@ func _setup_entity_sounds() -> void:
 	add_child(_entity_whisper)
 
 func _connect_signals() -> void:
-	if Engine.has_singleton("NightManager"):
-		var nm = Engine.get_singleton("NightManager")
+	# NightManager is registered as an autoload, so it's a child of the root node.
+	# Use get_node to access it, with a deferred call to ensure it's initialized.
+	call_deferred("_deferred_connect_night_manager")
+
+
+func _deferred_connect_night_manager() -> void:
+	var nm = get_node("/root/NightManager")
+	if nm:
 		nm.night_started.connect(_on_night_started)
 		nm.night_ended.connect(_on_night_ended)
 		nm.horror_event.connect(_on_horror_event)
+		print("HorrorSoundManager: Connected to NightManager signals")
+	else:
+		print("HorrorSoundManager: NightManager not found via /root/NightManager")
 
 func _on_night_started(night: int) -> void:
 	var ambient_vol = -15.0 + (night * 2.0)

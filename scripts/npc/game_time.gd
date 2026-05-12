@@ -1,52 +1,62 @@
 extends Node
 
 ## Global game time autoload singleton.
-## Tracks in-game time where 1 real second = 1 game minute.
-## A full day cycle (24 hours) = 24 real minutes.
+## Manages a day/night cycle where each day and each night lasts 5 minutes.
+## A full cycle (day + night) = 10 minutes.
 
-signal time_changed(hour: float)
-signal day_phase_changed(phase: DayPhase)
+signal time_changed(progress: float, is_day: bool)
+signal day_started()
+signal night_started()
 
-enum DayPhase { MORNING, AFTERNOON, EVENING, NIGHT }
+## Current cycle progress (0.0 to 1.0 for the current phase)
+var cycle_progress: float = 0.0
 
-## Current in-game hour (0.0 to 24.0)
-var current_hour: float = 8.0  # Start at 8 AM
+## Whether it's currently daytime
+var is_day: bool = true
 
-## How many real seconds equal one game minute
-@export var real_seconds_per_game_minute: float = 1.0
+## Duration of each phase in seconds (5 minutes = 300 seconds)
+@export var phase_duration: float = 300.0
 
-var _last_phase: DayPhase = DayPhase.MORNING
+## Total elapsed time
+var elapsed_time: float = 0.0
+
+## How many full cycles have completed
+var cycles_completed: int = 0
+
 
 func _process(delta: float) -> void:
-	var time_delta = (delta / real_seconds_per_game_minute) / 60.0  # Convert to hours
-	current_hour = fmod(current_hour + time_delta, 24.0)
+	elapsed_time += delta
+	cycle_progress += delta / phase_duration
 	
-	# Emit signals
-	time_changed.emit(current_hour)
+	if cycle_progress >= 1.0:
+		cycle_progress = 0.0
+		if is_day:
+			is_day = false
+			night_started.emit()
+			print("Night has fallen...")
+		else:
+			is_day = true
+			cycles_completed += 1
+			day_started.emit()
+			print("Day has broken! Cycle %d completed." % cycles_completed)
 	
-	var phase = get_day_phase()
-	if phase != _last_phase:
-		_last_phase = phase
-		day_phase_changed.emit(phase)
+	time_changed.emit(cycle_progress, is_day)
+	
+	# Debug: print progress every ~30 seconds of game time
+	if int(elapsed_time) % 30 == 0 and int(elapsed_time - delta) % 30 != 0:
+		print("GameTime: %s, progress=%.2f, elapsed=%.0fs" % [get_phase_string(), cycle_progress, elapsed_time])
 
-## Returns the current day phase based on the hour.
-func get_day_phase() -> DayPhase:
-	if current_hour >= 6.0 and current_hour < 12.0:
-		return DayPhase.MORNING
-	elif current_hour >= 12.0 and current_hour < 18.0:
-		return DayPhase.AFTERNOON
-	elif current_hour >= 18.0 and current_hour < 22.0:
-		return DayPhase.EVENING
-	else:
-		return DayPhase.NIGHT
 
-## Returns a formatted time string like "08:00 AM"
+## Returns a string like "Day" or "Night" with progress percentage.
+func get_phase_string() -> String:
+	var phase_name = "Day" if is_day else "Night"
+	var percent = int(cycle_progress * 100)
+	return "%s %d%%" % [phase_name, percent]
+
+
+## Returns the time of day as a formatted string (for display).
 func get_time_string() -> String:
-	var total_minutes = int(current_hour * 60)
-	var hours = int(total_minutes / 60.0)
-	var minutes = total_minutes % 60
-	var am_pm = "AM" if hours < 12 else "PM"
-	var display_hour = hours if hours <= 12 else hours - 12
-	if display_hour == 0:
-		display_hour = 12
-	return "%02d:%02d %s" % [display_hour, minutes, am_pm]
+	var total_seconds = int(elapsed_time)
+	var minutes = int(total_seconds / 60)
+	var seconds = total_seconds % 60
+	return "%02d:%02d" % [minutes, seconds]

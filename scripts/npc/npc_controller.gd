@@ -2,8 +2,7 @@ extends CharacterBody3D
 class_name NPCController
 
 ## Main NPC controller with schedule-driven behavior.
-## Uses direct position manipulation instead of physics-based movement
-## to avoid collision issues with the ground.
+## Uses the Entity component system for movement and visuals.
 
 signal activity_changed(activity: NPCScheduler.Activity)
 
@@ -58,6 +57,7 @@ func _ready() -> void:
 	# Debug: log NPC info
 	print("NPC %s ready at %s" % [npc_data.npc_name if npc_data else "unknown", global_position])
 
+
 func _physics_process(delta: float) -> void:
 	if not npc_data or not scheduler or not _ready_to_move:
 		return
@@ -98,6 +98,7 @@ func _physics_process(delta: float) -> void:
 			var target_basis = Basis.looking_at(look_dir, Vector3.UP)
 			transform.basis = transform.basis.slerp(target_basis, delta * 8.0)
 
+
 ## Sets up this NPC with data, loads the character model, and builds schedule.
 func initialize(data: NPCData) -> void:
 	npc_data = data
@@ -108,6 +109,7 @@ func initialize(data: NPCData) -> void:
 	# Build schedule
 	if scheduler:
 		scheduler.build_schedule(data)
+
 
 ## Loads a glTF character model and attaches it to this NPC.
 func _load_character_model(character_type: String) -> void:
@@ -142,6 +144,7 @@ func _load_character_model(character_type: String) -> void:
 	# Position the model so feet are at ground level
 	_character_model.position.y = 0.0
 
+
 ## Recursively finds the AnimationPlayer in the model hierarchy.
 func _find_animation_player(node: Node) -> void:
 	if node is AnimationPlayer:
@@ -155,6 +158,7 @@ func _find_animation_player(node: Node) -> void:
 	
 	for child in node.get_children():
 		_find_animation_player(child)
+
 
 ## Updates the animation based on movement state.
 func _update_animation() -> void:
@@ -181,9 +185,11 @@ func _update_animation() -> void:
 			elif _animation_player.has_animation("walk"):
 				_animation_player.play("walk")
 
+
 ## Returns the NPC's data (used by NPCScheduler).
 func get_npc_data() -> NPCData:
 	return npc_data
+
 
 func _move_to_target(target: Vector3, delta: float) -> void:
 	# Check if we're already close to the target
@@ -202,6 +208,7 @@ func _move_to_target(target: Vector3, delta: float) -> void:
 	
 	# Move the NPC directly (no physics collision)
 	global_position += velocity * delta
+
 
 func _handle_wander(delta: float) -> void:
 	_wander_timer -= delta
@@ -226,6 +233,7 @@ func _handle_wander(delta: float) -> void:
 	
 	# Move the NPC directly (no physics collision)
 	global_position += velocity * delta
+
 
 func _on_time_changed(hour: float) -> void:
 	if not scheduler:

@@ -1,0 +1,36 @@
+[gd_scene format=3 uid="uid://671uxsxwdrom"]
+
+[ext_resource type="Script" uid="uid://q6omui2prbth" path="res://scripts/player_controller.gd" id="1_player"]
+[ext_resource type="Script" uid="uid://be4erotljq8gt" path="res://scripts/interaction_manager.gd" id="2_interaction"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape_player"]
+radius = 0.35
+height = 1.8
+
+[node name="Player" type="CharacterBody3D" unique_id=629523076]
+floor_max_angle = 1.0472
+floor_snap_length = 1.2
+script = ExtResource("1_player")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1320359234]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
+shape = SubResource("CapsuleShape_player")
+
+[node name="CameraHolder" type="Node3D" parent="." unique_id=1797101837]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
+
+[node name="Camera3D" type="Camera3D" parent="CameraHolder" unique_id=729070594]
+current = true
+near = 0.1
+far = 500.0
+
+[node name="Flashlight" type="SpotLight3D" parent="CameraHolder/Camera3D" unique_id=1304318822]
+transform = Transform3D(0.996, 0, -0.087, 0, 1, 0, 0.087, 0, 0.996, 0.2, -0.1, -0.3)
+light_color = Color(1, 0.95, 0.8, 1)
+light_energy = 5.0
+shadow_enabled = true
+shadow_bias = 0.1
+spot_range = 10.0
+
+[node name="InteractionManager" type="Node3D" parent="CameraHolder" unique_id=1600805036]
+script = ExtResource("2_interaction")

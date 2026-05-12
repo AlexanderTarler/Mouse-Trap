@@ -1,20 +1,16 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://bbgosppfttoh5"]
 
-[ext_resource type="Script" path="res://scripts/ui/horror_hud.gd" id="1_hud"]
-[ext_resource type="Script" path="res://scripts/ui/watched_effect.gd" id="2_watched"]
+[ext_resource type="Script" uid="uid://eekwf71bb1kt" path="res://scripts/ui/horror_hud.gd" id="1_hud"]
+[ext_resource type="Script" uid="uid://b48cjof6fe2dy" path="res://scripts/ui/watched_effect.gd" id="2_watched"]
 
 [sub_resource type="Theme" id="Theme_hud"]
 default_font_size = 18
 
-[node name="HorrorHUD" type="CanvasLayer"]
+[node name="HorrorHUD" type="CanvasLayer" unique_id=1729726257]
+layer = 200
 script = ExtResource("1_hud")
 
-[node name="NightLabel" type="Label" parent="."]
-anchors_preset = 1
-anchor_left = 0.0
-anchor_top = 0.0
-anchor_right = 0.0
-anchor_bottom = 0.0
+[node name="NightLabel" type="Label" parent="." unique_id=16999964]
 offset_left = 20.0
 offset_top = 20.0
 offset_right = 200.0
@@ -24,12 +20,7 @@ theme_override_colors/font_color = Color(1, 1, 1, 0.8)
 theme_override_font_sizes/font_size = 24
 text = "Night 1 / 5"
 
-[node name="TimeLabel" type="Label" parent="."]
-anchors_preset = 1
-anchor_left = 0.0
-anchor_top = 0.0
-anchor_right = 0.0
-anchor_bottom = 0.0
+[node name="TimeLabel" type="Label" parent="." unique_id=2125934328]
 offset_left = 20.0
 offset_top = 50.0
 offset_right = 200.0
@@ -39,7 +30,25 @@ theme_override_colors/font_color = Color(1, 1, 1, 0.6)
 theme_override_font_sizes/font_size = 18
 text = "00:00 AM"
 
-[node name="EventLabel" type="Label" parent="."]
+[node name="ClockLabel" type="Label" parent="." unique_id=2125934329]
+offset_left = 20.0
+offset_top = 80.0
+offset_right = 400.0
+offset_bottom = 110.0
+theme = SubResource("Theme_hud")
+theme_override_colors/font_color = Color(1, 1, 1, 0.8)
+theme_override_font_sizes/font_size = 18
+text = "☀️ DAY 0% (05:00 remaining)"
+
+[node name="PhaseBar" type="ProgressBar" parent="." unique_id=2092697612]
+offset_left = 20.0
+offset_top = 110.0
+offset_right = 220.0
+offset_bottom = 130.0
+modulate = Color(1, 0.9, 0.6, 1)
+show_percentage = false
+
+[node name="EventLabel" type="Label" parent="." unique_id=2043193666]
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
@@ -53,16 +62,13 @@ theme = SubResource("Theme_hud")
 theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
 theme_override_font_sizes/font_size = 28
 horizontal_alignment = 1
-text = ""
 
-[node name="EventTimer" type="Timer" parent="."]
+[node name="EventTimer" type="Timer" parent="." unique_id=2099736344]
 wait_time = 3.0
 one_shot = true
 
-[node name="WatchedEffect" type="ColorRect" parent="."]
+[node name="WatchedEffect" type="ColorRect" parent="." unique_id=1103203420]
 anchors_preset = 15
-anchor_left = 0.0
-anchor_top = 0.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2

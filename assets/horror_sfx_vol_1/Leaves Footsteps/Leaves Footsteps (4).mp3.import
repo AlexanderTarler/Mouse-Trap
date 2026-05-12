@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://cc4hgirsio1ja"
+path="res://.godot/imported/Leaves Footsteps (4).mp3-7313fceece5f8142ac4cb5bbbf7374ed.mp3str"
+
+[deps]
+
+source_file="res://assets/horror_sfx_vol_1/Leaves Footsteps/Leaves Footsteps (4).mp3"
+dest_files=["res://.godot/imported/Leaves Footsteps (4).mp3-7313fceece5f8142ac4cb5bbbf7374ed.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

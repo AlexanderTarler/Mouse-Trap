@@ -19,7 +19,6 @@ config/icon="res://icon.svg"
 
 GameTime="*res://scripts/npc/game_time.gd"
 NightManager="*res://scripts/night_manager.gd"
-EntityManager="*res://scripts/entity_manager.gd"
 HorrorSoundManager="*res://scripts/horror_sound_manager.gd"
 
 [filesystem]
