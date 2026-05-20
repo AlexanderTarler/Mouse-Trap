@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://ce34ui3kxkwsm"
+path="res://.godot/imported/canned_food_mp_5_rusty.obj-59d46e9d4827bae56e445750c115b979.mesh"
+
+[deps]
+
+files=["res://.godot/imported/canned_food_mp_5_rusty.obj-59d46e9d4827bae56e445750c115b979.mesh"]
+
+source_file="res://assets/PSX Mega Pack/Models/other-formats/OBJ/Items & Weapons/canned_food_mp_5_rusty.obj"
+dest_files=["res://.godot/imported/canned_food_mp_5_rusty.obj-59d46e9d4827bae56e445750c115b979.mesh", "res://.godot/imported/canned_food_mp_5_rusty.obj-59d46e9d4827bae56e445750c115b979.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

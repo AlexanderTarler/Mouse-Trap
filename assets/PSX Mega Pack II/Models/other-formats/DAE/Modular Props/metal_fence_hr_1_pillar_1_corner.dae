@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 3.4.0 commit date:2022-12-06, commit time:18:46, hash:a95bf1ac01be</authoring_tool>
+    </contributor>
+    <created>2025-11-29T13:48:16</created>
+    <modified>2025-11-29T13:48:16</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="metal_fence_hr_1-effect">
+      <profile_COMMON>
+        <newparam sid="metal_fence_hr_1_png-surface">
+          <surface type="2D">
+            <init_from>metal_fence_hr_1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="metal_fence_hr_1_png-sampler">
+          <sampler2D>
+            <source>metal_fence_hr_1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="metal_fence_hr_1_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="metal_fence_hr_1_png" name="metal_fence_hr_1_png">
+      <init_from>metal_fence_hr_1.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="metal_fence_hr_1-material" name="metal_fence_hr_1">
+      <instance_effect url="#metal_fence_hr_1-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="metal_fence_hr_1_pillar_1_corner-mesh" name="metal_fence_hr_1_pillar_1_corner">
+      <mesh>
+        <source id="metal_fence_hr_1_pillar_1_corner-mesh-positions">
+          <float_array id="metal_fence_hr_1_pillar_1_corner-mesh-positions-array" count="48">0.09999996 0.1000002 0 0.1 -0.1999998 0 0.1 -0.1999998 2.5 -0.1 0.1000002 0 -0.1 0.1000002 2.5 -0.09999996 -0.1999998 0 -0.09999996 -0.1999998 2.5 0.09999996 -0.09999978 0 0.09999996 -0.09999978 2.5 -0.09999996 -0.09999984 0 -0.09999996 -0.09999984 2.5 0.09999978 0.09999996 2.5 0.1999998 0.1 0 0.1999998 0.1 2.5 0.1999998 -0.09999996 0 0.1999998 -0.09999996 2.5</float_array>
+          <technique_common>
+            <accessor source="#metal_fence_hr_1_pillar_1_corner-mesh-positions-array" count="16" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="metal_fence_hr_1_pillar_1_corner-mesh-normals">
+          <float_array id="metal_fence_hr_1_pillar_1_corner-mesh-normals-array" count="45">1 3.57628e-7 0 2.98023e-7 -1 0 -1 -1.78814e-7 0 -2.23517e-7 1 0 -7.45058e-7 0 1 -1 -3.57628e-7 0 1.93715e-6 1 0 1 1.19209e-7 0 -1.78814e-6 -1 0 0 0 1 2.98023e-7 -1 0 -1 0 0 8.94071e-7 1 0 -2.98023e-7 1 0 -1.78814e-6 -1 0</float_array>
+          <technique_common>
+            <accessor source="#metal_fence_hr_1_pillar_1_corner-mesh-normals-array" count="15" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="metal_fence_hr_1_pillar_1_corner-mesh-map-0">
+          <float_array id="metal_fence_hr_1_pillar_1_corner-mesh-map-0-array" count="132">0.9768257 1 1 0 0.9768257 0 0.9314536 1 0.9758492 0 0.9314536 0 0.9768254 0.9999999 0.9304769 0 0.9768254 0 0.9758492 1 0.9314536 0 0.9758492 0 0.9758492 0.58 0.9314535 0.54 0.9758492 0.54 1 1 0.9768257 0 1 0 0.9768257 0 1 1 1 0 0.9314536 1 0.9758492 0 0.9314536 0 0.96875 1 0.9455757 0 0.96875 0 0.9314536 0.58 0.9758492 0.54 0.9758492 0.58 0.9758492 0.54 0.9314536 0.46 0.9758492 0.46 0.9768257 1 1 1 1 0 0.9314536 1 0.9758492 1 0.9758492 0 0.9768254 0.9999999 0.9304769 1 0.9304769 0 0.9758492 1 0.9314536 1 0.9314536 0 0.9758492 0.58 0.9314536 0.58 0.9314535 0.54 1 1 0.9768257 1 0.9768257 0 0.9768257 0 0.9768257 1 1 1 0.9314536 1 0.9758492 1 0.9758492 0 0.96875 1 0.9455757 1 0.9455757 0 0.9314536 0.58 0.9314536 0.54 0.9758492 0.54 0.9758492 0.54 0.9314535 0.5399999 0.9314536 0.46</float_array>
+          <technique_common>
+            <accessor source="#metal_fence_hr_1_pillar_1_corner-mesh-map-0-array" count="66" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="metal_fence_hr_1_pillar_1_corner-mesh-vertices">
+          <input semantic="POSITION" source="#metal_fence_hr_1_pillar_1_corner-mesh-positions"/>
+        </vertices>
+        <triangles material="metal_fence_hr_1-material" count="22">
+          <input semantic="VERTEX" source="#metal_fence_hr_1_pillar_1_corner-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#metal_fence_hr_1_pillar_1_corner-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#metal_fence_hr_1_pillar_1_corner-mesh-map-0" offset="2" set="0"/>
+          <p>8 0 0 1 0 1 7 0 2 2 1 3 5 1 4 1 1 5 10 2 6 3 2 7 9 2 8 4 3 9 0 3 10 3 3 11 6 4 12 8 4 13 10 4 14 6 5 15 9 5 16 5 5 17 0 6 18 13 6 19 12 6 20 13 7 21 14 7 22 12 7 23 15 8 24 7 8 25 14 8 26 13 9 27 8 9 28 15 9 29 10 9 30 11 9 31 4 9 32 8 0 33 2 0 34 1 0 35 2 10 36 6 10 37 5 10 38 10 11 39 4 11 40 3 11 41 4 12 42 11 12 43 0 12 44 6 9 45 2 9 46 8 9 47 6 5 48 10 5 49 9 5 50 0 13 51 11 13 52 13 13 53 13 7 54 15 7 55 14 7 56 15 14 57 8 14 58 7 14 59 13 9 60 11 9 61 8 9 62 10 9 63 8 9 64 11 9 65</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="metal_fence_hr_1_pillar_1_corner" name="metal_fence_hr_1_pillar_1_corner" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#metal_fence_hr_1_pillar_1_corner-mesh" name="metal_fence_hr_1_pillar_1_corner">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="metal_fence_hr_1-material" target="#metal_fence_hr_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

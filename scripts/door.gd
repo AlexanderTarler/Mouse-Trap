@@ -1,66 +1,48 @@
-extends StaticBody3D
-class_name Door
+extends AnimatableBody3D
 
-## Interactive door that can be opened/closed.
-## Used for the cabin entrance and basement access.
+## How many degrees the door swings open (90 or -90 depending on hinge side)
+@export var open_angle: float = 90.0
+## How fast the door opens or closes in seconds
+@export var swing_speed: float = 0.4
+@export var open_sound: AudioStream
+@export var close_sound: AudioStream
 
-signal door_opened()
-signal door_closed()
+@onready var door_audio: AudioStreamPlayer3D = $DoorAudio if has_node("DoorAudio") else null
 
-## If true, the door starts in the open position.
-@export var start_open: bool = false
-
-## If true, this is the basement door (opens to reveal stairs).
-@export var is_basement_door: bool = false
-
-## Door swing angle in degrees (positive = inward, negative = outward).
-@export var swing_angle: float = 90.0
-
-## How fast the door opens/closes.
-@export var swing_speed: float = 3.0
-
-## Door label shown in the interaction prompt.
-@export var door_label: String = "Door"
-
-var _is_open: bool = false
-var _target_rotation: float = 0.0
-var _current_rotation: float = 0.0
-var _is_animating: bool = false
+var is_open: bool = false
+var is_animating: bool = false
+var default_rotation_y: float
 
 func _ready() -> void:
-	if start_open:
-		_is_open = true
-		_target_rotation = deg_to_rad(swing_angle)
-		_current_rotation = _target_rotation
-		rotation.y = _current_rotation
+	# Save the baseline rotation so we always return to a clean closed state
+	default_rotation_y = rotation_degrees.y
 
-func _process(delta: float) -> void:
-	if not _is_animating:
-		return
-	
-	_current_rotation = lerp(_current_rotation, _target_rotation, delta * swing_speed)
-	rotation.y = _current_rotation
-	
-	if abs(_current_rotation - _target_rotation) < 0.01:
-		_current_rotation = _target_rotation
-		rotation.y = _current_rotation
-		_is_animating = false
-
-## Called by InteractionManager when the player looks at this door and presses E.
+## Call this function from your Player's interaction script!
 func interact() -> void:
-	_toggle()
-
-func _toggle() -> void:
-	_is_open = not _is_open
-	_target_rotation = deg_to_rad(swing_angle) if _is_open else 0.0
-	_is_animating = true
+	if is_animating:
+		return # Prevent input spam while the door is mid-swing
+		
+	is_open = not is_open
+	is_animating = true
 	
-	if _is_open:
-		door_opened.emit()
-	else:
-		door_closed.emit()
-
-## Returns the interaction prompt text.
-func get_interact_text() -> String:
-	var action = "Close" if _is_open else "Open"
-	return "[E] %s %s" % [action, door_label]
+	# Play door audio with pitch randomization
+	if door_audio:
+		# Use export-assigned sounds if available, otherwise fall back to the node's existing stream
+		var target_stream = open_sound if is_open else close_sound
+		if target_stream:
+			door_audio.stream = target_stream
+		# If no stream is set at all (neither export nor node default), skip playing
+		if door_audio.stream:
+			door_audio.pitch_scale = randf_range(0.9, 1.1)
+			door_audio.play()
+	
+	# Determine target rotation destination
+	var target_angle = default_rotation_y + (open_angle if is_open else 0.0)
+	
+	# Create a clean, smooth physics tween interpolation
+	var tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(self, "rotation_degrees:y", target_angle, swing_speed)
+	
+	# Unlock input once the animation finishes moving
+	tween.tween_callback(func(): is_animating = false)
+	

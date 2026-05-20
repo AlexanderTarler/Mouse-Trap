@@ -1,0 +1,68 @@
+[gd_scene format=3 uid="uid://w2nhpuaugrii"]
+
+[ext_resource type="Script" path="res://scripts/inventory/inventory_ui.gd" id="1_inv_ui"]
+
+[node name="InventoryUI" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1_inv_ui")
+
+[node name="Panel" type="Panel" parent="."]
+visible = false
+anchors_preset = 0
+offset_left = 100.0
+offset_top = 100.0
+offset_right = 700.0
+offset_bottom = 500.0
+
+[node name="CloseButton" type="Button" parent="Panel"]
+offset_left = 560.0
+offset_top = 8.0
+offset_right = 592.0
+offset_bottom = 40.0
+text = "X"
+
+[node name="ItemNameLabel" type="Label" parent="Panel"]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 300.0
+offset_bottom = 40.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+
+[node name="ItemDescLabel" type="Label" parent="Panel"]
+offset_left = 16.0
+offset_top = 44.0
+offset_right = 400.0
+offset_bottom = 68.0
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_font_sizes/font_size = 14
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel"]
+offset_left = 16.0
+offset_top = 80.0
+offset_right = 584.0
+offset_bottom = 320.0
+
+[node name="GridContainer" type="GridContainer" parent="Panel/MarginContainer"]
+columns = 4
+custom_minimum_size = Vector2(0, 0)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+
+[node name="UseButton" type="Button" parent="Panel"]
+offset_left = 16.0
+offset_top = 336.0
+offset_right = 120.0
+offset_bottom = 368.0
+disabled = true
+text = "Use"
+
+[node name="DropButton" type="Button" parent="Panel"]
+offset_left = 136.0
+offset_top = 336.0
+offset_right = 240.0
+offset_bottom = 368.0
+disabled = true
+text = "Drop"

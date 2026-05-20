@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://c4n3ddyf714gg"
+path="res://.godot/imported/boiler_hx_4.obj-0ccc64510a9803adf2318f3f000967af.mesh"
+
+[deps]
+
+files=["res://.godot/imported/boiler_hx_4.obj-0ccc64510a9803adf2318f3f000967af.mesh"]
+
+source_file="res://assets/PSX Mega Pack II/Models/other-formats/OBJ/Structures/boiler_hx_4.obj"
+dest_files=["res://.godot/imported/boiler_hx_4.obj-0ccc64510a9803adf2318f3f000967af.mesh", "res://.godot/imported/boiler_hx_4.obj-0ccc64510a9803adf2318f3f000967af.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

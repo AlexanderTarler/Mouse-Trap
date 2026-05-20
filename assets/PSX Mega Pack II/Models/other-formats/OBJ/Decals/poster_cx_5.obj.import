@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://cehhs4ff3wg8q"
+path="res://.godot/imported/poster_cx_5.obj-e79dc77b534536d7b863aceaa76d9b5d.mesh"
+
+[deps]
+
+files=["res://.godot/imported/poster_cx_5.obj-e79dc77b534536d7b863aceaa76d9b5d.mesh"]
+
+source_file="res://assets/PSX Mega Pack II/Models/other-formats/OBJ/Decals/poster_cx_5.obj"
+dest_files=["res://.godot/imported/poster_cx_5.obj-e79dc77b534536d7b863aceaa76d9b5d.mesh", "res://.godot/imported/poster_cx_5.obj-e79dc77b534536d7b863aceaa76d9b5d.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

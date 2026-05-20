@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://brpg764ha14sp"
+path="res://.godot/imported/hanging_shelf_mx_2_1.obj-81e09dd653f03b4358b5f2446d3b74f2.mesh"
+
+[deps]
+
+files=["res://.godot/imported/hanging_shelf_mx_2_1.obj-81e09dd653f03b4358b5f2446d3b74f2.mesh"]
+
+source_file="res://assets/PSX Mega Pack II/Models/other-formats/OBJ/Props/hanging_shelf_mx_2_1.obj"
+dest_files=["res://.godot/imported/hanging_shelf_mx_2_1.obj-81e09dd653f03b4358b5f2446d3b74f2.mesh", "res://.godot/imported/hanging_shelf_mx_2_1.obj-81e09dd653f03b4358b5f2446d3b74f2.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

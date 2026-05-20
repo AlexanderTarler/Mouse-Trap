@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://cunatttioofed"
+path="res://.godot/imported/flare_mx_1.obj-d8f5b9c878d11b63f6472af7cb8f1b1d.mesh"
+
+[deps]
+
+files=["res://.godot/imported/flare_mx_1.obj-d8f5b9c878d11b63f6472af7cb8f1b1d.mesh"]
+
+source_file="res://assets/PSX Mega Pack II/Models/other-formats/OBJ/Weapons & Tools/flare_mx_1.obj"
+dest_files=["res://.godot/imported/flare_mx_1.obj-d8f5b9c878d11b63f6472af7cb8f1b1d.mesh", "res://.godot/imported/flare_mx_1.obj-d8f5b9c878d11b63f6472af7cb8f1b1d.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

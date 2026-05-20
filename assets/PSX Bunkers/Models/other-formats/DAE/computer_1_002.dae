@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 3.4.0 commit date:2022-12-06, commit time:18:46, hash:a95bf1ac01be</authoring_tool>
+    </contributor>
+    <created>2025-04-17T12:47:14</created>
+    <modified>2025-04-17T12:47:14</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="pc_1-effect">
+      <profile_COMMON>
+        <newparam sid="pc_1_png-surface">
+          <surface type="2D">
+            <init_from>pc_1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="pc_1_png-sampler">
+          <sampler2D>
+            <source>pc_1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="pc_1_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="keyboard_1-effect">
+      <profile_COMMON>
+        <newparam sid="keyboard_1_png-surface">
+          <surface type="2D">
+            <init_from>keyboard_1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="keyboard_1_png-sampler">
+          <sampler2D>
+            <source>keyboard_1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="keyboard_1_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="keyboard_1_png" name="keyboard_1_png">
+      <init_from>keyboard_1.png</init_from>
+    </image>
+    <image id="pc_1_png" name="pc_1_png">
+      <init_from>pc_1.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="pc_1-material" name="pc_1">
+      <instance_effect url="#pc_1-effect"/>
+    </material>
+    <material id="keyboard_1-material" name="keyboard_1">
+      <instance_effect url="#keyboard_1-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="computer_1_002-mesh" name="computer_1.002">
+      <mesh>
+        <source id="computer_1_002-mesh-positions">
+          <float_array id="computer_1_002-mesh-positions-array" count="54">-0.2714558 0.2274211 0.525 -0.2681474 0.2301085 0.525 -0.1972432 0.2299017 0.525 -0.1939348 0.2274211 0.525 -0.1939348 0.2102631 0.525 -0.1968267 0.2063354 0.525 -0.2342454 0.2046816 0.525 -0.2685639 0.2071623 0.525 -0.2714558 0.2104699 0.525 -0.2714558 0.2274211 0.53025 -0.2681474 0.2301085 0.53025 -0.1972432 0.2299017 0.53025 -0.1939348 0.2274211 0.53025 -0.1939348 0.2102631 0.53025 -0.1968267 0.2063354 0.53025 -0.2342454 0.2046816 0.53025 -0.2685639 0.2071623 0.53025 -0.2714558 0.2104699 0.53025</float_array>
+          <technique_common>
+            <accessor source="#computer_1_002-mesh-positions-array" count="18" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="computer_1_002-mesh-normals">
+          <float_array id="computer_1_002-mesh-normals-array" count="54">-0.6305006 0.7761888 0 0 0 1 -0.7528187 -0.658228 0 0.8052759 -0.5929003 0 0.002915918 0.9999958 0 -1 0 0 0.0441538 -0.9990248 0 0.5999022 0.8000735 0 -0.07209527 -0.9973978 0 1 2.58473e-6 0 -0.6304904 0.776197 0 -3.28132e-5 0 1 -0.7528337 -0.6582109 0 0.8052716 -0.5929062 0 0.002915918 0.9999958 0 0.04415321 -0.9990248 0 -0.07209521 -0.9973978 0 1 0 0</float_array>
+          <technique_common>
+            <accessor source="#computer_1_002-mesh-normals-array" count="18" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="computer_1_002-mesh-map-0">
+          <float_array id="computer_1_002-mesh-map-0-array" count="150">0.02174383 0.4165915 0.02452576 0.419151 0.02174383 0.4165915 0.02452576 0.419151 0.02174383 0.4165915 0.02174383 0.4004475 0.02417552 0.3972975 0.02174383 0.4004475 0.02417552 0.3972975 0.08692806 0.4002506 0.08449637 0.39651 0.08692806 0.4002506 0.02452576 0.419151 0.0841462 0.4189541 0.02452576 0.419151 0.02174383 0.4004475 0.02174383 0.4165915 0.02174383 0.4004475 0.08449637 0.39651 0.05303251 0.3949349 0.08449637 0.39651 0.0841462 0.4189541 0.08692806 0.4165915 0.0841462 0.4189541 0.05303251 0.3949349 0.02417552 0.3972975 0.05303251 0.3949349 0.08692806 0.4165915 0.08692806 0.4002506 0.08692806 0.4165915 0.02174383 0.4165915 0.02452576 0.419151 0.02452576 0.419151 0.02174383 0.4004475 0.02417552 0.3972975 0.02452576 0.419151 0.02417552 0.3972975 0.05303251 0.3949349 0.02452576 0.419151 0.05303251 0.3949349 0.08449637 0.39651 0.0841462 0.4189541 0.08449637 0.39651 0.08692806 0.4002506 0.0841462 0.4189541 0.08692806 0.4002506 0.08692806 0.4165915 0.0841462 0.4189541 0.0841462 0.4189541 0.02452576 0.419151 0.05303251 0.3949349 0.02417552 0.3972975 0.02174383 0.4004475 0.02174383 0.4004475 0.08692806 0.4002506 0.08449637 0.39651 0.08449637 0.39651 0.02452576 0.419151 0.0841462 0.4189541 0.0841462 0.4189541 0.02174383 0.4004475 0.02174383 0.4165915 0.02174383 0.4165915 0.08449637 0.39651 0.05303251 0.3949349 0.05303251 0.3949349 0.0841462 0.4189541 0.08692806 0.4165915 0.08692806 0.4165915 0.05303251 0.3949349 0.02417552 0.3972975 0.02417552 0.3972975 0.08692806 0.4165915 0.08692806 0.4002506 0.08692806 0.4002506</float_array>
+          <technique_common>
+            <accessor source="#computer_1_002-mesh-map-0-array" count="75" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="computer_1_002-mesh-vertices">
+          <input semantic="POSITION" source="#computer_1_002-mesh-positions"/>
+        </vertices>
+        <triangles material="pc_1-material" count="25">
+          <input semantic="VERTEX" source="#computer_1_002-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#computer_1_002-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#computer_1_002-mesh-map-0" offset="2" set="0"/>
+          <p>9 0 0 1 0 1 0 0 2 10 1 3 9 1 4 17 1 5 16 2 6 8 2 7 7 2 8 13 3 9 5 3 10 4 3 11 10 4 12 2 4 13 1 4 14 17 5 15 0 5 16 8 5 17 14 6 18 6 6 19 5 6 20 11 7 21 3 7 22 2 7 23 15 8 24 7 8 25 6 8 26 12 9 27 4 9 28 3 9 29 9 10 30 10 10 31 1 10 32 17 1 33 16 1 34 10 1 35 16 1 36 15 1 37 10 1 38 15 1 39 14 1 40 11 1 41 14 1 42 13 1 43 11 1 44 13 11 45 12 11 46 11 11 47 11 1 48 10 1 49 15 1 50 16 12 51 17 12 52 8 12 53 13 13 54 14 13 55 5 13 56 10 14 57 11 14 58 2 14 59 17 5 60 9 5 61 0 5 62 14 15 63 15 15 64 6 15 65 11 7 66 12 7 67 3 7 68 15 16 69 16 16 70 7 16 71 12 17 72 13 17 73 4 17 74</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="computer_1_002" name="computer_1.002" type="NODE">
+        <matrix sid="transform">0.9997146 -1.04429e-9 -0.0238905 0 -0.0238905 -4.36989e-8 -0.9997146 0 0 1 -4.37114e-8 0 0 0 0 1</matrix>
+        <instance_geometry url="#computer_1_002-mesh" name="computer_1.002">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="pc_1-material" target="#pc_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+              <instance_material symbol="keyboard_1-material" target="#keyboard_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 3.4.0 commit date:2022-12-06, commit time:18:46, hash:a95bf1ac01be</authoring_tool>
+    </contributor>
+    <created>2025-11-29T13:46:16</created>
+    <modified>2025-11-29T13:46:16</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="wall_rg_1-effect">
+      <profile_COMMON>
+        <newparam sid="wall_rg_1_png-surface">
+          <surface type="2D">
+            <init_from>wall_rg_1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="wall_rg_1_png-sampler">
+          <sampler2D>
+            <source>wall_rg_1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="wall_rg_1_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="wall_rg_1_png" name="wall_rg_1_png">
+      <init_from>wall_rg_1.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="wall_rg_1-material" name="wall_rg_1">
+      <instance_effect url="#wall_rg_1-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="seam_hr_1-mesh" name="seam_hr_1">
+      <mesh>
+        <source id="seam_hr_1-mesh-positions">
+          <float_array id="seam_hr_1-mesh-positions-array" count="72">-0.1999999 -4 0.3000002 -0.1999999 -4 1.2 -0.1999999 4 0.3000002 -0.1999999 4 1.2 -0.4 -4 1.3 -0.4 4 1.3 -0.4 -4 1.5 -0.4 4 1.5 -0.4 -4 0.2000002 -0.4 4 0.2000002 -0.4 -4 1.78814e-7 -0.4 4 1.78814e-7 0.1999955 4 0.3000002 0.1999955 4 1.2 0.1999967 -4 0.3000002 0.1999967 -4 1.2 0.3999956 4 1.3 0.3999968 -4 1.3 0.3999956 4 1.5 0.3999968 -4 1.5 0.3999956 4 0.2000002 0.3999968 -4 0.2000002 0.3999956 4 1.78814e-7 0.3999968 -4 1.78814e-7</float_array>
+          <technique_common>
+            <accessor source="#seam_hr_1-mesh-positions-array" count="24" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="seam_hr_1-mesh-normals">
+          <float_array id="seam_hr_1-mesh-normals-array" count="81">-1 0 0 0 0 -1 0 -1 -9.93419e-7 -0.4472141 0 -0.8944271 -0.4472136 0 0.8944272 1 1.49012e-7 0 0 1 2.98027e-6 1 1.49012e-7 0 0.4472141 0 -0.894427 1 1.49012e-7 0 0.4472138 0 0.8944272 0 0 1 0 -1 0 0 -1 -1.98683e-6 0 -1 1.98683e-6 -0.4472134 0 0.8944274 1 1.49012e-7 0 5.96049e-7 1 0 0 1 3.97366e-6 -5.96049e-7 1 0 0 1 0 -1.19209e-6 1 0 1.19209e-6 1 0 0 1 -6.62281e-7 0 1 -1.98683e-6 1 1.49012e-7 0 0.4472135 0 0.8944272</float_array>
+          <technique_common>
+            <accessor source="#seam_hr_1-mesh-normals-array" count="27" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="seam_hr_1-mesh-map-0">
+          <float_array id="seam_hr_1-mesh-map-0-array" count="264">-0.4999976 0.5833331 1.499998 0.4166669 -0.4999976 0.4166669 0.6749992 -0.83333 0.3250008 1.83333 0.6749988 1.83333 0.5999996 0.5833331 0.3250008 0.7166662 0.4000007 0.5833331 -0.4999976 0.6166663 1.499998 0.7166662 1.499998 0.6166663 0.4000007 -0.83333 0.3250008 1.83333 0.4000007 1.83333 1.499998 0.3833337 -0.4999976 0.2833338 -0.4999976 0.3833337 0.4000007 1.83333 0.3250008 -0.83333 0.4000007 -0.83333 1.499998 0.5833331 -0.4999976 0.4166669 1.499998 0.4166669 0.5999992 0.4166669 0.3250008 0.2833338 0.4000007 0.4166669 1.499998 0.6166663 -0.4999976 0.7166662 -0.4999976 0.6166663 0.5999992 1.83333 0.6749992 -0.83333 0.5999996 -0.83333 -0.4999976 0.3833337 1.499998 0.2833338 1.499998 0.3833337 0.5999996 -0.83333 0.6749988 1.83333 0.5999992 1.83333 0.6749988 1.83333 0.3250008 -0.83333 0.6749992 -0.83333 -0.4999976 0.5833331 1.499998 0.5833331 1.499998 0.4166669 0.6749992 -0.83333 0.3250008 -0.83333 0.3250008 1.83333 0.4000007 0.4166669 0.3250008 0.3833337 0.3250008 0.2833338 0.3250008 0.2833338 0.6749992 0.2833338 0.5999996 0.4166669 0.6749992 0.2833338 0.6749992 0.3833337 0.5999996 0.4166669 0.4000007 0.4166669 0.3250008 0.2833338 0.5999996 0.4166669 0.5999996 0.5833331 0.6749992 0.6166663 0.6749992 0.7166662 0.4000007 0.4166669 0.5999996 0.4166669 0.5999996 0.5833331 0.3250008 0.7166662 0.3250008 0.6166663 0.4000007 0.5833331 0.4000007 0.5833331 0.4000007 0.4166669 0.5999996 0.5833331 0.5999996 0.5833331 0.6749992 0.7166662 0.3250008 0.7166662 -0.4999976 0.6166663 -0.4999976 0.7166662 1.499998 0.7166662 0.4000007 -0.83333 0.3250008 -0.83333 0.3250008 1.83333 1.499998 0.3833337 1.499998 0.2833338 -0.4999976 0.2833338 0.4000007 1.83333 0.3250008 1.83333 0.3250008 -0.83333 1.499998 0.5833331 -0.4999976 0.5833331 -0.4999976 0.4166669 0.4000007 0.5833331 0.3250008 0.6166663 0.3250008 0.7166662 0.3250008 0.7166662 0.6749988 0.7166662 0.5999992 0.5833331 0.6749988 0.7166662 0.6749988 0.6166663 0.5999992 0.5833331 0.4000007 0.5833331 0.3250008 0.7166662 0.5999992 0.5833331 0.5999992 0.4166669 0.6749988 0.3833337 0.6749988 0.2833338 0.4000007 0.5833331 0.5999992 0.5833331 0.5999992 0.4166669 0.3250008 0.2833338 0.3250008 0.3833337 0.4000007 0.4166669 0.4000007 0.4166669 0.4000007 0.5833331 0.5999992 0.4166669 0.5999992 0.4166669 0.6749988 0.2833338 0.3250008 0.2833338 1.499998 0.6166663 1.499998 0.7166662 -0.4999976 0.7166662 0.5999992 1.83333 0.6749988 1.83333 0.6749992 -0.83333 -0.4999976 0.3833337 -0.4999976 0.2833338 1.499998 0.2833338 0.5999996 -0.83333 0.6749992 -0.83333 0.6749988 1.83333 0.6749988 1.83333 0.3250008 1.83333 0.3250008 -0.83333</float_array>
+          <technique_common>
+            <accessor source="#seam_hr_1-mesh-map-0-array" count="132" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="seam_hr_1-mesh-vertices">
+          <input semantic="POSITION" source="#seam_hr_1-mesh-positions"/>
+        </vertices>
+        <triangles material="wall_rg_1-material" count="44">
+          <input semantic="VERTEX" source="#seam_hr_1-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#seam_hr_1-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#seam_hr_1-mesh-map-0" offset="2" set="0"/>
+          <p>1 0 0 2 0 1 0 0 2 23 1 3 11 1 4 22 1 5 15 2 6 6 2 7 1 2 8 4 0 9 7 0 10 5 0 11 1 3 12 5 3 13 3 3 14 9 0 15 10 0 16 8 0 17 2 4 18 8 4 19 0 4 20 13 5 21 14 5 22 12 5 23 12 6 24 11 6 25 2 6 26 16 7 27 19 7 28 17 7 29 13 8 30 17 8 31 15 8 32 21 9 33 22 9 34 20 9 35 14 10 36 20 10 37 12 10 38 18 11 39 6 11 40 19 11 41 1 0 42 3 0 43 2 0 44 23 1 45 10 1 46 11 1 47 0 12 48 8 12 49 10 12 50 10 13 51 23 13 52 14 13 53 23 12 54 21 12 55 14 12 56 0 12 57 10 12 58 14 12 59 15 12 60 17 12 61 19 12 62 0 12 63 14 12 64 15 12 65 6 12 66 4 12 67 1 12 68 1 12 69 0 12 70 15 12 71 15 14 72 19 14 73 6 14 74 4 0 75 6 0 76 7 0 77 1 3 78 4 3 79 5 3 80 9 0 81 11 0 82 10 0 83 2 15 84 9 15 85 8 15 86 13 16 87 15 16 88 14 16 89 3 17 90 5 17 91 7 17 92 7 18 93 18 18 94 13 18 95 18 19 96 16 19 97 13 19 98 3 20 99 7 20 100 13 20 101 12 21 102 20 21 103 22 21 104 3 20 105 13 20 106 12 20 107 11 22 108 9 22 109 2 22 110 2 23 111 3 23 112 12 23 113 12 24 114 22 24 115 11 24 116 16 25 117 18 25 118 19 25 119 13 8 120 16 8 121 17 8 122 21 9 123 23 9 124 22 9 125 14 26 126 21 26 127 20 26 128 18 11 129 7 11 130 6 11 131</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="seam_hr_1" name="seam_hr_1" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#seam_hr_1-mesh" name="seam_hr_1">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="wall_rg_1-material" target="#wall_rg_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

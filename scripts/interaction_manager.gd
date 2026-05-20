@@ -32,7 +32,23 @@ func _create_prompt() -> void:
 	_prompt_label.text = ""
 	canvas.add_child(_prompt_label)
 
-func _process(_delta: float) -> void:
+## Returns the current interactable target (the node the player is looking at).
+func get_current_target() -> Node:
+	return _current_target
+
+
+## Walks up the parent chain from a collider to find a node that has the given method.
+## This handles cases where the CollisionShape3D is a child of the interactable node.
+func _find_interactable(from: Node) -> Node:
+	var current = from
+	while current:
+		if current.has_method("interact"):
+			return current
+		current = current.get_parent()
+	return null
+
+
+func _process(delta: float) -> void:
 	if not _camera:
 		return
 	
@@ -42,22 +58,32 @@ func _process(_delta: float) -> void:
 	var to = from + _camera.project_ray_normal(center) * interaction_distance
 	
 	var query = PhysicsRayQueryParameters3D.create(from, to)
-	query.exclude = [get_parent()]  # Exclude the player
+	# Exclude the player (CharacterBody3D) from the raycast
+	# InteractionManager is at: Player > CameraHolder > InteractionManager
+	# So get_parent() = CameraHolder, get_parent().get_parent() = Player
+	var player = get_parent().get_parent() if get_parent() and get_parent().get_parent() else null
+	if player:
+		query.exclude = [player]
 	
 	var result = space_state.intersect_ray(query)
 	
-	if result and result.collider.has_method("interact"):
-		_current_target = result.collider
-		# Use custom prompt text if the object provides it
-		if result.collider.has_method("get_interact_text"):
-			_prompt_label.text = result.collider.get_interact_text()
-		else:
-			_prompt_label.text = prompt_text
-	else:
-		_current_target = null
-		_prompt_label.text = ""
+	if result:
+		var collider = result.collider
+		if collider:
+			var interactable = _find_interactable(collider)
+			if interactable:
+				_current_target = interactable
+				# Use custom prompt text if the object provides it
+				if interactable.has_method("get_interact_text"):
+					_prompt_label.text = interactable.get_interact_text()
+				else:
+					_prompt_label.text = prompt_text
+				return
+	
+	_current_target = null
+	_prompt_label.text = ""
 
+# E key handling is now managed by PhysicalGrab, which delegates quick taps here.
+# This script only handles raycasting for the interaction prompt.
 func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_interact") or (event is InputEventKey and event.keycode == KEY_E and event.pressed):
-		if _current_target and _current_target.has_method("interact"):
-			_current_target.interact()
+	pass

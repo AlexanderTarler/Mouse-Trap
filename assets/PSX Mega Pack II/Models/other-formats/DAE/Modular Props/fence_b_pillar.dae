@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 3.4.0 commit date:2022-12-06, commit time:18:46, hash:a95bf1ac01be</authoring_tool>
+    </contributor>
+    <created>2025-11-29T13:48:15</created>
+    <modified>2025-11-29T13:48:15</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="planks_hr_3-effect">
+      <profile_COMMON>
+        <newparam sid="planks_hr_3_png-surface">
+          <surface type="2D">
+            <init_from>planks_hr_3_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="planks_hr_3_png-sampler">
+          <sampler2D>
+            <source>planks_hr_3_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="planks_hr_3_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="planks_hr_3_png" name="planks_hr_3_png">
+      <init_from>planks_hr_3.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="planks_hr_3-material" name="planks_hr_3">
+      <instance_effect url="#planks_hr_3-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="fence_b_pillar-mesh" name="fence_b_pillar">
+      <mesh>
+        <source id="fence_b_pillar-mesh-positions">
+          <float_array id="fence_b_pillar-mesh-positions-array" count="24">0.1999998 0.1 0 0.1999998 0.1 2.5 0.1999998 -0.09999996 0 0.1999998 -0.09999996 2.5 -4.02431e-7 0.09999996 2.5 -3.87331e-7 -0.09999996 2.5 -2.01265e-7 0.09999996 0 -1.86165e-7 -0.09999996 0</float_array>
+          <technique_common>
+            <accessor source="#fence_b_pillar-mesh-positions-array" count="8" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="fence_b_pillar-mesh-normals">
+          <float_array id="fence_b_pillar-mesh-normals-array" count="30">0 1 0 1 1.19209e-7 0 0 -1 0 0 0 -1 1.49011e-6 0 1 -1 0 0 0 1 0 0 -1 0 -1.11759e-6 0 1 -1 0 0</float_array>
+          <technique_common>
+            <accessor source="#fence_b_pillar-mesh-normals-array" count="10" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="fence_b_pillar-mesh-map-0">
+          <float_array id="fence_b_pillar-mesh-map-0-array" count="72">0.4457143 1 0.3657143 0 0.3657143 1 0.06285715 1 0.1428571 0 0.06285715 0 0.8628572 0 0.7828571 1 0.7828571 0 0.46 0.54 0.54 0.46 0.46 0.46 0.54 0.54 0.46 0.4599999 0.54 0.4599999 0.54 0 0.46 1 0.4628571 0 0.4457143 1 0.4457143 0 0.3657143 0 0.06285715 1 0.1428571 1 0.1428571 0 0.8628572 0 0.8628572 1 0.7828571 1 0.46 0.54 0.54 0.54 0.54 0.46 0.54 0.54 0.46 0.54 0.46 0.4599999 0.54 0 0.54 1 0.46 1</float_array>
+          <technique_common>
+            <accessor source="#fence_b_pillar-mesh-map-0-array" count="36" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="fence_b_pillar-mesh-vertices">
+          <input semantic="POSITION" source="#fence_b_pillar-mesh-positions"/>
+        </vertices>
+        <triangles material="planks_hr_3-material" count="12">
+          <input semantic="VERTEX" source="#fence_b_pillar-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#fence_b_pillar-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#fence_b_pillar-mesh-map-0" offset="2" set="0"/>
+          <p>1 0 0 6 0 1 4 0 2 1 1 3 2 1 4 0 1 5 2 2 6 5 2 7 7 2 8 0 3 9 7 3 10 6 3 11 3 4 12 4 4 13 5 4 14 7 5 15 4 5 16 6 5 17 1 6 18 0 6 19 6 6 20 1 1 21 3 1 22 2 1 23 2 7 24 3 7 25 5 7 26 0 3 27 2 3 28 7 3 29 3 8 30 1 8 31 4 8 32 7 9 33 5 9 34 4 9 35</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="fence_b_pillar" name="fence_b_pillar" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#fence_b_pillar-mesh" name="fence_b_pillar">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="planks_hr_3-material" target="#planks_hr_3-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

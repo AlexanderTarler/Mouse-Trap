@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://d0uq0x2m2q0ca"]
+
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_item_data"]
+[ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0c6" path="res://scenes/note.tscn" id="2_note_scene"]
+
+
+[resource]
+script = ExtResource("1_item_data")
+item_name = "Research Map"
+item_description = "A forest map with three marked locations. The nests must be documented."
+item_type = 1
+note_text = "[img]res://assets/Textures/forest_map.png[/img]
+
+Three Hasselmus nests have been identified in the surrounding forest. Each nest must be documented to track the creature's territory.
+
+Nest locations marked on the map:
+- Nest Alpha: Deep in the eastern woods
+- Nest Beta: Near the northern ridge
+- Nest Gamma: Hidden in the western hollow
+
+Document all three nests to complete the research."
+scene_to_spawn = ExtResource("2_note_scene")

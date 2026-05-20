@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dtjud1o3auc83"
+path="res://.godot/imported/cell_phone_2.obj-e29b33629505508f369ed97a23ab13c0.mesh"
+
+[deps]
+
+files=["res://.godot/imported/cell_phone_2.obj-e29b33629505508f369ed97a23ab13c0.mesh"]
+
+source_file="res://assets/PSX Mega Pack/Models/other-formats/OBJ/Items & Weapons/cell_phone_2.obj"
+dest_files=["res://.godot/imported/cell_phone_2.obj-e29b33629505508f369ed97a23ab13c0.mesh", "res://.godot/imported/cell_phone_2.obj-e29b33629505508f369ed97a23ab13c0.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

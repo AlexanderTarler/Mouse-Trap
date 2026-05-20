@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://dv501i5ews4mn"
+path="res://.godot/imported/death close by (loop).ogg-fb98c6947510df5c95540b3c278b10ec.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/Soundtracks/death close by (loop).ogg"
+dest_files=["res://.godot/imported/death close by (loop).ogg-fb98c6947510df5c95540b3c278b10ec.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

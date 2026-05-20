@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://qmdrntmpnjai"
+path="res://.godot/imported/undercover (start).ogg-a08f6044dcbb4845e2dac840b9c68b82.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/Soundtracks/undercover (start).ogg"
+dest_files=["res://.godot/imported/undercover (start).ogg-a08f6044dcbb4845e2dac840b9c68b82.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

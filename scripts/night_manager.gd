@@ -2,7 +2,8 @@ extends Node
 
 ## Manages the night progression and horror events.
 ## Tracks which night the player is on and triggers escalating events.
-## Syncs with the GameTime day/night cycle.
+## Listens to GameTime for day/night transitions.
+## Each night lasts one full GameTime night cycle (5 minutes by default).
 
 signal night_started(night: int)
 signal night_ended(night: int)
@@ -60,23 +61,48 @@ var _triggered_events: Array[String] = []
 ## Timer for triggering events during the night
 var _event_timer: float = 0.0
 
+## Reference to GameTime autoload
+var _game_time: Node = null
+
+## Maximum retry attempts for finding GameTime
+var _find_gt_attempts: int = 0
+const _MAX_FIND_GT_ATTEMPTS: int = 60
+
 
 func _ready() -> void:
-	# Sync with GameTime
-	if Engine.has_singleton("GameTime"):
-		var gt = Engine.get_singleton("GameTime")
-		gt.night_started.connect(_on_game_night_started)
-		gt.day_started.connect(_on_game_day_started)
+	# Try to find GameTime via the scene tree (autoloads are children of /root)
+	_find_game_time()
+
+
+func _find_game_time() -> void:
+	_find_gt_attempts += 1
+	if _find_gt_attempts > _MAX_FIND_GT_ATTEMPTS:
+		print("NightManager: GameTime not found after %d attempts." % _MAX_FIND_GT_ATTEMPTS)
+		return
+	
+	# Find GameTime via the scene tree (autoloads are children of /root)
+	var gt = get_node_or_null("/root/GameTime")
+	if gt:
+		_game_time = gt
+		_game_time.night_started.connect(_on_game_night_started)
+		_game_time.day_started.connect(_on_game_day_started)
+		
+		# If it's already night, start immediately
+		if not _game_time.is_day:
+			start_night(current_night)
+		print("NightManager: Connected to GameTime.")
+	else:
+		# Retry next frame — GameTime might not be ready yet
+		call_deferred("_find_game_time")
 
 
 func _process(delta: float) -> void:
 	if not is_night_active:
 		return
 	
-	# Update night progress based on GameTime
-	if Engine.has_singleton("GameTime"):
-		var gt = Engine.get_singleton("GameTime")
-		night_progress = gt.cycle_progress
+	# Update night progress from GameTime
+	if _game_time:
+		night_progress = _game_time.get_phase_progress()
 	
 	# Check for time-based events
 	_event_timer += delta
@@ -165,11 +191,13 @@ func _check_time_events() -> void:
 			if progress > 0.8 and not "final_confrontation" in _triggered_events:
 				_trigger_event("final_confrontation")
 
+
 ## Triggers a horror event.
 func _trigger_event(event_name: String) -> void:
 	_triggered_events.append(event_name)
 	horror_event.emit(event_name)
 	print("Horror event: %s" % event_name)
+
 
 ## Returns the current night's intensity (0.0 to 1.0).
 func get_intensity() -> float:

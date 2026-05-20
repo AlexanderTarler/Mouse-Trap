@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://dckvuoh0peo64"
+path="res://.godot/imported/footstep_wood_a_13.ogg-325d5bef7cc8002465a9e9607b6b4fe6.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_13.ogg"
+dest_files=["res://.godot/imported/footstep_wood_a_13.ogg-325d5bef7cc8002465a9e9607b6b4fe6.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

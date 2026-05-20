@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dkstrvuevaoof"
+path="res://.godot/imported/monitoring_screen_mp_1.obj-a89b4a21de98639b9912c34f9f77b45f.mesh"
+
+[deps]
+
+files=["res://.godot/imported/monitoring_screen_mp_1.obj-a89b4a21de98639b9912c34f9f77b45f.mesh"]
+
+source_file="res://assets/PSX Mega Pack/Models/other-formats/OBJ/Electronics & Misc/monitoring_screen_mp_1.obj"
+dest_files=["res://.godot/imported/monitoring_screen_mp_1.obj-a89b4a21de98639b9912c34f9f77b45f.mesh", "res://.godot/imported/monitoring_screen_mp_1.obj-a89b4a21de98639b9912c34f9f77b45f.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://db2i61vcxvnfh"
+path="res://.godot/imported/vent_2.obj-fa951f11954754b058b7b6ce99437301.mesh"
+
+[deps]
+
+files=["res://.godot/imported/vent_2.obj-fa951f11954754b058b7b6ce99437301.mesh"]
+
+source_file="res://assets/PSX Mega Pack/Models/other-formats/OBJ/Electronics & Misc/vent_2.obj"
+dest_files=["res://.godot/imported/vent_2.obj-fa951f11954754b058b7b6ce99437301.mesh", "res://.godot/imported/vent_2.obj-fa951f11954754b058b7b6ce99437301.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

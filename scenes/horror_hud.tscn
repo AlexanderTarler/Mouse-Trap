@@ -9,6 +9,7 @@ default_font_size = 18
 [node name="HorrorHUD" type="CanvasLayer" unique_id=1729726257]
 layer = 200
 script = ExtResource("1_hud")
+environment_controller = NodePath("../EnvironmentController")
 
 [node name="NightLabel" type="Label" parent="." unique_id=16999964]
 offset_left = 20.0
@@ -72,4 +73,65 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
+color = Color(0, 0, 0, 0)
 script = ExtResource("2_watched")
+
+[node name="BlindnessRect" type="ColorRect" parent="WatchedEffect" unique_id=1103203421]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0)
+
+[node name="BatteryBar" type="ProgressBar" parent="." unique_id=2092697613]
+offset_left = 20.0
+offset_top = 140.0
+offset_right = 220.0
+offset_bottom = 160.0
+show_percentage = false
+value = 100.0
+modulate = Color(0.3, 0.8, 0.3, 1)
+
+[node name="BatteryLabel" type="Label" parent="BatteryBar" unique_id=2092697614]
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 200.0
+offset_bottom = 20.0
+theme = SubResource("Theme_hud")
+theme_override_colors/font_color = Color(1, 1, 1, 0.9)
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "🔋 100%"
+
+[node name="LowBatteryWarning" type="Label" parent="." unique_id=2092697615]
+offset_left = 20.0
+offset_top = 165.0
+offset_right = 220.0
+offset_bottom = 185.0
+theme = SubResource("Theme_hud")
+theme_override_colors/font_color = Color(1, 0.2, 0.2, 0)
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+text = "⚠️ BATTERY LOW"
+
+[node name="StaminaBar" type="ProgressBar" parent="."]
+offset_left = 20.0
+offset_top = 195.0
+offset_right = 220.0
+offset_bottom = 215.0
+show_percentage = false
+value = 100.0
+modulate = Color(0.3, 0.8, 0.3, 1)
+
+[node name="StaminaLabel" type="Label" parent="StaminaBar"]
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 200.0
+offset_bottom = 20.0
+theme = SubResource("Theme_hud")
+theme_override_colors/font_color = Color(1, 1, 1, 0.9)
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "⚡ 100%"

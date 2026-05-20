@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 3.4.0 commit date:2022-12-06, commit time:18:46, hash:a95bf1ac01be</authoring_tool>
+    </contributor>
+    <created>2025-11-29T13:46:27</created>
+    <modified>2025-11-29T13:46:27</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="wall_rg_1-effect">
+      <profile_COMMON>
+        <newparam sid="wall_rg_1_png-surface">
+          <surface type="2D">
+            <init_from>wall_rg_1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="wall_rg_1_png-sampler">
+          <sampler2D>
+            <source>wall_rg_1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="wall_rg_1_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="concrete_hr_1-effect">
+      <profile_COMMON>
+        <newparam sid="concrete_hr_1_png-surface">
+          <surface type="2D">
+            <init_from>concrete_hr_1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="concrete_hr_1_png-sampler">
+          <sampler2D>
+            <source>concrete_hr_1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="concrete_hr_1_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="roof_hr_1-effect">
+      <profile_COMMON>
+        <newparam sid="roof_hr_1_png-surface">
+          <surface type="2D">
+            <init_from>roof_hr_1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="roof_hr_1_png-sampler">
+          <sampler2D>
+            <source>roof_hr_1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="roof_hr_1_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="concrete_hr_1_png" name="concrete_hr_1_png">
+      <init_from>concrete_hr_1.png</init_from>
+    </image>
+    <image id="roof_hr_1_png" name="roof_hr_1_png">
+      <init_from>roof_hr_1.png</init_from>
+    </image>
+    <image id="wall_rg_1_png" name="wall_rg_1_png">
+      <init_from>wall_rg_1.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="wall_rg_1-material" name="wall_rg_1">
+      <instance_effect url="#wall_rg_1-effect"/>
+    </material>
+    <material id="concrete_hr_1-material" name="concrete_hr_1">
+      <instance_effect url="#concrete_hr_1-effect"/>
+    </material>
+    <material id="roof_hr_1-material" name="roof_hr_1">
+      <instance_effect url="#roof_hr_1-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="roof_mx_1-mesh" name="roof_mx_1">
+      <mesh>
+        <source id="roof_mx_1-mesh-positions">
+          <float_array id="roof_mx_1-mesh-positions-array" count="90">-2 -1.8 0 -2 1.8 0 2 -1.8 0 2 1.8 0 -2 -1.8 0.1999998 -2 1.8 0.1999998 2 1.8 0.1999998 2 -1.8 0.1999998 0 -1.8 1.3 0 1.8 1.3 -2 -2 0.2999998 -2 2 0.2999998 2 -2 0.2999998 2 2 0.2999998 0 2 1.4 0 -2 1.4 -2 -2 0.1999998 -2 2 0.1999998 2 2 0.1999998 2 -2 0.1999998 0 -2 1.3 0 2 1.3 2.2 2 0.2999998 2.2 -2 0.2999998 2.2 2 0.1999998 2.2 -2 0.1999998 -2.2 -2 0.1999998 -2.2 -2 0.2999998 -2.2 2 0.2999998 -2.2 2 0.1999998</float_array>
+          <technique_common>
+            <accessor source="#roof_mx_1-mesh-positions-array" count="30" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="roof_mx_1-mesh-normals">
+          <float_array id="roof_mx_1-mesh-normals-array" count="36">0 -1 0 0 0 -1 0 1 0 1 0 0 -1 0 0 -0.4819188 0 0.876216 0.4819188 0 0.876216 0 0 1 0.4819189 0 -0.8762159 -0.4819189 0 -0.8762159 5.96049e-7 1 0 -5.96049e-7 1 0</float_array>
+          <technique_common>
+            <accessor source="#roof_mx_1-mesh-normals-array" count="12" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="roof_mx_1-mesh-map-0">
+          <float_array id="roof_mx_1-mesh-map-0-array" count="288">0.5 0.6654763 -0.25 0.1154761 1.25 0.1154761 1.166667 1.1 -0.1666666 -0.09999996 -0.1666666 1.1 0.5 0.6654763 1.25 0.1154761 -0.25 0.1154761 1.175 0.1154761 -0.175 0.01547622 1.175 0.01547622 -0.175 0.1154761 1.175 0.01547622 -0.175 0.01547622 -0.25 0.1154761 1.25 0.01547622 -0.25 0.01547622 1.25 0.1154761 -0.25 0.01547622 1.25 0.01547622 0.2666667 1.260848 0.2333333 1.327514 0.2333333 1.260848 1.166667 -0.1666667 -0.1666666 -0.2333334 -0.1666666 -0.1666668 0.2333333 0.5 0.2666667 -0.2608477 0.2333333 -0.2608477 0.2333333 0.5 0.2666667 1.260848 0.2333333 1.260848 1.166667 1.166667 -0.1666666 0.5 1.166667 0.5000001 1.166667 0.5000001 -0.1666666 -0.1666668 1.166667 -0.1666667 0.2666667 -0.2608477 0.2333333 0.5 0.2333333 -0.2608477 0.2666666 1.072486 0.2333333 0.5 0.2333332 1.072486 0.2666667 -0.1666667 0.2333332 1.166667 0.2333333 -0.1666667 0.4705315 -0.1666667 0.4371982 -0.2333334 0.4371982 -0.1666668 -0.1666666 -0.1666668 1.166667 -0.2333333 1.166667 -0.1666667 0.2333333 -0.2608477 0.2666667 -0.3275144 0.2666667 -0.2608477 0.2666666 1.166667 0.2333333 -0.1666667 0.2333332 1.166667 1.166667 1.166667 -0.1666667 1.233333 -0.1666667 1.166666 -0.1666667 1.166666 1.166667 1.233333 1.166667 1.166667 0.2333332 1.072486 0.2666666 1.139152 0.2666666 1.072486 0 0.5 1 1 1 0.5000001 0 0 1 0.5000001 1 0 1.166667 1.1 1.166667 -0.09999996 -0.1666666 -0.09999996 1.175 0.1154761 -0.175 0.1154761 -0.175 0.01547622 -0.175 0.1154761 1.175 0.1154761 1.175 0.01547622 -0.25 0.1154761 1.25 0.1154761 1.25 0.01547622 1.25 0.1154761 -0.25 0.1154761 -0.25 0.01547622 0.2666667 1.260848 0.2666667 1.327514 0.2333333 1.327514 1.166667 -0.1666667 1.166667 -0.2333333 -0.1666666 -0.2333334 0.2333333 0.5 0.2666667 0.5 0.2666667 -0.2608477 0.2333333 0.5 0.2666667 0.5 0.2666667 1.260848 1.166667 1.166667 -0.1666667 1.166666 -0.1666666 0.5 1.166667 0.5000001 -0.1666666 0.5 -0.1666666 -0.1666668 0.2666667 -0.2608477 0.2666667 0.5 0.2333333 0.5 0.2666666 1.072486 0.2666667 0.5 0.2333333 0.5 0.2666667 -0.1666667 0.2666666 1.166667 0.2333332 1.166667 0.4705315 -0.1666667 0.4705315 -0.2333333 0.4371982 -0.2333334 -0.1666666 -0.1666668 -0.1666666 -0.2333334 1.166667 -0.2333333 0.2333333 -0.2608477 0.2333333 -0.3275144 0.2666667 -0.3275144 0.2666666 1.166667 0.2666667 -0.1666667 0.2333333 -0.1666667 1.166667 1.166667 1.166667 1.233333 -0.1666667 1.233333 -0.1666667 1.166666 -0.1666667 1.233333 1.166667 1.233333 0.2333332 1.072486 0.2333332 1.139152 0.2666666 1.139152 0 0.5 0 1 1 1 0 0 0 0.5 1 0.5000001</float_array>
+          <technique_common>
+            <accessor source="#roof_mx_1-mesh-map-0-array" count="144" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="roof_mx_1-mesh-vertices">
+          <input semantic="POSITION" source="#roof_mx_1-mesh-positions"/>
+        </vertices>
+        <triangles material="wall_rg_1-material" count="10">
+          <input semantic="VERTEX" source="#roof_mx_1-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#roof_mx_1-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#roof_mx_1-mesh-map-0" offset="2" set="0"/>
+          <p>8 0 0 4 0 1 7 0 2 9 2 6 6 2 7 5 2 8 6 3 9 2 3 10 3 3 11 4 4 12 1 4 13 0 4 14 5 2 15 3 2 16 1 2 17 7 0 18 0 0 19 2 0 20 6 3 78 7 3 79 2 3 80 4 4 81 5 4 82 1 4 83 5 2 84 6 2 85 3 2 86 7 0 87 4 0 88 0 0 89</p>
+        </triangles>
+        <triangles material="concrete_hr_1-material" count="2">
+          <input semantic="VERTEX" source="#roof_mx_1-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#roof_mx_1-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#roof_mx_1-mesh-map-0" offset="2" set="0"/>
+          <p>3 1 3 0 1 4 1 1 5 3 1 75 2 1 76 0 1 77</p>
+        </triangles>
+        <triangles material="roof_hr_1-material" count="36">
+          <input semantic="VERTEX" source="#roof_mx_1-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#roof_mx_1-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#roof_mx_1-mesh-map-0" offset="2" set="0"/>
+          <p>10 0 21 26 0 22 16 0 23 18 1 24 25 1 25 19 1 26 21 2 27 13 2 28 18 2 29 20 0 30 10 0 31 16 0 32 11 5 33 15 5 34 14 5 35 14 6 36 12 6 37 13 6 38 12 0 39 20 0 40 19 0 41 11 2 42 21 2 43 17 2 44 22 3 45 25 3 46 24 3 47 13 2 48 24 2 49 18 2 50 12 7 51 22 7 52 13 7 53 19 0 54 23 0 55 12 0 56 27 4 57 29 4 58 26 4 59 11 7 60 27 7 61 10 7 62 16 1 63 29 1 64 17 1 65 17 2 66 28 2 67 11 2 68 20 8 69 17 8 70 21 8 71 19 9 72 21 9 73 18 9 74 10 0 90 27 0 91 26 0 92 18 1 93 24 1 94 25 1 95 21 10 96 14 10 97 13 10 98 20 0 99 15 0 100 10 0 101 11 5 102 10 5 103 15 5 104 14 6 105 15 6 106 12 6 107 12 0 108 15 0 109 20 0 110 11 11 111 14 11 112 21 11 113 22 3 114 23 3 115 25 3 116 13 2 117 22 2 118 24 2 119 12 7 120 23 7 121 22 7 122 19 0 123 25 0 124 23 0 125 27 4 126 28 4 127 29 4 128 11 7 129 28 7 130 27 7 131 16 1 132 26 1 133 29 1 134 17 2 135 29 2 136 28 2 137 20 8 138 16 8 139 17 8 140 19 9 141 20 9 142 21 9 143</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="roof_mx_1" name="roof_mx_1" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#roof_mx_1-mesh" name="roof_mx_1">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="wall_rg_1-material" target="#wall_rg_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+              <instance_material symbol="concrete_hr_1-material" target="#concrete_hr_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+              <instance_material symbol="roof_hr_1-material" target="#roof_hr_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://d4iak3r4dcnh5"
+path="res://.godot/imported/half_arc_pillar_2_wall_1_plain.obj-9679e1cd06ba2ec75d61778e3754eb37.mesh"
+
+[deps]
+
+files=["res://.godot/imported/half_arc_pillar_2_wall_1_plain.obj-9679e1cd06ba2ec75d61778e3754eb37.mesh"]
+
+source_file="res://assets/PSX Mega Pack/Models/other-formats/OBJ/Modular Structures/half_arc_pillar_2_wall_1_plain.obj"
+dest_files=["res://.godot/imported/half_arc_pillar_2_wall_1_plain.obj-9679e1cd06ba2ec75d61778e3754eb37.mesh", "res://.godot/imported/half_arc_pillar_2_wall_1_plain.obj-9679e1cd06ba2ec75d61778e3754eb37.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

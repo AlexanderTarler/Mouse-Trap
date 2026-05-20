@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 3.4.0 commit date:2022-12-06, commit time:18:46, hash:a95bf1ac01be</authoring_tool>
+    </contributor>
+    <created>2025-11-29T13:45:20</created>
+    <modified>2025-11-29T13:45:20</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="first_aid_kit_hr_1-effect">
+      <profile_COMMON>
+        <newparam sid="first_aid_kit_hr_1_png-surface">
+          <surface type="2D">
+            <init_from>first_aid_kit_hr_1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="first_aid_kit_hr_1_png-sampler">
+          <sampler2D>
+            <source>first_aid_kit_hr_1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="first_aid_kit_hr_1_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="first_aid_kit_hr_1_png" name="first_aid_kit_hr_1_png">
+      <init_from>first_aid_kit_hr_1.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="first_aid_kit_hr_1-material" name="first_aid_kit_hr_1">
+      <instance_effect url="#first_aid_kit_hr_1-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="first_aid_kit_hr_1-mesh" name="first_aid_kit_hr_1">
+      <mesh>
+        <source id="first_aid_kit_hr_1-mesh-positions">
+          <float_array id="first_aid_kit_hr_1-mesh-positions-array" count="24">-0.1999966 -0.1100025 0 0.200003 -0.1100025 0 -0.1999966 0.1099973 0 0.200003 0.1099973 0 -0.1999966 -0.1100025 0.07999998 0.200003 -0.1100025 0.07999998 -0.1999966 0.1099973 0.07999998 0.200003 0.1099973 0.07999998</float_array>
+          <technique_common>
+            <accessor source="#first_aid_kit_hr_1-mesh-positions-array" count="8" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="first_aid_kit_hr_1-mesh-normals">
+          <float_array id="first_aid_kit_hr_1-mesh-normals-array" count="18">0 0 -1 0 0 1 1 0 0 -1 0 0 0 1 0 0 -1 0</float_array>
+          <technique_common>
+            <accessor source="#first_aid_kit_hr_1-mesh-normals-array" count="6" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="first_aid_kit_hr_1-mesh-map-0">
+          <float_array id="first_aid_kit_hr_1-mesh-map-0-array" count="72">0.8360657 1 0 0.2816901 0.8360657 0.2816901 0.8360656 0.2816901 0 1 0 0.2816901 1 1 0.8360656 0.2816901 1 0.2816901 1 0.2816901 0.8360656 1 1 1 0 0 0.8360656 0.2816901 0.8360656 0 0.8360656 0 0 0.2816901 0 0 0.8360657 1 0 1 0 0.2816901 0.8360656 0.2816901 0.8360656 1 0 1 1 1 0.8360656 1 0.8360656 0.2816901 1 0.2816901 0.8360656 0.2816901 0.8360656 1 0 0 0 0.2816901 0.8360656 0.2816901 0.8360656 0 0.8360656 0.2816901 0 0.2816901</float_array>
+          <technique_common>
+            <accessor source="#first_aid_kit_hr_1-mesh-map-0-array" count="36" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="first_aid_kit_hr_1-mesh-vertices">
+          <input semantic="POSITION" source="#first_aid_kit_hr_1-mesh-positions"/>
+        </vertices>
+        <triangles material="first_aid_kit_hr_1-material" count="12">
+          <input semantic="VERTEX" source="#first_aid_kit_hr_1-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#first_aid_kit_hr_1-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#first_aid_kit_hr_1-mesh-map-0" offset="2" set="0"/>
+          <p>2 0 0 1 0 1 0 0 2 5 1 3 6 1 4 4 1 5 3 2 6 5 2 7 1 2 8 0 3 9 6 3 10 2 3 11 2 4 12 7 4 13 3 4 14 1 5 15 4 5 16 0 5 17 2 0 18 3 0 19 1 0 20 5 1 21 7 1 22 6 1 23 3 2 24 7 2 25 5 2 26 0 3 27 4 3 28 6 3 29 2 4 30 6 4 31 7 4 32 1 5 33 5 5 34 4 5 35</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="first_aid_kit_hr_1" name="first_aid_kit_hr_1" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#first_aid_kit_hr_1-mesh" name="first_aid_kit_hr_1">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="first_aid_kit_hr_1-material" target="#first_aid_kit_hr_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

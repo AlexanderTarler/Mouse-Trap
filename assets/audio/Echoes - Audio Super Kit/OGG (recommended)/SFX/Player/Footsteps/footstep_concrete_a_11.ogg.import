@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://5sljkmkco5t3"
+path="res://.godot/imported/footstep_concrete_a_11.ogg-572ec9d64ddbfc9cbfc6fff24ef6750e.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_concrete_a_11.ogg"
+dest_files=["res://.godot/imported/footstep_concrete_a_11.ogg-572ec9d64ddbfc9cbfc6fff24ef6750e.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

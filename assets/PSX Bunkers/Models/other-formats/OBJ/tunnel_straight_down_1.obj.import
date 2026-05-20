@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dkcm45vxho0kx"
+path="res://.godot/imported/tunnel_straight_down_1.obj-f467c7e40e72ceb23799a40a81dfe169.mesh"
+
+[deps]
+
+files=["res://.godot/imported/tunnel_straight_down_1.obj-f467c7e40e72ceb23799a40a81dfe169.mesh"]
+
+source_file="res://assets/PSX Bunkers/Models/other-formats/OBJ/tunnel_straight_down_1.obj"
+dest_files=["res://.godot/imported/tunnel_straight_down_1.obj-f467c7e40e72ceb23799a40a81dfe169.mesh", "res://.godot/imported/tunnel_straight_down_1.obj-f467c7e40e72ceb23799a40a81dfe169.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

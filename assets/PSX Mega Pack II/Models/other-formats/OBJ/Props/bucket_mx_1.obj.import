@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://brerf0b4wxc7u"
+path="res://.godot/imported/bucket_mx_1.obj-7eff24667cdca761cc61a56232eef9fc.mesh"
+
+[deps]
+
+files=["res://.godot/imported/bucket_mx_1.obj-7eff24667cdca761cc61a56232eef9fc.mesh"]
+
+source_file="res://assets/PSX Mega Pack II/Models/other-formats/OBJ/Props/bucket_mx_1.obj"
+dest_files=["res://.godot/imported/bucket_mx_1.obj-7eff24667cdca761cc61a56232eef9fc.mesh", "res://.godot/imported/bucket_mx_1.obj-7eff24667cdca761cc61a56232eef9fc.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

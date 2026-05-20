@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bm3e8j5q6ndce"
+path="res://.godot/imported/alien_drone_flying_distant_2.ogg-107dfaaaa037e1f47278a93b1434e858.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Creatures/Alien Drone/alien_drone_flying_distant_2.ogg"
+dest_files=["res://.godot/imported/alien_drone_flying_distant_2.ogg-107dfaaaa037e1f47278a93b1434e858.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

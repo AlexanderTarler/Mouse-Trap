@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://csgbix84pi2lh"
+path="res://.godot/imported/concrete_block_mx_1.obj-da8ba479e95b7bd5b13b4688a22ec4cc.mesh"
+
+[deps]
+
+files=["res://.godot/imported/concrete_block_mx_1.obj-da8ba479e95b7bd5b13b4688a22ec4cc.mesh"]
+
+source_file="res://assets/PSX Mega Pack II/Models/other-formats/OBJ/Props/concrete_block_mx_1.obj"
+dest_files=["res://.godot/imported/concrete_block_mx_1.obj-da8ba479e95b7bd5b13b4688a22ec4cc.mesh", "res://.godot/imported/concrete_block_mx_1.obj-da8ba479e95b7bd5b13b4688a22ec4cc.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

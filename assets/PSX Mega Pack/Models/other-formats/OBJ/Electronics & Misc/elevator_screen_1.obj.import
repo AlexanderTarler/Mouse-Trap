@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://bx65nfowlxdml"
+path="res://.godot/imported/elevator_screen_1.obj-f3940a17193f564e5420158e7a842256.mesh"
+
+[deps]
+
+files=["res://.godot/imported/elevator_screen_1.obj-f3940a17193f564e5420158e7a842256.mesh"]
+
+source_file="res://assets/PSX Mega Pack/Models/other-formats/OBJ/Electronics & Misc/elevator_screen_1.obj"
+dest_files=["res://.godot/imported/elevator_screen_1.obj-f3940a17193f564e5420158e7a842256.mesh", "res://.godot/imported/elevator_screen_1.obj-f3940a17193f564e5420158e7a842256.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

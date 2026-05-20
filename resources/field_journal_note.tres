@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://d0uq0x2m2q0c9"]
+
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_item_data"]
+[ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0c6" path="res://scenes/note.tscn" id="2_note_scene"]
+
+
+[resource]
+script = ExtResource("1_item_data")
+item_name = "Field Journal"
+item_description = "A worn leather journal with handwritten notes."
+item_type = 1
+note_text = "Day 1 - Arrival
+
+The cabin is exactly as described in the listing. Remote, quiet, surrounded by pine forest. Perfect for a weekend of bird watching and sketching.
+
+But something feels... off.
+
+The previous tenant left in a hurry. I found this journal in a drawer, along with some scattered notes. They mention a creature they call 'Hasselmus' — a shadow entity that stalks the forest at night.
+
+According to their notes:
+- It only moves when you're not looking directly at it.
+- It feeds on fear, growing stronger each night.
+- The flashlight is your only defense. Keep it charged.
+- Batteries can be found scattered around the property.
+- DO NOT follow it into the dark.
+
+I thought it was the ramblings of a paranoid mind. But last night, I saw something moving between the trees. A tall, thin figure with too many joints.
+
+I'm staying one more night to investigate. If you're reading this... be careful. And keep the flashlight on.
+
+— Elias
+
+P.S. There are more notes hidden around the cabin. Find them. They might help you survive."
+scene_to_spawn = ExtResource("2_note_scene")

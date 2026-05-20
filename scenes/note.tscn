@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://d0uq0x2m2q0c6"]
+
+[ext_resource type="Script" path="res://scripts/items/note_pickup.gd" id="1_note_script"]
+
+[sub_resource type="BoxMesh" id="Box_note"]
+size = Vector3(0.2, 0.01, 0.15)
+
+[sub_resource type="StandardMaterial3D" id="Mat_note"]
+albedo_color = Color(0.95, 0.9, 0.7, 1)
+roughness = 0.8
+
+[sub_resource type="BoxShape3D" id="Shape_note"]
+size = Vector3(0.2, 0.01, 0.15)
+
+[node name="Note" type="StaticBody3D"]
+script = ExtResource("1_note_script")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+mesh = SubResource("Box_note")
+material_override = SubResource("Mat_note")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("Shape_note")

@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://d0uq0x2m2q0c8"]
+
+[ext_resource type="Script" uid="uid://blub4eo2nx7lv" path="res://scripts/hasselmus_nest.gd" id="1_nest_script"]
+[ext_resource type="ArrayMesh" uid="uid://drs4ise3lslx2" path="res://assets/PSX Nature/Models/other-formats/OBJ/tree_stump_1.obj" id="2_catae"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_nest"]
+albedo_color = Color(0.3, 0.25, 0.15, 1)
+roughness = 0.9
+
+[sub_resource type="BoxShape3D" id="Shape_nest"]
+size = Vector3(1, 0.2, 1)
+
+[node name="HasselmusNest" type="StaticBody3D" unique_id=1859933820]
+transform = Transform3D(8, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0)
+script = ExtResource("1_nest_script")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=2005092188]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+material_override = SubResource("Mat_nest")
+mesh = ExtResource("2_catae")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=105707660]
+shape = SubResource("Shape_nest")

@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://bkfma1uwdet22"
+path="res://.godot/imported/machete_mx_1.obj-861b1a176c48810ca1ac4e309f8a13de.mesh"
+
+[deps]
+
+files=["res://.godot/imported/machete_mx_1.obj-861b1a176c48810ca1ac4e309f8a13de.mesh"]
+
+source_file="res://assets/PSX Mega Pack II/Models/other-formats/OBJ/Weapons & Tools/machete_mx_1.obj"
+dest_files=["res://.godot/imported/machete_mx_1.obj-861b1a176c48810ca1ac4e309f8a13de.mesh", "res://.godot/imported/machete_mx_1.obj-861b1a176c48810ca1ac4e309f8a13de.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

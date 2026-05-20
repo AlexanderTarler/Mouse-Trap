@@ -8,6 +8,7 @@ extends CharacterBody3D
 @export var jump_velocity: float = 4.5
 
 @export var walk_speed: float = 3.5
+@export var run_speed: float = 6.5
 @export var crouch_speed: float = 1.8
 @export var mouse_sensitivity: float = 0.002
 @export var head_bob_enabled: bool = true
@@ -19,7 +20,7 @@ extends CharacterBody3D
 @export var crouching_height: float = 0.8
 @export var crouch_transition_speed: float = 10.0
 
-# Flashlight settings
+# Flashlight settings (used as fallback if no flashlight script attached)
 @export var flashlight_energy: float = 5.0
 @export var flashlight_range: float = 10.0
 
@@ -33,9 +34,16 @@ extends CharacterBody3D
 @onready var _collision_shape: CollisionShape3D = $CollisionShape3D
 @onready var _flashlight: SpotLight3D = $CameraHolder/Camera3D/Flashlight
 @onready var _interaction_manager: Node = $CameraHolder/InteractionManager
+@onready var _physical_grab: Node = $CameraHolder/PhysicalGrab
+@onready var footstep_audio: AudioStreamPlayer3D = $FootstepAudio if has_node("FootstepAudio") else null
+@onready var floor_raycast: RayCast3D = $FloorRayCast if has_node("FloorRayCast") else null
 
-var _mouse_captured: bool = false
+@export var wood_footsteps: Array[AudioStream] = []
+@export var grass_footsteps: Array[AudioStream] = []
+
 var _current_speed: float
+var _step_timer: float = 0.0
+var _step_interval: float = 0.6
 var _head_bob_time: float = 0.0
 var _head_bob_active: bool = false
 var _is_crouching: bool = false
@@ -50,8 +58,18 @@ var _crosshair: Control
 var _footstep_timer: float = 0.0
 var _footstep_interval: float = 0.5
 
+# Debug: log FloorRayCast collision info every second
+var _debug_raycast_timer: float = 0.0
+const DEBUG_RAYCAST_INTERVAL: float = 1.0
+
 # Stair climbing state
 var _was_on_floor: bool = false
+
+# Stamina system
+var _stamina: float = 100.0
+var _max_stamina: float = 100.0
+var _is_running: bool = false
+signal stamina_changed(stamina_percent: float)
 
 
 func _ready() -> void:
@@ -63,7 +81,6 @@ func _ready() -> void:
 	
 	# Capture mouse immediately
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	_mouse_captured = true
 	
 	# Add to player group for entity tracking
 	add_to_group("player")
@@ -83,6 +100,12 @@ func _ready() -> void:
 		_interaction_manager.set_camera(_camera)
 	elif _interaction_manager:
 		_interaction_manager.set("_camera", _camera)
+	
+	# Pass camera reference to physical grab system
+	if _physical_grab and _physical_grab.has_method("set_camera"):
+		_physical_grab.set_camera(_camera)
+	elif _physical_grab:
+		_physical_grab.set("_camera", _camera)
 	
 	# Create crosshair overlay
 	_create_crosshair()
@@ -240,7 +263,8 @@ func _rebuild_crosshair() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if event is InputEventMouseMotion and _mouse_captured:
+	# Only process mouse look when mouse is captured (not in inventory/menu)
+	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		# Horizontal mouse movement rotates the player
 		rotate_y(-event.relative.x * mouse_sensitivity)
 		# Vertical mouse movement rotates the camera holder
@@ -250,12 +274,20 @@ func _input(event: InputEvent) -> void:
 		_camera_holder.rotation = rot
 	
 	if event.is_action_pressed("ui_cancel"):
-		if _mouse_captured:
+		# Don't toggle mouse mode if the inventory is open — InventoryUI handles ESC itself
+		var inv_ui = get_node_or_null("/root/CottageHorror/InventoryUI")
+		if not inv_ui:
+			inv_ui = get_node_or_null("/root/Main/InventoryUI")
+		if inv_ui and inv_ui.get("_is_open"):
+			return
+		
+		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-			_mouse_captured = false
 		else:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-			_mouse_captured = true
+	
+	# Toggle inventory with TAB key is handled exclusively by InventoryUI's _input()
+	# to prevent double-toggle conflicts. Do NOT handle TAB here.
 	
 	# Toggle flashlight with F key
 	if event is InputEventKey and event.keycode == KEY_F and event.pressed:
@@ -269,8 +301,25 @@ func _input(event: InputEvent) -> void:
 func _toggle_flashlight() -> void:
 	if not _flashlight:
 		return
-	_flashlight_on = not _flashlight_on
-	_flashlight.visible = _flashlight_on
+	# Use the flashlight script's toggle if available, otherwise fallback
+	if _flashlight.has_method("toggle"):
+		_flashlight.toggle()
+	else:
+		_flashlight_on = not _flashlight_on
+		_flashlight.visible = _flashlight_on
+
+
+## Toggles the inventory UI open/closed.
+## Finds the InventoryUI CanvasLayer in the scene tree and calls its open/close methods.
+func _toggle_inventory() -> void:
+	var inv_ui = get_node_or_null("/root/CottageHorror/InventoryUI")
+	if not inv_ui:
+		inv_ui = get_node_or_null("/root/Main/InventoryUI")
+	if inv_ui and inv_ui.has_method("_open_inventory") and inv_ui.has_method("_close_inventory"):
+		if inv_ui.get("_is_open"):
+			inv_ui._close_inventory()
+		else:
+			inv_ui._open_inventory()
 
 
 func _physics_process(delta: float) -> void:
@@ -290,11 +339,19 @@ func _physics_process(delta: float) -> void:
 		if _is_crouching:
 			_is_crouching = false
 
-	# No sprint in horror mode - just walk or crouch
+	# Sprint with Shift (hold to run, drains stamina)
+	_is_running = Input.is_key_pressed(KEY_SHIFT) and not _is_crouching and _stamina > 0.0
+	
 	if _is_crouching:
 		_current_speed = crouch_speed
+	elif _is_running:
+		_current_speed = run_speed
 	else:
 		_current_speed = walk_speed
+	
+	# Stamina drain/regen (DISABLED: stamina locked at 100% per user request)
+	_stamina = _max_stamina
+	stamina_changed.emit(100.0)
 
 	# Get the input direction using WASD
 	var input_dir := Vector2(
@@ -327,14 +384,20 @@ func _physics_process(delta: float) -> void:
 	# Handle crouch collision shape and camera height
 	_update_crouch(delta)
 	
-	# Footstep sounds
-	if _head_bob_active and is_on_floor():
-		_footstep_timer -= delta
-		if _footstep_timer <= 0.0:
-			_footstep_timer = _footstep_interval * (crouch_speed / _current_speed if _is_crouching else 1.0)
-			_play_footstep()
+	# Footstep audio — check velocity after move_and_slide to detect actual movement
+	if velocity.length() > 0.5 and is_on_floor():
+		_step_timer -= delta
+		if _step_timer <= 0.0:
+			_play_surface_footstep()
+			_step_timer = _step_interval
 	else:
-		_footstep_timer = 0.0
+		_step_timer = 0.0
+	
+	# Debug: log FloorRayCast collision info every second
+	_debug_raycast_timer -= delta
+	if _debug_raycast_timer <= 0.0:
+		_debug_raycast_timer = DEBUG_RAYCAST_INTERVAL
+		_debug_log_floor_raycast()
 	
 	# Head bob effect
 	if head_bob_enabled and _head_bob_active and is_on_floor() and not _is_crouching:
@@ -443,6 +506,90 @@ func _play_footstep() -> void:
 		var sm = Engine.get_singleton("HorrorSoundManager")
 		sm.play_footstep_at("wooden", global_position)
 
+func _play_surface_footstep() -> void:
+	if not footstep_audio:
+		return
+	
+	var chosen_stream: AudioStream = null
+	
+	# 1. Check what material we are standing on using the FloorRayCast
+	if floor_raycast and floor_raycast.is_colliding():
+		var collider = floor_raycast.get_collider()
+		# Walk up the parent chain to find a node with a surface group
+		# (the raycast may return a CollisionShape3D child, but the group
+		#  could be on a parent StaticBody3D or MeshInstance3D)
+		var surface_node: Node = collider
+		var found_group := false
+		while surface_node and not found_group:
+			if surface_node.is_in_group("wood") and wood_footsteps.size() > 0:
+				chosen_stream = wood_footsteps.pick_random()
+				found_group = true
+			elif surface_node.is_in_group("grass") and grass_footsteps.size() > 0:
+				chosen_stream = grass_footsteps.pick_random()
+				found_group = true
+			else:
+				surface_node = surface_node.get_parent()
+	
+	# 2. Fallback to grass/nature if no group is found or array is empty
+	if not chosen_stream and grass_footsteps.size() > 0:
+		chosen_stream = grass_footsteps.pick_random()
+	
+	# 3. Play the selected sound with a slight pitch variation
+	if chosen_stream:
+		footstep_audio.stream = chosen_stream
+		footstep_audio.pitch_scale = randf_range(0.85, 1.15)
+		footstep_audio.play()
+
+
+## DEBUG: Logs what the FloorRayCast is colliding with (called every second).
+func _debug_log_floor_raycast() -> void:
+	if not floor_raycast:
+		print("[FloorRayCast DEBUG] FloorRayCast node is null")
+		return
+	
+	if not floor_raycast.is_colliding():
+		print("[FloorRayCast DEBUG] Not colliding with anything")
+		return
+	
+	var collider = floor_raycast.get_collider()
+	var hit_point = floor_raycast.get_collision_point()
+	var hit_normal = floor_raycast.get_collision_normal()
+	
+	print("=== FloorRayCast DEBUG ===")
+	print("  Player Position: ", global_position)
+	print("  Hit Point: ", hit_point)
+	print("  Hit Normal: ", hit_normal)
+	
+	if collider:
+		print("  Collider Type: ", collider.get_class())
+		print("  Collider Name: ", collider.name)
+		print("  Collider Path: ", collider.get_path())
+		
+		# Walk up the parent chain
+		var parent = collider.get_parent()
+		var depth = 0
+		while parent and depth < 10:
+			var groups_str = ""
+			if parent.get_groups().size() > 0:
+				groups_str = " groups=" + str(parent.get_groups())
+			print("    Parent[", depth, "]: ", parent.name, " (", parent.get_class(), ")", groups_str)
+			parent = parent.get_parent()
+			depth += 1
+		
+		# If it's a CollisionShape3D, print its shape info
+		if collider is CollisionShape3D:
+			var shape = collider.shape
+			if shape:
+				print("  Shape Type: ", shape.get_class())
+				if shape is BoxShape3D:
+					print("  Box Size: ", shape.size)
+				elif shape is ConcavePolygonShape3D:
+					print("  ConcavePolygon (trimesh)")
+	else:
+		print("  Collider: null")
+	
+	print("==========================")
+
 
 ## DEBUG: Raycasts from the camera center and prints info about the hit collider.
 func _debug_raycast_collider() -> void:
@@ -467,12 +614,12 @@ func _debug_raycast_collider() -> void:
 		return
 	
 	var collider = result.get("collider", null)
-	var position = result.get("position", Vector3.ZERO)
-	var normal = result.get("normal", Vector3.ZERO)
+	var hit_position = result.get("position", Vector3.ZERO)
+	var hit_normal = result.get("normal", Vector3.ZERO)
 	
 	print("=== DEBUG RAYCAST HIT ===")
-	print("  Position: ", position)
-	print("  Normal: ", normal)
+	print("  Position: ", hit_position)
+	print("  Normal: ", hit_normal)
 	
 	if collider:
 		print("  Collider Type: ", collider.get_class())

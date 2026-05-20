@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dku0drt5xlthg"
+path="res://.godot/imported/roof_mh_4_b_1.obj-7447413c6e9e696f4a093f01324d344c.mesh"
+
+[deps]
+
+files=["res://.godot/imported/roof_mh_4_b_1.obj-7447413c6e9e696f4a093f01324d344c.mesh"]
+
+source_file="res://assets/PSX Mega Pack II/Models/other-formats/OBJ/Modular Structures/roof_mh_4_b_1.obj"
+dest_files=["res://.godot/imported/roof_mh_4_b_1.obj-7447413c6e9e696f4a093f01324d344c.mesh", "res://.godot/imported/roof_mh_4_b_1.obj-7447413c6e9e696f4a093f01324d344c.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

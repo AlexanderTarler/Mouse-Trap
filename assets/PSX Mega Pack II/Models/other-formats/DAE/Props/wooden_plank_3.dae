@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 3.4.0 commit date:2022-12-06, commit time:18:46, hash:a95bf1ac01be</authoring_tool>
+    </contributor>
+    <created>2025-11-29T13:45:20</created>
+    <modified>2025-11-29T13:45:20</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="planks_hr_1-effect">
+      <profile_COMMON>
+        <newparam sid="planks_hr_1_png-surface">
+          <surface type="2D">
+            <init_from>planks_hr_1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="planks_hr_1_png-sampler">
+          <sampler2D>
+            <source>planks_hr_1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="planks_hr_1_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="planks_hr_1_png" name="planks_hr_1_png">
+      <init_from>planks_hr_1.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="planks_hr_1-material" name="planks_hr_1">
+      <instance_effect url="#planks_hr_1-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="wooden_plank_3-mesh" name="wooden_plank_3">
+      <mesh>
+        <source id="wooden_plank_3-mesh-positions">
+          <float_array id="wooden_plank_3-mesh-positions-array" count="60">-0.4081966 0.08275079 0.02999997 -0.4103567 -0.07712578 0.02999997 -0.3685877 -0.08864855 0.02999997 -0.2857686 -0.08000659 0.02999997 -0.181345 -0.09008854 0.02999997 0.3392955 -0.09419631 0.02999997 0.3544188 -0.07691192 0.02999997 0.4098703 -0.07979291 0.02999997 0.4466 -0.07187104 0.02999997 0.4480391 0.08368468 0.02999997 -0.4081966 0.08275079 0 -0.4103567 -0.07712578 0 -0.3685877 -0.08864855 0 -0.2857686 -0.08000659 0 -0.181345 -0.09008854 0 0.3392955 -0.09419631 0 0.3544188 -0.07691192 0 0.4098703 -0.07979291 0 0.4466 -0.07187104 0 0.4480391 0.08368468 0</float_array>
+          <technique_common>
+            <accessor source="#wooden_plank_3-mesh-positions-array" count="20" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="wooden_plank_3-mesh-normals">
+          <float_array id="wooden_plank_3-mesh-normals-array" count="66">0 0 1 0 0 -1 -0.9999088 0.01350986 0 -0.2659355 -0.9639908 0 0.1037839 -0.9945999 0 -0.09610146 -0.9953716 0 -0.007889628 -0.9999689 0 0.752587 -0.6584929 0 -0.0518856 -0.9986531 0 0.2108326 -0.9775222 0 0.9999572 -0.009251177 0 -0.001090586 0.9999994 0 0 0 1 0 0 1 0 0 1 1.63329e-7 0 1 -0.9999088 0.01350945 0 -0.09610146 -0.9953716 0 0.7525884 -0.6584914 0 -0.05188554 -0.9986531 0 0.9999572 -0.009250819 0 -0.001090586 0.9999994 0</float_array>
+          <technique_common>
+            <accessor source="#wooden_plank_3-mesh-normals-array" count="22" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="wooden_plank_3-mesh-map-0">
+          <float_array id="wooden_plank_3-mesh-map-0-array" count="216">0.1936659 0.4099114 0.6240447 0.4230881 0.6992499 0.5836847 0.1936659 0.4099114 0.1097825 0.4199934 0.0114361 0.5827509 0.470339 0.4684211 0.3474576 0.5 0.470339 0.5 0.01694911 0.4684211 0.05084741 0.5 0.01694911 0.5 0.05084741 0.4684211 0.1144068 0.5 0.05084741 0.5 0.1144068 0.4684211 0.1991525 0.5 0.1144068 0.5 0.1991525 0.4684211 0.6059322 0.5 0.1991525 0.5 0.3305085 0.4684211 0.3474576 0.5 0.3305085 0.5 0.6186441 0.4684211 0.661017 0.5 0.6186441 0.5 0.661017 0.4684211 0.690678 0.5 0.661017 0.5 0.3516949 0.4684211 0.470339 0.5 0.3516949 0.5 0.6949152 0.4684211 0.02118641 0.5 0.6949152 0.5 0.0114361 0.5827509 0.009700894 0.4228742 0.04325395 0.4113514 0.1097825 0.4199934 0.1936659 0.4099114 0.0114361 0.5827509 0.1936659 0.4099114 0.6118961 0.4058036 0.6240447 0.4230881 0.0114361 0.5827509 0.04325395 0.4113514 0.1097825 0.4199934 0.6980938 0.428129 0.6992499 0.5836847 0.6685888 0.4202071 0.6992499 0.5836847 0.0114361 0.5827509 0.1936659 0.4099114 0.6240447 0.4230881 0.6685888 0.4202071 0.6992499 0.5836847 0.04325395 0.4113514 0.009700894 0.4228742 0.0114361 0.5827509 0.0114361 0.5827509 0.6992499 0.5836847 0.1936659 0.4099114 0.6992499 0.5836847 0.6980938 0.428129 0.6685888 0.4202071 0.6240447 0.4230881 0.6992499 0.5836847 0.6685888 0.4202071 0.6240447 0.4230881 0.6118961 0.4058036 0.1936659 0.4099114 0.1097825 0.4199934 0.04325395 0.4113514 0.0114361 0.5827509 0.6240447 0.4230881 0.1936659 0.4099114 0.6992499 0.5836847 0.470339 0.4684211 0.3474576 0.4684211 0.3474576 0.5 0.01694911 0.4684211 0.05084741 0.4684211 0.05084741 0.5 0.05084741 0.4684211 0.1144068 0.4684211 0.1144068 0.5 0.1144068 0.4684211 0.1991525 0.4684211 0.1991525 0.5 0.1991525 0.4684211 0.6059322 0.4684211 0.6059322 0.5 0.3305085 0.4684211 0.3474576 0.4684211 0.3474576 0.5 0.6186441 0.4684211 0.661017 0.4684211 0.661017 0.5 0.661017 0.4684211 0.690678 0.4684211 0.690678 0.5 0.3516949 0.4684211 0.470339 0.4684211 0.470339 0.5 0.6949152 0.4684211 0.02118641 0.4684211 0.02118641 0.5</float_array>
+          <technique_common>
+            <accessor source="#wooden_plank_3-mesh-map-0-array" count="108" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="wooden_plank_3-mesh-vertices">
+          <input semantic="POSITION" source="#wooden_plank_3-mesh-positions"/>
+        </vertices>
+        <triangles material="planks_hr_1-material" count="36">
+          <input semantic="VERTEX" source="#wooden_plank_3-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#wooden_plank_3-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#wooden_plank_3-mesh-map-0" offset="2" set="0"/>
+          <p>4 0 0 6 0 1 9 0 2 14 1 3 13 1 4 10 1 5 10 2 6 1 2 7 0 2 8 11 3 9 2 3 10 1 3 11 12 4 12 3 4 13 2 4 14 13 5 15 4 5 16 3 5 17 14 6 18 5 6 19 4 6 20 15 7 21 6 7 22 5 7 23 16 8 24 7 8 25 6 8 26 17 9 27 8 9 28 7 9 29 18 10 30 9 10 31 8 10 32 19 11 33 0 11 34 9 11 35 0 12 36 1 12 37 2 12 38 3 13 39 4 13 40 0 13 41 4 0 42 5 0 43 6 0 44 0 14 45 2 14 46 3 14 47 8 15 48 9 15 49 7 15 50 9 0 51 0 0 52 4 0 53 6 0 54 7 0 55 9 0 56 12 1 57 11 1 58 10 1 59 10 1 60 19 1 61 14 1 62 19 1 63 18 1 64 17 1 65 16 1 66 19 1 67 17 1 68 16 1 69 15 1 70 14 1 71 13 1 72 12 1 73 10 1 74 16 1 75 14 1 76 19 1 77 10 16 78 11 16 79 1 16 80 11 3 81 12 3 82 2 3 83 12 4 84 13 4 85 3 4 86 13 17 87 14 17 88 4 17 89 14 6 90 15 6 91 5 6 92 15 18 93 16 18 94 6 18 95 16 19 96 17 19 97 7 19 98 17 9 99 18 9 100 8 9 101 18 20 102 19 20 103 9 20 104 19 21 105 10 21 106 0 21 107</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="wooden_plank_3" name="wooden_plank_3" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#wooden_plank_3-mesh" name="wooden_plank_3">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="planks_hr_1-material" target="#planks_hr_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

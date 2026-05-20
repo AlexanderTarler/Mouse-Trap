@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 3.4.0 commit date:2022-12-06, commit time:18:46, hash:a95bf1ac01be</authoring_tool>
+    </contributor>
+    <created>2025-11-29T13:45:38</created>
+    <modified>2025-11-29T13:45:38</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="graffiti_mx_4-effect">
+      <profile_COMMON>
+        <newparam sid="graffiti_mx_4_png-surface">
+          <surface type="2D">
+            <init_from>graffiti_mx_4_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="graffiti_mx_4_png-sampler">
+          <sampler2D>
+            <source>graffiti_mx_4_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="graffiti_mx_4_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="graffiti_mx_4_png" name="graffiti_mx_4_png">
+      <init_from>graffiti_mx_4.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="graffiti_mx_4-material" name="graffiti_mx_4">
+      <instance_effect url="#graffiti_mx_4-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="graffiti_mx_4-mesh" name="graffiti_mx_4">
+      <mesh>
+        <source id="graffiti_mx_4-mesh-positions">
+          <float_array id="graffiti_mx_4-mesh-positions-array" count="12">-1.874304 0 -0.4676808 1.857023 0 -0.5321699 -1.857023 0 0.5321699 1.874304 0 0.4676808</float_array>
+          <technique_common>
+            <accessor source="#graffiti_mx_4-mesh-positions-array" count="4" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="graffiti_mx_4-mesh-normals">
+          <float_array id="graffiti_mx_4-mesh-normals-array" count="3">0 -1 0</float_array>
+          <technique_common>
+            <accessor source="#graffiti_mx_4-mesh-normals-array" count="1" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="graffiti_mx_4-mesh-map-0">
+          <float_array id="graffiti_mx_4-mesh-map-0-array" count="12">1 0 0 1 0 0 1 0 1 1 0 1</float_array>
+          <technique_common>
+            <accessor source="#graffiti_mx_4-mesh-map-0-array" count="6" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="graffiti_mx_4-mesh-vertices">
+          <input semantic="POSITION" source="#graffiti_mx_4-mesh-positions"/>
+        </vertices>
+        <triangles material="graffiti_mx_4-material" count="2">
+          <input semantic="VERTEX" source="#graffiti_mx_4-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#graffiti_mx_4-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#graffiti_mx_4-mesh-map-0" offset="2" set="0"/>
+          <p>1 0 0 2 0 1 0 0 2 1 0 3 3 0 4 2 0 5</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="graffiti_mx_4" name="graffiti_mx_4" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#graffiti_mx_4-mesh" name="graffiti_mx_4">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="graffiti_mx_4-material" target="#graffiti_mx_4-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

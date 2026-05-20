@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://41fa8kkrqvk0"
+path="res://.godot/imported/metal_fence_hr_2.obj-7ab31ff72c75b1885562721b7e0d77f5.mesh"
+
+[deps]
+
+files=["res://.godot/imported/metal_fence_hr_2.obj-7ab31ff72c75b1885562721b7e0d77f5.mesh"]
+
+source_file="res://assets/PSX Mega Pack II/Models/other-formats/OBJ/Modular Props/metal_fence_hr_2.obj"
+dest_files=["res://.godot/imported/metal_fence_hr_2.obj-7ab31ff72c75b1885562721b7e0d77f5.mesh", "res://.godot/imported/metal_fence_hr_2.obj-7ab31ff72c75b1885562721b7e0d77f5.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

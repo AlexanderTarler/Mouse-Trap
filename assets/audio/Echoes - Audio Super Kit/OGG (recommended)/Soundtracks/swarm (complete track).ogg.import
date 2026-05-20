@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://dno304dowtbv8"
+path="res://.godot/imported/swarm (complete track).ogg-00d46f4400466c2a1a41b3dfb8921f20.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/Soundtracks/swarm (complete track).ogg"
+dest_files=["res://.godot/imported/swarm (complete track).ogg-00d46f4400466c2a1a41b3dfb8921f20.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

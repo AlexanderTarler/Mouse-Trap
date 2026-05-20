@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://drvhyapvtvebb"
+path="res://.godot/imported/crack_1_wood.ogg-af4d949a08ca7b2f3df5ba54803a9f67.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Misc/crack_1_wood.ogg"
+dest_files=["res://.godot/imported/crack_1_wood.ogg-af4d949a08ca7b2f3df5ba54803a9f67.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

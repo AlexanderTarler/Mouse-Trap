@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 3.4.0 commit date:2022-12-06, commit time:18:46, hash:a95bf1ac01be</authoring_tool>
+    </contributor>
+    <created>2025-04-17T12:47:12</created>
+    <modified>2025-04-17T12:47:12</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="power_supply_1-effect">
+      <profile_COMMON>
+        <newparam sid="power_supply_1_png-surface">
+          <surface type="2D">
+            <init_from>power_supply_1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="power_supply_1_png-sampler">
+          <sampler2D>
+            <source>power_supply_1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="power_supply_1_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="power_supply_1_png" name="power_supply_1_png">
+      <init_from>power_supply_1.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="power_supply_1-material" name="power_supply_1">
+      <instance_effect url="#power_supply_1-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="power_supply_1-mesh" name="power_supply_1">
+      <mesh>
+        <source id="power_supply_1-mesh-positions">
+          <float_array id="power_supply_1-mesh-positions-array" count="24">-0.1324324 0 0.119 0.1324324 0 0.119 -0.1324324 0 -0.1264449 0.1324324 0 -0.1264449 -0.1324324 0.154 -0.1264449 -0.1324324 0.1540001 0.1189998 0.132432 0.1540001 0.119 0.132432 0.154 -0.1264448</float_array>
+          <technique_common>
+            <accessor source="#power_supply_1-mesh-positions-array" count="8" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="power_supply_1-mesh-normals">
+          <float_array id="power_supply_1-mesh-normals-array" count="36">-1 0 0 0 3.87043e-7 -1 -6.39313e-7 1.25789e-6 1 1 2.75958e-6 0 0 -1 0 0 1 0 -1 0 0 1.82661e-7 0 -1 0 0 1 1 2.73614e-6 0 0 -1 0 0 1 0</float_array>
+          <technique_common>
+            <accessor source="#power_supply_1-mesh-normals-array" count="12" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="power_supply_1-mesh-map-0">
+          <float_array id="power_supply_1-mesh-map-0-array" count="72">1 0.3558558 0 0.5675676 1 0.5675676 0 0.7837838 0.9999985 0.9999998 1 0.7837838 0 0.5675676 1 0.7882883 0 0.7882883 0 0.3558558 1 0.5675676 0 0.5675676 0 0 1 0.3513513 0 0.3513513 0 0.3513513 0.9999983 0 0 0 1 0.3558558 0 0.3558558 0 0.5675676 0 0.7837838 0 0.9999998 0.9999985 0.9999998 0 0.5675676 1 0.5675676 1 0.7882883 0 0.3558558 1 0.3558558 1 0.5675676 0 0 1 0 1 0.3513513 0 0.3513513 1 0.3513513 0.9999983 0</float_array>
+          <technique_common>
+            <accessor source="#power_supply_1-mesh-map-0-array" count="36" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="power_supply_1-mesh-vertices">
+          <input semantic="POSITION" source="#power_supply_1-mesh-positions"/>
+        </vertices>
+        <triangles material="power_supply_1-material" count="12">
+          <input semantic="VERTEX" source="#power_supply_1-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#power_supply_1-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#power_supply_1-mesh-map-0" offset="2" set="0"/>
+          <p>2 0 0 5 0 1 4 0 2 2 1 3 7 1 4 3 1 5 0 2 6 6 2 7 5 2 8 1 3 9 7 3 10 6 3 11 2 4 12 1 4 13 0 4 14 5 5 15 7 5 16 4 5 17 2 6 18 0 6 19 5 6 20 2 7 21 4 7 22 7 7 23 0 8 24 1 8 25 6 8 26 1 9 27 3 9 28 7 9 29 2 10 30 3 10 31 1 10 32 5 11 33 6 11 34 7 11 35</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="power_supply_1" name="power_supply_1" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 -4.37114e-8 -1 0 0 1 -4.37114e-8 0 0 0 0 1</matrix>
+        <instance_geometry url="#power_supply_1-mesh" name="power_supply_1">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="power_supply_1-material" target="#power_supply_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

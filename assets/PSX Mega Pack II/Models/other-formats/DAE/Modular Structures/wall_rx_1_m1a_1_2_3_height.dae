@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 3.4.0 commit date:2022-12-06, commit time:18:46, hash:a95bf1ac01be</authoring_tool>
+    </contributor>
+    <created>2025-11-29T13:46:37</created>
+    <modified>2025-11-29T13:46:37</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="wall_rx_1-effect">
+      <profile_COMMON>
+        <newparam sid="wall_rx_1_png-surface">
+          <surface type="2D">
+            <init_from>wall_rx_1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="wall_rx_1_png-sampler">
+          <sampler2D>
+            <source>wall_rx_1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="wall_rx_1_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="concrete_hr_3-effect">
+      <profile_COMMON>
+        <newparam sid="concrete_hr_3_png-surface">
+          <surface type="2D">
+            <init_from>concrete_hr_3_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="concrete_hr_3_png-sampler">
+          <sampler2D>
+            <source>concrete_hr_3_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="concrete_hr_3_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="concrete_hr_3_png" name="concrete_hr_3_png">
+      <init_from>concrete_hr_3.png</init_from>
+    </image>
+    <image id="wall_rx_1_png" name="wall_rx_1_png">
+      <init_from>wall_rx_1.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="wall_rx_1-material" name="wall_rx_1">
+      <instance_effect url="#wall_rx_1-effect"/>
+    </material>
+    <material id="concrete_hr_3-material" name="concrete_hr_3">
+      <instance_effect url="#concrete_hr_3-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="wall_rx_1_m1a_1_2_3_height-mesh" name="wall_rx_1_m1a_1_2/3_height">
+      <mesh>
+        <source id="wall_rx_1_m1a_1_2_3_height-mesh-positions">
+          <float_array id="wall_rx_1_m1a_1_2_3_height-mesh-positions-array" count="48">2 1.8 -5.76969e-7 -2 -2.200001 -7.51818e-7 -2 -1.8 -7.34332e-7 1.599999 1.8 -5.76969e-7 2.000001 1.8 1.999999 -2 -2.200001 1.999999 -2 -1.8 1.999999 1.599999 1.8 1.999999 -1 -1.8 -7.34331e-7 -0.85 -2.200001 1.999999 -0.85 -2.2 -7.51817e-7 -1 -1.8 1.999999 2 0.6500003 -6.86842e-7 1.599999 0.8000003 1.999999 1.6 0.8000001 -6.20681e-7 2.000001 0.6500005 2</float_array>
+          <technique_common>
+            <accessor source="#wall_rx_1_m1a_1_2_3_height-mesh-positions-array" count="16" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="wall_rx_1_m1a_1_2_3_height-mesh-normals">
+          <float_array id="wall_rx_1_m1a_1_2_3_height-mesh-normals-array" count="108">1 3.45767e-7 -3.18025e-7 1 2.76194e-7 -2.78021e-7 1 2.0732e-7 -2.38419e-7 -2.38419e-7 1 -1.54396e-7 -2.38419e-7 1 -2.03232e-7 -2.38419e-7 1 -1.19209e-7 0 0 1 0 0 1 0 0 1 2.07321e-7 -1 -4.1534e-7 2.07321e-7 -1 -2.06622e-7 2.0732e-7 -1 -6.21961e-7 -0.7071069 0.7071067 -1.96098e-7 -0.7071068 0.7071067 -1.60529e-7 -0.707107 0.7071067 -2.26945e-7 0.7071068 -0.7071068 -1.35653e-7 0.7071068 -0.7071067 -1.60114e-7 0.7071068 -0.7071068 -1.7746e-7 -1 -2.52493e-7 -2.38419e-7 -1 -2.72028e-7 -2.38419e-7 -1 -2.38419e-7 -2.38419e-7 0 1.65664e-7 1 -3.12068e-7 2.73164e-7 1 -3.88724e-7 3.10981e-7 1 -1.13035e-6 3.24364e-7 1 3.49248e-7 0 1 -1.21681e-6 3.42226e-7 1 1 4.14641e-7 -3.57628e-7 -2.38419e-7 1 -2.38419e-7 0 0 1 2.07321e-7 -1 0 -0.7071068 0.7071068 -1.29683e-7 0.7071069 -0.7071068 0 -1 -2.86103e-7 -2.38419e-7 0 1.19209e-7 1 5.00178e-7 0 1</float_array>
+          <technique_common>
+            <accessor source="#wall_rx_1_m1a_1_2_3_height-mesh-normals-array" count="36" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="wall_rx_1_m1a_1_2_3_height-mesh-map-0">
+          <float_array id="wall_rx_1_m1a_1_2_3_height-mesh-map-0-array" count="108">-0.001385688 0.3333333 -0.2875001 0.9999997 -0.001385807 1 1.206199 0.333333 0.9574041 0.9999996 0.957404 0.333333 0.75 0.5500001 0.5 0.4499998 0.7875001 0.4499998 1.001386 0.3333334 1.2875 0.9999998 1.2875 0.3333333 0.04259568 0.3333334 0.9574041 0.9999996 0.04259574 0.9999999 -0.001385688 0.3333333 1.001386 0.9999998 1.001386 0.3333334 0.04259568 0.3333334 -0.2061994 0.9999997 -0.2061994 0.3333334 1.500001 1.449999 1.4 1.2 1.500001 1.1625 1.4 1.2 0.7875001 0.4499998 1.500001 1.1625 -0.001385688 0.3333333 -0.2875 0.3333333 -0.2875001 0.9999997 1.206199 0.333333 1.206199 0.9999995 0.9574041 0.9999996 0.75 0.5500001 0.5 0.5500001 0.5 0.4499998 1.001386 0.3333334 1.001386 0.9999998 1.2875 0.9999998 0.04259568 0.3333334 0.957404 0.333333 0.9574041 0.9999996 -0.001385688 0.3333333 -0.001385807 1 1.001386 0.9999998 0.04259568 0.3333334 0.04259574 0.9999999 -0.2061994 0.9999997 1.500001 1.449999 1.4 1.449999 1.4 1.2 1.4 1.2 0.75 0.5500001 0.7875001 0.4499998</float_array>
+          <technique_common>
+            <accessor source="#wall_rx_1_m1a_1_2_3_height-mesh-map-0-array" count="54" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="wall_rx_1_m1a_1_2_3_height-mesh-vertices">
+          <input semantic="POSITION" source="#wall_rx_1_m1a_1_2_3_height-mesh-positions"/>
+        </vertices>
+        <triangles material="wall_rx_1-material" count="6">
+          <input semantic="VERTEX" source="#wall_rx_1_m1a_1_2_3_height-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#wall_rx_1_m1a_1_2_3_height-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#wall_rx_1_m1a_1_2_3_height-mesh-map-0" offset="2" set="0"/>
+          <p>12 0 0 4 1 1 15 2 2 10 9 9 5 10 10 1 11 11 12 15 15 9 16 16 10 17 17 12 0 27 0 27 28 4 1 29 10 9 36 9 30 37 5 10 38 12 15 42 15 32 43 9 16 44</p>
+        </triangles>
+        <triangles material="wall_rx_1-material" count="6">
+          <input semantic="VERTEX" source="#wall_rx_1_m1a_1_2_3_height-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#wall_rx_1_m1a_1_2_3_height-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#wall_rx_1_m1a_1_2_3_height-mesh-map-0" offset="2" set="0"/>
+          <p>2 3 3 11 4 4 8 5 5 14 12 12 11 13 13 13 14 14 14 18 18 7 19 19 3 20 20 2 3 30 6 28 31 11 4 32 14 12 39 8 31 40 11 13 41 14 18 45 13 33 46 7 19 47</p>
+        </triangles>
+        <triangles material="concrete_hr_3-material" count="6">
+          <input semantic="VERTEX" source="#wall_rx_1_m1a_1_2_3_height-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#wall_rx_1_m1a_1_2_3_height-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#wall_rx_1_m1a_1_2_3_height-mesh-map-0" offset="2" set="0"/>
+          <p>11 6 6 5 7 7 9 8 8 4 21 21 13 22 22 15 23 23 13 24 24 9 25 25 15 26 26 11 6 33 6 29 34 5 7 35 4 21 48 7 34 49 13 22 50 13 24 51 11 35 52 9 25 53</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="wall_rx_1_m1a_1_2_3_height" name="wall_rx_1_m1a_1_2/3_height" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#wall_rx_1_m1a_1_2_3_height-mesh" name="wall_rx_1_m1a_1_2/3_height">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="wall_rx_1-material" target="#wall_rx_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+              <instance_material symbol="wall_rx_1-material" target="#wall_rx_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+              <instance_material symbol="concrete_hr_3-material" target="#concrete_hr_3-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

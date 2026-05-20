@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://vqtr5fb5ulbp"
+path="res://.godot/imported/button_1.ogg-e728558b35a4fbd8e1b8302e64044a48.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Buttons & Levers/button_1.ogg"
+dest_files=["res://.godot/imported/button_1.ogg-e728558b35a4fbd8e1b8302e64044a48.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

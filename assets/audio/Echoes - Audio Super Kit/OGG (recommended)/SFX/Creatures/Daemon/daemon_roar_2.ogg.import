@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://detppcrfjjvl6"
+path="res://.godot/imported/daemon_roar_2.ogg-b7de6493a69821c9813aaacafd9135ee.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Creatures/Daemon/daemon_roar_2.ogg"
+dest_files=["res://.godot/imported/daemon_roar_2.ogg-b7de6493a69821c9813aaacafd9135ee.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

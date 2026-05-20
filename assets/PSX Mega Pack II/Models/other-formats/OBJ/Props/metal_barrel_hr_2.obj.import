@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://d151am1rrqyhg"
+path="res://.godot/imported/metal_barrel_hr_2.obj-57a81cd611585be4ee8cd9d27558f7da.mesh"
+
+[deps]
+
+files=["res://.godot/imported/metal_barrel_hr_2.obj-57a81cd611585be4ee8cd9d27558f7da.mesh"]
+
+source_file="res://assets/PSX Mega Pack II/Models/other-formats/OBJ/Props/metal_barrel_hr_2.obj"
+dest_files=["res://.godot/imported/metal_barrel_hr_2.obj-57a81cd611585be4ee8cd9d27558f7da.mesh", "res://.godot/imported/metal_barrel_hr_2.obj-57a81cd611585be4ee8cd9d27558f7da.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

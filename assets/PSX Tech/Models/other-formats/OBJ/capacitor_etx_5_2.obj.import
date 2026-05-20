@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://3u74f47kn67j"
+path="res://.godot/imported/capacitor_etx_5_2.obj-17354a78edfb2c74a079e87119159db5.mesh"
+
+[deps]
+
+files=["res://.godot/imported/capacitor_etx_5_2.obj-17354a78edfb2c74a079e87119159db5.mesh"]
+
+source_file="res://assets/PSX Tech/Models/other-formats/OBJ/capacitor_etx_5_2.obj"
+dest_files=["res://.godot/imported/capacitor_etx_5_2.obj-17354a78edfb2c74a079e87119159db5.mesh", "res://.godot/imported/capacitor_etx_5_2.obj-17354a78edfb2c74a079e87119159db5.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://d0xijj0xksdhk"
+path="res://.godot/imported/data_block_etx_1.obj-83a52bfccdc0261867827e3abedee0cc.mesh"
+
+[deps]
+
+files=["res://.godot/imported/data_block_etx_1.obj-83a52bfccdc0261867827e3abedee0cc.mesh"]
+
+source_file="res://assets/PSX Tech/Models/other-formats/OBJ/data_block_etx_1.obj"
+dest_files=["res://.godot/imported/data_block_etx_1.obj-83a52bfccdc0261867827e3abedee0cc.mesh", "res://.godot/imported/data_block_etx_1.obj-83a52bfccdc0261867827e3abedee0cc.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

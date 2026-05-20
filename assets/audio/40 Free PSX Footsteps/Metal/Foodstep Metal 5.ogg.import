@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://dmn3n0bqmy5e0"
+path="res://.godot/imported/Foodstep Metal 5.ogg-898c6fe0e2ac167e46847c19c4f0b88b.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/40 Free PSX Footsteps/Metal/Foodstep Metal 5.ogg"
+dest_files=["res://.godot/imported/Foodstep Metal 5.ogg-898c6fe0e2ac167e46847c19c4f0b88b.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://hq0rg6mmtr42"
+path="res://.godot/imported/brick_mx_3_2.obj-7b3b82c55652af493a921f175f1a4044.mesh"
+
+[deps]
+
+files=["res://.godot/imported/brick_mx_3_2.obj-7b3b82c55652af493a921f175f1a4044.mesh"]
+
+source_file="res://assets/PSX Mega Pack II/Models/other-formats/OBJ/Debris & Misc/brick_mx_3_2.obj"
+dest_files=["res://.godot/imported/brick_mx_3_2.obj-7b3b82c55652af493a921f175f1a4044.mesh", "res://.godot/imported/brick_mx_3_2.obj-7b3b82c55652af493a921f175f1a4044.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

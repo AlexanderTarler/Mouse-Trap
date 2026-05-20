@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 3.4.0 commit date:2022-12-06, commit time:18:46, hash:a95bf1ac01be</authoring_tool>
+    </contributor>
+    <created>2025-11-29T13:46:25</created>
+    <modified>2025-11-29T13:46:25</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="panel_hs_1-effect">
+      <profile_COMMON>
+        <newparam sid="panel_hs_1_png-surface">
+          <surface type="2D">
+            <init_from>panel_hs_1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="panel_hs_1_png-sampler">
+          <sampler2D>
+            <source>panel_hs_1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="panel_hs_1_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="concrete_hr_1-effect">
+      <profile_COMMON>
+        <newparam sid="concrete_hr_1_png-surface">
+          <surface type="2D">
+            <init_from>concrete_hr_1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="concrete_hr_1_png-sampler">
+          <sampler2D>
+            <source>concrete_hr_1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="concrete_hr_1_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="wall_hr_2-effect">
+      <profile_COMMON>
+        <newparam sid="wall_hr_2_png-surface">
+          <surface type="2D">
+            <init_from>wall_hr_2_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="wall_hr_2_png-sampler">
+          <sampler2D>
+            <source>wall_hr_2_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="wall_hr_2_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="concrete_hr_1_png" name="concrete_hr_1_png">
+      <init_from>concrete_hr_1.png</init_from>
+    </image>
+    <image id="panel_hs_1_png" name="panel_hs_1_png">
+      <init_from>panel_hs_1.png</init_from>
+    </image>
+    <image id="wall_hr_2_png" name="wall_hr_2_png">
+      <init_from>wall_hr_2.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="panel_hs_1-material" name="panel_hs_1">
+      <instance_effect url="#panel_hs_1-effect"/>
+    </material>
+    <material id="concrete_hr_1-material" name="concrete_hr_1">
+      <instance_effect url="#concrete_hr_1-effect"/>
+    </material>
+    <material id="wall_hr_2-material" name="wall_hr_2">
+      <instance_effect url="#wall_hr_2-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="floor_ceiling_hy_1-mesh" name="floor_ceiling_hy_1">
+      <mesh>
+        <source id="floor_ceiling_hy_1-mesh-positions">
+          <float_array id="floor_ceiling_hy_1-mesh-positions-array" count="120">2 -2 0.4000013 2 2 0.4000018 -2 -2 1.51992e-6 2 -2 1.51992e-6 -1.92 2 0.3200031 1.92 2 0.3200031 -1.92 -2 0.08000284 -2 -1.92 0.3200026 2 -1.92 0.3200026 2 1.92 0.3200031 -2 1.92 0.08000284 2 1.92 0.08000284 -2 -1.92 0.08000284 -2 2 0.4000031 -2 -2 0.4000026 2 2 2.89083e-6 -2 2 2.89083e-6 1.95 -1.87 0.2700027 1.95 1.87 0.2700031 1.95 1.87 0.1300028 1.95 -1.87 0.1300027 2 -1.92 0.08000284 1.87 1.95 0.2700031 -1.87 1.95 0.2700031 -1.92 2 0.08000284 -1.87 1.95 0.1300027 1.87 1.95 0.1300027 1.92 2 0.08000284 -1.92 -2 0.3200026 -1.87 -1.95 0.2700027 1.87 -1.95 0.2700027 1.92 -2 0.3200026 1.92 -2 0.08000284 1.87 -1.95 0.1300028 -1.87 -1.95 0.1300028 -2 1.92 0.3200031 -1.95 1.87 0.2700031 -1.95 -1.87 0.2700027 -1.95 -1.87 0.1300027 -1.95 1.87 0.1300028</float_array>
+          <technique_common>
+            <accessor source="#floor_ceiling_hy_1-mesh-positions-array" count="40" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="floor_ceiling_hy_1-mesh-normals">
+          <float_array id="floor_ceiling_hy_1-mesh-normals-array" count="306">3.33786e-7 -1.19209e-7 1 3.33786e-7 -1.19209e-7 1 3.42727e-7 -1.19209e-7 1 0 3.42727e-7 -1 0 3.42727e-7 -1 2.48347e-7 -1 0 -1.24407e-7 -1 -9.01185e-7 -2.48352e-7 -1 -7.76102e-7 4.67159e-7 1 0 -1.18196e-6 1 -1.78105e-6 -1.9868e-6 1 -1.60077e-6 3.27502e-7 1 -1.3898e-6 -8.94071e-7 1 1.18288e-6 -7.4947e-7 1 1.19335e-6 0 -1 -4.10105e-7 -1.49013e-7 -1 3.37522e-7 0 -1 4.07345e-7 0 1 1.45248e-7 1.49012e-7 -1 -4.65656e-7 5.96048e-7 1 -1.49012e-6 1.24406e-7 -1 -1.45248e-7 1 0 0 -1 0 0 0 1 1.77799e-6 0 1 0 0 1 1.82138e-6 1 0 0 1 0 0 1 0 0 0 -1 -1.778e-6 0 -1 0 0 -1 -1.82138e-6 -1 0 0 -1 0 0 -1 0 0 0.7071065 0 -0.7071071 0.7071068 0 -0.7071068 0.7071068 0 -0.7071068 0.7071066 0 0.707107 0.7071071 0 0.7071065 0.7071071 0 0.7071065 0.7071064 -0.7071072 0 0.7071078 -0.7071058 0 0.707109 -0.7071046 0 0.7071059 0.7071078 3.27468e-7 0.7071067 0.7071068 7.34971e-7 0.7071071 0.7071066 8.78062e-7 0 0.7071095 -0.7071042 0 0.7071072 -0.7071064 0 0.7071071 -0.7071064 0 0.7071073 0.7071064 0 0.7071068 0.7071068 0 0.7071067 0.7071068 0.7071072 0.7071064 7.34971e-7 0.7071065 0.7071071 3.27467e-7 0.7071059 0.7071076 0 -0.7071057 0.7071079 3.27467e-7 -0.7071064 0.7071072 7.3497e-7 -0.7071053 0.7071084 0 0 -0.707109 -0.7071046 0 -0.7071068 -0.7071068 0 -0.7071068 -0.7071068 0 -0.7071077 0.7071059 0 -0.7071089 0.7071048 0 -0.7071089 0.7071046 0.7071051 -0.7071086 -9.80269e-7 0.7071067 -0.707107 -1.27134e-6 0.707108 -0.7071056 -1.50525e-6 -0.7071064 -0.7071072 -9.8027e-7 -0.7071057 -0.7071079 -1.27134e-6 -0.7071052 -0.7071084 -1.50525e-6 -0.7071062 0 -0.7071075 -0.7071072 0 -0.7071065 -0.7071072 0 -0.7071065 -0.7071068 0 0.7071067 -0.7071067 0 0.7071069 -0.7071067 0 0.7071069 -0.7071079 -0.7071057 0 -0.7071064 -0.7071072 0 -0.707109 -0.7071046 0 -0.7071059 0.7071078 3.27468e-7 -0.7071067 0.7071068 7.34971e-7 -0.7071052 0.7071085 0 3.24845e-7 -1.19209e-7 1 0 1 0 0 -1 0 -1 0 0 0.7071065 0 -0.7071071 0.7071066 0 0.7071071 0.7071059 -0.7071077 0 0.7071052 0.7071085 0 0 0.7071073 0.7071063 0.7071075 0.7071061 8.78061e-7 -0.7071066 0.707107 8.7806e-7 0 -0.707109 -0.7071046 0 -0.7071077 0.7071059 0.7071045 -0.7071091 -8.7806e-7 -0.7071065 -0.707107 -8.78062e-7 -0.7071061 0 -0.7071075 -0.7071069 0 0.7071068 -0.7071059 -0.7071077 0 -0.7071071 0.7071066 8.78062e-7</float_array>
+          <technique_common>
+            <accessor source="#floor_ceiling_hy_1-mesh-normals-array" count="102" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="floor_ceiling_hy_1-mesh-map-0">
+          <float_array id="floor_ceiling_hy_1-mesh-map-0-array" count="456">1 2 0 0 0 2 1 0 0 2 0 0 0.98 0.5425001 0 0.5625001 0.01999998 0.5425001 0.01999998 0.5424999 1 0.5625 0.98 0.5424999 0.98 0.4824998 0 0.4624999 0.01999998 0.4824998 0.01999998 0.4825001 1 0.4625002 0.98 0.4825001 0.01999998 0.4824998 0 0.5624999 0.01999998 0.5424999 0.01999998 0.4825001 0 0.5625001 0 0.4625002 0.98 0.4824998 1 0.5625 1 0.4624999 0.98 0.4825001 1 0.5625001 0.98 0.5425001 0.5424999 0.01999998 0.5625001 1 0.5425001 0.98 0.5425001 0.98 0.5625 0 0.5424999 0.01999998 0.4825001 0.98 0.4624999 0 0.4824999 0.01999998 0.4824999 0.01999998 0.4625002 1 0.4825001 0.98 0.4824999 0.01999998 0.5625 0 0.4624999 0 0.4825001 0.98 0.5625001 1 0.5425001 0.98 0.4824999 0.01999998 0.5625 0 0.5424999 0.01999998 0.4825001 0.98 0.5625001 1 0.4625002 1 0.9667969 0.9427083 0.03320312 0.9895833 0.9667969 0.9895833 0.03320312 0.9427083 0.9667969 0.9895833 0.03320312 0.9895833 0.03320312 0.9427083 0.9667969 0.9895833 0.03320312 0.9895833 0.9667969 0.9895833 0.03320312 0.9427083 0.03320312 0.9895833 0.5299999 0.03249996 0.5425001 0.98 0.5300002 0.9675001 0.4950002 0.9675 0.4824999 0.01999998 0.4949998 0.03249996 0.4949998 0.03249996 0.5424999 0.01999998 0.5299999 0.03249996 0.4825001 0.98 0.5300002 0.9675001 0.5425001 0.98 0.03249996 0.53 0.98 0.5424999 0.9674999 0.5299999 0.9675 0.4949998 0.01999998 0.4824998 0.03249996 0.4949998 0.03249996 0.4949998 0.01999998 0.5424999 0.03249996 0.53 0.98 0.5424999 0.9675 0.4949998 0.9674999 0.5299999 0.9675 0.5300001 0.01999998 0.5425001 0.03249996 0.5300002 0.03249996 0.4950001 0.98 0.4825001 0.9675 0.4950001 0.03249996 0.5300002 0.01999998 0.4825001 0.03249996 0.4950001 0.9675 0.4950001 0.98 0.5425001 0.9675 0.5300001 0.53 0.9674999 0.5424999 0.01999998 0.53 0.03249996 0.4949999 0.03249996 0.4825001 0.98 0.4950001 0.9675 0.5424999 0.01999998 0.4949999 0.03249996 0.53 0.03249996 0.4825001 0.98 0.53 0.9674999 0.4950001 0.9675 1 2 1 0 0 0 1 0 1 2 0 2 0.98 0.5425001 1 0.5625001 0 0.5625001 0.01999998 0.5424999 0 0.5624999 1 0.5625 0.98 0.4824998 1 0.4624999 0 0.4624999 0.01999998 0.4825001 0 0.4625002 1 0.4625002 0.01999998 0.4824998 0 0.4624999 0 0.5624999 0.01999998 0.4825001 0.01999998 0.5425001 0 0.5625001 0.98 0.4824998 0.98 0.5424999 1 0.5625 0.98 0.4825001 1 0.4625002 1 0.5625001 0.5424999 0.01999998 0.5625 0 0.5625001 1 0.5425001 0.98 0.5625001 1 0.5625 0 0.4825001 0.98 0.4625002 1 0.4624999 0 0.4824999 0.01999998 0.4624999 0 0.4625002 1 0.4824999 0.01999998 0.5424999 0.01999998 0.5625 0 0.4825001 0.98 0.4625002 1 0.5625001 1 0.4824999 0.01999998 0.4624999 0 0.5625 0 0.4825001 0.98 0.5425001 0.98 0.5625001 1 0.9667969 0.9427083 0.03320312 0.9427083 0.03320312 0.9895833 0.03320312 0.9427083 0.9667969 0.9427083 0.9667969 0.9895833 0.03320312 0.9427083 0.9667969 0.9427083 0.9667969 0.9895833 0.9667969 0.9895833 0.9667969 0.9427083 0.03320312 0.9427083 0.5299999 0.03249996 0.5424999 0.01999998 0.5425001 0.98 0.4950002 0.9675 0.4825001 0.98 0.4824999 0.01999998 0.4949998 0.03249996 0.4824999 0.01999998 0.5424999 0.01999998 0.4825001 0.98 0.4950002 0.9675 0.5300002 0.9675001 0.03249996 0.53 0.01999998 0.5424999 0.98 0.5424999 0.9675 0.4949998 0.98 0.4824998 0.01999998 0.4824998 0.03249996 0.4949998 0.01999998 0.4824998 0.01999998 0.5424999 0.98 0.5424999 0.98 0.4824998 0.9675 0.4949998 0.9675 0.5300001 0.98 0.5425001 0.01999998 0.5425001 0.03249996 0.4950001 0.01999998 0.4825001 0.98 0.4825001 0.03249996 0.5300002 0.01999998 0.5425001 0.01999998 0.4825001 0.9675 0.4950001 0.98 0.4825001 0.98 0.5425001 0.53 0.9674999 0.5425001 0.98 0.5424999 0.01999998 0.4949999 0.03249996 0.4824999 0.01999998 0.4825001 0.98 0.5424999 0.01999998 0.4824999 0.01999998 0.4949999 0.03249996 0.4825001 0.98 0.5425001 0.98 0.53 0.9674999</float_array>
+          <technique_common>
+            <accessor source="#floor_ceiling_hy_1-mesh-map-0-array" count="228" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="floor_ceiling_hy_1-mesh-vertices">
+          <input semantic="POSITION" source="#floor_ceiling_hy_1-mesh-positions"/>
+        </vertices>
+        <triangles material="panel_hs_1-material" count="4">
+          <input semantic="VERTEX" source="#floor_ceiling_hy_1-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#floor_ceiling_hy_1-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#floor_ceiling_hy_1-mesh-map-0" offset="2" set="0"/>
+          <p>0 0 0 13 1 1 14 2 2 15 3 3 2 3 4 16 4 5 0 0 114 1 83 115 13 1 116 15 3 117 3 4 118 2 3 119</p>
+        </triangles>
+        <triangles material="concrete_hr_1-material" count="64">
+          <input semantic="VERTEX" source="#floor_ceiling_hy_1-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#floor_ceiling_hy_1-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#floor_ceiling_hy_1-mesh-map-0" offset="2" set="0"/>
+          <p>31 5 6 14 6 7 28 7 8 4 8 9 1 9 10 5 10 11 27 11 12 16 12 13 24 13 14 6 14 15 3 15 16 32 16 17 24 13 18 13 17 19 4 8 20 6 14 21 14 6 22 2 18 23 27 11 24 1 9 25 15 19 26 32 16 27 0 20 28 31 5 29 9 21 30 0 21 31 8 21 32 7 22 33 13 22 34 35 22 35 21 21 36 15 21 37 11 21 38 10 22 39 2 22 40 12 22 41 10 22 42 13 22 43 16 22 44 12 22 45 14 22 46 7 22 47 11 21 48 1 21 49 9 21 50 21 21 51 0 21 52 3 21 53 18 35 66 8 36 67 17 37 68 20 38 69 11 39 70 19 40 71 19 41 72 9 42 73 18 43 74 21 44 75 17 45 76 8 46 77 23 47 78 5 48 79 22 49 80 26 50 81 24 51 82 25 52 83 25 53 84 4 54 85 23 55 86 5 56 87 26 57 88 22 58 89 30 59 90 28 60 91 29 61 92 34 62 93 32 63 94 33 64 95 29 65 96 6 66 97 34 67 98 33 68 99 31 69 100 30 70 101 37 71 102 35 72 103 36 73 104 39 74 105 12 75 106 38 76 107 35 77 108 39 78 109 36 79 110 12 80 111 37 81 112 38 82 113 31 5 120 0 20 121 14 6 122 4 8 123 13 17 124 1 9 125 27 11 126 15 19 127 16 12 128 6 14 129 2 18 130 3 15 131 24 13 132 16 12 133 13 17 134 6 14 135 28 7 136 14 6 137 27 11 138 5 10 139 1 9 140 32 16 141 3 15 142 0 20 143 9 21 144 1 21 145 0 21 146 7 22 147 14 22 148 13 22 149 21 21 150 3 21 151 15 21 152 10 22 153 16 22 154 2 22 155 10 22 156 35 22 157 13 22 158 12 22 159 2 22 160 14 22 161 11 21 162 15 21 163 1 21 164 21 21 165 8 21 166 0 21 167 18 35 180 9 87 181 8 36 182 20 38 183 21 88 184 11 39 185 19 41 186 11 89 187 9 42 188 21 44 189 20 90 190 17 45 191 23 47 192 4 47 193 5 48 194 26 50 195 27 91 196 24 51 197 25 53 198 24 92 199 4 54 200 5 56 201 27 93 202 26 57 203 30 59 204 31 94 205 28 60 206 34 62 207 6 95 208 32 63 209 29 65 210 28 96 211 6 66 212 33 68 213 32 97 214 31 69 215 37 71 216 7 98 217 35 72 218 39 74 219 10 99 220 12 75 221 35 77 222 10 100 223 39 78 224 12 80 225 7 101 226 37 81 227</p>
+        </triangles>
+        <triangles material="wall_hr_2-material" count="8">
+          <input semantic="VERTEX" source="#floor_ceiling_hy_1-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#floor_ceiling_hy_1-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#floor_ceiling_hy_1-mesh-map-0" offset="2" set="0"/>
+          <p>26 23 54 23 24 55 22 25 56 20 26 57 18 27 58 17 28 59 34 29 60 30 30 61 29 31 62 36 32 63 38 33 64 37 34 65 26 23 168 25 84 169 23 24 170 20 26 171 19 21 172 18 27 173 34 29 174 33 85 175 30 30 176 36 32 177 39 86 178 38 33 179</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="floor_ceiling_hy_1" name="floor_ceiling_hy_1" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#floor_ceiling_hy_1-mesh" name="floor_ceiling_hy_1">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="panel_hs_1-material" target="#panel_hs_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+              <instance_material symbol="concrete_hr_1-material" target="#concrete_hr_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+              <instance_material symbol="wall_hr_2-material" target="#wall_hr_2-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

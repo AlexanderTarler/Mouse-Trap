@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 3.4.0 commit date:2022-12-06, commit time:18:46, hash:a95bf1ac01be</authoring_tool>
+    </contributor>
+    <created>2025-04-17T12:47:12</created>
+    <modified>2025-04-17T12:47:12</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="cpu_1-effect">
+      <profile_COMMON>
+        <newparam sid="cpu_1_png_001-surface">
+          <surface type="2D">
+            <init_from>cpu_1_png_001</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="cpu_1_png_001-sampler">
+          <sampler2D>
+            <source>cpu_1_png_001-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="cpu_1_png_001-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="cpu_1_png_001" name="cpu_1_png_001">
+      <init_from>cpu_1.png.001.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="cpu_1-material" name="cpu_1">
+      <instance_effect url="#cpu_1-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="cpu_1-mesh" name="cpu_1">
+      <mesh>
+        <source id="cpu_1-mesh-positions">
+          <float_array id="cpu_1-mesh-positions-array" count="72">-0.03430426 0.003999948 0.03429996 -0.03430426 0.003999948 -0.03429996 0.03429573 0.003999948 0.03429996 0.03429573 0.003999948 -0.03429996 -0.02979856 0.01049995 -0.02979433 -0.02979856 0.01049995 0.02979433 0.02979004 0.01049995 -0.02979433 0.02979004 0.01049995 0.02979433 -0.03500425 0.007499992 -0.03499996 -0.03500425 0.007499992 0.03499996 0.03499573 0.007499992 -0.03499996 0.03499573 0.007499992 0.03499996 -0.03240144 0.007499992 0.03239715 -0.03240144 0.007499992 -0.03239715 0.03239285 0.007499992 -0.03239715 0.03239285 0.007499992 0.03239715 -0.03500425 0.003999948 -0.03499996 -0.03500425 0.003999948 0.03499996 0.03499573 0.003999948 -0.03499996 0.03499573 0.003999948 0.03499996 -0.03430426 0 -0.03429996 -0.03430426 0 0.03429996 0.03429573 0 -0.03429996 0.03429573 0 0.03429996</float_array>
+          <technique_common>
+            <accessor source="#cpu_1-mesh-positions-array" count="24" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="cpu_1-mesh-normals">
+          <float_array id="cpu_1-mesh-normals-array" count="87">1 0 0 0 1 0 0 0 -1 0 0 1 -1 0 0 0 1 0 0 1 -7.33425e-7 0 1 4.9614e-7 0 1 0 0.7553357 0.6553381 0 0 0.6553374 0.7553364 0 0.6553377 -0.7553361 -0.7553356 0.6553382 0 0 -1 0 0 -1 3.88268e-7 0 -1 -4.82967e-7 0 -1 0 0 -1 0 0 1 0 0 1 0 0 1 0 0.7553366 0.6553371 0 0 0.6553378 0.755336 0 0.6553374 -0.7553363 -0.7553349 0.655339 0 0 -1 0 0 -1 -1.18791e-6 0 -1 1.18791e-6 0 -1 0</float_array>
+          <technique_common>
+            <accessor source="#cpu_1-mesh-normals-array" count="29" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="cpu_1-mesh-map-0">
+          <float_array id="cpu_1-mesh-map-0-array" count="264">0.5271381 0 0.5567706 0.9999999 0.5271381 0.9999999 0.4628167 0.07436662 0.03718334 0.9256334 0.03718334 0.07436662 0.5 1 0.5 0 0.5 0 0 1 0.5 1 0.5 1 0.5 0 0 0 0 0 0 0 0 1 0 1 0.01859164 0.9628167 0 0 0.01859164 0.03718328 0.4814083 0.9628166 0 1 0.01859164 0.9628167 0.01859164 0.03718328 0.5 0 0.4814083 0.03718328 0.4814083 0.03718328 0.5 1 0.4814083 0.9628166 0.4628167 0.07436662 0.4814083 0.9628166 0.4628167 0.9256333 0.03718334 0.07436662 0.4814083 0.03718328 0.4628167 0.07436662 0.03718334 0.9256334 0.4814083 0.9628166 0.01859164 0.9628167 0.03718334 0.9256334 0.01859164 0.03718328 0.03718334 0.07436662 0.5050001 0.00999999 0.5 1 0.505 0.9900001 0.505 0.9900001 1 1 0.9950001 0.9900001 0.9950001 0.00999999 0.5 0 0.5050001 0.00999999 0.9950001 0.9900001 1 0 0.9950001 0.00999999 0.505 0.9900001 0.9950001 0.00999999 0.5050001 0.00999999 0.5271381 0.9999999 0.5567706 0 0.5271381 0 0.5271381 0 0.5567706 0.9999999 0.5271381 0.9999999 0.5271381 0.9999999 0.5567706 0 0.5271381 0 0.5271381 0 0.5567706 0 0.5567706 0.9999999 0.4628167 0.07436662 0.4628167 0.9256333 0.03718334 0.9256334 0.5 1 0.5 1 0.5 0 0 1 0 1 0.5 1 0.5 0 0.5 0 0 0 0 0 0 0 0 1 0.01859164 0.9628167 0 1 0 0 0.4814083 0.9628166 0.5 1 0 1 0.01859164 0.03718328 0 0 0.5 0 0.4814083 0.03718328 0.5 0 0.5 1 0.4628167 0.07436662 0.4814083 0.03718328 0.4814083 0.9628166 0.03718334 0.07436662 0.01859164 0.03718328 0.4814083 0.03718328 0.03718334 0.9256334 0.4628167 0.9256333 0.4814083 0.9628166 0.03718334 0.9256334 0.01859164 0.9628167 0.01859164 0.03718328 0.5050001 0.00999999 0.5 0 0.5 1 0.505 0.9900001 0.5 1 1 1 0.9950001 0.00999999 1 0 0.5 0 0.9950001 0.9900001 1 1 1 0 0.505 0.9900001 0.9950001 0.9900001 0.9950001 0.00999999 0.5271381 0.9999999 0.5567706 0.9999999 0.5567706 0 0.5271381 0 0.5567706 0 0.5567706 0.9999999 0.5271381 0.9999999 0.5567706 0.9999999 0.5567706 0</float_array>
+          <technique_common>
+            <accessor source="#cpu_1-mesh-map-0-array" count="132" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="cpu_1-mesh-vertices">
+          <input semantic="POSITION" source="#cpu_1-mesh-positions"/>
+        </vertices>
+        <triangles material="cpu_1-material" count="44">
+          <input semantic="VERTEX" source="#cpu_1-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#cpu_1-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#cpu_1-mesh-map-0" offset="2" set="0"/>
+          <p>2 0 0 22 0 1 3 0 2 7 1 3 4 1 4 5 1 5 18 0 6 11 0 7 19 0 8 16 2 9 10 2 10 18 2 11 19 3 12 9 3 13 17 3 14 17 4 15 8 4 16 16 4 17 13 5 18 9 5 19 12 5 20 14 6 21 8 6 22 13 6 23 12 7 24 11 7 25 15 7 26 15 8 27 10 8 28 14 8 29 7 9 30 14 9 31 6 9 32 5 10 33 15 10 34 7 10 35 4 11 36 14 11 37 13 11 38 4 12 39 12 12 40 5 12 41 0 13 42 16 13 43 1 13 44 1 14 45 18 14 46 3 14 47 2 15 48 17 15 49 0 15 50 3 16 51 19 16 52 2 16 53 20 17 54 23 17 55 21 17 56 3 2 57 20 2 58 1 2 59 0 3 60 23 3 61 2 3 62 1 4 63 21 4 64 0 4 65 2 0 66 23 0 67 22 0 68 7 1 69 6 1 70 4 1 71 18 0 72 10 0 73 11 0 74 16 2 75 8 2 76 10 2 77 19 3 78 11 3 79 9 3 80 17 4 81 9 4 82 8 4 83 13 18 84 8 18 85 9 18 86 14 19 87 10 19 88 8 19 89 12 19 90 9 19 91 11 19 92 15 20 93 11 20 94 10 20 95 7 21 96 15 21 97 14 21 98 5 22 99 12 22 100 15 22 101 4 23 102 6 23 103 14 23 104 4 24 105 13 24 106 12 24 107 0 25 108 17 25 109 16 25 110 1 26 111 16 26 112 18 26 113 2 27 114 19 27 115 17 27 116 3 28 117 18 28 118 19 28 119 20 17 120 22 17 121 23 17 122 3 2 123 22 2 124 20 2 125 0 3 126 21 3 127 23 3 128 1 4 129 20 4 130 21 4 131</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="cpu_1" name="cpu_1" type="NODE">
+        <matrix sid="transform">0.5735765 -3.58063e-8 -0.8191521 0 -0.8191521 -2.50718e-8 -0.5735765 0 0 1 -4.37114e-8 0 0 0 0 1</matrix>
+        <instance_geometry url="#cpu_1-mesh" name="cpu_1">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="cpu_1-material" target="#cpu_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

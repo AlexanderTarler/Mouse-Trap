@@ -39,11 +39,6 @@ func _ready() -> void:
 	# Disable physics processing until fully initialized
 	set_physics_process(false)
 	
-	# Connect to game time
-	if Engine.has_singleton("GameTime") and scheduler:
-		var gt = Engine.get_singleton("GameTime")
-		gt.time_changed.connect(_on_time_changed)
-	
 	# Wait a few frames for everything to initialize
 	await get_tree().physics_frame
 	await get_tree().physics_frame

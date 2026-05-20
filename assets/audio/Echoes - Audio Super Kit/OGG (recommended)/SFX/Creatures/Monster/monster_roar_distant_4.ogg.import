@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://c34863xo130ie"
+path="res://.godot/imported/monster_roar_distant_4.ogg-396c418164cc37eef5612b77095f029d.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Creatures/Monster/monster_roar_distant_4.ogg"
+dest_files=["res://.godot/imported/monster_roar_distant_4.ogg-396c418164cc37eef5612b77095f029d.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

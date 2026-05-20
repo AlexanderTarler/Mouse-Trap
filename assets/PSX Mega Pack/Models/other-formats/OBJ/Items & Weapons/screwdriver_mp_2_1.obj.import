@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dy5p4023jv2ep"
+path="res://.godot/imported/screwdriver_mp_2_1.obj-d3a154a230354713a28c8c5e00bf7cc0.mesh"
+
+[deps]
+
+files=["res://.godot/imported/screwdriver_mp_2_1.obj-d3a154a230354713a28c8c5e00bf7cc0.mesh"]
+
+source_file="res://assets/PSX Mega Pack/Models/other-formats/OBJ/Items & Weapons/screwdriver_mp_2_1.obj"
+dest_files=["res://.godot/imported/screwdriver_mp_2_1.obj-d3a154a230354713a28c8c5e00bf7cc0.mesh", "res://.godot/imported/screwdriver_mp_2_1.obj-d3a154a230354713a28c8c5e00bf7cc0.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

@@ -17,6 +17,7 @@ const MUD_FOOTSTEP_DIR: String = "res://assets/horror_sfx_vol_1/Mud foosteps/"
 const STAIRS_FOOTSTEP_DIR: String = "res://assets/horror_sfx_vol_1/Stairs Footsteps/"
 const WIND_FOOTSTEP_DIR: String = "res://assets/horror_sfx_vol_1/Wind Footsteps/"
 const WOODEN_FOOTSTEP_DIR: String = "res://assets/horror_sfx_vol_1/Wooden Foosteps/"
+const GRASS_FOOTSTEP_DIR: String = "res://assets/audio/40 Free PSX Footsteps/Grass/"
 const CREAKING_DOOR_DIR: String = "res://assets/horror_sfx_vol_1/Creaking Door/"
 const MONSTER_GROWL_DIR: String = "res://assets/horror_sfx_vol_1/Monster Growl/"
 
@@ -41,6 +42,7 @@ var _metal_footstep_streams: Array[AudioStream] = []
 var _mud_footstep_streams: Array[AudioStream] = []
 var _stairs_footstep_streams: Array[AudioStream] = []
 var _wind_footstep_streams: Array[AudioStream] = []
+var _grass_footstep_streams: Array[AudioStream] = []
 var _creaking_door_streams: Array[AudioStream] = []
 var _monster_growl_streams: Array[AudioStream] = []
 
@@ -109,9 +111,13 @@ func _preload_audio_files() -> void:
 	# Monster growls (files: "Monster Growl (1).mp3" through "Monster Growl (12).mp3")
 	_monster_growl_streams = _load_audio_files(MONSTER_GROWL_DIR, "Monster Growl", 12)
 	
-	print("HorrorSoundManager: Loaded %d ambient wind, %d wooden footsteps, %d door creaks, %d monster growls" % [
+	# Grass footsteps (files: "Footstep Grass 1.ogg" through "Footstep Grass 6.ogg")
+	_grass_footstep_streams = _load_audio_files_custom(GRASS_FOOTSTEP_DIR, "Footstep Grass", 6, ".ogg")
+	
+	print("HorrorSoundManager: Loaded %d ambient wind, %d wooden footsteps, %d grass footsteps, %d door creaks, %d monster growls" % [
 		_ambient_wind_streams.size(),
 		_wooden_footstep_streams.size(),
+		_grass_footstep_streams.size(),
 		_creaking_door_streams.size(),
 		_monster_growl_streams.size()
 	])
@@ -121,6 +127,18 @@ func _load_audio_files(dir_path: String, filename_prefix: String, count: int) ->
 	var streams: Array[AudioStream] = []
 	for i in range(1, count + 1):
 		var path = dir_path + filename_prefix + " (%d).mp3" % i
+		var stream = load(path) as AudioStream
+		if stream:
+			streams.append(stream)
+		else:
+			print("Warning: Could not load audio file: " + path)
+	return streams
+
+## Loads audio files with a custom naming pattern: "{filename_prefix} {n}{extension}"
+func _load_audio_files_custom(dir_path: String, filename_prefix: String, count: int, extension: String) -> Array[AudioStream]:
+	var streams: Array[AudioStream] = []
+	for i in range(1, count + 1):
+		var path = dir_path + filename_prefix + " %d%s" % [i, extension]
 		var stream = load(path) as AudioStream
 		if stream:
 			streams.append(stream)
@@ -169,7 +187,7 @@ func _connect_signals() -> void:
 
 
 func _deferred_connect_night_manager() -> void:
-	var nm = get_node("/root/NightManager")
+	var nm = get_node_or_null("/root/NightManager")
 	if nm:
 		nm.night_started.connect(_on_night_started)
 		nm.night_ended.connect(_on_night_ended)
@@ -177,6 +195,8 @@ func _deferred_connect_night_manager() -> void:
 		print("HorrorSoundManager: Connected to NightManager signals")
 	else:
 		print("HorrorSoundManager: NightManager not found via /root/NightManager")
+		# Retry next frame in case NightManager isn't ready yet
+		call_deferred("_deferred_connect_night_manager")
 
 func _on_night_started(night: int) -> void:
 	var ambient_vol = -15.0 + (night * 2.0)
@@ -300,6 +320,8 @@ func play_footstep_at(surface_type: String = "wooden", position: Vector3 = Vecto
 			stream = _get_random_stream(_stairs_footstep_streams)
 		"wind":
 			stream = _get_random_stream(_wind_footstep_streams)
+		"grass":
+			stream = _get_random_stream(_grass_footstep_streams)
 		_:
 			stream = _get_random_stream(_wooden_footstep_streams)
 	
@@ -336,6 +358,8 @@ func play_footstep(surface_type: String = "wooden") -> void:
 			stream = _get_random_stream(_stairs_footstep_streams)
 		"wind":
 			stream = _get_random_stream(_wind_footstep_streams)
+		"grass":
+			stream = _get_random_stream(_grass_footstep_streams)
 		_:
 			stream = _get_random_stream(_wooden_footstep_streams)
 	
@@ -358,6 +382,34 @@ func set_entity_proximity(level: float) -> void:
 		_play_breathing(level)
 	else:
 		_stop_entity_sounds()
+
+
+## Scales monster growl volume and pitch based on watched_intensity.
+## Called by PerceptionManager when the player is looking at the entity.
+func set_watched_intensity(level: float) -> void:
+	if level <= 0.0:
+		_stop_entity_sounds()
+		return
+	
+	# Scale breathing volume with watched intensity
+	if _entity_breathing:
+		_entity_breathing.volume_db = linear_to_db(level * 0.5)
+		_entity_breathing.pitch_scale = 1.0 + level * 0.3
+		if not _entity_breathing.playing and _monster_growl_streams.size() > 0:
+			_entity_breathing.stream = _get_random_stream(_monster_growl_streams)
+			_entity_breathing.play()
+	
+	# Scale whisper volume with watched intensity
+	if _entity_whisper:
+		_entity_whisper.volume_db = linear_to_db(level * 0.3)
+		_entity_whisper.pitch_scale = 1.0 + level * 0.2
+		if not _entity_whisper.playing and _ambient_wind_streams.size() > 0:
+			_entity_whisper.stream = _get_random_stream(_ambient_wind_streams)
+			_entity_whisper.play()
+	
+	# At high intensity, play a monster growl as a one-shot event
+	if level > 0.7 and _monster_growl_streams.size() > 0:
+		_play_event_sound_3d(_get_random_stream(_monster_growl_streams), Vector3(0, 1, -4))
 
 func toggle_mute() -> void:
 	_muted = not _muted

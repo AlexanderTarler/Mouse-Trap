@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://cm5eababuryhl"
+path="res://.godot/imported/stinger_ph_2.ogg-5c55eb6eccfba630c7105da47e687d26.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/Bonus/Pure Horror/One-shots/stinger_ph_2.ogg"
+dest_files=["res://.godot/imported/stinger_ph_2.ogg-5c55eb6eccfba630c7105da47e687d26.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 3.4.0 commit date:2022-12-06, commit time:18:46, hash:a95bf1ac01be</authoring_tool>
+    </contributor>
+    <created>2025-11-29T13:46:22</created>
+    <modified>2025-11-29T13:46:22</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="tiles_floor_hr_2-effect">
+      <profile_COMMON>
+        <newparam sid="tiles_floor_hr_2_png-surface">
+          <surface type="2D">
+            <init_from>tiles_floor_hr_2_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="tiles_floor_hr_2_png-sampler">
+          <sampler2D>
+            <source>tiles_floor_hr_2_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="tiles_floor_hr_2_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="tiles_floor_hr_2_png" name="tiles_floor_hr_2_png">
+      <init_from>tiles_floor_hr_2.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="tiles_floor_hr_2-material" name="tiles_floor_hr_2">
+      <instance_effect url="#tiles_floor_hr_2-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="floor_ceiling_hs_3_slope-mesh" name="floor_ceiling_hs_3_slope">
+      <mesh>
+        <source id="floor_ceiling_hs_3_slope-mesh-positions">
+          <float_array id="floor_ceiling_hs_3_slope-mesh-positions-array" count="24">-2 -2 0.299999 2 -2 1.299999 -2 2 0.2999995 2 2 1.299999 -2 2 -7.45058e-7 2 2 0.9999992 -2 -2 -7.7486e-7 2 -2 0.9999992</float_array>
+          <technique_common>
+            <accessor source="#floor_ceiling_hs_3_slope-mesh-positions-array" count="8" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="floor_ceiling_hs_3_slope-mesh-normals">
+          <float_array id="floor_ceiling_hs_3_slope-mesh-normals-array" count="36">-0.2425356 0 0.9701426 0.2425356 0 -0.9701426 0.2425356 0 -0.9701426 0.2425356 0 -0.9701426 1 0 0 0 1 0 -1 0 0 0 -1 0 0 -1 0 0 -1 0 0.2425356 0 -0.9701426 0 -1 0</float_array>
+          <technique_common>
+            <accessor source="#floor_ceiling_hs_3_slope-mesh-normals-array" count="12" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="floor_ceiling_hs_3_slope-mesh-map-0">
+          <float_array id="floor_ceiling_hs_3_slope-mesh-map-0-array" count="72">1 1 0 0 0 1 1 0 0 1 0 0 0.4625002 1 0.5374999 0 0.5375001 1 1 0.4624999 0 0.5374999 1 0.5374999 0.4624999 0 0.5375001 1 0.5374999 0 0 0.5375001 1 0.4625002 1 0.5375001 1 1 1 0 0 0 1 0 1 1 0 1 0.4625002 1 0.4624999 0 0.5374999 0 1 0.4624999 0 0.4624999 0 0.5374999 0.4624999 0 0.4625002 1 0.5375001 1 0 0.5375001 0 0.4625002 1 0.4625002</float_array>
+          <technique_common>
+            <accessor source="#floor_ceiling_hs_3_slope-mesh-map-0-array" count="36" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="floor_ceiling_hs_3_slope-mesh-vertices">
+          <input semantic="POSITION" source="#floor_ceiling_hs_3_slope-mesh-positions"/>
+        </vertices>
+        <triangles material="tiles_floor_hr_2-material" count="10">
+          <input semantic="VERTEX" source="#floor_ceiling_hs_3_slope-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#floor_ceiling_hs_3_slope-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#floor_ceiling_hs_3_slope-mesh-map-0" offset="2" set="0"/>
+          <p>1 0 0 2 0 1 0 0 2 7 4 6 3 4 7 1 4 8 5 5 9 2 5 10 3 5 11 4 6 12 0 6 13 2 6 14 0 7 15 7 8 16 1 9 17 1 0 18 3 0 19 2 0 20 7 4 24 5 4 25 3 4 26 5 5 27 4 5 28 2 5 29 4 6 30 6 6 31 0 6 32 0 7 33 6 11 34 7 8 35</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="floor_ceiling_hs_3_slope" name="floor_ceiling_hs_3_slope" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#floor_ceiling_hs_3_slope-mesh" name="floor_ceiling_hs_3_slope">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="tiles_floor_hr_2-material" target="#tiles_floor_hr_2-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

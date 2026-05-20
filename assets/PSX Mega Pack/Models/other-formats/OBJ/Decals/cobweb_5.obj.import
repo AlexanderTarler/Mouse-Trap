@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://emgnymogj0bw"
+path="res://.godot/imported/cobweb_5.obj-7006a1ebd5b52c1638b9d901c3b9c06f.mesh"
+
+[deps]
+
+files=["res://.godot/imported/cobweb_5.obj-7006a1ebd5b52c1638b9d901c3b9c06f.mesh"]
+
+source_file="res://assets/PSX Mega Pack/Models/other-formats/OBJ/Decals/cobweb_5.obj"
+dest_files=["res://.godot/imported/cobweb_5.obj-7006a1ebd5b52c1638b9d901c3b9c06f.mesh", "res://.godot/imported/cobweb_5.obj-7006a1ebd5b52c1638b9d901c3b9c06f.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

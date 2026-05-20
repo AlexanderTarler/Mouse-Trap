@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://b1wjir100tmdk"
+path="res://.godot/imported/firefight (loop).ogg-70b569b2db9dade91ee2f30b9ccade1d.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/Soundtracks/firefight (loop).ogg"
+dest_files=["res://.godot/imported/firefight (loop).ogg-70b569b2db9dade91ee2f30b9ccade1d.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

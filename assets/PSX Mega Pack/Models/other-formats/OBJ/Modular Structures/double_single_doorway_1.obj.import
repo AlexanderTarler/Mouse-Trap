@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://6tp2f0twm16c"
+path="res://.godot/imported/double_single_doorway_1.obj-7eee5f1a8a7a616f5390b413ed344cee.mesh"
+
+[deps]
+
+files=["res://.godot/imported/double_single_doorway_1.obj-7eee5f1a8a7a616f5390b413ed344cee.mesh"]
+
+source_file="res://assets/PSX Mega Pack/Models/other-formats/OBJ/Modular Structures/double_single_doorway_1.obj"
+dest_files=["res://.godot/imported/double_single_doorway_1.obj-7eee5f1a8a7a616f5390b413ed344cee.mesh", "res://.godot/imported/double_single_doorway_1.obj-7eee5f1a8a7a616f5390b413ed344cee.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

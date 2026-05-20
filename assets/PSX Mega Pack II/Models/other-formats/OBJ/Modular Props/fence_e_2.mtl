@@ -1,0 +1,32 @@
+# Blender 3.4.0 MTL File: 'PSX Mega Pack II (source file) backup from home PC.blend'
+# www.blender.org
+
+newmtl barbed_wire_hr_1
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+illum 1
+map_Kd C:/barbed_wire_hr_1.png
+map_d C:/barbed_wire_hr_1.png
+
+newmtl grate_hm_1
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+illum 1
+map_Kd C:/grate_hm_1.png
+map_d C:/grate_hm_1.png
+
+newmtl metal_hr_2
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 1
+map_Kd C:/metal_hr_2.png

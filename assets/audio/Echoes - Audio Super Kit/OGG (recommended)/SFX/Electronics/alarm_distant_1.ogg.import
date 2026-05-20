@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bkv43ed3j4llq"
+path="res://.godot/imported/alarm_distant_1.ogg-4eefec74a815641322c1a7e76fd5d3c5.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Electronics/alarm_distant_1.ogg"
+dest_files=["res://.godot/imported/alarm_distant_1.ogg-4eefec74a815641322c1a7e76fd5d3c5.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

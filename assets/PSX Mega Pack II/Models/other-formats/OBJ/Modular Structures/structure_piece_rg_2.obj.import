@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://4myiw38nw5ax"
+path="res://.godot/imported/structure_piece_rg_2.obj-35ab0fd8157462c75d9f5d1b5d4d7c0c.mesh"
+
+[deps]
+
+files=["res://.godot/imported/structure_piece_rg_2.obj-35ab0fd8157462c75d9f5d1b5d4d7c0c.mesh"]
+
+source_file="res://assets/PSX Mega Pack II/Models/other-formats/OBJ/Modular Structures/structure_piece_rg_2.obj"
+dest_files=["res://.godot/imported/structure_piece_rg_2.obj-35ab0fd8157462c75d9f5d1b5d4d7c0c.mesh", "res://.godot/imported/structure_piece_rg_2.obj-35ab0fd8157462c75d9f5d1b5d4d7c0c.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

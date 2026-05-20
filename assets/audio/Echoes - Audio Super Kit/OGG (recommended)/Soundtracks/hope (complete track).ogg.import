@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://dqr138e7bqp1j"
+path="res://.godot/imported/hope (complete track).ogg-aa34fc7a1cb425f7a680fa0fd9a16bfc.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/Soundtracks/hope (complete track).ogg"
+dest_files=["res://.godot/imported/hope (complete track).ogg-aa34fc7a1cb425f7a680fa0fd9a16bfc.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

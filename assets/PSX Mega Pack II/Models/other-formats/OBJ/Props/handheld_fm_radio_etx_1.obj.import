@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dvr8scngyuk0x"
+path="res://.godot/imported/handheld_fm_radio_etx_1.obj-eaece9a43c8e21b2f9feec1ca183b361.mesh"
+
+[deps]
+
+files=["res://.godot/imported/handheld_fm_radio_etx_1.obj-eaece9a43c8e21b2f9feec1ca183b361.mesh"]
+
+source_file="res://assets/PSX Mega Pack II/Models/other-formats/OBJ/Props/handheld_fm_radio_etx_1.obj"
+dest_files=["res://.godot/imported/handheld_fm_radio_etx_1.obj-eaece9a43c8e21b2f9feec1ca183b361.mesh", "res://.godot/imported/handheld_fm_radio_etx_1.obj-eaece9a43c8e21b2f9feec1ca183b361.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

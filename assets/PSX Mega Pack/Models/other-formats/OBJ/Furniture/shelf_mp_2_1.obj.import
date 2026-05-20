@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://c3y1fh4t4y3o"
+path="res://.godot/imported/shelf_mp_2_1.obj-e02af155911c1e8251fae9cac437c98c.mesh"
+
+[deps]
+
+files=["res://.godot/imported/shelf_mp_2_1.obj-e02af155911c1e8251fae9cac437c98c.mesh"]
+
+source_file="res://assets/PSX Mega Pack/Models/other-formats/OBJ/Furniture/shelf_mp_2_1.obj"
+dest_files=["res://.godot/imported/shelf_mp_2_1.obj-e02af155911c1e8251fae9cac437c98c.mesh", "res://.godot/imported/shelf_mp_2_1.obj-e02af155911c1e8251fae9cac437c98c.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

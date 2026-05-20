@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://ugk84e8d5rij"
+path="res://.godot/imported/ceiling_lamp_mp_1_1_fake_light_1.obj-a80632a1a0c99207ed60ec443601891c.mesh"
+
+[deps]
+
+files=["res://.godot/imported/ceiling_lamp_mp_1_1_fake_light_1.obj-a80632a1a0c99207ed60ec443601891c.mesh"]
+
+source_file="res://assets/PSX Mega Pack/Models/other-formats/OBJ/Lighting/ceiling_lamp_mp_1_1_fake_light_1.obj"
+dest_files=["res://.godot/imported/ceiling_lamp_mp_1_1_fake_light_1.obj-a80632a1a0c99207ed60ec443601891c.mesh", "res://.godot/imported/ceiling_lamp_mp_1_1_fake_light_1.obj-a80632a1a0c99207ed60ec443601891c.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

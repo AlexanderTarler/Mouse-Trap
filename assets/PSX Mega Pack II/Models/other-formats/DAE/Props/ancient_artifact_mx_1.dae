@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 3.4.0 commit date:2022-12-06, commit time:18:46, hash:a95bf1ac01be</authoring_tool>
+    </contributor>
+    <created>2025-11-29T13:45:20</created>
+    <modified>2025-11-29T13:45:20</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="ancient_artifact_mx_1-effect">
+      <profile_COMMON>
+        <newparam sid="ancient_artifact_mx_1_png-surface">
+          <surface type="2D">
+            <init_from>ancient_artifact_mx_1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="ancient_artifact_mx_1_png-sampler">
+          <sampler2D>
+            <source>ancient_artifact_mx_1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="ancient_artifact_mx_1_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="ancient_artifact_mx_1_png" name="ancient_artifact_mx_1_png">
+      <init_from>ancient_artifact_mx_1.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="ancient_artifact_mx_1-material" name="ancient_artifact_mx_1">
+      <instance_effect url="#ancient_artifact_mx_1-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="ancient_artifact_mx_1-mesh" name="ancient_artifact_mx_1">
+      <mesh>
+        <source id="ancient_artifact_mx_1-mesh-positions">
+          <float_array id="ancient_artifact_mx_1-mesh-positions-array" count="30">-0.25 0.14 5.00679e-7 0 -1.18278e-6 0.4 0 -0.26 -9.29832e-7 0.25 0.14 5.00679e-7 -0.2229363 0.125 4.47035e-7 0.2229363 0.125 4.47035e-7 0 -0.231698 -8.28617e-7 0.2229363 0.125 0.007000446 -0.2229363 0.125 0.007000446 0 -0.231698 0.006999135</float_array>
+          <technique_common>
+            <accessor source="#ancient_artifact_mx_1-mesh-positions-array" count="10" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="ancient_artifact_mx_1-mesh-normals">
+          <float_array id="ancient_artifact_mx_1-mesh-normals-array" count="48">-0.8479983 0.5299989 1.26519e-6 0 0.9438574 0.3303533 0.8017556 -0.5010985 0.3257117 0 3.57628e-6 -1 0 3.57628e-6 -1 0 3.57628e-6 -1 -0.8017557 -0.5010985 0.3257118 0 3.5757e-6 -1 0.8479984 0.5299989 2.53038e-6 0 -1 -4.77432e-6 -0.8479983 0.529999 2.53038e-6 0 3.57629e-6 -1 0 3.57628e-6 -1 0 3.57628e-6 -1 0.8479984 0.5299989 1.89779e-6 0 -1 -2.38716e-6</float_array>
+          <technique_common>
+            <accessor source="#ancient_artifact_mx_1-mesh-normals-array" count="16" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="ancient_artifact_mx_1-mesh-map-0">
+          <float_array id="ancient_artifact_mx_1-mesh-map-0-array" count="96">0.4924379 0.1211643 0.5060219 0.8902738 0.5060219 0.1211643 0.01775622 0.01951175 0.9838472 0.01976883 0.501015 0.9820611 0.01846861 0.01858663 0.9831967 0.01892507 0.501015 0.9820611 0.01894885 0.01874536 0.5025011 0.9152736 0.5015096 0.9857595 0.9831963 0.01841378 0.07217985 0.0529434 0.01894885 0.01874536 0.9831963 0.01841378 0.5025011 0.9152736 0.9320428 0.0526477 0.01847702 0.01914584 0.9828112 0.01963645 0.501015 0.9820611 0.5025011 0.9152736 0.07217985 0.0529434 0.9320428 0.0526477 0.4924379 0.8902738 0.5060219 0.1211643 0.5060219 0.8902738 0.9326241 0.0988025 0.06737589 0.1138958 0.06737589 0.0988025 0.4924379 0.1211643 0.4924379 0.8902738 0.5060219 0.8902738 0.01894885 0.01874536 0.07217985 0.0529434 0.5025011 0.9152736 0.9831963 0.01841378 0.9320428 0.0526477 0.07217985 0.0529434 0.9831963 0.01841378 0.5015096 0.9857595 0.5025011 0.9152736 0.4924379 0.8902738 0.4924379 0.1211643 0.5060219 0.1211643 0.9326241 0.0988025 0.9326241 0.1138958 0.06737589 0.1138958</float_array>
+          <technique_common>
+            <accessor source="#ancient_artifact_mx_1-mesh-map-0-array" count="48" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="ancient_artifact_mx_1-mesh-vertices">
+          <input semantic="POSITION" source="#ancient_artifact_mx_1-mesh-positions"/>
+        </vertices>
+        <triangles material="ancient_artifact_mx_1-material" count="16">
+          <input semantic="VERTEX" source="#ancient_artifact_mx_1-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#ancient_artifact_mx_1-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#ancient_artifact_mx_1-mesh-map-0" offset="2" set="0"/>
+          <p>5 0 0 9 0 1 7 0 2 3 1 3 0 1 4 1 1 5 2 2 6 3 2 7 1 2 8 3 3 9 4 3 10 0 3 11 2 4 12 5 4 13 3 4 14 2 5 15 4 5 16 6 5 17 0 6 18 2 6 19 1 6 20 8 7 21 7 7 22 9 7 23 6 8 24 8 8 25 9 8 26 5 9 27 8 9 28 4 9 29 5 10 30 6 10 31 9 10 32 3 11 33 5 11 34 4 11 35 2 12 36 6 12 37 5 12 38 2 13 39 0 13 40 4 13 41 6 14 42 4 14 43 8 14 44 5 15 45 7 15 46 8 15 47</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="ancient_artifact_mx_1" name="ancient_artifact_mx_1" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#ancient_artifact_mx_1-mesh" name="ancient_artifact_mx_1">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="ancient_artifact_mx_1-material" target="#ancient_artifact_mx_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

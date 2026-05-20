@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://b85mxdnvcm8en"
+path="res://.godot/imported/pistol_mp_1_mag_empty.obj-001c50a1b6553f5d6c30403c9511c0bc.mesh"
+
+[deps]
+
+files=["res://.godot/imported/pistol_mp_1_mag_empty.obj-001c50a1b6553f5d6c30403c9511c0bc.mesh"]
+
+source_file="res://assets/PSX Mega Pack/Models/other-formats/OBJ/Items & Weapons/pistol_mp_1_mag_empty.obj"
+dest_files=["res://.godot/imported/pistol_mp_1_mag_empty.obj-001c50a1b6553f5d6c30403c9511c0bc.mesh", "res://.godot/imported/pistol_mp_1_mag_empty.obj-001c50a1b6553f5d6c30403c9511c0bc.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

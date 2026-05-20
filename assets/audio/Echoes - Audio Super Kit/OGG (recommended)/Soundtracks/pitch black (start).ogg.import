@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://c6lmmrf1uw6v0"
+path="res://.godot/imported/pitch black (start).ogg-3a65d745de71b486e587b89e4fb1a4ca.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/Soundtracks/pitch black (start).ogg"
+dest_files=["res://.godot/imported/pitch black (start).ogg-3a65d745de71b486e587b89e4fb1a4ca.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

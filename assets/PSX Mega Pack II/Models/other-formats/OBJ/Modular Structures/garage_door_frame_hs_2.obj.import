@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dy818e0qxb5fr"
+path="res://.godot/imported/garage_door_frame_hs_2.obj-2ff7954a9eeaabf1ddb441da59178c31.mesh"
+
+[deps]
+
+files=["res://.godot/imported/garage_door_frame_hs_2.obj-2ff7954a9eeaabf1ddb441da59178c31.mesh"]
+
+source_file="res://assets/PSX Mega Pack II/Models/other-formats/OBJ/Modular Structures/garage_door_frame_hs_2.obj"
+dest_files=["res://.godot/imported/garage_door_frame_hs_2.obj-2ff7954a9eeaabf1ddb441da59178c31.mesh", "res://.godot/imported/garage_door_frame_hs_2.obj-2ff7954a9eeaabf1ddb441da59178c31.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

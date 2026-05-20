@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://cmd3vfdpi0ng4"
+path="res://.godot/imported/finale (middle_loop).ogg-783ac394ae294bad6953d7523d536171.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/Soundtracks/finale (middle_loop).ogg"
+dest_files=["res://.godot/imported/finale (middle_loop).ogg-783ac394ae294bad6953d7523d536171.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 3.4.0 commit date:2022-12-06, commit time:18:46, hash:a95bf1ac01be</authoring_tool>
+    </contributor>
+    <created>2025-11-29T13:46:21</created>
+    <modified>2025-11-29T13:46:21</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="asphalt_hr_1-effect">
+      <profile_COMMON>
+        <newparam sid="asphalt_hr_1_png-surface">
+          <surface type="2D">
+            <init_from>asphalt_hr_1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="asphalt_hr_1_png-sampler">
+          <sampler2D>
+            <source>asphalt_hr_1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="asphalt_hr_1_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="hole_hr_1-effect">
+      <profile_COMMON>
+        <newparam sid="hole_hr_1_png-surface">
+          <surface type="2D">
+            <init_from>hole_hr_1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="hole_hr_1_png-sampler">
+          <sampler2D>
+            <source>hole_hr_1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="hole_hr_1_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="asphalt_hr_1_png" name="asphalt_hr_1_png">
+      <init_from>asphalt_hr_1.png</init_from>
+    </image>
+    <image id="hole_hr_1_png" name="hole_hr_1_png">
+      <init_from>hole_hr_1.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="asphalt_hr_1-material" name="asphalt_hr_1">
+      <instance_effect url="#asphalt_hr_1-effect"/>
+    </material>
+    <material id="hole_hr_1-material" name="hole_hr_1">
+      <instance_effect url="#hole_hr_1-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="asphalt_hr_3-mesh" name="asphalt_hr_3">
+      <mesh>
+        <source id="asphalt_hr_3-mesh-positions">
+          <float_array id="asphalt_hr_3-mesh-positions-array" count="60">-1.2 0.8 -1.28462e-7 1.2 0.8 -1.28462e-7 -1.2 1.6 0 1.2 1.6 0 2 2 2.28984e-7 -2 2 2.28984e-7 -1.2 0.8 -0.0200001 1.2 0.8 -0.0200001 1.2 1.6 -0.01999986 -1.2 1.6 -0.01999986 1.2 -0.8000002 -1.28462e-7 -1.2 -0.7999998 -1.28462e-7 1.2 -1.6 0 -1.2 -1.6 0 -2 -2 2.28984e-7 2 -2 2.28984e-7 1.2 -0.8000002 -0.0200001 -1.2 -0.7999998 -0.0200001 -1.2 -1.6 -0.01999986 1.2 -1.6 -0.01999986</float_array>
+          <technique_common>
+            <accessor source="#asphalt_hr_3-mesh-positions-array" count="20" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="asphalt_hr_3-mesh-normals">
+          <float_array id="asphalt_hr_3-mesh-normals-array" count="102">0.7071059 -0.7071076 0 -0.7071062 -0.7071074 0 -0.7071071 -0.7071065 0 0 -2.97872e-7 1 1.67255e-7 -1.86368e-7 1 0 -2.97872e-7 1 -2.4212e-7 0 1 -2.4212e-7 0 1 -1.67255e-7 1.86368e-7 1 0 -2.98023e-7 1 -0.7071062 0.7071074 0 0.707106 0.7071076 0 0.7071073 0.7071064 0 0.7071072 -0.7071064 0 -0.7071072 0.7071065 0 -0.7071057 0.7071079 0 0.7071049 0.7071087 -6.98722e-6 0.7071085 0.7071051 -7.02446e-6 1.67255e-7 1.86368e-7 1 2.4212e-7 0 1 0 2.97871e-7 1 2.4212e-7 0 1 0 3.00351e-7 1 0 3.00352e-7 1 0 3.00352e-7 1 0.7071061 -0.7071076 0 -0.7071061 -0.7071076 0 -0.7071067 -0.7071068 0 -0.7071065 0.7071072 0 0.707107 -0.7071066 0 -1.67255e-7 -1.86368e-7 1 0 -2.98023e-7 1 0 2.97872e-7 1 0 3.00351e-7 1</float_array>
+          <technique_common>
+            <accessor source="#asphalt_hr_3-mesh-normals-array" count="34" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="asphalt_hr_3-mesh-map-0">
+          <float_array id="asphalt_hr_3-mesh-map-0-array" count="204">0.2 0.5015384 0.8 0.4965384 0.8 0.5015384 0.8 0.09999996 0 0 0.2 0.09999996 0.8 0.3 0.8 0.7000001 1 1 1 1 0 0 0 1 0.8 0.5015384 0.2 0.4965384 0.2 0.5015384 0.5015384 0.3 0.4965384 0.09999996 0.5015384 0.09999996 0.5015384 0.09999996 0.4965384 0.3 0.5015384 0.3 0.8 0.5015386 0.1999999 0.4965386 0.1999999 0.5015386 0 0 0 0.9999999 0.2 0.7 0.8 0.9000001 0 0.9999999 1 1 0.8 0.7000001 0.2 0.3 0.2 0.7 1 1 0 0 0 1 0.2 0.5015385 0.8 0.4965385 0.8 0.5015385 0.5015385 0.7000001 0.4965386 0.9000001 0.5015386 0.9000001 0.5015386 0.9 0.4965385 0.7 0.5015385 0.7 0.2 0.5015384 0.2 0.4965384 0.8 0.4965384 0.8 0.09999996 1 0 0 0 0.8 0.7000001 0.8 0.9000001 1 1 1 1 1 0 0.8 0.3 1 0 0.8 0.09999996 0.8 0.3 1 1 1 0 0 0 0.8 0.5015384 0.8 0.4965384 0.2 0.4965384 0.5015384 0.3 0.4965384 0.3 0.4965384 0.09999996 0.5015384 0.09999996 0.4965384 0.09999996 0.4965384 0.3 0.8 0.5015386 0.8 0.4965386 0.1999999 0.4965386 0 0.9999999 0.1999999 0.9 0.2 0.7 0.2 0.7 0.2 0.3 0 0 0.2 0.3 0.2 0.09999996 0 0 0.8 0.9000001 0.1999999 0.9 0 0.9999999 0.8 0.7000001 0.8 0.3 0.2 0.3 1 1 1 0 0 0 0.2 0.5015385 0.2 0.4965385 0.8 0.4965385 0.5015385 0.7000001 0.4965385 0.7000001 0.4965386 0.9000001 0.5015386 0.9 0.4965386 0.9 0.4965385 0.7</float_array>
+          <technique_common>
+            <accessor source="#asphalt_hr_3-mesh-map-0-array" count="102" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="asphalt_hr_3-mesh-vertices">
+          <input semantic="POSITION" source="#asphalt_hr_3-mesh-positions"/>
+        </vertices>
+        <triangles material="asphalt_hr_1-material" count="30">
+          <input semantic="VERTEX" source="#asphalt_hr_3-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#asphalt_hr_3-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#asphalt_hr_3-mesh-map-0" offset="2" set="0"/>
+          <p>2 0 0 8 1 1 3 2 2 3 3 3 5 4 4 2 5 5 1 6 6 10 7 7 15 8 8 1 10 12 6 11 13 0 12 14 0 12 15 9 13 16 2 0 17 3 2 18 7 14 19 1 10 20 12 15 21 18 16 22 13 17 23 5 4 24 14 18 25 11 19 26 12 20 27 14 18 28 15 8 29 10 7 30 0 21 31 11 19 32 11 25 36 16 26 37 10 27 38 10 27 39 19 28 40 12 15 41 13 17 42 17 29 43 11 25 44 2 0 45 9 13 46 8 1 47 3 3 48 4 30 49 5 4 50 10 7 51 12 20 52 15 8 53 15 8 54 4 30 55 1 6 56 4 30 57 3 3 58 1 6 59 1 10 63 7 14 64 6 11 65 0 12 66 6 11 67 9 13 68 3 2 69 8 1 70 7 14 71 12 15 72 19 28 73 18 16 74 14 18 75 13 32 76 11 19 77 11 19 78 0 21 79 5 4 80 0 21 81 2 5 82 5 4 83 12 20 84 13 32 85 14 18 86 10 7 87 1 6 88 0 21 89 11 25 93 17 29 94 16 26 95 10 27 96 16 26 97 19 28 98 13 17 99 18 16 100 17 29 101</p>
+        </triangles>
+        <triangles material="hole_hr_1-material" count="4">
+          <input semantic="VERTEX" source="#asphalt_hr_3-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#asphalt_hr_3-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#asphalt_hr_3-mesh-map-0" offset="2" set="0"/>
+          <p>7 9 9 9 9 10 6 9 11 17 22 33 19 23 34 16 24 35 7 9 60 8 31 61 9 9 62 17 22 90 18 33 91 19 23 92</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="asphalt_hr_3" name="asphalt_hr_3" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#asphalt_hr_3-mesh" name="asphalt_hr_3">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="asphalt_hr_1-material" target="#asphalt_hr_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+              <instance_material symbol="hole_hr_1-material" target="#hole_hr_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

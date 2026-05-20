@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://dxvyl0v7reuy7"
+path="res://.godot/imported/mindleech_further_1.ogg-eb578d3a61d7da2681ec1ca919c98219.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Creatures/Mindleech/mindleech_further_1.ogg"
+dest_files=["res://.godot/imported/mindleech_further_1.ogg-eb578d3a61d7da2681ec1ca919c98219.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

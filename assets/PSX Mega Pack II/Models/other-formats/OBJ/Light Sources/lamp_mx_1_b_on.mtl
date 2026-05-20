@@ -1,0 +1,32 @@
+# Blender 3.4.0 MTL File: 'PSX Mega Pack II (source file) backup from home PC.blend'
+# www.blender.org
+
+newmtl lamp_1_on
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 1
+map_Kd C:/lamp_1_on.png
+map_Ke C:/lamp_1_on.png
+
+newmtl metal_hr_1_dark_smooth
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 1
+map_Kd C:/metal_hr_1_dark_smooth.png
+
+newmtl metal_hr_2
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 1
+map_Kd C:/metal_hr_2.png

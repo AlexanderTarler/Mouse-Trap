@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://duon1r8sj1tdk"
+path="res://.godot/imported/electrical_outlet_1.obj-685b5dfb0e7e68916894655ce4cff602.mesh"
+
+[deps]
+
+files=["res://.godot/imported/electrical_outlet_1.obj-685b5dfb0e7e68916894655ce4cff602.mesh"]
+
+source_file="res://assets/PSX Mega Pack/Models/other-formats/OBJ/Electronics & Misc/electrical_outlet_1.obj"
+dest_files=["res://.godot/imported/electrical_outlet_1.obj-685b5dfb0e7e68916894655ce4cff602.mesh", "res://.godot/imported/electrical_outlet_1.obj-685b5dfb0e7e68916894655ce4cff602.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

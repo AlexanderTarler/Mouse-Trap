@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://he1rqtlpihb7"
+path="res://.godot/imported/subliminal (end).ogg-b9e19d263450c4d505c3fdbb22cb3c63.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/Soundtracks/subliminal (end).ogg"
+dest_files=["res://.godot/imported/subliminal (end).ogg-b9e19d263450c4d505c3fdbb22cb3c63.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

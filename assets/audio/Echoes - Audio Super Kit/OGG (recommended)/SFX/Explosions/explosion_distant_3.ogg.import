@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://c50e4vtkvt5pt"
+path="res://.godot/imported/explosion_distant_3.ogg-9fb0e731d218f62e4e69b4779e6ed7e8.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Explosions/explosion_distant_3.ogg"
+dest_files=["res://.godot/imported/explosion_distant_3.ogg-9fb0e731d218f62e4e69b4779e6ed7e8.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

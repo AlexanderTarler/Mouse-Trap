@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 3.4.0 commit date:2022-12-06, commit time:18:46, hash:a95bf1ac01be</authoring_tool>
+    </contributor>
+    <created>2025-11-29T13:46:15</created>
+    <modified>2025-11-29T13:46:15</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="wall_rg_1_1-effect">
+      <profile_COMMON>
+        <newparam sid="wall_rg_1_1_png-surface">
+          <surface type="2D">
+            <init_from>wall_rg_1_1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="wall_rg_1_1_png-sampler">
+          <sampler2D>
+            <source>wall_rg_1_1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="wall_rg_1_1_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="bricks_mx_2-effect">
+      <profile_COMMON>
+        <newparam sid="bricks_mx_2_png-surface">
+          <surface type="2D">
+            <init_from>bricks_mx_2_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="bricks_mx_2_png-sampler">
+          <sampler2D>
+            <source>bricks_mx_2_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="bricks_mx_2_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="window_mx_2-effect">
+      <profile_COMMON>
+        <newparam sid="window_mx_2_png-surface">
+          <surface type="2D">
+            <init_from>window_mx_2_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="window_mx_2_png-sampler">
+          <sampler2D>
+            <source>window_mx_2_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="window_mx_2_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="metal_hr_2-effect">
+      <profile_COMMON>
+        <newparam sid="metal_hr_2_png-surface">
+          <surface type="2D">
+            <init_from>metal_hr_2_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="metal_hr_2_png-sampler">
+          <sampler2D>
+            <source>metal_hr_2_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="metal_hr_2_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="roof_hr_7-effect">
+      <profile_COMMON>
+        <newparam sid="roof_hr_7_png-surface">
+          <surface type="2D">
+            <init_from>roof_hr_7_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="roof_hr_7_png-sampler">
+          <sampler2D>
+            <source>roof_hr_7_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="roof_hr_7_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="concrete_hr_4-effect">
+      <profile_COMMON>
+        <newparam sid="concrete_hr_4_png-surface">
+          <surface type="2D">
+            <init_from>concrete_hr_4_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="concrete_hr_4_png-sampler">
+          <sampler2D>
+            <source>concrete_hr_4_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="concrete_hr_4_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="window_mx_1-effect">
+      <profile_COMMON>
+        <newparam sid="window_mx_1_png-surface">
+          <surface type="2D">
+            <init_from>window_mx_1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="window_mx_1_png-sampler">
+          <sampler2D>
+            <source>window_mx_1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="window_mx_1_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="bricks_mx_2_png" name="bricks_mx_2_png">
+      <init_from>bricks_mx_2.png</init_from>
+    </image>
+    <image id="concrete_hr_4_png" name="concrete_hr_4_png">
+      <init_from>concrete_hr_4.png</init_from>
+    </image>
+    <image id="metal_hr_2_png" name="metal_hr_2_png">
+      <init_from>metal_hr_2.png</init_from>
+    </image>
+    <image id="roof_hr_7_png" name="roof_hr_7_png">
+      <init_from>roof_hr_7.png</init_from>
+    </image>
+    <image id="wall_rg_1_1_png" name="wall_rg_1_1_png">
+      <init_from>wall_rg_1_1.png</init_from>
+    </image>
+    <image id="window_mx_1_png" name="window_mx_1_png">
+      <init_from>window_mx_1.png</init_from>
+    </image>
+    <image id="window_mx_2_png" name="window_mx_2_png">
+      <init_from>window_mx_2.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="wall_rg_1_1-material" name="wall_rg_1_1">
+      <instance_effect url="#wall_rg_1_1-effect"/>
+    </material>
+    <material id="bricks_mx_2-material" name="bricks_mx_2">
+      <instance_effect url="#bricks_mx_2-effect"/>
+    </material>
+    <material id="window_mx_2-material" name="window_mx_2">
+      <instance_effect url="#window_mx_2-effect"/>
+    </material>
+    <material id="metal_hr_2-material" name="metal_hr_2">
+      <instance_effect url="#metal_hr_2-effect"/>
+    </material>
+    <material id="roof_hr_7-material" name="roof_hr_7">
+      <instance_effect url="#roof_hr_7-effect"/>
+    </material>
+    <material id="concrete_hr_4-material" name="concrete_hr_4">
+      <instance_effect url="#concrete_hr_4-effect"/>
+    </material>
+    <material id="window_mx_1-material" name="window_mx_1">
+      <instance_effect url="#window_mx_1-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="ramp_platform_wide_mx_1-mesh" name="ramp_platform_wide_mx_1">
+      <mesh>
+        <source id="ramp_platform_wide_mx_1-mesh-positions">
+          <float_array id="ramp_platform_wide_mx_1-mesh-positions-array" count="18">0 2.300009 1 0 -2.299993 1 0 -2.299993 0 -4.76837e-7 2.30001 0 -3.700001 -2.299993 0 -3.700001 2.300009 0</float_array>
+          <technique_common>
+            <accessor source="#ramp_platform_wide_mx_1-mesh-positions-array" count="6" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="ramp_platform_wide_mx_1-mesh-normals">
+          <float_array id="ramp_platform_wide_mx_1-mesh-normals-array" count="30">-0.260909 0 0.9653635 -0.260909 0 0.9653635 -0.260909 0 0.9653635 -2.5775e-7 1 5.155e-7 0 -1 0 1 0 0 1 0 -4.11856e-7 1 0 0 -0.260909 0 0.9653634 1 0 -4.76837e-7</float_array>
+          <technique_common>
+            <accessor source="#ramp_platform_wide_mx_1-mesh-normals-array" count="10" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="ramp_platform_wide_mx_1-mesh-map-0">
+          <float_array id="ramp_platform_wide_mx_1-mesh-map-0-array" count="36">0.9625001 -0.07500076 0.0374999 1.075001 0.9625001 1.075 0.9625001 0.624998 0.9625 0.3749979 0.0374999 0.3749979 0.9625001 0.3750021 0.9625001 0.6250021 0.0374999 0.3750021 0.3750021 1.075001 0.624998 -0.07500076 0.6250021 1.075 0.9625001 -0.07500076 0.0374999 -0.0749998 0.0374999 1.075001 0.3750021 1.075001 0.3749979 -0.07500004 0.624998 -0.07500076</float_array>
+          <technique_common>
+            <accessor source="#ramp_platform_wide_mx_1-mesh-map-0-array" count="18" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="ramp_platform_wide_mx_1-mesh-vertices">
+          <input semantic="POSITION" source="#ramp_platform_wide_mx_1-mesh-positions"/>
+        </vertices>
+        <triangles material="concrete_hr_4-material" count="6">
+          <input semantic="VERTEX" source="#ramp_platform_wide_mx_1-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#ramp_platform_wide_mx_1-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#ramp_platform_wide_mx_1-mesh-map-0" offset="2" set="0"/>
+          <p>0 0 0 4 1 1 1 2 2 0 3 3 3 3 4 5 3 5 2 4 6 1 4 7 4 4 8 2 5 9 0 6 10 1 7 11 0 0 12 5 8 13 4 1 14 2 5 15 3 9 16 0 6 17</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="ramp_platform_wide_mx_1" name="ramp_platform_wide_mx_1" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#ramp_platform_wide_mx_1-mesh" name="ramp_platform_wide_mx_1">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="wall_rg_1_1-material" target="#wall_rg_1_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+              <instance_material symbol="bricks_mx_2-material" target="#bricks_mx_2-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+              <instance_material symbol="window_mx_2-material" target="#window_mx_2-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+              <instance_material symbol="metal_hr_2-material" target="#metal_hr_2-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+              <instance_material symbol="roof_hr_7-material" target="#roof_hr_7-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+              <instance_material symbol="concrete_hr_4-material" target="#concrete_hr_4-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+              <instance_material symbol="bricks_mx_2-material" target="#bricks_mx_2-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+              <instance_material symbol="window_mx_1-material" target="#window_mx_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

@@ -2,6 +2,35 @@
 
 [ext_resource type="Script" uid="uid://q6omui2prbth" path="res://scripts/player_controller.gd" id="1_player"]
 [ext_resource type="Script" uid="uid://be4erotljq8gt" path="res://scripts/interaction_manager.gd" id="2_interaction"]
+[ext_resource type="Script" uid="uid://b2kj1o88a68xd" path="res://scripts/perception_manager.gd" id="3_perception"]
+[ext_resource type="AudioStream" uid="uid://dqc8ggn4wbd7u" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_2.ogg" id="3_wnwbv"]
+[ext_resource type="Script" uid="uid://c8tn3oufrakfn" path="res://scripts/flashlight.gd" id="4_flashlight"]
+[ext_resource type="AudioStream" uid="uid://b531nvjyedef3" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_3.ogg" id="4_gl8cc"]
+[ext_resource type="AudioStream" uid="uid://ckv0bkeyoueit" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_4.ogg" id="5_487ah"]
+[ext_resource type="Script" uid="uid://bnt5b01jj8rdh" path="res://scripts/physical_grab.gd" id="5_physical_grab"]
+[ext_resource type="AudioStream" uid="uid://6icg1chidov2" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_5.ogg" id="6_md1ol"]
+[ext_resource type="AudioStream" uid="uid://yuiatatc3mdh" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_1.ogg" id="6_tuyoq"]
+[ext_resource type="AudioStream" uid="uid://6rpq7508xvaw" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_6.ogg" id="7_bj30b"]
+[ext_resource type="AudioStream" uid="uid://bv4qhhx1s7a2e" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_7.ogg" id="8_jc3p3"]
+[ext_resource type="AudioStream" uid="uid://c328jicut68f8" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_8.ogg" id="9_hax0n"]
+[ext_resource type="AudioStream" uid="uid://dsl0mtqjf6due" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_9.ogg" id="10_t4otl"]
+[ext_resource type="AudioStream" uid="uid://jcbb8gpggox5" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_10.ogg" id="11_j2b1d"]
+[ext_resource type="AudioStream" uid="uid://bpuavdxo0ux8b" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_11.ogg" id="12_cs1tg"]
+[ext_resource type="AudioStream" uid="uid://jg28enm5rj7b" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_12.ogg" id="13_2dvfe"]
+[ext_resource type="AudioStream" uid="uid://dckvuoh0peo64" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_13.ogg" id="14_giy8y"]
+[ext_resource type="AudioStream" uid="uid://bdku81ye5lbdg" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_14.ogg" id="15_fdfoy"]
+[ext_resource type="AudioStream" uid="uid://dpy3sbqy7ddn4" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_15.ogg" id="16_hhpqf"]
+[ext_resource type="AudioStream" uid="uid://clpiujo8w50kk" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_16.ogg" id="17_g5jhy"]
+[ext_resource type="AudioStream" uid="uid://bl62gxvnxqqyq" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_17.ogg" id="18_holxr"]
+[ext_resource type="AudioStream" uid="uid://klwus5qjifiv" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_18.ogg" id="19_mx1m4"]
+[ext_resource type="AudioStream" uid="uid://c2ab3ld2stcc8" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_19.ogg" id="20_4gjji"]
+[ext_resource type="AudioStream" uid="uid://bhdk0hacbrpy0" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_20.ogg" id="21_u2ulf"]
+[ext_resource type="AudioStream" uid="uid://dhol28d2sggow" path="res://assets/audio/40 Free PSX Footsteps/Grass/Footstep Grass 1.ogg" id="22_6e8lb"]
+[ext_resource type="AudioStream" uid="uid://cr8tl55qw2hk4" path="res://assets/audio/40 Free PSX Footsteps/Grass/Footstep Grass 2.ogg" id="23_2gdjj"]
+[ext_resource type="AudioStream" uid="uid://c8lca6e61e4q7" path="res://assets/audio/40 Free PSX Footsteps/Grass/Footstep Grass 3.ogg" id="24_sc3ue"]
+[ext_resource type="AudioStream" uid="uid://bbr5hivkgrv74" path="res://assets/audio/40 Free PSX Footsteps/Grass/Footstep Grass 4.ogg" id="25_lxlsd"]
+[ext_resource type="AudioStream" uid="uid://ccfe53tpp0ycv" path="res://assets/audio/40 Free PSX Footsteps/Grass/Footstep Grass 5.ogg" id="26_ha2mi"]
+[ext_resource type="AudioStream" uid="uid://drs3qbmo2aghb" path="res://assets/audio/40 Free PSX Footsteps/Grass/Footstep Grass 6.ogg" id="27_apa73"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_player"]
 radius = 0.35
@@ -11,6 +40,9 @@ height = 1.8
 floor_max_angle = 1.0472
 floor_snap_length = 1.2
 script = ExtResource("1_player")
+standing_height = 2.0
+wood_footsteps = Array[AudioStream]([ExtResource("6_tuyoq"), ExtResource("3_wnwbv"), ExtResource("4_gl8cc"), ExtResource("5_487ah"), ExtResource("6_md1ol"), ExtResource("7_bj30b"), ExtResource("8_jc3p3"), ExtResource("9_hax0n"), ExtResource("10_t4otl"), ExtResource("11_j2b1d"), ExtResource("12_cs1tg"), ExtResource("13_2dvfe"), ExtResource("14_giy8y"), ExtResource("15_fdfoy"), ExtResource("16_hhpqf"), ExtResource("17_g5jhy"), ExtResource("18_holxr"), ExtResource("19_mx1m4"), ExtResource("20_4gjji"), ExtResource("21_u2ulf")])
+grass_footsteps = Array[AudioStream]([ExtResource("22_6e8lb"), ExtResource("23_2gdjj"), ExtResource("24_sc3ue"), ExtResource("25_lxlsd"), ExtResource("26_ha2mi"), ExtResource("27_apa73")])
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1320359234]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
@@ -22,15 +54,34 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
 [node name="Camera3D" type="Camera3D" parent="CameraHolder" unique_id=729070594]
 current = true
 near = 0.1
-far = 500.0
 
 [node name="Flashlight" type="SpotLight3D" parent="CameraHolder/Camera3D" unique_id=1304318822]
-transform = Transform3D(0.996, 0, -0.087, 0, 1, 0, 0.087, 0, 0.996, 0.2, -0.1, -0.3)
 light_color = Color(1, 0.95, 0.8, 1)
 light_energy = 5.0
 shadow_enabled = true
 shadow_bias = 0.1
 spot_range = 10.0
+script = ExtResource("4_flashlight")
 
 [node name="InteractionManager" type="Node3D" parent="CameraHolder" unique_id=1600805036]
 script = ExtResource("2_interaction")
+
+[node name="PhysicalGrab" type="Node3D" parent="CameraHolder" unique_id=959314513]
+script = ExtResource("5_physical_grab")
+
+[node name="PerceptionManager" type="Node3D" parent="." unique_id=1600805037]
+script = ExtResource("3_perception")
+
+[node name="OcclusionRayCast" type="RayCast3D" parent="PerceptionManager" unique_id=1600805038]
+target_position = Vector3(0, 0, -40)
+hit_from_inside = true
+
+[node name="FootstepAudio" type="AudioStreamPlayer3D" parent="." unique_id=492340539]
+stream = ExtResource("26_ha2mi")
+volume_db = -22.735
+max_db = 0.73
+pitch_scale = 0.82
+
+[node name="FloorRayCast" type="RayCast3D" parent="." unique_id=1911614750]
+target_position = Vector3(0, -10, 0)
+hit_from_inside = true

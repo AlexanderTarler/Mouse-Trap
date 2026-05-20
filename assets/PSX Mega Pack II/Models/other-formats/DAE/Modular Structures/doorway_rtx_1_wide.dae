@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 3.4.0 commit date:2022-12-06, commit time:18:46, hash:a95bf1ac01be</authoring_tool>
+    </contributor>
+    <created>2025-11-29T13:46:34</created>
+    <modified>2025-11-29T13:46:34</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="door_hm_1_1-effect">
+      <profile_COMMON>
+        <newparam sid="door_hm_1_1_png-surface">
+          <surface type="2D">
+            <init_from>door_hm_1_1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="door_hm_1_1_png-sampler">
+          <sampler2D>
+            <source>door_hm_1_1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="door_hm_1_1_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="wall_rg_2-effect">
+      <profile_COMMON>
+        <newparam sid="wall_rg_2_png-surface">
+          <surface type="2D">
+            <init_from>wall_rg_2_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="wall_rg_2_png-sampler">
+          <sampler2D>
+            <source>wall_rg_2_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="wall_rg_2_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="concrete_hr_1-effect">
+      <profile_COMMON>
+        <newparam sid="concrete_hr_1_png-surface">
+          <surface type="2D">
+            <init_from>concrete_hr_1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="concrete_hr_1_png-sampler">
+          <sampler2D>
+            <source>concrete_hr_1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="concrete_hr_1_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="concrete_hr_3-effect">
+      <profile_COMMON>
+        <newparam sid="concrete_hr_3_png-surface">
+          <surface type="2D">
+            <init_from>concrete_hr_3_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="concrete_hr_3_png-sampler">
+          <sampler2D>
+            <source>concrete_hr_3_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="concrete_hr_3_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="concrete_hr_1_png" name="concrete_hr_1_png">
+      <init_from>concrete_hr_1.png</init_from>
+    </image>
+    <image id="concrete_hr_3_png" name="concrete_hr_3_png">
+      <init_from>concrete_hr_3.png</init_from>
+    </image>
+    <image id="door_hm_1_1_png" name="door_hm_1_1_png">
+      <init_from>door_hm_1_1.png</init_from>
+    </image>
+    <image id="wall_rg_2_png" name="wall_rg_2_png">
+      <init_from>wall_rg_2.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="door_hm_1_1-material" name="door_hm_1_1">
+      <instance_effect url="#door_hm_1_1-effect"/>
+    </material>
+    <material id="wall_rg_2-material" name="wall_rg_2">
+      <instance_effect url="#wall_rg_2-effect"/>
+    </material>
+    <material id="concrete_hr_1-material" name="concrete_hr_1">
+      <instance_effect url="#concrete_hr_1-effect"/>
+    </material>
+    <material id="concrete_hr_3-material" name="concrete_hr_3">
+      <instance_effect url="#concrete_hr_3-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="door_rtx_1_piece_1-mesh" name="door_rtx_1_piece_1">
+      <mesh>
+        <source id="door_rtx_1_piece_1-mesh-positions">
+          <float_array id="door_rtx_1_piece_1-mesh-positions-array" count="24">0 0 0 0 -5.96046e-7 2.5 0.6000004 -5.96046e-7 2.5 0.6000004 0 0 0.6000004 -0.05000054 2.5 0 -0.05000054 2.5 0 -0.04999995 0 0.6000004 -0.04999995 0</float_array>
+          <technique_common>
+            <accessor source="#door_rtx_1_piece_1-mesh-positions-array" count="8" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="door_rtx_1_piece_1-mesh-normals">
+          <float_array id="door_rtx_1_piece_1-mesh-normals-array" count="21">0 1 2.38419e-7 0 -1 -2.38418e-7 -1 0 0 0 2.38419e-7 -1 0 0 1 1 0 0 1 0 0</float_array>
+          <technique_common>
+            <accessor source="#door_rtx_1_piece_1-mesh-normals-array" count="7" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="door_rtx_1_piece_1-mesh-map-0">
+          <float_array id="door_rtx_1_piece_1-mesh-map-0-array" count="72">0 1 0.368421 0 0 0 0.368421 0 0 1 0 0 0.03157889 0 0 1 0.03157889 1 0.368421 1 0 0.9802632 0 1 0 1 0.368421 0.9802632 0.368421 1 0 1 0.03157889 0 0.03157889 1 0 1 0.368421 1 0.368421 0 0.368421 0 0.368421 1 0 1 0.03157889 0 0 0 0 1 0.368421 1 0.368421 0.9802632 0 0.9802632 0 1 0 0.9802632 0.368421 0.9802632 0 1 0 0 0.03157889 0</float_array>
+          <technique_common>
+            <accessor source="#door_rtx_1_piece_1-mesh-map-0-array" count="36" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="door_rtx_1_piece_1-mesh-vertices">
+          <input semantic="POSITION" source="#door_rtx_1_piece_1-mesh-positions"/>
+        </vertices>
+        <triangles material="door_hm_1_1-material" count="12">
+          <input semantic="VERTEX" source="#door_rtx_1_piece_1-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#door_rtx_1_piece_1-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#door_rtx_1_piece_1-mesh-map-0" offset="2" set="0"/>
+          <p>1 0 0 3 0 1 0 0 2 7 1 3 5 1 4 6 1 5 0 2 6 5 2 7 1 2 8 3 3 9 6 3 10 0 3 11 1 4 12 4 4 13 2 4 14 4 5 15 3 5 16 2 5 17 1 0 18 2 0 19 3 0 20 7 1 21 4 1 22 5 1 23 0 2 24 6 2 25 5 2 26 3 3 27 7 3 28 6 3 29 1 4 30 5 4 31 4 4 32 4 6 33 7 6 34 3 6 35</p>
+        </triangles>
+      </mesh>
+    </geometry>
+    <geometry id="door_rtx_1_piece_2-mesh" name="door_rtx_1_piece_2">
+      <mesh>
+        <source id="door_rtx_1_piece_2-mesh-positions">
+          <float_array id="door_rtx_1_piece_2-mesh-positions-array" count="24">1.90735e-6 0 0 1.90735e-6 -5.96046e-7 2.5 -0.9999981 -5.96046e-7 2.5 -0.9999981 0 0 1.90735e-6 -0.04999995 0 1.90735e-6 -0.05000054 2.5 -0.9999981 -0.05000054 2.5 -0.9999981 -0.04999995 0</float_array>
+          <technique_common>
+            <accessor source="#door_rtx_1_piece_2-mesh-positions-array" count="8" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="door_rtx_1_piece_2-mesh-normals">
+          <float_array id="door_rtx_1_piece_2-mesh-normals-array" count="24">0 1 2.38419e-7 0 -1 -2.38419e-7 0 0 1 1 0 0 0 2.38419e-7 -1 -1 0 0 1 0 0 0 2.38419e-7 -1</float_array>
+          <technique_common>
+            <accessor source="#door_rtx_1_piece_2-mesh-normals-array" count="8" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="door_rtx_1_piece_2-mesh-map-0">
+          <float_array id="door_rtx_1_piece_2-mesh-map-0-array" count="72">0.368421 1 1 0 0.368421 0 1 0 0.368421 1 0.368421 0 0.368421 1 1 0.9802632 1 1 0.03157889 1 0 0 0.03157889 0 1 1 0.368421 0.9802632 0.368421 1 0.03157889 0 0 1 0.03157889 1 0.368421 1 1 1 1 0 1 0 1 1 0.368421 1 0.368421 1 0.368421 0.9802632 1 0.9802632 0.03157889 1 0 1 0 0 1 1 1 0.9802632 0.368421 0.9802632 0.03157889 0 0 0 0 1</float_array>
+          <technique_common>
+            <accessor source="#door_rtx_1_piece_2-mesh-map-0-array" count="36" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="door_rtx_1_piece_2-mesh-vertices">
+          <input semantic="POSITION" source="#door_rtx_1_piece_2-mesh-positions"/>
+        </vertices>
+        <triangles material="door_hm_1_1-material" count="12">
+          <input semantic="VERTEX" source="#door_rtx_1_piece_2-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#door_rtx_1_piece_2-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#door_rtx_1_piece_2-mesh-map-0" offset="2" set="0"/>
+          <p>2 0 0 0 0 1 3 0 2 4 1 3 6 1 4 7 1 5 2 2 6 5 2 7 1 2 8 1 3 9 4 3 10 0 3 11 0 4 12 7 4 13 3 4 14 3 5 15 6 5 16 2 5 17 2 0 18 1 0 19 0 0 20 4 1 21 5 1 22 6 1 23 2 2 24 6 2 25 5 2 26 1 6 27 5 6 28 4 6 29 0 7 30 4 7 31 7 7 32 3 5 33 7 5 34 6 5 35</p>
+        </triangles>
+      </mesh>
+    </geometry>
+    <geometry id="doorway_rtx_1_wide-mesh" name="doorway_rtx_1_wide">
+      <mesh>
+        <source id="doorway_rtx_1_wide-mesh-positions">
+          <float_array id="doorway_rtx_1_wide-mesh-positions-array" count="48">2 -0.2000001 0 2 -0.2000005 3 -2 -0.2000005 0 0.8000002 -0.2 2.5 -0.8000002 -0.2 2.5 -0.8000002 -0.2 0 0.8000002 -0.2 0 -0.8000002 0.2 0 -2 0.1999998 0 -2 0.2000002 3 2 0.2000008 0 0.8000002 0.2 2.5 0.8000002 0.2 0 -0.8000002 0.1999999 2.5 -2 -0.200001 3 2 0.2000013 3</float_array>
+          <technique_common>
+            <accessor source="#doorway_rtx_1_wide-mesh-positions-array" count="16" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="doorway_rtx_1_wide-mesh-normals">
+          <float_array id="doorway_rtx_1_wide-mesh-normals-array" count="78">1 0 0 3.55577e-7 -1 -1.08394e-6 5.34854e-7 -1 0 4.34617e-7 -1 0 -1 0 0 -5.40786e-7 1 -1.19441e-6 -7.83207e-7 1 0 -6.8297e-7 1 0 0 0 -1 0 0 -1 0 0 -1 0 0 1 0 0 1 0 0 1 -2.97317e-7 -1 -4.75754e-7 -1.39239e-7 -1 -7.02099e-7 -1.62325e-7 -1 0 0 -1 0 0 1 -4.42562e-7 0 1 -4.01546e-7 0 1 0 -1.86265e-7 1 0 6.16879e-7 -1 -5.89513e-7 -8.40264e-7 1 -6.49435e-7 0 0 -1 0 0 1</float_array>
+          <technique_common>
+            <accessor source="#doorway_rtx_1_wide-mesh-normals-array" count="26" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="doorway_rtx_1_wide-mesh-map-0">
+          <float_array id="doorway_rtx_1_wide-mesh-map-0-array" count="120">0.3073632 0 0.4273629 0.8333275 0.3073632 0.8333275 0.3072568 0.8333333 0.007389068 0 0.3072568 0 0.6927655 0.8333275 0.5727654 0 0.6927652 0 0.3072568 0.8333333 0.007389068 0 0.3072568 0 0.3072568 0.8333333 0.6912646 0.7000001 0.6927432 0.8333334 1.5 0.4499999 0.5 0.5500001 0.5 0.4499998 0.9926109 1 0.3072568 0.8333333 0.6927432 0.8333334 0.9926109 0 0.6927432 0.8333334 0.6927431 0 0.9926109 1 0.3072568 0.8333333 0.6927432 0.8333334 0.9926109 0 0.6927432 0.8333334 0.6927431 0 0.3073632 0 0.4273634 0 0.4273629 0.8333275 0.3072568 0.8333333 0.007389068 1 0.007389068 0 0.6927655 0.8333275 0.5727657 0.8333275 0.5727654 0 0.3072568 0.8333333 0.007389068 1 0.007389068 0 0.3072568 0.8333333 0.3087356 0.6999999 0.6912646 0.7000001 1.5 0.4499999 1.5 0.5500003 0.5 0.5500001 0.9926109 1 0.007389068 1 0.3072568 0.8333333 0.9926109 0 0.9926109 1 0.6927432 0.8333334 0.9926109 1 0.007389068 1 0.3072568 0.8333333 0.9926109 0 0.9926109 1 0.6927432 0.8333334</float_array>
+          <technique_common>
+            <accessor source="#doorway_rtx_1_wide-mesh-map-0-array" count="60" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="doorway_rtx_1_wide-mesh-vertices">
+          <input semantic="POSITION" source="#doorway_rtx_1_wide-mesh-positions"/>
+        </vertices>
+        <triangles material="wall_rg_2-material" count="18">
+          <input semantic="VERTEX" source="#doorway_rtx_1_wide-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#doorway_rtx_1_wide-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#doorway_rtx_1_wide-mesh-map-0" offset="2" set="0"/>
+          <p>5 0 0 13 0 1 4 0 2 4 1 3 2 2 4 5 3 5 3 4 6 12 4 7 6 4 8 11 5 9 10 6 10 12 7 11 4 8 12 11 9 13 3 10 14 1 14 18 4 1 19 3 15 20 0 16 21 3 15 22 6 17 23 9 18 24 11 5 25 13 19 26 8 20 27 13 19 28 7 21 29 5 0 30 7 0 31 13 0 32 4 1 33 14 22 34 2 2 35 3 4 36 11 4 37 12 4 38 11 5 39 15 23 40 10 6 41 4 8 42 13 24 43 11 9 44 1 14 48 14 22 49 4 1 50 0 16 51 1 14 52 3 15 53 9 18 54 15 23 55 11 5 56 8 20 57 9 18 58 13 19 59</p>
+        </triangles>
+        <triangles material="concrete_hr_3-material" count="2">
+          <input semantic="VERTEX" source="#doorway_rtx_1_wide-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#doorway_rtx_1_wide-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#doorway_rtx_1_wide-mesh-map-0" offset="2" set="0"/>
+          <p>1 11 15 9 12 16 14 13 17 1 11 45 15 25 46 9 12 47</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="doorway_rtx_1_wide" name="doorway_rtx_1_wide" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#doorway_rtx_1_wide-mesh" name="doorway_rtx_1_wide">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="wall_rg_2-material" target="#wall_rg_2-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+              <instance_material symbol="concrete_hr_1-material" target="#concrete_hr_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+              <instance_material symbol="concrete_hr_3-material" target="#concrete_hr_3-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+        <node id="door_rtx_1_piece_2" name="door_rtx_1_piece_2" type="NODE">
+          <matrix sid="transform">1 0 0 0.7999992 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+          <instance_geometry url="#door_rtx_1_piece_2-mesh" name="door_rtx_1_piece_2">
+            <bind_material>
+              <technique_common>
+                <instance_material symbol="door_hm_1_1-material" target="#door_hm_1_1-material">
+                  <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                </instance_material>
+              </technique_common>
+            </bind_material>
+          </instance_geometry>
+        </node>
+        <node id="door_rtx_1_piece_1" name="door_rtx_1_piece_1" type="NODE">
+          <matrix sid="transform">1 0 0 -0.7999992 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+          <instance_geometry url="#door_rtx_1_piece_1-mesh" name="door_rtx_1_piece_1">
+            <bind_material>
+              <technique_common>
+                <instance_material symbol="door_hm_1_1-material" target="#door_hm_1_1-material">
+                  <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+                </instance_material>
+              </technique_common>
+            </bind_material>
+          </instance_geometry>
+        </node>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bk6ty2350xico"
+path="res://.godot/imported/ambience_d8_loop.ogg-26a409199233ce786eff91cd56d7e075.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/Ambiences/ambience_d8_loop.ogg"
+dest_files=["res://.godot/imported/ambience_d8_loop.ogg-26a409199233ce786eff91cd56d7e075.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

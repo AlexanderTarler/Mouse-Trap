@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 3.4.0 commit date:2022-12-06, commit time:18:46, hash:a95bf1ac01be</authoring_tool>
+    </contributor>
+    <created>2025-11-29T13:48:15</created>
+    <modified>2025-11-29T13:48:15</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="metal_fence_hr_1-effect">
+      <profile_COMMON>
+        <newparam sid="metal_fence_hr_1_png-surface">
+          <surface type="2D">
+            <init_from>metal_fence_hr_1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="metal_fence_hr_1_png-sampler">
+          <sampler2D>
+            <source>metal_fence_hr_1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="metal_fence_hr_1_png-sampler" texcoord="UVMap"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="metal_fence_hr_1_png" name="metal_fence_hr_1_png">
+      <init_from>metal_fence_hr_1.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="metal_fence_hr_1-material" name="metal_fence_hr_1">
+      <instance_effect url="#metal_fence_hr_1-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="metal_fence_hr_1_pillar_1-mesh" name="metal_fence_hr_1_pillar_1">
+      <mesh>
+        <source id="metal_fence_hr_1_pillar_1-mesh-positions">
+          <float_array id="metal_fence_hr_1_pillar_1-mesh-positions-array" count="24">-0.2000002 0.09999996 0 -0.2000002 0.09999996 2.5 0.1999998 0.1 0 0.1999998 0.1 2.5 -0.2000001 -0.1 0 -0.2000001 -0.1 2.5 0.1999998 -0.09999996 0 0.1999998 -0.09999996 2.5</float_array>
+          <technique_common>
+            <accessor source="#metal_fence_hr_1_pillar_1-mesh-positions-array" count="8" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="metal_fence_hr_1_pillar_1-mesh-normals">
+          <float_array id="metal_fence_hr_1_pillar_1-mesh-normals-array" count="21">0 1 0 1 1.19209e-7 0 0 -1 0 -1 -2.38419e-7 0 -3.72529e-7 0 1 0 1 0 0 0 1</float_array>
+          <technique_common>
+            <accessor source="#metal_fence_hr_1_pillar_1-mesh-normals-array" count="7" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="metal_fence_hr_1_pillar_1-mesh-map-0">
+          <float_array id="metal_fence_hr_1_pillar_1-mesh-map-0-array" count="60">0.9073026 1 1 0 0.9073026 0 0.9314536 1 0.9758492 0 0.9314536 0 1 1 0.9073026 0 1 0 0.9758492 1 0.9314536 0 0.9758492 0 0.9314536 0.58 0.9758492 0.42 0.9758492 0.58 0.9073026 1 1 1 1 0 0.9314536 1 0.9758492 1 0.9758492 0 1 1 0.9073026 1 0.9073026 0 0.9758492 1 0.9314536 1 0.9314536 0 0.9314536 0.58 0.9314536 0.42 0.9758492 0.42</float_array>
+          <technique_common>
+            <accessor source="#metal_fence_hr_1_pillar_1-mesh-map-0-array" count="30" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="metal_fence_hr_1_pillar_1-mesh-vertices">
+          <input semantic="POSITION" source="#metal_fence_hr_1_pillar_1-mesh-positions"/>
+        </vertices>
+        <triangles material="metal_fence_hr_1-material" count="10">
+          <input semantic="VERTEX" source="#metal_fence_hr_1_pillar_1-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#metal_fence_hr_1_pillar_1-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#metal_fence_hr_1_pillar_1-mesh-map-0" offset="2" set="0"/>
+          <p>1 0 0 2 0 1 0 0 2 3 1 3 6 1 4 2 1 5 7 2 6 4 2 7 6 2 8 5 3 9 0 3 10 4 3 11 3 4 12 5 4 13 7 4 14 1 5 15 3 5 16 2 5 17 3 1 18 7 1 19 6 1 20 7 2 21 5 2 22 4 2 23 5 3 24 1 3 25 0 3 26 3 6 27 1 6 28 5 6 29</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="metal_fence_hr_1_pillar_1" name="metal_fence_hr_1_pillar_1" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#metal_fence_hr_1_pillar_1-mesh" name="metal_fence_hr_1_pillar_1">
+          <bind_material>
+            <technique_common>
+              <instance_material symbol="metal_fence_hr_1-material" target="#metal_fence_hr_1-material">
+                <bind_vertex_input semantic="UVMap" input_semantic="TEXCOORD" input_set="0"/>
+              </instance_material>
+            </technique_common>
+          </bind_material>
+        </instance_geometry>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

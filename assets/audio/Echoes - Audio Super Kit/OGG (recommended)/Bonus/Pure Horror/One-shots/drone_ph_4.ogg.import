@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://c6ri7vmqnk60n"
+path="res://.godot/imported/drone_ph_4.ogg-3ab7a28265f89619e19f4e7a1f1788b1.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/Bonus/Pure Horror/One-shots/drone_ph_4.ogg"
+dest_files=["res://.godot/imported/drone_ph_4.ogg-3ab7a28265f89619e19f4e7a1f1788b1.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

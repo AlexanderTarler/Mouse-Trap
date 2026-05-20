@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://kupbqmtd5rne"
+path="res://.godot/imported/window_2_2_single_no_glass.obj-25f6b8bd9809966f0b26a7ab7b34df20.mesh"
+
+[deps]
+
+files=["res://.godot/imported/window_2_2_single_no_glass.obj-25f6b8bd9809966f0b26a7ab7b34df20.mesh"]
+
+source_file="res://assets/PSX Mega Pack/Models/other-formats/OBJ/Modular Structures/window_2_2_single_no_glass.obj"
+dest_files=["res://.godot/imported/window_2_2_single_no_glass.obj-25f6b8bd9809966f0b26a7ab7b34df20.mesh", "res://.godot/imported/window_2_2_single_no_glass.obj-25f6b8bd9809966f0b26a7ab7b34df20.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

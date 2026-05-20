@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://8f1cfb7iapk1"
+path="res://.godot/imported/test_machine_mx_1.obj-ccd1316821dab47501445dcfea60ca46.mesh"
+
+[deps]
+
+files=["res://.godot/imported/test_machine_mx_1.obj-ccd1316821dab47501445dcfea60ca46.mesh"]
+
+source_file="res://assets/PSX Mega Pack II/Models/other-formats/OBJ/Large Props & Machinery/test_machine_mx_1.obj"
+dest_files=["res://.godot/imported/test_machine_mx_1.obj-ccd1316821dab47501445dcfea60ca46.mesh", "res://.godot/imported/test_machine_mx_1.obj-ccd1316821dab47501445dcfea60ca46.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

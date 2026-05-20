@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dl52pe56uaog0"
+path="res://.godot/imported/cement_bag_mp_1.obj-cc7dd0a36244a19d068b387cca78bfaa.mesh"
+
+[deps]
+
+files=["res://.godot/imported/cement_bag_mp_1.obj-cc7dd0a36244a19d068b387cca78bfaa.mesh"]
+
+source_file="res://assets/PSX Mega Pack II/Models/other-formats/OBJ/Props/cement_bag_mp_1.obj"
+dest_files=["res://.godot/imported/cement_bag_mp_1.obj-cc7dd0a36244a19d068b387cca78bfaa.mesh", "res://.godot/imported/cement_bag_mp_1.obj-cc7dd0a36244a19d068b387cca78bfaa.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bk33euecr7mx0"
+path="res://.godot/imported/ambience_d28_outdoors_loop.ogg-ed882c41a5f8c88568a5013abf71bb9f.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/Ambiences/ambience_d28_outdoors_loop.ogg"
+dest_files=["res://.godot/imported/ambience_d28_outdoors_loop.ogg-ed882c41a5f8c88568a5013abf71bb9f.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

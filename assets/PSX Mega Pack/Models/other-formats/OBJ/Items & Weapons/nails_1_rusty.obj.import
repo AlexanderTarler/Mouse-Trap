@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://cd1n2o47tf08p"
+path="res://.godot/imported/nails_1_rusty.obj-3dff8b0bec26df123bff60a5e89bbd67.mesh"
+
+[deps]
+
+files=["res://.godot/imported/nails_1_rusty.obj-3dff8b0bec26df123bff60a5e89bbd67.mesh"]
+
+source_file="res://assets/PSX Mega Pack/Models/other-formats/OBJ/Items & Weapons/nails_1_rusty.obj"
+dest_files=["res://.godot/imported/nails_1_rusty.obj-3dff8b0bec26df123bff60a5e89bbd67.mesh", "res://.godot/imported/nails_1_rusty.obj-3dff8b0bec26df123bff60a5e89bbd67.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

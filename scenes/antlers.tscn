@@ -1,0 +1,75 @@
+[gd_scene format=3 uid="uid://b7x8dad0e1f2g"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_1"]
+top_radius = 0.015
+bottom_radius = 0.025
+height = 0.1
+material = null
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_2"]
+top_radius = 0.01
+bottom_radius = 0.018
+height = 0.08
+material = null
+
+[sub_resource type="CylinderMesh" id="ConeMesh_1"]
+top_radius = 0.0
+bottom_radius = 0.015
+height = 0.06
+material = null
+
+[sub_resource type="StandardMaterial3D" id="ShadowMat"]
+albedo_color = Color(0.02, 0.02, 0.02, 1)
+metallic = 0.0
+roughness = 0.8
+rim_enabled = true
+rim_color = Color(0.05, 0.0, 0.05, 1)
+rim_roughness = 0.3
+
+[node name="Antlers" type="Node3D"]
+
+[node name="AntlerLeft" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.12, 0.15, 0)
+
+[node name="Base" type="MeshInstance3D" parent="AntlerLeft"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+mesh = SubResource("CylinderMesh_1")
+material_override = SubResource("ShadowMat")
+
+[node name="Branch1" type="MeshInstance3D" parent="AntlerLeft"]
+transform = Transform3D(0.9659, 0, -0.2588, 0, 1, 0, 0.2588, 0, 0.9659, 0, 0.12, 0)
+mesh = SubResource("CylinderMesh_2")
+material_override = SubResource("ShadowMat")
+
+[node name="Branch2" type="MeshInstance3D" parent="AntlerLeft"]
+transform = Transform3D(0.9659, 0, 0.2588, 0, 1, 0, -0.2588, 0, 0.9659, 0, 0.12, 0.04)
+mesh = SubResource("CylinderMesh_2")
+material_override = SubResource("ShadowMat")
+
+[node name="Tip" type="MeshInstance3D" parent="AntlerLeft"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18, 0)
+mesh = SubResource("ConeMesh_1")
+material_override = SubResource("ShadowMat")
+
+[node name="AntlerRight" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.12, 0.15, 0)
+
+[node name="Base" type="MeshInstance3D" parent="AntlerRight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+mesh = SubResource("CylinderMesh_1")
+material_override = SubResource("ShadowMat")
+
+[node name="Branch1" type="MeshInstance3D" parent="AntlerRight"]
+transform = Transform3D(0.9659, 0, -0.2588, 0, 1, 0, 0.2588, 0, 0.9659, 0, 0.12, 0)
+mesh = SubResource("CylinderMesh_2")
+material_override = SubResource("ShadowMat")
+
+[node name="Branch2" type="MeshInstance3D" parent="AntlerRight"]
+transform = Transform3D(0.9659, 0, 0.2588, 0, 1, 0, -0.2588, 0, 0.9659, 0, 0.12, 0.04)
+mesh = SubResource("CylinderMesh_2")
+material_override = SubResource("ShadowMat")
+
+[node name="Tip" type="MeshInstance3D" parent="AntlerRight"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.18, 0)
+mesh = SubResource("ConeMesh_1")
+material_override = SubResource("ShadowMat")

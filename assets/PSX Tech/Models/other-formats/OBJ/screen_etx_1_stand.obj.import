@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://dfbo2r6uev75l"
+path="res://.godot/imported/screen_etx_1_stand.obj-701e5a6d66ec9059b02776929cf1d08b.mesh"
+
+[deps]
+
+files=["res://.godot/imported/screen_etx_1_stand.obj-701e5a6d66ec9059b02776929cf1d08b.mesh"]
+
+source_file="res://assets/PSX Tech/Models/other-formats/OBJ/screen_etx_1_stand.obj"
+dest_files=["res://.godot/imported/screen_etx_1_stand.obj-701e5a6d66ec9059b02776929cf1d08b.mesh", "res://.godot/imported/screen_etx_1_stand.obj-701e5a6d66ec9059b02776929cf1d08b.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

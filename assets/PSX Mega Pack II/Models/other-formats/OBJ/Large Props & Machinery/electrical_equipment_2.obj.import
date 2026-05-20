@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://b4k3pydirguv6"
+path="res://.godot/imported/electrical_equipment_2.obj-a0a0c979c3b1953d58cf9af642c5a327.mesh"
+
+[deps]
+
+files=["res://.godot/imported/electrical_equipment_2.obj-a0a0c979c3b1953d58cf9af642c5a327.mesh"]
+
+source_file="res://assets/PSX Mega Pack II/Models/other-formats/OBJ/Large Props & Machinery/electrical_equipment_2.obj"
+dest_files=["res://.godot/imported/electrical_equipment_2.obj-a0a0c979c3b1953d58cf9af642c5a327.mesh", "res://.godot/imported/electrical_equipment_2.obj-a0a0c979c3b1953d58cf9af642c5a327.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

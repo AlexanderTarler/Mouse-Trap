@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://cnqmbw6cydl4x"
+path="res://.godot/imported/pillar_rx_8.obj-9aaf4eed8128356d9658937c53c4696a.mesh"
+
+[deps]
+
+files=["res://.godot/imported/pillar_rx_8.obj-9aaf4eed8128356d9658937c53c4696a.mesh"]
+
+source_file="res://assets/PSX Mega Pack II/Models/other-formats/OBJ/Modular Structures/pillar_rx_8.obj"
+dest_files=["res://.godot/imported/pillar_rx_8.obj-9aaf4eed8128356d9658937c53c4696a.mesh", "res://.godot/imported/pillar_rx_8.obj-9aaf4eed8128356d9658937c53c4696a.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

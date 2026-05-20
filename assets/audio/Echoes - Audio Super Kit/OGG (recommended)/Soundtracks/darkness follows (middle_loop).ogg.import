@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://c7mdij3lh6uft"
+path="res://.godot/imported/darkness follows (middle_loop).ogg-61a0d89792b8ec7be1f270384bc34ecb.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/Soundtracks/darkness follows (middle_loop).ogg"
+dest_files=["res://.godot/imported/darkness follows (middle_loop).ogg-61a0d89792b8ec7be1f270384bc34ecb.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
