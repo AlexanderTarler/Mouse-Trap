@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://otohi2wkp5vo"
-path.s3tc="res://.godot/imported/wooden_crate_7_1.png-1745c934f7083e256eb570bdb5ba9c66.s3tc.ctex"
+path.s3tc="res://.godot/imported/wooden_crate_7_1.png-101527eef9bd2b365ca48c34c861da05.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/wooden_crate_7_1.png"
-dest_files=["res://.godot/imported/wooden_crate_7_1.png-1745c934f7083e256eb570bdb5ba9c66.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/wooden_crate_7_1.png"
+dest_files=["res://.godot/imported/wooden_crate_7_1.png-101527eef9bd2b365ca48c34c861da05.s3tc.ctex"]
 
 [params]
 

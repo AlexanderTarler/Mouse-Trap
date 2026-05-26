@@ -14,6 +14,7 @@
 [ext_resource type="PackedScene" uid="uid://clq01k102v26p" path="res://assets/PSX Nature/Models/GLB/tree_log_1.glb" id="12_3pvim"]
 
 [node name="Group of Trees" type="Node3D" unique_id=335884299]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0)
 
 [node name="pine_tree_n_12" parent="." unique_id=807040485 instance=ExtResource("1_pine1")]
 

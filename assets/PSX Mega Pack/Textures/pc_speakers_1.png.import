@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bp5c6i7du4m1p"
-path.s3tc="res://.godot/imported/pc_speakers_1.png-ea6043b765f52dd261c9406c559045c8.s3tc.ctex"
+path.s3tc="res://.godot/imported/pc_speakers_1.png-aabfe9ae14a7d688a252716b1d78c6b1.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/pc_speakers_1.png"
-dest_files=["res://.godot/imported/pc_speakers_1.png-ea6043b765f52dd261c9406c559045c8.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/pc_speakers_1.png"
+dest_files=["res://.godot/imported/pc_speakers_1.png-aabfe9ae14a7d688a252716b1d78c6b1.s3tc.ctex"]
 
 [params]
 

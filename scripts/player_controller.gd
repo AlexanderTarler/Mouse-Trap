@@ -49,7 +49,8 @@ var _head_bob_active: bool = false
 var _is_crouching: bool = false
 
 # Flashlight
-var _flashlight_on: bool = true
+var _flashlight_on: bool = false
+var _has_flashlight: bool = false
 
 # Crosshair
 var _crosshair: Control
@@ -58,77 +59,78 @@ var _crosshair: Control
 var _footstep_timer: float = 0.0
 var _footstep_interval: float = 0.5
 
-# Debug: log FloorRayCast collision info every second
-var _debug_raycast_timer: float = 0.0
-const DEBUG_RAYCAST_INTERVAL: float = 1.0
+# (Removed unused debug raycast timer)
 
 # Stair climbing state
 var _was_on_floor: bool = false
+
+# Sprint unlock — locked on Night 1 until the first chase begins
+var sprint_unlocked: bool = false
+
+# --- STANDOFF / CHARGE MECHANIC ---
+## How long the player has been staring at the Entity with the flashlight on.
+## 0.0 = not looking, 1.5+ = Entity charges.
+var look_timer: float = 0.0
+
+## Reference to the StandoffEffect node on the HUD
+var _standoff_effect: Node = null
+
+## Reference to the Entity node (found at runtime)
+var _entity_node: Node = null
 
 # Stamina system
 var _stamina: float = 100.0
 var _max_stamina: float = 100.0
 var _is_running: bool = false
+var _stamina_drain_rate: float = 5.625   # Points per second while running (62.5% slower than original 15.0)
+var _stamina_regen_rate: float = 8.0    # Points per second while not running
+var _stamina_exhausted: bool = false
+var _stamina_exhausted_timer: float = 0.0
+var _stamina_exhausted_delay: float = 1.5  # Seconds before regen starts after exhaustion
 signal stamina_changed(stamina_percent: float)
 
+# Noise system
+var _noise_timer: float = 0.0
 
 func _ready() -> void:
 	_current_speed = walk_speed
-	
-	# Configure CharacterBody3D for stair climbing
 	floor_max_angle = deg_to_rad(60.0)
 	floor_snap_length = 1.2
-	
-	# Capture mouse immediately
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	
-	# Add to player group for entity tracking
 	add_to_group("player")
 	
-	# Apply camera settings from exports
 	if _camera:
 		_camera.far = camera_far
 		_camera.near = camera_near
-	
-	# Apply flashlight settings from exports
 	if _flashlight:
 		_flashlight.light_energy = flashlight_energy
 		_flashlight.spot_range = flashlight_range
+		# Flashlight starts disabled until the player picks up flashlight.tscn
+		_flashlight.visible = false
+		if _flashlight.has_method("toggle") and _flashlight.is_on:
+			_flashlight.is_on = false
 	
-	# Pass camera reference to interaction manager
 	if _interaction_manager and _interaction_manager.has_method("set_camera"):
 		_interaction_manager.set_camera(_camera)
 	elif _interaction_manager:
 		_interaction_manager.set("_camera", _camera)
 	
-	# Pass camera reference to physical grab system
 	if _physical_grab and _physical_grab.has_method("set_camera"):
 		_physical_grab.set_camera(_camera)
 	elif _physical_grab:
 		_physical_grab.set("_camera", _camera)
 	
-	# Create crosshair overlay
 	_create_crosshair()
-	
-	# Rebuild crosshair on window resize
 	get_viewport().size_changed.connect(_rebuild_crosshair)
-	
-	# Initialize footstep interval based on speed
 	_footstep_interval = 1.0 / walk_speed
 
-
 func _create_crosshair() -> void:
-	# Create a CanvasLayer for the crosshair
 	var canvas = CanvasLayer.new()
 	canvas.layer = 10
 	add_child(canvas)
-	
-	# Create a container control
 	var container = Control.new()
 	container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	canvas.add_child(container)
-	
-	# Crosshair settings
 	var center_x = 0.5
 	var center_y = 0.5
 	var line_length = 0.012
@@ -136,72 +138,37 @@ func _create_crosshair() -> void:
 	var gap = 0.004
 	var color = Color(1, 1, 1, 0.6)
 	
-	# Top line
 	var top = ColorRect.new()
 	top.color = color
-	top.size = Vector2(
-		get_viewport().size.x * line_width,
-		get_viewport().size.y * line_length
-	)
-	top.position = Vector2(
-		get_viewport().size.x * center_x - top.size.x / 2,
-		get_viewport().size.y * center_y - top.size.y - get_viewport().size.y * gap
-	)
+	top.size = Vector2(get_viewport().size.x * line_width, get_viewport().size.y * line_length)
+	top.position = Vector2(get_viewport().size.x * center_x - top.size.x / 2, get_viewport().size.y * center_y - top.size.y - get_viewport().size.y * gap)
 	container.add_child(top)
 	
-	# Bottom line
 	var bottom = ColorRect.new()
 	bottom.color = color
-	bottom.size = Vector2(
-		get_viewport().size.x * line_width,
-		get_viewport().size.y * line_length
-	)
-	bottom.position = Vector2(
-		get_viewport().size.x * center_x - bottom.size.x / 2,
-		get_viewport().size.y * center_y + get_viewport().size.y * gap
-	)
+	bottom.size = Vector2(get_viewport().size.x * line_width, get_viewport().size.y * line_length)
+	bottom.position = Vector2(get_viewport().size.x * center_x - bottom.size.x / 2, get_viewport().size.y * center_y + get_viewport().size.y * gap)
 	container.add_child(bottom)
 	
-	# Left line
 	var left = ColorRect.new()
 	left.color = color
-	left.size = Vector2(
-		get_viewport().size.x * line_length,
-		get_viewport().size.y * line_width
-	)
-	left.position = Vector2(
-		get_viewport().size.x * center_x - left.size.x - get_viewport().size.x * gap,
-		get_viewport().size.y * center_y - left.size.y / 2
-	)
+	left.size = Vector2(get_viewport().size.x * line_length, get_viewport().size.y * line_width)
+	left.position = Vector2(get_viewport().size.x * center_x - left.size.x - get_viewport().size.x * gap, get_viewport().size.y * center_y - left.size.y / 2)
 	container.add_child(left)
 	
-	# Right line
 	var right = ColorRect.new()
 	right.color = color
-	right.size = Vector2(
-		get_viewport().size.x * line_length,
-		get_viewport().size.y * line_width
-	)
-	right.position = Vector2(
-		get_viewport().size.x * center_x + get_viewport().size.x * gap,
-		get_viewport().size.y * center_y - right.size.y / 2
-	)
+	right.size = Vector2(get_viewport().size.x * line_length, get_viewport().size.y * line_width)
+	right.position = Vector2(get_viewport().size.x * center_x + get_viewport().size.x * gap, get_viewport().size.y * center_y - right.size.y / 2)
 	container.add_child(right)
-	
-	# Store reference to update on resize
 	_crosshair = container
 
-
-## Rebuilds the crosshair when the window is resized.
 func _rebuild_crosshair() -> void:
-	if not _crosshair:
-		return
-	# Remove old crosshair children and recreate
+	if not _crosshair: return
 	for child in _crosshair.get_children():
 		_crosshair.remove_child(child)
 		child.queue_free()
 	
-	# Crosshair settings
 	var center_x = 0.5
 	var center_y = 0.5
 	var line_length = 0.012
@@ -209,151 +176,122 @@ func _rebuild_crosshair() -> void:
 	var gap = 0.004
 	var color = Color(1, 1, 1, 0.6)
 	
-	# Top line
 	var top = ColorRect.new()
 	top.color = color
-	top.size = Vector2(
-		get_viewport().size.x * line_width,
-		get_viewport().size.y * line_length
-	)
-	top.position = Vector2(
-		get_viewport().size.x * center_x - top.size.x / 2,
-		get_viewport().size.y * center_y - top.size.y - get_viewport().size.y * gap
-	)
+	top.size = Vector2(get_viewport().size.x * line_width, get_viewport().size.y * line_length)
+	top.position = Vector2(get_viewport().size.x * center_x - top.size.x / 2, get_viewport().size.y * center_y - top.size.y - get_viewport().size.y * gap)
 	_crosshair.add_child(top)
 	
-	# Bottom line
 	var bottom = ColorRect.new()
 	bottom.color = color
-	bottom.size = Vector2(
-		get_viewport().size.x * line_width,
-		get_viewport().size.y * line_length
-	)
-	bottom.position = Vector2(
-		get_viewport().size.x * center_x - bottom.size.x / 2,
-		get_viewport().size.y * center_y + get_viewport().size.y * gap
-	)
+	bottom.size = Vector2(get_viewport().size.x * line_width, get_viewport().size.y * line_length)
+	bottom.position = Vector2(get_viewport().size.x * center_x - bottom.size.x / 2, get_viewport().size.y * center_y + get_viewport().size.y * gap)
 	_crosshair.add_child(bottom)
 	
-	# Left line
 	var left = ColorRect.new()
 	left.color = color
-	left.size = Vector2(
-		get_viewport().size.x * line_length,
-		get_viewport().size.y * line_width
-	)
-	left.position = Vector2(
-		get_viewport().size.x * center_x - left.size.x - get_viewport().size.x * gap,
-		get_viewport().size.y * center_y - left.size.y / 2
-	)
+	left.size = Vector2(get_viewport().size.x * line_length, get_viewport().size.y * line_width)
+	left.position = Vector2(get_viewport().size.x * center_x - left.size.x - get_viewport().size.x * gap, get_viewport().size.y * center_y - left.size.y / 2)
 	_crosshair.add_child(left)
 	
-	# Right line
 	var right = ColorRect.new()
 	right.color = color
-	right.size = Vector2(
-		get_viewport().size.x * line_length,
-		get_viewport().size.y * line_width
-	)
-	right.position = Vector2(
-		get_viewport().size.x * center_x + get_viewport().size.x * gap,
-		get_viewport().size.y * center_y - right.size.y / 2
-	)
+	right.size = Vector2(get_viewport().size.x * line_length, get_viewport().size.y * line_width)
+	right.position = Vector2(get_viewport().size.x * center_x + get_viewport().size.x * gap, get_viewport().size.y * center_y - right.size.y / 2)
 	_crosshair.add_child(right)
 
-
 func _input(event: InputEvent) -> void:
-	# Only process mouse look when mouse is captured (not in inventory/menu)
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		# Horizontal mouse movement rotates the player
 		rotate_y(-event.relative.x * mouse_sensitivity)
-		# Vertical mouse movement rotates the camera holder
 		_camera_holder.rotate_x(-event.relative.y * mouse_sensitivity)
 		var rot = _camera_holder.rotation
 		rot.x = clamp(rot.x, -1.4, 1.4)
 		_camera_holder.rotation = rot
 	
 	if event.is_action_pressed("ui_cancel"):
-		# Don't toggle mouse mode if the inventory is open — InventoryUI handles ESC itself
 		var inv_ui = get_node_or_null("/root/CottageHorror/InventoryUI")
-		if not inv_ui:
-			inv_ui = get_node_or_null("/root/Main/InventoryUI")
-		if inv_ui and inv_ui.get("_is_open"):
-			return
+		if not inv_ui: inv_ui = get_node_or_null("/root/Main/InventoryUI")
+		if inv_ui and inv_ui.get("_is_open"): return
 		
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		else:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	
-	# Toggle inventory with TAB key is handled exclusively by InventoryUI's _input()
-	# to prevent double-toggle conflicts. Do NOT handle TAB here.
-	
-	# Toggle flashlight with F key
 	if event is InputEventKey and event.keycode == KEY_F and event.pressed:
 		_toggle_flashlight()
-	
-	# DEBUG: Press Q to raycast and print info about the collider you're facing
-	if event is InputEventKey and event.keycode == KEY_Q and event.pressed:
-		_debug_raycast_collider()
+
+## Called by flashlight_pickup.gd when the player picks up the flashlight item.
+## Enables the player's built-in flashlight so they can toggle it with F.
+func enable_flashlight() -> void:
+	_has_flashlight = true
+	_flashlight_on = false
+	if _flashlight:
+		_flashlight.visible = false
+		if _flashlight.has_method("toggle") and _flashlight.is_on:
+			_flashlight.is_on = false
+	print("[Player] Flashlight acquired! Press F to toggle.")
 
 
 func _toggle_flashlight() -> void:
-	if not _flashlight:
+	if not _has_flashlight:
+		# Show a hint that the player needs to find the flashlight first
+		print("[Player] You don't have a flashlight yet! Find one in the cabin.")
 		return
-	# Use the flashlight script's toggle if available, otherwise fallback
+	if not _flashlight: return
 	if _flashlight.has_method("toggle"):
 		_flashlight.toggle()
 	else:
 		_flashlight_on = not _flashlight_on
 		_flashlight.visible = _flashlight_on
 
-
-## Toggles the inventory UI open/closed.
-## Finds the InventoryUI CanvasLayer in the scene tree and calls its open/close methods.
 func _toggle_inventory() -> void:
 	var inv_ui = get_node_or_null("/root/CottageHorror/InventoryUI")
-	if not inv_ui:
-		inv_ui = get_node_or_null("/root/Main/InventoryUI")
+	if not inv_ui: inv_ui = get_node_or_null("/root/Main/InventoryUI")
 	if inv_ui and inv_ui.has_method("_open_inventory") and inv_ui.has_method("_close_inventory"):
-		if inv_ui.get("_is_open"):
-			inv_ui._close_inventory()
-		else:
-			inv_ui._open_inventory()
-
+		if inv_ui.get("_is_open"): inv_ui._close_inventory()
+		else: inv_ui._open_inventory()
 
 func _physics_process(delta: float) -> void:
-	# Add the gravity
 	if not is_on_floor():
 		velocity += get_gravity() * delta
 
-	# Handle jump (press Space to jump)
 	if Input.is_key_pressed(KEY_SPACE) and is_on_floor():
 		velocity.y = jump_velocity
+		make_noise(15.0, 1.0) # Jumping is loud!
 
-	# Handle crouch toggle (press Ctrl or C to toggle)
 	if Input.is_key_pressed(KEY_CTRL) or Input.is_key_pressed(KEY_C):
-		if not _is_crouching:
-			_is_crouching = true
+		if not _is_crouching: _is_crouching = true
 	else:
-		if _is_crouching:
-			_is_crouching = false
+		if _is_crouching: _is_crouching = false
 
-	# Sprint with Shift (hold to run, drains stamina)
-	_is_running = Input.is_key_pressed(KEY_SHIFT) and not _is_crouching and _stamina > 0.0
+	_is_running = Input.is_key_pressed(KEY_SHIFT) and sprint_unlocked and not _is_crouching and _stamina > 0.0 and not _stamina_exhausted
 	
-	if _is_crouching:
-		_current_speed = crouch_speed
-	elif _is_running:
-		_current_speed = run_speed
+	if _is_crouching: _current_speed = crouch_speed
+	elif _is_running: _current_speed = run_speed
+	else: _current_speed = walk_speed
+	
+	# --- STAMINA DRAIN / REGEN ---
+	if _is_running:
+		# Drain stamina while running
+		_stamina -= _stamina_drain_rate * delta
+		if _stamina <= 0.0:
+			_stamina = 0.0
+			_stamina_exhausted = true
+			_stamina_exhausted_timer = 0.0
+	elif _stamina_exhausted:
+		# Wait for exhaustion delay before regen starts
+		_stamina_exhausted_timer += delta
+		if _stamina_exhausted_timer >= _stamina_exhausted_delay:
+			_stamina_exhausted = false
 	else:
-		_current_speed = walk_speed
+		# Regen stamina when not running
+		_stamina += _stamina_regen_rate * delta
+		if _stamina > _max_stamina:
+			_stamina = _max_stamina
 	
-	# Stamina drain/regen (DISABLED: stamina locked at 100% per user request)
-	_stamina = _max_stamina
-	stamina_changed.emit(100.0)
+	stamina_changed.emit(_stamina / _max_stamina * 100.0)
 
-	# Get the input direction using WASD
 	var input_dir := Vector2(
 		-1.0 if Input.is_key_pressed(KEY_A) else (1.0 if Input.is_key_pressed(KEY_D) else 0.0),
 		-1.0 if Input.is_key_pressed(KEY_W) else (1.0 if Input.is_key_pressed(KEY_S) else 0.0)
@@ -365,160 +303,97 @@ func _physics_process(delta: float) -> void:
 		velocity.x = direction.x * _current_speed
 		velocity.z = direction.z * _current_speed
 		_head_bob_active = true
+		
+		# Emit noise while running
+		if _is_running and is_on_floor():
+			_noise_timer += delta
+			if _noise_timer >= 0.5:
+				make_noise(12.0, 0.5)
+				_noise_timer = 0.0
 	else:
 		velocity.x = move_toward(velocity.x, 0, _current_speed)
 		velocity.z = move_toward(velocity.z, 0, _current_speed)
 		_head_bob_active = false
+		_noise_timer = 0.0
 
-	# --- Stair climbing: Step-up check ---
-	# Perform step-up BEFORE move_and_slide() to lift the player over steps
 	if _was_on_floor and direction.length() > 0 and is_on_floor():
 		_try_step_up(direction)
 
+	var landed = not _was_on_floor and is_on_floor()
+	if landed: make_noise(15.0, 1.0) # Thud on landing
+
 	move_and_slide()
-
-	# Store floor state for next frame (after move_and_slide)
 	_was_on_floor = is_on_floor()
-
-	
-	# Handle crouch collision shape and camera height
 	_update_crouch(delta)
 	
-	# Footstep audio — check velocity after move_and_slide to detect actual movement
 	if velocity.length() > 0.5 and is_on_floor():
 		_step_timer -= delta
 		if _step_timer <= 0.0:
 			_play_surface_footstep()
-			_step_timer = _step_interval
+			# Dynamic footstep speed: when sprinting, footsteps play twice as fast
+			# (interval cut in half) to match the increased movement speed.
+			if _is_running and sprint_unlocked:
+				_step_timer = _step_interval * 0.5
+			else:
+				_step_timer = _step_interval
 	else:
 		_step_timer = 0.0
 	
-	# Debug: log FloorRayCast collision info every second
-	_debug_raycast_timer -= delta
-	if _debug_raycast_timer <= 0.0:
-		_debug_raycast_timer = DEBUG_RAYCAST_INTERVAL
-		_debug_log_floor_raycast()
-	
-	# Head bob effect
 	if head_bob_enabled and _head_bob_active and is_on_floor() and not _is_crouching:
 		_head_bob_time += delta * _current_speed * head_bob_frequency
-		var bob_offset = Vector3(
-			head_bob_amplitude * cos(_head_bob_time * 0.5) * 0.3,
-			head_bob_amplitude * sin(_head_bob_time),
-			0
-		)
+		var bob_offset = Vector3(head_bob_amplitude * cos(_head_bob_time * 0.5) * 0.3, head_bob_amplitude * sin(_head_bob_time), 0)
 		_camera.position = bob_offset
 	else:
 		_head_bob_time = 0.0
-		# Smoothly return camera to center
 		_camera.position = _camera.position.lerp(Vector3.ZERO, delta * 10.0)
 
-
-## Attempts to step up onto stairs or small obstacles in the movement direction.
-## Uses a floor-height comparison approach:
-##   1. Casts down at the player's current position to get the floor height.
-##   2. Casts down ahead of the player to get the floor height on the step.
-##   3. If the floor ahead is higher (within max_step_height), applies a smooth
-##      vertical velocity boost so move_and_slide() carries the player up.
-##
-## This works with merged collision meshes (like the cabin FBX imports) where
-## the stairs are part of a single StaticBody and have horizontal normals on top.
 func _try_step_up(direction: Vector3) -> void:
 	var space_state = get_world_3d().direct_space_state
-	if not space_state:
-		return
+	if not space_state or not _collision_shape or not _collision_shape.shape: return
 	
-	# Get the capsule shape info for positioning the raycasts
-	if not _collision_shape or not _collision_shape.shape:
-		return
 	var capsule: CapsuleShape3D = _collision_shape.shape as CapsuleShape3D
-	if not capsule:
-		return
-	
-	# Calculate the bottom of the capsule (where the player's "feet" are)
-	# The capsule's position is at its center, so bottom = pos.y - height/2
 	var capsule_center_y = global_position.y + _collision_shape.position.y
 	var capsule_bottom_y = capsule_center_y - capsule.height / 2.0
 	
-	# --- RAY 1: Cast down at current position to get the floor height ---
 	var down_here_start = Vector3(global_position.x, capsule_bottom_y + 0.1, global_position.z)
 	var down_here_end = Vector3(global_position.x, capsule_bottom_y - max_step_height - 0.5, global_position.z)
-	
 	var here_query = PhysicsRayQueryParameters3D.create(down_here_start, down_here_end)
-	here_query.collide_with_areas = false
-	here_query.collide_with_bodies = true
 	here_query.exclude = [self]
 	
 	var here_result = space_state.intersect_ray(here_query)
-	if here_result.is_empty():
-		return
-	
+	if here_result.is_empty(): return
 	var floor_y = here_result.position.y
 	
-	# --- RAY 2: Cast down ahead of the player to check floor height on the step ---
 	var ahead_pos = global_position + direction * (step_check_distance + capsule.radius * 0.5)
 	var down_ahead_start = Vector3(ahead_pos.x, capsule_bottom_y + max_step_height + 0.5, ahead_pos.z)
 	var down_ahead_end = Vector3(ahead_pos.x, capsule_bottom_y - 0.5, ahead_pos.z)
-	
 	var ahead_query = PhysicsRayQueryParameters3D.create(down_ahead_start, down_ahead_end)
-	ahead_query.collide_with_areas = false
-	ahead_query.collide_with_bodies = true
 	ahead_query.exclude = [self]
 	
 	var ahead_result = space_state.intersect_ray(ahead_query)
-	if ahead_result.is_empty():
-		return
-	
+	if ahead_result.is_empty(): return
 	var ahead_floor_y = ahead_result.position.y
-	
-	# Calculate the height difference
 	var step_height = ahead_floor_y - floor_y
 	
-	# Only step up if the floor ahead is higher (a step) and within max_step_height
-	if step_height <= 0.01 or step_height > max_step_height:
-		return
+	if step_height <= 0.01 or step_height > max_step_height: return
 	
-	# --- RAY 3: Check for headroom above the step ---
-	# Cast forward from above the step height to make sure there's space
 	var check_height = capsule_bottom_y + max_step_height + 0.1
 	var check_start = Vector3(global_position.x, check_height, global_position.z)
 	var check_end = check_start + direction * (step_check_distance + capsule.radius)
-	
 	var check_query = PhysicsRayQueryParameters3D.create(check_start, check_end)
-	check_query.collide_with_areas = false
-	check_query.collide_with_bodies = true
 	check_query.exclude = [self]
 	
-	var check_result = space_state.intersect_ray(check_query)
-	if not check_result.is_empty():
-		# Something is blocking the headroom - can't step up
-		return
+	if not space_state.intersect_ray(check_query).is_empty(): return
 	
-	# --- Apply a smooth vertical velocity boost ---
-	# Calculate the velocity needed to reach the step height using physics
 	velocity.y = sqrt(2.0 * get_gravity().length() * step_height) * 1.2
-	# Nudge forward slightly to help clear the step edge
 	global_position += direction * 0.02
 
-
-func _play_footstep() -> void:
-	if Engine.has_singleton("HorrorSoundManager"):
-		var sm = Engine.get_singleton("HorrorSoundManager")
-		sm.play_footstep_at("wooden", global_position)
-
 func _play_surface_footstep() -> void:
-	if not footstep_audio:
-		return
-	
+	if not footstep_audio: return
 	var chosen_stream: AudioStream = null
 	
-	# 1. Check what material we are standing on using the FloorRayCast
 	if floor_raycast and floor_raycast.is_colliding():
-		var collider = floor_raycast.get_collider()
-		# Walk up the parent chain to find a node with a surface group
-		# (the raycast may return a CollisionShape3D child, but the group
-		#  could be on a parent StaticBody3D or MeshInstance3D)
-		var surface_node: Node = collider
+		var surface_node: Node = floor_raycast.get_collider()
 		var found_group := false
 		while surface_node and not found_group:
 			if surface_node.is_in_group("wood") and wood_footsteps.size() > 0:
@@ -530,142 +405,135 @@ func _play_surface_footstep() -> void:
 			else:
 				surface_node = surface_node.get_parent()
 	
-	# 2. Fallback to grass/nature if no group is found or array is empty
 	if not chosen_stream and grass_footsteps.size() > 0:
 		chosen_stream = grass_footsteps.pick_random()
 	
-	# 3. Play the selected sound with a slight pitch variation
 	if chosen_stream:
 		footstep_audio.stream = chosen_stream
 		footstep_audio.pitch_scale = randf_range(0.85, 1.15)
 		footstep_audio.play()
 
-
-## DEBUG: Logs what the FloorRayCast is colliding with (called every second).
-func _debug_log_floor_raycast() -> void:
-	if not floor_raycast:
-		print("[FloorRayCast DEBUG] FloorRayCast node is null")
-		return
-	
-	if not floor_raycast.is_colliding():
-		print("[FloorRayCast DEBUG] Not colliding with anything")
-		return
-	
-	var collider = floor_raycast.get_collider()
-	var hit_point = floor_raycast.get_collision_point()
-	var hit_normal = floor_raycast.get_collision_normal()
-	
-	print("=== FloorRayCast DEBUG ===")
-	print("  Player Position: ", global_position)
-	print("  Hit Point: ", hit_point)
-	print("  Hit Normal: ", hit_normal)
-	
-	if collider:
-		print("  Collider Type: ", collider.get_class())
-		print("  Collider Name: ", collider.name)
-		print("  Collider Path: ", collider.get_path())
-		
-		# Walk up the parent chain
-		var parent = collider.get_parent()
-		var depth = 0
-		while parent and depth < 10:
-			var groups_str = ""
-			if parent.get_groups().size() > 0:
-				groups_str = " groups=" + str(parent.get_groups())
-			print("    Parent[", depth, "]: ", parent.name, " (", parent.get_class(), ")", groups_str)
-			parent = parent.get_parent()
-			depth += 1
-		
-		# If it's a CollisionShape3D, print its shape info
-		if collider is CollisionShape3D:
-			var shape = collider.shape
-			if shape:
-				print("  Shape Type: ", shape.get_class())
-				if shape is BoxShape3D:
-					print("  Box Size: ", shape.size)
-				elif shape is ConcavePolygonShape3D:
-					print("  ConcavePolygon (trimesh)")
-	else:
-		print("  Collider: null")
-	
-	print("==========================")
-
-
-## DEBUG: Raycasts from the camera center and prints info about the hit collider.
-func _debug_raycast_collider() -> void:
-	if not _camera:
-		return
-	
-	var space_state = get_world_3d().direct_space_state
-	if not space_state:
-		return
-	
-	var camera_center = _camera.global_position
-	var camera_forward = -_camera.global_transform.basis.z
-	
-	var query = PhysicsRayQueryParameters3D.create(camera_center, camera_center + camera_forward * 10.0)
-	query.collide_with_areas = true
-	query.collide_with_bodies = true
-	
-	var result = space_state.intersect_ray(query)
-	
-	if result.is_empty():
-		print("DEBUG: No collider hit within 10 meters")
-		return
-	
-	var collider = result.get("collider", null)
-	var hit_position = result.get("position", Vector3.ZERO)
-	var hit_normal = result.get("normal", Vector3.ZERO)
-	
-	print("=== DEBUG RAYCAST HIT ===")
-	print("  Position: ", hit_position)
-	print("  Normal: ", hit_normal)
-	
-	if collider:
-		print("  Collider Type: ", collider.get_class())
-		print("  Collider Name: ", collider.name)
-		print("  Collider Path: ", collider.get_path())
-		
-		# Walk up the parent chain to find the StaticBody or root
-		var parent = collider.get_parent()
-		var depth = 0
-		while parent and depth < 10:
-			print("    Parent[", depth, "]: ", parent.name, " (", parent.get_class(), ")")
-			parent = parent.get_parent()
-			depth += 1
-		
-		# If it's a CollisionShape3D, print its shape info
-		if collider is CollisionShape3D:
-			var shape = collider.shape
-			if shape:
-				print("  Shape Type: ", shape.get_class())
-				if shape is BoxShape3D:
-					print("  Box Size: ", shape.size)
-				elif shape is ConcavePolygonShape3D:
-					print("  ConcavePolygon (trimesh) - face count: ", shape.get_faces().size() if shape.get_faces() else 0)
-	else:
-		print("  Collider: null")
-	
-	print("==========================")
-
-
 func _update_crouch(delta: float) -> void:
 	var target_height = crouching_height if _is_crouching else standing_height
-	
-	# Smoothly interpolate the collision shape height
-	if not _collision_shape or not _collision_shape.shape:
-		return
+	if not _collision_shape or not _collision_shape.shape: return
 	var shape: CapsuleShape3D = _collision_shape.shape as CapsuleShape3D
 	shape.height = lerp(shape.height, target_height, delta * crouch_transition_speed)
 	
-	# Adjust the collision shape position so the bottom stays on the ground
-	# Capsule total height = height + 2 * radius, center is at half of that
 	var col_pos = _collision_shape.position
 	col_pos.y = shape.height / 2.0 + shape.radius
 	_collision_shape.position = col_pos
 	
-	# Smoothly move the camera holder to the correct eye height
 	var target_cam_height = target_height - 0.1
 	var cam_pos = _camera_holder.position
 	cam_pos.y = lerp(cam_pos.y, target_cam_height, delta * crouch_transition_speed)
 	_camera_holder.position = cam_pos
+
+# --- STANDOFF / CHARGE: LOOK TIMER & CAMERA SHAKE ---
+func _process(delta: float) -> void:
+	# Find the StandoffEffect node on the HUD (lazy init)
+	if not _standoff_effect:
+		var hud = get_node_or_null("/root/CottageHorror/HorrorHUD")
+		if not hud:
+			hud = get_node_or_null("/root/Main/HorrorHUD")
+		if hud:
+			_standoff_effect = hud.get_node_or_null("StandoffText")
+	
+	# Find the Entity node (lazy init)
+	if not _entity_node:
+		_entity_node = get_tree().get_first_node_in_group("entity")
+	
+	# Check if the flashlight is ON and we're looking at the Entity
+	var is_looking_at_entity = _is_flashlight_on_entity()
+	
+	if is_looking_at_entity:
+		# Increase look_timer while staring at the Entity with flashlight
+		look_timer += delta
+		
+		# Clamp to max meaningful value (1.5s triggers charge)
+		if look_timer > 2.0:
+			look_timer = 2.0
+		
+		# Dynamic camera shake — intensity scales with look_timer
+		var shake_intensity = look_timer / 1.5  # 0.0 to 1.0 at 1.5s
+		if shake_intensity > 0.1:
+			var shake = shake_intensity * 0.02  # Max 0.02 radians (~1 degree)
+			_camera.h_offset = randf_range(-shake, shake)
+			_camera.v_offset = randf_range(-shake, shake)
+		else:
+			_camera.h_offset = 0.0
+			_camera.v_offset = 0.0
+		
+		# Notify the Entity that it's being stared at (triggers STANDOFF state)
+		if _entity_node and _entity_node.has_method("on_player_stare"):
+			_entity_node.on_player_stare(look_timer)
+	else:
+		# Not looking at the Entity — decay look_timer
+		if look_timer > 0.0:
+			look_timer -= delta * 2.0  # Decay twice as fast as it builds
+			if look_timer < 0.0:
+				look_timer = 0.0
+				_camera.h_offset = 0.0
+				_camera.v_offset = 0.0
+			
+			# Notify the Entity that stare is ending
+			if _entity_node and _entity_node.has_method("on_player_stare"):
+				_entity_node.on_player_stare(look_timer)
+		else:
+			_camera.h_offset = 0.0
+			_camera.v_offset = 0.0
+	
+	# Update the StandoffEffect with the current look_timer
+	if _standoff_effect and _standoff_effect.has_method("update_look_timer"):
+		_standoff_effect.update_look_timer(look_timer)
+
+
+## Checks if the player's flashlight is currently shining on the Entity.
+## Uses a RayCast3D from the center of the camera to detect the Entity.
+func _is_flashlight_on_entity() -> bool:
+	# Flashlight must be on
+	if not _flashlight or not _has_flashlight:
+		return false
+	if not _flashlight.is_on:
+		return false
+	
+	if not _entity_node or not is_instance_valid(_entity_node):
+		return false
+	
+	# Raycast from camera center to check if we're looking at the Entity
+	var space_state = get_world_3d().direct_space_state
+	if not space_state:
+		return false
+	
+	var viewport_size = _camera.get_viewport().size
+	var center = viewport_size / 2.0
+	var from = _camera.project_ray_origin(center)
+	var to = from + _camera.project_ray_normal(center) * 30.0  # Max range
+	
+	var query = PhysicsRayQueryParameters3D.create(from, to)
+	query.collide_with_areas = true
+	query.collide_with_bodies = true
+	query.exclude = [self]
+	
+	var result = space_state.intersect_ray(query)
+	if result.is_empty():
+		return false
+	
+	var collider = result.collider
+	
+	# Walk up the parent chain to check if we hit the Entity
+	var current = collider
+	while current:
+		if current == _entity_node:
+			return true
+		if current.is_in_group("entity"):
+			return true
+		current = current.get_parent()
+	
+	return false
+
+
+# --- NEW NOISE SYSTEM EMITTER ---
+func make_noise(radius: float, intensity: float = 1.0) -> void:
+	var entity = get_tree().get_first_node_in_group("entity")
+	if entity and entity.has_method("hear_noise"):
+		entity.hear_noise(global_position, radius, intensity)

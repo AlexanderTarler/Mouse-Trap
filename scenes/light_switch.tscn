@@ -1,0 +1,25 @@
+[gd_scene format=3 uid="uid://cgqts05fxlpn5"]
+
+[ext_resource type="PackedScene" uid="uid://d4mimvhkfa6yv" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/light_switch_1.glb" id="1_ldygq"]
+[ext_resource type="Script" uid="uid://dbj6d6cqy56sp" path="res://scripts/light_switch_trigger.gd" id="2_e7wg2"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_e7wg2"]
+size = Vector3(0.2, 0.2, 0.2)
+
+[node name="LightSwitch" type="Node3D" unique_id=278821629]
+
+[node name="LightswitchModel" parent="." unique_id=1576820909 instance=ExtResource("1_ldygq")]
+
+[node name="GlowLight" type="OmniLight3D" parent="." unique_id=278821630]
+light_color = Color(0.2, 0.8, 0.3, 1)
+light_energy = 0.5
+light_indirect_energy = 0.0
+omni_range = 1.5
+shadow_enabled = false
+visible = true
+
+[node name="InteractionArea" type="Area3D" parent="." unique_id=1106359011]
+script = ExtResource("2_e7wg2")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionArea" unique_id=1451090991]
+shape = SubResource("BoxShape3D_e7wg2")

@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cbmtd07ncrvso"
-path="res://.godot/imported/ceiling_peace_1_concrete_6.png-31e82ff990c9c6fb5af5480a31ab557e.ctex"
+path.s3tc="res://.godot/imported/ceiling_peace_1_concrete_6.png-31e82ff990c9c6fb5af5480a31ab557e.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "ea873cc70d8209e9118b72286f01d725"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/GLB/ceiling_peace_1_concrete_6.png"
-dest_files=["res://.godot/imported/ceiling_peace_1_concrete_6.png-31e82ff990c9c6fb5af5480a31ab557e.ctex"]
+dest_files=["res://.godot/imported/ceiling_peace_1_concrete_6.png-31e82ff990c9c6fb5af5480a31ab557e.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

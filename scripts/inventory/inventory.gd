@@ -56,7 +56,7 @@ func has_item(item) -> bool:
 
 func has_item_of_type(type) -> bool:
 	for item in items:
-		if item != null and item.has("item_type") and item.item_type == type:
+		if item != null and item.item_type == type:
 			return true
 	return false
 
@@ -64,7 +64,7 @@ func has_item_of_type(type) -> bool:
 func get_items_of_type(type) -> Array:
 	var result: Array = []
 	for item in items:
-		if item != null and item.has("item_type") and item.item_type == type:
+		if item != null and item.item_type == type:
 			result.append(item)
 	return result
 

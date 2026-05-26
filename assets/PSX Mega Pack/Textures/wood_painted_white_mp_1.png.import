@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dqbik3yx76h5a"
-path.s3tc="res://.godot/imported/wood_painted_white_mp_1.png-f5b1f9213dbda7be84b3127ec262864b.s3tc.ctex"
+path.s3tc="res://.godot/imported/wood_painted_white_mp_1.png-762bbd1d4e10fe88a2aeac8a56c909fb.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/wood_painted_white_mp_1.png"
-dest_files=["res://.godot/imported/wood_painted_white_mp_1.png-f5b1f9213dbda7be84b3127ec262864b.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/wood_painted_white_mp_1.png"
+dest_files=["res://.godot/imported/wood_painted_white_mp_1.png-762bbd1d4e10fe88a2aeac8a56c909fb.s3tc.ctex"]
 
 [params]
 

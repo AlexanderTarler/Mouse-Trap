@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://d2q6b3m7kf7c8"]
+
+[ext_resource type="Script" uid="uid://b46w00w0d5pq7" path="res://scripts/flashlight_pickup.gd" id="1_flashlight_pickup"]
+[ext_resource type="PackedScene" uid="uid://dbjetydtrjwyx" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/flashlight_mp_1.glb" id="2_model"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+
+[node name="FlashlightPickup" type="RigidBody3D"]
+script = ExtResource("1_flashlight_pickup")
+
+[node name="FlashlightModel" parent="." instance=ExtResource("2_model")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_1")

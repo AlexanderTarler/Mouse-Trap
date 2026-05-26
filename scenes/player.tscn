@@ -25,12 +25,20 @@
 [ext_resource type="AudioStream" uid="uid://klwus5qjifiv" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_18.ogg" id="19_mx1m4"]
 [ext_resource type="AudioStream" uid="uid://c2ab3ld2stcc8" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_19.ogg" id="20_4gjji"]
 [ext_resource type="AudioStream" uid="uid://bhdk0hacbrpy0" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_20.ogg" id="21_u2ulf"]
-[ext_resource type="AudioStream" uid="uid://dhol28d2sggow" path="res://assets/audio/40 Free PSX Footsteps/Grass/Footstep Grass 1.ogg" id="22_6e8lb"]
-[ext_resource type="AudioStream" uid="uid://cr8tl55qw2hk4" path="res://assets/audio/40 Free PSX Footsteps/Grass/Footstep Grass 2.ogg" id="23_2gdjj"]
-[ext_resource type="AudioStream" uid="uid://c8lca6e61e4q7" path="res://assets/audio/40 Free PSX Footsteps/Grass/Footstep Grass 3.ogg" id="24_sc3ue"]
-[ext_resource type="AudioStream" uid="uid://bbr5hivkgrv74" path="res://assets/audio/40 Free PSX Footsteps/Grass/Footstep Grass 4.ogg" id="25_lxlsd"]
 [ext_resource type="AudioStream" uid="uid://ccfe53tpp0ycv" path="res://assets/audio/40 Free PSX Footsteps/Grass/Footstep Grass 5.ogg" id="26_ha2mi"]
-[ext_resource type="AudioStream" uid="uid://drs3qbmo2aghb" path="res://assets/audio/40 Free PSX Footsteps/Grass/Footstep Grass 6.ogg" id="27_apa73"]
+[ext_resource type="AudioStream" uid="uid://b2bpim632f8ms" path="res://assets/audio/Footsteps Grass/step0.wav" id="28_hhpqf"]
+[ext_resource type="AudioStream" uid="uid://bnqpirl3k0lkd" path="res://assets/audio/Footsteps Grass/step1.wav" id="29_g5jhy"]
+[ext_resource type="AudioStream" uid="uid://bguv5fj7yac14" path="res://assets/audio/Footsteps Grass/step2.wav" id="30_holxr"]
+[ext_resource type="AudioStream" uid="uid://b2ls35p6utvps" path="res://assets/audio/Footsteps Grass/step3.wav" id="31_mx1m4"]
+[ext_resource type="AudioStream" uid="uid://itc3mf8i61c" path="res://assets/audio/Footsteps Grass/step4.wav" id="32_4gjji"]
+[ext_resource type="AudioStream" uid="uid://dx7ocgc6nr74i" path="res://assets/audio/Footsteps Grass/step5.wav" id="33_u2ulf"]
+[ext_resource type="AudioStream" uid="uid://dtd35vba1f1jo" path="res://assets/audio/Footsteps Grass/step6.wav" id="34_6e8lb"]
+[ext_resource type="AudioStream" uid="uid://eo1je0ssd07l" path="res://assets/audio/Footsteps Grass/step7.wav" id="35_2gdjj"]
+[ext_resource type="AudioStream" uid="uid://bn002isx4864n" path="res://assets/audio/Footsteps Grass/step8.wav" id="36_sc3ue"]
+[ext_resource type="AudioStream" uid="uid://0ahdqj47achp" path="res://assets/audio/Footsteps Grass/step9.wav" id="37_lxlsd"]
+[ext_resource type="AudioStream" uid="uid://dquhe1c8scvlf" path="res://assets/audio/Footsteps Grass/step10.wav" id="38_ha2mi"]
+[ext_resource type="AudioStream" uid="uid://dkln3f15c1nek" path="res://assets/audio/Footsteps Grass/step11.wav" id="39_apa73"]
+[ext_resource type="AudioStream" uid="uid://bftl2t04nrp61" path="res://assets/audio/Footsteps Grass/step12.wav" id="40_74r1k"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_player"]
 radius = 0.35
@@ -42,7 +50,7 @@ floor_snap_length = 1.2
 script = ExtResource("1_player")
 standing_height = 2.0
 wood_footsteps = Array[AudioStream]([ExtResource("6_tuyoq"), ExtResource("3_wnwbv"), ExtResource("4_gl8cc"), ExtResource("5_487ah"), ExtResource("6_md1ol"), ExtResource("7_bj30b"), ExtResource("8_jc3p3"), ExtResource("9_hax0n"), ExtResource("10_t4otl"), ExtResource("11_j2b1d"), ExtResource("12_cs1tg"), ExtResource("13_2dvfe"), ExtResource("14_giy8y"), ExtResource("15_fdfoy"), ExtResource("16_hhpqf"), ExtResource("17_g5jhy"), ExtResource("18_holxr"), ExtResource("19_mx1m4"), ExtResource("20_4gjji"), ExtResource("21_u2ulf")])
-grass_footsteps = Array[AudioStream]([ExtResource("22_6e8lb"), ExtResource("23_2gdjj"), ExtResource("24_sc3ue"), ExtResource("25_lxlsd"), ExtResource("26_ha2mi"), ExtResource("27_apa73")])
+grass_footsteps = Array[AudioStream]([ExtResource("28_hhpqf"), ExtResource("29_g5jhy"), ExtResource("30_holxr"), ExtResource("31_mx1m4"), ExtResource("32_4gjji"), ExtResource("33_u2ulf"), ExtResource("34_6e8lb"), ExtResource("35_2gdjj"), ExtResource("36_sc3ue"), ExtResource("37_lxlsd"), ExtResource("38_ha2mi"), ExtResource("39_apa73"), ExtResource("40_74r1k")])
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1320359234]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
@@ -61,6 +69,8 @@ light_energy = 5.0
 shadow_enabled = true
 shadow_bias = 0.1
 spot_range = 10.0
+spot_angle = 30.0
+spot_angle_attenuation = 2.0
 script = ExtResource("4_flashlight")
 
 [node name="InteractionManager" type="Node3D" parent="CameraHolder" unique_id=1600805036]

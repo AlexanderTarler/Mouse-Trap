@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://yyw43wrmp4vc"
-path.s3tc="res://.godot/imported/clock_1.png-b48077e4009d274bb93ad12cac19629a.s3tc.ctex"
+path.s3tc="res://.godot/imported/clock_1.png-2b484c6befd5998847ab087b7bcb1414.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/clock_1.png"
-dest_files=["res://.godot/imported/clock_1.png-b48077e4009d274bb93ad12cac19629a.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/clock_1.png"
+dest_files=["res://.godot/imported/clock_1.png-2b484c6befd5998847ab087b7bcb1414.s3tc.ctex"]
 
 [params]
 

@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dipjtaqiou1x7"
-path.s3tc="res://.godot/imported/money_1.png-50da020b9e5580e2144840c9fc110783.s3tc.ctex"
+path.s3tc="res://.godot/imported/money_1.png-618d41520c95defd574639f68043ed7a.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/money_1.png"
-dest_files=["res://.godot/imported/money_1.png-50da020b9e5580e2144840c9fc110783.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/money_1.png"
+dest_files=["res://.godot/imported/money_1.png-618d41520c95defd574639f68043ed7a.s3tc.ctex"]
 
 [params]
 

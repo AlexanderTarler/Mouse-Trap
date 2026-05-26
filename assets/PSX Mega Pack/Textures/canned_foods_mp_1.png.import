@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dy7uyo8y3vbru"
-path.s3tc="res://.godot/imported/canned_foods_mp_1.png-445c7cb66e65f41e5cc6ebd448d877be.s3tc.ctex"
+path.s3tc="res://.godot/imported/canned_foods_mp_1.png-92a2f7afc963872bd722f1b19137eb5e.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/canned_foods_mp_1.png"
-dest_files=["res://.godot/imported/canned_foods_mp_1.png-445c7cb66e65f41e5cc6ebd448d877be.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/canned_foods_mp_1.png"
+dest_files=["res://.godot/imported/canned_foods_mp_1.png-92a2f7afc963872bd722f1b19137eb5e.s3tc.ctex"]
 
 [params]
 

@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bp2lpfylvq17q"
-path.s3tc="res://.godot/imported/kitchen_knife_1.png-539f98c0c9708a535f7bc6c5b410aab2.s3tc.ctex"
+path.s3tc="res://.godot/imported/kitchen_knife_1.png-47052ae3238102797a6e73f988a582d0.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/kitchen_knife_1.png"
-dest_files=["res://.godot/imported/kitchen_knife_1.png-539f98c0c9708a535f7bc6c5b410aab2.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/kitchen_knife_1.png"
+dest_files=["res://.godot/imported/kitchen_knife_1.png-47052ae3238102797a6e73f988a582d0.s3tc.ctex"]
 
 [params]
 

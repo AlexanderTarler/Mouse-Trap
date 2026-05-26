@@ -1,0 +1,36 @@
+[gd_scene format=3 uid="uid://e8tu43c3ihp0"]
+
+[ext_resource type="PackedScene" uid="uid://lhhyrrumnd54" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/wooden_plank_1.glb" id="1_uo6og"]
+[ext_resource type="Script" uid="uid://d3vvc4y65g0fj" path="res://scripts/cabin_window.gd" id="1_yfnpk"]
+[ext_resource type="AudioStream" uid="uid://cnr55qbh3dgjn" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Misc/hit_3.ogg" id="2_xje28"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_xje28"]
+
+[node name="CabinWindow" type="Node3D" unique_id=1290486114]
+script = ExtResource("1_yfnpk")
+
+[node name="InteractionArea" type="Area3D" parent="." unique_id=2017977008]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionArea" unique_id=1527222803]
+shape = SubResource("BoxShape3D_xje28")
+
+[node name="BarricadePlanks" type="Node3D" parent="." unique_id=1336875403]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1398965, 0)
+
+[node name="Plank1" parent="BarricadePlanks" unique_id=779850049 instance=ExtResource("1_uo6og")]
+transform = Transform3D(0.9986577, -0.0005785492, -0.051792473, -0.0517956, -0.011154849, -0.9985955, 0, 0.99993783, -0.011169843, 0, 0.29102856, 0)
+visible = false
+
+[node name="Plank2" parent="BarricadePlanks" unique_id=206261751 instance=ExtResource("1_uo6og")]
+transform = Transform3D(0.9998021, 0.00022222864, 0.019894123, 0.019895464, -0.011167632, -0.9997398, 3.1543082e-10, 0.99993783, -0.011169844, 0, 0.014867514, 0)
+visible = false
+
+[node name="Plank3" parent="BarricadePlanks" unique_id=1454939823 instance=ExtResource("1_uo6og")]
+transform = Transform3D(0.9996222, -0.00030700862, -0.02748382, -0.02748546, -0.0111656245, -0.99956, 3.154308e-10, 0.99993783, -0.011169844, 0, -0.35229316, 0)
+visible = false
+
+[node name="WindowMarker" type="Marker3D" parent="." unique_id=1542265065 groups=["WindowMarkers"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.2150924)
+
+[node name="BarricadeDamageAudio" type="AudioStreamPlayer3D" parent="." unique_id=2120085934]
+stream = ExtResource("2_xje28")

@@ -64,25 +64,17 @@ func _process(_delta: float) -> void:
 	# Hardware-poll TAB key directly — bypasses fragile _input() event consumption
 	var tab_down = Input.is_physical_key_pressed(KEY_TAB)
 	
-	# DEBUG: Log TAB state every frame for 2 seconds after startup
 	if not _tab_pressed_last_frame and tab_down:
-		print("[InventoryUI DEBUG] TAB DOWN detected! _is_open=", _is_open, " _tab_pressed_last_frame=", _tab_pressed_last_frame)
 		_tab_pressed_last_frame = true
 		if _is_open:
 			_close_inventory()
 		else:
 			_open_inventory()
-	elif tab_down:
-		# TAB is being held — log once per second to confirm hardware polling works
-		if Engine.get_physics_frames() % 60 == 0:
-			print("[InventoryUI DEBUG] TAB still held, _is_open=", _is_open)
 	elif not tab_down and _tab_pressed_last_frame:
-		print("[InventoryUI DEBUG] TAB released")
 		_tab_pressed_last_frame = false
 	
 	# Hardware-poll ESC to close inventory (bypasses _input() event consumption)
 	if _is_open and Input.is_physical_key_pressed(KEY_ESCAPE):
-		print("[InventoryUI DEBUG] ESC pressed while open, closing")
 		_close_inventory()
 	
 	# Force the mouse to stay visible as long as inventory is open, overriding the Player's camera lock
@@ -192,8 +184,8 @@ func _use_battery(item) -> void:
 		print("Battery used! Flashlight refilled.")
 		
 		# Play battery-swap sound via HorrorSoundManager
-		if Engine.has_singleton("HorrorSoundManager"):
-			var sm = Engine.get_singleton("HorrorSoundManager")
+		var sm = get_node_or_null("/root/HorrorSoundManager")
+		if sm:
 			sm.play_footstep("wooden")
 		
 		# Remove the battery from inventory

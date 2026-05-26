@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cpq0842067hs3"
-path.s3tc="res://.godot/imported/planks_hr_3.png-b3483b12750e3c36c3793a82e1aefa93.s3tc.ctex"
+path.s3tc="res://.godot/imported/planks_hr_3.png-89aa50bec3a3e83f309e4efab0deaf08.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack II/textures/planks_hr_3.png"
-dest_files=["res://.godot/imported/planks_hr_3.png-b3483b12750e3c36c3793a82e1aefa93.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack II/Textures/planks_hr_3.png"
+dest_files=["res://.godot/imported/planks_hr_3.png-89aa50bec3a3e83f309e4efab0deaf08.s3tc.ctex"]
 
 [params]
 

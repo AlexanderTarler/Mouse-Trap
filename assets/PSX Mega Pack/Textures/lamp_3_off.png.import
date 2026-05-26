@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dlef0heqjfc1v"
-path.s3tc="res://.godot/imported/lamp_3_off.png-5c159e2e26c3dbc869565c5afbb4b977.s3tc.ctex"
+path.s3tc="res://.godot/imported/lamp_3_off.png-4599e954a558b029e2ab6d296c555e1a.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/lamp_3_off.png"
-dest_files=["res://.godot/imported/lamp_3_off.png-5c159e2e26c3dbc869565c5afbb4b977.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/lamp_3_off.png"
+dest_files=["res://.godot/imported/lamp_3_off.png-4599e954a558b029e2ab6d296c555e1a.s3tc.ctex"]
 
 [params]
 

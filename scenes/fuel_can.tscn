@@ -1,0 +1,16 @@
+[gd_scene format=3 uid="uid://cd6rau4pn5djq"]
+
+[ext_resource type="Script" uid="uid://dq6ip8kp2w5rq" path="res://scripts/fuel_can_pickup.gd" id="1_6k3lm"]
+[ext_resource type="PackedScene" uid="uid://gxtbrp8e7ry2" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/jerrycan_1.glb" id="3_7k3lm"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(0.4, 0.5, 0.4)
+
+[node name="FuelCan" type="Area3D" unique_id=618056672]
+script = ExtResource("1_6k3lm")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=784027142]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.29276606, -0.05590877)
+shape = SubResource("BoxShape3D_1")
+
+[node name="JerrycanModel" parent="." unique_id=1660941793 instance=ExtResource("3_7k3lm")]

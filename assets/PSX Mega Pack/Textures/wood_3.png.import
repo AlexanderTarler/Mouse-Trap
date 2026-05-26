@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d3504bwsx8bs3"
-path.s3tc="res://.godot/imported/wood_3.png-a82ea69e298935dc70f98ae9dc383ffa.s3tc.ctex"
+path.s3tc="res://.godot/imported/wood_3.png-08b9dd7b65e188510741639933169b6d.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/wood_3.png"
-dest_files=["res://.godot/imported/wood_3.png-a82ea69e298935dc70f98ae9dc383ffa.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/wood_3.png"
+dest_files=["res://.godot/imported/wood_3.png-08b9dd7b65e188510741639933169b6d.s3tc.ctex"]
 
 [params]
 

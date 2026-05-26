@@ -49,12 +49,24 @@ var _monster_growl_streams: Array[AudioStream] = []
 # Whether sound is muted
 var _muted: bool = false
 
+# Distant monster music player (plays when night starts)
+var _distant_monster_player: AudioStreamPlayer = null
+var _distant_monster_streams: Array[AudioStream] = []
+
+# Day/Night forest ambience players
+var _day_ambience_player: AudioStreamPlayer = null
+var _night_ambience_player: AudioStreamPlayer = null
+const DAY_AMBIENCE_PATH: String = "res://assets/audio/Ambience/Forest Ambience.ogg"
+const NIGHT_AMBIENCE_PATH: String = "res://assets/audio/Ambience/Forest_night_ambience.ogg"
+
 func _ready() -> void:
 	_setup_audio_buses()
 	_preload_audio_files()
 	_setup_ambient_sounds()
 	_setup_event_sounds()
 	_setup_entity_sounds()
+	_setup_distant_monster_sounds()
+	_setup_forest_ambience()
 	_connect_signals()
 
 func _setup_audio_buses() -> void:
@@ -180,6 +192,55 @@ func _setup_entity_sounds() -> void:
 	_entity_whisper.volume_db = -15.0
 	add_child(_entity_whisper)
 
+## Sets up the day/night forest ambience players.
+## Day ambience plays "Forest Ambience.ogg" on loop during daytime.
+## Night ambience plays "Forest_night_ambience.ogg" on loop during nighttime.
+func _setup_forest_ambience() -> void:
+	# Day ambience player
+	_day_ambience_player = AudioStreamPlayer.new()
+	_day_ambience_player.bus = "Ambient"
+	_day_ambience_player.volume_db = -12.0
+	var day_stream = load(DAY_AMBIENCE_PATH) as AudioStream
+	if day_stream:
+		if day_stream is AudioStreamOggVorbis:
+			day_stream.loop = true
+		_day_ambience_player.stream = day_stream
+	add_child(_day_ambience_player)
+	
+	# Night ambience player
+	_night_ambience_player = AudioStreamPlayer.new()
+	_night_ambience_player.bus = "Ambient"
+	_night_ambience_player.volume_db = -12.0
+	var night_stream = load(NIGHT_AMBIENCE_PATH) as AudioStream
+	if night_stream:
+		if night_stream is AudioStreamOggVorbis:
+			night_stream.loop = true
+		_night_ambience_player.stream = night_stream
+	add_child(_night_ambience_player)
+	
+	# Start with day ambience (game starts in daytime)
+	_play_day_ambience()
+	print("HorrorSoundManager: Forest ambience set up.")
+
+
+## Plays the day forest ambience on loop and stops night ambience.
+func _play_day_ambience() -> void:
+	if _night_ambience_player and _night_ambience_player.playing:
+		_night_ambience_player.stop()
+	if _day_ambience_player and _day_ambience_player.stream:
+		_day_ambience_player.play()
+		print("HorrorSoundManager: Playing day forest ambience.")
+
+
+## Plays the night forest ambience on loop and stops day ambience.
+func _play_night_ambience() -> void:
+	if _day_ambience_player and _day_ambience_player.playing:
+		_day_ambience_player.stop()
+	if _night_ambience_player and _night_ambience_player.stream:
+		_night_ambience_player.play()
+		print("HorrorSoundManager: Playing night forest ambience.")
+
+
 func _connect_signals() -> void:
 	# NightManager is registered as an autoload, so it's a child of the root node.
 	# Use get_node to access it, with a deferred call to ensure it's initialized.
@@ -203,10 +264,23 @@ func _on_night_started(night: int) -> void:
 	for player in _ambient_sounds:
 		player.volume_db = ambient_vol
 	_play_ambient()
+	# Switch to night forest ambience
+	_play_night_ambience()
+	# Night 1 exception: The distant monster sound is suppressed so the car
+	# alarm narrative event plays without the Entity's audio telegraphing.
+	# The howl will play when trigger_first_chase() fires instead.
+	if night == 1:
+		print("HorrorSoundManager: Night 1 — suppressing distant monster sound for car alarm narrative.")
+	else:
+		# Play the distant monster sound when night starts
+		_play_distant_monster()
 
 func _on_night_ended(_night: int) -> void:
 	_stop_ambient()
 	_stop_entity_sounds()
+	_stop_distant_monster()
+	# Switch back to day forest ambience
+	_play_day_ambience()
 
 func _on_horror_event(event_name: String) -> void:
 	match event_name:
@@ -410,6 +484,51 @@ func set_watched_intensity(level: float) -> void:
 	# At high intensity, play a monster growl as a one-shot event
 	if level > 0.7 and _monster_growl_streams.size() > 0:
 		_play_event_sound_3d(_get_random_stream(_monster_growl_streams), Vector3(0, 1, -4))
+
+## Sets up the distant monster audio player and preloads the audio files.
+func _setup_distant_monster_sounds() -> void:
+	# Preload distant monster audio files from assets/audio/Entity/
+	var entity_audio_dir = "res://assets/audio/Entity/"
+	var file_names = ["monster_distant_mx_1.ogg", "monster_distant_mx_4.ogg"]
+	for fname in file_names:
+		var path = entity_audio_dir + fname
+		var stream = load(path) as AudioStream
+		if stream:
+			_distant_monster_streams.append(stream)
+			print("HorrorSoundManager: Loaded distant monster audio: " + path)
+		else:
+			print("Warning: Could not load distant monster audio: " + path)
+	
+	# Create a 2D audio player for the distant monster sound (always audible)
+	_distant_monster_player = AudioStreamPlayer.new()
+	_distant_monster_player.bus = "Entity"
+	_distant_monster_player.volume_db = -8.0
+	add_child(_distant_monster_player)
+
+
+## Plays a distant monster sound when the first night starts.
+## Always plays monster_distant_mx_1.ogg (the first loaded stream) for a
+## consistent, subtle awakening cue. monster_distant_mx_4.ogg is reserved
+## for future use (e.g., final night intensity).
+func _play_distant_monster() -> void:
+	if _distant_monster_streams.is_empty() or not _distant_monster_player:
+		return
+	
+	# Always use the first stream (monster_distant_mx_1.ogg) for the awakening cue.
+	# This provides a consistent, recognizable sound that signals the Entity is active.
+	var stream = _distant_monster_streams[0]
+	if stream:
+		_distant_monster_player.stream = stream
+		_distant_monster_player.play()
+		print("HorrorSoundManager: Playing distant monster sound (mx_1)!")
+		sound_played.emit("distant_monster")
+
+
+## Stops the distant monster sound.
+func _stop_distant_monster() -> void:
+	if _distant_monster_player and _distant_monster_player.playing:
+		_distant_monster_player.stop()
+
 
 func toggle_mute() -> void:
 	_muted = not _muted

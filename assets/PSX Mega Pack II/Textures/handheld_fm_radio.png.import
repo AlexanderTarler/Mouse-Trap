@@ -3,19 +3,20 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ch3mijsy6nag6"
-path="res://.godot/imported/handheld_fm_radio.png-5ec12445032ffe6653e6d5b501f27bd4.ctex"
+path.s3tc="res://.godot/imported/handheld_fm_radio.png-0023f8dafc074bf1cb3f52ce4dac472e.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack II/Textures/handheld_fm_radio.png"
-dest_files=["res://.godot/imported/handheld_fm_radio.png-5ec12445032ffe6653e6d5b501f27bd4.ctex"]
+source_file="res://assets/PSX Mega Pack II/textures/handheld_fm_radio.png"
+dest_files=["res://.godot/imported/handheld_fm_radio.png-0023f8dafc074bf1cb3f52ce4dac472e.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -23,7 +24,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
@@ -37,4 +38,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

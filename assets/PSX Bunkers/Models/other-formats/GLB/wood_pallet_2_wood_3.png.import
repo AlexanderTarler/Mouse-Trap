@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://0nd7hsno6cfs"
-path="res://.godot/imported/wood_pallet_2_wood_3.png-8b3369d0ee38a42e433e985a9c595b1b.ctex"
+path.s3tc="res://.godot/imported/wood_pallet_2_wood_3.png-8b3369d0ee38a42e433e985a9c595b1b.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "29a1728727afa4770e78a8c223904226"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/GLB/wood_pallet_2_wood_3.png"
-dest_files=["res://.godot/imported/wood_pallet_2_wood_3.png-8b3369d0ee38a42e433e985a9c595b1b.ctex"]
+dest_files=["res://.godot/imported/wood_pallet_2_wood_3.png-8b3369d0ee38a42e433e985a9c595b1b.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

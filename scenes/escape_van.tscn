@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://dsgbbun0atwdq"]
+
+[ext_resource type="PackedScene" uid="uid://bexuimcekf3lb" path="res://assets/PSX Kidnapper's Van/Meshes/other-formats/GLB/van_1.glb" id="1_halmf"]
+[ext_resource type="Script" uid="uid://b5jjve3a1t501" path="res://scripts/escape_van.gd" id="1_ywdun"]
+[ext_resource type="AudioStream" uid="uid://bkv43ed3j4llq" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Electronics/alarm_distant_1.ogg" id="2_hxwsh"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hxwsh"]
+size = Vector3(3, 3, 6)
+
+[node name="EscapeVan" type="Node3D" unique_id=433528797]
+script = ExtResource("1_ywdun")
+
+[node name="van_12" parent="." unique_id=1506434892 instance=ExtResource("1_halmf")]
+
+[node name="InteractionArea" type="Area3D" parent="." unique_id=1299091452]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionArea" unique_id=19522352]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4228547, 0)
+shape = SubResource("BoxShape3D_hxwsh")
+
+[node name="AlarmAudio" type="AudioStreamPlayer3D" parent="." unique_id=573679544]
+stream = ExtResource("2_hxwsh")
+
+[node name="AlarmLight" type="OmniLight3D" parent="." unique_id=710300612]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.956003, 2.0793147)
+visible = false
+light_color = Color(1, 0, 0, 1)

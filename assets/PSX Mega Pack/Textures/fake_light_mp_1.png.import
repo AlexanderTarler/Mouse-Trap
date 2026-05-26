@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b72aivp2y2r7i"
-path.s3tc="res://.godot/imported/fake_light_mp_1.png-ad381d1cabb0fa7cbb88b78beaec6775.s3tc.ctex"
+path.s3tc="res://.godot/imported/fake_light_mp_1.png-a110064d7912c031f67b8696d7dd509a.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/fake_light_mp_1.png"
-dest_files=["res://.godot/imported/fake_light_mp_1.png-ad381d1cabb0fa7cbb88b78beaec6775.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/fake_light_mp_1.png"
+dest_files=["res://.godot/imported/fake_light_mp_1.png-a110064d7912c031f67b8696d7dd509a.s3tc.ctex"]
 
 [params]
 

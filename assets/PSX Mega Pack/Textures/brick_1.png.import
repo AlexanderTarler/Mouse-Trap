@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://f7jmf6002ohe"
-path.s3tc="res://.godot/imported/brick_1.png-c5e7c614f8852267c78d3f2563dd96ca.s3tc.ctex"
+path.s3tc="res://.godot/imported/brick_1.png-d1532942484a829d25fd616dfc855efd.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/brick_1.png"
-dest_files=["res://.godot/imported/brick_1.png-c5e7c614f8852267c78d3f2563dd96ca.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/brick_1.png"
+dest_files=["res://.godot/imported/brick_1.png-d1532942484a829d25fd616dfc855efd.s3tc.ctex"]
 
 [params]
 

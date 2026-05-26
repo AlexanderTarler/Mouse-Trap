@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://06d8lk1x3tqi"
-path.s3tc="res://.godot/imported/hand_saw_1.png-d6de982cf7dbb7073a16390dab8d03bf.s3tc.ctex"
+path.s3tc="res://.godot/imported/hand_saw_1.png-cdba19ab399caf337782df503b7f97de.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/hand_saw_1.png"
-dest_files=["res://.godot/imported/hand_saw_1.png-d6de982cf7dbb7073a16390dab8d03bf.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/hand_saw_1.png"
+dest_files=["res://.godot/imported/hand_saw_1.png-cdba19ab399caf337782df503b7f97de.s3tc.ctex"]
 
 [params]
 

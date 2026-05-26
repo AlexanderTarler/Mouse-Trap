@@ -6,6 +6,8 @@ class_name WatchedEffect
 ## that scales with watched_intensity from the PerceptionManager.
 ##
 ## Also manages the blindness overlay (full-screen black fade).
+##
+## Plays "sfx cinematic 53" as a one-shot audio cue when the player is looking at the Entity.
 
 ## Reference to the PerceptionManager (set automatically)
 @export var perception_manager: Node = null
@@ -21,6 +23,12 @@ var _effect_time: float = 0.0
 
 ## Whether blindness is currently active
 var _is_blind: bool = false
+
+## Watched audio — plays "sfx cinematic 53" when the player is looking at the Entity
+var _watched_audio_player: AudioStreamPlayer = null
+var _watched_audio_was_playing: bool = false
+const WATCHED_AUDIO_PATH: String = "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Cinematic/sfx cinematic 53.ogg"
+const WATCHED_AUDIO_VOLUME_DB: float = -6.0
 
 
 func _ready() -> void:
@@ -40,6 +48,15 @@ func _ready() -> void:
 	if _blindness_rect:
 		_blindness_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_blindness_rect.color = Color(0, 0, 0, 0)
+	
+	# Set up watched audio player (2D, non-positional)
+	_watched_audio_player = AudioStreamPlayer.new()
+	_watched_audio_player.bus = "SFX"
+	_watched_audio_player.volume_db = WATCHED_AUDIO_VOLUME_DB
+	var watched_stream = load(WATCHED_AUDIO_PATH) as AudioStream
+	if watched_stream:
+		_watched_audio_player.stream = watched_stream
+	add_child(_watched_audio_player)
 	
 	# Find PerceptionManager
 	if not perception_manager:
@@ -66,6 +83,14 @@ func _process(delta: float) -> void:
 func _on_watched_intensity_changed(intensity: float) -> void:
 	if _shader_material:
 		_shader_material.set_shader_parameter("watched_intensity", intensity)
+	
+	# Play "sfx cinematic 53" when the player starts looking at the Entity
+	if intensity > 0.0 and not _watched_audio_was_playing:
+		if _watched_audio_player and _watched_audio_player.stream:
+			_watched_audio_player.play()
+		_watched_audio_was_playing = true
+	elif intensity <= 0.0 and _watched_audio_was_playing:
+		_watched_audio_was_playing = false
 
 
 func _on_blindness_started() -> void:

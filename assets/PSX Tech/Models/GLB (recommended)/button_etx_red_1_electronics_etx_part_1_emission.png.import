@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cskpab2hqbxrn"
-path="res://.godot/imported/button_etx_red_1_electronics_etx_part_1_emission.png-a5a7c477667dab10317eb54bbc2b5a6c.ctex"
+path.s3tc="res://.godot/imported/button_etx_red_1_electronics_etx_part_1_emission.png-a5a7c477667dab10317eb54bbc2b5a6c.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "f7e1266ea99f54b63724f68404e93995"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Tech/Models/GLB (recommended)/button_etx_red_1_electronics_etx_part_1_emission.png"
-dest_files=["res://.godot/imported/button_etx_red_1_electronics_etx_part_1_emission.png-a5a7c477667dab10317eb54bbc2b5a6c.ctex"]
+dest_files=["res://.godot/imported/button_etx_red_1_electronics_etx_part_1_emission.png-a5a7c477667dab10317eb54bbc2b5a6c.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

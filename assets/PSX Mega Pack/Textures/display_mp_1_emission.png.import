@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dpwcwapcl0105"
-path.s3tc="res://.godot/imported/display_mp_1_emission.png-079c29bd7cb3e9bbb4710bf3abb6f3fd.s3tc.ctex"
+path.s3tc="res://.godot/imported/display_mp_1_emission.png-bbf09b7124bbf12f62c738c8c3be1c10.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/display_mp_1_emission.png"
-dest_files=["res://.godot/imported/display_mp_1_emission.png-079c29bd7cb3e9bbb4710bf3abb6f3fd.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/display_mp_1_emission.png"
+dest_files=["res://.godot/imported/display_mp_1_emission.png-bbf09b7124bbf12f62c738c8c3be1c10.s3tc.ctex"]
 
 [params]
 

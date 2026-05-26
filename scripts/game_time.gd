@@ -145,3 +145,9 @@ func set_progress(value: float) -> void:
 		night_started.emit()
 	
 	_was_day = is_day
+
+
+## Resets the cycle to the start of the night phase (progress = 0.5).
+## Used by the Game Over restart flow to re-enter the night from scratch.
+func reset_to_night_start() -> void:
+	set_progress(0.5)

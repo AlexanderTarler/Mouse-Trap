@@ -8,7 +8,7 @@ signal flashlight_turned_off
 signal flashlight_turned_on
 
 @export var max_battery: float = 100.0
-@export var drain_rate: float = 2.0  # per second when on
+@export var drain_rate: float = 1.0  # per second when on (50% slower)
 @export var low_battery_threshold: float = 15.0
 
 var battery_level: float = 100.0

@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b2e7y0dfnah2s"
-path.s3tc="res://.godot/imported/cell_phone_2.png-c9ee317458c3c86688b8fb7140f0a845.s3tc.ctex"
+path.s3tc="res://.godot/imported/cell_phone_2.png-e260c6e5df48a67fa46d27fc969821bf.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/cell_phone_2.png"
-dest_files=["res://.godot/imported/cell_phone_2.png-c9ee317458c3c86688b8fb7140f0a845.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/cell_phone_2.png"
+dest_files=["res://.godot/imported/cell_phone_2.png-e260c6e5df48a67fa46d27fc969821bf.s3tc.ctex"]
 
 [params]
 

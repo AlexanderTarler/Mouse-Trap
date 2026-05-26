@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://camr0s3c80g2j"
+path="res://.godot/imported/electric_shock_mx_1.ogg-5a659179604b32012f3f808cd0447df8.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Echoes - Audio Super Kit/electric_shock_mx_1.ogg"
+dest_files=["res://.godot/imported/electric_shock_mx_1.ogg-5a659179604b32012f3f808cd0447df8.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

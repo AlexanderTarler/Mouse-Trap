@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://d0uq0x2m2q0db"]
+
+[ext_resource type="Script" uid="uid://baixx1fs8cosb" path="res://scripts/items/item_data.gd" id="1_8lbpg"]
+
+[resource]
+script = ExtResource("1_8lbpg")
+item_name = "Wooden Plank"
+item_description = "A sturdy wooden plank. Can be used to board up windows."
+item_type = 3
+metadata/_custom_type_script = "uid://baixx1fs8cosb"

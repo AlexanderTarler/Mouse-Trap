@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ci4ljvw8qf1a3"
-path.s3tc="res://.godot/imported/ceiling_lamp_1_on_emission.png-1cd6f2798da36b5dfd78a7f06e5f94af.s3tc.ctex"
+path.s3tc="res://.godot/imported/ceiling_lamp_1_on_emission.png-9712d153bc749ac166c039d3f65ba3c1.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/ceiling_lamp_1_on_emission.png"
-dest_files=["res://.godot/imported/ceiling_lamp_1_on_emission.png-1cd6f2798da36b5dfd78a7f06e5f94af.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/ceiling_lamp_1_on_emission.png"
+dest_files=["res://.godot/imported/ceiling_lamp_1_on_emission.png-9712d153bc749ac166c039d3f65ba3c1.s3tc.ctex"]
 
 [params]
 

@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b3rvasjp72hju"
-path.s3tc="res://.godot/imported/walkie_talkie_2.png-58c9dcb219c9a1ae6e5416a63dff47c7.s3tc.ctex"
+path.s3tc="res://.godot/imported/walkie_talkie_2.png-0a063606a3acea6cf2547d91520fd586.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/walkie_talkie_2.png"
-dest_files=["res://.godot/imported/walkie_talkie_2.png-58c9dcb219c9a1ae6e5416a63dff47c7.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/walkie_talkie_2.png"
+dest_files=["res://.godot/imported/walkie_talkie_2.png-0a063606a3acea6cf2547d91520fd586.s3tc.ctex"]
 
 [params]
 

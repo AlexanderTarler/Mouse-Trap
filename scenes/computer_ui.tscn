@@ -1,0 +1,201 @@
+[gd_scene format=3 uid="uid://b2lplqj6v4bkj"]
+
+[ext_resource type="Script" uid="uid://bteeabtnr50ik" path="res://scripts/computer_ui.gd" id="1_computer_ui"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_win98"]
+bg_color = Color(0.7529412, 0.7529412, 0.7529412, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.5019608, 0.5019608, 0.5019608, 1)
+corner_radius_top_left = 0
+corner_radius_top_right = 0
+corner_radius_bottom_right = 0
+corner_radius_bottom_left = 0
+content_margin_left = 2
+content_margin_top = 2
+content_margin_right = 2
+content_margin_bottom = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_content"]
+bg_color = Color(1, 1, 1, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.5019608, 0.5019608, 0.5019608, 1)
+corner_radius_top_left = 0
+corner_radius_top_right = 0
+corner_radius_bottom_right = 0
+corner_radius_bottom_left = 0
+content_margin_left = 4
+content_margin_top = 4
+content_margin_right = 4
+content_margin_bottom = 4
+
+[node name="ComputerUI" type="CanvasLayer"]
+layer = 100
+script = ExtResource("1_computer_ui")
+
+[node name="DesktopBackground" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.00784314, 0.5019608, 0.5019608, 1)
+
+[node name="MainWindow" type="Panel" parent="."]
+offset_left = 308.0
+offset_top = 25.0
+offset_right = 1108.0
+offset_bottom = 625.0
+size_flags_horizontal = 4
+size_flags_vertical = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_win98")
+
+[node name="TitleBar" type="ColorRect" parent="MainWindow"]
+layout_mode = 0
+offset_right = 800.0
+offset_bottom = 22.0
+color = Color(0, 0, 0.5019608, 1)
+
+[node name="TitleLabel" type="Label" parent="MainWindow/TitleBar"]
+layout_mode = 0
+offset_left = 4.0
+offset_top = 2.0
+offset_right = 300.0
+offset_bottom = 20.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "Archival System v3.1"
+vertical_alignment = 1
+
+[node name="MinimizeButton" type="Button" parent="MainWindow/TitleBar"]
+layout_mode = 0
+offset_left = 740.0
+offset_top = 1.0
+offset_right = 758.0
+offset_bottom = 21.0
+theme_override_font_sizes/font_size = 8
+text = "_"
+
+[node name="MaximizeButton" type="Button" parent="MainWindow/TitleBar"]
+layout_mode = 0
+offset_left = 759.0
+offset_top = 1.0
+offset_right = 777.0
+offset_bottom = 21.0
+theme_override_font_sizes/font_size = 8
+text = "□"
+
+[node name="CloseButton" type="Button" parent="MainWindow/TitleBar"]
+layout_mode = 0
+offset_left = 778.0
+offset_top = 1.0
+offset_right = 796.0
+offset_bottom = 21.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 11
+text = "X"
+
+[node name="MenuBar" type="HBoxContainer" parent="MainWindow"]
+layout_mode = 0
+offset_left = 2
+offset_top = 23
+offset_right = 798
+offset_bottom = 40
+
+[node name="FileMenu" type="Button" parent="MainWindow/MenuBar"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+flat = true
+text = "File"
+
+[node name="EditMenu" type="Button" parent="MainWindow/MenuBar"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+flat = true
+text = "Edit"
+
+[node name="ViewMenu" type="Button" parent="MainWindow/MenuBar"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+flat = true
+text = "View"
+
+[node name="HelpMenu" type="Button" parent="MainWindow/MenuBar"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+flat = true
+text = "Help"
+
+[node name="SeparatorLine" type="HSeparator" parent="MainWindow"]
+layout_mode = 0
+offset_left = 2
+offset_top = 40
+offset_right = 798
+offset_bottom = 42
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MainWindow"]
+layout_mode = 0
+offset_left = 2
+offset_top = 43
+offset_right = 798
+offset_bottom = 598
+
+[node name="NavButtons" type="VBoxContainer" parent="MainWindow/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="LogNestData" type="Button" parent="MainWindow/HBoxContainer/NavButtons"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Log Nest Data"
+
+[node name="ArchiveLogs" type="Button" parent="MainWindow/HBoxContainer/NavButtons"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Archive Logs"
+
+[node name="Trash" type="Button" parent="MainWindow/HBoxContainer/NavButtons"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Trash (Deleted)"
+
+[node name="ContentPanel" type="Panel" parent="MainWindow/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_content")
+
+[node name="ContentDisplay" type="RichTextLabel" parent="MainWindow/HBoxContainer/ContentPanel"]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_colors/default_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 11
+bbcode_enabled = true
+text = "Welcome to the Archival System v3.1
+
+Select a category from the left to view records."
+
+[node name="StatusBar" type="ColorRect" parent="MainWindow"]
+layout_mode = 0
+offset_left = 2
+offset_top = 598
+offset_right = 798
+offset_bottom = 616
+color = Color(0.7529412, 0.7529412, 0.7529412, 1)
+
+[node name="StatusLabel" type="Label" parent="MainWindow/StatusBar"]
+layout_mode = 0
+offset_left = 4
+offset_top = 2
+offset_right = 400
+offset_bottom = 18
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 11
+text = "Ready"

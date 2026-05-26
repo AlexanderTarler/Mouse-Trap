@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://l101wfdbbfth"]
+
+[ext_resource type="Script" uid="uid://dg3xhud56qdu8" path="res://scripts/items/key_pickup.gd" id="1_wy8tx"]
+[ext_resource type="PackedScene" uid="uid://brir1cakbq8hh" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/key_mp_3.glb" id="2_model"]
+[ext_resource type="Resource" path="res://resources/key_resource.tres" id="2_wy8tx"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bavnn"]
+size = Vector3(0.1, 0.1, 0.1)
+
+[node name="Key" type="RigidBody3D" unique_id=1309299402]
+script = ExtResource("1_wy8tx")
+item_data = ExtResource("2_wy8tx")
+
+[node name="KeyModel" parent="." unique_id=88922058 instance=ExtResource("2_model")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1828663289]
+shape = SubResource("BoxShape3D_bavnn")
+debug_color = Color(0.6379778, 0.52352464, 0.1482018, 0.41960785)

@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://caxeveyxpdxh6"
-path="res://.godot/imported/chair_wooden_1_wood_1.png-fec727ff9da767ba36b72e9c9abde327.ctex"
+path.s3tc="res://.godot/imported/chair_wooden_1_wood_1.png-fec727ff9da767ba36b72e9c9abde327.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "1b93fff80b4661339ff1d1f33c9a42ec"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/GLB/chair_wooden_1_wood_1.png"
-dest_files=["res://.godot/imported/chair_wooden_1_wood_1.png-fec727ff9da767ba36b72e9c9abde327.ctex"]
+dest_files=["res://.godot/imported/chair_wooden_1_wood_1.png-fec727ff9da767ba36b72e9c9abde327.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

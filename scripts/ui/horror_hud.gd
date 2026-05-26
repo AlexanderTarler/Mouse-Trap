@@ -8,6 +8,7 @@ extends CanvasLayer
 @onready var event_label: Label = $EventLabel
 @onready var event_timer: Timer = $EventTimer
 @onready var phase_bar: ProgressBar = $PhaseBar
+@onready var objective_label: Label = $ObjectiveLabel
 
 # Battery meter nodes
 @onready var battery_bar: ProgressBar = $BatteryBar
@@ -17,6 +18,10 @@ extends CanvasLayer
 # Stamina meter nodes
 @onready var stamina_bar: ProgressBar = $StaminaBar
 @onready var stamina_label: Label = $StaminaBar/StaminaLabel
+
+# Fuel meter nodes
+@onready var fuel_bar: TextureProgressBar = $GeneratorFuelBar
+@onready var fuel_label: Label = $GeneratorFuelBar/FuelLabel
 
 ## Reference to the EnvironmentController (set in the scene)
 @export var environment_controller: Node
@@ -34,16 +39,21 @@ var _message_busy: bool = false
 
 
 func _ready() -> void:
-	if Engine.has_singleton("NightManager"):
-		var nm = Engine.get_singleton("NightManager")
+	var nm = get_node_or_null("/root/NightManager")
+	if nm:
 		nm.night_started.connect(_on_night_started)
 		nm.night_ended.connect(_on_night_ended)
 		nm.horror_event.connect(_on_horror_event)
+		nm.fuel_changed.connect(_on_generator_fuel_changed)
+		nm.generator_state_changed.connect(_on_generator_state_changed)
+		nm.first_chase_started.connect(_on_first_chase_started)
 		_update_night_label(nm.current_night)
+		# Initialize fuel bar with current fuel value
+		_on_generator_fuel_changed(nm.generator_fuel)
 	
 	# Connect to GameTime's time_changed signal for immediate HUD refresh
-	if Engine.has_singleton("GameTime"):
-		var gt = Engine.get_singleton("GameTime")
+	var gt = get_node_or_null("/root/GameTime")
+	if gt:
 		gt.time_changed.connect(_on_game_time_changed)
 	
 	# Find EnvironmentController if not assigned
@@ -63,6 +73,32 @@ func _ready() -> void:
 	
 	# Connect to player stamina signal
 	_find_and_connect_stamina()
+	
+	# Connect to RoutineManager for Night 1 bedtime routine objective
+	_connect_routine_manager()
+
+
+func _connect_routine_manager() -> void:
+	var rm = get_node_or_null("/root/RoutineManager")
+	if rm:
+		rm.routine_step_changed.connect(_on_routine_step_changed)
+		# Initialize the objective label with the current step
+		if objective_label:
+			objective_label.text = rm.get_current_objective()
+		print("[HUD] Connected to RoutineManager.")
+	else:
+		# Retry next frame — RoutineManager might not be ready yet
+		call_deferred("_connect_routine_manager")
+
+
+## Called when the Night 1 bedtime routine advances to a new step.
+## Updates the objective label text on the HUD.
+func _on_routine_step_changed(step: int, objective_text: String) -> void:
+	if not objective_label:
+		return
+	
+	objective_label.text = objective_text
+	print("[HUD] Routine step updated: Step ", step, " — ", objective_text)
 
 
 func _find_and_connect_flashlight() -> void:
@@ -156,8 +192,8 @@ func _process(delta: float) -> void:
 	
 	# Read from GameTime directly as the primary source (most reliable).
 	# Fall back to EnvironmentController if GameTime isn't available.
-	if Engine.has_singleton("GameTime"):
-		var gt = Engine.get_singleton("GameTime")
+	var gt = get_node_or_null("/root/GameTime")
+	if gt:
 		progress = gt.cycle_progress
 		p_is_day = gt.is_day
 	elif environment_controller:
@@ -233,8 +269,8 @@ func _on_game_time_changed(_progress: float) -> void:
 	# Re-read the latest values from GameTime and refresh the display
 	var progress: float = 0.0
 	var p_is_day: bool = true
-	if Engine.has_singleton("GameTime"):
-		var gt = Engine.get_singleton("GameTime")
+	var gt = get_node_or_null("/root/GameTime")
+	if gt:
 		progress = gt.cycle_progress
 		p_is_day = gt.is_day
 	_update_display(progress, p_is_day)
@@ -252,6 +288,61 @@ func _on_night_ended(night: int) -> void:
 func _on_horror_event(event_name: String) -> void:
 	var display_name = event_name.replace("_", " ").capitalize()
 	_show_event(display_name)
+
+
+## Called when NightManager emits first_chase_started (Night 1 narrative event).
+## Unlocks the player's sprint ability and displays a prominent UI hint.
+func _on_first_chase_started() -> void:
+	# Find the player and unlock sprint
+	var player = get_node_or_null("/root/CottageHorror/Player")
+	if not player:
+		player = get_node_or_null("/root/Main/Player")
+	if player and "sprint_unlocked" in player:
+		player.sprint_unlocked = true
+		print("[HUD] Sprint unlocked for the player!")
+	
+	# Display a massive, highly visible UI hint
+	_show_event("⚠️ PRESS SHIFT TO RUN ⚠️")
+
+
+## Updates the generator fuel bar on the HUD.
+## Colors the bar green/yellow when fuel is healthy, red when below 25%.
+func _on_generator_fuel_changed(current_fuel: float) -> void:
+	if not fuel_bar or not fuel_label:
+		return
+	
+	fuel_bar.value = current_fuel
+	fuel_label.text = "⛽ %d%%" % current_fuel
+	
+	# Color the bar based on fuel level
+	if current_fuel <= 25.0:
+		# Red - critical
+		fuel_bar.modulate = Color(1.0, 0.2, 0.2, 1.0)
+	elif current_fuel <= 50.0:
+		# Yellow - warning
+		fuel_bar.modulate = Color(1.0, 0.8, 0.2, 1.0)
+	else:
+		# Green - good
+		fuel_bar.modulate = Color(0.3, 0.8, 0.3, 1.0)
+
+
+## Called when the generator turns on or off.
+## Shows a blackout event message when the generator stops.
+func _on_generator_state_changed(is_running: bool) -> void:
+	if not is_running:
+		_show_event("⚠️ Generator offline! Lights out!")
+		# Gray out the fuel bar to indicate the generator is off
+		if fuel_bar:
+			fuel_bar.modulate = Color(0.4, 0.4, 0.4, 0.6)
+		if fuel_label:
+			fuel_label.text = "⛽ OFF"
+	else:
+		_show_event("⚡ Generator restarted!")
+		# Restore fuel bar color and label (will be updated by next fuel_changed signal)
+		if fuel_bar:
+			fuel_bar.modulate = Color(0.3, 0.8, 0.3, 1.0)
+		if fuel_label:
+			fuel_label.text = "⛽ %d%%" % fuel_bar.value
 
 
 func _update_night_label(night: int) -> void:

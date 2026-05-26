@@ -1,16 +1,19 @@
 extends Node3D
 
-## Spawns batteries and notes at predefined Marker3D spawn points.
+## Spawns batteries, notes, and wooden planks at predefined Marker3D spawn points.
 ## Place Marker3D nodes as children of this node to define spawn locations.
 ## Optionally assign unique note texts via note_texts array (cycled through spawns).
 ## Items are raycast-snapped to the ground so they always rest on the surface.
 
 @export var battery_scene: PackedScene
 @export var note_scene: PackedScene
+@export var plank_scene: PackedScene
 @export var battery_count: int = 3
 @export var note_count: int = 2
+@export var plank_count: int = 2
 @export var battery_item_data: ItemData
 @export var note_item_data: ItemData
+@export var plank_item_data: ItemData
 @export var note_texts: Array[String] = []
 
 ## How high above the spawn point to start the ground-snap raycast
@@ -105,9 +108,31 @@ func _spawn_items() -> void:
 			
 			spawn_idx += 1
 	
-	print("ItemSpawner: Spawned ", battery_count, " batteries and ", note_count, " notes")
-
-
+	# Spawn wooden planks
+	for i in range(plank_count):
+		if spawn_idx >= spawn_points.size():
+			spawn_idx = 0
+		
+		if plank_scene:
+			var plank = plank_scene.instantiate()
+			add_child(plank)
+			
+			# Snap to ground using raycast
+			var ground_pos = _snap_to_ground(space_state, spawn_points[spawn_idx].global_position)
+			plank.global_position = ground_pos
+			
+			if plank_item_data and plank.has_method("set_item_data"):
+				plank.set_item_data(plank_item_data)
+			elif plank.has_method("set_item_data"):
+				var data = ItemData.new()
+				data.item_name = "Wooden Plank"
+				data.item_description = "A sturdy wooden plank. Can be used to board up windows."
+				data.item_type = ItemData.ItemType.PLANK
+				plank.set_item_data(data)
+			
+			spawn_idx += 1
+	
+	print("ItemSpawner: Spawned ", battery_count, " batteries, ", note_count, " notes, and ", plank_count, " planks")
 
 ## Casts a ray downward from above the given position to find the ground surface.
 ## Returns the snapped position (just above ground) or the original position if no ground found.

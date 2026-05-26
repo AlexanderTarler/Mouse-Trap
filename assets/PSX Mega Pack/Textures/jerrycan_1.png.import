@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://j2yc1o0pnhj8"
-path.s3tc="res://.godot/imported/jerrycan_1.png-a38cf7a9077d798e89df72e4994add76.s3tc.ctex"
+path.s3tc="res://.godot/imported/jerrycan_1.png-9c89016ace457941ede02cd28a177d88.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/jerrycan_1.png"
-dest_files=["res://.godot/imported/jerrycan_1.png-a38cf7a9077d798e89df72e4994add76.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/jerrycan_1.png"
+dest_files=["res://.godot/imported/jerrycan_1.png-9c89016ace457941ede02cd28a177d88.s3tc.ctex"]
 
 [params]
 

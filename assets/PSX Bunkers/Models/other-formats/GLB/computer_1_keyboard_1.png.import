@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cp4g6yrhcs6xa"
-path="res://.godot/imported/computer_1_keyboard_1.png-a9fc62f88f6b6ccdda8089ede2feba53.ctex"
+path.s3tc="res://.godot/imported/computer_1_keyboard_1.png-a9fc62f88f6b6ccdda8089ede2feba53.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "437c374ed88a2d32dd1511a1724acb9a"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/GLB/computer_1_keyboard_1.png"
-dest_files=["res://.godot/imported/computer_1_keyboard_1.png-a9fc62f88f6b6ccdda8089ede2feba53.ctex"]
+dest_files=["res://.godot/imported/computer_1_keyboard_1.png-a9fc62f88f6b6ccdda8089ede2feba53.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

@@ -11,6 +11,9 @@ var _camera: Camera3D = null
 var _current_target: Node = null
 var _prompt_label: Label = null
 
+func set_camera(cam: Camera3D) -> void:
+	_camera = cam
+
 func _ready() -> void:
 	_create_prompt()
 
@@ -25,8 +28,8 @@ func _create_prompt() -> void:
 	_prompt_label.position = Vector2(0, 0)
 	_prompt_label.size = Vector2(0, 0)
 	_prompt_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	_prompt_label.offset_top = -60
-	_prompt_label.offset_bottom = -20
+	_prompt_label.offset_top = -220
+	_prompt_label.offset_bottom = -180
 	_prompt_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.8))
 	_prompt_label.add_theme_font_size_override("font_size", 16)
 	_prompt_label.text = ""
@@ -58,6 +61,10 @@ func _process(delta: float) -> void:
 	var to = from + _camera.project_ray_normal(center) * interaction_distance
 	
 	var query = PhysicsRayQueryParameters3D.create(from, to)
+	# Collide with both physics bodies AND areas (Area3D triggers like LightSwitchTrigger).
+	# Without this, Area3D-based interactables will never be detected by the raycast.
+	query.collide_with_areas = true
+	query.collide_with_bodies = true
 	# Exclude the player (CharacterBody3D) from the raycast
 	# InteractionManager is at: Player > CameraHolder > InteractionManager
 	# So get_parent() = CameraHolder, get_parent().get_parent() = Player

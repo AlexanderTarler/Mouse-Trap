@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://d0uq0x2m2q0dc"]
+
+[ext_resource type="Script" uid="uid://baixx1fs8cosb" path="res://scripts/items/item_data.gd" id="1_8lbpg"]
+[ext_resource type="PackedScene" uid="uid://cd6rau4pn5djq" path="res://scenes/key.tscn" id="2_7k3lm"]
+
+[resource]
+script = ExtResource("1_8lbpg")
+item_name = "Cabin Key"
+item_description = "A rusty old key. It might open something in the cabin."
+item_type = 5
+scene_to_spawn = ExtResource("2_7k3lm")
+metadata/_custom_type_script = "uid://baixx1fs8cosb"

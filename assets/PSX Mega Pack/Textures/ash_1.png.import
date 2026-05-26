@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b71hhdx5t2aik"
-path.s3tc="res://.godot/imported/ash_1.png-c8b6aff3b4c24e1cffc167077ccbb722.s3tc.ctex"
+path.s3tc="res://.godot/imported/ash_1.png-6fede5dfad16603faf93ce5f8541eff4.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/ash_1.png"
-dest_files=["res://.godot/imported/ash_1.png-c8b6aff3b4c24e1cffc167077ccbb722.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/ash_1.png"
+dest_files=["res://.godot/imported/ash_1.png-6fede5dfad16603faf93ce5f8541eff4.s3tc.ctex"]
 
 [params]
 

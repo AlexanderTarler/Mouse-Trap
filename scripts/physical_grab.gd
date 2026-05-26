@@ -3,6 +3,7 @@ extends Node3D
 ## Physical grab system.
 ## Hold E (0.5s) to grab a RigidBody3D in front of the camera and move it around physically.
 ## Quick tap E to interact with objects (delegates to InteractionManager).
+## Hold E (1s) on a locked/unlocked door to toggle its lock state (via toggle_lock()).
 
 @export var grab_distance: float = 3.0
 @export var hold_distance: float = 1.5
@@ -11,6 +12,9 @@ extends Node3D
 # How long E must be held before entering grab mode (seconds)
 @export var hold_threshold: float = 0.5
 
+# How long E must be held on a door to toggle its lock (seconds)
+@export var door_lock_threshold: float = 1.0
+
 var _camera: Camera3D = null
 var _grabbed_body: RigidBody3D = null
 var _e_held_time: float = 0.0
@@ -18,6 +22,10 @@ var _e_is_held: bool = false
 var _is_grabbing: bool = false
 var _has_passed_threshold: bool = false
 var _prompt_label: Label = null
+
+# Door lock hold tracking
+var _door_lock_target: Node = null
+var _has_passed_door_threshold: bool = false
 
 # Saved gravity scale to restore on release
 var _saved_gravity_scale: float = 1.0
@@ -60,6 +68,8 @@ func _input(event: InputEvent) -> void:
 		_e_is_held = true
 		_e_held_time = 0.0
 		_has_passed_threshold = false
+		_has_passed_door_threshold = false
+		_door_lock_target = null
 		
 	elif not event.pressed and _e_is_held:
 		# E released
@@ -68,6 +78,9 @@ func _input(event: InputEvent) -> void:
 		if _is_grabbing:
 			# Release the grabbed object
 			_drop_object()
+		elif _has_passed_door_threshold:
+			# Door lock hold completed — do nothing on release (already handled)
+			pass
 		elif not _has_passed_threshold:
 			# Quick tap! Fire interact() on the current target
 			_fire_interact()
@@ -81,7 +94,17 @@ func _process(delta: float) -> void:
 	if _e_is_held and not _is_grabbing:
 		_e_held_time += delta
 		
-		if _e_held_time >= hold_threshold and not _has_passed_threshold:
+		# Check for door lock hold (2s threshold)
+		if not _has_passed_door_threshold and _e_held_time >= door_lock_threshold:
+			# Check if we're looking at a door with toggle_lock
+			var door_target = _find_door_target()
+			if door_target:
+				_has_passed_door_threshold = true
+				door_target.toggle_lock()
+				return  # Don't try to grab
+		
+		# Check for grab hold (0.5s threshold) — only if not doing door lock
+		if not _has_passed_door_threshold and _e_held_time >= hold_threshold and not _has_passed_threshold:
 			_has_passed_threshold = true
 			# Try to grab an object
 			_try_grab()
@@ -214,19 +237,69 @@ func _drop_object() -> void:
 	_is_grabbing = false
 
 
+## Finds a door target in front of the camera that has toggle_lock() method.
+func _find_door_target() -> Node:
+	if not _camera:
+		return null
+	
+	var space_state = get_world_3d().direct_space_state
+	if not space_state:
+		return null
+	
+	var viewport_size = _camera.get_viewport().size
+	var center = viewport_size / 2.0
+	var from = _camera.project_ray_origin(center)
+	var to = from + _camera.project_ray_normal(center) * grab_distance
+	
+	var query = PhysicsRayQueryParameters3D.create(from, to)
+	query.collide_with_areas = true
+	query.collide_with_bodies = true
+	
+	var player = _find_player()
+	if player:
+		query.exclude = [player]
+	
+	var result = space_state.intersect_ray(query)
+	if result.is_empty():
+		return null
+	
+	var collider = result.collider
+	if not collider:
+		return null
+	
+	# Walk up the parent chain to find a node with toggle_lock
+	var current = collider
+	while current:
+		if current.has_method("toggle_lock"):
+			return current
+		current = current.get_parent()
+	
+	return null
+
+
 func _update_prompt() -> void:
 	if not _prompt_label:
 		return
 	
 	if _is_grabbing:
 		_prompt_label.text = "[E] Release"
-	elif _e_is_held and not _has_passed_threshold:
+	elif _e_is_held and not _has_passed_threshold and not _has_passed_door_threshold:
 		# Show what we're looking at while holding E
 		var target = _find_grabbable_target()
 		if target:
 			_prompt_label.text = "Grabbing " + target.name + "..."
 		else:
-			_prompt_label.text = ""
+			# Check if we're looking at a door for lock toggle
+			var door_target = _find_door_target()
+			if door_target:
+				var progress = min(1.0, _e_held_time / door_lock_threshold)
+				var pct = int(progress * 100)
+				if door_target.is_locked:
+					_prompt_label.text = "Unlocking... %d%%" % pct
+				else:
+					_prompt_label.text = "Locking... %d%%" % pct
+			else:
+				_prompt_label.text = ""
 	else:
 		_prompt_label.text = ""
 

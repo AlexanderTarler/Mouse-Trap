@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c1xoonrnyih7y"
-path.s3tc="res://.godot/imported/notebook_1.png-cbd86526a45086d66d9e19d6ed6d4ac5.s3tc.ctex"
+path.s3tc="res://.godot/imported/notebook_1.png-b8adad6ed1d170297d8109e6f2204732.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/notebook_1.png"
-dest_files=["res://.godot/imported/notebook_1.png-cbd86526a45086d66d9e19d6ed6d4ac5.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/notebook_1.png"
+dest_files=["res://.godot/imported/notebook_1.png-b8adad6ed1d170297d8109e6f2204732.s3tc.ctex"]
 
 [params]
 

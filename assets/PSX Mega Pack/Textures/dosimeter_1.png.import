@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://vrebry3u8ovq"
-path.s3tc="res://.godot/imported/dosimeter_1.png-9301704047bfce9106b590b67988c2e4.s3tc.ctex"
+path.s3tc="res://.godot/imported/dosimeter_1.png-1ca72212e398a4554711855ee6164538.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/dosimeter_1.png"
-dest_files=["res://.godot/imported/dosimeter_1.png-9301704047bfce9106b590b67988c2e4.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/dosimeter_1.png"
+dest_files=["res://.godot/imported/dosimeter_1.png-1ca72212e398a4554711855ee6164538.s3tc.ctex"]
 
 [params]
 

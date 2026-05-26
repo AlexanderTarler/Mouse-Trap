@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b6m6a6rg5bbtd"
-path="res://.godot/imported/fuse_box_etx_1_1_grate_etx_1.png-b95ed649073e8df47b44ce3a590302f7.ctex"
+path.s3tc="res://.godot/imported/fuse_box_etx_1_1_grate_etx_1.png-b95ed649073e8df47b44ce3a590302f7.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "f36c5c897063218a9685e8cd906b1bb8"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Tech/Models/GLB (recommended)/fuse_box_etx_1_1_grate_etx_1.png"
-dest_files=["res://.godot/imported/fuse_box_etx_1_1_grate_etx_1.png-b95ed649073e8df47b44ce3a590302f7.ctex"]
+dest_files=["res://.godot/imported/fuse_box_etx_1_1_grate_etx_1.png-b95ed649073e8df47b44ce3a590302f7.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

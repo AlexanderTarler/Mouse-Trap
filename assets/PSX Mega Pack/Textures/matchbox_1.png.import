@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://00d7fo7q60xs"
-path.s3tc="res://.godot/imported/matchbox_1.png-3a0f196368c2ba9043cffbaf9c6083af.s3tc.ctex"
+path.s3tc="res://.godot/imported/matchbox_1.png-5136318b926b0705fb181f64f74aec22.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/matchbox_1.png"
-dest_files=["res://.godot/imported/matchbox_1.png-3a0f196368c2ba9043cffbaf9c6083af.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/matchbox_1.png"
+dest_files=["res://.godot/imported/matchbox_1.png-5136318b926b0705fb181f64f74aec22.s3tc.ctex"]
 
 [params]
 

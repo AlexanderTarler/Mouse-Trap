@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://br2invnrwau7c"
-path.s3tc="res://.godot/imported/toilet_mp_1.png-416783f890b4444f76934838816e00c6.s3tc.ctex"
+path.s3tc="res://.godot/imported/toilet_mp_1.png-c8a751d8db3a8c741c64953444d47ad4.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/toilet_mp_1.png"
-dest_files=["res://.godot/imported/toilet_mp_1.png-416783f890b4444f76934838816e00c6.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/toilet_mp_1.png"
+dest_files=["res://.godot/imported/toilet_mp_1.png-c8a751d8db3a8c741c64953444d47ad4.s3tc.ctex"]
 
 [params]
 

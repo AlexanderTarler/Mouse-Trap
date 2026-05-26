@@ -7,7 +7,10 @@ class_name ItemData
 enum ItemType {
 	BATTERY,
 	NOTE,
-	TOOL
+	TOOL,
+	PLANK,
+	FUEL,
+	KEY
 }
 
 ## Display name of the item

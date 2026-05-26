@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://07b2j5w1pmrw"
-path.s3tc="res://.godot/imported/floppy_disc_1.png-e6c1780be22a1f263d3851cdd53dc0b9.s3tc.ctex"
+path.s3tc="res://.godot/imported/floppy_disc_1.png-4605973adc7f1c58499ff8331aa65fc1.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/floppy_disc_1.png"
-dest_files=["res://.godot/imported/floppy_disc_1.png-e6c1780be22a1f263d3851cdd53dc0b9.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/floppy_disc_1.png"
+dest_files=["res://.godot/imported/floppy_disc_1.png-4605973adc7f1c58499ff8331aa65fc1.s3tc.ctex"]
 
 [params]
 

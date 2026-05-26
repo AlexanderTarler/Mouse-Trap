@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://d0q6l3m5p7k2"]
+
+[ext_resource type="Script" uid="uid://baixx1fs8cosb" path="res://scripts/items/item_data.gd" id="1_8lbpg"]
+[ext_resource type="PackedScene" uid="uid://cd6rau4pn5djq" path="res://scenes/fuel_can.tscn" id="2_7k3lm"]
+
+[resource]
+script = ExtResource("1_8lbpg")
+item_name = "Fuel Can"
+item_description = "A can of fuel for the generator. Each can refills 50 units."
+scene_to_spawn = ExtResource("2_7k3lm")
+metadata/_custom_type_script = "uid://baixx1fs8cosb"

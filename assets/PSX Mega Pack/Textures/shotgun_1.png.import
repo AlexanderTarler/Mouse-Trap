@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c1ix7fuu80e6t"
-path.s3tc="res://.godot/imported/shotgun_1.png-737d71b3bfdab464ca77f2c7599f8fc3.s3tc.ctex"
+path.s3tc="res://.godot/imported/shotgun_1.png-626aa43c163f3829312d63d37110f648.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack/textures/shotgun_1.png"
-dest_files=["res://.godot/imported/shotgun_1.png-737d71b3bfdab464ca77f2c7599f8fc3.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack/Textures/shotgun_1.png"
+dest_files=["res://.godot/imported/shotgun_1.png-626aa43c163f3829312d63d37110f648.s3tc.ctex"]
 
 [params]
 
