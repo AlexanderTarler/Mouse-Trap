@@ -530,6 +530,32 @@ func _stop_distant_monster() -> void:
 		_distant_monster_player.stop()
 
 
+## Plays a distant car alarm sound as a narrative telegraph for the Night 1 intro.
+## The sound is positioned outside the cabin (e.g., near the van) and loops
+## until the player interacts with the escape van to investigate.
+func play_car_alarm_telegraph() -> void:
+	# Use the distant monster player as a 2D audio source (always audible)
+	# since the car alarm should be heard from inside the cabin.
+	if not _distant_monster_player:
+		return
+	
+	# Try to load a car alarm audio file if it exists
+	var car_alarm_path = "res://assets/audio/Entity/car_alarm.ogg"
+	var stream = load(car_alarm_path) as AudioStream
+	if stream:
+		if stream is AudioStreamOggVorbis:
+			stream.loop = true
+		_distant_monster_player.stream = stream
+		_distant_monster_player.volume_db = -4.0
+		_distant_monster_player.play()
+		print("HorrorSoundManager: Playing car alarm telegraph!")
+		sound_played.emit("car_alarm_telegraph")
+	else:
+		print("HorrorSoundManager: Car alarm audio not found at ", car_alarm_path, ". Using distant monster sound as fallback.")
+		# Fallback: play the distant monster sound as a placeholder
+		_play_distant_monster()
+
+
 func toggle_mute() -> void:
 	_muted = not _muted
 	for player in _ambient_sounds:

@@ -32,6 +32,35 @@ func is_player_outside() -> bool:
 	return entity._player.global_position.distance_to(entity.cabin_center) > 10.0
 
 
+## Returns true if the player is on the second floor of the cabin.
+## Uses a Y-axis threshold (3.0 meters above ground level).
+## Ground floor Y ≈ 0.0, second floor Y ≈ 3.0+
+func is_player_on_second_floor() -> bool:
+	if not entity._player:
+		return false
+	return entity._player.global_position.y > 3.0
+
+
+## Finds the nearest exterior wall base position below a second-story window.
+## Scans WindowMarkers, finds ones with Y > 3.0 (second story), projects their
+## position down to ground level (Y = 0.0), and returns the closest one to the Entity.
+## Used by CLIMB_WALL state to determine where to begin the vertical ascent.
+func find_nearest_second_story_window_base() -> Vector3:
+	var windows = entity.get_tree().get_nodes_in_group("WindowMarkers")
+	var best_pos = Vector3.ZERO
+	var shortest = INF
+	for w in windows:
+		if w.global_position.y < 3.0:
+			continue  # Skip ground-floor windows
+		# Project the window position down to ground level
+		var base_pos = Vector3(w.global_position.x, 0.0, w.global_position.z)
+		var d = entity.global_position.distance_to(base_pos)
+		if d < shortest:
+			shortest = d
+			best_pos = base_pos
+	return best_pos
+
+
 ## Picks a new vantage point from the Treeline_Vantage_Points group,
 ## blacklisting the last visited one to avoid getting stuck.
 func pick_next_vantage_point() -> void:

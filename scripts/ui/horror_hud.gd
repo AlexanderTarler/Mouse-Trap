@@ -37,8 +37,21 @@ var _warning_visible: bool = false
 var _message_queue: Array[String] = []
 var _message_busy: bool = false
 
+# ─── FADE-TO-BLACK SYSTEM ──────────────────────────────────────────────
+# A full-screen ColorRect overlay that tweens alpha for cinematic fades.
+# Created programmatically in _ready() so no scene changes are needed.
+var _fade_overlay: ColorRect = null
+
 
 func _ready() -> void:
+	# Create the fade overlay programmatically
+	_fade_overlay = ColorRect.new()
+	_fade_overlay.color = Color(0, 0, 0, 0)  # Start fully transparent
+	_fade_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE  # Don't block clicks
+	_fade_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_fade_overlay.z_index = 100  # Render above everything
+	add_child(_fade_overlay)
+	
 	var nm = get_node_or_null("/root/NightManager")
 	if nm:
 		nm.night_started.connect(_on_night_started)
@@ -76,6 +89,65 @@ func _ready() -> void:
 	
 	# Connect to RoutineManager for Night 1 bedtime routine objective
 	_connect_routine_manager()
+
+
+## Fades the screen to pitch black over the given duration.
+## Uses a Tween on the _fade_overlay ColorRect alpha.
+func fade_to_black(duration: float = 1.5) -> void:
+	if not _fade_overlay:
+		return
+	_fade_overlay.mouse_filter = Control.MOUSE_FILTER_STOP  # Block clicks during fade
+	var tween = create_tween()
+	tween.tween_property(_fade_overlay, "color:a", 1.0, duration)
+	await tween.finished
+
+
+## Fades the screen back in from pitch black over the given duration.
+## Uses a Tween on the _fade_overlay ColorRect alpha.
+func fade_from_black(duration: float = 2.0) -> void:
+	if not _fade_overlay:
+		return
+	var tween = create_tween()
+	tween.tween_property(_fade_overlay, "color:a", 0.0, duration)
+	await tween.finished
+	_fade_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE  # Restore click-through
+
+
+## ─── CAMERA FLASH SNAP ─────────────────────────────────────────────────────
+## High-priority white flash overlay for the photo camera's shutter.
+##
+## freeze_duration: How long the screen stays fully white (default 0.3s).
+## decay_duration:  How long the white flash takes to fade to transparent (default 1.0s).
+##
+## The flash overlay is created programmatically (like _fade_overlay) so it
+## works independently of the CameraHUD scene. This ensures the flash always
+## renders, even if the CameraHUD has rendering issues.
+var _camera_flash_overlay: ColorRect = null
+
+func trigger_camera_flash_snap(freeze_duration: float = 0.3, decay_duration: float = 1.0) -> void:
+	# Lazily create the camera flash overlay (same pattern as _fade_overlay)
+	if not _camera_flash_overlay:
+		_camera_flash_overlay = ColorRect.new()
+		_camera_flash_overlay.color = Color(1, 1, 1, 0)  # Start transparent
+		_camera_flash_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_camera_flash_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_camera_flash_overlay.z_index = 101  # Above _fade_overlay (100)
+		add_child(_camera_flash_overlay)
+	
+	# Phase 1: Instant white flash
+	_camera_flash_overlay.color = Color(1, 1, 1, 1.0)
+	_camera_flash_overlay.visible = true
+	
+	# Phase 2: Hold the freeze for freeze_duration seconds
+	await get_tree().create_timer(freeze_duration).timeout
+	
+	# Phase 3: Elegant Tween decay over decay_duration seconds
+	var tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tween.tween_property(_camera_flash_overlay, "color:a", 0.0, decay_duration)
+	await tween.finished
+	
+	# Cleanup
+	_camera_flash_overlay.visible = false
 
 
 func _connect_routine_manager() -> void:

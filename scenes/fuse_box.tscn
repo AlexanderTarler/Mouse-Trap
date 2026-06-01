@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://dev1jyquh31tw"]
+
+[ext_resource type="PackedScene" uid="uid://bhtpwl205ntv4" path="res://assets/PSX Tech/Models/GLB (recommended)/fuse_box_etx_1.glb" id="1_7ap5c"]
+
+[node name="Fuse Box" type="Node3D" unique_id=1333240661]
+
+[node name="fuse_box_etx_12" parent="." unique_id=40553350 instance=ExtResource("1_7ap5c")]

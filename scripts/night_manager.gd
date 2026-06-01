@@ -264,19 +264,10 @@ func _check_time_events() -> void:
 	
 	match current_night:
 		1:
-			# Night 1: Car alarm narrative event
-			# ~30-45 seconds into the night (progress > 0.15), trigger the car alarm
-			# to force the player outside. The Entity is NOT active yet.
-			# If the van has already been investigated (e.g. after a night restart),
-			# skip the car alarm entirely.
-			if progress > 0.15 and not "car_alarm" in _triggered_events:
-				var escape_van = get_node_or_null("/root/CottageHorror/EscapeVan")
-				if not escape_van:
-					escape_van = get_node_or_null("/root/Main/EscapeVan")
-				if escape_van and escape_van.has_method("get_interact_text") and escape_van.van_investigated:
-					print("[NightManager] Van already investigated. Skipping car alarm event.")
-				else:
-					_trigger_event("car_alarm")
+			# Night 1: Car alarm is now driven exclusively by the bed interaction
+			# (bed_interactable.gd → _trigger_sleep_intro_sequence).
+			# No time-based auto-trigger — the player must choose to sleep.
+			pass
 		
 		2:
 			# Night 2: Entity appears briefly

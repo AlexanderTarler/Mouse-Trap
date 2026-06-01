@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://myej0vcgjeoa"]
+
+[ext_resource type="PackedScene" uid="uid://cn54gliuph0vx" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/bed_1.glb" id="1_fqty4"]
+[ext_resource type="PackedScene" uid="uid://b2xkqw7gli4qw" path="res://assets/PSX Mega Pack/Models/other-formats/FBX/Furniture/pillow_mp_1.fbx" id="2_raxto"]
+[ext_resource type="Script" uid="uid://bkr2xvmjfr0xc" path="res://scripts/bed_interactable.gd" id="3_raxto"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_853xm"]
+size = Vector3(3, 1.5, 1.5)
+
+[node name="Bed" type="Node3D" unique_id=501505394]
+
+[node name="bed_12" parent="." unique_id=1613334554 instance=ExtResource("1_fqty4")]
+
+[node name="pillow_mp_1" parent="." unique_id=1668208436 instance=ExtResource("2_raxto")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9972922, 0.7887755, 0.069096684)
+
+[node name="InteractableArea3D" type="Area3D" parent="." unique_id=1233149055]
+script = ExtResource("3_raxto")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractableArea3D" unique_id=1190095180]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6475789, 0)
+shape = SubResource("BoxShape3D_853xm")

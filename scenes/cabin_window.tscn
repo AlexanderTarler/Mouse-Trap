@@ -6,6 +6,19 @@
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_xje28"]
 
+[sub_resource type="BoxShape3D" id="BoxShape3D_yfnpk"]
+size = Vector3(1, 1, 0.2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yfnpk"]
+transparency = 1
+albedo_color = Color(0.96862745, 1, 1, 0)
+metallic = 0.8
+roughness = 0.1
+
+[sub_resource type="BoxMesh" id="BoxMesh_onr5d"]
+material = SubResource("StandardMaterial3D_yfnpk")
+size = Vector3(1, 1, 0.02)
+
 [node name="CabinWindow" type="Node3D" unique_id=1290486114]
 script = ExtResource("1_yfnpk")
 
@@ -34,3 +47,16 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.2150924)
 
 [node name="BarricadeDamageAudio" type="AudioStreamPlayer3D" parent="." unique_id=2120085934]
 stream = ExtResource("2_xje28")
+
+[node name="NavBlocker" type="StaticBody3D" parent="." unique_id=261182453]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavBlocker" unique_id=1533731465]
+shape = SubResource("BoxShape3D_yfnpk")
+
+[node name="PristineVisuals" type="Node3D" parent="." unique_id=753564403]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="PristineVisuals" unique_id=227728680]
+mesh = SubResource("BoxMesh_onr5d")
+
+[node name="ShatteredVisuals" type="Node3D" parent="." unique_id=903357451]
+visible = false

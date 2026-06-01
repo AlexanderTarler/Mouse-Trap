@@ -33,6 +33,7 @@ extends CharacterBody3D
 @onready var _camera_holder: Node3D = $CameraHolder
 @onready var _collision_shape: CollisionShape3D = $CollisionShape3D
 @onready var _flashlight: SpotLight3D = $CameraHolder/Camera3D/Flashlight
+@onready var _photo_camera: Node = $CameraHolder/Camera3D/PhotoCamera
 @onready var _interaction_manager: Node = $CameraHolder/InteractionManager
 @onready var _physical_grab: Node = $CameraHolder/PhysicalGrab
 @onready var footstep_audio: AudioStreamPlayer3D = $FootstepAudio if has_node("FootstepAudio") else null
@@ -92,7 +93,17 @@ signal stamina_changed(stamina_percent: float)
 # Noise system
 var _noise_timer: float = 0.0
 
+## Starting items to add to the player's inventory on game start.
+## Drag ItemData resources (e.g. key_resource.tres, battery_resource.tres) here
+## in the editor to give the player items at the beginning of the game.
+@export var starting_items: Array[ItemData] = []
+
 func _ready() -> void:
+	# Add starting items to the Inventory autoload
+	for item in starting_items:
+		if item:
+			Inventory.add_item(item)
+			print("[Player] Added starting item to inventory: ", item.item_name)
 	_current_speed = walk_speed
 	floor_max_angle = deg_to_rad(60.0)
 	floor_snap_length = 1.2
@@ -220,6 +231,33 @@ func _input(event: InputEvent) -> void:
 	
 	if event is InputEventKey and event.keycode == KEY_F and event.pressed:
 		_toggle_flashlight()
+	
+	# ─── PHOTO CAMERA TOGGLE (R key) ──────────────────────────────────────
+	# Pressing R toggles the PhotoCamera viewfinder on/off (only if equipped).
+	# The CameraHUD is instantiated lazily inside photo_camera.gd's equip()
+	# when the player first presses R, ensuring the scene tree is fully loaded.
+	if event is InputEventKey and event.keycode == KEY_R and event.pressed:
+		if _photo_camera and _photo_camera.is_equipped:
+			_photo_camera.unequip()
+		elif _photo_camera:
+			_photo_camera.equip()
+	
+	# ─── CAMERA ZOOM (RMB) ────────────────────────────────────────────────
+	# Hold RMB to zoom in when the PhotoCamera is equipped.
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
+		if _photo_camera and _photo_camera.is_equipped:
+			_photo_camera.toggle_zoom(event.pressed)
+	
+	# ─── TAKE PHOTO (LMB) ─────────────────────────────────────────────────
+	# Press LMB to take a photo when zoomed in with the PhotoCamera.
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		if _photo_camera and _photo_camera.is_equipped and _photo_camera.is_zoomed:
+			_photo_camera.take_photo()
+	
+	# ─── CAMERA HUD DEBUG TOGGLE (Y key) ──────────────────────────────────
+	# Pressing Y loads and shows the CameraHUD overlay directly for debugging.
+	if event is InputEventKey and event.keycode == KEY_Y and event.pressed:
+		_toggle_camera_hud_debug()
 
 ## Called by flashlight_pickup.gd when the player picks up the flashlight item.
 ## Enables the player's built-in flashlight so they can toggle it with F.
@@ -231,6 +269,46 @@ func enable_flashlight() -> void:
 		if _flashlight.has_method("toggle") and _flashlight.is_on:
 			_flashlight.is_on = false
 	print("[Player] Flashlight acquired! Press F to toggle.")
+
+## Called by camera_pickup.gd when the player picks up the Floppy Disk Camera.
+## Marks the camera as available but does NOT equip it — the player must
+## press R to toggle the viewfinder on/off.
+func enable_camera() -> void:
+	if _photo_camera:
+		print("[Player] PhotoCamera acquired! Press R to toggle viewfinder.")
+	else:
+		print("[Player] WARNING: PhotoCamera node not found!")
+
+
+## Toggles the CameraHUD overlay directly for debugging (Y key).
+## Loads and shows the camera viewfinder HUD without needing the camera item.
+var _camera_hud_debug = null
+var _camera_hud_debug_active: bool = false
+
+func _toggle_camera_hud_debug() -> void:
+	if not _camera_hud_debug:
+		var hud_scene = load("res://scenes/camera_hud.tscn")
+		if hud_scene:
+			_camera_hud_debug = hud_scene.instantiate()
+			if is_inside_tree():
+				get_tree().current_scene.add_child(_camera_hud_debug)
+			else:
+				get_window().add_child(_camera_hud_debug)
+			print("[Player] CameraHUD debug instance created.")
+		else:
+			print("[Player] WARNING: Could not load camera_hud.tscn for debug!")
+			return
+	
+	_camera_hud_debug_active = not _camera_hud_debug_active
+	
+	if _camera_hud_debug_active:
+		if _camera_hud_debug.has_method("show_hud"):
+			_camera_hud_debug.show_hud()
+		print("[Player] CameraHUD debug shown (Y key).")
+	else:
+		if _camera_hud_debug.has_method("hide_hud"):
+			_camera_hud_debug.hide_hud()
+		print("[Player] CameraHUD debug hidden (Y key).")
 
 
 func _toggle_flashlight() -> void:

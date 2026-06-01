@@ -41,9 +41,10 @@ func _ready() -> void:
 
 ## Called by HasselmusNest when a nest is documented.
 ## Increments the counter and advances to Step 1 when all 3 nests are done.
-func document_nest(nest_id: int) -> void:
+func document_nest(nest_id = null) -> void:
 	nests_documented += 1
-	print("[RoutineManager] Nest ", nest_id, " documented! (", nests_documented, "/3)")
+	print("[RoutineManager] Nest ", str(nest_id), " documented! (", nests_documented, "/3)")
+
 	
 	if nests_documented >= 3 and current_step == 0:
 		advance_step()

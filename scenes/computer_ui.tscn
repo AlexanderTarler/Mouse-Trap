@@ -153,7 +153,7 @@ size_flags_vertical = 3
 [node name="LogNestData" type="Button" parent="MainWindow/HBoxContainer/NavButtons"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 11
-text = "Log Nest Data"
+text = "FIELD_LOG.EXE"
 
 [node name="ArchiveLogs" type="Button" parent="MainWindow/HBoxContainer/NavButtons"]
 layout_mode = 2
@@ -181,6 +181,90 @@ bbcode_enabled = true
 text = "Welcome to the Archival System v3.1
 
 Select a category from the left to view records."
+
+[node name="DataEntryPanel" type="Panel" parent="MainWindow/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_content")
+visible = false
+
+[node name="DataEntryVBox" type="VBoxContainer" parent="MainWindow/HBoxContainer/DataEntryPanel"]
+layout_mode = 0
+offset_left = 8
+offset_top = 8
+offset_right = 392
+offset_bottom = 392
+
+[node name="FormTitle" type="Label" parent="MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "FIELD_LOG.EXE — Data Correlation"
+vertical_alignment = 1
+
+[node name="Separator1" type="HSeparator" parent="MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox"]
+layout_mode = 2
+
+[node name="SourceLabel" type="Label" parent="MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Evidence Source:"
+
+[node name="DropdownSource" type="OptionButton" parent="MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+item_count = 3
+popup/item_0/text = "Nest Alpha"
+popup/item_0/id = 0
+popup/item_1/text = "Nest Beta"
+popup/item_1/id = 1
+popup/item_2/text = "Window 3 Sill"
+popup/item_2/id = 2
+
+
+
+
+[node name="AnomalyLabel" type="Label" parent="MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Anomaly Type:"
+
+[node name="DropdownAnomaly" type="OptionButton" parent="MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+item_count = 3
+popup/item_0/text = "Bio-Crystalline"
+popup/item_0/id = 0
+popup/item_1/text = "Organic Decay"
+popup/item_1/id = 1
+popup/item_2/text = "Corrosive Trace"
+popup/item_2/id = 2
+
+
+
+[node name="FrequencyLabel" type="Label" parent="MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Resonant Frequency:"
+
+[node name="DropdownFrequency" type="OptionButton" parent="MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+item_count = 3
+popup/item_0/text = "14.2 Hz"
+popup/item_0/id = 0
+popup/item_1/text = "8.8 Hz"
+popup/item_1/id = 1
+popup/item_2/text = "22.1 Hz"
+popup/item_2/id = 2
+
+
+
+[node name="CorrelateButton" type="Button" parent="MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "CORRELATE DATA"
+
 
 [node name="StatusBar" type="ColorRect" parent="MainWindow"]
 layout_mode = 0

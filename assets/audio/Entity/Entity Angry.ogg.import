@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://drejcy2576dr8"
+path="res://.godot/imported/Entity Angry.ogg-3c2b56ed75c6b5c9284a1f0c71fafba7.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Entity/Entity Angry.ogg"
+dest_files=["res://.godot/imported/Entity Angry.ogg-3c2b56ed75c6b5c9284a1f0c71fafba7.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

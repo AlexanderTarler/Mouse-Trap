@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://dx713hxldjcph"
+path="res://.godot/imported/Entity Searching.ogg-9ec9ceb25a5f538d167479b284ea58f8.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Entity/Entity Searching.ogg"
+dest_files=["res://.godot/imported/Entity Searching.ogg-9ec9ceb25a5f538d167479b284ea58f8.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

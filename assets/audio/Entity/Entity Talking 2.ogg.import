@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bfs2b0535neca"
+path="res://.godot/imported/Entity Talking 2.ogg-f8740244dc0a72408a65d4438bc4ecf7.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/Entity/Entity Talking 2.ogg"
+dest_files=["res://.godot/imported/Entity Talking 2.ogg-f8740244dc0a72408a65d4438bc4ecf7.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4
