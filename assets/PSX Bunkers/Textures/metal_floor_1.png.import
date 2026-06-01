@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b1dedtrucr0kj"
-path.s3tc="res://.godot/imported/metal_floor_1.png-a0cf650452ddacc65ff42f7b2ad6f4ae.s3tc.ctex"
+path.s3tc="res://.godot/imported/metal_floor_1.png-c3c3b9696bd1d4fb16027a2022a23b0a.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Bunkers/textures/metal_floor_1.png"
-dest_files=["res://.godot/imported/metal_floor_1.png-a0cf650452ddacc65ff42f7b2ad6f4ae.s3tc.ctex"]
+source_file="res://assets/PSX Bunkers/Textures/metal_floor_1.png"
+dest_files=["res://.godot/imported/metal_floor_1.png-c3c3b9696bd1d4fb16027a2022a23b0a.s3tc.ctex"]
 
 [params]
 

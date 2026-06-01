@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d3tsqjvcutimd"
-path.s3tc="res://.godot/imported/bucket_mx_2.png-d58ee4d207ca6920a70ae09d9bd143c6.s3tc.ctex"
+path.s3tc="res://.godot/imported/bucket_mx_2.png-e7095dbdaf12dfafbaf448e95bf80ffc.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack II/textures/bucket_mx_2.png"
-dest_files=["res://.godot/imported/bucket_mx_2.png-d58ee4d207ca6920a70ae09d9bd143c6.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack II/Textures/bucket_mx_2.png"
+dest_files=["res://.godot/imported/bucket_mx_2.png-e7095dbdaf12dfafbaf448e95bf80ffc.s3tc.ctex"]
 
 [params]
 

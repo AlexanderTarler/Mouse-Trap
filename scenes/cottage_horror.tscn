@@ -35,7 +35,7 @@
 [ext_resource type="PackedScene" uid="uid://dtsdykh3o5g85" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/painting_1.glb" id="25_4ma01"]
 [ext_resource type="PackedScene" uid="uid://cicq0ubrwge2p" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/tv_table_1.glb" id="25_llemf"]
 [ext_resource type="Resource" uid="uid://d0uq0x2m2q0ca" path="res://resources/research_map_note.tres" id="25_research_map"]
-[ext_resource type="PackedScene" uid="uid://myej0vcgjeoa" path="res://scenes/bed.tscn" id="26_1cglp"]
+[ext_resource type="PackedScene" path="res://scenes/bed.tscn" id="26_1cglp"]
 [ext_resource type="Resource" uid="uid://cbj5ujvtj6nrs" path="res://resources/battery_resource.tres" id="26_battery_res"]
 [ext_resource type="PackedScene" uid="uid://cclt4hjfsubxb" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/tv_mp_1_1.glb" id="26_jtbog"]
 [ext_resource type="PackedScene" uid="uid://ohh0uo3cit5r" path="res://assets/PSX Nature/Models/GLB/tree_stump_1.glb" id="27_72lnn"]
@@ -54,7 +54,7 @@
 [ext_resource type="PackedScene" uid="uid://pf3yuqggyh44" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Buildings/shed_ax_3.glb" id="51_0emg7"]
 [ext_resource type="PackedScene" uid="uid://ber2ukknc0e3n" path="res://scenes/generator.tscn" id="52_xarc6"]
 [ext_resource type="PackedScene" uid="uid://cd6rau4pn5djq" path="res://scenes/fuel_can.tscn" id="53_0ioup"]
-[ext_resource type="PackedScene" uid="uid://coyyk33ohwd4f" path="res://scenes/camera.tscn" id="54_3te1r"]
+[ext_resource type="PackedScene" path="res://scenes/camera.tscn" id="54_3te1r"]
 [ext_resource type="PackedScene" uid="uid://d2q6b3m7kf7c8" path="res://scenes/flashlight.tscn" id="54_flashlight"]
 [ext_resource type="PackedScene" uid="uid://d2q3b4f5c6e7g" path="res://scenes/wooden_plank.tscn" id="55_plank"]
 [ext_resource type="Resource" uid="uid://d0uq0x2m2q0db" path="res://resources/plank_resource.tres" id="56_plank_res"]
@@ -70,6 +70,7 @@
 [ext_resource type="PackedScene" uid="uid://bp604ge3vljoy" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/glass_bottle_2.glb" id="68_frym3"]
 [ext_resource type="PackedScene" uid="uid://ctosb4mcp1ff3" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/matchbox_1.glb" id="69_en0qb"]
 [ext_resource type="PackedScene" uid="uid://dyqwf06b45pk7" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/screwdriver_mp_1.glb" id="70_h7pim"]
+[ext_resource type="PackedScene" uid="uid://cwe54kc56vwjr" path="res://scenes/scrap_heap.tscn" id="71_hnqef"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_50dpl"]
 sky_top_color = Color(0.4, 0.6, 1, 1)
@@ -2186,6 +2187,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.2560434, 1.3931007, 18.4753
 
 [node name="book_mp_12" parent="." unique_id=1320984612 instance=ExtResource("24_yohq4")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.069627, 1.3931009, 18.503262)
+
+[node name="ScrapHeap" parent="." unique_id=1453943959 instance=ExtResource("71_hnqef")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.177343, 0.45000058, 7.931775)
+
+[node name="MeshInstance3D3" type="MeshInstance3D" parent="ScrapHeap" unique_id=1722060882]
 
 [editable path="Details/Inside Cabin/Computer"]
 [editable path="Lightswitches/LightSwitchStairBottom"]

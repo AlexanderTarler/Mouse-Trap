@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://biu6lgbwhso63"
-path.s3tc="res://.godot/imported/makeshift_melee_mx_1.png-fcf3a56c5bf07e991ed0ecb7ae5285b5.s3tc.ctex"
+path.s3tc="res://.godot/imported/makeshift_melee_mx_1.png-104664ca1de5385e7985e5bcd527a381.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack II/textures/makeshift_melee_mx_1.png"
-dest_files=["res://.godot/imported/makeshift_melee_mx_1.png-fcf3a56c5bf07e991ed0ecb7ae5285b5.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack II/Textures/makeshift_melee_mx_1.png"
+dest_files=["res://.godot/imported/makeshift_melee_mx_1.png-104664ca1de5385e7985e5bcd527a381.s3tc.ctex"]
 
 [params]
 

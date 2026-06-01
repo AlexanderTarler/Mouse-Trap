@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c7ik0s76x3kq2"
-path.s3tc="res://.godot/imported/fish_mx_1.png-154b1ef19f6245e12f40b3c027c041d1.s3tc.ctex"
+path.s3tc="res://.godot/imported/fish_mx_1.png-48fd68d342d0ff28f38905186061e086.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack II/textures/fish_mx_1.png"
-dest_files=["res://.godot/imported/fish_mx_1.png-154b1ef19f6245e12f40b3c027c041d1.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack II/Textures/fish_mx_1.png"
+dest_files=["res://.godot/imported/fish_mx_1.png-48fd68d342d0ff28f38905186061e086.s3tc.ctex"]
 
 [params]
 

@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ch3mijsy6nag6"
-path.s3tc="res://.godot/imported/handheld_fm_radio.png-0023f8dafc074bf1cb3f52ce4dac472e.s3tc.ctex"
+path.s3tc="res://.godot/imported/handheld_fm_radio.png-5ec12445032ffe6653e6d5b501f27bd4.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack II/textures/handheld_fm_radio.png"
-dest_files=["res://.godot/imported/handheld_fm_radio.png-0023f8dafc074bf1cb3f52ce4dac472e.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack II/Textures/handheld_fm_radio.png"
+dest_files=["res://.godot/imported/handheld_fm_radio.png-5ec12445032ffe6653e6d5b501f27bd4.s3tc.ctex"]
 
 [params]
 

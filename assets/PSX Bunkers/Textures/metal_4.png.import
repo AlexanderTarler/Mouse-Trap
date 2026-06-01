@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bio3nbavu41f"
-path.s3tc="res://.godot/imported/metal_4.png-ebc77e1a2d5a56f0f18fce4b98e630e7.s3tc.ctex"
+path.s3tc="res://.godot/imported/metal_4.png-32919cf54001a620a4930098374631c3.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Bunkers/textures/metal_4.png"
-dest_files=["res://.godot/imported/metal_4.png-ebc77e1a2d5a56f0f18fce4b98e630e7.s3tc.ctex"]
+source_file="res://assets/PSX Bunkers/Textures/metal_4.png"
+dest_files=["res://.godot/imported/metal_4.png-32919cf54001a620a4930098374631c3.s3tc.ctex"]
 
 [params]
 

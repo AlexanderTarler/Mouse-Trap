@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d3xpcihxjjhef"
-path.s3tc="res://.godot/imported/tile_floor_mx_3.png-9549da1187b349da293d921d1732eaf9.s3tc.ctex"
+path.s3tc="res://.godot/imported/tile_floor_mx_3.png-c8b7843b36782a7851ac2796c6391025.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack II/textures/tile_floor_mx_3.png"
-dest_files=["res://.godot/imported/tile_floor_mx_3.png-9549da1187b349da293d921d1732eaf9.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack II/Textures/tile_floor_mx_3.png"
+dest_files=["res://.godot/imported/tile_floor_mx_3.png-c8b7843b36782a7851ac2796c6391025.s3tc.ctex"]
 
 [params]
 

@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://3niwd28ox748"
-path.s3tc="res://.godot/imported/transformer_box_hr_1.png-2c84836d5b9d1d1facd7818a2d648640.s3tc.ctex"
+path.s3tc="res://.godot/imported/transformer_box_hr_1.png-df3270ac6df346ab461649f714dd5f4b.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack II/textures/transformer_box_hr_1.png"
-dest_files=["res://.godot/imported/transformer_box_hr_1.png-2c84836d5b9d1d1facd7818a2d648640.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack II/Textures/transformer_box_hr_1.png"
+dest_files=["res://.godot/imported/transformer_box_hr_1.png-df3270ac6df346ab461649f714dd5f4b.s3tc.ctex"]
 
 [params]
 

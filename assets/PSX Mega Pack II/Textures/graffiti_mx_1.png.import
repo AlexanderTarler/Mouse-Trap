@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://xccfg6fcpacr"
-path.s3tc="res://.godot/imported/graffiti_mx_1.png-a5f1c551d2dc8b297615a1beac9133a0.s3tc.ctex"
+path.s3tc="res://.godot/imported/graffiti_mx_1.png-8cba08beb87594deeeaa12401a8b824b.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack II/textures/graffiti_mx_1.png"
-dest_files=["res://.godot/imported/graffiti_mx_1.png-a5f1c551d2dc8b297615a1beac9133a0.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack II/Textures/graffiti_mx_1.png"
+dest_files=["res://.godot/imported/graffiti_mx_1.png-8cba08beb87594deeeaa12401a8b824b.s3tc.ctex"]
 
 [params]
 

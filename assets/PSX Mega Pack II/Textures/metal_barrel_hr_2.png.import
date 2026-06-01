@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bfiqpiowp1t6g"
-path.s3tc="res://.godot/imported/metal_barrel_hr_2.png-3d2782c66ef9876189ae01001c671636.s3tc.ctex"
+path.s3tc="res://.godot/imported/metal_barrel_hr_2.png-038ee85e9808ec030200ebfa07b10801.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack II/textures/metal_barrel_hr_2.png"
-dest_files=["res://.godot/imported/metal_barrel_hr_2.png-3d2782c66ef9876189ae01001c671636.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack II/Textures/metal_barrel_hr_2.png"
+dest_files=["res://.godot/imported/metal_barrel_hr_2.png-038ee85e9808ec030200ebfa07b10801.s3tc.ctex"]
 
 [params]
 

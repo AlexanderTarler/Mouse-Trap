@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://by41ij8sy8tfd"
-path.s3tc="res://.godot/imported/manhole_cover_1.png-ca856b2f923082c374be9e03ce13efd5.s3tc.ctex"
+path.s3tc="res://.godot/imported/manhole_cover_1.png-594eccc41f87aac8983ac00e90d6e576.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Bunkers/textures/manhole_cover_1.png"
-dest_files=["res://.godot/imported/manhole_cover_1.png-ca856b2f923082c374be9e03ce13efd5.s3tc.ctex"]
+source_file="res://assets/PSX Bunkers/Textures/manhole_cover_1.png"
+dest_files=["res://.godot/imported/manhole_cover_1.png-594eccc41f87aac8983ac00e90d6e576.s3tc.ctex"]
 
 [params]
 

@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://besw8ld5k7ag5"
-path.s3tc="res://.godot/imported/metal_4.png-7b2e3d77176f73693f0555b1dfa2e9dd.s3tc.ctex"
+path.s3tc="res://.godot/imported/metal_4.png-2119e5cf4c031b91e978bedcc4978613.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Kidnapper's Van/textures/metal_4.png"
-dest_files=["res://.godot/imported/metal_4.png-7b2e3d77176f73693f0555b1dfa2e9dd.s3tc.ctex"]
+source_file="res://assets/PSX Kidnapper's Van/Textures/metal_4.png"
+dest_files=["res://.godot/imported/metal_4.png-2119e5cf4c031b91e978bedcc4978613.s3tc.ctex"]
 
 [params]
 

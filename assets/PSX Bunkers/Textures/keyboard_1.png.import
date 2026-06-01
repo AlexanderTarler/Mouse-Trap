@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://oi28fcipo345"
-path.s3tc="res://.godot/imported/keyboard_1.png-f7b827e9cf20c955940b7da24533008e.s3tc.ctex"
+path.s3tc="res://.godot/imported/keyboard_1.png-0559bff1e3b4e1b02509935d3abf74da.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Bunkers/textures/keyboard_1.png"
-dest_files=["res://.godot/imported/keyboard_1.png-f7b827e9cf20c955940b7da24533008e.s3tc.ctex"]
+source_file="res://assets/PSX Bunkers/Textures/keyboard_1.png"
+dest_files=["res://.godot/imported/keyboard_1.png-0559bff1e3b4e1b02509935d3abf74da.s3tc.ctex"]
 
 [params]
 

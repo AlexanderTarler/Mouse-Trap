@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c0pvcde1vmria"
-path.s3tc="res://.godot/imported/gravel_hr_2.png-bb03087274a47374ab3714bcae9c620f.s3tc.ctex"
+path.s3tc="res://.godot/imported/gravel_hr_2.png-2deebaae3f5c1d0e1396ea7c1cf2b9f1.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack II/textures/gravel_hr_2.png"
-dest_files=["res://.godot/imported/gravel_hr_2.png-bb03087274a47374ab3714bcae9c620f.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack II/Textures/gravel_hr_2.png"
+dest_files=["res://.godot/imported/gravel_hr_2.png-2deebaae3f5c1d0e1396ea7c1cf2b9f1.s3tc.ctex"]
 
 [params]
 

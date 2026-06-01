@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dpd60xml0elg3"
-path.s3tc="res://.godot/imported/plastic_bottle_mp_1.png-ba2eec53cd66e4904f454fc5fde0e93f.s3tc.ctex"
+path.s3tc="res://.godot/imported/plastic_bottle_mp_1.png-1062a1ecc3bdacc219be97d026075f8d.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack II/textures/plastic_bottle_mp_1.png"
-dest_files=["res://.godot/imported/plastic_bottle_mp_1.png-ba2eec53cd66e4904f454fc5fde0e93f.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack II/Textures/plastic_bottle_mp_1.png"
+dest_files=["res://.godot/imported/plastic_bottle_mp_1.png-1062a1ecc3bdacc219be97d026075f8d.s3tc.ctex"]
 
 [params]
 

@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bln7fhq4chrbi"
-path.s3tc="res://.godot/imported/door_hr_11.png-f9aa782fb40366a302454d33f8b864fe.s3tc.ctex"
+path.s3tc="res://.godot/imported/door_hr_11.png-c3c91492f83e9e5d2b30c68e6c0ef86e.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack II/textures/door_hr_11.png"
-dest_files=["res://.godot/imported/door_hr_11.png-f9aa782fb40366a302454d33f8b864fe.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack II/Textures/door_hr_11.png"
+dest_files=["res://.godot/imported/door_hr_11.png-c3c91492f83e9e5d2b30c68e6c0ef86e.s3tc.ctex"]
 
 [params]
 

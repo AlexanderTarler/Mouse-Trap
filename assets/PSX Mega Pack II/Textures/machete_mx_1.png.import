@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://brq7s3soy1rth"
-path.s3tc="res://.godot/imported/machete_mx_1.png-d64503ba6037f04dc94464e1188dab7e.s3tc.ctex"
+path.s3tc="res://.godot/imported/machete_mx_1.png-37b0979c4a0c9eda77e6cb771bc02404.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack II/textures/machete_mx_1.png"
-dest_files=["res://.godot/imported/machete_mx_1.png-d64503ba6037f04dc94464e1188dab7e.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack II/Textures/machete_mx_1.png"
+dest_files=["res://.godot/imported/machete_mx_1.png-37b0979c4a0c9eda77e6cb771bc02404.s3tc.ctex"]
 
 [params]
 

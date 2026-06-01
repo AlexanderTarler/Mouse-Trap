@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://xsooww1yr4cg"
-path.s3tc="res://.godot/imported/baseball_bat_mx_1.png-ae18dcb599e08e3934e2a968caf73255.s3tc.ctex"
+path.s3tc="res://.godot/imported/baseball_bat_mx_1.png-adb6bb2667ac3eb24357e793e036cd55.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack II/textures/baseball_bat_mx_1.png"
-dest_files=["res://.godot/imported/baseball_bat_mx_1.png-ae18dcb599e08e3934e2a968caf73255.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack II/Textures/baseball_bat_mx_1.png"
+dest_files=["res://.godot/imported/baseball_bat_mx_1.png-adb6bb2667ac3eb24357e793e036cd55.s3tc.ctex"]
 
 [params]
 

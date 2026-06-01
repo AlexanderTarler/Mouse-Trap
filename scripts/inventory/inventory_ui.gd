@@ -61,6 +61,15 @@ func _find_note_ui() -> void:
 
 
 func _process(_delta: float) -> void:
+	# ─── STASH UI GUARD ────────────────────────────────────
+	# Prevent TAB from opening the inventory while the stash UI
+	# (scrap heap looting interface) is open. The stash UI handles
+	# its own E/Tab/ESC close logic.
+	if _is_stash_ui_open():
+		if _is_open:
+			_close_inventory()
+		return
+
 	# Hardware-poll TAB key directly — bypasses fragile _input() event consumption
 	var tab_down = Input.is_physical_key_pressed(KEY_TAB)
 	
@@ -80,6 +89,17 @@ func _process(_delta: float) -> void:
 	# Force the mouse to stay visible as long as inventory is open, overriding the Player's camera lock
 	if _is_open:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+
+
+## Checks if the StashUI (scrap heap looting interface) is currently open.
+## Returns true if the stash UI exists and is visible, false otherwise.
+func _is_stash_ui_open() -> bool:
+	var stash_ui = get_node_or_null("/root/CottageHorror/StashUI")
+	if not stash_ui:
+		stash_ui = get_node_or_null("/root/Main/StashUI")
+	if stash_ui and stash_ui.get("_is_open"):
+		return true
+	return false
 
 
 func _open_inventory() -> void:

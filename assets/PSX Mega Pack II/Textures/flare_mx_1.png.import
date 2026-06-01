@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cjyv6aj6af777"
-path.s3tc="res://.godot/imported/flare_mx_1.png-734fbaf20a5cb4efee2aad82420b0062.s3tc.ctex"
+path.s3tc="res://.godot/imported/flare_mx_1.png-4c6138e67f0cbdbf313d512e035acdac.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack II/textures/flare_mx_1.png"
-dest_files=["res://.godot/imported/flare_mx_1.png-734fbaf20a5cb4efee2aad82420b0062.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack II/Textures/flare_mx_1.png"
+dest_files=["res://.godot/imported/flare_mx_1.png-4c6138e67f0cbdbf313d512e035acdac.s3tc.ctex"]
 
 [params]
 

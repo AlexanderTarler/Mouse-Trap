@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://biak3b7qelko7"
-path.s3tc="res://.godot/imported/concrete_wall_1.png-6dfe71d850de7e3615ce2162782d7e24.s3tc.ctex"
+path.s3tc="res://.godot/imported/concrete_wall_1.png-6288efca4c17bd2dd826c456c778dc3b.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Bunkers/textures/concrete_wall_1.png"
-dest_files=["res://.godot/imported/concrete_wall_1.png-6dfe71d850de7e3615ce2162782d7e24.s3tc.ctex"]
+source_file="res://assets/PSX Bunkers/Textures/concrete_wall_1.png"
+dest_files=["res://.godot/imported/concrete_wall_1.png-6288efca4c17bd2dd826c456c778dc3b.s3tc.ctex"]
 
 [params]
 

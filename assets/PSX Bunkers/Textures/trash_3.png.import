@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://5xnh40wuet7t"
-path.s3tc="res://.godot/imported/trash_3.png-e741140ba9af521b2478ca23705998bf.s3tc.ctex"
+path.s3tc="res://.godot/imported/trash_3.png-eaf3e864fb306889c5129aa14cad959f.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Bunkers/textures/trash_3.png"
-dest_files=["res://.godot/imported/trash_3.png-e741140ba9af521b2478ca23705998bf.s3tc.ctex"]
+source_file="res://assets/PSX Bunkers/Textures/trash_3.png"
+dest_files=["res://.godot/imported/trash_3.png-eaf3e864fb306889c5129aa14cad959f.s3tc.ctex"]
 
 [params]
 

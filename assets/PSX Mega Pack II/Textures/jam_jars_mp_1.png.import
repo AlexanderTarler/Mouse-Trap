@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dwu3mb7ymhl56"
-path.s3tc="res://.godot/imported/jam_jars_mp_1.png-b3b34cf37447667e218f69ec94b50545.s3tc.ctex"
+path.s3tc="res://.godot/imported/jam_jars_mp_1.png-85926d53e6389c7bec478e6310b6db35.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack II/textures/jam_jars_mp_1.png"
-dest_files=["res://.godot/imported/jam_jars_mp_1.png-b3b34cf37447667e218f69ec94b50545.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack II/Textures/jam_jars_mp_1.png"
+dest_files=["res://.godot/imported/jam_jars_mp_1.png-85926d53e6389c7bec478e6310b6db35.s3tc.ctex"]
 
 [params]
 

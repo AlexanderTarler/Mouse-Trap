@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://btir8vjr3mfro"
-path.s3tc="res://.godot/imported/cement_bag_mp_1.png-6288fe4e5128ea44f668de44b3ab9eae.s3tc.ctex"
+path.s3tc="res://.godot/imported/cement_bag_mp_1.png-603dda344a4ea936e2af075bba2862c3.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack II/textures/cement_bag_mp_1.png"
-dest_files=["res://.godot/imported/cement_bag_mp_1.png-6288fe4e5128ea44f668de44b3ab9eae.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack II/Textures/cement_bag_mp_1.png"
+dest_files=["res://.godot/imported/cement_bag_mp_1.png-603dda344a4ea936e2af075bba2862c3.s3tc.ctex"]
 
 [params]
 

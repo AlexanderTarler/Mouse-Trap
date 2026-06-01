@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cot5o0mhuakkf"
-path.s3tc="res://.godot/imported/first_aid_kit_hr_2.png-0794b0133bdbc3f1bc316821474b214a.s3tc.ctex"
+path.s3tc="res://.godot/imported/first_aid_kit_hr_2.png-9a682c3b8884fdb55475518e2d522e9c.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack II/textures/first_aid_kit_hr_2.png"
-dest_files=["res://.godot/imported/first_aid_kit_hr_2.png-0794b0133bdbc3f1bc316821474b214a.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack II/Textures/first_aid_kit_hr_2.png"
+dest_files=["res://.godot/imported/first_aid_kit_hr_2.png-9a682c3b8884fdb55475518e2d522e9c.s3tc.ctex"]
 
 [params]
 

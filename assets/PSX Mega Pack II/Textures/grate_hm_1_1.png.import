@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dh4q2k0wy5ual"
-path.s3tc="res://.godot/imported/grate_hm_1_1.png-eea2aa5098f50faf141f4f7c468ac7a3.s3tc.ctex"
+path.s3tc="res://.godot/imported/grate_hm_1_1.png-90f40d7c54559ca5fabe5f0436a73325.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack II/textures/grate_hm_1_1.png"
-dest_files=["res://.godot/imported/grate_hm_1_1.png-eea2aa5098f50faf141f4f7c468ac7a3.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack II/Textures/grate_hm_1_1.png"
+dest_files=["res://.godot/imported/grate_hm_1_1.png-90f40d7c54559ca5fabe5f0436a73325.s3tc.ctex"]
 
 [params]
 

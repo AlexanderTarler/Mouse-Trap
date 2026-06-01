@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://b84myn1t68pr3"
+path="res://.godot/imported/painting_4.obj-1ef44ce4bf2ffe15ecca0ee0edd3cdbf.mesh"
+
+[deps]
+
+files=["res://.godot/imported/painting_4.obj-1ef44ce4bf2ffe15ecca0ee0edd3cdbf.mesh"]
+
+source_file="res://assets/PSX Paintings/Meshes/OBJ/painting_4.obj"
+dest_files=["res://.godot/imported/painting_4.obj-1ef44ce4bf2ffe15ecca0ee0edd3cdbf.mesh", "res://.godot/imported/painting_4.obj-1ef44ce4bf2ffe15ecca0ee0edd3cdbf.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

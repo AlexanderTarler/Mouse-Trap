@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bl2udvm7d3wso"
-path.s3tc="res://.godot/imported/tire_hr_1.png-d63f762ed320a7c780a03125dbfe47f2.s3tc.ctex"
+path.s3tc="res://.godot/imported/tire_hr_1.png-997a88ff9b98e5f3680a7b4ecfc8fed8.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Mega Pack II/textures/tire_hr_1.png"
-dest_files=["res://.godot/imported/tire_hr_1.png-d63f762ed320a7c780a03125dbfe47f2.s3tc.ctex"]
+source_file="res://assets/PSX Mega Pack II/Textures/tire_hr_1.png"
+dest_files=["res://.godot/imported/tire_hr_1.png-997a88ff9b98e5f3680a7b4ecfc8fed8.s3tc.ctex"]
 
 [params]
 
