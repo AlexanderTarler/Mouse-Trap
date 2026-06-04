@@ -4,9 +4,12 @@
 [ext_resource type="PackedScene" uid="uid://bbgosppfttoh5" path="res://scenes/horror_hud.tscn" id="4_hud"]
 [ext_resource type="Texture2D" uid="uid://dy3y4yrk61pwv" path="res://assets/Textures/Grass/Grass_03-512x512.png" id="4_wvbas"]
 [ext_resource type="Script" uid="uid://cvaqel187lqwe" path="res://scripts/lamp_flicker.gd" id="5_lamp_flicker"]
+[ext_resource type="Resource" uid="uid://d0q6l3m5p7k2" path="res://resources/fuel_can_resource.tres" id="6_frym3"]
 [ext_resource type="PackedScene" uid="uid://cl2nlt2tucxol" path="res://scenes/cabin.tscn" id="7_cabins"]
+[ext_resource type="Resource" uid="uid://d0uq0x2m2q0dd" path="res://resources/fuse_resource.tres" id="7_en0qb"]
 [ext_resource type="PackedScene" uid="uid://cfsq6j2xnoxm" path="res://assets/PSX Nature/Models/GLB/pine_tree_n_1.glb" id="8_jtbog"]
 [ext_resource type="PackedScene" uid="uid://dqnqvwoaib6mc" path="res://scenes/trees.tscn" id="10_mdrot"]
+[ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0de" path="res://scenes/fuse.tscn" id="11_j6uu5"]
 [ext_resource type="PackedScene" uid="uid://dpnaxk3u44vbj" path="res://scenes/door.tscn" id="11_jjdw5"]
 [ext_resource type="PackedScene" uid="uid://d1nbbsranyayl" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Decals/cobweb_1.glb" id="13_f6rfm"]
 [ext_resource type="PackedScene" uid="uid://dqk8cdcsudmp1" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/table_large_2.glb" id="14_63ebo"]
@@ -19,7 +22,6 @@
 [ext_resource type="Script" uid="uid://baixx1fs8cosb" path="res://scripts/items/item_data.gd" id="17_pee2b"]
 [ext_resource type="PackedScene" uid="uid://w56fc53h33lt" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/walkie_talkie_2.glb" id="17_xarc6"]
 [ext_resource type="PackedScene" uid="uid://djjrpkdlgtc3w" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/sofa_1_3.glb" id="18_0ioup"]
-[ext_resource type="Script" uid="uid://dl1ifol504gen" path="res://scripts/item_spawner.gd" id="18_item_spawner"]
 [ext_resource type="PackedScene" uid="uid://dkc0lfxbh7ef3" path="res://scenes/battery.tscn" id="19_battery"]
 [ext_resource type="PackedScene" uid="uid://c2wx8r8v7rdcc" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/cardboard_box_1.glb" id="19_ui7ij"]
 [ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0c6" path="res://scenes/note.tscn" id="20_note"]
@@ -33,9 +35,11 @@
 [ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0c8" path="res://scenes/hasselmus_nest.tscn" id="24_nest"]
 [ext_resource type="PackedScene" uid="uid://bu3d58c70beoj" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/book_mp_1.glb" id="24_yohq4"]
 [ext_resource type="PackedScene" uid="uid://dtsdykh3o5g85" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/painting_1.glb" id="25_4ma01"]
+[ext_resource type="Resource" uid="uid://d0uq0x2m2q0cb" path="res://resources/lore_fragment_hearth.tres" id="25_hearth_fragment"]
 [ext_resource type="PackedScene" uid="uid://cicq0ubrwge2p" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/tv_table_1.glb" id="25_llemf"]
 [ext_resource type="Resource" uid="uid://d0uq0x2m2q0ca" path="res://resources/research_map_note.tres" id="25_research_map"]
-[ext_resource type="PackedScene" path="res://scenes/bed.tscn" id="26_1cglp"]
+[ext_resource type="Resource" uid="uid://d0uq0x2m2q0cc" path="res://resources/lore_fragment_window.tres" id="25_window_fragment"]
+[ext_resource type="PackedScene" uid="uid://myej0vcgjeoa" path="res://scenes/bed.tscn" id="26_1cglp"]
 [ext_resource type="Resource" uid="uid://cbj5ujvtj6nrs" path="res://resources/battery_resource.tres" id="26_battery_res"]
 [ext_resource type="PackedScene" uid="uid://cclt4hjfsubxb" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/tv_mp_1_1.glb" id="26_jtbog"]
 [ext_resource type="PackedScene" uid="uid://ohh0uo3cit5r" path="res://assets/PSX Nature/Models/GLB/tree_stump_1.glb" id="27_72lnn"]
@@ -54,16 +58,14 @@
 [ext_resource type="PackedScene" uid="uid://pf3yuqggyh44" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Buildings/shed_ax_3.glb" id="51_0emg7"]
 [ext_resource type="PackedScene" uid="uid://ber2ukknc0e3n" path="res://scenes/generator.tscn" id="52_xarc6"]
 [ext_resource type="PackedScene" uid="uid://cd6rau4pn5djq" path="res://scenes/fuel_can.tscn" id="53_0ioup"]
-[ext_resource type="PackedScene" path="res://scenes/camera.tscn" id="54_3te1r"]
+[ext_resource type="PackedScene" uid="uid://coyyk33ohwd4f" path="res://scenes/camera.tscn" id="54_3te1r"]
 [ext_resource type="PackedScene" uid="uid://d2q6b3m7kf7c8" path="res://scenes/flashlight.tscn" id="54_flashlight"]
-[ext_resource type="PackedScene" uid="uid://d2q3b4f5c6e7g" path="res://scenes/wooden_plank.tscn" id="55_plank"]
 [ext_resource type="Resource" uid="uid://d0uq0x2m2q0db" path="res://resources/plank_resource.tres" id="56_plank_res"]
 [ext_resource type="PackedScene" uid="uid://e8tu43c3ihp0" path="res://scenes/cabin_window.tscn" id="57_1m0e5"]
 [ext_resource type="PackedScene" uid="uid://dsgbbun0atwdq" path="res://scenes/escape_van.tscn" id="58_uhlf3"]
 [ext_resource type="PackedScene" uid="uid://cpvhl2k7wl3jq" path="res://scenes/computer.tscn" id="60_ot2p7"]
 [ext_resource type="PackedScene" uid="uid://l101wfdbbfth" path="res://scenes/key.tscn" id="63_key"]
 [ext_resource type="PackedScene" uid="uid://c1cbq04lfrmh6" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/coffee_table_1_2.glb" id="64_1cglp"]
-[ext_resource type="Script" path="res://scripts/car_alarm_trigger.gd" id="64_car_alarm_trigger"]
 [ext_resource type="PackedScene" uid="uid://chomp5702sq14" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/display_cabinet_mp_1.glb" id="65_hnqef"]
 [ext_resource type="PackedScene" uid="uid://c8veqd3spasgi" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/coin_mp_1.glb" id="66_j6uu5"]
 [ext_resource type="PackedScene" uid="uid://rhlnj4o8hclw" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/glass_bottle_1.glb" id="67_1qcio"]
@@ -71,6 +73,9 @@
 [ext_resource type="PackedScene" uid="uid://ctosb4mcp1ff3" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/matchbox_1.glb" id="69_en0qb"]
 [ext_resource type="PackedScene" uid="uid://dyqwf06b45pk7" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/screwdriver_mp_1.glb" id="70_h7pim"]
 [ext_resource type="PackedScene" uid="uid://cwe54kc56vwjr" path="res://scenes/scrap_heap.tscn" id="71_hnqef"]
+[ext_resource type="PackedScene" uid="uid://dev1jyquh31tw" path="res://scenes/fuse_box.tscn" id="72_1qcio"]
+[ext_resource type="PackedScene" uid="uid://porchlight01" path="res://scenes/porch_light.tscn" id="73_porch_light"]
+[ext_resource type="PackedScene" uid="uid://b2lplqj6v4bkj" path="res://scenes/computer_ui.tscn" id="74_computer_ui"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_50dpl"]
 sky_top_color = Color(0.4, 0.6, 1, 1)
@@ -1419,12 +1424,15 @@ moon = NodePath("../Moonlight")
 
 [node name="Player" parent="." unique_id=92687399 instance=ExtResource("1_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.009, 0.5, -5)
+starting_items = Array[ExtResource("17_pee2b")]([ExtResource("26_battery_res"), ExtResource("26_battery_res"), ExtResource("56_plank_res"), ExtResource("6_frym3"), ExtResource("26_battery_res"), ExtResource("56_plank_res"), ExtResource("6_frym3"), ExtResource("7_en0qb"), null])
 
 [node name="HUD" parent="." unique_id=1086543120 instance=ExtResource("4_hud")]
 
 [node name="InventoryUI" parent="." unique_id=1086543121 instance=ExtResource("17_inv_ui")]
 
 [node name="NoteUI" parent="." unique_id=1938651782 instance=ExtResource("21_note_ui")]
+
+[node name="ComputerUI" parent="." unique_id=1989339076 instance=ExtResource("74_computer_ui")]
 
 [node name="TheEntity" parent="." unique_id=133456140 instance=ExtResource("16_entity")]
 
@@ -1465,7 +1473,13 @@ transform = Transform3D(500, 0, 0, 0, 1, 0, 0, 0, 500, 0, 0, 0)
 shape = SubResource("Shape_ground")
 
 [node name="FlashlightPickup" parent="NavigationRegion3D/Ground" unique_id=321211457 instance=ExtResource("54_flashlight")]
-transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 1.7018912, 0.26499298, 1.7224579)
+transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 1.7018912, 0.26700485, 1.7224579)
+
+[node name="Fuse" parent="NavigationRegion3D/Ground" unique_id=185857692 instance=ExtResource("11_j6uu5")]
+transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 1.7111626, 0.34890792, 2.157238)
+
+[node name="Fuse2" parent="NavigationRegion3D/Ground" unique_id=517490088 instance=ExtResource("11_j6uu5")]
+transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 1.7111626, 0.34890792, 2.193138)
 
 [node name="Cabin" parent="NavigationRegion3D" unique_id=1282417259 instance=ExtResource("7_cabins")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.009, 0.05, 0.409)
@@ -1538,30 +1552,6 @@ spawner_enabled = false
 tree_scenes = Array[PackedScene]([ExtResource("10_mdrot")])
 road_angle = 4.71239
 road_gap_width = 0.6
-
-[node name="ItemSpawner" type="Node3D" parent="." unique_id=1824044729]
-script = ExtResource("18_item_spawner")
-battery_scene = ExtResource("19_battery")
-note_scene = ExtResource("20_note")
-plank_scene = ExtResource("55_plank")
-battery_item_data = ExtResource("26_battery_res")
-note_item_data = ExtResource("22_field_journal")
-plank_item_data = ExtResource("56_plank_res")
-
-[node name="SpawnPoint1" type="Marker3D" parent="ItemSpawner" unique_id=2128098719]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 0.5, 0.4)
-
-[node name="SpawnPoint2" type="Marker3D" parent="ItemSpawner" unique_id=239421183]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, 0.5, 0.4)
-
-[node name="SpawnPoint3" type="Marker3D" parent="ItemSpawner" unique_id=1823073283]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.5, 1.4)
-
-[node name="SpawnPoint4" type="Marker3D" parent="ItemSpawner" unique_id=1846360495]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.5, -0.6)
-
-[node name="SpawnPoint5" type="Marker3D" parent="ItemSpawner" unique_id=29919342]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0.5, 1)
 
 [node name="Details" type="Node" parent="." unique_id=1144393623]
 
@@ -1963,6 +1953,14 @@ item_data = ExtResource("22_field_journal")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, -2.95, 2.5)
 item_data = ExtResource("25_research_map")
 
+[node name="HearthFragment" parent="." unique_id=1253555027 instance=ExtResource("20_note")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, -2.95, -1.5)
+item_data = ExtResource("25_hearth_fragment")
+
+[node name="WindowFragment" parent="." unique_id=1253555028 instance=ExtResource("20_note")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, -2.95, 3)
+item_data = ExtResource("25_window_fragment")
+
 [node name="TrailSpawner" type="Node3D" parent="." unique_id=2049181707]
 script = SubResource("GDScript_f6rfm")
 spawner_enabled = false
@@ -2034,6 +2032,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.460174, 3.5855672, 17.19377
 
 [node name="CabinLightKitchen" parent="Cabin Lights" unique_id=1217254999 groups=["CabinLights"] instance=ExtResource("49_f6rfm")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.939633, 3.5855672, 17.193771)
+
+[node name="PorchLight" parent="Cabin Lights" unique_id=1792247548 instance=ExtResource("73_porch_light")]
+transform = Transform3D(0.009145446, -0.99995816, 0, 0.99995816, 0.009145446, 0, 0, 0, 1, 9.270728, 3.8265224, 9.650703)
 
 [node name="Lightswitches" type="Node" parent="." unique_id=125359164]
 
@@ -2150,7 +2151,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.641135, 0.980777, 9.110605)
 [node name="CarAlarmTrigger" type="Area3D" parent="." unique_id=2092697617]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.8936, 3.6831, 15.223)
 collision_layer = 0
-script = ExtResource("64_car_alarm_trigger")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="CarAlarmTrigger" unique_id=1436529089]
 shape = SubResource("car_alarm_shape")
@@ -2193,7 +2193,19 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.177343, 0.45000058, 7.9317
 
 [node name="MeshInstance3D3" type="MeshInstance3D" parent="ScrapHeap" unique_id=1722060882]
 
+[node name="Fuse Box" parent="." unique_id=1333240661 instance=ExtResource("72_1qcio")]
+transform = Transform3D(0.05601324, 0, -0.99843013, 0, 1, 0, 0.99843013, 0, 0.05601324, 2.6413074, 2.090415, 16.497524)
+
+[node name="Note" parent="." unique_id=1059492005 instance=ExtResource("20_note")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.3207226, 0.12499976, 3.2053654)
+item_data = ExtResource("25_window_fragment")
+
+[node name="Note2" parent="." unique_id=1204971213 instance=ExtResource("20_note")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.0981007, 0.12499976, 1.7629606)
+item_data = ExtResource("25_hearth_fragment")
+
 [editable path="Details/Inside Cabin/Computer"]
+[editable path="Details/Inside Cabin/Computer/pc_monitor_mp_12"]
 [editable path="Lightswitches/LightSwitchStairBottom"]
 [editable path="Lightswitches/LightSwitchOffice"]
 [editable path="Lightswitches/LightSwitchStairTop"]

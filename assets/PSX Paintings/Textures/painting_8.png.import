@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://byr6a1s6c54ig"
-path.s3tc="res://.godot/imported/painting_8.png-377f126c8d6fe987fea4eb75e0e723c8.s3tc.ctex"
+path.s3tc="res://.godot/imported/painting_8.png-5405a4513fb9682a6841403d718aa4f1.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX Paintings/textures/painting_8.png"
-dest_files=["res://.godot/imported/painting_8.png-377f126c8d6fe987fea4eb75e0e723c8.s3tc.ctex"]
+source_file="res://assets/PSX Paintings/Textures/painting_8.png"
+dest_files=["res://.godot/imported/painting_8.png-5405a4513fb9682a6841403d718aa4f1.s3tc.ctex"]
 
 [params]
 

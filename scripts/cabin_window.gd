@@ -133,24 +133,23 @@ func _ready() -> void:
 	# Initialize navigation blocker state
 	_update_nav_blocker()
 	
-	# ─── DIAGNOSTIC VISIBILITY LOG ──────────────────────────────────
-	# Logs the initial state of all visual child nodes at startup.
-	# This helps verify that the scene tree structure matches what the
-	# @onready var paths expect (e.g. $BarricadePlanks/Plank1 exists).
-	# If a node is null, the path is wrong or the node is missing.
-	print("[CabinWindow Init] window_id='", window_id, "' | Path: ", get_path())
-	print("  PristineVisuals: ", _pristine_visuals if _pristine_visuals else "MISSING")
-	print("  ShatteredVisuals: ", _shattered_visuals if _shattered_visuals else "MISSING")
-	print("  BarricadePlanks/Plank1: ", _plank_1 if _plank_1 else "MISSING")
-	print("  BarricadePlanks/Plank2: ", _plank_2 if _plank_2 else "MISSING")
-	print("  BarricadePlanks/Plank3: ", _plank_3 if _plank_3 else "MISSING")
-	print("  NavBlocker: ", _nav_blocker if _nav_blocker else "MISSING")
-	print("  IndoorBreachWayPoint: ", _indoor_breach_waypoint if _indoor_breach_waypoint else "MISSING")
-	print("  BreakSound: ", _break_sound if _break_sound else "MISSING")
-	print("  HammerSound: ", _hammer_sound if _hammer_sound else "MISSING")
-	print("  GlassCrunchSound: ", _glass_crunch_sound if _glass_crunch_sound else "MISSING")
-	print("  GlassShards: ", _glass_shards if _glass_shards else "MISSING")
-	print("[CabinWindow Init] End of diagnostic log for '", window_id, "'.")
+	if OS.is_debug_build():
+		# ─── DIAGNOSTIC VISIBILITY LOG ──────────────────────────────────
+		# Logs the initial state of all visual child nodes at startup.
+		# Only runs in debug builds to avoid console spam in production.
+		print("[CabinWindow Init] window_id='", window_id, "' | Path: ", get_path())
+		print("  PristineVisuals: ", _pristine_visuals if _pristine_visuals else "MISSING")
+		print("  ShatteredVisuals: ", _shattered_visuals if _shattered_visuals else "MISSING")
+		print("  BarricadePlanks/Plank1: ", _plank_1 if _plank_1 else "MISSING")
+		print("  BarricadePlanks/Plank2: ", _plank_2 if _plank_2 else "MISSING")
+		print("  BarricadePlanks/Plank3: ", _plank_3 if _plank_3 else "MISSING")
+		print("  NavBlocker: ", _nav_blocker if _nav_blocker else "MISSING")
+		print("  IndoorBreachWayPoint: ", _indoor_breach_waypoint if _indoor_breach_waypoint else "MISSING")
+		print("  BreakSound: ", _break_sound if _break_sound else "MISSING")
+		print("  HammerSound: ", _hammer_sound if _hammer_sound else "MISSING")
+		print("  GlassCrunchSound: ", _glass_crunch_sound if _glass_crunch_sound else "MISSING")
+		print("  GlassShards: ", _glass_shards if _glass_shards else "MISSING")
+		print("[CabinWindow Init] End of diagnostic log for '", window_id, "'.")
 
 
 func _process(delta: float) -> void:

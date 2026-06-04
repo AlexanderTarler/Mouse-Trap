@@ -36,13 +36,18 @@ var _night_manager: Node = null
 
 
 func _ready() -> void:
-	# Find NightManager and connect to its horror_event signal
+	_connect_night_manager()
+
+
+## Connects to NightManager's horror_event signal.
+## Uses a dedicated method (not _ready) to avoid re-running _ready() on retry.
+func _connect_night_manager() -> void:
 	_night_manager = get_node_or_null("/root/NightManager")
 	if _night_manager:
 		_night_manager.horror_event.connect(_on_horror_event)
 	else:
-		# Retry next frame
-		call_deferred("_ready")
+		# Retry next frame — NightManager autoload may not be ready yet
+		call_deferred("_connect_night_manager")
 
 
 ## Listens for horror events from NightManager.

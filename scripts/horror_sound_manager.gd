@@ -28,7 +28,6 @@ var _ambient_sounds: Array[AudioStreamPlayer3D] = []
 var _event_players: Array[AudioStreamPlayer3D] = []
 
 # Entity proximity sounds (2D - always audible)
-var _entity_breathing: AudioStreamPlayer = null
 var _entity_whisper: AudioStreamPlayer = null
 
 # Preloaded audio streams
@@ -90,16 +89,16 @@ func _setup_audio_buses() -> void:
 		AudioServer.set_bus_volume_db(idx, linear_to_db(0.3))
 	
 	if not sfx_exists:
-		var idx = AudioServer.bus_count
-		AudioServer.add_bus(idx)
-		AudioServer.set_bus_name(idx, "SFX")
-		AudioServer.set_bus_volume_db(idx, linear_to_db(0.8))
+		var sfx_idx = AudioServer.bus_count
+		AudioServer.add_bus(sfx_idx)
+		AudioServer.set_bus_name(sfx_idx, "SFX")
+		AudioServer.set_bus_volume_db(sfx_idx, linear_to_db(0.8))
 	
 	if not entity_exists:
-		var idx = AudioServer.bus_count
-		AudioServer.add_bus(idx)
-		AudioServer.set_bus_name(idx, "Entity")
-		AudioServer.set_bus_volume_db(idx, linear_to_db(0.6))
+		var entity_idx = AudioServer.bus_count
+		AudioServer.add_bus(entity_idx)
+		AudioServer.set_bus_name(entity_idx, "Entity")
+		AudioServer.set_bus_volume_db(entity_idx, linear_to_db(0.6))
 
 ## Preloads all audio files from the horror_sfx_vol_1 asset pack.
 func _preload_audio_files() -> void:
@@ -182,11 +181,6 @@ func _setup_event_sounds() -> void:
 		_event_players.append(player)
 
 func _setup_entity_sounds() -> void:
-	_entity_breathing = AudioStreamPlayer.new()
-	_entity_breathing.bus = "Entity"
-	_entity_breathing.volume_db = -20.0
-	add_child(_entity_breathing)
-	
 	_entity_whisper = AudioStreamPlayer.new()
 	_entity_whisper.bus = "Entity"
 	_entity_whisper.volume_db = -15.0
@@ -273,7 +267,7 @@ func _on_night_started(night: int) -> void:
 		print("HorrorSoundManager: Night 1 — suppressing distant monster sound for car alarm narrative.")
 	else:
 		# Play the distant monster sound when night starts
-		_play_distant_monster()
+		play_distant_monster()
 
 func _on_night_ended(_night: int) -> void:
 	_stop_ambient()
@@ -295,27 +289,22 @@ func _on_horror_event(event_name: String) -> void:
 			_play_event_sound_3d(_get_random_stream(_creaking_door_streams), Vector3(0, 1, 4))
 		"entity_inside":
 			_play_event_sound_3d(_get_random_stream(_wooden_footstep_streams), Vector3(-2, 1, 2))
-			_play_breathing(0.5)
 		"object_moved":
 			_play_event_sound_3d(_get_random_stream(_creaking_door_streams), Vector3(1, 0.5, -1))
 		"footsteps":
 			_play_event_sound_3d(_get_random_stream(_wooden_footstep_streams), Vector3(0, 1, 3))
 		"entity_appears":
 			_play_event_sound_3d(_get_random_stream(_monster_growl_streams), Vector3(0, 1, -4))
-			_play_breathing(0.8)
 		"lights_flicker":
 			_play_event_sound_3d(_get_random_stream(_creaking_door_streams), Vector3(0, 1, -3))
 		"entity_charge":
 			_play_event_sound_3d(_get_random_stream(_monster_growl_streams), Vector3(0, 1, -2))
-			_play_breathing(1.0)
 		"entity_constant":
-			_play_breathing(0.7)
 			_play_whisper()
 		"poltergeist":
 			_play_event_sound_3d(_get_random_stream(_creaking_door_streams), Vector3(0, 1, 0))
 		"final_confrontation":
 			_play_event_sound_3d(_get_random_stream(_monster_growl_streams), Vector3(0, 1, -3))
-			_play_breathing(1.0)
 
 func _play_ambient() -> void:
 	if _ambient_sounds.is_empty() or _ambient_wind_streams.is_empty():
@@ -343,29 +332,24 @@ func _play_event_sound_3d(stream: AudioStream, position: Vector3) -> void:
 			sound_played.emit(stream.resource_path.get_file())
 			return
 
-func _play_breathing(intensity: float = 0.5) -> void:
-	if not _entity_breathing:
-		return
-	if _monster_growl_streams.is_empty():
-		return
-	_entity_breathing.volume_db = linear_to_db(intensity * 0.3)
-	if not _entity_breathing.playing:
-		_entity_breathing.stream = _get_random_stream(_monster_growl_streams)
-		_entity_breathing.play()
-
 func _play_whisper() -> void:
 	if not _entity_whisper:
 		return
 	if not _entity_whisper.playing:
 		if _ambient_wind_streams.is_empty():
 			return
-		_entity_whisper.stream = _get_random_stream(_ambient_wind_streams)
-		_entity_whisper.volume_db = -10.0
-		_entity_whisper.play()
+		var stream = _get_random_stream(_ambient_wind_streams)
+		if stream:
+			# Explicitly disable looping — the audio file may have loop=true
+			# in its import settings, which would cause this one-shot sound
+			# to loop forever when the player enters a lit room sanctuary.
+			if stream is AudioStreamOggVorbis:
+				stream.loop = false
+			_entity_whisper.stream = stream
+			_entity_whisper.volume_db = -10.0
+			_entity_whisper.play()
 
 func _stop_entity_sounds() -> void:
-	if _entity_breathing:
-		_entity_breathing.stop()
 	if _entity_whisper:
 		_entity_whisper.stop()
 
@@ -407,44 +391,6 @@ func play_footstep_at(surface_type: String = "wooden", position: Vector3 = Vecto
 			player.play()
 			sound_played.emit("footstep_" + surface_type)
 
-## Called by player controller for footstep sounds
-func play_footstep(surface_type: String = "wooden") -> void:
-	if _muted:
-		return
-	
-	var stream: AudioStream = null
-	match surface_type:
-		"wooden":
-			stream = _get_random_stream(_wooden_footstep_streams)
-		"carpet":
-			stream = _get_random_stream(_carpet_footstep_streams)
-		"concrete":
-			stream = _get_random_stream(_concrete_footstep_streams)
-		"gravel":
-			stream = _get_random_stream(_gravel_footstep_streams)
-		"leaves":
-			stream = _get_random_stream(_leaves_footstep_streams)
-		"metal":
-			stream = _get_random_stream(_metal_footstep_streams)
-		"mud":
-			stream = _get_random_stream(_mud_footstep_streams)
-		"stairs":
-			stream = _get_random_stream(_stairs_footstep_streams)
-		"wind":
-			stream = _get_random_stream(_wind_footstep_streams)
-		"grass":
-			stream = _get_random_stream(_grass_footstep_streams)
-		_:
-			stream = _get_random_stream(_wooden_footstep_streams)
-	
-	if stream:
-		var player = _get_available_event_player()
-		if player:
-			player.stream = stream
-			player.global_position = Vector3.ZERO
-			player.play()
-			sound_played.emit("footstep_" + surface_type)
-
 func _get_available_event_player() -> AudioStreamPlayer3D:
 	for player in _event_players:
 		if not player.playing:
@@ -452,10 +398,9 @@ func _get_available_event_player() -> AudioStreamPlayer3D:
 	return null
 
 func set_entity_proximity(level: float) -> void:
-	if level > 0.3:
-		_play_breathing(level)
-	else:
-		_stop_entity_sounds()
+	# Entity proximity breathing sounds have been removed.
+	# This function is kept as a stub for any external callers.
+	pass
 
 
 ## Scales monster growl volume and pitch based on watched_intensity.
@@ -465,21 +410,17 @@ func set_watched_intensity(level: float) -> void:
 		_stop_entity_sounds()
 		return
 	
-	# Scale breathing volume with watched intensity
-	if _entity_breathing:
-		_entity_breathing.volume_db = linear_to_db(level * 0.5)
-		_entity_breathing.pitch_scale = 1.0 + level * 0.3
-		if not _entity_breathing.playing and _monster_growl_streams.size() > 0:
-			_entity_breathing.stream = _get_random_stream(_monster_growl_streams)
-			_entity_breathing.play()
-	
 	# Scale whisper volume with watched intensity
 	if _entity_whisper:
 		_entity_whisper.volume_db = linear_to_db(level * 0.3)
 		_entity_whisper.pitch_scale = 1.0 + level * 0.2
 		if not _entity_whisper.playing and _ambient_wind_streams.size() > 0:
-			_entity_whisper.stream = _get_random_stream(_ambient_wind_streams)
-			_entity_whisper.play()
+			var stream = _get_random_stream(_ambient_wind_streams)
+			if stream:
+				if stream is AudioStreamOggVorbis:
+					stream.loop = false
+				_entity_whisper.stream = stream
+				_entity_whisper.play()
 	
 	# At high intensity, play a monster growl as a one-shot event
 	if level > 0.7 and _monster_growl_streams.size() > 0:
@@ -506,11 +447,12 @@ func _setup_distant_monster_sounds() -> void:
 	add_child(_distant_monster_player)
 
 
-## Plays a distant monster sound when the first night starts.
+## Public API: plays a distant monster sound.
+## Called by NightManager.trigger_first_chase() and internally by _on_night_started().
 ## Always plays monster_distant_mx_1.ogg (the first loaded stream) for a
 ## consistent, subtle awakening cue. monster_distant_mx_4.ogg is reserved
 ## for future use (e.g., final night intensity).
-func _play_distant_monster() -> void:
+func play_distant_monster() -> void:
 	if _distant_monster_streams.is_empty() or not _distant_monster_player:
 		return
 	
@@ -533,6 +475,12 @@ func _stop_distant_monster() -> void:
 ## Plays a distant car alarm sound as a narrative telegraph for the Night 1 intro.
 ## The sound is positioned outside the cabin (e.g., near the van) and loops
 ## until the player interacts with the escape van to investigate.
+##
+## IMPORTANT: This function must NEVER play the distant monster sound as a
+## fallback. The car alarm narrative is the player's first audio cue after
+## waking up — a monster howl would spoil the Entity's reveal. If the car
+## alarm audio file is missing, we silently skip playback rather than
+## substituting the monster sound.
 func play_car_alarm_telegraph() -> void:
 	# Use the distant monster player as a 2D audio source (always audible)
 	# since the car alarm should be heard from inside the cabin.
@@ -551,9 +499,10 @@ func play_car_alarm_telegraph() -> void:
 		print("HorrorSoundManager: Playing car alarm telegraph!")
 		sound_played.emit("car_alarm_telegraph")
 	else:
-		print("HorrorSoundManager: Car alarm audio not found at ", car_alarm_path, ". Using distant monster sound as fallback.")
-		# Fallback: play the distant monster sound as a placeholder
-		_play_distant_monster()
+		# Silent skip — never fall back to the monster sound here.
+		# The car alarm narrative is the player's first audio cue after
+		# waking up; a monster howl would spoil the Entity's reveal.
+		print("HorrorSoundManager: Car alarm audio not found at ", car_alarm_path, ". Skipping car alarm telegraph silently.")
 
 
 func toggle_mute() -> void:

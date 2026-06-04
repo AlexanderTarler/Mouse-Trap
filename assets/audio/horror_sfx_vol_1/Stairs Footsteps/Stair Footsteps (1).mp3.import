@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://ct6kau2ok0ivh"
+path="res://.godot/imported/Stair Footsteps (1).mp3-d6ae5d9977c6646e562484606c2dcf0b.mp3str"
+
+[deps]
+
+source_file="res://assets/audio/horror_sfx_vol_1/Stairs Footsteps/Stair Footsteps (1).mp3"
+dest_files=["res://.godot/imported/Stair Footsteps (1).mp3-d6ae5d9977c6646e562484606c2dcf0b.mp3str"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

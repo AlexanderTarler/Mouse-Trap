@@ -25,7 +25,7 @@ signal nest_documented(nest_id: String)
 var is_photographed: bool = false
 
 ## Whether this nest has been documented via the old direct-interact method
-## (kept for backward compatibility)
+## (kept for backward compatibility — mirrors is_photographed)
 var is_documented: bool = false
 
 

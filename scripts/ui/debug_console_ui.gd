@@ -11,6 +11,10 @@ var _entity: Node = null
 var _player: Node = null
 var _is_open: bool = false
 
+# Entity enable/disable toggle state
+var _entity_enabled: bool = true
+var _entity_toggle_btn: Button = null
+
 # UI node references
 @onready var panel: Panel = $Panel
 @onready var header: Label = $Panel/MarginContainer/VBoxContainer/Header
@@ -66,6 +70,13 @@ func _setup_entity_buttons() -> void:
 		var method_name = data.method  # Capture for closure
 		btn.pressed.connect(func(): _call_entity_method(method_name))
 		entity_section.add_child(btn)
+	
+	# Entity enable/disable toggle button (persistent state)
+	_entity_toggle_btn = Button.new()
+	_entity_toggle_btn.text = "Entity: ENABLED"
+	_entity_toggle_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_entity_toggle_btn.pressed.connect(_toggle_entity_enabled)
+	entity_section.add_child(_entity_toggle_btn)
 
 
 func open(player: Node) -> void:
@@ -226,6 +237,35 @@ func _toggle_stalking() -> void:
 	else:
 		_entity.activate()
 		print("[Debug Console] Entity activated (OBSERVE_FROM_TREELINE).")
+
+
+## Toggles the Entity between enabled (active) and disabled (dormant).
+## Updates the toggle button text and color to reflect the current state.
+## Also sets a "debug_disabled" meta flag on the Entity node so the
+## NightManager can check it before auto-activating on night transitions.
+func _toggle_entity_enabled() -> void:
+	if not _entity:
+		print("[Debug Console] Entity not found.")
+		return
+	
+	_entity_enabled = not _entity_enabled
+	
+	if _entity_enabled:
+		_entity.activate()
+		_entity_toggle_btn.text = "Entity: ENABLED"
+		# Reset to default button color
+		_entity_toggle_btn.remove_theme_color_override("font_color")
+		# Clear the debug-disabled meta flag so NightManager can re-activate
+		_entity.set_meta("debug_disabled", false)
+	else:
+		_entity.deactivate()
+		_entity_toggle_btn.text = "Entity: DISABLED"
+		# Color the button red when disabled for visual clarity
+		_entity_toggle_btn.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+		# Set the debug-disabled meta flag so NightManager skips auto-activation
+		_entity.set_meta("debug_disabled", true)
+	
+	print("[Debug Console] Entity %s." % ["ENABLED" if _entity_enabled else "DISABLED"])
 
 
 func _call_entity_method(method_name: String) -> void:

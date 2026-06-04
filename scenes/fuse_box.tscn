@@ -1,7 +1,16 @@
 [gd_scene format=3 uid="uid://dev1jyquh31tw"]
 
 [ext_resource type="PackedScene" uid="uid://bhtpwl205ntv4" path="res://assets/PSX Tech/Models/GLB (recommended)/fuse_box_etx_1.glb" id="1_7ap5c"]
+[ext_resource type="Script" uid="uid://bh20lnj2howlq" path="res://scripts/fuse_box.gd" id="1_wlh5m"]
 
-[node name="Fuse Box" type="Node3D" unique_id=1333240661]
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(0.8, 1.0, 0.6)
 
-[node name="fuse_box_etx_12" parent="." unique_id=40553350 instance=ExtResource("1_7ap5c")]
+[node name="Fuse Box" type="StaticBody3D" unique_id=1485753892]
+script = ExtResource("1_wlh5m")
+
+[node name="fuse_box_etx_12" parent="." unique_id=1631078919 instance=ExtResource("1_7ap5c")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1285745836]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.14646506)
+shape = SubResource("BoxShape3D_1")

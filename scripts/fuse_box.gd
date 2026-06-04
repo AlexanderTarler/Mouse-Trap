@@ -1,0 +1,117 @@
+extends StaticBody3D
+class_name FuseBox
+
+## FuseBox — Power restoration puzzle.
+## Three-state interaction: BROKEN (needs fuse) → HAS_FUSE (throw switch) → POWER_ON (done).
+## Communicates with the NightManager autoload to restore generator power.
+##
+## The player must find a "Fuse" item in their inventory and insert it,
+## then throw the switch to restore power to the cabin.
+
+signal fuse_inserted
+signal power_restored
+
+enum BoxState { BROKEN, HAS_FUSE, POWER_ON }
+
+## The item_name to search for in the player's inventory.
+@export var required_item_name: String = "Fuse"
+
+var current_state: BoxState = BoxState.BROKEN
+
+
+func _ready() -> void:
+	add_to_group("interactable")
+	
+	# Ensure this StaticBody3D is on collision layer 1 so the
+	# InteractionManager's center-screen raycast can detect it.
+	collision_layer = 1
+	
+	# Ensure the generator starts OFF until the fuse is inserted.
+	# This guarantees the cabin is dark at scene start, forcing the
+	# player to find the fuse and restore power.
+	_set_generator_state(false)
+	
+	print("[FuseBox] _ready() complete. State: ", BoxState.keys()[current_state])
+
+
+## Main interaction entry point — called by the InteractionManager
+## when the player looks at this node and presses E.
+## Takes zero parameters, matching the convention used by all other
+## interactables in the codebase (door.gd, generator_interaction.gd, etc.).
+func interact() -> void:
+	print("[FuseBox] interact() called! Current state: ", BoxState.keys()[current_state])
+	match current_state:
+		BoxState.BROKEN:
+			attempt_fuse_insertion()
+		BoxState.HAS_FUSE:
+			throw_switch()
+		BoxState.POWER_ON:
+			print("[FuseBox] The power is already humming softly.")
+
+
+## Searches the player's Inventory autoload for a Fuse item.
+## If found, removes it and advances to HAS_FUSE state.
+func attempt_fuse_insertion() -> void:
+	var fuse_item = _find_fuse_in_inventory()
+	if fuse_item:
+		Inventory.remove_item(fuse_item)
+		current_state = BoxState.HAS_FUSE
+		fuse_inserted.emit()
+		print("[FuseBox] You slot the heavy ceramic fuse into the terminal block. The switch can now be thrown.")
+	else:
+		print("[FuseBox] The fuse block is empty. The main circuit breaker is completely dead.")
+
+
+## Throws the switch — restores generator power via NightManager.
+func throw_switch() -> void:
+	current_state = BoxState.POWER_ON
+	_set_generator_state(true)
+	power_restored.emit()
+	print("[FuseBox] The lever snaps down. The old generator spools up, and lights flicker to life!")
+
+
+## Sets the NightManager generator state and emits the state change signal
+## so all CabinLight nodes update their visibility automatically.
+func _set_generator_state(enabled: bool) -> void:
+	var nm = get_node_or_null("/root/NightManager")
+	if nm:
+		nm.is_generator_on = enabled
+		nm.generator_state_changed.emit(enabled)
+		if enabled:
+			# Recalculate fuel drain to account for any lights that are switched on
+			nm.recalculate_fuel_drain()
+		print("[FuseBox] Generator state set to: ", enabled)
+	else:
+		print("[FuseBox] Warning: NightManager not found at /root/NightManager")
+
+
+## Iterates the Inventory autoload's items array looking for an item
+## whose item_name matches required_item_name.
+## Returns the ItemData resource if found, or null if not.
+func _find_fuse_in_inventory():
+	print("[FuseBox] Searching inventory for '", required_item_name, "'. Inventory has ", Inventory.items.size(), " items:")
+	for i in range(Inventory.items.size()):
+		var item = Inventory.items[i]
+		if item != null:
+			print("  [", i, "] item_name='", item.item_name, "' type=", item.item_type if "item_type" in item else "?")
+		else:
+			print("  [", i, "] null")
+	for item in Inventory.items:
+		if item != null and "item_name" in item and item.item_name == required_item_name:
+			print("[FuseBox] Found matching item: ", item.item_name)
+			return item
+	print("[FuseBox] No item named '", required_item_name, "' found in inventory.")
+	return null
+
+
+## Returns the context-sensitive interaction prompt shown in the HUD.
+func get_interact_text() -> String:
+	match current_state:
+		BoxState.BROKEN:
+			return "[E] Insert Fuse"
+		BoxState.HAS_FUSE:
+			return "[E] Throw Switch"
+		BoxState.POWER_ON:
+			return "[E] Fuse Box (Active)"
+		_:
+			return ""

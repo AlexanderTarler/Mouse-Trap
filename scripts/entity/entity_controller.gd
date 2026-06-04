@@ -53,11 +53,18 @@ const CHASE_MUSIC_VOLUME_DB: float = -8.0
 # Grunt sound when leaving CHASE state
 var _chase_exit_grunt_player: AudioStreamPlayer = null
 var _was_chasing: bool = false
+var _chase_exit_grunt_cooldown: float = 0.0
+const CHASE_EXIT_GRUNT_COOLDOWN_DURATION: float = 5.0
 const CHASE_EXIT_GRUNT_PATH: String = "res://assets/audio/Entity/Entity_grunt_long.ogg"
 
 # Grunt sound when Entity is repelled by light sanctuary (one-shot, higher pitch)
 var _light_sanctuary_grunt_player: AudioStreamPlayer = null
 
+## Debounce flag for the light sanctuary grunt sound.
+## Prevents the frustrated grunt from repeating every frame while the player
+## remains in a lit room. Set to true when the sound plays, reset to false
+## when the Entity fades/relocates or resets exposure.
+var _has_played_light_sound: bool = false
 
 # Night ambience — 2D background soundtrack that plays during non-chase night hours
 var _night_ambience_player: AudioStreamPlayer = null
@@ -208,27 +215,31 @@ func _ready() -> void:
 		_night_ambience_player.stream = ambience_stream
 	add_child(_night_ambience_player)
 	
-	# Set up chase exit grunt player (2D, plays when leaving CHASE state)
+	# Set up chase exit grunt player (2D, plays ONCE when leaving CHASE state).
+	# Uses duplicate() to create an independent copy of the audio stream so that
+	# modifying its properties (e.g., loop = false) does NOT affect the shared
+	# resource used by the light sanctuary grunt player below.
 	_chase_exit_grunt_player = AudioStreamPlayer.new()
 	_chase_exit_grunt_player.bus = "Entity"
 	_chase_exit_grunt_player.volume_db = -6.0
 	var grunt_stream = load(CHASE_EXIT_GRUNT_PATH) as AudioStream
 	if grunt_stream:
-		# Explicitly disable looping — the OGG file may have loop=true in its
-		# import settings, which would cause this one-shot sound to loop forever.
+		grunt_stream = grunt_stream.duplicate()
 		if grunt_stream is AudioStreamOggVorbis:
 			grunt_stream.loop = false
 		_chase_exit_grunt_player.stream = grunt_stream
 	add_child(_chase_exit_grunt_player)
 	
-	# Set up light sanctuary grunt player (2D, one-shot when Entity is repelled by light)
+	# Set up light sanctuary grunt player (2D, one-shot when Entity is repelled by light).
+	# Uses duplicate() to create an independent copy so it doesn't interfere with
+	# the chase exit grunt's stream settings.
 	_light_sanctuary_grunt_player = AudioStreamPlayer.new()
 	_light_sanctuary_grunt_player.bus = "Entity"
 	_light_sanctuary_grunt_player.volume_db = -3.0  # Slightly louder than chase exit
 	_light_sanctuary_grunt_player.pitch_scale = 1.3  # Higher pitch = frustrated/angry
 	var sanctuary_stream = load(CHASE_EXIT_GRUNT_PATH) as AudioStream
 	if sanctuary_stream:
-		# Explicitly disable looping — this is a one-shot frustration sound
+		sanctuary_stream = sanctuary_stream.duplicate()
 		if sanctuary_stream is AudioStreamOggVorbis:
 			sanctuary_stream.loop = false
 		_light_sanctuary_grunt_player.stream = sanctuary_stream
@@ -331,6 +342,14 @@ func _on_night_started(night: int) -> void:
 	# The Entity only appears when the player interacts with the van.
 	if night == 1:
 		print("[Entity] Night 1: Staying hidden for car alarm narrative.")
+		return
+	
+	# Check if the Entity has been manually disabled via the debug console.
+	# The debug console sets a meta flag "debug_disabled" when the player
+	# toggles it off. If set, we skip activation so the Entity stays dormant
+	# even when a new night starts.
+	if has_meta("debug_disabled") and get_meta("debug_disabled"):
+		print("[Entity] Night %d: Debug-disabled via console. Skipping activation." % night)
 		return
 	
 	activate() # Controller handles visibility
@@ -474,6 +493,10 @@ func _physics_process(delta: float) -> void:
 	if _light_sabotage_cooldown > 0.0:
 		_light_sabotage_cooldown -= delta
 	
+	# Chase exit grunt cooldown decrement
+	if _chase_exit_grunt_cooldown > 0.0:
+		_chase_exit_grunt_cooldown -= delta
+	
 	# ─── DEBUG: F2 — Window Siege Stress Test ──────────────────────────────
 	# Development-only shortcut to stress-test the outside-to-inside sequential
 	# window destruction system (glass shatter → plank damage → breach → INDOOR_SEARCH).
@@ -486,24 +509,6 @@ func _physics_process(delta: float) -> void:
 	if _state != _last_logged_state:
 		print("[Entity FSM] Transitioned from %s to %s" % [State.keys()[_last_logged_state], State.keys()[_state]])
 		_last_logged_state = _state
-	
-	# --- PERIODIC POSITION LOG (every 2 seconds, unconditional) ---
-	# Logs the Entity's current position, state, and distance to the player
-	# every 2 seconds. This runs regardless of _debug_logging_enabled so we
-	# always have a breadcrumb trail during siege debugging.
-	_ai_debug_timer += delta
-	if _ai_debug_timer >= 2.0:
-		_ai_debug_timer = 0.0
-		var dist_to_player = global_position.distance_to(_player.global_position)
-		var nav_target = _nav_agent.target_position if _nav_agent else Vector3.ZERO
-		var dist_to_nav_target = nav_target.distance_to(global_position)
-		print("[Entity PosLog] State=%s | Pos=(%.1f, %.1f, %.1f) | DistToPlayer=%.1f | NavTarget=(%.1f, %.1f, %.1f) | DistToNav=%.1f" % [
-			State.keys()[_state],
-			global_position.x, global_position.y, global_position.z,
-			dist_to_player,
-			nav_target.x, nav_target.y, nav_target.z,
-			dist_to_nav_target
-		])
 	
 	# --- BACKGROUND SENSE PROCESSING (runs every frame regardless of state) ---
 	if _sensory:
@@ -566,6 +571,12 @@ func _physics_process(delta: float) -> void:
 				if _state != State.FLINCH and _state != State.CHARGE:
 					_start_flinch()
 	
+	# Reset the light sanctuary grunt debounce when the player stops
+	# shining the flashlight on the Entity. This allows the grunt to
+	# play again on the next spotting cycle.
+	if _has_played_light_sound and not (_sensory and _sensory.is_player_spotting_entity()):
+		_has_played_light_sound = false
+	
 	# --- CHASE MUSIC (ambience_d6_loop) ---
 	# Fade in when entering CHASE state, fade out when leaving.
 	var is_chasing = _state == State.CHASE
@@ -581,10 +592,17 @@ func _physics_process(delta: float) -> void:
 	# --- CHASE EXIT GRUNT ---
 	# Play the Entity_grunt_long.ogg sound when the Entity leaves CHASE state.
 	# This provides an audio cue that the chase has ended.
-	if _was_chasing and not is_chasing:
+	#
+	# COOLDOWN GUARD:
+	# The _chase_exit_grunt_cooldown prevents the grunt from repeating every
+	# time the Entity rapidly enters/exits CHASE (e.g., when the player runs
+	# between lit and dark rooms). The cooldown is set to 5 seconds each time
+	# the grunt plays, ensuring it can only play once every 5 seconds at most.
+	if _was_chasing and not is_chasing and _chase_exit_grunt_cooldown <= 0.0:
 		if _chase_exit_grunt_player and _chase_exit_grunt_player.stream:
 			_chase_exit_grunt_player.play()
-			print("[Entity] Playing chase exit grunt.")
+			_chase_exit_grunt_cooldown = CHASE_EXIT_GRUNT_COOLDOWN_DURATION
+			print("[Entity] Playing chase exit grunt. _state=", _state, " is_player_outside=", _navigation.is_player_outside() if _navigation else "NO_NAV")
 	_was_chasing = is_chasing
 	
 	# Smooth volume interpolation for chase music
@@ -715,26 +733,6 @@ func _debug_attack_window() -> void:
 	# CabinWindow instance (or the CabinWindow itself).
 	var windows = get_tree().get_nodes_in_group("WindowMarkers")
 	
-	# ─── DIAGNOSTIC: Dump all WindowMarkers group members ───
-	print("[F2 Discovery Debug] Dumping all nodes in 'WindowMarkers' group:")
-	for node in get_tree().get_nodes_in_group("WindowMarkers"):
-		var script_info = "NO SCRIPT"
-		if node.get_script():
-			script_info = node.get_script().resource_path
-		print("  Name: ", node.name, 
-			  " | Type: ", node.get_class(), 
-			  " | Path: ", node.get_path(),
-			  " | Script: ", script_info)
-		# Also print parent info for context
-		if node.get_parent():
-			var parent_script = "NONE"
-			if node.get_parent().get_script():
-				parent_script = node.get_parent().get_script().resource_path
-			print("    Parent: ", node.get_parent().name, 
-				  " (", node.get_parent().get_class(), ")",
-				  " | Parent Script: ", parent_script)
-	print("[F2 Discovery Debug] End of group dump.")
-	
 	if windows.is_empty():
 		print("[F2] ERROR: No WindowMarkers found in scene tree!")
 		print("==========================================================\n")
@@ -778,34 +776,22 @@ func _debug_attack_window() -> void:
 		# Check for target_id match
 		if candidate.window_id == target_id:
 			final_window_target = candidate
-			print("[F2] Found target window '", target_id, "' via window_id match: ", node.name)
 			break
 	
 	# Fallback: if no window_id match found, use the first valid window
 	if not final_window_target:
 		final_window_target = first_valid
-		if final_window_target:
-			print("[F2] WARNING: No window with window_id='", target_id, "' found. Falling back to first valid window.")
 	
 	if not final_window_target:
-		print("[F2] ERROR: Could not resolve CabinWindow from any marker!")
-		print("  Total markers in group: ", windows.size())
-		for node in windows:
-			print("    - ", node.name, " (", node.get_class(), ") Path: ", node.get_path())
-		print("==========================================================\n")
 		return
 	
 	# Store the original state for diagnostic logging
 	var original_state = _state
 	
-	print("[F2] Target window: ", final_window_target.name, " at ", final_window_target.global_position)
-	print("[F2] Window state — glass_shattered: ", final_window_target.is_glass_shattered, ", boarded: ", final_window_target.is_boarded)
-	
 	# ─── PART 2: Teleport to Window + Immediate Barricade Damage ───
 	# Activate the Entity if it's dormant (e.g. Night 1 before van alarm)
 	if not _is_active:
 		activate()
-		print("[F2] Entity was dormant. Activated.")
 	
 	# Teleport the Entity directly to the window's position.
 	# This bypasses the long pathfinding march through the treeline.
@@ -951,6 +937,9 @@ func _on_caught_player() -> void:
 	var nm = get_node_or_null("/root/NightManager")
 	if nm:
 		nm.horror_event.emit("entity_caught_player")
+	# Unpause the game tree in case it was paused by a previous jumpscare
+	if get_tree().paused:
+		get_tree().paused = false
 
 
 ## Called when the player enters the Entity's catch area (Area3D overlap zone).
@@ -1073,6 +1062,11 @@ func fade_and_relocate() -> void:
 	
 	_is_fading = false
 	_state = State.OBSERVE_FROM_TREELINE
+	
+	# Reset the light sanctuary grunt debounce flag so the Entity can
+	# play the frustrated sound again the next time it is repelled.
+	_has_played_light_sound = false
+	
 	if _ai and _ai.has_method("reset_exposure"):
 		_ai.reset_exposure()
 
@@ -1131,10 +1125,19 @@ func _sabotage_light(target_window: CabinWindow) -> void:
 ## pitch (1.3) and slightly louder volume (-3.0 dB) to differentiate it from
 ## the chase exit grunt. This gives the player clear audio feedback that
 ## they've successfully escaped into a lit room.
+##
+## DEBOUNCE GUARD:
+## The _has_played_light_sound flag prevents this sound from repeating every
+## frame while the player remains in a lit room. The flag is set to true when
+## the sound plays, and is reset to false when the Entity fades/relocates
+## (see fade_and_relocate()) or resets exposure.
 func _play_light_sanctuary_grunt() -> void:
+	if _has_played_light_sound:
+		return
 	if _light_sanctuary_grunt_player and _light_sanctuary_grunt_player.stream:
 		_light_sanctuary_grunt_player.play()
-		print("[Entity] Playing light sanctuary grunt — frustrated by the light!")
+		_has_played_light_sound = true
+		print("[Entity] Playing light sanctuary grunt — frustrated by the light! _state=", _state, " is_player_outside=", _navigation.is_player_outside() if _navigation else "NO_NAV")
 
 
 ## Smoothly fades an AudioStreamPlayer's volume toward a target value.

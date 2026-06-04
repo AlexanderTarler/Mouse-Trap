@@ -171,8 +171,21 @@ func start_night(night: int) -> void:
 	if night == 1:
 		print("Night 1: Entity remains hidden for the car alarm narrative event.")
 	else:
-		# Awaken the entity for the night
-		get_tree().call_group("entity", "activate")
+		# Check if the Entity has been manually disabled via the debug console.
+		# The debug console sets a meta flag "debug_disabled" on the Entity node
+		# when the player toggles it off. If set, we skip auto-activation so the
+		# Entity stays dormant even when a new night starts.
+		var entity_nodes = get_tree().get_nodes_in_group("entity")
+		var should_activate = true
+		for e in entity_nodes:
+			if e.has_meta("debug_disabled") and e.get_meta("debug_disabled"):
+				should_activate = false
+				print("Night %d: Entity is debug-disabled. Skipping auto-activation." % night)
+				break
+		
+		if should_activate:
+			# Awaken the entity for the night
+			get_tree().call_group("entity", "activate")
 	
 	print("Night %d has begun..." % night)
 
@@ -308,7 +321,14 @@ func _check_time_events() -> void:
 func _trigger_event(event_name: String) -> void:
 	_triggered_events.append(event_name)
 	horror_event.emit(event_name)
-	print("Horror event: %s" % event_name)
+	
+	# Special logging for lights_flicker — this event triggers the cabin
+	# lights to physically flicker (via CabinLight's power-on flicker sequence
+	# or the HorrorSoundManager's lights_flicker sound effect).
+	if event_name == "lights_flicker":
+		print("[Horror Event] LIGHTS FLICKER! The cabin lights are flickering! Night %d at progress %.0f%%" % [current_night, night_progress * 100.0])
+	else:
+		print("Horror event: %s" % event_name)
 
 
 ## Called by the EscapeVan when the player interacts with the car.
@@ -324,8 +344,8 @@ func trigger_first_chase() -> void:
 	# On Night 1, this sound is suppressed during night_started so it
 	# plays here instead — right when the Entity spawns.
 	var hsm = get_node_or_null("/root/HorrorSoundManager")
-	if hsm and hsm.has_method("_play_distant_monster"):
-		hsm._play_distant_monster()
+	if hsm and hsm.has_method("play_distant_monster"):
+		hsm.play_distant_monster()
 	
 	first_chase_started.emit()
 

@@ -305,7 +305,3 @@ func _update_light_appearance(p_day_factor: float, p_sun_height: float) -> void:
 		if moon.shadow_enabled:
 			moon.shadow_bias = 0.1
 			moon.shadow_normal_bias = 0.1
-
-
-func _on_car_alarm_trigger_body_entered(body: Node3D) -> void:
-	pass # Replace with function body.

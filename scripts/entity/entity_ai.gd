@@ -633,8 +633,16 @@ func _indoor_search_state(delta: float) -> void:
 	# Once inside, loop through Cabin_Patrol_Waypoints to hunt the player.
 	_has_arrived_indoor = true
 	
-	# Check for line-of-sight — if we see the player, upgrade to CHASE
-	if entity._sensory.can_entity_see_player():
+	# Check for line-of-sight — if we see the player, upgrade to CHASE.
+	# LIGHT SANCTUARY GUARD:
+	# Before upgrading to CHASE, check if the player is standing in a lit room.
+	# If they are, do NOT enter CHASE — the light sanctuary check in
+	# _stalk_state() would immediately repel the Entity on the next frame,
+	# creating a 1-frame CHASE blip that triggers the chase exit grunt sound.
+	# Instead, continue patrolling. The Entity will naturally retreat via the
+	# light sanctuary check at the top of this function if the player stays
+	# in the light.
+	if entity._sensory.can_entity_see_player() and not _check_light_sanctuary_near_player():
 		print("[Entity AI] Line of sight established indoors! Upgrading to CHASE.")
 		entity._state = entity.State.CHASE
 		entity._nav_agent.target_position = entity._player.global_position
@@ -860,24 +868,14 @@ func setup_night_difficulty(night: int) -> void:
 	entity.window_peek_chance = maxf(0.05, 0.70 - (night - 1) * 0.15)
 	
 	# --- FLASHLIGHT FLINCH DIFFICULTY ---
-	# Controls whether the Entity flinches (lateral sprint) when the player
-	# shines the flashlight at it from inside the cabin.
-	#
 	# Nights 1-4: Flinch is enabled. The Entity sprints laterally to evade.
-	# Night 5:    Flinch is DISABLED. The Entity is relentless — it ignores
-	#             the flashlight and immediately sieges the nearest window.
-	#             This matches the terminal "no escape" behavior of Night 5.
-	if night == 1:
-		entity._flinch_enabled = true
-	elif night == 2:
-		entity._flinch_enabled = true
-	elif night == 3:
-		entity._flinch_enabled = true
-	elif night == 4:
-		entity._flinch_enabled = true
+	# Night 5:    Flinch is DISABLED — relentless siege, no escape.
+	entity._flinch_enabled = (night < 5)
+	
+	# Night-specific speed overrides (applied after the formula above)
+	if night == 4:
 		entity.current_stalk_speed = 5.3
 	elif night == 5:
-		entity._flinch_enabled = false  # Night 5: NO FLINCH — relentless siege
 		entity.current_stalk_speed = 5.9
 
 

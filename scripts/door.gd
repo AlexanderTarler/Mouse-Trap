@@ -166,9 +166,16 @@ func _check_routine_advance() -> void:
 		return
 	
 	# Check if all cabin lights are off
+	# IMPORTANT: Faulty lights (e.g. the permanently short-circuited porch light)
+	# are EXCLUDED from this check — they cannot be toggled off and would
+	# otherwise block progression forever.
 	var all_lights_off = true
 	var lights = get_tree().get_nodes_in_group("CabinLights")
 	for light in lights:
+		# Skip faulty lights — they are permanently stuck ON and cannot be toggled
+		if "is_faulty" in light and light.is_faulty:
+			print("[Door] Skipping faulty light '%s' (permanently stuck ON)." % light.light_name if "light_name" in light else "unknown faulty")
+			continue
 		if "is_switched_on" in light and light.is_switched_on:
 			all_lights_off = false
 			print("[Door] Light '%s' is still on. Cannot advance routine." % light.light_name if "light_name" in light else "unknown")

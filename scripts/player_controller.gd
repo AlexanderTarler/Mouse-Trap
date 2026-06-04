@@ -20,14 +20,6 @@ extends CharacterBody3D
 @export var crouching_height: float = 0.8
 @export var crouch_transition_speed: float = 10.0
 
-# Flashlight settings (used as fallback if no flashlight script attached)
-@export var flashlight_energy: float = 5.0
-@export var flashlight_range: float = 10.0
-
-# Camera settings
-@export var camera_far: float = 500.0
-@export var camera_near: float = 0.1
-
 # References to scene nodes
 @onready var _camera: Camera3D = $CameraHolder/Camera3D
 @onready var _camera_holder: Node3D = $CameraHolder
@@ -44,7 +36,7 @@ extends CharacterBody3D
 
 var _current_speed: float
 var _step_timer: float = 0.0
-var _step_interval: float = 0.6
+var _step_interval: float = 0.5
 var _head_bob_time: float = 0.0
 var _head_bob_active: bool = false
 var _is_crouching: bool = false
@@ -55,12 +47,6 @@ var _has_flashlight: bool = false
 
 # Crosshair
 var _crosshair: Control
-
-# Footstep sound tracking
-var _footstep_timer: float = 0.0
-var _footstep_interval: float = 0.5
-
-# (Removed unused debug raycast timer)
 
 # Stair climbing state
 var _was_on_floor: bool = false
@@ -110,12 +96,7 @@ func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	add_to_group("player")
 	
-	if _camera:
-		_camera.far = camera_far
-		_camera.near = camera_near
 	if _flashlight:
-		_flashlight.light_energy = flashlight_energy
-		_flashlight.spot_range = flashlight_range
 		# Flashlight starts disabled until the player picks up flashlight.tscn
 		_flashlight.visible = false
 		if _flashlight.has_method("toggle") and _flashlight.is_on:
@@ -133,7 +114,7 @@ func _ready() -> void:
 	
 	_create_crosshair()
 	get_viewport().size_changed.connect(_rebuild_crosshair)
-	_footstep_interval = 1.0 / walk_speed
+	_step_interval = 2.0 / walk_speed
 
 func _create_crosshair() -> void:
 	var canvas = CanvasLayer.new()
@@ -218,6 +199,7 @@ func _input(event: InputEvent) -> void:
 		var rot = _camera_holder.rotation
 		rot.x = clamp(rot.x, -1.4, 1.4)
 		_camera_holder.rotation = rot
+		
 	
 	if event.is_action_pressed("ui_cancel"):
 		var inv_ui = get_node_or_null("/root/CottageHorror/InventoryUI")
@@ -608,6 +590,12 @@ func _is_flashlight_on_entity() -> bool:
 		current = current.get_parent()
 	
 	return false
+
+
+## Public API: returns true if the player's flashlight is currently on.
+## Called by entity_sensory.gd to check flashlight state without string-based property access.
+func is_flashlight_on() -> bool:
+	return _has_flashlight and _flashlight != null and _flashlight.is_on
 
 
 # --- NEW NOISE SYSTEM EMITTER ---

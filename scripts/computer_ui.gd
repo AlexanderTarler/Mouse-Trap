@@ -27,6 +27,11 @@ class_name ComputerUI
 ## Answer Key (read from /root/NightManager.current_night):
 ##   Night 1: Nest Alpha (0), Bio-Crystalline (0), 14.2 Hz (0)
 ##   Night 2: Window 3 Sill (2), Corrosive Trace (2), 8.8 Hz (1)
+##
+## RECOVER_DATA.EXE — Arvid Stenberg's hidden field diary.
+## Two corrupted log files can be restored by entering the correct
+## corporate decryption key found in the world.
+##   Key: "STENBERG_1996" — unlocks both LOG_01_SURVEY and LOG_02_CRITICAL.
 
 
 signal computer_closed
@@ -52,6 +57,19 @@ var _unlocked_profiles: Dictionary = {}
 ## This gates the Day 1 phone drop / time start progression.
 var _eco_survey_completed: bool = false
 
+## ─────────────────────────────────────────────────────────────────────────────
+## RECOVER_DATA.EXE — Arvid Stenberg's hidden field diary state
+## ─────────────────────────────────────────────────────────────────────────────
+
+## Whether LOG_01_SURVEY.TXT has been restored via the decryption key.
+var is_arvid_log_1_unlocked: bool = false
+
+## Whether LOG_02_CRITICAL.TXT has been restored via the decryption key.
+var is_arvid_log_2_unlocked: bool = false
+
+## The correct decryption key the player must find in the world.
+const ARVID_DECRYPTION_KEY: String = "STENBERG_1996"
+
 ## Set by PCInteractable to pass the player and camera_holder references directly.
 ## This is more reliable than looking them up via absolute paths.
 func set_player_references(player: Node, camera_holder: Node3D) -> void:
@@ -74,6 +92,14 @@ func set_player_references(player: Node, camera_holder: Node3D) -> void:
 @onready var _dropdown_anomaly: OptionButton = $MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox/DropdownAnomaly
 @onready var _dropdown_frequency: OptionButton = $MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox/DropdownFrequency
 @onready var _btn_correlate: Button = $MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox/CorrelateButton
+
+# --- RECOVER_DATA.EXE nodes ---
+@onready var _recovery_btn: Button = $MainWindow/HBoxContainer/NavButtons/RecoverData
+@onready var _overload_btn: Button = $MainWindow/HBoxContainer/NavButtons/OverloadButton
+@onready var _recovery_panel: Panel = $MainWindow/HBoxContainer/RecoveryPanel
+@onready var _key_input: LineEdit = $MainWindow/HBoxContainer/RecoveryPanel/RecoveryVBox/KeyInput
+@onready var _submit_key_btn: Button = $MainWindow/HBoxContainer/RecoveryPanel/RecoveryVBox/SubmitKeyButton
+@onready var _recovery_status: Label = $MainWindow/HBoxContainer/RecoveryPanel/RecoveryVBox/RecoveryStatus
 
 ## Tracks whether the window is minimized (only title bar visible)
 var _is_minimized: bool = false
@@ -130,11 +156,50 @@ const TACTICAL_LOG_REWARDS: Dictionary = {
 	},
 }
 
+## ─────────────────────────────────────────────────────────────────────────────
+## ARVID STENBERG'S HIDDEN FIELD DIARY — Restored via RECOVER_DATA.EXE
+## ─────────────────────────────────────────────────────────────────────────────
+## These logs are unlocked when the player enters the correct corporate
+## decryption key ("STENBERG_1996") found somewhere in the world.
+
+const ARVID_LOG_01_SURVEY: String = (
+	"[b]SYSTEM RECOVERY: SECTOR 0x4F RESTORED[/b]\n"
+	+ "[color=gray]LOG DATE: MARCH 14[/color]\n\n"
+	+ "The regional office lied to me. This isn't an environmental assessment "
+	+ "for a new logging permit. I found old corporate land surveys in the "
+	+ "crawlspace dating back to the 70s. They've known about the 'Watcher' "
+	+ "for decades. They didn't abandon this cabin because the timber dried up; "
+	+ "they abandoned it because they couldn't keep the crews alive. \n\n"
+	+ "Management left me out here alone to monitor the local grid spikes. "
+	+ "They aren't trying to avoid the forest spirit—they're mapping its "
+	+ "aggression threshold. I am a canary in a coal mine."
+)
+
+const ARVID_LOG_02_CRITICAL: String = (
+	"[b]SYSTEM RECOVERY: MAIL_SPOOL_REBUILT[/b]\n"
+	+ "[color=gray]LOG DATE: APRIL 02 (UNSENT)[/color]\n\n"
+	+ "It knows I'm inside. It shadows the cabin lights every night. My "
+	+ "flashlight only infuriates it now—the localized beam hurts it enough "
+	+ "to trigger a blind charge. If it breaks through the shutters, a "
+	+ "hand-lamp won't stop it.\n\n"
+	+ "I've rewired the terminal interface to the main breaker. If I execute "
+	+ "the grid override command, it will force the external porch floodlights "
+	+ "to draw max voltage from the generator. It will create a blinding wall "
+	+ "of light that should physically paralyze the thing in its tracks.\n\n"
+	+ "But the power draw will burn through generator fuel at a catastrophic "
+	+ "rate. If I trigger the trap, I'll have minutes to sprint into the yard, "
+	+ "find its anchoring totem, and destroy it before the grid goes completely "
+	+ "dark. If the fuel hits zero before the totem breaks..."
+)
 
 
 func _ready() -> void:
 	# Start hidden
 	visible = false
+	
+	# Register in the "computer_ui" group so PCInteractable can find us
+	# via group lookup as a bulletproof fallback.
+	add_to_group("computer_ui")
 	
 	# Connect button signals
 	if _close_button:
@@ -151,6 +216,12 @@ func _ready() -> void:
 		_trash_btn.pressed.connect(_on_trash)
 	if _btn_correlate:
 		_btn_correlate.pressed.connect(_on_correlate_data)
+	if _recovery_btn:
+		_recovery_btn.pressed.connect(_on_recovery_open)
+	if _submit_key_btn:
+		_submit_key_btn.pressed.connect(_on_submit_decryption_key)
+	if _overload_btn:
+		_overload_btn.pressed.connect(_on_overload_execute)
 	
 	# Save the normal window rect for restore
 	_normal_rect = Rect2(_main_window.position, _main_window.size)
@@ -219,30 +290,28 @@ func open_computer() -> void:
 	print("[ComputerUI] Computer opened.")
 
 
-## Closes the computer UI: hides the overlay, tweens the camera back to
-## the original position, then restores player movement.
+## Closes the computer UI: hides the overlay and performs a hard camera reset.
+## The camera is snapped directly to the saved original transform without any
+## tween interpolation. This eliminates the microscopic float rounding errors
+## on the Z-axis (roll) that the tween interpolation would introduce.
 func close_computer() -> void:
 	visible = false
 	
 	# Only tween the camera back if we have a valid original transform
-	# (i.e., the player actually sat down at the computer).
-	# If close_computer() is called from _ready() during initialization,
-	# _original_camera_transform is still the default identity transform,
-	# so we skip the tween and restore controls immediately.
+	# (Prevents running snapping calculations during initial hidden boot-up inside _ready())
 	if _camera_holder and _original_camera_transform != Transform3D():
 		var tween = create_tween()
 		tween.set_parallel(false)
 		tween.tween_property(_camera_holder, "global_transform", _original_camera_transform, 0.5)\
 			.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 		
-		# Restore controls after the tween finishes
+		# Connect to our completion callback to re-enable movement
 		tween.finished.connect(_on_stand_tween_completed)
 	else:
-		# No CameraHolder found or no original transform saved — restore controls immediately
 		_restore_player_controls()
 	
 	computer_closed.emit()
-	print("[ComputerUI] Computer closed.")
+	print("[ComputerUI] Computer closed smoothly using original transform timeline.")
 
 
 ## Called when the standing-up tween animation completes.
@@ -252,12 +321,65 @@ func _on_stand_tween_completed() -> void:
 
 
 ## Restores player movement and re-captures the mouse cursor.
+## Re-enables player input and physics processing, then performs a deep
+## matrix alignment that transfers any relative horizontal yaw from the
+## child CameraHolder up to the parent player body capsule.
+##
+## WHY THIS IS NECESSARY:
+## The telemetry log proved that after the standing tween restores the
+## CameraHolder's global transform perfectly (roll = 0.0), the very first
+## mouse move in player_controller.gd's _input() introduces ~12° of roll.
+## This happens because the CameraHolder retains a non-zero local Y-rotation
+## (yaw) from the sitting alignment. When _input() calls rotate_x() on a
+## node with non-zero local Y, the Euler-to-quaternion round-trip bleeds
+## cross-contamination into rotation.z (roll).
+##
+## THE FIX:
+## 1. Extract the true horizontal look angle from the saved original transform
+## 2. Apply that yaw directly to the parent player body capsule (global_rotation.y)
+## 3. Reset the child CameraHolder to ONLY handle vertical pitch (rotation.x),
+##    with rotation.y and rotation.z forced to 0.0
+## 4. Orthonormalize the basis to wipe out any float skew
+##
+## This ensures the PlayerController's _input() mouse look operates on a
+## perfectly flat, uncontaminated local basis — no Y component to cross-couple.
 func _restore_player_controls() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	
 	if _player:
 		_player.set_process_input(true)
 		_player.set_physics_process(true)
+		
+		# Deep matrix alignment: transfer yaw to body capsule, isolate camera child
+		if _original_camera_transform != Transform3D():
+			var original_euler = _original_camera_transform.basis.get_euler()
+			
+			# 1. Apply the true horizontal look orientation directly to the
+			#    main player body capsule. This is the yaw (rotation around Y).
+			#    The body capsule handles physics and collision — it must own
+			#    the horizontal orientation so mouse look doesn't fight it.
+			_player.global_rotation.y = original_euler.y
+			_player.global_rotation.x = 0.0
+			_player.global_rotation.z = 0.0
+			
+			# 2. Reset the child camera holder to ONLY handle vertical pitch,
+			#    completely flattening its Y and Z channels to zero.
+			#    This eliminates the cross-contamination that caused the roll bug.
+			if _camera_holder:
+				_camera_holder.rotation = Vector3(original_euler.x, 0.0, 0.0)
+				_camera_holder.global_transform.basis = _camera_holder.global_transform.basis.orthonormalized()
+			
+			print("[ComputerUI] Deep matrix alignment complete. Relative yaw transferred to body capsule, camera child isolated.")
+		else:
+			# Fallback: no saved transform — just zero the roll
+			if _camera_holder:
+				_camera_holder.rotation.z = 0.0
+				print("[ComputerUI] Fallback: camera holder roll zeroed (no original transform).")
+	else:
+		# Fallback if no player reference exists
+		if _camera_holder:
+			_camera_holder.rotation.z = 0.0
+			print("[ComputerUI] Fallback: camera holder roll zeroed (no player reference).")
 
 
 ## Minimize button: collapses the window to just the title bar.
@@ -672,3 +794,171 @@ func _on_trash() -> void:
 	_content_display.text += "---\n"
 	_content_display.text += "[color=gray]File recovered from Recycle Bin. "
 	_content_display.text += "Original deletion date: 1996-05-03.[/color]"
+
+
+## ─────────────────────────────────────────────────────────────────────────────
+## RECOVER_DATA.EXE — Arvid Stenberg's hidden field diary
+## ─────────────────────────────────────────────────────────────────────────────
+
+## "RECOVER_DATA.EXE" button — opens the file restoration utility panel.
+## If the logs are already unlocked, displays them directly in the content panel.
+## Otherwise, shows the decryption key input form.
+func _on_recovery_open() -> void:
+	_status_label.text = "Opening: RECOVER_DATA.EXE — File Restoration Utility..."
+	
+	# Hide other panels
+	_data_entry_panel.visible = false
+	$MainWindow/HBoxContainer/ContentPanel.visible = false
+	_recovery_panel.visible = true
+	
+	# If both logs are already unlocked, show them in the content panel instead
+	if is_arvid_log_1_unlocked and is_arvid_log_2_unlocked:
+		_recovery_panel.visible = false
+		$MainWindow/HBoxContainer/ContentPanel.visible = true
+		_content_display.text = ""
+		_content_display.text += "[b]RECOVER_DATA.EXE — FILE RESTORATION COMPLETE[/b]\n\n"
+		_content_display.text += "All corrupted sectors have been successfully rebuilt.\n\n"
+		_content_display.text += "---\n\n"
+		_content_display.text += ARVID_LOG_01_SURVEY + "\n\n"
+		_content_display.text += "---\n\n"
+		_content_display.text += ARVID_LOG_02_CRITICAL + "\n\n"
+		_content_display.text += "---\n"
+		_content_display.text += "[color=gray]Decryption Key: " + ARVID_DECRYPTION_KEY + "[/color]"
+		_status_label.text = "RECOVER_DATA.EXE — All Files Restored"
+		return
+	
+	# If only log 1 is unlocked, show it and prompt for log 2
+	if is_arvid_log_1_unlocked and not is_arvid_log_2_unlocked:
+		_recovery_panel.visible = false
+		$MainWindow/HBoxContainer/ContentPanel.visible = true
+		_content_display.text = ""
+		_content_display.text += "[b]RECOVER_DATA.EXE — PARTIAL RESTORATION[/b]\n\n"
+		_content_display.text += ARVID_LOG_01_SURVEY + "\n\n"
+		_content_display.text += "---\n\n"
+		_content_display.text += "[color=yellow]LOG_02_CRITICAL.TXT remains corrupted.[/color]\n"
+		_content_display.text += "[color=yellow]Enter the decryption key to rebuild remaining sectors.[/color]"
+		_status_label.text = "RECOVER_DATA.EXE — Log 1 Restored, Log 2 Corrupted"
+		return
+	
+	# Neither log is unlocked — show the corrupted warning and key input
+	_recovery_status.text = ""
+	_key_input.text = ""
+	_status_label.text = "RECOVER_DATA.EXE — Data Sectors Corrupted"
+	print("[ComputerUI] Recovery panel opened. Waiting for decryption key.")
+
+
+## "SUBMIT KEY" button — validates the entered decryption key.
+## If correct, unlocks both Arvid Stenberg logs and displays them.
+## If incorrect, shows an error message.
+func _on_submit_decryption_key() -> void:
+	var entered_key: String = _key_input.text.strip_edges()
+	
+	if entered_key.is_empty():
+		_recovery_status.text = "[color=red]ERROR: No key entered.[/color]"
+		return
+	
+	if entered_key == ARVID_DECRYPTION_KEY:
+		# Correct key — unlock both logs
+		is_arvid_log_1_unlocked = true
+		is_arvid_log_2_unlocked = true
+		
+		_play_success_sound()
+		_recovery_status.text = "[color=green]KEY ACCEPTED. Rebuilding sectors...[/color]"
+		_status_label.text = "KEY ACCEPTED — Restoring Arvid Stenberg's Field Diary..."
+		
+		# Enable the overload button now that LOG_02_CRITICAL is unlocked
+		if _overload_btn:
+			_overload_btn.disabled = false
+			print("[ComputerUI] Overload button ENABLED — LOG_02_CRITICAL decrypted.")
+		
+		# Switch to content panel and display both logs
+		_recovery_panel.visible = false
+		$MainWindow/HBoxContainer/ContentPanel.visible = true
+		_content_display.text = ""
+		_content_display.text += "[b]RECOVER_DATA.EXE — FILE RESTORATION COMPLETE[/b]\n\n"
+		_content_display.text += "All corrupted sectors have been successfully rebuilt.\n\n"
+		_content_display.text += "---\n\n"
+		_content_display.text += ARVID_LOG_01_SURVEY + "\n\n"
+		_content_display.text += "---\n\n"
+		_content_display.text += ARVID_LOG_02_CRITICAL + "\n\n"
+		_content_display.text += "---\n"
+		_content_display.text += "[color=gray]Decryption Key: " + ARVID_DECRYPTION_KEY + "[/color]"
+		
+		print("[ComputerUI] Arvid Stenberg's logs successfully decrypted and restored!")
+	else:
+		# Wrong key — show error
+		_play_error_sound()
+		_recovery_status.text = "[color=red]ERROR: Invalid decryption key. Access denied.[/color]"
+		_status_label.text = "ERROR: Decryption Failed"
+		print("[ComputerUI] Invalid decryption key entered: '%s'" % entered_key)
+
+
+## ─────────────────────────────────────────────────────────────────────────────
+## OVERLOAD TRAP — Endgame climax execution
+## ─────────────────────────────────────────────────────────────────────────────
+
+## "EXECUTE OVERLOAD_PORCH_GRID" button — triggers the endgame overload trap.
+##
+## Only enabled after LOG_02_CRITICAL has been unlocked via RECOVER_DATA.EXE.
+## When clicked:
+##   1. Searches the "CabinLights" group for the node where
+##      is_overload_target == true (the PorchLight).
+##   2. Calls trigger_overload() on that light, which spikes its drain rate
+##      to 50.0 and boosts its light intensity to blinding levels.
+##   3. Displays a dramatic system warning in the content panel.
+##   4. Closes the computer interface automatically after a short delay,
+##      forcing the player back into physical space.
+func _on_overload_execute() -> void:
+	# Guard: ensure LOG_02_CRITICAL is unlocked before allowing execution
+	if not is_arvid_log_2_unlocked:
+		_play_error_sound()
+		_status_label.text = "ERROR: LOG_02_CRITICAL not decrypted. Access denied."
+		print("[ComputerUI] Overload blocked: LOG_02_CRITICAL not yet unlocked.")
+		return
+	
+	# Find the overload target light in the CabinLights group
+	var cabin_lights = get_tree().get_nodes_in_group("CabinLights")
+	var target_light: CabinLight = null
+	
+	for light in cabin_lights:
+		if light is CabinLight and light.is_overload_target:
+			target_light = light
+			break
+	
+	if not target_light:
+		_play_error_sound()
+		_status_label.text = "ERROR: OVERLOAD_TARGET not found in power grid."
+		print("[ComputerUI] Overload failed: No light with is_overload_target == true found in CabinLights group!")
+		return
+	
+	# Execute the overload
+	target_light.trigger_overload()
+	
+	# Play success sound
+	_play_success_sound()
+	
+	# Show dramatic system warning in the content panel
+	_data_entry_panel.visible = false
+	_recovery_panel.visible = false
+	$MainWindow/HBoxContainer/ContentPanel.visible = true
+	
+	_content_display.text = ""
+	_content_display.text += "[color=red][b]⚠ CRITICAL OVERLOAD INITIATED ⚠[/b][/color]\n\n"
+	_content_display.text += "[color=red]POWER GRID STABILITY: COMPROMISED[/color]\n\n"
+	_content_display.text += "The external porch floodlight grid has been forced "
+	_content_display.text += "to draw maximum voltage from the generator.\n\n"
+	_content_display.text += "[color=yellow]Generator fuel consumption rate: CRITICAL[/color]\n\n"
+	_content_display.text += "The blinding wall of light is active. The entity "
+	_content_display.text += "should be physically paralyzed in its tracks.\n\n"
+	_content_display.text += "[color=red]WARNING: Generator fuel will deplete in seconds.[/color]\n"
+	_content_display.text += "[color=red]Exit the cabin immediately and destroy the anchoring totem.[/color]"
+	
+	_status_label.text = "⚠ CRITICAL OVERLOAD INITIATED — POWER GRID STABILITY: COMPROMISED"
+	
+	print("[ComputerUI] ⚡ Overload executed on '%s'! Drain rate: %.1f" % [target_light.light_name, target_light.energy_drain_rate])
+	
+	# Close the computer interface after a short delay so the player
+	# can read the warning, then gets forced back into physical space
+	var close_tween = create_tween()
+	close_tween.tween_interval(2.5)
+	close_tween.tween_callback(close_computer)

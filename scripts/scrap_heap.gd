@@ -29,6 +29,12 @@ class_name ScrapHeap
 ## (to be added later) instead of one of its normal items.
 @export var will_contain_car_part: bool = false
 
+## Probability (0.0 to 1.0) that this scrap heap contains a Fuse item
+## when searched. The fuse is added as an extra bonus item alongside
+## the normal loot, not replacing any existing items.
+## Only checked once during _spawn_initial_contents().
+@export var fuse_spawn_chance: float = 0.3
+
 # ─── STATE ─────────────────────────────────────────────────
 
 ## Whether this scrap heap has been completely emptied.
@@ -178,6 +184,20 @@ func _spawn_initial_contents() -> void:
 				"item_data": item_data,
 				"quantity": quantity
 			})
+
+	# ─── FUSE BONUS LOOT ───────────────────────────────────
+	# Roll the dice: if fuse_spawn_chance succeeds, add a Fuse item
+	# as an extra bonus alongside the normal loot.
+	if randf() < fuse_spawn_chance:
+		var fuse_data = _try_load_resource("res://resources/fuse_resource.tres")
+		if fuse_data:
+			contents.append({
+				"item_data": fuse_data,
+				"quantity": 1
+			})
+			print("[ScrapHeap] %s: Fuse spawned! (chance was %.0f%%)" % [scrap_heap_id, fuse_spawn_chance * 100.0])
+		else:
+			print("[ScrapHeap] %s: Fuse resource not found, skipping fuse spawn." % scrap_heap_id)
 
 	# If this heap is flagged for a car part, add a placeholder slot
 	if will_contain_car_part:

@@ -12,11 +12,10 @@ class_name PhotoCamera
 ## by playing faster static ticks the closer they get to an undocumented nest.
 ##
 ## Visual feedback is handled by the CameraHUD scene (camera_hud.tscn), which
-## provides corner brackets, labels, progress bar, screen flash, and freeze-frame.
+## provides corner brackets, labels, screen flash, and freeze-frame.
 
 signal photo_taken(nest_id: String)
 signal zoom_toggled(is_zoomed: bool)
-signal write_progress_updated(progress: float, message: String)
 
 ## ─── CONSTANTS ───────────────────────────────────────────────────────────────
 
@@ -28,9 +27,6 @@ const GEIGER_RADIUS: float = 10.0
 
 ## Maximum distance for detecting a photographable nest
 const PHOTO_RANGE: float = 5.0
-
-## Duration of the "WRITING TO DRIVE A:\" progress bar
-const WRITE_DURATION: float = 3.0
 
 ## Zoomed FOV
 const ZOOM_FOV: float = 30.0
@@ -51,12 +47,6 @@ var is_equipped: bool = false
 
 ## Whether the player is zoomed in (RMB held)
 var is_zoomed: bool = false
-
-## Whether the camera is in the write-to-disk animation state
-var _is_writing: bool = false
-
-## Timer for the write animation
-var _write_timer: float = 0.0
 
 ## Reference to the player's camera (found at runtime)
 var _camera: Camera3D = null
@@ -90,21 +80,7 @@ var _camera_hud = null
 var _shutter_player: AudioStreamPlayer3D = null
 var _zoom_player: AudioStreamPlayer3D = null
 var _equip_player: AudioStreamPlayer3D = null
-var _disk_write_player: AudioStreamPlayer3D = null
 var _error_player: AudioStreamPlayer3D = null
-
-## ─── CAPTURE SEQUENCE STATE ──────────────────────────────────────────────────
-## Tracks the multi-phase capture animation for proper timing.
-
-enum CapturePhase {
-	NONE,
-	PROGRESSIVE_WRITE # 0.0s - 3.0s: progress bar fills, disk write audio
-}
-
-var _capture_phase: int = CapturePhase.NONE
-var _capture_timer: float = 0.0
-var _capture_nest_id: String = ""
-var _capture_nest_node: Node = null
 
 
 ## ─── INIT ────────────────────────────────────────────────────────────────────
@@ -158,12 +134,6 @@ func _ready() -> void:
 	_equip_player.bus = "SFX"
 	_equip_player.unit_size = 0.5
 	add_child(_equip_player)
-	
-	_disk_write_player = AudioStreamPlayer3D.new()
-	_disk_write_player.bus = "SFX"
-	_disk_write_player.unit_size = 0.6
-	_disk_write_player.stream = load("res://assets/audio/UI/disk_write_loop.ogg")
-	add_child(_disk_write_player)
 	
 	_error_player = AudioStreamPlayer3D.new()
 	_error_player.bus = "SFX"
@@ -222,9 +192,6 @@ func unequip() -> void:
 	visible = false
 	set_process(false)
 	is_zoomed = false
-	_is_writing = false
-	_write_timer = 0.0
-	_capture_phase = CapturePhase.NONE
 	
 	# Restore FOV
 	if _camera:
@@ -238,10 +205,6 @@ func unequip() -> void:
 	if _player:
 		_player.set_process_input(true)
 		_player.set_physics_process(true)
-	
-	# Stop any looping disk write sound
-	if _disk_write_player and _disk_write_player.playing:
-		_disk_write_player.stop()
 	
 	_play_unequip_sound()
 	
@@ -259,47 +222,6 @@ func _process(delta: float) -> void:
 	# ─── PROXIMITY GEIGER COUNTER ──────────────────────────────────────────
 	_update_geiger_counter(delta)
 	
-	# ─── CAPTURE SEQUENCE ───────────────────────────────────────────────────
-	if _capture_phase != CapturePhase.NONE:
-		_capture_timer += delta
-		_process_capture_sequence(delta)
-		return  # Don't process aim detection during capture
-	
-	# ─── WRITE-TO-DISK ANIMATION (legacy fallback) ─────────────────────────
-	if _is_writing:
-		_write_timer += delta
-		var write_progress = clampf(_write_timer / WRITE_DURATION, 0.0, 1.0)
-		var file_num = documented_nests.size()
-		
-		if _camera_hud and _camera_hud.has_method("show_write_progress"):
-			_camera_hud.show_write_progress(write_progress, "WRITING TO DRIVE A:\\ \\DSC%03d.JPG..." % file_num)
-		
-		if _write_timer >= WRITE_DURATION:
-			_is_writing = false
-			_write_timer = 0.0
-			
-			# Play disk write-done sound
-			_play_write_complete_sound()
-			
-			# Restore player movement
-			if _player:
-				_player.set_process_input(true)
-				_player.set_physics_process(true)
-			
-			# Check if all nests are now documented
-			if documented_nests.size() >= TOTAL_NESTS:
-				if _camera_hud and _camera_hud.has_method("show_write_progress"):
-					_camera_hud.show_write_progress(1.0, "SURVEY SAMPLES LOGGED. RETURN TO PC WORKSTATION.")
-				print("[PhotoCamera] All %d nests documented! Survey complete." % TOTAL_NESTS)
-			else:
-				if _camera_hud and _camera_hud.has_method("show_write_progress"):
-					_camera_hud.show_write_progress(1.0, "Photo saved. %d/%d nests documented." % [documented_nests.size(), TOTAL_NESTS])
-			
-			# Hide progress bar after a short delay
-			_hide_progress_bar_after_delay()
-		
-		return  # Don't process aim detection while writing
-	
 	# ─── CONTINUOUS AIM DETECTION (when zoomed) ────────────────────────────
 	if is_zoomed:
 		_update_aim_detection()
@@ -311,52 +233,6 @@ func _process(delta: float) -> void:
 		# Update disk counter
 		if _camera_hud and _camera_hud.has_method("update_disk_count"):
 			_camera_hud.update_disk_count(documented_nests.size())
-
-
-## ─── CAPTURE SEQUENCE ────────────────────────────────────────────────────────
-## Simplified capture sequence. The white flash + freeze is handled by
-## HorrorHUD.trigger_camera_flash_snap() in _execute_capture(). This function
-## only manages the PROGRESSIVE_WRITE phase (disk write progress bar + audio).
-
-func _process_capture_sequence(delta: float) -> void:
-	match _capture_phase:
-		CapturePhase.PROGRESSIVE_WRITE:
-			# Phase lasts WRITE_DURATION seconds
-			var write_progress = clampf(_capture_timer / WRITE_DURATION, 0.0, 1.0)
-			var file_num = documented_nests.size()
-			
-			# Update progress bar
-			if _camera_hud and _camera_hud.has_method("show_write_progress"):
-				_camera_hud.show_write_progress(write_progress, "WRITING TO DRIVE A:\\ \\DSC%03d.JPG..." % file_num)
-			
-			if _capture_timer >= WRITE_DURATION:
-				# Capture complete!
-				_capture_phase = CapturePhase.NONE
-				_capture_timer = 0.0
-				
-				# Stop disk write audio loop
-				if _disk_write_player and _disk_write_player.playing:
-					_disk_write_player.stop()
-				
-				# Play write-complete sound
-				_play_write_complete_sound()
-				
-				# Restore player movement
-				if _player:
-					_player.set_process_input(true)
-					_player.set_physics_process(true)
-				
-				# Check if all nests are now documented
-				if documented_nests.size() >= TOTAL_NESTS:
-					if _camera_hud and _camera_hud.has_method("show_write_progress"):
-						_camera_hud.show_write_progress(1.0, "SURVEY SAMPLES LOGGED. RETURN TO PC WORKSTATION.")
-					print("[PhotoCamera] All %d nests documented! Survey complete." % TOTAL_NESTS)
-				else:
-					if _camera_hud and _camera_hud.has_method("show_write_progress"):
-						_camera_hud.show_write_progress(1.0, "Photo saved. %d/%d nests documented." % [documented_nests.size(), TOTAL_NESTS])
-				
-				# Hide progress bar after a short delay
-				_hide_progress_bar_after_delay()
 
 
 ## ─── AIM DETECTION ───────────────────────────────────────────────────────────
@@ -413,17 +289,6 @@ func _update_aim_detection() -> void:
 		_camera_hud.update_disk_count(documented_nests.size())
 
 
-## ─── PROGRESS BAR ────────────────────────────────────────────────────────────
-
-func _hide_progress_bar_after_delay() -> void:
-	if _camera_hud and _camera_hud.has_method("hide_write_progress"):
-		var timer = get_tree().create_timer(2.0)
-		timer.timeout.connect(func():
-			if _camera_hud and _camera_hud.has_method("hide_write_progress"):
-				_camera_hud.hide_write_progress()
-		)
-
-
 ## ─── PROXIMITY GEIGER COUNTER ────────────────────────────────────────────────
 ## Scans for undocumented nests within GEIGER_RADIUS and adjusts the tick rate
 ## of a static audio effect. Faster ticks = closer to a hidden nest.
@@ -467,7 +332,7 @@ func _play_geiger_tick(intensity: float) -> void:
 
 ## ─── ZOOM TOGGLE ─────────────────────────────────────────────────────────────
 func toggle_zoom(pressed: bool) -> void:
-	if not is_equipped or _is_writing or _capture_phase != CapturePhase.NONE:
+	if not is_equipped:
 		return
 	
 	is_zoomed = pressed
@@ -501,7 +366,7 @@ func toggle_zoom(pressed: bool) -> void:
 
 ## ─── TAKE PHOTO ──────────────────────────────────────────────────────────────
 func take_photo() -> void:
-	if not is_equipped or _is_writing or not _camera or _capture_phase != CapturePhase.NONE:
+	if not is_equipped or not _camera:
 		return
 	
 	# Raycast from camera center to find a nest
@@ -521,7 +386,6 @@ func take_photo() -> void:
 		_play_error_beep()
 		if _camera_hud and _camera_hud.has_method("trigger_error_flash"):
 			_camera_hud.trigger_error_flash()
-		write_progress_updated.emit(0.0, "NO TARGET IN FRAME. AIM AT A NEST.")
 		return
 	
 	var collider = result.collider
@@ -533,7 +397,6 @@ func take_photo() -> void:
 			_play_error_beep()
 			if _camera_hud and _camera_hud.has_method("trigger_error_flash"):
 				_camera_hud.trigger_error_flash()
-			write_progress_updated.emit(0.0, "FILE ALREADY EXISTS: CHOSEN NODE PREVIOUSLY ARCHIVED.")
 			return
 		
 		_execute_capture(collider, nest_id_str)
@@ -541,24 +404,28 @@ func take_photo() -> void:
 		_play_error_beep()
 		if _camera_hud and _camera_hud.has_method("trigger_error_flash"):
 			_camera_hud.trigger_error_flash()
-		write_progress_updated.emit(0.0, "NO TARGET IN FRAME. AIM AT A NEST.")
 
 
-## ─── SHUTTER SNAP & WRITE TO DISK ────────────────────────────────────────────
+## ─── SHUTTER SNAP & CAPTURE ──────────────────────────────────────────────────
 func _execute_capture(nest: Node, nest_id_str: String) -> void:
-	# Store capture info
-	_capture_nest_id = nest_id_str
-	_capture_nest_node = nest
-	
 	# 1. Play the heavy mechanical shutter CLACK
 	_play_shutter_sound()
 	
-	# 2. Trigger the classic horror white flash + snappy freeze via HorrorHUD
-	var horror_hud = get_tree().get_first_node_in_group("hud")
+	# 2. Trigger the classic horror white flash + snappy freeze via HorrorHUD.
+	#    The HorrorHUD node is named "HUD" and is a child of the current scene root.
+	#    We find it by absolute path rather than group lookup, since the HorrorHUD
+	#    scene does not define a "hud" group.
+	var horror_hud = get_node_or_null("/root/CottageHorror/HUD")
+	if not horror_hud:
+		horror_hud = get_node_or_null("/root/Main/HUD")
 	if horror_hud and horror_hud.has_method("trigger_camera_flash_snap"):
 		horror_hud.trigger_camera_flash_snap(0.3, 1.0)
-	else:
-		print("[PhotoCamera] WARNING: HorrorHUD not found or missing trigger_camera_flash_snap!")
+	
+	# 2b. ALSO trigger the CameraHUD freeze-frame (viewport capture + white flash + freeze)
+	#     This is the primary visual effect — it captures the viewport, shows a blinding
+	#     white flash, holds the frozen frame for 0.5s, then fades out over 0.2s.
+	if _camera_hud and _camera_hud.has_method("trigger_freeze_frame"):
+		_camera_hud.trigger_freeze_frame()
 	
 	# 3. Record the nest immediately
 	documented_nests.append(nest_id_str)
@@ -570,32 +437,34 @@ func _execute_capture(nest: Node, nest_id_str: String) -> void:
 	# 5. Emit signal
 	photo_taken.emit(nest_id_str)
 	
-	# 6. Freeze player input for the entire capture sequence
+	# 6. Freeze player input briefly for the freeze-frame effect.
+	#    Player controls will be unfrozen at ~0.7s when the freeze-frame
+	#    finishes fading out.
 	if _player:
 		_player.set_process_input(false)
 		_player.set_physics_process(false)
 	
-	# 7. Start the capture sequence (simplified: go straight to PROGRESSIVE_WRITE)
-	_capture_phase = CapturePhase.PROGRESSIVE_WRITE
-	_capture_timer = 0.0
-	
-	# Start the disk write audio loop immediately
-	if _disk_write_player and _disk_write_player.stream:
-		_disk_write_player.play()
-	
-	# Initialize progress bar
-	if _camera_hud and _camera_hud.has_method("show_write_progress"):
-		_camera_hud.show_write_progress(0.0, "WRITING TO DRIVE A:\\ \\DSC%03d.JPG..." % documented_nests.size())
-	
-	# Update viewfinder for writing state
-	if _camera_hud and _camera_hud.has_method("set_bracket_color"):
-		_camera_hud.set_bracket_color(COLOR_IDLE)
-	if _camera_hud and _camera_hud.has_method("set_mode_text"):
-		_camera_hud.set_mode_text("💾 WRITING TO DRIVE A:\\...")
-	if _camera_hud and _camera_hud.has_method("update_aim_status"):
-		_camera_hud.update_aim_status("", Color.TRANSPARENT)
+	# 7. Connect to CameraHUD's photo_captured signal to unfreeze player early.
+	#    The freeze-frame lasts 0.5s hold + 0.2s fade = 0.7s total.
+	if _camera_hud and _camera_hud.has_signal("photo_captured"):
+		if _camera_hud.photo_captured.is_connected(_on_freeze_frame_completed):
+			_camera_hud.photo_captured.disconnect(_on_freeze_frame_completed)
+		_camera_hud.photo_captured.connect(_on_freeze_frame_completed)
 	
 	print("[PhotoCamera] Photo captured! Nest ", nest_id_str, " documented. (", documented_nests.size(), "/", TOTAL_NESTS, ")")
+	
+	
+## Called when the CameraHUD freeze-frame finishes fading out (~0.7s after capture).
+## Unfreezes player movement and look controls.
+func _on_freeze_frame_completed() -> void:
+	if _player:
+		_player.set_process_input(true)
+		_player.set_physics_process(true)
+	
+	# Disconnect the signal to avoid accumulating connections across multiple photos
+	if _camera_hud and _camera_hud.photo_captured.is_connected(_on_freeze_frame_completed):
+		_camera_hud.photo_captured.disconnect(_on_freeze_frame_completed)
+
 
 
 ## ─── AUDIO FEEDBACK ──────────────────────────────────────────────────────────
@@ -644,17 +513,6 @@ func _play_shutter_sound() -> void:
 		print("[PhotoCamera] No shutter sound file found at res://assets/audio/UI/camera_shutter.ogg")
 		return
 	_shutter_player.play()
-
-
-func _play_write_complete_sound() -> void:
-	if not _equip_player:
-		return
-	var stream = load("res://assets/audio/UI/disk_write_done.ogg")
-	if stream:
-		_equip_player.stream = stream
-		_equip_player.play()
-	else:
-		print("[PhotoCamera] No disk write sound file found at res://assets/audio/UI/disk_write_done.ogg")
 
 
 func _play_error_beep() -> void:

@@ -58,11 +58,12 @@ func is_player_spotting_entity() -> bool:
 	if not cam:
 		return false
 	
+	# Use the typed public API on the player controller instead of string-based
+	# property access. is_flashlight_on() returns true only when the player has
+	# picked up the flashlight AND it is currently switched on.
 	var flashlight_on := false
-	if entity._player.has_method("_toggle_flashlight"):
-		var fl = entity._player.get("_flashlight")
-		if fl and is_instance_valid(fl):
-			flashlight_on = fl.is_on if "is_on" in fl else fl.visible
+	if entity._player.has_method("is_flashlight_on"):
+		flashlight_on = entity._player.is_flashlight_on()
 	
 	if not flashlight_on:
 		return false

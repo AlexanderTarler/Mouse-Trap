@@ -188,7 +188,10 @@ func show_hud() -> void:
 	is_active = true
 	
 	# ─── OVERRIDE 1: Max rendering layer to guarantee topmost draw ────────
-	layer = 128
+	# Layer 210 ensures the CameraHUD renders ABOVE the HorrorHUD (layer 200)
+	# and its StandoffText (layer 210). This guarantees the freeze-frame
+	# overlay and white flash are visible on top of all other UI elements.
+	layer = 220
 	
 	# ─── OVERRIDE 1b: Force CanvasLayer rendering parameters ──────────────
 	# Disable follow_viewport to prevent Godot from culling this layer
@@ -284,18 +287,6 @@ func show_hud() -> void:
 	
 	# ─── REPOSITION ALL ELEMENTS USING CANVASLAYER SIZE ──────────────────
 	_reposition_hud_elements()
-	
-	# ─── RENDER DIAGNOSTICS ──────────────────────────────────────────────
-	print("[Render Debug] Canvas Layer ID: ", get_instance_id(), " | Top Control Draw Object: ", name)
-	print("[HUD Debug] HUD Canvas Layer Visible: ", visible, " | Layer: ", layer, " | Viewfinder Size: ", viewfinder.size if viewfinder else "NO VIEWFINDER", " | DisplayServer Window Size: ", real_screen_size)
-	for child in get_children():
-		if child is Control:
-			print("  -> Found HUD Child Node: ", child.name, " | Size: ", child.size, " | Visible: ", child.visible, " | Position: ", child.position)
-	if viewfinder:
-		for grandchild in viewfinder.get_children():
-			if grandchild is Control:
-				print("  -> Viewfinder Grandchild: ", grandchild.name, " | Size: ", grandchild.size, " | Visible: ", grandchild.visible, " | Position: ", grandchild.position)
-
 
 func hide_hud() -> void:
 	is_active = false
@@ -479,7 +470,11 @@ func trigger_flash() -> void:
 
 ## ─── FREEZE FRAME EFFECT ─────────────────────────────────────────────────────
 ## Captures the current viewport as a frozen image, shows it for 0.5 seconds,
-## then fades it out over 0.3 seconds to reveal the live view.
+## then fades it out over 0.2 seconds to reveal the live view.
+##
+## Also triggers a blinding white flash overlay that snaps to full alpha
+## instantly, then fades out over 0.15 seconds for a classic retro horror
+## camera bulb flash feel.
 
 func trigger_freeze_frame() -> void:
 	if not freeze_overlay:
@@ -499,10 +494,36 @@ func trigger_freeze_frame() -> void:
 	freeze_overlay.visible = true
 	freeze_overlay.modulate.a = 1.0
 	
-	# Wait 0.5 seconds, then fade out over 0.3 seconds
+	# ─── BLINDING WHITE FLASH (DOUBLED INTENSITY) ──────────────────────────
+	# Snap the flash overlay to pure solid white instantly, then hold it for
+	# 0.2 seconds before fading out over 0.3 seconds. This creates a much
+	# more impactful, classic horror camera bulb flash that lingers longer.
+	if flash_overlay:
+		flash_overlay.color = Color(1, 1, 1, 1.0)  # Pure white
+		flash_overlay.visible = true
+		flash_overlay.modulate.a = 1.0
+		var flash_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+		flash_tween.tween_interval(0.2)  # Hold full white for 0.2s
+		flash_tween.tween_property(flash_overlay, "modulate:a", 0.0, 0.3)  # Fade over 0.3s
+		flash_tween.finished.connect(func():
+			if flash_overlay:
+				flash_overlay.visible = false
+				flash_overlay.modulate.a = 1.0
+		)
+	
+	# ─── FREEZE FRAME TIMING ───────────────────────────────────────────────
+	# 1. Hold the frozen image for 0.5 seconds (player is frozen during this).
+	# 2. After the hold, emit photo_captured immediately so PhotoCamera
+	#    unfreezes the player while the freeze frame fades out over 0.5s.
+	#    This means the player can start moving while the frozen image is
+	#    still fading away, creating a smooth transition.
 	var tween = create_tween()
 	tween.tween_interval(0.5)
-	tween.tween_property(freeze_overlay, "modulate:a", 0.0, 0.3)
+	tween.tween_callback(func():
+		# Signal PhotoCamera to unfreeze player controls NOW
+		photo_captured.emit()
+	)
+	tween.tween_property(freeze_overlay, "modulate:a", 0.0, 0.5)
 	tween.finished.connect(func():
 		if freeze_overlay:
 			freeze_overlay.visible = false

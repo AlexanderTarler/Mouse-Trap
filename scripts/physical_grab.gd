@@ -152,6 +152,7 @@ func _update_grab(delta: float) -> void:
 func _fire_interact() -> void:
 	var interaction_manager = get_node_or_null("../InteractionManager")
 	if not interaction_manager:
+		print("[PhysicalGrab] ERROR: InteractionManager not found at ../InteractionManager")
 		return
 	
 	# Get the current target from InteractionManager using the public getter

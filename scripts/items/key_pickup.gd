@@ -30,12 +30,8 @@ func set_item_data(data: ItemData) -> void:
 
 
 func interact() -> void:
-	print("[KeyPickup] interact() called! item_data=", item_data, " name=", item_data.item_name if item_data else "null")
 	if Inventory.add_item(item_data):
-		print("[KeyPickup] Item added to inventory, removing from scene")
 		queue_free()
-	else:
-		print("[KeyPickup] Could not add item (inventory full or invalid), staying in world")
 
 
 func get_interact_text() -> String:

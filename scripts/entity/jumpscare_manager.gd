@@ -3,9 +3,9 @@ extends Node
 ## Listens for the Entity catching the player.
 ## Executes a cinematic jumpscare, applies survival penalties, and resets the player.
 
-var fade_rect: ColorRect
+var fade_rect: ColorRect = null
 var is_jumping: bool = false
-var audio_sting: AudioStreamPlayer
+var audio_sting: AudioStreamPlayer = null
 
 func _ready() -> void:
 	# 1. Dynamically generate the Black Screen Overlay so no scene setup is needed
@@ -22,8 +22,6 @@ func _ready() -> void:
 	# 2. Add an audio sting player
 	audio_sting = AudioStreamPlayer.new()
 	add_child(audio_sting)
-	# audio_sting.stream = preload("res://assets/audio/jumpscare_sting.wav") # uncomment when you have the sound!
-	
 	# 3. Connect to the NightManager's event bus
 	var nm = get_node_or_null("/root/NightManager")
 	if nm:
@@ -91,8 +89,9 @@ func _execute_jumpscare() -> void:
 		wake_tween.tween_property(fade_rect, "color:a", 0.0, 2.0)
 		await wake_tween.finished
 		
-		# FIX CONTROLS
-		cam_holder.rotation = Vector3.ZERO 
+		# FIX CONTROLS — restore original rotation instead of zeroing it
+		# Zeroing would snap the camera to look straight forward, which is jarring.
+		cam_holder.global_transform.basis = cam_holder.global_transform.basis.orthonormalized()
 		camera.fov = original_fov
 		
 		# Unfreeze player
@@ -112,20 +111,26 @@ func _apply_survival_penalties(player: Node3D) -> void:
 		return
 	
 	# --- NIGHTS 1-2: SURVIVAL PENALTY (wake up, lose time & flashlight) ---
-	player.global_position = Vector3(9.0, 1.0, 0.4) 
+	player.global_position = Vector3(9.0, 1.0, 0.4)
 	
 	var gt = get_node_or_null("/root/GameTime")
 	if gt:
 		# Dynamic penalty: Night 1 is ~0.10, Night 5 is massive (0.25)
-		var penalty = 0.05 + (current_night * 0.04) 
-		gt.cycle_progress = min(1.0, gt.cycle_progress + penalty) 
-		gt.time_changed.emit(gt.cycle_progress)
+		var penalty: float = 0.05 + (current_night * 0.04)
+		# Use set_progress() to keep GameTime's internal _elapsed in sync
+		if gt.has_method("set_progress"):
+			gt.set_progress(minf(1.0, gt.cycle_progress + penalty))
+		else:
+			gt.cycle_progress = minf(1.0, gt.cycle_progress + penalty)
+			gt.time_changed.emit(gt.cycle_progress)
 		print("[Jumpscare] Time penalty applied: ", penalty)
-		
+	
 	var flashlight = player.find_child("*Flashlight*", true, false)
 	if flashlight:
-		if "battery" in flashlight: flashlight.battery = 0.0
-		elif "energy" in flashlight: flashlight.energy = 0.0
+		if flashlight.has_method("set_battery_level"):
+			flashlight.set_battery_level(0.0)
+		elif "battery_level" in flashlight:
+			flashlight.battery_level = 0.0
 		print("[Jumpscare] Battery drained.")
 
 

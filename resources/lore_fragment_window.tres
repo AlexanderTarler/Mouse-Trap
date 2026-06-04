@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://d0uq0x2m2q0cc"]
+
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_item_data"]
+[ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0c6" path="res://scenes/note.tscn" id="2_note_scene"]
+
+
+[resource]
+script = ExtResource("1_item_data")
+item_name = "Lore Fragment (Window)"
+item_description = "Another scrap, torn from the same journal. The handwriting grows more frantic."
+item_type = 1
+note_text = "...I met its gaze beneath the canopy and struck my match, thinking the flare would scatter it like a wolf. A terrible mistake. The light pained its ancient eyes, and it fell into a screaming rage, charging blindly through the brush. A passing glare only maddens the beast; only a flood of steady light will force it to halt..."
+scene_to_spawn = ExtResource("2_note_scene")

@@ -2,9 +2,19 @@
 
 [ext_resource type="PackedScene" uid="uid://b1ebaa7job4uu" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/pc_monitor_mp_1.glb" id="1_om4aa"]
 [ext_resource type="Script" uid="uid://dlhgo2k48r3ky" path="res://scripts/pc_interactable.gd" id="3_8pqrt"]
+[ext_resource type="Shader" uid="uid://c1s66g87uyhi5" path="res://shaders/crt_monitor.gdshader" id="3_tjrug"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_8pqrt"]
 size = Vector3(0.5, 0.5, 0.5)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_tjrug"]
+shader = ExtResource("3_tjrug")
+shader_parameter/warp_amount = 0.0470000022325
+shader_parameter/vignette_strength = 0.2370000112575
+shader_parameter/scanline_count = 240
+shader_parameter/scanline_opacity = 0.0410000019475
+shader_parameter/flicker_intensity = 0.010000000475
+shader_parameter/aberration_amount = 0.0010000000475
 
 [node name="Computer" type="Node3D" unique_id=1857954428]
 
@@ -15,8 +25,10 @@ transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0, 0.5, 0.8)
 
 [node name="InteractionArea" type="Area3D" parent="." unique_id=533672233]
 script = ExtResource("3_8pqrt")
-sit_marker = NodePath("../SitMarker")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionArea" unique_id=2021469788]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.28364286, 0.07274164)
 shape = SubResource("BoxShape3D_8pqrt")
+
+
+[editable path="pc_monitor_mp_12"]

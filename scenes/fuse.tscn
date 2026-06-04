@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://d0uq0x2m2q0de"]
+
+[ext_resource type="Script" uid="uid://7054j7os60yv" path="res://scripts/items/fuse_pickup.gd" id="1_fuse_script"]
+[ext_resource type="Resource" path="res://resources/fuse_resource.tres" id="2_fuse_resource"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_1"]
+top_radius = 0.04
+bottom_radius = 0.04
+height = 0.12
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(0.08, 0.12, 0.08)
+
+[node name="Fuse" type="RigidBody3D"]
+script = ExtResource("1_fuse_script")
+item_data = ExtResource("2_fuse_resource")
+
+[node name="FuseModel" type="MeshInstance3D" parent="."]
+mesh = SubResource("CylinderMesh_1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_1")
+debug_color = Color(0.8, 0.6, 0.2, 0.4)
