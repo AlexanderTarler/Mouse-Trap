@@ -1,0 +1,31 @@
+[gd_scene format=3 uid="uid://bec7ckeg5nn2q"]
+
+[ext_resource type="Script" uid="uid://cbm3rf1ait5ad" path="res://scripts/objects/portable_lamp.gd" id="1_oeyy3"]
+[ext_resource type="PackedScene" uid="uid://d0d7xsuqe2b3h" path="res://assets/PSX Bunkers/Models/other-formats/GLB/lamp_0.glb" id="2_0or6f"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_6mgel"]
+radius = 15.0
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_oeyy3"]
+size = Vector3(0.25, 0.25, 0.25)
+
+[node name="PortableLight" type="RigidBody3D" unique_id=279815332 node_paths=PackedStringArray("generator_outlet")]
+script = ExtResource("1_oeyy3")
+generator_outlet = NodePath("Marker3D")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=752760476]
+light_energy = 5.0
+omni_range = 8.0
+
+[node name="lamp_02" parent="." unique_id=537829037 instance=ExtResource("2_0or6f")]
+
+[node name="AggroRadius" type="Area3D" parent="." unique_id=429390124]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AggroRadius" unique_id=1412128832]
+shape = SubResource("SphereShape3D_6mgel")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1622748981]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.09832627, 0)
+shape = SubResource("BoxShape3D_oeyy3")
+
+[node name="Marker3D" type="Marker3D" parent="." unique_id=1603834589]

@@ -95,7 +95,9 @@ func set_player_references(player: Node, camera_holder: Node3D) -> void:
 
 # --- RECOVER_DATA.EXE nodes ---
 @onready var _recovery_btn: Button = $MainWindow/HBoxContainer/NavButtons/RecoverData
+@onready var _trap_power_btn: Button = $MainWindow/HBoxContainer/NavButtons/TrapPowerButton
 @onready var _overload_btn: Button = $MainWindow/HBoxContainer/NavButtons/OverloadButton
+
 @onready var _recovery_panel: Panel = $MainWindow/HBoxContainer/RecoveryPanel
 @onready var _key_input: LineEdit = $MainWindow/HBoxContainer/RecoveryPanel/RecoveryVBox/KeyInput
 @onready var _submit_key_btn: Button = $MainWindow/HBoxContainer/RecoveryPanel/RecoveryVBox/SubmitKeyButton
@@ -220,10 +222,13 @@ func _ready() -> void:
 		_recovery_btn.pressed.connect(_on_recovery_open)
 	if _submit_key_btn:
 		_submit_key_btn.pressed.connect(_on_submit_decryption_key)
+	if _trap_power_btn:
+		_trap_power_btn.pressed.connect(_on_trap_power_toggle)
 	if _overload_btn:
 		_overload_btn.pressed.connect(_on_overload_execute)
 	
 	# Save the normal window rect for restore
+
 	_normal_rect = Rect2(_main_window.position, _main_window.size)
 	
 	# Find the player using groups (more reliable than absolute paths)
@@ -894,16 +899,81 @@ func _on_submit_decryption_key() -> void:
 
 
 ## ─────────────────────────────────────────────────────────────────────────────
+## TRAP POWER TOGGLE — Remote lamp control
+## ─────────────────────────────────────────────────────────────────────────────
+
+## "TOGGLE TRAP POWER" button — remotely turns the portable lamp on/off.
+##
+## Finds the deployed PortableLamp in the "portable_trap" group and calls
+## toggle_power() on it. The button text and enabled state are updated
+## dynamically via _process() to reflect the current trap status.
+func _on_trap_power_toggle() -> void:
+	# Find the deployed portable trap in the "portable_trap" group
+	var trap = get_tree().get_first_node_in_group("portable_trap")
+	
+	if not trap or not trap.is_deployed:
+		_play_error_sound()
+		_status_label.text = "ERROR: PORTABLE TRAP not deployed in the field."
+		print("[ComputerUI] Trap power toggle failed: No deployed PortableLamp found!")
+		return
+	
+	if not trap.is_powered:
+		_play_error_sound()
+		_status_label.text = "ERROR: PORTABLE TRAP not connected to generator."
+		print("[ComputerUI] Trap power toggle failed: Lamp not connected to generator!")
+		return
+	
+	# Toggle the power state
+	var new_state: bool = not trap.energy_drain_rate > 0.0
+	trap.toggle_power(new_state)
+	
+	_play_success_sound()
+	
+	if new_state:
+		_status_label.text = "TRAP STATUS: ONLINE / DRAWING POWER"
+		print("[ComputerUI] Trap power toggled ON.")
+	else:
+		_status_label.text = "TRAP STATUS: OFFLINE"
+		print("[ComputerUI] Trap power toggled OFF.")
+
+
+## Updates the TOGGLE TRAP POWER button text and enabled state each frame
+## to reflect the current status of the deployed portable lamp.
+func _process(_delta: float) -> void:
+	if not _trap_power_btn:
+		return
+	
+	var trap = get_tree().get_first_node_in_group("portable_trap")
+	
+	# Enable the button only if a lamp is deployed AND connected to the generator
+	if trap and trap.is_deployed and trap.is_powered:
+		_trap_power_btn.disabled = false
+		
+		# Update button text to show current state
+		if trap.energy_drain_rate > 0.0:
+			_trap_power_btn.text = "TRAP STATUS: ONLINE / DRAWING POWER"
+			_trap_power_btn.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
+		else:
+			_trap_power_btn.text = "TRAP STATUS: OFFLINE"
+			_trap_power_btn.add_theme_color_override("font_color", Color(0.8, 0.8, 0.2))
+	else:
+		_trap_power_btn.disabled = true
+		_trap_power_btn.text = "TOGGLE TRAP POWER"
+		_trap_power_btn.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
+
+
+
+## ─────────────────────────────────────────────────────────────────────────────
 ## OVERLOAD TRAP — Endgame climax execution
 ## ─────────────────────────────────────────────────────────────────────────────
 
-## "EXECUTE OVERLOAD_PORCH_GRID" button — triggers the endgame overload trap.
+
+## "EXECUTE OVERLOAD" button — triggers the endgame overload trap.
 ##
 ## Only enabled after LOG_02_CRITICAL has been unlocked via RECOVER_DATA.EXE.
 ## When clicked:
-##   1. Searches the "CabinLights" group for the node where
-##      is_overload_target == true (the PorchLight).
-##   2. Calls trigger_overload() on that light, which spikes its drain rate
+##   1. Searches the "portable_trap" group for the deployed PortableLamp.
+##   2. Calls trigger_overload() on that lamp, which spikes its drain rate
 ##      to 50.0 and boosts its light intensity to blinding levels.
 ##   3. Displays a dramatic system warning in the content panel.
 ##   4. Closes the computer interface automatically after a short delay,
@@ -916,23 +986,17 @@ func _on_overload_execute() -> void:
 		print("[ComputerUI] Overload blocked: LOG_02_CRITICAL not yet unlocked.")
 		return
 	
-	# Find the overload target light in the CabinLights group
-	var cabin_lights = get_tree().get_nodes_in_group("CabinLights")
-	var target_light: CabinLight = null
+	# Find the deployed portable trap in the "portable_trap" group
+	var trap = get_tree().get_first_node_in_group("portable_trap")
 	
-	for light in cabin_lights:
-		if light is CabinLight and light.is_overload_target:
-			target_light = light
-			break
-	
-	if not target_light:
+	if not trap or not trap.is_deployed:
 		_play_error_sound()
-		_status_label.text = "ERROR: OVERLOAD_TARGET not found in power grid."
-		print("[ComputerUI] Overload failed: No light with is_overload_target == true found in CabinLights group!")
+		_status_label.text = "ERROR: PORTABLE TRAP not deployed in the field."
+		print("[ComputerUI] Overload failed: No deployed PortableLamp found in portable_trap group!")
 		return
 	
-	# Execute the overload
-	target_light.trigger_overload()
+	# Execute the overload on the portable lamp
+	trap.trigger_overload()
 	
 	# Play success sound
 	_play_success_sound()
@@ -945,7 +1009,7 @@ func _on_overload_execute() -> void:
 	_content_display.text = ""
 	_content_display.text += "[color=red][b]⚠ CRITICAL OVERLOAD INITIATED ⚠[/b][/color]\n\n"
 	_content_display.text += "[color=red]POWER GRID STABILITY: COMPROMISED[/color]\n\n"
-	_content_display.text += "The external porch floodlight grid has been forced "
+	_content_display.text += "The portable high-voltage lamp has been forced "
 	_content_display.text += "to draw maximum voltage from the generator.\n\n"
 	_content_display.text += "[color=yellow]Generator fuel consumption rate: CRITICAL[/color]\n\n"
 	_content_display.text += "The blinding wall of light is active. The entity "
@@ -955,10 +1019,11 @@ func _on_overload_execute() -> void:
 	
 	_status_label.text = "⚠ CRITICAL OVERLOAD INITIATED — POWER GRID STABILITY: COMPROMISED"
 	
-	print("[ComputerUI] ⚡ Overload executed on '%s'! Drain rate: %.1f" % [target_light.light_name, target_light.energy_drain_rate])
+	print("[ComputerUI] ⚡ Overload executed on portable lamp! Drain rate: %.1f" % trap.energy_drain_rate)
 	
-	# Close the computer interface after a short delay so the player
-	# can read the warning, then gets forced back into physical space
-	var close_tween = create_tween()
-	close_tween.tween_interval(2.5)
-	close_tween.tween_callback(close_computer)
+	# ─── FORCED EMERGENCY EXIT ──────────────────────────────────────
+	# Immediately close the computer interface so the player is thrust
+	# back into 3D physical space to witness the trap blow up in real-time.
+	# No 2.5-second delay — the overload is a dramatic emergency that
+	# demands the player's immediate attention.
+	close_computer()

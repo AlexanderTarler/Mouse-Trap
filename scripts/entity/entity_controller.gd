@@ -22,7 +22,12 @@ enum State {
 	CHARGE,                 # Player stared too long — Entity sprints at 3x speed
 	INDOOR_SEARCH,          # Entity has breached a window and is hunting inside the cabin
 	CLIMB_WALL,             # Entity is climbing the exterior wall to a second-story window
+	STUNNED,                # Entity is paralyzed by the porch light overload trap
+	ENRAGED,                # Blackout released Entity — permanent speed boost for the rest of the night
+	ATTACK_LAMP,            # Entity is physically approaching and striking the portable high-voltage lamp
 }
+
+
 
 @export var speed: float = 4.0
 @export var catch_distance: float = 2.5
@@ -181,6 +186,30 @@ var _window_bluff_cooldown: float = 0.0
 ## The Entity can only sabotage one light every 30 seconds to prevent
 ## the mechanic from being too oppressive.
 var _light_sabotage_cooldown: float = 0.0
+
+# --- LAMP ATTACK TIMING ---
+## Timer counting up to 3.0 seconds between Entity strikes on the portable
+## high-voltage lamp trap. Incremented by delta each frame while the Entity
+## is within hitting distance of an active, deployed lamp. When it reaches
+## 3.0, the Entity calls take_physical_hit() on the lamp and resets.
+var _lamp_attack_timer: float = 0.0
+
+# --- OVERLOAD STUN STATE ---
+## Timer counting down the stun duration (seconds remaining).
+## Set by trigger_overload_stun() and decremented each frame during STUNNED.
+## When it reaches 0.0, the Entity is released from the stun.
+var _stun_timer: float = 0.0
+
+
+## Whether the Entity has been enraged by a blackout this night.
+## Once set to true, the Entity's movement speed is permanently boosted
+## by 1.5x for the rest of the night. Reset to false when the night ends.
+var _is_enraged: bool = false
+
+## The original stalk speed before the enrage multiplier was applied.
+## Used to restore the speed if the enrage is ever reset.
+var _original_stalk_speed: float = 0.0
+
 
 ## Path to the claw scrape audio asset. If the file doesn't exist at this path,
 ## a programmatic fallback is used: the door creak/grunt asset loaded at pitch 0.4,
@@ -442,6 +471,11 @@ func deactivate() -> void:
 	_state = State.DORMANT
 	_set_visuals_visible(false)
 	
+	# Reset enrage state so the Entity starts fresh next night
+	_is_enraged = false
+	_original_stalk_speed = 0.0
+
+	
 	# ─── STOP ALL AUDIO ────────────────────────────────────────────
 	# Immediately stop all looping audio players so no sounds continue
 	# playing after the Entity deactivates (e.g., at dawn).
@@ -667,6 +701,36 @@ func _physics_process(delta: float) -> void:
 		_update_animations(delta)
 		return
 	
+	# --- STUNNED STATE (Porch Light Overload Trap) ---
+	# The Entity is paralyzed by the blinding porch light. It cannot move,
+	# cannot pathfind, and cannot transition to any other state until the
+	# stun timer expires or the generator dies (blackout).
+	# This gives the player a window to destroy the totem anchor.
+	if _state == State.STUNNED:
+		# Decrement the stun timer
+		_stun_timer -= delta
+		
+		# Freeze all movement and pathfinding
+		velocity = Vector3.ZERO
+		_nav_agent.target_position = global_position  # Keep nav target on self
+		
+		# Play writhing/pained animation (Idle with transparency flicker)
+		_update_animations(delta)
+		
+		# Check if the stun has expired naturally
+		if _stun_timer <= 0.0:
+			print("[Entity] Stun expired! Entity released from overload paralysis.")
+			_state = State.OBSERVE_FROM_TREELINE
+		
+		return
+	
+	# --- ENRAGED STATE (Blackout Release) ---
+	# The generator died while the Entity was stunned. The Entity is now
+	# permanently enraged for the rest of the night — 1.5x movement speed.
+	# ENRAGED is a modifier flag, not a blocking state — the Entity still
+	# uses its normal FSM states (CHASE, PATROL, etc.) but with boosted speed.
+	# The _is_enraged flag is checked by the AI speed calculations.
+	
 	# --- TRANSITION LOCK: RETREAT / RELOCATE / STANDOFF ---
 	# During fade/teleport sequences, force velocity to zero and skip movement
 	# processing, but STILL execute the AI update tick so that _retreat_state()
@@ -679,18 +743,23 @@ func _physics_process(delta: float) -> void:
 			_ai.update(delta)
 		_update_animations(delta)
 		return
+
 	
 	# --- STANDARD ACTIVE NAVIGATION ---
+
 	# Gravity is bypassed during CLIMB_WALL (vertical ascent), WINDOW_PEEK
-	# (Entity is stationary at the window frame), and FLINCH (lateral sprint
-	# — the Entity stays at its current Y to avoid dropping into terrain).
-	if not is_on_floor() and _state != State.WINDOW_PEEK and _state != State.CLIMB_WALL and _state != State.FLINCH:
+	# (Entity is stationary at the window frame), FLINCH (lateral sprint
+	# — the Entity stays at its current Y to avoid dropping into terrain),
+	# and ATTACK_LAMP (Entity stands still while striking the lamp).
+	if not is_on_floor() and _state != State.WINDOW_PEEK and _state != State.CLIMB_WALL and _state != State.FLINCH and _state != State.ATTACK_LAMP:
+
 		velocity += get_gravity() * delta
 	
 	if _ai and _ai.has_method("update"):
 		_ai.update(delta)
 	else:
 		velocity = Vector3.ZERO
+
 	
 	move_and_slide()
 	
@@ -1140,10 +1209,112 @@ func _play_light_sanctuary_grunt() -> void:
 		print("[Entity] Playing light sanctuary grunt — frustrated by the light! _state=", _state, " is_player_outside=", _navigation.is_player_outside() if _navigation else "NO_NAV")
 
 
+## ─────────────────────────────────────────────────────────────────────────────
+## OVERLOAD STUN — Portable High-Voltage Lamp Trap
+## ─────────────────────────────────────────────────────────────────────────────
+
+## Public API: Triggers the overload stun on the Entity.
+##
+## Called by PortableLamp.trigger_overload() when the player executes the
+## "EXECUTE OVERLOAD" command from the computer terminal.
+##
+## The Entity must be within 25 units of the portable trap position for the
+## stun to take effect. If the Entity is too far away (e.g., patrolling the
+## treeline), the stun is ignored and the overload only burns fuel.
+##
+## Effects:
+##   1. Checks distance to the portable trap (must be < 25.0 units)
+##   2. Forces state to STUNNED — freezes all movement and pathfinding
+##   3. Sets _stun_timer to the provided duration (default 30.0 seconds)
+##   4. Plays a high-priority pained scream via HorrorSoundManager
+##   5. Logs the stun event for debugging
+func trigger_overload_stun(trap_position: Vector3, duration: float = 30.0) -> void:
+	if not _is_active:
+		print("[Entity] Overload stun ignored — Entity is not active.")
+		return
+	
+	if _state == State.STUNNED:
+		print("[Entity] Overload stun ignored — Entity is already stunned.")
+		return
+	
+	# Distance check: Entity must be within 25 units of the portable trap
+	var dist_to_trap: float = global_position.distance_to(trap_position)
+	if dist_to_trap > 25.0:
+		print("[Entity] Overload stun ignored — Entity is too far from portable trap (%.1f units > 25.0)." % dist_to_trap)
+		return
+	
+	print("[Entity] ⚡ OVERLOAD STUN TRIGGERED! Distance to trap: %.1f units. Stun duration: %.1f seconds." % [dist_to_trap, duration])
+	
+	# Force the Entity into STUNNED state
+	_state = State.STUNNED
+	_stun_timer = duration
+	
+	# Freeze all movement immediately
+	velocity = Vector3.ZERO
+	_nav_agent.target_position = global_position
+	
+	# Play a high-priority pained scream via HorrorSoundManager
+	var hsm = get_node_or_null("/root/HorrorSoundManager")
+	if hsm and hsm.has_method("play_distant_monster"):
+		hsm.play_distant_monster()
+	
+	# Also play a local growl at higher pitch for the pained reaction
+	if _growl_audio:
+		_growl_audio.pitch_scale = 1.8  # Higher pitch = pained scream
+		_growl_audio.play()
+	
+	print("[Entity] Entity is STUNNED! Paralyzed by the blinding portable lamp for %.1f seconds." % duration)
+
+
+
+## Called when the generator runs out of fuel (blackout) while the Entity
+## is in the STUNNED state. Instantly transitions the Entity to ENRAGED.
+##
+## ENRAGED permanently boosts the Entity's movement speed by 1.5x for the
+## rest of the night. The Entity is released from the stun and immediately
+## begins hunting the player with enhanced aggression.
+##
+## If the Entity is NOT stunned when the blackout hits, this function does
+## nothing — the Entity continues its normal behavior.
+func on_generator_blackout() -> void:
+	if _state != State.STUNNED:
+		return
+	
+	print("[Entity] ⚡ BLACKOUT RELEASE! Generator died while Entity was stunned. ENRAGED!")
+	
+	# Save the original stalk speed if not already saved
+	if not _is_enraged:
+		_original_stalk_speed = current_stalk_speed
+		_is_enraged = true
+		
+		# Permanently boost movement speed by 1.5x for the rest of the night
+		current_stalk_speed = _original_stalk_speed * 1.5
+		print("[Entity] ENRAGED! Stalk speed permanently boosted from %.1f to %.1f (1.5x)." % [_original_stalk_speed, current_stalk_speed])
+	
+	# Release from stun — immediately begin hunting the player
+	_state = State.CHASE
+	_stun_timer = 0.0
+	
+	# Update nav target to the player's current position
+	if _player:
+		_nav_agent.target_position = _player.global_position
+	
+	# Play an enraged roar
+	if _growl_audio:
+		_growl_audio.pitch_scale = 1.2
+		_growl_audio.play()
+	
+	# Play the distant monster sound as a telegraph
+	var hsm = get_node_or_null("/root/HorrorSoundManager")
+	if hsm and hsm.has_method("play_distant_monster"):
+		hsm.play_distant_monster()
+
+
 ## Smoothly fades an AudioStreamPlayer's volume toward a target value.
 ## Stops playback once fully silent to save resources.
 ## Used by both chase music and night ambience to avoid code duplication.
 func _fade_audio_player(player: AudioStreamPlayer, active: bool, target_vol: float, fade_speed: float, delta: float) -> void:
+
 
 	if not player:
 		return
@@ -1209,7 +1380,14 @@ func _update_animations(_delta: float) -> void:
 		State.FLINCH:
 			# Use running_crawl during the lateral sprint flinch
 			_anim_state_machine.travel("running_crawl")
+		State.ATTACK_LAMP:
+			# Use Stalk animation while moving toward the lamp, Idle while striking
+			if horz_speed > 0.2:
+				_anim_state_machine.travel("Stalk")
+			else:
+				_anim_state_machine.travel("Idle")
 		State.CHASE, State.APPROACH_WINDOW, State.OBSERVE_FROM_TREELINE, State.PATROL:
+
 			if real_vel.y > 0.8:
 				_anim_state_machine.travel("ClimbUp")
 			elif real_vel.y < -0.8 and not is_on_floor():

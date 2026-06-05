@@ -48,10 +48,10 @@ color = Color(0.00784314, 0.5019608, 0.5019608, 1)
 
 [node name="MainWindow" type="Panel" parent="." unique_id=106868408]
 material = SubResource("ShaderMaterial_25mte")
-offset_left = 308.0
-offset_top = 25.0
-offset_right = 1108.0
-offset_bottom = 625.0
+offset_left = 572.0
+offset_top = 122.0
+offset_right = 1372.0
+offset_bottom = 722.0
 size_flags_horizontal = 4
 size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxFlat_win98")
@@ -173,6 +173,14 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 11
 text = "RECOVER_DATA.EXE"
 
+[node name="TrapPowerButton" type="Button" parent="MainWindow/HBoxContainer/NavButtons" unique_id=914037680]
+layout_mode = 2
+tooltip_text = "Toggle the portable lamp's power ON/OFF remotely."
+theme_override_colors/font_color = Color(0.2, 0.8, 0.2, 1)
+theme_override_font_sizes/font_size = 11
+disabled = true
+text = "TOGGLE TRAP POWER"
+
 [node name="OverloadButton" type="Button" parent="MainWindow/HBoxContainer/NavButtons" unique_id=914037679]
 layout_mode = 2
 tooltip_text = "Unlock LOG_02_CRITICAL via RECOVER_DATA.EXE to enable this command."
@@ -181,6 +189,7 @@ theme_override_font_sizes/font_size = 11
 disabled = true
 text = "EXECUTE OVERLOAD_PORCH_GRID"
 
+
 [node name="ContentPanel" type="Panel" parent="MainWindow/HBoxContainer" unique_id=1319873479]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -188,7 +197,8 @@ size_flags_vertical = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_content")
 
 [node name="ContentDisplay" type="RichTextLabel" parent="MainWindow/HBoxContainer/ContentPanel" unique_id=1031972570]
-layout_mode = 0
+layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 theme_override_colors/default_color = Color(0, 0, 0, 1)

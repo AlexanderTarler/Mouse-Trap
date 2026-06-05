@@ -10,8 +10,12 @@ enum ItemType {
 	TOOL,
 	PLANK,
 	FUEL,
-	KEY
+	KEY,
+	CABLE_SPOOL
 }
+
+
+
 
 ## Display name of the item
 @export var item_name: String = "Item"

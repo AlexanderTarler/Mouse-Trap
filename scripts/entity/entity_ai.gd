@@ -119,8 +119,11 @@ func update(delta: float) -> void:
 			_indoor_search_state(delta)
 		entity.State.CLIMB_WALL:
 			_climb_wall_state(delta)
+		entity.State.ATTACK_LAMP:
+			_attack_lamp_state(delta)
 		_:
 			entity.velocity = Vector3.ZERO
+
 
 
 # ---------------------------------------------------------------------------
@@ -128,6 +131,19 @@ func update(delta: float) -> void:
 # ---------------------------------------------------------------------------
 
 func _observe_from_treeline_state(delta: float) -> void:
+	# --- PORTABLE TRAP ATTRACTION OVERRIDE ---
+	# If a powered, deployed portable lamp exists, the Entity abandons its
+	# treeline observation and physically stalks toward the lamp to attack it.
+	# This prevents the old teleport loop where the Entity would be attracted
+	# to the trap but then fade_and_relocate() when the stare timer expired.
+	var trap = entity.get_tree().get_first_node_in_group("portable_trap")
+	if trap and trap.is_deployed and trap.is_powered:
+		entity._state = entity.State.ATTACK_LAMP
+		entity._nav_agent.target_position = trap.global_position
+		entity._lamp_attack_timer = 0.0
+		print("[Entity AI] Powered portable trap detected! Transitioning to ATTACK_LAMP.")
+		return
+	
 	# --- STARE TIMER ---
 	# After staring at a vantage point for a while, fade and relocate.
 	entity._stare_timer -= delta
@@ -135,9 +151,85 @@ func _observe_from_treeline_state(delta: float) -> void:
 		entity.fade_and_relocate()
 
 
+
+# ---------------------------------------------------------------------------
+# STATE: ATTACK_LAMP — Physical approach and strike against the portable lamp
+# ---------------------------------------------------------------------------
+# The Entity abandons all treeline observation and physically pathfinds
+# toward the deployed portable high-voltage lamp. Once within striking
+# distance (3.0 units), it attacks the lamp every 3 seconds.
+#
+# BEHAVIOR:
+#   1. Sets NavigationAgent3D target_position directly to the lamp's position.
+#   2. Moves toward it using standard stalk speed. No random relocations.
+#   3. When within 3.0 units, accumulates a 3-second strike timer.
+#   4. Every 3.0 seconds, calculates the directional vector toward the lamp
+#      and calls trap.take_physical_hit(direction_vector).
+#   5. If the lamp loses power (is_powered == false) or is no longer deployed,
+#      instantly exits ATTACK_LAMP and returns to OBSERVE_FROM_TREELINE.
+# ---------------------------------------------------------------------------
+
+func _attack_lamp_state(delta: float) -> void:
+	var trap = entity.get_tree().get_first_node_in_group("portable_trap")
+	
+	# --- EXIT CONDITION: Lamp is gone, unpowered, or undeployed ---
+	if not trap or not trap.is_deployed or not trap.is_powered:
+		print("[Entity AI] Portable lamp lost power or was removed. Exiting ATTACK_LAMP.")
+		entity._state = entity.State.OBSERVE_FROM_TREELINE
+		entity._lamp_attack_timer = 0.0
+		entity.velocity = Vector3.ZERO
+		return
+	
+	# --- CONTINUOUS PATHFINDING TOWARD THE LAMP ---
+	# Update the nav target every path_update_interval seconds so the Entity
+	# tracks the lamp's current position (it may have been knocked away by a hit).
+	entity._path_timer += delta
+	if entity._path_timer >= entity.path_update_interval:
+		entity._path_timer = 0.0
+		entity._nav_agent.target_position = trap.global_position
+	
+	# --- STRIKE TIMER: Attack the lamp every 3 seconds when close enough ---
+	var dist_to_trap: float = entity.global_position.distance_to(trap.global_position)
+	
+	if dist_to_trap < 3.0:
+		# Accumulate the attack timer
+		entity._lamp_attack_timer += delta
+		
+		if entity._lamp_attack_timer >= 3.0:
+			entity._lamp_attack_timer = 0.0
+			
+			# Calculate the direction from the Entity to the lamp
+			var hit_dir: Vector3 = (trap.global_position - entity.global_position).normalized()
+			
+			# Call take_physical_hit on the lamp
+			if trap.has_method("take_physical_hit"):
+				trap.take_physical_hit(hit_dir)
+				print("[Entity AI] ATTACK_LAMP: Struck portable lamp at distance %.1f!" % dist_to_trap)
+			
+			# Trigger a claw/strike animation
+			if entity._anim_state_machine:
+				entity._anim_state_machine.travel("AttackWindow")
+		
+		# Stop movement while attacking (stand still and swing)
+		entity.velocity = Vector3.ZERO
+	else:
+		# --- MOVE TOWARD THE LAMP ---
+		if entity._nav_agent.is_navigation_finished():
+			entity.velocity.x = 0.0
+			entity.velocity.z = 0.0
+		else:
+			var next_pos = entity._nav_agent.get_next_path_position()
+			var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
+			if dir_2d.length() > 0.01:
+				var move_dir_2d = dir_2d.normalized()
+				entity.velocity.x = move_dir_2d.x * entity.current_stalk_speed
+				entity.velocity.z = move_dir_2d.y * entity.current_stalk_speed
+
+
 # ---------------------------------------------------------------------------
 # STATE: STALK (CHASE / PATROL)
 # ---------------------------------------------------------------------------
+
 
 func _stalk_state(delta: float) -> void:
 	# --- LIGHT SANCTUARY ESCAPE ---

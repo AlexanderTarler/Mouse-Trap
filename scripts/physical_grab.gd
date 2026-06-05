@@ -4,6 +4,13 @@ extends Node3D
 ## Hold E (0.5s) to grab a RigidBody3D in front of the camera and move it around physically.
 ## Quick tap E to interact with objects (delegates to InteractionManager).
 ## Hold E (1s) on a locked/unlocked door to toggle its lock state (via toggle_lock()).
+##
+## SPECIAL CASE — PortableLamp (portable_trap group):
+## The Portable High-Voltage Lamp uses a dedicated carry system instead of the
+## generic grab. When the player interacts with a node in the "portable_trap"
+## group, PhysicalGrab calls lamp.pick_up() / lamp.drop_trap() which manages
+## its own freeze state, collision exclusion, and lerp loop. This gives the
+## lamp a more natural "carry in front of you" feel (like Amnesia/Half-Life).
 
 @export var grab_distance: float = 3.0
 @export var hold_distance: float = 1.5
@@ -30,9 +37,49 @@ var _has_passed_door_threshold: bool = false
 # Saved gravity scale to restore on release
 var _saved_gravity_scale: float = 1.0
 
+## Reference to the PortableLamp being carried (if any).
+## When non-null, the lamp manages its own physics via pick_up()/drop_trap().
+var _carried_lamp: Node = null
+
+## Reference to the CarryMarker (Marker3D) child of the Camera3D.
+## The lamp lerps its position/rotation to match this marker while carried.
+## NOTE: This is NOT set in @onready because _camera is set externally via
+## set_camera() in player_controller._ready(), which runs AFTER this node's
+## _ready(). Instead, we lazily create it on first use in _get_or_create_carry_marker().
+var _carry_marker: Marker3D = null
+
+
+
 
 func _ready() -> void:
+	add_to_group("physical_grab")
 	_create_prompt()
+
+
+
+## Finds or creates a Marker3D named "CarryMarker" as a child of the camera.
+## This marker defines where the PortableLamp sits in front of the player
+## while being carried. Positioned ~0.5m in front and ~0.3m below the camera
+## center to look like the player is holding it at waist/chest level.
+func _find_or_create_carry_marker() -> Marker3D:
+	if not _camera:
+		return null
+	
+	# Check if a CarryMarker already exists as a child of the camera
+	var existing: Marker3D = _camera.get_node_or_null("CarryMarker")
+	if existing:
+		return existing
+	
+	# Create a new Marker3D as a child of the camera
+	var marker := Marker3D.new()
+	marker.name = "CarryMarker"
+	marker.position = Vector3(0.0, 0.0, -1.5)  # Centered on crosshair, 1.5m in front (matches hold_distance)
+	_camera.add_child(marker)
+	return marker
+
+
+
+
 
 
 func _create_prompt() -> void:
@@ -63,6 +110,22 @@ func _input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.keycode == KEY_E):
 		return
 	
+	# ─── CARRYING LAMP: tap E to drop ────────────────────────────────────
+	# If we're carrying the lamp, a NEW press of E drops it (quick tap).
+	# We check _e_is_held to distinguish a new press from the hold cycle
+	# that was used to pick up the lamp.
+	if _carried_lamp and event.pressed and not _e_is_held:
+		_drop_carried_lamp()
+		return
+	
+	# ─── GRABBING OBJECT: tap E to drop ──────────────────────────────────
+	# Same behavior as the lamp — once an object is grabbed via hold,
+	# releasing E does NOT drop it. Instead, the player must press E again
+	# to release. This makes the grab system consistent with the lamp carry.
+	if _is_grabbing and event.pressed and not _e_is_held:
+		_drop_object()
+		return
+	
 	if event.pressed and not _e_is_held:
 		# E just pressed - start tracking hold time
 		_e_is_held = true
@@ -75,15 +138,16 @@ func _input(event: InputEvent) -> void:
 		# E released
 		_e_is_held = false
 		
-		if _is_grabbing:
-			# Release the grabbed object
-			_drop_object()
-		elif _has_passed_door_threshold:
+		if _has_passed_door_threshold:
 			# Door lock hold completed — do nothing on release (already handled)
 			pass
 		elif not _has_passed_threshold:
 			# Quick tap! Fire interact() on the current target
 			_fire_interact()
+
+
+
+
 
 
 func _process(delta: float) -> void:
@@ -163,10 +227,12 @@ func _fire_interact() -> void:
 
 func _try_grab() -> void:
 	if not _camera:
+		print("[PhysicalGrab] _try_grab: no camera!")
 		return
 	
 	var space_state = get_world_3d().direct_space_state
 	if not space_state:
+		print("[PhysicalGrab] _try_grab: no space state!")
 		return
 	
 	var viewport_size = _camera.get_viewport().size
@@ -186,24 +252,84 @@ func _try_grab() -> void:
 	var result = space_state.intersect_ray(query)
 	
 	if result.is_empty():
+		print("[PhysicalGrab] _try_grab: raycast hit nothing!")
 		return
 	
 	var body = result.collider
+	print("[PhysicalGrab] _try_grab: hit ", body, " (", body.name, ") type=", typeof(body), " is_rigid=", body is RigidBody3D)
 	
 	# Only grab RigidBody3D
 	if not (body is RigidBody3D):
+		print("[PhysicalGrab] _try_grab: not a RigidBody3D, skipping")
 		return
 	
 	# Check mass
 	if body.mass > max_grab_mass:
+		print("[PhysicalGrab] _try_grab: mass too high: ", body.mass)
 		return
 	
 	# Don't grab the player itself
 	if body == player:
+		print("[PhysicalGrab] _try_grab: is player, skipping")
 		return
+	
+	# ─── PORTABLE LAMP CARRY CHECK ────────────────────────────────────────
+	# If the body is in the "portable_trap" group, use the dedicated carry
+	# system instead of the generic grab. This gives the lamp a natural
+	# "hold in front of you" feel (like Amnesia/Half-Life).
+	# Also check for the "interact" method as a fallback — any RigidBody3D
+	# that has interact() is a special object that should use the carry system.
+	if (body.is_in_group("portable_trap") or body.has_method("interact")) and body.has_method("pick_up"):
+		print("[PhysicalGrab] _try_grab: found portable lamp, picking up!")
+		_pick_up_lamp(body)
+		return
+	
+	print("[PhysicalGrab] _try_grab: grabbing as regular object")
 	
 	# Success - grab the object
 	_grab_object(body)
+
+
+
+
+## Lazily gets or creates the CarryMarker.
+## Unlike the old @onready approach, this is safe to call after set_camera()
+## has been invoked (which happens in player_controller._ready()).
+func _get_or_create_carry_marker() -> Marker3D:
+	if _carry_marker:
+		return _carry_marker
+	_carry_marker = _find_or_create_carry_marker()
+	return _carry_marker
+
+
+## Picks up a PortableLamp using the dedicated carry system.
+## Calls lamp.pick_up() with the CarryMarker reference so the lamp lerps
+## its position/rotation to match the marker while carried.
+func _pick_up_lamp(lamp: Node) -> void:
+	var marker = _get_or_create_carry_marker()
+	if not marker:
+		print("[PhysicalGrab] ERROR: No CarryMarker available to pick up lamp!")
+		return
+	
+	_carried_lamp = lamp
+	lamp.pick_up(marker)
+	print("[PhysicalGrab] PortableLamp picked up.")
+
+
+
+## Drops the carried PortableLamp by calling lamp.drop_trap().
+## The lamp handles its own deployment (enables light, sets drain rate,
+## re-adds to portable_trap group, restores collision mask).
+func _drop_carried_lamp() -> void:
+	if not _carried_lamp:
+		return
+	
+	if _carried_lamp.has_method("drop_trap"):
+		_carried_lamp.drop_trap()
+		print("[PhysicalGrab] PortableLamp dropped.")
+	
+	_carried_lamp = null
+
 
 
 func _grab_object(body: RigidBody3D) -> void:
@@ -282,9 +408,12 @@ func _update_prompt() -> void:
 	if not _prompt_label:
 		return
 	
-	if _is_grabbing:
+	if _carried_lamp:
+		_prompt_label.text = "[E] Deploy Lamp"
+	elif _is_grabbing:
 		_prompt_label.text = "[E] Release"
 	elif _e_is_held and not _has_passed_threshold and not _has_passed_door_threshold:
+
 		# Show what we're looking at while holding E
 		var target = _find_grabbable_target()
 		if target:

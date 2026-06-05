@@ -42,7 +42,6 @@
 [ext_resource type="PackedScene" uid="uid://myej0vcgjeoa" path="res://scenes/bed.tscn" id="26_1cglp"]
 [ext_resource type="Resource" uid="uid://cbj5ujvtj6nrs" path="res://resources/battery_resource.tres" id="26_battery_res"]
 [ext_resource type="PackedScene" uid="uid://cclt4hjfsubxb" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/tv_mp_1_1.glb" id="26_jtbog"]
-[ext_resource type="PackedScene" uid="uid://ohh0uo3cit5r" path="res://assets/PSX Nature/Models/GLB/tree_stump_1.glb" id="27_72lnn"]
 [ext_resource type="PackedScene" uid="uid://clq01k102v26p" path="res://assets/PSX Nature/Models/GLB/tree_log_1.glb" id="29_42sdp"]
 [ext_resource type="PackedScene" uid="uid://dhgrntix8ay6e" path="res://assets/PSX Nature/Models/GLB/mushroom_n_1_2.glb" id="30_jjdw5"]
 [ext_resource type="PackedScene" uid="uid://cg620memb2rct" path="res://assets/PSX Nature/Models/GLB/mushroom_n_2.glb" id="31_p0ndf"]
@@ -76,6 +75,10 @@
 [ext_resource type="PackedScene" uid="uid://dev1jyquh31tw" path="res://scenes/fuse_box.tscn" id="72_1qcio"]
 [ext_resource type="PackedScene" uid="uid://porchlight01" path="res://scenes/porch_light.tscn" id="73_porch_light"]
 [ext_resource type="PackedScene" uid="uid://b2lplqj6v4bkj" path="res://scenes/computer_ui.tscn" id="74_computer_ui"]
+[ext_resource type="PackedScene" uid="uid://b0r8xvj7451wy" path="res://assets/PSX Paintings/Meshes/GLB/painting_8.glb" id="76_h7pim"]
+[ext_resource type="PackedScene" uid="uid://bec7ckeg5nn2q" path="res://scenes/portable_light.tscn" id="77_0wr2x"]
+[ext_resource type="PackedScene" path="res://scenes/cable_spool.tscn" id="78_3o631"]
+[ext_resource type="PackedScene" uid="uid://bpymnhhh56yaj" path="res://scenes/light_switch_special.tscn" id="79_q46gv"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_50dpl"]
 sky_top_color = Color(0.4, 0.6, 1, 1)
@@ -1540,7 +1543,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.992285, 1.6431003, 16.2304
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.532306, 1.6431003, 16.652176)
 
 [node name="painting_12" parent="NavigationRegion3D" unique_id=2123567333 instance=ExtResource("25_4ma01")]
-transform = Transform3D(-0.99987555, 0, 0.015777022, 0, 1, 0, -0.015777022, 0, -0.99987555, 3.4653938, 5.6632886, 20.430408)
+transform = Transform3D(-0.99987555, 0, 0.015777022, 0, 1, 0, -0.015777022, 0, -0.99987555, 5.2164383, 5.6632886, 20.430408)
 
 [node name="Bed" parent="NavigationRegion3D" unique_id=501505394 instance=ExtResource("26_1cglp")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.834966, 3.7331, 15.221859)
@@ -1724,9 +1727,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -52.350105, 0.5547377, 73.984
 
 [node name="Group of Trees56" parent="Details/Outside Cabin" unique_id=1326963133 instance=ExtResource("10_mdrot")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -75.45816, 0.5547415, 81.40106)
-
-[node name="tree_stump_12" parent="Details/Outside Cabin" unique_id=1398647486 instance=ExtResource("27_72lnn")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.146943, 0.125, 12.475434)
 
 [node name="tree_log_12" parent="Details/Outside Cabin" unique_id=67509523 instance=ExtResource("29_42sdp")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 46.59076, 0.14068282, -16.630362)
@@ -2203,6 +2203,18 @@ item_data = ExtResource("25_window_fragment")
 [node name="Note2" parent="." unique_id=1204971213 instance=ExtResource("20_note")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.0981007, 0.12499976, 1.7629606)
 item_data = ExtResource("25_hearth_fragment")
+
+[node name="painting_82" parent="." unique_id=385348132 instance=ExtResource("76_h7pim")]
+transform = Transform3D(-0.9999998, 0, 0.00062832236, 0, 1, 0, -0.00062832236, 0, -0.9999998, 3.9166112, 5.4883156, 20.44899)
+
+[node name="PortableLight" parent="." unique_id=279815332 instance=ExtResource("77_0wr2x")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.248568, 8.125, 2.4327326)
+
+[node name="CableSpool" parent="." unique_id=429603078 instance=ExtResource("78_3o631")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.336417, 0.5948738, 3.6250904)
+
+[node name="LightSwitch" parent="." unique_id=422318108 instance=ExtResource("79_q46gv")]
+transform = Transform3D(-0.01305464, 0, -0.99991477, 0, 1, 0, 0.99991477, 0, -0.01305464, 15.260162, 2.6549559, 17.225714)
 
 [editable path="Details/Inside Cabin/Computer"]
 [editable path="Details/Inside Cabin/Computer/pc_monitor_mp_12"]

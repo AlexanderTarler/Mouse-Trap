@@ -135,6 +135,14 @@ func _process(delta: float) -> void:
 				generator_state_changed.emit(false)
 				fuel_changed.emit(0.0)
 				print("[Power Grid] Blackout! The generator has run completely out of fuel.")
+				
+				# Notify the Entity of the blackout — if it was stunned by the
+				# overload trap, it will be released into an ENRAGED state.
+				# If it wasn't stunned, this call is a no-op.
+				var entity = get_tree().get_first_node_in_group("entity")
+				if entity and entity.has_method("on_generator_blackout"):
+					entity.on_generator_blackout()
+
 	
 	# Check for time-based events (only during active nights)
 	if is_night_active:

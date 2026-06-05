@@ -194,6 +194,8 @@ func _on_use_pressed() -> void:
 			print("Tool used: ", item.item_name)
 
 
+
+
 func _use_battery(item) -> void:
 	# Find the flashlight and refill it
 	if not _flashlight:
@@ -228,6 +230,8 @@ func _read_note(item) -> void:
 
 
 func _on_drop_pressed() -> void:
+
+
 	if _selected_index < 0 or _selected_index >= Inventory.items.size():
 		return
 	

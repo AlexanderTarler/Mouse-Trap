@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://cable_spool_scene"]
+
+[ext_resource type="Script" uid="uid://cable_spool_pickup_script" path="res://scripts/items/cable_spool_pickup.gd" id="1_spool_script"]
+[ext_resource type="PackedScene" uid="uid://electrical_tape_model" path="res://assets/PSX Tech/Models/GLB (recommended)/electrical_tape_etx_1_1.glb" id="2_model"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_spool"]
+
+[node name="CableSpool" type="RigidBody3D"]
+script = ExtResource("1_spool_script")
+
+[node name="SpoolModel" parent="." instance=ExtResource("2_model")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_spool")
+debug_color = Color(0.2, 0.2, 0.2, 0.4)

@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://dayxts6vvgk"]
+
+[ext_resource type="Script" path="res://scripts/objects/power_cable.gd" id="1_7q3c8"]
+
+[node name="PowerCable" type="Node3D"]
+script = ExtResource("1_7q3c8")
