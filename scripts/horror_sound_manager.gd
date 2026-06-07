@@ -134,27 +134,31 @@ func _preload_audio_files() -> void:
 	])
 
 ## Loads audio files using the exact naming pattern: "{filename_prefix} ({n}).mp3"
+## Uses FileAccess.file_exists() to silently skip missing files without
+## triggering the engine's broken path loader warnings in the debugger console.
 func _load_audio_files(dir_path: String, filename_prefix: String, count: int) -> Array[AudioStream]:
 	var streams: Array[AudioStream] = []
 	for i in range(1, count + 1):
 		var path = dir_path + filename_prefix + " (%d).mp3" % i
+		if not FileAccess.file_exists(path):
+			continue  # Silently skip — no warning printed to debugger
 		var stream = load(path) as AudioStream
 		if stream:
 			streams.append(stream)
-		else:
-			print("Warning: Could not load audio file: " + path)
 	return streams
 
 ## Loads audio files with a custom naming pattern: "{filename_prefix} {n}{extension}"
+## Uses FileAccess.file_exists() to silently skip missing files without
+## triggering the engine's broken path loader warnings in the debugger console.
 func _load_audio_files_custom(dir_path: String, filename_prefix: String, count: int, extension: String) -> Array[AudioStream]:
 	var streams: Array[AudioStream] = []
 	for i in range(1, count + 1):
 		var path = dir_path + filename_prefix + " %d%s" % [i, extension]
+		if not FileAccess.file_exists(path):
+			continue  # Silently skip — no warning printed to debugger
 		var stream = load(path) as AudioStream
 		if stream:
 			streams.append(stream)
-		else:
-			print("Warning: Could not load audio file: " + path)
 	return streams
 
 ## Gets a random stream from an array.
@@ -189,27 +193,31 @@ func _setup_entity_sounds() -> void:
 ## Sets up the day/night forest ambience players.
 ## Day ambience plays "Forest Ambience.ogg" on loop during daytime.
 ## Night ambience plays "Forest_night_ambience.ogg" on loop during nighttime.
+## Uses FileAccess.file_exists() to silently skip missing files without
+## triggering the engine's broken path loader warnings in the debugger console.
 func _setup_forest_ambience() -> void:
 	# Day ambience player
 	_day_ambience_player = AudioStreamPlayer.new()
 	_day_ambience_player.bus = "Ambient"
 	_day_ambience_player.volume_db = -12.0
-	var day_stream = load(DAY_AMBIENCE_PATH) as AudioStream
-	if day_stream:
-		if day_stream is AudioStreamOggVorbis:
-			day_stream.loop = true
-		_day_ambience_player.stream = day_stream
+	if FileAccess.file_exists(DAY_AMBIENCE_PATH):
+		var day_stream = load(DAY_AMBIENCE_PATH) as AudioStream
+		if day_stream:
+			if day_stream is AudioStreamOggVorbis:
+				day_stream.loop = true
+			_day_ambience_player.stream = day_stream
 	add_child(_day_ambience_player)
 	
 	# Night ambience player
 	_night_ambience_player = AudioStreamPlayer.new()
 	_night_ambience_player.bus = "Ambient"
 	_night_ambience_player.volume_db = -12.0
-	var night_stream = load(NIGHT_AMBIENCE_PATH) as AudioStream
-	if night_stream:
-		if night_stream is AudioStreamOggVorbis:
-			night_stream.loop = true
-		_night_ambience_player.stream = night_stream
+	if FileAccess.file_exists(NIGHT_AMBIENCE_PATH):
+		var night_stream = load(NIGHT_AMBIENCE_PATH) as AudioStream
+		if night_stream:
+			if night_stream is AudioStreamOggVorbis:
+				night_stream.loop = true
+			_night_ambience_player.stream = night_stream
 	add_child(_night_ambience_player)
 	
 	# Start with day ambience (game starts in daytime)
@@ -427,18 +435,20 @@ func set_watched_intensity(level: float) -> void:
 		_play_event_sound_3d(_get_random_stream(_monster_growl_streams), Vector3(0, 1, -4))
 
 ## Sets up the distant monster audio player and preloads the audio files.
+## Uses FileAccess.file_exists() to silently skip missing files without
+## triggering the engine's broken path loader warnings in the debugger console.
 func _setup_distant_monster_sounds() -> void:
 	# Preload distant monster audio files from assets/audio/Entity/
 	var entity_audio_dir = "res://assets/audio/Entity/"
 	var file_names = ["monster_distant_mx_1.ogg", "monster_distant_mx_4.ogg"]
 	for fname in file_names:
 		var path = entity_audio_dir + fname
+		if not FileAccess.file_exists(path):
+			continue  # Silently skip — no warning printed to debugger
 		var stream = load(path) as AudioStream
 		if stream:
 			_distant_monster_streams.append(stream)
 			print("HorrorSoundManager: Loaded distant monster audio: " + path)
-		else:
-			print("Warning: Could not load distant monster audio: " + path)
 	
 	# Create a 2D audio player for the distant monster sound (always audible)
 	_distant_monster_player = AudioStreamPlayer.new()
@@ -487,22 +497,20 @@ func play_car_alarm_telegraph() -> void:
 	if not _distant_monster_player:
 		return
 	
-	# Try to load a car alarm audio file if it exists
+	# Try to load a car alarm audio file if it exists.
+	# Uses FileAccess.file_exists() to silently skip missing files without
+	# triggering the engine's broken path loader warnings in the debugger console.
 	var car_alarm_path = "res://assets/audio/Entity/car_alarm.ogg"
-	var stream = load(car_alarm_path) as AudioStream
-	if stream:
-		if stream is AudioStreamOggVorbis:
-			stream.loop = true
-		_distant_monster_player.stream = stream
-		_distant_monster_player.volume_db = -4.0
-		_distant_monster_player.play()
-		print("HorrorSoundManager: Playing car alarm telegraph!")
-		sound_played.emit("car_alarm_telegraph")
-	else:
-		# Silent skip — never fall back to the monster sound here.
-		# The car alarm narrative is the player's first audio cue after
-		# waking up; a monster howl would spoil the Entity's reveal.
-		print("HorrorSoundManager: Car alarm audio not found at ", car_alarm_path, ". Skipping car alarm telegraph silently.")
+	if FileAccess.file_exists(car_alarm_path):
+		var stream = load(car_alarm_path) as AudioStream
+		if stream:
+			if stream is AudioStreamOggVorbis:
+				stream.loop = true
+			_distant_monster_player.stream = stream
+			_distant_monster_player.volume_db = -4.0
+			_distant_monster_player.play()
+			print("HorrorSoundManager: Playing car alarm telegraph!")
+			sound_played.emit("car_alarm_telegraph")
 
 
 func toggle_mute() -> void:

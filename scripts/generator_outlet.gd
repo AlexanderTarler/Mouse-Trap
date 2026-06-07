@@ -98,6 +98,15 @@ func _find_player_hand_marker() -> Marker3D:
 	return null
 
 
+## Public API: Called by PortableLamp when the Entity destroys the cable
+## on the 3rd strike. Clears the internal _active_cable reference and
+## resets the interaction state back to AVAILABLE so the player can
+## forge a fresh connection from scratch using a new Cable Spool.
+func on_cable_destroyed() -> void:
+	_active_cable = null
+	print("[GeneratorOutlet] Cable destroyed by Entity! Outlet reset to AVAILABLE. Player must reconnect from scratch.")
+
+
 func get_interact_text() -> String:
 	if _active_cable:
 		return "[E] Disconnect Cable"

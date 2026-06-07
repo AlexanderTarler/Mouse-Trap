@@ -81,13 +81,25 @@ func _execute_jumpscare() -> void:
 		fade_tween.tween_property(fade_rect, "color:a", 1.0, 0.5)
 		await fade_tween.finished
 		
-		# APPLY PENALTIES
-		_apply_survival_penalties(player)
+		# RESET TO DAYBREAK — invoke the NightManager's daybreak reset system.
+		# This replaces the old survival penalty system (time penalty + battery drain).
+		# The player wakes up in bed at the morning baseline of the current day,
+		# with fresh inventory, reset world state, and daytime lighting.
+		var nm: Node = get_node_or_null("/root/NightManager")
+		if nm and nm.has_method("reset_to_daybreak"):
+			nm.reset_to_daybreak()
+			print("[Jumpscare] Daybreak reset invoked. Player will wake up at morning baseline.")
+		else:
+			# Fallback: if NightManager is unavailable, use the old penalty system
+			print("[Jumpscare] NightManager not found! Falling back to legacy survival penalties.")
+			_apply_survival_penalties(player)
 		
-		# WAKE UP (Fade back in)
-		var wake_tween = create_tween()
-		wake_tween.tween_property(fade_rect, "color:a", 0.0, 2.0)
-		await wake_tween.finished
+		# WAKE UP (Fade back in) — the NightManager's reset_to_daybreak() handles
+		# the fade-in tween internally. If it didn't, we do it here as a safety net.
+		if fade_rect.color.a > 0.01:
+			var wake_tween = create_tween()
+			wake_tween.tween_property(fade_rect, "color:a", 0.0, 2.0)
+			await wake_tween.finished
 		
 		# FIX CONTROLS — restore original rotation instead of zeroing it
 		# Zeroing would snap the camera to look straight forward, which is jarring.

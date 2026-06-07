@@ -37,6 +37,15 @@ var _warning_visible: bool = false
 var _message_queue: Array[String] = []
 var _message_busy: bool = false
 
+# ─── PURGE PROGRESS BAR ────────────────────────────────────────────────
+# A full-width progress bar displayed at the center of the screen when the
+# player is actively purging the TotemAnchor. Created programmatically so
+# no scene changes are needed.
+var _purge_bar_bg: ColorRect = null
+var _purge_bar_fill: ColorRect = null
+var _purge_bar_label: Label = null
+var _purge_bar_visible: bool = false
+
 # ─── FADE-TO-BLACK SYSTEM ──────────────────────────────────────────────
 # A full-screen ColorRect overlay that tweens alpha for cinematic fades.
 # Created programmatically in _ready() so no scene changes are needed.
@@ -449,3 +458,103 @@ func _on_event_timer_timeout() -> void:
 	tween.tween_property(event_label, "modulate:a", 0.0, 1.0)
 	# After the fade completes, show the next message in the queue
 	tween.finished.connect(_display_next_message.bind(), CONNECT_ONE_SHOT)
+
+
+# ─── PURGE PROGRESS BAR ────────────────────────────────────────────────
+# Public API for the TotemAnchor to display a timed hold-to-purge progress
+# meter on the HUD. The bar is created programmatically on first use.
+
+## Shows the purge progress bar overlay at the center of the screen.
+## Called by TotemAnchor.interact() when the player begins purging.
+func show_purge_progress() -> void:
+	if not _purge_bar_bg:
+		_create_purge_bar_nodes()
+	_purge_bar_bg.visible = true
+	_purge_bar_fill.size.x = 0.0
+	_purge_bar_fill.modulate = Color(1.0, 0.5, 0.0, 1.0)  # Orange
+	_purge_bar_label.text = "Purging Totem..."
+	_purge_bar_label.modulate = Color(1, 1, 1, 1)
+	_purge_bar_visible = true
+
+
+## Updates the purge progress bar fill to reflect the current progress ratio.
+## progress_ratio: 0.0 (empty) to 1.0 (complete).
+func update_purge_progress(progress_ratio: float) -> void:
+	if not _purge_bar_visible or not _purge_bar_bg:
+		return
+	
+	var clamped: float = clampf(progress_ratio, 0.0, 1.0)
+	_purge_bar_fill.size.x = _purge_bar_bg.size.x * clamped
+	
+	# Color transitions: Orange → Yellow → Green as progress increases
+	if clamped >= 1.0:
+		_purge_bar_fill.modulate = Color(0.3, 1.0, 0.3, 1.0)  # Green - complete
+		_purge_bar_label.text = "Totem Purged!"
+	elif clamped >= 0.66:
+		_purge_bar_fill.modulate = Color(1.0, 0.9, 0.2, 1.0)  # Yellow - almost there
+		_purge_bar_label.text = "Purging Totem... %.0f%%" % (clamped * 100.0)
+	elif clamped >= 0.33:
+		_purge_bar_fill.modulate = Color(1.0, 0.7, 0.1, 1.0)  # Amber - halfway
+		_purge_bar_label.text = "Purging Totem... %.0f%%" % (clamped * 100.0)
+	else:
+		_purge_bar_fill.modulate = Color(1.0, 0.5, 0.0, 1.0)  # Orange - starting
+		_purge_bar_label.text = "Purging Totem... %.0f%%" % (clamped * 100.0)
+
+
+## Hides the purge progress bar overlay.
+## Called by TotemAnchor when the player releases the interact key early
+## or when the purge completes.
+func hide_purge_progress() -> void:
+	if _purge_bar_bg:
+		_purge_bar_bg.visible = false
+	_purge_bar_visible = false
+
+
+## Creates the purge bar UI nodes programmatically on first use.
+func _create_purge_bar_nodes() -> void:
+	# Background bar (dark gray, full-width container)
+	_purge_bar_bg = ColorRect.new()
+	_purge_bar_bg.name = "PurgeBarBackground"
+	_purge_bar_bg.color = Color(0.15, 0.15, 0.15, 0.85)
+	_purge_bar_bg.anchor_left = 0.3
+	_purge_bar_bg.anchor_right = 0.7
+	_purge_bar_bg.anchor_top = 0.55
+	_purge_bar_bg.anchor_bottom = 0.58
+	_purge_bar_bg.offset_left = 0.0
+	_purge_bar_bg.offset_right = 0.0
+	_purge_bar_bg.offset_top = 0.0
+	_purge_bar_bg.offset_bottom = 0.0
+	_purge_bar_bg.z_index = 50
+	_purge_bar_bg.visible = false
+	add_child(_purge_bar_bg)
+	
+	# Fill bar (colored overlay that grows left-to-right)
+	_purge_bar_fill = ColorRect.new()
+	_purge_bar_fill.name = "PurgeBarFill"
+	_purge_bar_fill.color = Color(1.0, 0.5, 0.0, 1.0)  # Orange
+	_purge_bar_fill.anchor_left = 0.0
+	_purge_bar_fill.anchor_right = 0.0
+	_purge_bar_fill.anchor_top = 0.0
+	_purge_bar_fill.anchor_bottom = 1.0
+	_purge_bar_fill.offset_left = 2.0
+	_purge_bar_fill.offset_right = -2.0
+	_purge_bar_fill.offset_top = 2.0
+	_purge_bar_fill.offset_bottom = -2.0
+	_purge_bar_fill.size.x = 0.0
+	_purge_bar_fill.z_index = 51
+	_purge_bar_bg.add_child(_purge_bar_fill)
+	
+	# Label (centered text above the bar)
+	_purge_bar_label = Label.new()
+	_purge_bar_label.name = "PurgeBarLabel"
+	_purge_bar_label.text = "Purging Totem..."
+	_purge_bar_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_purge_bar_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_purge_bar_label.anchor_left = 0.0
+	_purge_bar_label.anchor_right = 1.0
+	_purge_bar_label.anchor_top = -1.5
+	_purge_bar_label.anchor_bottom = 0.0
+	_purge_bar_label.offset_top = -4.0
+	_purge_bar_label.offset_bottom = 4.0
+	_purge_bar_label.z_index = 52
+	_purge_bar_bg.add_child(_purge_bar_label)

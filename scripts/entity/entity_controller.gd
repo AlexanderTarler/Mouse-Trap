@@ -16,7 +16,7 @@ enum State {
 	RETREAT,                # Physically running away to deep woods
 	APPROACH_WINDOW,        # Night 3+ (Moving to glass)
 	WINDOW_PEEK,            # Night 2+ (Staring inside)
-	RELOCATE,               # Fading out and teleporting to a new position
+	RELOCATE,               # Safe initialization state only — never used during active runtime
 	STANDOFF,               # Player is staring at Entity with flashlight — frozen in place
 	FLINCH,                 # Player inside, Entity outside — lateral sprint to evade flashlight
 	CHARGE,                 # Player stared too long — Entity sprints at 3x speed
@@ -25,6 +25,7 @@ enum State {
 	STUNNED,                # Entity is paralyzed by the porch light overload trap
 	ENRAGED,                # Blackout released Entity — permanent speed boost for the rest of the night
 	ATTACK_LAMP,            # Entity is physically approaching and striking the portable high-voltage lamp
+	HARASS,                 # Entity stands at a window performing psychological harassment (breathing, tapping, rattling)
 }
 
 
@@ -80,8 +81,9 @@ const NIGHT_AMBIENCE_VOLUME_DB: float = -18.0
 
 # Sub-modules
 @onready var _ai: Node = $EntityAI if has_node("EntityAI") else null
-@onready var _sensory: Node = $EntitySensory if has_node("EntitySensory") else null
+@onready var _sensory: Node = $EntitySensory if has_node("EnttySensory") else null
 @onready var _navigation: Node = $EntityNavigation if has_node("EntityNavigation") else null
+@onready var _confidence: Node = $EntityConfidence if has_node("EntityConfidence") else null
 
 var _anim_state_machine: AnimationNodeStateMachinePlayback = null
 var _entity_step_timer: float = 0.0
@@ -163,6 +165,40 @@ var _indoor_patrol_index: int = 0
 ## Plays a scraping sound as the Entity climbs up the wooden siding.
 var _claw_scrape_player: AudioStreamPlayer3D = null
 
+# --- 3D SPATIAL VOICE STATE MACHINE ---
+## 3D spatial audio player for the Entity's voice (talking, searching, angry).
+## Programmatically created in _ready() with inverse-square distance attenuation.
+## The voice is routed by entity_ai.gd's _manage_spatial_voice() based on FSM state.
+var _voice_player: AudioStreamPlayer3D = null
+
+## Audio streams for the voice state machine.
+## Loaded safely using ResourceLoader.exists() guards.
+var _voice_talking_1: AudioStream = null
+var _voice_talking_2: AudioStream = null
+var _voice_searching: AudioStream = null
+var _voice_angry: AudioStream = null
+
+## Harassment audio player (3D, positioned at the window during HARASS state).
+## Plays intimate sounds (breathing, tapping, rattling) to psychologically
+## pressure the player. Created programmatically in _ready().
+var _harass_audio: AudioStreamPlayer3D = null
+
+## Paths to the Entity voice audio assets.
+const VOICE_TALKING_1_PATH: String = "res://assets/audio/Entity/entity_talking_1.ogg"
+const VOICE_TALKING_2_PATH: String = "res://assets/audio/Entity/entity_talking_2.ogg"
+const VOICE_SEARCHING_PATH: String = "res://assets/audio/Entity/entity_searching.ogg"
+const VOICE_ANGRY_PATH: String = "res://assets/audio/Entity/entity_angry.ogg"
+
+## Whether the angry voice has been played this charge instance.
+## Set to true when entity_angry.ogg fires during CHARGE/CHASE entry.
+## Reset to false when the Entity leaves CHARGE/CHASE state.
+var _voice_angry_played_this_charge: bool = false
+
+## Tracks whether the voice player was in a "talking" state (OBSERVE_FROM_TREELINE/PATROL)
+## on the previous frame. Used by _manage_spatial_voice() to detect transitions
+## between talking and non-talking states for the interchangeable track cycling.
+var _voice_was_talking: bool = false
+
 # --- WINDOW BLUFF STATE ---
 ## When true, the Entity is performing a fake window approach (bluff).
 ## The Entity moves toward a window, stops short, then backs away to
@@ -206,6 +242,12 @@ var _stun_timer: float = 0.0
 ## by 1.5x for the rest of the night. Reset to false when the night ends.
 var _is_enraged: bool = false
 
+## Tracks whether the player was staring at the Entity with the flashlight
+## on the previous frame. Used by the confidence modification system to
+## detect the transition from "staring" to "not staring" and apply the
+## one-time +8.0 confidence boost exactly once when line of sight breaks.
+var _confidence_stare_was_active: bool = false
+
 ## The original stalk speed before the enrage multiplier was applied.
 ## Used to restore the speed if the enrage is ever reset.
 var _original_stalk_speed: float = 0.0
@@ -217,8 +259,39 @@ var _original_stalk_speed: float = 0.0
 const CLAW_SCRAPE_PATH: String = "res://assets/audio/Entity/claw_scrape_loop.ogg"
 const CLAW_SCRAPE_FALLBACK_PATH: String = "res://assets/audio/Entity/Entity_grunt_long.ogg"
 
+# ─── "CREEPING GHOST" COLLISION LAYER SYSTEM ──────────────────────────────────
+# When the Entity is traveling outside through dense woods (OBSERVE_FROM_TREELINE,
+# PATROL), it programmatically disables hard physics collisions with tree/rock
+# environmental layers. This allows the Entity to phase through foliage while
+# still following the NavigationAgent3D path for steering.
+#
+# Full physics body collision masks are re-enabled the moment the Entity
+# transitions into CHASE, APPROACH_WINDOW, or enters the cabin porch zone,
+# ensuring it cannot phase through doors or window frames during an attack.
+#
+# Collision layers are defined in the project settings (project.godot).
+# These constants map to the layer indices used in the physics layer names.
+# Adjust these values to match the project's actual layer assignments.
+const COLLISION_LAYER_TREE: int = 3   # Layer 3: Trees / large foliage
+const COLLISION_LAYER_ROCK: int = 4   # Layer 4: Rocks / boulders / terrain obstacles
+const COLLISION_LAYER_CABIN: int = 1  # Layer 1: Cabin geometry (walls, doors, windows)
+const COLLISION_LAYER_PLAYER: int = 2 # Layer 2: Player body
+
+## Stores the original collision mask before "Creeping Ghost" modifications.
+## Restored when the Entity transitions to an aggressive state.
+var _saved_collision_mask: int = 0
+
+# ─── CONTEXT-STEERING RAYCAST ARRAY ──────────────────────────────────────────
+# Three RayCast3D nodes used for obstacle avoidance when the Entity is stalking
+# with tree/rock collisions disabled (OBSERVE_FROM_TREELINE, PATROL).
+# Programmatically instantiated in _ready().
+var _ray_center: RayCast3D = null
+var _ray_left: RayCast3D = null
+var _ray_right: RayCast3D = null
+
 
 func _ready() -> void:
+
 	add_to_group("entity")
 	_find_player()
 	
@@ -296,6 +369,74 @@ func _ready() -> void:
 		_claw_scrape_player.stream = scrape_stream
 	add_child(_claw_scrape_player)
 	
+	# ─── 3D SPATIAL VOICE PLAYER ──────────────────────────────────
+	# Programmatically create an AudioStreamPlayer3D for the Entity's voice.
+	# Configured with inverse-square distance attenuation for realistic spatial
+	# audio — the voice gets quieter as the player moves away from the Entity.
+	# The voice is routed by entity_ai.gd's _manage_spatial_voice() based on
+	# the current FSM state (talking, searching, angry).
+	_voice_player = AudioStreamPlayer3D.new()
+	_voice_player.name = "VoicePlayer"
+	_voice_player.bus = "Entity"
+	_voice_player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_SQUARE_DISTANCE
+	_voice_player.unit_size = 4.0
+	_voice_player.max_distance = 40.0
+	_voice_player.pitch_scale = 0.8  # Deep, guttural tone
+	add_child(_voice_player)
+	
+	# ─── HARASSMENT AUDIO PLAYER ──────────────────────────────────
+	# Programmatically create an AudioStreamPlayer3D for the HARASS state.
+	# Plays intimate sounds (breathing, tapping, rattling) at the window
+	# to psychologically pressure the player.
+	# Configured with inverse-square attenuation and a short max distance
+	# (15.0m) so the sounds are only audible when the player is near the
+	# window being harassed.
+	_harass_audio = AudioStreamPlayer3D.new()
+	_harass_audio.name = "HarassAudio"
+	_harass_audio.bus = "Entity"
+	_harass_audio.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_SQUARE_DISTANCE
+	_harass_audio.unit_size = 2.0
+	_harass_audio.max_distance = 15.0
+	add_child(_harass_audio)
+	
+	# ─── SAFE AUDIO LOADING ───────────────────────────────────────
+	# Load the 4 voice audio streams using ResourceLoader.exists() guards
+	# to avoid engine warnings when the files don't exist yet.
+	if ResourceLoader.exists(VOICE_TALKING_1_PATH):
+		_voice_talking_1 = load(VOICE_TALKING_1_PATH) as AudioStream
+	if ResourceLoader.exists(VOICE_TALKING_2_PATH):
+		_voice_talking_2 = load(VOICE_TALKING_2_PATH) as AudioStream
+	if ResourceLoader.exists(VOICE_SEARCHING_PATH):
+		_voice_searching = load(VOICE_SEARCHING_PATH) as AudioStream
+	if ResourceLoader.exists(VOICE_ANGRY_PATH):
+		_voice_angry = load(VOICE_ANGRY_PATH) as AudioStream
+	
+	# ─── CONTEXT-STEERING RAYCAST ARRAY ────────────────────────────
+	# Three RayCast3D nodes used for obstacle avoidance when the Entity is
+	# stalking with tree/rock collisions disabled (OBSERVE_FROM_TREELINE, PATROL).
+	# The center ray is 3.5m long, left/right rays are 2.5m long at 30° angles.
+	# Collision mask is set to scan static obstacles (cabin walls, porch posts).
+	_ray_center = RayCast3D.new()
+	_ray_center.name = "RayCastCenter"
+	_ray_center.target_position = Vector3(0.0, 0.0, -3.5)
+	_ray_center.collision_mask = (1 << (COLLISION_LAYER_CABIN - 1))  # Layer 1: Cabin
+	_ray_center.hit_from_inside = false
+	add_child(_ray_center)
+	
+	_ray_left = RayCast3D.new()
+	_ray_left.name = "RayCastLeft"
+	_ray_left.target_position = Vector3(0.0, 0.0, -2.5).rotated(Vector3.UP, deg_to_rad(30.0))
+	_ray_left.collision_mask = (1 << (COLLISION_LAYER_CABIN - 1))  # Layer 1: Cabin
+	_ray_left.hit_from_inside = false
+	add_child(_ray_left)
+	
+	_ray_right = RayCast3D.new()
+	_ray_right.name = "RayCastRight"
+	_ray_right.target_position = Vector3(0.0, 0.0, -2.5).rotated(Vector3.UP, deg_to_rad(-30.0))
+	_ray_right.collision_mask = (1 << (COLLISION_LAYER_CABIN - 1))  # Layer 1: Cabin
+	_ray_right.hit_from_inside = false
+	add_child(_ray_right)
+	
 	# Set up sub-modules
 	if _ai and _ai.has_method("setup"):
 		_ai.setup(self)
@@ -303,6 +444,22 @@ func _ready() -> void:
 		_sensory.setup(self)
 	if _navigation and _navigation.has_method("setup"):
 		_navigation.setup(self)
+	
+	# ─── CONFIDENCE SYSTEM ─────────────────────────────────────────
+	# Create the EntityConfidence node as a child of the Entity.
+	# This module tracks the Entity's boldness (0.0–100.0) and provides
+	# the F3 debug overlay for real-time confidence visualization.
+	#
+	# CRITICAL: add_child() MUST be called immediately after new().
+	# Without it, the EntityConfidence node is an orphan — its CanvasLayer
+	# cannot render (F3 menu invisible) and its _process(delta) never fires
+	# (confidence value freezes and never decays).
+	if not _confidence:
+		_confidence = EntityConfidence.new()
+		_confidence.name = "EntityConfidence"
+		add_child(_confidence)  # <-- REQUIRED: attaches to SceneTree
+	if _confidence and _confidence.has_method("setup"):
+		_confidence.setup(self)
 	
 	_nav_agent.path_desired_distance = 2.0
 	_nav_agent.target_desired_distance = 2.0
@@ -451,6 +608,14 @@ func _on_first_chase_started() -> void:
 
 
 
+## ─── INPUT PASSTHROUGH ──────────────────────────────────────────────────────
+## Routes input events to sub-modules that need them.
+## Currently forwards F3 to the EntityConfidence debug overlay toggle.
+func _input(event: InputEvent) -> void:
+	if _confidence and _confidence.has_method("_input"):
+		_confidence._input(event)
+
+
 func _find_player() -> void:
 	var players = get_tree().get_nodes_in_group("player")
 	if players.size() > 0:
@@ -543,6 +708,13 @@ func _physics_process(delta: float) -> void:
 	if _state != _last_logged_state:
 		print("[Entity FSM] Transitioned from %s to %s" % [State.keys()[_last_logged_state], State.keys()[_state]])
 		_last_logged_state = _state
+		
+		# ─── "CREEPING GHOST" COLLISION LAYER UPDATE ─────────────────
+		# Every time the state changes, update the collision mask to match
+		# the new state's requirements. This ensures the Entity phases through
+		# tree/rock collision when stalking outside (OBSERVE_FROM_TREELINE,
+		# PATROL) and has full collision when attacking (CHASE, APPROACH_WINDOW).
+		_update_collision_layers()
 	
 	# --- BACKGROUND SENSE PROCESSING (runs every frame regardless of state) ---
 	if _sensory:
@@ -567,6 +739,31 @@ func _physics_process(delta: float) -> void:
 	#     Entity never flinches. If spotted while player is inside, it
 	#     immediately sieges the nearest window instead.
 	#
+	# ─── FLOOR MATERIAL SAFETY GUARD ───────────────────────────────
+	# Before ANY flashlight-based state override can force a CHARGE
+	# transition, perform a definitive floor material check. If the
+	# player is standing on a "wood" group surface (cabin flooring),
+	# the Entity is strictly forbidden from charging through the walls.
+	#
+	# This is a BULLETPROOF safety override that runs BEFORE the AI's
+	# STANDOFF handler. Even if the AI's charge countdown expires and
+	# tries to transition to CHARGE, this guard will intercept it on
+	# the next physics frame and force a RETREAT instead.
+	#
+	# The check walks up the collider's parent chain to find any node
+	# in the "wood" group, ensuring it works even if the floor mesh
+	# is nested inside a grouping node.
+	var _player_is_on_wood_floor: bool = false
+	if _player:
+		var floor_raycast: RayCast3D = _player.get_node_or_null("FloorRayCast")
+		if floor_raycast and floor_raycast.is_colliding():
+			var surface_node: Node = floor_raycast.get_collider()
+			while surface_node:
+				if surface_node.is_in_group("wood"):
+					_player_is_on_wood_floor = true
+					break
+				surface_node = surface_node.get_parent()
+	
 	# ─── DEBUG MARCH LOCK ──────────────────────────────────────────
 	# When the debug march is active, skip ALL flashlight-based state
 	# overrides. The developer tool has absolute priority over player
@@ -578,13 +775,43 @@ func _physics_process(delta: float) -> void:
 	# to the siege — the player cannot interrupt it by shining the
 	# flashlight at the window. This prevents premature exit from the
 	# barricade damage sequence.
-	if _state != State.WINDOW_PEEK and _sensory and _sensory.is_player_spotting_entity():
+	#
+	# ─── HARASS INTERCEPT ──────────────────────────────────────────
+	# When the Entity is in HARASS state and the player shines the
+	# flashlight on it, the harassment is interrupted and the Entity
+	# immediately transitions to FLINCH (Phantom Evasion). The Entity
+	# slides laterally into the darkness, denying the player the
+	# satisfaction of a direct confrontation.
+	#
+	# ─── RETREAT EXCLUSION ─────────────────────────────────────────
+	# RETREAT is excluded from the outer guard to prevent the oscillation
+	# loop: Controller sets STANDOFF → AI forces RETREAT → AI completes
+	# retreat (fade_and_relocate → OBSERVE) → Controller sets STANDOFF
+	# again. By excluding RETREAT here, the Entity can complete its
+	# retreat without being interrupted by the flashlight detection block.
+	if _state != State.WINDOW_PEEK and _state != State.HARASS and _state != State.RETREAT and _sensory and _sensory.is_player_spotting_entity():
 		var player_outside = _navigation.is_player_outside() if _navigation else false
 		
 		if player_outside:
 			# BEHAVIOR 2: Both outside → IMMEDIATE CHARGE (ALL NIGHTS)
 			# No standoff freeze, no exposure timer, no fade.
 			# The Entity screeches and sprints directly at the player.
+			#
+			# ─── FLOOR MATERIAL SAFETY GUARD ──────────────────────────
+			# Even if the navigation system reports the player as outside,
+			# double-check the floor material. If the player is on wood
+			# flooring, they are inside the cabin — do NOT charge.
+			if _player_is_on_wood_floor and _state != State.INDOOR_SEARCH:
+				# Player is on wood flooring — they are safely inside.
+				# Force a retreat instead of charging through the wall.
+				print("[Entity Controller] OUTSIDE CHARGE blocked by wood floor safety guard! Player is on cabin flooring. Forcing RETREAT.")
+				_state = State.RETREAT
+				if _ai and _ai.has_method("fade_and_relocate"):
+					_ai.fade_and_relocate()
+				elif _navigation:
+					_navigation.pick_next_vantage_point()
+				return
+			
 			if _state != State.CHARGE and _state != State.FLINCH:
 				_state = State.CHARGE
 				_nav_agent.target_position = _player.global_position
@@ -593,17 +820,73 @@ func _physics_process(delta: float) -> void:
 			# Player inside, Entity outside
 			if not _flinch_enabled:
 				# --- NIGHT 5 EXCEPTION ---
-				# Skip the flinch entirely. The Entity is relentless.
+				# Skip the standoff entirely. The Entity is relentless.
 				# Immediately accelerate into a window breach or door siege.
 				if _state != State.CHARGE and _state != State.APPROACH_WINDOW and _state != State.WINDOW_PEEK:
 					_state = State.APPROACH_WINDOW
 					_current_window_target = null
-					print("[Entity] Night 5: No flinch! Immediately sieging nearest window!")
+					print("[Entity] Night 5: No standoff! Immediately sieging nearest window!")
 			else:
-				# BEHAVIOR 1: Cowardly Outside Flinch (Nights 1-4)
-				# Entity flinches and sprints laterally to evade the flashlight.
-				if _state != State.FLINCH and _state != State.CHARGE:
-					_start_flinch()
+				# BEHAVIOR 1: Flashlight Standoff (Nights 1-4)
+				# The Entity freezes in place while the player shines the flashlight
+				# beam on it. A 1.5-second charge countdown begins. If the player
+				# holds the beam for the full duration, the Entity charges at 3x speed.
+				# If the player breaks line of sight or turns off the flashlight,
+				# the countdown resets and the Entity drops back to observation.
+				#
+				# This replaces the old instant-flinch behavior with a high-tension
+				# standoff: the player can delay the Entity by staring at it, but
+				# must eventually look away or the Entity will charge.
+				#
+				# ─── FLOOR MATERIAL SAFETY GUARD ──────────────────────────
+				# Before initiating STANDOFF, check if the player is on wood
+				# flooring. If they are, the STANDOFF will eventually transition
+				# to RETREAT (handled by the AI's floor material check). But
+				# we also guard here to prevent the controller from ever setting
+				# STANDOFF if the player is safely inside — force RETREAT directly.
+				if _player_is_on_wood_floor and _state != State.INDOOR_SEARCH:
+					# Player is on wood flooring — they are safely inside.
+					# Do NOT initiate STANDOFF. Force a retreat immediately.
+					print("[Entity Controller] STANDOFF blocked by wood floor safety guard! Player is on cabin flooring. Forcing RETREAT.")
+					_state = State.RETREAT
+					if _ai and _ai.has_method("fade_and_relocate"):
+						_ai.fade_and_relocate()
+					elif _navigation:
+						_navigation.pick_next_vantage_point()
+					return
+				
+				if _state != State.STANDOFF and _state != State.CHARGE and _state != State.FLINCH and _state != State.RETREAT:
+					_state = State.STANDOFF
+					# Reset the charge countdown in the AI module
+					if _ai and _ai.has_method("reset_charge_countdown"):
+						_ai.reset_charge_countdown()
+					print("[Entity] Player spotted Entity from inside! STANDOFF initiated.")
+	
+	# ─── CONFIDENCE MODIFICATION: FLASHLIGHT STARE ──────────────────────
+	# While the player is staring at the Entity with the flashlight beam,
+	# continuously drain confidence at 2.0 units per second. This makes the
+	# Entity more timid the longer it is exposed to the light.
+	#
+	# When the player breaks line of sight (stops staring), grant a one-time
+	# +8.0 instant confidence boost. This represents the Entity's relief at
+	# escaping the light and encourages it to try again.
+	#
+	# The _confidence_stare_was_active flag tracks whether the player was
+	# staring on the previous frame, so we can detect the transition from
+	# "staring" to "not staring" and apply the one-time boost exactly once.
+	var _confidence_stare_active: bool = _sensory and _sensory.is_player_spotting_entity()
+	
+	if _confidence_stare_active:
+		# Continuous drain: -2.0 confidence per second while stared at
+		if _confidence and _confidence.has_method("modify"):
+			_confidence.modify(-2.0 * delta, "flashlight_stare")
+	elif _confidence_stare_was_active and not _confidence_stare_active:
+		# One-time boost: +8.0 confidence when the player breaks line of sight
+		if _confidence and _confidence.has_method("modify"):
+			_confidence.modify(8.0, "flashlight_stare_break")
+			print("[Entity Controller] Confidence boost: +8.0 (player broke flashlight stare)")
+	
+	_confidence_stare_was_active = _confidence_stare_active
 	
 	# Reset the light sanctuary grunt debounce when the player stops
 	# shining the flashlight on the Entity. This allows the grunt to
@@ -731,16 +1014,19 @@ func _physics_process(delta: float) -> void:
 	# uses its normal FSM states (CHASE, PATROL, etc.) but with boosted speed.
 	# The _is_enraged flag is checked by the AI speed calculations.
 	
-	# --- TRANSITION LOCK: RETREAT / RELOCATE / STANDOFF ---
-	# During fade/teleport sequences, force velocity to zero and skip movement
-	# processing, but STILL execute the AI update tick so that _retreat_state()
-	# can call fade_and_relocate(). Without this, the early return would create
+	# --- TRANSITION LOCK: RETREAT / STANDOFF ---
+	# During RETREAT, force velocity to zero and skip movement processing,
+	# but STILL execute the AI update tick so that _retreat_state() can
+	# call fade_and_relocate(). Without this, the early return would create
 	# a deadlock where the AI never runs and the transition never completes.
 	# STANDOFF also locks movement — the Entity freezes in place while stared at.
-	if _state == State.RETREAT or _state == State.RELOCATE or _state == State.STANDOFF:
+	# NOTE: RELOCATE is NOT included here — it is a safe initialization state only
+	# and is never used during active runtime transitions.
+	if _state == State.RETREAT or _state == State.STANDOFF:
 		velocity = Vector3.ZERO
-		if _ai and _ai.has_method("update"):
-			_ai.update(delta)
+		if _ai and _ai.has_method("process_state_logic"):
+			_ai.process_state_logic(delta)
+			velocity = _ai.get_calculated_velocity()
 		_update_animations(delta)
 		return
 
@@ -755,8 +1041,9 @@ func _physics_process(delta: float) -> void:
 
 		velocity += get_gravity() * delta
 	
-	if _ai and _ai.has_method("update"):
-		_ai.update(delta)
+	if _ai and _ai.has_method("process_state_logic"):
+		_ai.process_state_logic(delta)
+		velocity = _ai.get_calculated_velocity()
 	else:
 		velocity = Vector3.ZERO
 
@@ -948,6 +1235,23 @@ func _start_window_peek() -> void:
 	print("[Entity] Starting window peek sequence.")
 
 
+## Starts a visual alpha fade Tween on the Entity's monster model.
+## The model fades from opaque (alpha 1.0) to transparent (alpha 0.0)
+## over 1.5 seconds, creating a "phantom" effect as the Entity slides
+## into the darkness during the FLINCH state.
+##
+## Called from _flinch_state() in entity_ai.gd on first entry.
+func _start_flinch_fade() -> void:
+	if not _monster_model:
+		return
+	# Kill any existing tweens on the monster model to prevent conflicts
+	var existing_tween = create_tween()
+	existing_tween.kill()
+	
+	var fade_tween = create_tween()
+	fade_tween.tween_property(_monster_model, "modulate:a", 0.0, 1.5).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
+
+
 ## Initiates the FLINCH state — a lateral sprint to evade the player's flashlight.
 ##
 ## BEHAVIOR 1 (Cowardly Outside Flinch):
@@ -1079,58 +1383,43 @@ func on_player_stare(look_timer: float) -> void:
 			_state = State.PATROL
 
 
-## Smoothly fades the Entity out, teleports to a new location, then reappears.
-## Uses Godot 4's Tween to animate transparency on all GeometryInstance3D children.
+## Physically stalks to a new vantage point using NavigationAgent3D pathfinding.
+## Replaces the old fade-out + teleport system. The Entity now physically sneaks
+## between trees using the "Stalk" or "running_crawl" locomotion animation.
+##
+## BEHAVIOR:
+##   1. Picks a new vantage point via entity_navigation.pick_next_vantage_point()
+##   2. Sets the NavigationAgent3D target to that position
+##   3. Transitions to a physical movement phase (State.OBSERVE_FROM_TREELINE)
+##      where the Entity moves at stalk speed along the computed path
+##   4. The "Creeping Ghost" collision layer is active during this movement,
+##      allowing the Entity to phase through tree/rock collision while still
+##      following the NavMesh path for steering
+##   5. Once the path is complete, the Entity resumes normal observation
+##
+## Called from entity_ai.gd when the Entity needs to change spots (e.g., the
+## player stared at it, its observation timer expired, or it was repelled by
+## a light sanctuary).
 func fade_and_relocate() -> void:
 	if _is_fading:
 		return
-	print("[FadeDebug] fade_and_relocate() called! Current state: ", State.keys()[_state])
+	print("[Entity] fade_and_relocate() called! Current state: ", State.keys()[_state])
 	_is_fading = true
-	_state = State.RELOCATE
 	
-	# Force-reset animation to Idle before the fade begins.
-	# This kills any "Running" or "Stalk" animation loop so the monster
-	# doesn't appear to be mid-stride while turning transparent.
-	if _anim_state_machine:
-		_anim_state_machine.travel("Idle")
-	
-	# 1. Smooth Fade Out
-	if _monster_model:
-		var tween = create_tween()
-		# Find all mesh instances within the model
-		var meshes = _monster_model.find_children("*", "GeometryInstance3D", true, false)
-		for mesh in meshes:
-			# 0.0 is opaque, 1.0 is fully transparent
-			tween.parallel().tween_property(mesh, "transparency", 1.0, fade_duration)
-		
-		await tween.finished
-		_monster_model.visible = false
-		
-		# Reset transparency so it is solid when it reappears
-		for mesh in meshes:
-			mesh.transparency = 0.0
-	
-	# 2. Wait in the void
-	await get_tree().create_timer(randf_range(3.0, 6.0)).timeout
-	
-	# 3. Pick a new node and teleport
-	# For ALL nights, pick a fresh vantage point so the Entity never
-	# reappears at a stale coordinate. On Night 3+, the AI state will
-	# transition to APPROACH_WINDOW or PATROL after relocation anyway.
+	# Pick a new vantage point via the navigation system.
+	# This sets _nav_agent.target_position to the new coordinate.
 	_navigation.pick_next_vantage_point()
 	
-	# Place the Entity directly on the NavMesh target position.
-	# The NavMesh already defines the perfect Y coordinate for the ground,
-	# so no vertical buffer is needed. This prevents the entity from
-	# appearing to "fall from the sky" when it reappears.
-	global_position = _nav_agent.target_position
-	
-	# 4. Reappear instantly in the new location
-	if _monster_model:
-		_monster_model.visible = true
-	
-	_is_fading = false
+	# Transition to OBSERVE_FROM_TREELINE — the AI will handle the physical
+	# movement toward the new vantage point via _observe_from_treeline_state().
+	# The "Creeping Ghost" collision layer is automatically applied by
+	# _update_collision_layers() each frame for this state.
 	_state = State.OBSERVE_FROM_TREELINE
+	
+	# Reset the stare timer so the Entity doesn't immediately try to
+	# relocate again upon arrival. The AI will set a new timer once
+	# the Entity reaches the vantage point.
+	_stare_timer = 9999.0  # Effectively infinite — the AI resets it on arrival
 	
 	# Reset the light sanctuary grunt debounce flag so the Entity can
 	# play the frustrated sound again the next time it is repelled.
@@ -1138,6 +1427,9 @@ func fade_and_relocate() -> void:
 	
 	if _ai and _ai.has_method("reset_exposure"):
 		_ai.reset_exposure()
+	
+	_is_fading = false
+	print("[Entity] Physical relocation in progress. Stalking to new vantage point.")
 
 
 ## Initiates a Window Bluff — the Entity fakes an approach toward a window,
@@ -1310,6 +1602,51 @@ func on_generator_blackout() -> void:
 		hsm.play_distant_monster()
 
 
+## ─── "CREEPING GHOST" COLLISION LAYER SYSTEM ──────────────────────────────────
+## Updates the Entity's collision mask based on the current state.
+##
+## When the Entity is traveling outside through dense woods (OBSERVE_FROM_TREELINE,
+## PATROL), it disables hard physics collisions with tree/rock environmental layers
+## (layers 3 and 4). This allows the Entity to phase through foliage while still
+## following the NavigationAgent3D path for steering.
+##
+## Full physics body collision masks are re-enabled the moment the Entity
+## transitions into CHASE, APPROACH_WINDOW, or enters the cabin porch zone,
+## ensuring it cannot phase through doors or window frames during an attack.
+##
+## Called automatically every time the state changes (see _physics_process).
+func _update_collision_layers() -> void:
+	match _state:
+		State.OBSERVE_FROM_TREELINE, State.PATROL:
+			# "Creeping Ghost" mode: Disable tree/rock collision layers.
+			# The Entity phases through foliage while stalking outside.
+			# Only cabin geometry (layer 1) and player (layer 2) remain active.
+			# This prevents the Entity from getting stuck on trees while
+			# physically pathfinding between vantage points.
+			collision_mask = 0
+			collision_mask |= (1 << (COLLISION_LAYER_CABIN - 1))  # Layer 1: Cabin
+			collision_mask |= (1 << (COLLISION_LAYER_PLAYER - 1)) # Layer 2: Player
+			# NOTE: Layers 3 (Tree) and 4 (Rock) are intentionally excluded.
+			
+		State.CHASE, State.CHARGE, State.APPROACH_WINDOW, State.WINDOW_PEEK, State.INDOOR_SEARCH, State.CLIMB_WALL, State.FLINCH, State.ATTACK_LAMP, State.RETREAT:
+			# Full collision mode: Re-enable ALL collision layers.
+			# The Entity must collide with everything during aggressive states
+			# to prevent phasing through doors, window frames, or cabin walls.
+			collision_mask = 0
+			collision_mask |= (1 << (COLLISION_LAYER_CABIN - 1))  # Layer 1: Cabin
+			collision_mask |= (1 << (COLLISION_LAYER_PLAYER - 1)) # Layer 2: Player
+			collision_mask |= (1 << (COLLISION_LAYER_TREE - 1))   # Layer 3: Trees
+			collision_mask |= (1 << (COLLISION_LAYER_ROCK - 1))   # Layer 4: Rocks
+			
+		_:
+			# Default: Full collision mask for all other states (DORMANT, STANDOFF, STUNNED, etc.)
+			collision_mask = 0
+			collision_mask |= (1 << (COLLISION_LAYER_CABIN - 1))
+			collision_mask |= (1 << (COLLISION_LAYER_PLAYER - 1))
+			collision_mask |= (1 << (COLLISION_LAYER_TREE - 1))
+			collision_mask |= (1 << (COLLISION_LAYER_ROCK - 1))
+
+
 ## Smoothly fades an AudioStreamPlayer's volume toward a target value.
 ## Stops playback once fully silent to save resources.
 ## Used by both chase music and night ambience to avoid code duplication.
@@ -1332,11 +1669,13 @@ func _update_animations(_delta: float) -> void:
 	if _monster_model:
 		_monster_model.position = Vector3(0.0, -0.95, 0.0)
 	
-	# Hard clamp animations to Idle if we are fading, relocating, or in a
+	# Hard clamp animations to Idle if we are retreating, dormant, or in a
 	# frozen standoff. This prevents the animation state machine from caching
 	# and continuously looping the previous sprinting animation during
 	# supernatural transitions or while the Entity is locked in place.
-	if _state == State.RETREAT or _state == State.RELOCATE or _state == State.DORMANT or _state == State.STANDOFF:
+	# NOTE: RELOCATE is NOT included here — it is a safe initialization state
+	# only and is never used during active runtime transitions.
+	if _state == State.RETREAT or _state == State.DORMANT or _state == State.STANDOFF:
 		_anim_state_machine.travel("Idle")
 		return
 	
@@ -1347,9 +1686,6 @@ func _update_animations(_delta: float) -> void:
 		State.CHARGE:
 			# Use the running_crawl animation during CHARGE for a terrifying sprint
 			_anim_state_machine.travel("running_crawl")
-		State.STANDOFF:
-			# Drop into Idle while maintaining eye contact with the player
-			_anim_state_machine.travel("Idle")
 		State.WINDOW_PEEK:
 			# If the animation lock timer is active, play the AttackWindow
 			# animation. The lock is set to 1.5 seconds by entity_ai.gd's

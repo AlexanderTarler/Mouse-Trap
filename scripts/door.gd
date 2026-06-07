@@ -18,6 +18,21 @@ extends AnimatableBody3D
 ## Sound to play when the door is locked shut.
 @export var lock_sound: AudioStream
 
+## Programmatically loaded lock/unlock sound paths (fallback if exported streams are null).
+const LOCK_SOUND_PATH: String = "res://assets/audio/objects/lock_door.ogg"
+const UNLOCK_SOUND_PATH: String = "res://assets/audio/objects/unlock_door.ogg"
+
+## Cached programmatic audio streams for lock/unlock sounds.
+## Loaded once in _ready() using ResourceLoader.exists() guards.
+var _lock_sound_programmatic: AudioStream = null
+var _unlock_sound_programmatic: AudioStream = null
+
+## Cached baseline stream that was pre-assigned to the DoorAudio node in the scene editor.
+## Used as the fallback in interact() for open/close sounds, ensuring the default door
+## swing audio always plays correctly even after _play_lock_unlock_sound() or
+## _play_locked_sound() have overwritten door_audio.stream.
+var _original_scene_stream: AudioStream = null
+
 @onready var door_audio: AudioStreamPlayer3D = $DoorAudio if has_node("DoorAudio") else null
 
 var is_open: bool = false
@@ -30,6 +45,24 @@ var is_locked: bool = true
 func _ready() -> void:
 	# Save the baseline rotation so we always return to a clean closed state
 	default_rotation_y = rotation_degrees.y
+	
+	# ─── CACHE THE ORIGINAL SCENE STREAM ───────────────────────────
+	# Snapshot the stream that was pre-assigned to the DoorAudio node in the
+	# scene editor. This cached reference is used as the fallback in interact()
+	# for open/close sounds, ensuring the default door swing audio always plays
+	# correctly even after _play_lock_unlock_sound() or _play_locked_sound()
+	# have overwritten door_audio.stream at runtime.
+	if door_audio:
+		_original_scene_stream = door_audio.stream
+	
+	# ─── PROGRAMMATIC AUDIO LOADING ────────────────────────────────
+	# Load lock/unlock sound effects from file paths using ResourceLoader.exists()
+	# guards. These serve as fallbacks if the exported AudioStream properties
+	# (lock_sound, unlock_sound) are null in the inspector.
+	if ResourceLoader.exists(LOCK_SOUND_PATH):
+		_lock_sound_programmatic = load(LOCK_SOUND_PATH) as AudioStream
+	if ResourceLoader.exists(UNLOCK_SOUND_PATH):
+		_unlock_sound_programmatic = load(UNLOCK_SOUND_PATH) as AudioStream
 
 
 ## Quick tap E — opens/closes the door.
@@ -50,11 +83,19 @@ func interact() -> void:
 	is_animating = true
 	
 	# Play door audio with pitch randomization
+	# Priority 1: Use the exported open_sound / close_sound property if assigned.
+	# Priority 2: Fall back to the baseline stream cached from the DoorAudio node
+	#             on startup (_original_scene_stream). This ensures the default
+	#             door swing audio (e.g. door_1_open.ogg) always plays correctly,
+	#             even after _play_lock_unlock_sound() or _play_locked_sound()
+	#             have overwritten door_audio.stream at runtime.
 	if door_audio:
 		var target_stream = open_sound if is_open else close_sound
+		if not target_stream:
+			# Fallback directly to the baseline asset cached on startup
+			target_stream = _original_scene_stream
 		if target_stream:
 			door_audio.stream = target_stream
-		if door_audio.stream:
 			door_audio.pitch_scale = randf_range(0.9, 1.1)
 			door_audio.play()
 	
@@ -89,23 +130,13 @@ func toggle_lock() -> void:
 	if is_locked:
 		# Unlock (door stays closed — player can then open with quick tap)
 		print("[Door] Unlocking door with: ", required_key_name)
-		if unlock_sound and door_audio:
-			door_audio.stream = unlock_sound
-			door_audio.pitch_scale = 1.0
-			door_audio.play()
+		_play_lock_unlock_sound(false)  # false = unlock sound
 		is_locked = false
 		print("[Door] Door unlocked! (stays closed — tap E to open)")
 	else:
 		# Lock (door stays closed)
 		print("[Door] Locking door with: ", required_key_name)
-		if lock_sound and door_audio:
-			door_audio.stream = lock_sound
-			door_audio.pitch_scale = 1.0
-			door_audio.play()
-		elif unlock_sound and door_audio:
-			door_audio.stream = unlock_sound
-			door_audio.pitch_scale = 0.7
-			door_audio.play()
+		_play_lock_unlock_sound(true)  # true = lock sound
 		is_locked = true
 		print("[Door] Door locked! (stays closed)")
 		
@@ -125,11 +156,8 @@ func _has_key_in_inventory() -> bool:
 func _unlock_door() -> void:
 	print("[Door] Unlocking door with: ", required_key_name)
 	
-	# Play unlock sound
-	if unlock_sound and door_audio:
-		door_audio.stream = unlock_sound
-		door_audio.pitch_scale = 1.0
-		door_audio.play()
+	# Play unlock sound via the shared helper (supports programmatic fallback)
+	_play_lock_unlock_sound(false)  # false = unlock sound
 	
 	# Unlock and open the door
 	is_locked = false
@@ -149,6 +177,41 @@ func _play_locked_sound() -> void:
 	if locked_sound and door_audio:
 		door_audio.stream = locked_sound
 		door_audio.pitch_scale = randf_range(0.9, 1.1)
+		door_audio.play()
+
+
+## Plays the lock or unlock sound effect when the door's is_locked state changes.
+##
+## Priority order:
+##   1. Exported AudioStream property (lock_sound / unlock_sound) — set in the inspector.
+##   2. Programmatically loaded stream from file path — loaded in _ready() via
+##      ResourceLoader.exists() guards.
+##
+## @param is_locking: If true, plays the lock sound. If false, plays the unlock sound.
+func _play_lock_unlock_sound(is_locking: bool) -> void:
+	if not door_audio:
+		return
+	
+	var target_stream: AudioStream = null
+	
+	if is_locking:
+		# Priority 1: Exported lock_sound property
+		if lock_sound:
+			target_stream = lock_sound
+		# Priority 2: Programmatic fallback
+		elif _lock_sound_programmatic:
+			target_stream = _lock_sound_programmatic
+	else:
+		# Priority 1: Exported unlock_sound property
+		if unlock_sound:
+			target_stream = unlock_sound
+		# Priority 2: Programmatic fallback
+		elif _unlock_sound_programmatic:
+			target_stream = _unlock_sound_programmatic
+	
+	if target_stream:
+		door_audio.stream = target_stream
+		door_audio.pitch_scale = 1.0
 		door_audio.play()
 
 

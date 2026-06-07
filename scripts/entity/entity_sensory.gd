@@ -82,8 +82,27 @@ func is_player_spotting_entity() -> bool:
 	var space = entity.get_world_3d().direct_space_state
 	var query = PhysicsRayQueryParameters3D.create(cam.global_position, entity.global_position + Vector3(0, 1, 0))
 	query.exclude = [entity, entity._player]
+	
+	# ─── FLASHLIGHT RAYCAST COLLISION MASK ──────────────────────────────
+	# The default collision mask scans ALL physics layers, which causes the
+	# flashlight beam to hit window glass colliders (Layer 1: Cabin walls/
+	# glass windows). This creates rapid on/off oscillation as the Entity
+	# moves behind window frames, resetting the STANDOFF charge countdown
+	# every frame and causing unfair CHARGE transitions through walls.
+	#
+	# FIX: Restrict the collision mask to ONLY scan for the Entity's own
+	# body collision layer. The Entity is assumed to be on Layer 2 (Player
+	# layer) or Layer 5 (Entity layer). We scan Layer 2 exclusively so the
+	# flashlight tracing ray passes seamlessly through transparent glass
+	# windows, window frames, trees, and rocks — only the Entity's capsule
+	# collider can register a hit.
+	#
+	# Layer bit calculation:
+	#   Layer 2 = 1 << (2-1) = 1 << 1 = 2
+	query.collision_mask = 2
+	
 	var hit = space.intersect_ray(query)
-	# If the ray hit something (wall, tree, etc.), line of sight is blocked.
+	# If the ray hit something (tree, rock, etc.), line of sight is blocked.
 	# The entity is excluded from the query, so any hit means an obstruction.
 	if not hit.is_empty():
 		return false
@@ -91,3 +110,46 @@ func is_player_spotting_entity() -> bool:
 	return true
 
 
+## Checks if the player's camera forward vector is looking within a 15-to-20
+## degree cone of the target window position.
+##
+## This is the "RLOS" (Reverse Line of Sight) check used by the HARASS state
+## to determine if the player is watching the Entity's harassment probe.
+##
+## Parameters:
+##   window_pos: The world-space position of the window being harassed.
+##
+## Returns true if the player's camera is pointed within 20 degrees of the
+## window position AND there is no obstruction between the camera and the window.
+##
+## Used by: _harass_state() in entity_ai.gd to evaluate player reaction.
+func is_player_looking_at_window(window_pos: Vector3) -> bool:
+	if not entity._player or not is_instance_valid(entity._player):
+		return false
+	var cam = entity.get_viewport().get_camera_3d()
+	if not cam:
+		return false
+	
+	# Calculate the angle between the camera's forward vector and the
+	# direction from the camera to the window position.
+	var cam_forward: Vector3 = -cam.global_transform.basis.z
+	cam_forward.y = 0.0
+	cam_forward = cam_forward.normalized()
+	
+	var to_window: Vector3 = window_pos - cam.global_position
+	to_window.y = 0.0
+	to_window = to_window.normalized()
+	
+	# 20-degree cone (cos(20°) ≈ 0.94)
+	var dot_product: float = cam_forward.dot(to_window)
+	if dot_product < 0.94:
+		return false
+	
+	# Line-of-sight raycast: check if anything blocks the view to the window
+	var space = entity.get_world_3d().direct_space_state
+	var query = PhysicsRayQueryParameters3D.create(cam.global_position, window_pos)
+	query.exclude = [entity, entity._player]
+	
+	var hit = space.intersect_ray(query)
+	# If the ray hits nothing, the player has a clear view of the window.
+	return hit.is_empty()

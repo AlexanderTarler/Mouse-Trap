@@ -137,18 +137,31 @@ func _ready() -> void:
 		# ─── DIAGNOSTIC VISIBILITY LOG ──────────────────────────────────
 		# Logs the initial state of all visual child nodes at startup.
 		# Only runs in debug builds to avoid console spam in production.
+		# NOTE: Each diagnostic variable is explicitly typed to avoid Godot 4.6
+		# static type warnings from ternary operators mixing Node3D and String.
 		print("[CabinWindow Init] window_id='", window_id, "' | Path: ", get_path())
-		print("  PristineVisuals: ", _pristine_visuals if _pristine_visuals else "MISSING")
-		print("  ShatteredVisuals: ", _shattered_visuals if _shattered_visuals else "MISSING")
-		print("  BarricadePlanks/Plank1: ", _plank_1 if _plank_1 else "MISSING")
-		print("  BarricadePlanks/Plank2: ", _plank_2 if _plank_2 else "MISSING")
-		print("  BarricadePlanks/Plank3: ", _plank_3 if _plank_3 else "MISSING")
-		print("  NavBlocker: ", _nav_blocker if _nav_blocker else "MISSING")
-		print("  IndoorBreachWayPoint: ", _indoor_breach_waypoint if _indoor_breach_waypoint else "MISSING")
-		print("  BreakSound: ", _break_sound if _break_sound else "MISSING")
-		print("  HammerSound: ", _hammer_sound if _hammer_sound else "MISSING")
-		print("  GlassCrunchSound: ", _glass_crunch_sound if _glass_crunch_sound else "MISSING")
-		print("  GlassShards: ", _glass_shards if _glass_shards else "MISSING")
+		var diag_pristine: String = str(_pristine_visuals) if _pristine_visuals else "MISSING"
+		print("  PristineVisuals: ", diag_pristine)
+		var diag_shattered: String = str(_shattered_visuals) if _shattered_visuals else "MISSING"
+		print("  ShatteredVisuals: ", diag_shattered)
+		var diag_plank1: String = str(_plank_1) if _plank_1 else "MISSING"
+		print("  BarricadePlanks/Plank1: ", diag_plank1)
+		var diag_plank2: String = str(_plank_2) if _plank_2 else "MISSING"
+		print("  BarricadePlanks/Plank2: ", diag_plank2)
+		var diag_plank3: String = str(_plank_3) if _plank_3 else "MISSING"
+		print("  BarricadePlanks/Plank3: ", diag_plank3)
+		var diag_nav: String = str(_nav_blocker) if _nav_blocker else "MISSING"
+		print("  NavBlocker: ", diag_nav)
+		var diag_waypoint: String = str(_indoor_breach_waypoint) if _indoor_breach_waypoint else "MISSING"
+		print("  IndoorBreachWayPoint: ", diag_waypoint)
+		var diag_break: String = str(_break_sound) if _break_sound else "MISSING"
+		print("  BreakSound: ", diag_break)
+		var diag_hammer: String = str(_hammer_sound) if _hammer_sound else "MISSING"
+		print("  HammerSound: ", diag_hammer)
+		var diag_crunch: String = str(_glass_crunch_sound) if _glass_crunch_sound else "MISSING"
+		print("  GlassCrunchSound: ", diag_crunch)
+		var diag_shards: String = str(_glass_shards) if _glass_shards else "MISSING"
+		print("  GlassShards: ", diag_shards)
 		print("[CabinWindow Init] End of diagnostic log for '", window_id, "'.")
 
 

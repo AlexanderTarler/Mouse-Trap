@@ -3,12 +3,16 @@
 [ext_resource type="Script" uid="uid://c60kak8vfqobn" path="res://scripts/door.gd" id="1_uvdjg"]
 [ext_resource type="PackedScene" uid="uid://cxen3waw0id6x" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Doors & Gates/door_hr_12.glb" id="2_83dcw"]
 [ext_resource type="AudioStream" uid="uid://bm5iyi0m6nghs" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Doors & Drawers/door_1_open.ogg" id="3_83dcw"]
+[ext_resource type="AudioStream" uid="uid://b4h3q2q2q2q2q" path="res://assets/audio/objects/lock_door.ogg" id="4_83dcw"]
+[ext_resource type="AudioStream" uid="uid://b4h3q2q2q2q3q" path="res://assets/audio/objects/unlock_door.ogg" id="5_83dcw"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_uvdjg"]
 size = Vector3(1, 2.1, 0.07)
 
 [node name="Door" type="AnimatableBody3D" unique_id=187910433]
 script = ExtResource("1_uvdjg")
+lock_sound = ExtResource("4_83dcw")
+unlock_sound = ExtResource("5_83dcw")
 
 [node name="VisualModel" parent="." unique_id=1829477244 instance=ExtResource("2_83dcw")]
 transform = Transform3D(-1, -8.742278e-08, 0, 8.742278e-08, -1, 0, 0, 0, 1, 0.018976092, 2.1123538, 0)

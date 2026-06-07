@@ -8,6 +8,7 @@
 default_font_size = 18
 
 [node name="HorrorHUD" type="CanvasLayer" unique_id=1729726257]
+groups = ["hud"]
 layer = 200
 script = ExtResource("1_hud")
 environment_controller = NodePath("../EnvironmentController")

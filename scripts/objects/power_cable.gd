@@ -107,6 +107,20 @@ func _ready() -> void:
 		cable_material = default_mat
 
 
+## Cleanup when the cable is removed from the scene tree (via queue_free).
+## Removes the node from the "power_cable" group to prevent dangling references
+## in NightManager loops or other group-based lookups.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		# Remove from group to prevent dangling references in group iterations
+		remove_from_group("power_cable")
+		
+		# Clear references to prevent broken pointer issues
+		source_node = null
+		target_node = null
+		player_hand = null
+
+
 ## ─── PUBLIC API ────────────────────────────────────────────────────────────
 
 ## Plugs the cable into the generator outlet and attaches the free end

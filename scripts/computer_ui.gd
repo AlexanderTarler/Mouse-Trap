@@ -995,6 +995,31 @@ func _on_overload_execute() -> void:
 		print("[ComputerUI] Overload failed: No deployed PortableLamp found in portable_trap group!")
 		return
 	
+	# ─── SECTOR OUTLET DISCONNECTED CHECK ──────────────────────────────
+	# If the lamp is deployed but the power cable is in PLUGGED_TO_SOURCE
+	# state (free end in player's hand, not yet connected to the lamp),
+	# the circuit is incomplete and the overload cannot execute.
+	# Show a specific error message instead of a generic "not powered" alert.
+	if not trap.is_powered:
+		# Check if there's a cable in PLUGGED_TO_SOURCE state (free end in hand)
+		var cables: Array[Node] = get_tree().get_nodes_in_group("power_cable")
+		var has_loose_cable: bool = false
+		for cable in cables:
+			if cable.has_method("get_state") and cable.get_state() == 1:  # CableState.PLUGGED_TO_SOURCE
+				has_loose_cable = true
+				break
+		
+		if has_loose_cable:
+			_play_error_sound()
+			_status_label.text = "ERROR: SECTOR OUTLET DISCONNECTED"
+			print("[ComputerUI] Overload failed: Cable is in PLUGGED_TO_SOURCE state (free end in player's hand, not connected to lamp)!")
+			return
+		else:
+			_play_error_sound()
+			_status_label.text = "ERROR: PORTABLE TRAP not connected to generator."
+			print("[ComputerUI] Overload failed: Lamp not connected to generator!")
+			return
+	
 	# Execute the overload on the portable lamp
 	trap.trigger_overload()
 	

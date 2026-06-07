@@ -386,6 +386,192 @@ func restart_night() -> void:
 	start_night(current_night)
 
 
+## Resets the game state to the morning baseline of the current day.
+## Called by JumpscareManager after the jumpscare fade-out completes.
+## This is the player's "wake up in bed" reset — NOT a full night restart.
+##
+## The reset performs four phases:
+##   A. TIME & WEATHER RESET — Rewind the clock to morning/daytime.
+##   B. CHARACTER & INVENTORY RESET — Teleport player to bed, restore health,
+##      wipe inventory, and rebuild baseline morning items.
+##   C. WORLD MACHINE RESET — Clear deployed traps/cables, reset fuse box,
+##      turn off all lights, force Entity to DORMANT.
+##   D. FADE BACK IN — Tween the JumpscareManager's fade_rect from black
+##      to transparent over 2.0 seconds.
+func reset_to_daybreak() -> void:
+	print("[NightManager] reset_to_daybreak() — Resetting to morning baseline of Day %d." % current_night)
+	
+	# ─── PHASE A: TIME & WEATHER RESET ──────────────────────────────
+	# Rewind the clock to morning. On Night 1, force to 14:30 (2:30 PM).
+	# For subsequent days, roll back to the baseline morning hour.
+	var gt: Node = get_node_or_null("/root/GameTime")
+	if gt and gt.has_method("set_progress"):
+		if current_night == 1:
+			# Night 1: Force to 14:30 (cycle_progress ≈ 0.25 for a 24-hour cycle)
+			# cycle_progress = 14.5 / 24.0 ≈ 0.604
+			gt.set_progress(14.5 / 24.0)
+		else:
+			# Subsequent days: Roll back to early morning (cycle_progress ≈ 0.125 = 6:00 AM)
+			gt.set_progress(0.125)
+		print("[NightManager] Time reset to morning (progress: %.3f)." % gt.cycle_progress)
+	
+	# Force the EnvironmentController to update sky/lighting immediately.
+	# The GameTime.set_progress() call above emits time_changed, which the
+	# EnvironmentController listens to, so this should happen automatically.
+	# If not, we manually trigger a refresh.
+	var ec: Node = get_node_or_null("/root/CottageHorror/EnvironmentController")
+	if not ec:
+		ec = get_node_or_null("/root/Main/EnvironmentController")
+	if ec and ec.has_method("_apply_cycle"):
+		ec._apply_cycle()
+		print("[NightManager] EnvironmentController refreshed to daytime lighting.")
+	
+	# ─── PHASE B: CHARACTER & INVENTORY RESET ───────────────────────
+	# Teleport the player back to the bedroom spawn point.
+	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
+	if player:
+		# Find the bedroom spawn marker
+		var spawn_marker: Node3D = get_tree().get_first_node_in_group("BedroomSpawn") as Node3D
+		if not spawn_marker:
+			# Fallback: search for a Marker3D named "BedroomSpawn" or "PlayerSpawn"
+			spawn_marker = get_tree().get_first_node_in_group("PlayerSpawn") as Node3D
+		if not spawn_marker:
+			# Hardcoded fallback position (bedroom coordinates)
+			spawn_marker = get_tree().current_scene.get_node_or_null("BedroomSpawn") as Node3D
+		
+		if spawn_marker:
+			player.global_position = spawn_marker.global_position
+			print("[NightManager] Player teleported to spawn: ", spawn_marker.global_position)
+		else:
+			# Ultimate fallback: hardcoded bedroom position
+			player.global_position = Vector3(9.0, 1.0, 0.4)
+			print("[NightManager] No spawn marker found. Using fallback position.")
+		
+		# Reset player health/sanity to 100%
+		if player.has_method("reset_health"):
+			player.reset_health()
+		elif "health" in player:
+			player.health = 100.0
+		if "sanity" in player:
+			player.sanity = 100.0
+		print("[NightManager] Player health/sanity reset to 100%.")
+		
+		# Reset flashlight battery to full
+		var flashlight: Node = player.find_child("*Flashlight*", true, false)
+		if flashlight:
+			if flashlight.has_method("set_battery_level"):
+				flashlight.set_battery_level(100.0)
+			elif "battery_level" in flashlight:
+				flashlight.battery_level = 100.0
+			print("[NightManager] Flashlight battery restored to 100%.")
+	
+	# Wipe the inventory and rebuild baseline morning items.
+	# Baseline: 3 Batteries, 2 Planks, 2 Fuel Cans, 1 Fuse.
+	var inv: Node = get_node_or_null("/root/Inventory")
+	if inv:
+		inv.clear()
+		print("[NightManager] Inventory wiped.")
+		
+		# Load item resources and add them to the inventory
+		var battery_res: Resource = load("res://resources/battery_resource.tres")
+		var plank_res: Resource = load("res://resources/plank_resource.tres")
+		var fuel_can_res: Resource = load("res://resources/fuel_can_resource.tres")
+		var fuse_res: Resource = load("res://resources/fuse_resource.tres")
+		
+		# Add 3 Batteries
+		for i in range(3):
+			if battery_res and inv.has_method("add_item"):
+				inv.add_item(battery_res.duplicate())
+		
+		# Add 2 Planks
+		for i in range(2):
+			if plank_res and inv.has_method("add_item"):
+				inv.add_item(plank_res.duplicate())
+		
+		# Add 2 Fuel Cans
+		for i in range(2):
+			if fuel_can_res and inv.has_method("add_item"):
+				inv.add_item(fuel_can_res.duplicate())
+		
+		# Add 1 Fuse
+		if fuse_res and inv.has_method("add_item"):
+			inv.add_item(fuse_res.duplicate())
+		
+		print("[NightManager] Baseline morning items added: 3 Batteries, 2 Planks, 2 Fuel Cans, 1 Fuse.")
+	
+	# ─── PHASE C: WORLD MACHINE RESET ──────────────────────────────
+	# Clear deployed portable traps and power cables from the yard.
+	var traps: Array[Node] = get_tree().get_nodes_in_group("portable_trap")
+	for trap in traps:
+		if trap and is_instance_valid(trap):
+			trap.queue_free()
+			print("[NightManager] Cleared portable trap: ", trap.name)
+	
+	var cables: Array[Node] = get_tree().get_nodes_in_group("power_cable")
+	for cable in cables:
+		if cable and is_instance_valid(cable):
+			cable.queue_free()
+			print("[NightManager] Cleared power cable: ", cable.name)
+	
+	# Reset the FuseBox to BROKEN state and turn off all room lights.
+	var fuse_box: Node = get_tree().get_first_node_in_group("interactable")
+	if fuse_box and fuse_box is FuseBox:
+		fuse_box.current_state = 0  # BoxState.BROKEN
+		if fuse_box.has_method("_set_generator_state"):
+			fuse_box._set_generator_state(false)
+		print("[NightManager] FuseBox reset to BROKEN. Generator turned off.")
+	
+	# Turn off all cabin lights.
+	var cabin_lights: Array[Node] = get_tree().get_nodes_in_group("CabinLights")
+	for light in cabin_lights:
+		if "is_switched_on" in light:
+			light.is_switched_on = false
+		if "turn_off" in light:
+			light.turn_off()
+	print("[NightManager] All cabin lights turned off.")
+	
+	# Reset the generator fuel to full so the player has a fair chance.
+	is_generator_on = false
+	generator_fuel = max_fuel
+	fuel_changed.emit(generator_fuel)
+	generator_state_changed.emit(false)
+	print("[NightManager] Generator fuel reset to %.1f (off state)." % max_fuel)
+	
+	# Force the Entity back to DORMANT state, stopping all active pathfinding.
+	var entity_nodes: Array[Node] = get_tree().get_nodes_in_group("entity")
+	for entity_node in entity_nodes:
+		if entity_node and entity_node.has_method("deactivate"):
+			entity_node.deactivate()
+			print("[NightManager] Entity deactivated to DORMANT.")
+		elif "State" in entity_node:
+			# Direct state manipulation fallback
+			entity_node._state = 0  # State.DORMANT
+			entity_node._is_active = false
+			print("[NightManager] Entity state forced to DORMANT (fallback).")
+	
+	# Reset night state flags so the night cycle can restart cleanly.
+	is_night_active = false
+	is_day_active = true
+	night_progress = 0.0
+	_triggered_events.clear()
+	_event_timer = 0.0
+	
+	print("[NightManager] Daybreak reset complete. Player is safe in bed.")
+	
+	# ─── PHASE D: FADE BACK IN ─────────────────────────────────────
+	# Find the JumpscareManager's fade_rect and tween it from black to transparent.
+	var jm: Node = get_node_or_null("/root/JumpscareManager")
+	if jm and "fade_rect" in jm and jm.fade_rect:
+		var fade_rect: ColorRect = jm.fade_rect as ColorRect
+		if fade_rect:
+			var wake_tween: Tween = create_tween()
+			wake_tween.tween_property(fade_rect, "color:a", 0.0, 2.0)
+			await wake_tween.finished
+			print("[NightManager] Fade-in complete. Player can see again.")
+	else:
+		print("[NightManager] JumpscareManager fade_rect not found. Skipping fade-in.")
+
+
 ## Returns the current night's intensity (0.0 to 1.0).
 func get_intensity() -> float:
 	var night_factor = float(current_night) / float(total_nights)

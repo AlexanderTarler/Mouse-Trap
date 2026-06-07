@@ -263,10 +263,10 @@ func take_physical_hit(hit_direction: Vector3) -> void:
 	if hsm and hsm.has_method("play_sound"):
 		hsm.play_sound("lamp_hit")
 	
-	# Check if this is the 3rd strike — disconnect the cable
+	# Check if this is the 3rd strike — destroy the cable completely
 	if attack_strikes >= 3:
 		attack_strikes = 0
-		print("[PortableLamp] 3 strikes! Cable forcibly disconnected!")
+		print("[PortableLamp] 3 strikes! Cable destroyed by Entity!")
 		
 		# Force is_powered to false
 		is_powered = false
@@ -276,15 +276,24 @@ func take_physical_hit(hit_direction: Vector3) -> void:
 			lamp_light.visible = false
 		energy_drain_rate = 0.0
 		
-		# Find the connected cable and force it back to PLUGGED_TO_SOURCE state
+		# ─── DISPOSABLE CABLE DESTRUCTION ────────────────────────────────
+		# Find the connected cable in FULLY_CONNECTED state and vaporize it
+		# from the scene tree entirely. The player must forge out into the
+		# world, retrieve a fresh Cable Spool from their resource stashes,
+		# and run the physical connection pipeline from scratch.
 		var cables: Array[Node] = get_tree().get_nodes_in_group("power_cable")
 		for cable in cables:
 			if cable.has_method("get_state") and cable.get_state() == 2:  # CableState.FULLY_CONNECTED == 2
-				# Disconnect the cable from this lamp — reset to PLUGGED_TO_SOURCE
-				# so the free end returns to the player's hand for re-plugging.
-				if cable.has_method("disconnect_cable"):
-					cable.disconnect_cable()
-				print("[PortableLamp] Cable disconnected and reset to PLUGGED_TO_SOURCE.")
+				# Notify the generator outlet to clear its internal reference
+				# and reset its interaction state back to AVAILABLE.
+				var outlet: Node = get_tree().get_first_node_in_group("generator_outlet")
+				if outlet and outlet.has_method("on_cable_destroyed"):
+					outlet.on_cable_destroyed()
+				
+				# Completely remove the cable from the scene tree.
+				# The player must manually forge a fresh connection from scratch.
+				cable.queue_free()
+				print("[PortableLamp] Cable node queued for deletion. Player must reconnect from scratch.")
 				break
 		
 		# Notify NightManager to recalculate fuel drain
