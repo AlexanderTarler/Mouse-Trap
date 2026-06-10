@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://dqvotp7i01i83"]
+
+[ext_resource type="Script" uid="uid://br0tle13g7vbi" path="res://scripts/entity/jumpscare_manager.gd" id="1_5vbcf"]
+
+[node name="JumpscareManager" type="Node3D" unique_id=575870287]
+script = ExtResource("1_5vbcf")

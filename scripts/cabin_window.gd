@@ -80,7 +80,7 @@ const HITS_PER_PLANK: int = 3
 
 ## Reference to the IndoorBreachWayPoint Marker3D — positioned ~1.5m inside the room
 ## behind the window opening. The Entity navigates here after shattering the barricade.
-@onready var _indoor_breach_waypoint: Marker3D = $IndoorBreachWayPoint if has_node("IndoorBreachWayPoint") else null
+@onready var _indoor_breach_waypoint: Marker3D = $IndoorBreachWaypoint if has_node("IndoorBreachWaypoint") else null
 
 # --- TWO-STAGE VISUAL STATE BRANCH ---
 ## PristineVisuals: Clean frame with intact crossbars and glass panes.

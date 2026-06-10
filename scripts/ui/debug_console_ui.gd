@@ -54,6 +54,14 @@ func _setup_night_buttons() -> void:
 		var night_num = i  # Capture for closure
 		btn.pressed.connect(func(): _force_night(night_num))
 		night_grid.add_child(btn)
+	
+	# Add a "Head to Bedroom" button that sets up the game state as if the
+	# player has completed most Day 1 tasks and needs to go to sleep.
+	var bedroom_btn = Button.new()
+	bedroom_btn.text = "Head to Bedroom"
+	bedroom_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bedroom_btn.pressed.connect(_setup_bedroom_state)
+	night_grid.add_child(bedroom_btn)
 
 
 func _setup_entity_buttons() -> void:
@@ -205,6 +213,192 @@ func _force_night(night: int) -> void:
 				gt.unpause_time()
 		
 		print("[Debug Console] Night %d forced!" % night)
+
+
+## Sets up the game state as if the player has completed all Day 1 tasks
+## and needs to head to the bedroom to sleep. This is a "late Day 1" state:
+##   - Time is set to late afternoon (cycle_progress ~0.35, ~20:00), paused
+##   - RoutineManager is at Step 4 (all 3 nests documented, data uploaded,
+##     generator refueled, door locked, lights off)
+##   - Generator is ON with partial fuel
+##   - Fuse box is repaired (state 2 = REPAIRED)
+##   - Player has a reasonable inventory (batteries, planks, fuel)
+##   - Entity is dormant (not yet active — Night 1 narrative hasn't started)
+##   - Player is teleported to the cabin interior near the bedroom
+##   - HUD objective is set to "Head to the bedroom and sleep"
+func _setup_bedroom_state() -> void:
+	print("[Debug Console] Setting up 'Head to Bedroom' state...")
+	
+	# ─── TIME SETUP ──────────────────────────────────────────────────
+	# Set time to late afternoon (cycle_progress ~0.35 = ~20:00).
+	# This is before nightfall but late enough that the player should
+	# be heading to bed. Time is paused so the player can explore.
+	var gt = get_node_or_null("/root/GameTime")
+	if gt and gt.has_method("set_progress"):
+		gt.set_progress(0.35)
+		gt.is_time_paused = true
+		print("[Debug Console] Time set to late afternoon (progress: 0.35).")
+	
+	# Force the EnvironmentController to update sky/lighting immediately.
+	var ec = get_node_or_null("/root/CottageHorror/EnvironmentController")
+	if not ec:
+		ec = get_node_or_null("/root/Main/EnvironmentController")
+	if ec and ec.has_method("_apply_cycle"):
+		ec._apply_cycle()
+		print("[Debug Console] EnvironmentController refreshed.")
+	
+	# ─── NIGHT MANAGER SETUP ─────────────────────────────────────────
+	if _night_manager:
+		# Ensure we're on Night 1
+		_night_manager.current_night = 1
+		_night_manager.is_night_active = false
+		_night_manager.is_day_active = true
+		_night_manager.night_progress = 0.0
+		_night_manager._triggered_events.clear()
+		
+		# Generator is ON with partial fuel (player has been using it)
+		_night_manager.is_generator_on = true
+		_night_manager.generator_fuel = 35.0
+		_night_manager.fuel_changed.emit(_night_manager.generator_fuel)
+		_night_manager.generator_state_changed.emit(true)
+		print("[Debug Console] Generator ON with %.1f fuel." % _night_manager.generator_fuel)
+	
+	# ─── FUSE BOX SETUP ─────────────────────────────────────────────
+	# Set the fuse box to REPAIRED state (state 2).
+	var fuse_box = get_tree().get_first_node_in_group("interactable")
+	if fuse_box and fuse_box is FuseBox:
+		fuse_box.current_state = 2  # BoxState.REPAIRED
+		if fuse_box.has_method("_set_generator_state"):
+			fuse_box._set_generator_state(true)
+		print("[Debug Console] Fuse box set to REPAIRED.")
+	
+	# ─── CABIN LIGHTS ───────────────────────────────────────────────
+	# Turn OFF all cabin lights — the player has completed the "turn off lights" step.
+	var cabin_lights = get_tree().get_nodes_in_group("CabinLights")
+	for light in cabin_lights:
+		if "is_switched_on" in light:
+			light.is_switched_on = false
+		if "turn_off" in light:
+			light.turn_off()
+	print("[Debug Console] All cabin lights turned off.")
+	
+	# ─── ROUTINE MANAGER SETUP ──────────────────────────────────────
+	# Set the RoutineManager to Step 4 ("Head to the bedroom").
+	# This simulates the player having completed:
+	#   Step 0: Documented all 3 nests
+	#   Step 1: Uploaded nest data on the computer
+	#   Step 2: Refilled the generator
+	#   Step 3: Locked the door and turned off lights
+	var rm = get_node_or_null("/root/RoutineManager")
+	if rm:
+		rm.nests_documented = 3
+		rm.current_step = 4
+		rm.routine_completed = false
+		print("[Debug Console] RoutineManager set to Step 4 (all nests documented).")
+		
+		# Mark all 3 nests as photographed/documented
+		var nests = get_tree().get_nodes_in_group("hasselmus_nests")
+		for nest in nests:
+			if nest.has_method("photograph"):
+				nest.is_photographed = true
+				nest.is_documented = true
+			elif "is_photographed" in nest:
+				nest.is_photographed = true
+				nest.is_documented = true
+		print("[Debug Console] All %d nests marked as documented." % nests.size())
+		
+		# Mark the computer UI as having uploaded nest data
+		var computer_ui = get_tree().get_first_node_in_group("computer_ui")
+		if computer_ui and "nest_data_uploaded" in computer_ui:
+			computer_ui.nest_data_uploaded = true
+			print("[Debug Console] Computer UI marked as data uploaded.")
+	
+	# ─── DOOR SETUP ─────────────────────────────────────────────────
+	# Lock the front door — the player has completed the "lock the door" step.
+	var doors = get_tree().get_nodes_in_group("interactable")
+	for door in doors:
+		if door is AnimatableBody3D and door.has_method("interact"):
+			# Check if this is the front door by looking for the required_key_name
+			if "required_key_name" in door and door.required_key_name != "":
+				door.is_locked = true
+				print("[Debug Console] Door '%s' locked." % door.name)
+	
+	# ─── PLAYER SETUP ───────────────────────────────────────────────
+	var player = get_tree().get_first_node_in_group("player") as Node3D
+	if player:
+		# Teleport to cabin interior near the bedroom hallway
+		var spawn_marker = get_tree().get_first_node_in_group("BedroomSpawn") as Node3D
+		if not spawn_marker:
+			spawn_marker = get_tree().get_first_node_in_group("PlayerSpawn") as Node3D
+		if spawn_marker:
+			player.global_position = spawn_marker.global_position
+		else:
+			# Fallback: cabin interior position near bedroom door
+			player.global_position = Vector3(9.0, 1.0, 0.4)
+		
+		# Restore health/sanity
+		if player.has_method("reset_health"):
+			player.reset_health()
+		elif "health" in player:
+			player.health = 100.0
+		if "sanity" in player:
+			player.sanity = 100.0
+		
+		# Restore flashlight battery
+		var flashlight = player.find_child("*Flashlight*", true, false)
+		if flashlight:
+			if flashlight.has_method("set_battery_level"):
+				flashlight.set_battery_level(100.0)
+			elif "battery_level" in flashlight:
+				flashlight.battery_level = 100.0
+		
+		print("[Debug Console] Player teleported to bedroom area.")
+	
+	# ─── INVENTORY SETUP ────────────────────────────────────────────
+	# Give the player a reasonable "end of day" inventory.
+	var inv = get_node_or_null("/root/Inventory")
+	if inv:
+		inv.clear()
+		
+		var battery_res = load("res://resources/battery_resource.tres")
+		var plank_res = load("res://resources/plank_resource.tres")
+		var fuel_can_res = load("res://resources/fuel_can_resource.tres")
+		var fuse_res = load("res://resources/fuse_resource.tres")
+		
+		# 2 Batteries (player has used some)
+		for i in range(2):
+			if battery_res and inv.has_method("add_item"):
+				inv.add_item(battery_res.duplicate())
+		
+		# 1 Plank (player has used one to board a window)
+		if plank_res and inv.has_method("add_item"):
+			inv.add_item(plank_res.duplicate())
+		
+		# 1 Fuel Can (player has used one)
+		if fuel_can_res and inv.has_method("add_item"):
+			inv.add_item(fuel_can_res.duplicate())
+		
+		# 1 Fuse (player has a spare)
+		if fuse_res and inv.has_method("add_item"):
+			inv.add_item(fuse_res.duplicate())
+		
+		print("[Debug Console] Inventory set to end-of-day loadout.")
+	
+	# ─── ENTITY SETUP ───────────────────────────────────────────────
+	# Deactivate the Entity — it should be dormant during the day.
+	if _entity:
+		_entity.deactivate()
+		_entity.set_meta("debug_disabled", false)
+		print("[Debug Console] Entity deactivated (dormant).")
+	
+	# ─── HUD OBJECTIVE ──────────────────────────────────────────────
+	# Set the HUD objective to guide the player to the bedroom.
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud and "objective_text" in hud:
+		hud.objective_text = "Head to the bedroom and sleep"
+		print("[Debug Console] HUD objective set: 'Head to the bedroom and sleep'.")
+	
+	print("[Debug Console] 'Head to Bedroom' state setup complete!")
 
 
 func _force_relocate() -> void:

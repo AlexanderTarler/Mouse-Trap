@@ -1,9 +1,14 @@
-# Mouse Trap - FIELD_LOG.EXE Implementation
+# Master Behavior Director - Bug Fix Plan
 
-## Progress
+## Root Cause
 
-- [x] Analyze existing codebase (computer_ui.gd, night_manager.gd, routine_manager.gd, pc_interactable.gd, game_time.gd, horror_sound_manager.gd, computer_ui.tscn)
-- [x] Modify computer_ui.tscn - Add dropdown OptionButtons and CORRELATE DATA button
-- [x] Rewrite computer_ui.gd - Refactor \_on_log_nest_data into validation form with tactical log rewards
-- [x] Add sound effect references for success/failure feedback
-- [x] Verify integration with existing systems (NightManager, RoutineManager, GameTime)
+11 rogue `set_state()` calls in `entity_controller.gd` bypass the Director, causing the FLINCH/OBSERVE loop.
+
+## Fix Strategy
+
+1. Add `_pending_state` variable to entity_controller.gd
+2. Add `request_state()` method that sets `_pending_state`
+3. Update Director to read `_pending_state` at the top of `evaluate_master_state()`
+4. Convert all 11 rogue `set_state()` calls to `request_state()`
+5. Add Director rules for all transitions that were previously handled by rogue calls
+6. Keep `state_locked` mechanism intact

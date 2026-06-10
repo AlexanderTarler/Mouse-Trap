@@ -39,7 +39,7 @@ var is_open: bool = false
 var is_animating: bool = false
 var default_rotation_y: float
 ## Whether this door is currently locked (only used when required_key_name is set).
-var is_locked: bool = true
+var is_locked: bool = false
 
 
 func _ready() -> void:

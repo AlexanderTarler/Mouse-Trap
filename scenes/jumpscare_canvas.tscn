@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://jumpscare_canvas"]
+
+[node name="JumpscareCanvas" type="CanvasLayer"]
+layer = 300
+
+[node name="FadeRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0)
+mouse_filter = 2

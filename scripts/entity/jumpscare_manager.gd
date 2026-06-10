@@ -2,32 +2,73 @@ extends Node
 
 ## Listens for the Entity catching the player.
 ## Executes a cinematic jumpscare, applies survival penalties, and resets the player.
+##
+## UI is handled via exported scene references (jumpscare_canvas.tscn and death_screen.tscn)
+## instead of programmatic Control node generation. Assign these in the editor.
 
-var fade_rect: ColorRect = null
+## Reference to a pre-made jumpscare canvas scene containing the fade overlay.
+const jumpscare_scene = preload("res://scenes/jumpscare_canvas.tscn")
+const death_screen_scene = preload("res://scenes/death_screen.tscn")
+
+## Audio sting played during the jumpscare face-zoom.
+@export var audio_sting: AudioStream = null
+
+var _fade_rect: ColorRect = null
 var is_jumping: bool = false
-var audio_sting: AudioStreamPlayer = null
+var _audio_sting_player: AudioStreamPlayer = null
+
 
 func _ready() -> void:
-	# 1. Dynamically generate the Black Screen Overlay so no scene setup is needed
-	var canvas = CanvasLayer.new()
-	canvas.layer = 127 # Draw above absolutely everything (including the inventory)
-	add_child(canvas)
+	# Ensure this node processes input even when the game is paused
+	# (needed for the death screen buttons to work and for debug logging)
+	process_mode = PROCESS_MODE_ALWAYS
 	
-	fade_rect = ColorRect.new()
-	fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-	fade_rect.color = Color(0, 0, 0, 0) # Start transparent
-	fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	canvas.add_child(fade_rect)
+	# 1. Instantiate the jumpscare canvas scene if provided
+	if jumpscare_scene:
+		var canvas = jumpscare_scene.instantiate()
+		add_child(canvas)
+		# Find the FadeRect child
+		_fade_rect = canvas.get_node_or_null("FadeRect") as ColorRect
+		if not _fade_rect:
+			# Try recursive search
+			_fade_rect = canvas.find_child("FadeRect", true, false) as ColorRect
+		if _fade_rect:
+			_fade_rect.color = Color(0, 0, 0, 0)  # Start transparent
+	else:
+		print("[Jumpscare] WARNING: No jumpscare_scene assigned! Fade overlay will not work.")
 	
 	# 2. Add an audio sting player
-	audio_sting = AudioStreamPlayer.new()
-	add_child(audio_sting)
+	_audio_sting_player = AudioStreamPlayer.new()
+	if audio_sting:
+		_audio_sting_player.stream = audio_sting
+	add_child(_audio_sting_player)
+	
 	# 3. Connect to the NightManager's event bus
 	var nm = get_node_or_null("/root/NightManager")
 	if nm:
 		nm.horror_event.connect(_on_horror_event)
 
 func _input(event: InputEvent) -> void:
+	# DEBUG: Log every left-click and what was clicked
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		var mouse_pos = get_viewport().get_mouse_position()
+		# Use raycasting from the current camera to find what's under the cursor
+		var camera = get_viewport().get_camera_3d()
+		var clicked_node = null
+		if camera:
+			var from = camera.project_ray_origin(mouse_pos)
+			var dir = camera.project_ray_normal(mouse_pos)
+			var space_state = camera.get_world_3d().direct_space_state
+			if space_state:
+				var params = PhysicsRayQueryParameters3D.new()
+				params.from = from
+				params.to = from + dir * 1000.0
+				var result = space_state.intersect_ray(params)
+				if result and result.has("collider"):
+					clicked_node = result.collider
+		var clicked_name = clicked_node.name if clicked_node else "nothing (UI)"
+		print("[DEBUG] Left-click at (%d, %d) — clicked: %s" % [mouse_pos.x, mouse_pos.y, clicked_name])
+	
 	# Press F1 to instantly trigger the jumpscare at any time
 	if event is InputEventKey and event.keycode == KEY_F1 and event.pressed and not event.is_echo():
 		if not is_jumping:
@@ -38,10 +79,18 @@ func _on_horror_event(event_name: String) -> void:
 		_execute_jumpscare()
 
 func _execute_jumpscare() -> void:
+	print("[JumpscareManager] _execute_jumpscare() called.")
 	is_jumping = true
 	var player = get_tree().get_first_node_in_group("player") as Node3D
 	var entity = get_tree().get_first_node_in_group("entity") as Node3D
-	if not player or not entity: return
+	if not player:
+		print("[JumpscareManager] ERROR: Player not found in group 'player'!")
+		return
+	if not entity:
+		print("[JumpscareManager] ERROR: Entity not found in group 'entity'!")
+		return
+	print("[JumpscareManager] Player and Entity found. Executing jumpscare...")
+
 	
 	var cam_holder = player.get_node_or_null("CameraHolder")
 	var camera = get_viewport().get_camera_3d()
@@ -51,8 +100,8 @@ func _execute_jumpscare() -> void:
 	player.set_physics_process(false)
 	player.set_process_input(false)
 	
-	if audio_sting.stream:
-		audio_sting.play()
+	if _audio_sting_player and _audio_sting_player.stream:
+		_audio_sting_player.play()
 	
 	if cam_holder:
 		var face_marker = entity.get_node_or_null("FaceTarget")
@@ -78,32 +127,17 @@ func _execute_jumpscare() -> void:
 		
 		# FADE OUT (Black screen)
 		var fade_tween = create_tween()
-		fade_tween.tween_property(fade_rect, "color:a", 1.0, 0.5)
+		fade_tween.tween_property(_fade_rect, "color:a", 1.0, 0.5)
 		await fade_tween.finished
 		
-		# RESET TO DAYBREAK — invoke the NightManager's daybreak reset system.
-		# This replaces the old survival penalty system (time penalty + battery drain).
-		# The player wakes up in bed at the morning baseline of the current day,
-		# with fresh inventory, reset world state, and daytime lighting.
-		var nm: Node = get_node_or_null("/root/NightManager")
-		if nm and nm.has_method("reset_to_daybreak"):
-			nm.reset_to_daybreak()
-			print("[Jumpscare] Daybreak reset invoked. Player will wake up at morning baseline.")
-		else:
-			# Fallback: if NightManager is unavailable, use the old penalty system
-			print("[Jumpscare] NightManager not found! Falling back to legacy survival penalties.")
-			_apply_survival_penalties(player)
+		# GAME OVER — always trigger the death screen after a jumpscare.
+		# The player must restart the night from the death screen.
+		_trigger_game_over()
 		
-		# WAKE UP (Fade back in) — the NightManager's reset_to_daybreak() handles
-		# the fade-in tween internally. If it didn't, we do it here as a safety net.
-		if fade_rect.color.a > 0.01:
-			var wake_tween = create_tween()
-			wake_tween.tween_property(fade_rect, "color:a", 0.0, 2.0)
-			await wake_tween.finished
-		
-		# FIX CONTROLS — restore original rotation instead of zeroing it
-		# Zeroing would snap the camera to look straight forward, which is jarring.
-		cam_holder.global_transform.basis = cam_holder.global_transform.basis.orthonormalized()
+		# FIX CONTROLS — reset camera rotation and offsets to zero
+		# This prevents the camera from being permanently tilted after respawn.
+		if player.has_method("reset_camera"):
+			player.reset_camera()
 		camera.fov = original_fov
 		
 		# Unfreeze player
@@ -149,66 +183,81 @@ func _apply_survival_penalties(player: Node3D) -> void:
 ## Triggers a hard Game Over state: pauses the game, shows a death screen,
 ## and provides an option to restart the current night.
 func _trigger_game_over() -> void:
+	print("[JumpscareManager] _trigger_game_over() called.")
+	
 	# Pause the game
 	get_tree().paused = true
+	print("[JumpscareManager] Game paused.")
 	
-	# Create a CanvasLayer overlay for the death screen
-	var death_canvas = CanvasLayer.new()
-	death_canvas.layer = 128  # Above everything
-	death_canvas.name = "DeathScreenCanvas"
-	get_tree().current_scene.add_child(death_canvas)
+	# Free the cursor so the player can click the death screen buttons
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	print("[JumpscareManager] Mouse mode set to VISIBLE.")
 	
-	# Full-screen black background
-	var bg = ColorRect.new()
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.color = Color(0, 0, 0, 0.85)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	death_canvas.add_child(bg)
-	
-	# "YOU DIED" text
-	var death_label = Label.new()
-	death_label.text = "YOU DIED"
-	death_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	death_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	death_label.add_theme_font_size_override("font_size", 64)
-	death_label.add_theme_color_override("font_color", Color(0.8, 0.1, 0.1))
-	death_label.set_anchors_preset(Control.PRESET_CENTER)
-	death_label.size = Vector2(400, 100)
-	death_label.position = Vector2(-200, -80)
-	death_canvas.add_child(death_label)
-	
-	# Night info
-	var night_label = Label.new()
-	var nm = get_node_or_null("/root/NightManager")
-	var night_num = nm.current_night if nm else 1
-	night_label.text = "Night %d" % night_num
-	night_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	night_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	night_label.add_theme_font_size_override("font_size", 32)
-	night_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
-	night_label.set_anchors_preset(Control.PRESET_CENTER)
-	night_label.size = Vector2(200, 50)
-	night_label.position = Vector2(-100, 10)
-	death_canvas.add_child(night_label)
-	
-	# Restart button
-	var restart_btn = Button.new()
-	restart_btn.text = "Restart Night"
-	restart_btn.set_anchors_preset(Control.PRESET_CENTER)
-	restart_btn.size = Vector2(200, 50)
-	restart_btn.position = Vector2(-100, 80)
-	restart_btn.pressed.connect(_on_restart_night.bind(death_canvas))
-	death_canvas.add_child(restart_btn)
+	if death_screen_scene:
+		print("[JumpscareManager] Instantiating death screen scene: %s" % death_screen_scene.resource_path)
+		var death_canvas = death_screen_scene.instantiate()
+		death_canvas.name = "DeathScreenCanvas"
+		
+		var current_scene = get_tree().current_scene
+		if not current_scene:
+			print("[JumpscareManager] ERROR: current_scene is null!")
+			return
+		print("[JumpscareManager] Adding death screen to scene: %s" % current_scene.name)
+		current_scene.add_child(death_canvas)
+		print("[JumpscareManager] Death screen added. Children count: %d" % current_scene.get_child_count())
+		
+		# Find and connect the restart button
+		var restart_btn = death_canvas.find_child("RestartButton", true, false) as Button
+		if restart_btn:
+			print("[JumpscareManager] Found RestartButton. Connecting pressed signal...")
+			restart_btn.pressed.connect(_on_restart_night.bind(death_canvas))
+			print("[JumpscareManager] RestartButton connected.")
+		else:
+			print("[JumpscareManager] ERROR: RestartButton not found in death screen!")
+		
+		# Update the night label if present
+		var night_label = death_canvas.find_child("NightLabel", true, false) as Label
+		if night_label:
+			var nm = get_node_or_null("/root/NightManager")
+			var night_num = nm.current_night if nm else 1
+			night_label.text = "Night %d" % night_num
+			print("[JumpscareManager] Night label set to: Night %d" % night_num)
+	else:
+		print("[JumpscareManager] WARNING: No death_screen_scene assigned! Cannot show game over screen.")
+		# Fallback: just unpause and restart
+		get_tree().paused = false
+		var nm = get_node_or_null("/root/NightManager")
+		if nm and nm.has_method("restart_night"):
+			nm.restart_night()
 
 
 func _on_restart_night(death_canvas: CanvasLayer) -> void:
+	print("[JumpscareManager] _on_restart_night() called — \"Restart from morning\" button was clicked.")
+	
+	# Fade the jumpscare overlay back to transparent so the player can see
+	if _fade_rect:
+		print("[JumpscareManager] Fading jumpscare overlay back to transparent...")
+		var fade_in_tween = create_tween()
+		fade_in_tween.tween_property(_fade_rect, "color:a", 0.0, 0.5)
+		await fade_in_tween.finished
+		print("[JumpscareManager] Fade-in complete.")
+	
 	# Unpause
 	get_tree().paused = false
+	
+	# Recapture the cursor so the player can look around
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	
 	# Remove the death screen
 	death_canvas.queue_free()
 	
-	# Restart the current night via NightManager
+	# Restart from the morning of the current day via NightManager.
+	# This fully resets the player, inventory, world state, and time
+	# to the morning baseline, then waits for the natural day/night
+	# cycle to reach night again.
 	var nm = get_node_or_null("/root/NightManager")
-	if nm and nm.has_method("restart_night"):
-		nm.restart_night()
+	if nm and nm.has_method("restart_from_morning"):
+		print("[JumpscareManager] Calling NightManager.restart_from_morning()...")
+		nm.restart_from_morning()
+	else:
+		print("[JumpscareManager] ERROR: NightManager not found or restart_from_morning() method missing!")

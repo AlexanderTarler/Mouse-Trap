@@ -4,7 +4,7 @@
 [ext_resource type="Script" uid="uid://bh20lnj2howlq" path="res://scripts/fuse_box.gd" id="1_wlh5m"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_1"]
-size = Vector3(0.8, 1.0, 0.6)
+size = Vector3(0.6, 0.9, 0.4)
 
 [node name="Fuse Box" type="StaticBody3D" unique_id=1485753892]
 script = ExtResource("1_wlh5m")

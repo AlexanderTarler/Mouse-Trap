@@ -38,6 +38,7 @@ import/blender/enabled=false
 
 wood=""
 WindowMarkers=""
+navmesh_source=""
 
 [input]
 

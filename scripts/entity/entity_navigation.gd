@@ -48,10 +48,51 @@ var _debug_draw_timer: float = 0.0
 
 const DEBUG_DRAW_INTERVAL: float = 1.0
 
+# ─── CACHED SCENE TREE GROUPS ───────────────────────────────────────────────
+## Cached references to scene tree groups populated once in _ready().
+## Avoids expensive get_tree().get_nodes_in_group() calls in the AI/physics loop.
+var _window_markers: Array[Node3D] = []
+var _treeline_markers: Array[Node3D] = []
+
 
 func setup(parent: CharacterBody3D) -> void:
 	entity = parent
 	_grid_center = entity.cabin_center if "cabin_center" in entity else Vector3(0.0, 0.0, 14.88)
+	
+	# Cache scene tree groups once to avoid tree traversal during runtime
+	_cache_scene_groups()
+
+
+## Populates cached group arrays. Called once from setup().
+func _cache_scene_groups() -> void:
+	var windows = entity.get_tree().get_nodes_in_group("WindowMarkers")
+	for w in windows:
+		if w is Node3D:
+			_window_markers.append(w as Node3D)
+	
+	var treeline = entity.get_tree().get_nodes_in_group("Treeline_Vantage_Points")
+	for t in treeline:
+		if t is Node3D:
+			_treeline_markers.append(t as Node3D)
+	
+	# ─── AUTO-POPULATE FALLBACK: VantagePoints Container ──────────────
+	# If no treeline markers were found via the group, try to find a
+	# "VantagePoints" node in the scene root and use its children as markers.
+	# This prevents the Entity from freezing due to an empty _treeline_markers
+	# array when the scene tree hasn't been properly tagged with groups.
+	if _treeline_markers.is_empty():
+		var root = entity.get_tree().current_scene
+		if root:
+			var container = root.get_node_or_null("VantagePoints")
+			if container:
+				for child in container.get_children():
+					if child is Node3D:
+						_treeline_markers.append(child as Node3D)
+				print("[Navigation] Auto-populated %d markers from VantagePoints container." % _treeline_markers.size())
+			else:
+				push_warning("VantagePoints container not found in scene root! Entity may freeze without navigation markers.")
+	
+	print("[Entity Navigation] Cached %d window markers and %d treeline markers." % [_window_markers.size(), _treeline_markers.size()])
 
 
 func _process(delta: float) -> void:
@@ -65,9 +106,6 @@ func _process(delta: float) -> void:
 		_scan_light_sources()
 		_rebuild_light_cost_grid()
 		_grid_dirty = false
-		
-		if OS.is_debug_build():
-			print("[Light Grid] Rebuilt. Sources: %d | Cells: %d" % [_light_sources.size(), _light_cost_grid.size()])
 
 
 # ─── LIGHT SOURCE SCANNING ───────────────────────────────────────────────────
@@ -78,7 +116,7 @@ func _scan_light_sources() -> void:
 	_light_sources.clear()
 	
 	# 1. Cabin Lights (interior room lights that leak through windows)
-	var cabin_lights: Array[Node] = entity.get_tree().get_nodes_in_group("CabinLights")
+	var cabin_lights: Array[Node] = entity.get_cabin_lights()
 	for cl in cabin_lights:
 		if "is_switched_on" in cl and cl.is_switched_on:
 			var light_pos: Vector3 = cl.global_position if "global_position" in cl else Vector3.ZERO
@@ -120,13 +158,14 @@ func _scan_light_sources() -> void:
 			})
 	
 	# 4. Flashlight Beam (if player is outside, the flashlight projects light)
-	if entity._player:
+	var player = entity.get_player()
+	if player:
 		var flashlight_on: bool = false
-		if entity._player.has_method("is_flashlight_on"):
-			flashlight_on = entity._player.is_flashlight_on()
+		if player.has_method("is_flashlight_on"):
+			flashlight_on = player.is_flashlight_on()
 		
 		if flashlight_on:
-			var player_pos: Vector3 = entity._player.global_position
+			var player_pos: Vector3 = player.global_position
 			var cam = entity.get_viewport().get_camera_3d()
 			if cam:
 				var cam_forward: Vector3 = -cam.global_transform.basis.z
@@ -138,6 +177,7 @@ func _scan_light_sources() -> void:
 					"intensity": 0.8,
 					"type": "flashlight"
 				})
+
 	
 	# 5. Generator Exhaust Flame (small light near the generator when running)
 	var nm: Node = entity.get_node_or_null("/root/NightManager")
@@ -283,45 +323,46 @@ func mark_grid_dirty() -> void:
 # ─── LEGACY METHODS (Preserved from original entity_navigation.gd) ──────────
 
 ## Returns true if the player is outside the cabin.
-## Uses the player's floor raycast to check if they're standing on wood (inside)
-## or grass/dirt (outside). Falls back to distance check if raycast is unavailable.
+## Uses get_player_room() as the single source of truth:
+##   - If get_player_room() returns "Outside" → player is outside
+##   - If get_player_room() returns any room name → player is inside
+## This ensures consistent inside/outside detection across all systems.
 func is_player_outside() -> bool:
-	if not entity._player:
-		return false
-	
-	# Try to use the player's floor raycast to detect surface type
-	var floor_raycast = entity._player.get_node_or_null("FloorRayCast")
-	if floor_raycast and floor_raycast is RayCast3D and floor_raycast.is_colliding():
-		var surface_node: Node = floor_raycast.get_collider()
-		while surface_node:
-			if surface_node.is_in_group("wood"):
-				return false  # Standing on wood = inside the cabin
-			if surface_node.is_in_group("grass"):
-				return true   # Standing on grass = outside
-			surface_node = surface_node.get_parent()
-	
-	# Fallback: distance check from cabin center
-	return entity._player.global_position.distance_to(entity.cabin_center) > 10.0
+	return get_player_room() == "Outside"
+
+
+## Returns the name of the room the player is currently in, or "Outside" if
+## the player is not inside any registered cabin interior area.
+## Delegates to player_controller.gd's get_player_room() method.
+func get_player_room() -> String:
+	var player = entity.get_player()
+	if not player:
+		return "Outside"
+	if player.has_method("get_player_room"):
+		return player.get_player_room()
+	return "Outside"
 
 
 ## Returns true if the player is on the second floor of the cabin.
 ## Uses a Y-axis threshold (3.0 meters above ground level).
 ## Ground floor Y ≈ 0.0, second floor Y ≈ 3.0+
 func is_player_on_second_floor() -> bool:
-	if not entity._player:
+	var player = entity.get_player()
+	if not player:
 		return false
-	return entity._player.global_position.y > 3.0
+	return player.global_position.y > 3.0
+
 
 
 ## Finds the nearest exterior wall base position below a second-story window.
+## Uses the cached _window_markers array to avoid tree traversal.
 ## Scans WindowMarkers, finds ones with Y > 3.0 (second story), projects their
 ## position down to ground level (Y = 0.0), and returns the closest one to the Entity.
 ## Used by CLIMB_WALL state to determine where to begin the vertical ascent.
 func find_nearest_second_story_window_base() -> Vector3:
-	var windows = entity.get_tree().get_nodes_in_group("WindowMarkers")
 	var best_pos = Vector3.ZERO
 	var shortest = INF
-	for w in windows:
+	for w in _window_markers:
 		if w.global_position.y < 3.0:
 			continue  # Skip ground-floor windows
 		# Project the window position down to ground level
@@ -333,16 +374,99 @@ func find_nearest_second_story_window_base() -> Vector3:
 	return best_pos
 
 
-## Picks a new vantage point from the Treeline_Vantage_Points group,
-## blacklisting the last visited one to avoid getting stuck.
+## Picks a tactical window near the player to simulate intelligent flanking.
+## Gathers all windows within 15 meters of the player, then picks one at random
+## from that subset. If no windows are within range, falls back to the absolute
+## closest window to the Entity.
+##
+## LIGHT SANCTUARY FILTER:
+##   Windows whose room light is switched on are EXCLUDED from selection.
+##   The Entity will never approach a window that has an active CabinLight,
+##   because the light makes the window "secure" — the Entity avoids lit areas.
+##   This gives the player a powerful defensive tool: turn on room lights to
+##   make that window safe.
+##
+## NIGHT 2 BOARDED WINDOW FILTER:
+##   On Night 2, boarded windows are also excluded. The Entity can only
+##   approach and peek through unboarded (glass-only) windows on Night 2.
+##   On Night 3+, boarded windows are fair game.
+##
+## This prevents the Entity from making a beeline to the nearest window every
+## time, creating more varied and unpredictable approach patterns.
+##
+## Parameters:
+##   player: The player Node3D to measure distance from.
+##
+## Returns: A Node3D window marker, or null if no windows are available.
+func pick_tactical_window(player: Node3D) -> Node3D:
+	if not player or _window_markers.is_empty():
+		return null
+	
+	# Determine the current night for boarded window filtering.
+	# NOTE: We read from NightManager, NOT GameTime. GameTime manages the
+	# day/night cycle (time of day), while NightManager tracks which narrative
+	# night the player is on (1-5). The debug console sets the night via
+	# NightManager.start_night(night), so reading from NightManager ensures
+	# the debug override is respected.
+	var current_night: int = 3  # Default to Night 3+ (no boarded restriction)
+	var night_manager = entity.get_node_or_null("/root/NightManager")
+	if night_manager and "current_night" in night_manager:
+		current_night = night_manager.current_night
+	
+	# Gather all windows within 15 meters of the player, applying filters
+	var nearby_windows: Array[Node3D] = []
+	for w in _window_markers:
+		# ─── LIGHT SANCTUARY FILTER ──────────────────────────────────────
+		# Skip windows whose room light is switched on. The Entity avoids
+		# lit rooms entirely — it will never approach a window with an
+		# active CabinLight.
+		if w.has_method("is_secure") and w.is_secure():
+			# is_secure() returns true if the room light is on, the window
+			# is boarded, OR the glass is intact. We need to distinguish
+			# between "secure due to light" and "secure due to barricade".
+			# Check the room_light directly.
+			if "room_light" in w and w.room_light and w.room_light.is_switched_on:
+				continue  # Skip — room light is on, Entity avoids this window
+		
+		# ─── NIGHT 2 BOARDED WINDOW FILTER ──────────────────────────────
+		# On Night 2, skip boarded windows. The Entity can only approach
+		# unboarded (glass-only) windows on Night 2.
+		if current_night == 2 and w.has_method("is_barricaded") and w.is_barricaded():
+			continue  # Skip — boarded windows are immune on Night 2
+		
+		var dist_to_player: float = w.global_position.distance_to(player.global_position)
+		if dist_to_player <= 15.0:
+			nearby_windows.append(w)
+	
+	# If we found nearby windows, pick one at random (tactical flanking)
+	if not nearby_windows.is_empty():
+		return nearby_windows.pick_random()
+	
+	# Fallback: return the absolute closest window to the Entity (with same filters)
+	var closest: Node3D = null
+	var closest_dist: float = INF
+	for w in _window_markers:
+		# Apply same filters to fallback selection
+		if "room_light" in w and w.room_light and w.room_light.is_switched_on:
+			continue
+		if current_night == 2 and w.has_method("is_barricaded") and w.is_barricaded():
+			continue
+		var d: float = entity.global_position.distance_to(w.global_position)
+		if d < closest_dist:
+			closest_dist = d
+			closest = w
+	return closest
+
+
+
 func pick_next_vantage_point() -> void:
-	var treeline_markers = entity.get_tree().get_nodes_in_group("Treeline_Vantage_Points")
-	var candidates = treeline_markers.filter(func(m): return m != entity._last_vantage_point)
+	var candidates = _treeline_markers.filter(func(m): return m != entity.get_last_vantage_point())
 	if candidates.is_empty():
-		candidates = treeline_markers
+		candidates = _treeline_markers
 	
 	var best_marker = candidates.pick_random()
-	entity._last_vantage_point = best_marker
-	entity._nav_agent.target_position = best_marker.global_position
-	entity._is_at_vantage_point = false
-	print("[Entity AI] Moving to new vantage point: ", best_marker.name)
+	entity.set_last_vantage_point(best_marker)
+	entity.get_nav_agent().target_position = best_marker.global_position
+	entity.set_at_vantage_point(false)
+
+

@@ -51,6 +51,12 @@ var _purge_bar_visible: bool = false
 # Created programmatically in _ready() so no scene changes are needed.
 var _fade_overlay: ColorRect = null
 
+# ─── ROOM DEBUG LABEL ──────────────────────────────────────────────────
+# A small label in the top-left corner showing which room the player is in.
+# Created programmatically in _ready() so no scene changes are needed.
+var _room_label: Label = null
+var _room_label_visible: bool = false
+
 
 func _ready() -> void:
 	# Create the fade overlay programmatically
@@ -285,6 +291,11 @@ func _process(delta: float) -> void:
 	
 	# Update low battery warning flicker
 	_update_low_battery_warning(delta)
+	
+	# ─── ROOM DEBUG LABEL ──────────────────────────────────────────────
+	# Update the room label every frame to show which room the player is in.
+	# The label is created lazily on first use (like the purge bar).
+	_update_room_label()
 
 
 func _update_low_battery_warning(delta: float) -> void:
@@ -508,6 +519,37 @@ func hide_purge_progress() -> void:
 	if _purge_bar_bg:
 		_purge_bar_bg.visible = false
 	_purge_bar_visible = false
+
+
+## Updates the room debug label every frame.
+## Creates the label lazily on first call (no scene changes needed).
+## Shows which room the player is currently in by calling
+## player_controller.gd's get_player_room() method.
+func _update_room_label() -> void:
+	# Lazily create the room label on first use
+	if not _room_label:
+		_room_label = Label.new()
+		_room_label.name = "RoomLabel"
+		_room_label.theme = Theme.new()
+		_room_label.theme.default_font_size = 14
+		_room_label.add_theme_color_override("font_color", Color(0.6, 0.8, 1.0, 0.7))  # Light blue, semi-transparent
+		_room_label.add_theme_constant_override("outline_size", 1)
+		_room_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.5))
+		_room_label.position = Vector2(20, 230)  # Below the stamina bar
+		_room_label.z_index = 10
+		add_child(_room_label)
+		_room_label_visible = true
+	
+	# Find the player and get the current room
+	var player = get_node_or_null("/root/CottageHorror/Player")
+	if not player:
+		player = get_node_or_null("/root/Main/Player")
+	
+	if player and player.has_method("get_player_room"):
+		var room_name = player.get_player_room()
+		_room_label.text = "📍 Room: %s" % room_name
+	else:
+		_room_label.text = "📍 Room: N/A"
 
 
 ## Creates the purge bar UI nodes programmatically on first use.

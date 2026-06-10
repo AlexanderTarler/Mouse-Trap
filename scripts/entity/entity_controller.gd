@@ -7,28 +7,10 @@ extends CharacterBody3D
 ##   - entity_ai.gd        → FSM state behaviors
 ##   - entity_sensory.gd   → Vision cone, flashlight detection, audio hearing
 ##   - entity_navigation.gd → Vantage point selection, outside detection
-
-enum State {
-	DORMANT,
-	OBSERVE_FROM_TREELINE,  # Night 1 & 2 (Passive Voyeurism)
-	PATROL,                 # Wandering the map looking for clues
-	CHASE,                  # Active pursuit (Line of sight established)
-	RETREAT,                # Physically running away to deep woods
-	APPROACH_WINDOW,        # Night 3+ (Moving to glass)
-	WINDOW_PEEK,            # Night 2+ (Staring inside)
-	RELOCATE,               # Safe initialization state only — never used during active runtime
-	STANDOFF,               # Player is staring at Entity with flashlight — frozen in place
-	FLINCH,                 # Player inside, Entity outside — lateral sprint to evade flashlight
-	CHARGE,                 # Player stared too long — Entity sprints at 3x speed
-	INDOOR_SEARCH,          # Entity has breached a window and is hunting inside the cabin
-	CLIMB_WALL,             # Entity is climbing the exterior wall to a second-story window
-	STUNNED,                # Entity is paralyzed by the porch light overload trap
-	ENRAGED,                # Blackout released Entity — permanent speed boost for the rest of the night
-	ATTACK_LAMP,            # Entity is physically approaching and striking the portable high-voltage lamp
-	HARASS,                 # Entity stands at a window performing psychological harassment (breathing, tapping, rattling)
-}
-
-
+##
+## NOTE: The State enum is now defined in entity_ai.gd.
+## Reference states as EntityAI.State.X from this script.
+const EntityAI := preload("entity_ai.gd")
 
 @export var speed: float = 4.0
 @export var catch_distance: float = 2.5
@@ -81,7 +63,7 @@ const NIGHT_AMBIENCE_VOLUME_DB: float = -18.0
 
 # Sub-modules
 @onready var _ai: Node = $EntityAI if has_node("EntityAI") else null
-@onready var _sensory: Node = $EntitySensory if has_node("EnttySensory") else null
+@onready var _sensory: Node = $EntitySensory if has_node("EntitySensory") else null
 @onready var _navigation: Node = $EntityNavigation if has_node("EntityNavigation") else null
 @onready var _confidence: Node = $EntityConfidence if has_node("EntityConfidence") else null
 
@@ -90,11 +72,80 @@ var _entity_step_timer: float = 0.0
 var _entity_step_interval: float = 0.5
 
 var _player: Node3D = null
-var _state: State = State.DORMANT
+var _state: EntityAI.State = EntityAI.State.DORMANT
 var _is_active: bool = false
 var _path_timer: float = 0.0
 var _stuck_timer: float = 0.0
 var _game_time: float = 0.0
+
+# Cached NightManager reference — resolved once in _initialize_entity().
+# Sub-modules access this via get_night_manager() instead of polling
+# get_node_or_null("/root/NightManager") every frame.
+var _night_manager: Node = null
+
+# Cached portable trap reference — resolved via group lookup in _ready().
+# Sub-modules access this via get_portable_trap() instead of calling
+# get_tree().get_first_node_in_group("portable_trap") every frame.
+# Updated by _refresh_portable_trap() when the trap is deployed/undeployed.
+var _portable_trap: Node = null
+
+# Cached array of CabinLight nodes — resolved via group lookup in _ready().
+# Sub-modules access this via get_cabin_lights() instead of calling
+# get_tree().get_nodes_in_group("CabinLights") every frame.
+# Updated by _refresh_cabin_lights() when lights are added/removed.
+var _cabin_lights: Array[Node] = []
+
+# --- BLACKBOARD: Sensory Data (written by external scripts, read by Director) ---
+## Whether the Entity is currently illuminated by the player's flashlight beam.
+## Written by on_player_stare(). Read by the Master Director (entity_director.gd).
+var is_illuminated: bool = false
+
+## How long the player has been staring at the Entity with the flashlight on.
+## Written by on_player_stare(). Read by the Master Director (entity_director.gd).
+## Range: 0.0 to 2.0+. 1.5+ triggers CHARGE if player is outside.
+var player_stare_timer: float = 0.0
+
+# --- BLACKBOARD: State Lock (prevents Director from overriding mid-execution) ---
+## When true, the Master Director MUST return the current state, preventing
+## transitions until the state handler unlocks it.
+## Set to true by state handlers on entry, set to false on completion.
+## This prevents "State Flapping" where the Director and FSM fight over
+## the state variable every frame.
+var state_locked: bool = false
+
+# --- BLACKBOARD: State Completion Flags (written by FSM handlers, read by Director) ---
+## Set to true by _approach_window_state() when the Entity arrives at the target window.
+## The Director checks this flag and transitions to WINDOW_PEEK.
+var is_approach_finished: bool = false
+
+## Set to true by _window_peek_state() when the window is unbarricaded and siege timer
+## has elapsed. The Director checks this flag and transitions to INDOOR_SEARCH.
+var is_window_unbarricaded: bool = false
+
+## Set to true by _climb_wall_state() when the vertical ascent completes.
+## The Director checks this flag and transitions to WINDOW_PEEK.
+var is_climb_finished: bool = false
+
+## Set to true by _retreat_state() when the Entity arrives at the farthest treeline
+## vantage point. The Director checks this flag and transitions to OBSERVE_FROM_TREELINE.
+var is_retreat_arrived: bool = false
+
+## Set to true by _flinch_state() when the lateral sprint completes.
+## The Director checks this flag and transitions to RELOCATE.
+var is_flinch_finished: bool = false
+
+## Set to true by _observe_from_treeline_state() or _window_peek_state() when the
+## stare timer expires. The Director checks this flag, calls fade_and_relocate()
+## for the setup work, and transitions to OBSERVE_FROM_TREELINE.
+var is_observe_finished: bool = false
+
+## ─── INDOOR RETREAT FLAG ──────────────────────────────────────────────────────
+## Set to true by the Director (Tier 0) when the Entity is illuminated while in
+## INDOOR_SEARCH state. The RETREAT handler reads this flag to know it should
+## pathfind to the breach window (instead of the farthest treeline), teleport
+## outside, and perform a 5-second flinch before transitioning to OBSERVE.
+## Reset to false by the RETREAT handler when the indoor retreat completes.
+var is_indoor_retreat: bool = false
 
 # --- SENSORY & HUNTING VARIABLES ---
 var _last_known_position: Vector3 = Vector3.ZERO
@@ -104,7 +155,7 @@ var _vision_cone_angle: float = deg_to_rad(70.0) # 140-degree field of view
 var _interest_decay_rate: float = 2.5 # How fast it loses interest
 
 # --- STATE TRACKING ---
-var _last_logged_state: State = State.DORMANT
+var _last_logged_state: EntityAI.State = EntityAI.State.DORMANT
 var _ai_debug_timer: float = 0.0
 var _has_logged_sight: bool = false
 var _is_at_vantage_point: bool = false
@@ -156,6 +207,22 @@ var cabin_center: Vector3 = Vector3(0.0, 0.0, 14.88)
 ## repelled by a light sanctuary.
 var _indoor_breach_window: CabinWindow = null
 
+## The world-space landing position the Entity vaults toward during INDOOR_SEARCH
+## Phase A (vault entry). Set by the breach window's landing marker when the
+## Entity breaks through. Used by entity_ai.gd's _indoor_search_state() to
+## navigate the Entity to the correct interior position before Phase B begins.
+var _indoor_landing_position: Vector3 = Vector3.ZERO
+
+## Sound cooldown registry — a single Dictionary replacing 80+ individual
+## cooldown variables for WINDOW_PEEK atmospheric sounds.
+##
+## Keys are lowercase snake_case strings (e.g., "footstep", "window_rattle").
+## Values are float cooldown timers that count down each frame.
+## When a cooldown reaches <= 0.0, the corresponding sound can play.
+##
+## This eliminates the need for 80+ individual _xxx_cooldown variables in
+## the controller, keeping the state surface minimal and the code DRY.
+var _sound_cooldowns: Dictionary = {}
 
 ## Index into the Cabin_Patrol_Waypoints group for indoor search patrol looping.
 var _indoor_patrol_index: int = 0
@@ -165,10 +232,8 @@ var _indoor_patrol_index: int = 0
 ## Plays a scraping sound as the Entity climbs up the wooden siding.
 var _claw_scrape_player: AudioStreamPlayer3D = null
 
-# --- 3D SPATIAL VOICE STATE MACHINE ---
 ## 3D spatial audio player for the Entity's voice (talking, searching, angry).
 ## Programmatically created in _ready() with inverse-square distance attenuation.
-## The voice is routed by entity_ai.gd's _manage_spatial_voice() based on FSM state.
 var _voice_player: AudioStreamPlayer3D = null
 
 ## Audio streams for the voice state machine.
@@ -195,7 +260,7 @@ const VOICE_ANGRY_PATH: String = "res://assets/audio/Entity/entity_angry.ogg"
 var _voice_angry_played_this_charge: bool = false
 
 ## Tracks whether the voice player was in a "talking" state (OBSERVE_FROM_TREELINE/PATROL)
-## on the previous frame. Used by _manage_spatial_voice() to detect transitions
+## on the previous frame. Used by the AI's voice management to detect transitions
 ## between talking and non-talking states for the interchangeable track cycling.
 var _voice_was_talking: bool = false
 
@@ -237,6 +302,18 @@ var _lamp_attack_timer: float = 0.0
 var _stun_timer: float = 0.0
 
 
+## ─── PENDING STATE OVERRIDE ──────────────────────────────────────────────
+## When set to a valid State value (>= 0), the Master Director will read this
+## at the START of evaluate_master_state() and apply it immediately, then
+## clear it to -1. This is the ONLY mechanism by which external events (stun,
+## blackout, debug, activation) can request a state change.
+##
+## THE GOLDEN RULE:
+##   NO script is allowed to call set_state() except the Director.
+##   External scripts must use request_state() which sets this flag.
+##   The Director picks it up next frame, applies it, and clears it.
+var _pending_state: int = -1
+
 ## Whether the Entity has been enraged by a blackout this night.
 ## Once set to true, the Entity's movement speed is permanently boosted
 ## by 1.5x for the rest of the night. Reset to false when the night ends.
@@ -248,7 +325,14 @@ var _is_enraged: bool = false
 ## one-time +8.0 confidence boost exactly once when line of sight breaks.
 var _confidence_stare_was_active: bool = false
 
+## Whether the player is standing on wood flooring (inside the cabin).
+## Updated every frame in _physics_process() via floor raycast.
+## Used by the floor material safety guard to prevent the Entity from
+## charging through walls when the player is safely inside.
+var _player_is_on_wood_floor: bool = false
+
 ## The original stalk speed before the enrage multiplier was applied.
+
 ## Used to restore the speed if the enrage is ever reset.
 var _original_stalk_speed: float = 0.0
 
@@ -504,14 +588,14 @@ func _set_visuals_visible(v: bool) -> void:
 
 
 func _initialize_entity() -> void:
-	var nm = get_node_or_null("/root/NightManager")
-	if nm:
-		nm.night_started.connect(_on_night_started)
-		nm.night_ended.connect(_on_night_ended)
-		nm.first_chase_started.connect(_on_first_chase_started)
-		if nm.is_night_active:
+	_night_manager = get_node_or_null("/root/NightManager")
+	if _night_manager:
+		_night_manager.night_started.connect(_on_night_started)
+		_night_manager.night_ended.connect(_on_night_ended)
+		_night_manager.first_chase_started.connect(_on_first_chase_started)
+		if _night_manager.is_night_active:
 			# Night 1 exception: Entity stays hidden for the car alarm narrative
-			if nm.current_night == 1:
+			if _night_manager.current_night == 1:
 				print("[Entity] Night 1 at startup: Staying hidden for car alarm narrative.")
 			else:
 				activate()
@@ -582,7 +666,7 @@ func _on_first_chase_started() -> void:
 	
 	# Activate the Entity (make visible) and immediately begin chasing
 	activate()
-	_state = State.CHASE
+	request_state(EntityAI.State.CHASE)
 	print("[Entity] Cinematic arrival complete! Now chasing the player.")
 	
 	# ─── SYSTEMIC TIME CRUNCH ──────────────────────────────────────
@@ -625,7 +709,7 @@ func _find_player() -> void:
 func activate() -> void:
 	_is_active = true
 	visible = true
-	_state = State.OBSERVE_FROM_TREELINE
+	request_state(EntityAI.State.OBSERVE_FROM_TREELINE)
 	_set_visuals_visible(true)
 
 
@@ -633,7 +717,7 @@ func deactivate() -> void:
 	_is_active = false
 	velocity = Vector3.ZERO
 	visible = false
-	_state = State.DORMANT
+	request_state(EntityAI.State.DORMANT)
 	_set_visuals_visible(false)
 	
 	# Reset enrage state so the Entity starts fresh next night
@@ -706,7 +790,6 @@ func _physics_process(delta: float) -> void:
 	
 	# --- STATE TRANSITION LOGGING ---
 	if _state != _last_logged_state:
-		print("[Entity FSM] Transitioned from %s to %s" % [State.keys()[_last_logged_state], State.keys()[_state]])
 		_last_logged_state = _state
 		
 		# ─── "CREEPING GHOST" COLLISION LAYER UPDATE ─────────────────
@@ -716,151 +799,46 @@ func _physics_process(delta: float) -> void:
 		# PATROL) and has full collision when attacking (CHASE, APPROACH_WINDOW).
 		_update_collision_layers()
 	
+	# ─── STUCK DETECTION ──────────────────────────────────────────────────────
+	# Monitors whether the Entity has stopped making progress toward its
+	# navigation target. If the Entity's velocity is near zero while the
+	# NavigationAgent3D still has an active path (not finished), it means
+	# the Entity is physically blocked by an obstacle (cabin wall, porch
+	# post, rock formation, etc.).
+	#
+	# After stuck_timeout (1.5s) seconds of zero progress, the Entity
+	# triggers a fade_and_relocate() to teleport to a new vantage point.
+	# This prevents the Entity from freezing in place indefinitely when
+	# the NavMesh path is blocked by geometry that the "Creeping Ghost"
+	# collision system cannot phase through (cabin layer 1).
+	#
+	# NOTE: Stuck detection is disabled during CHASE and CHARGE — the
+	# Entity should never teleport away while actively pursuing the player.
+	var is_nav_active: bool = not _nav_agent.is_navigation_finished()
+	var is_moving: bool = velocity.length_squared() > 0.01
+	var is_attack_state: bool = (
+		_state == EntityAI.State.CHASE or
+		_state == EntityAI.State.CHARGE or
+		_state == EntityAI.State.FLINCH or
+		_state == EntityAI.State.CLIMB_WALL or
+		_state == EntityAI.State.INDOOR_SEARCH or
+		_state == EntityAI.State.STUNNED
+	)
+	
+	if is_nav_active and not is_moving and not is_attack_state:
+		_stuck_timer += delta
+		if _stuck_timer >= stuck_timeout:
+			print("[Entity] STUCK DETECTED! No movement for %.1fs while nav is active. Relocating." % stuck_timeout)
+			fade_and_relocate()
+			_stuck_timer = 0.0
+	else:
+		_stuck_timer = 0.0
+	
 	# --- BACKGROUND SENSE PROCESSING (runs every frame regardless of state) ---
 	if _sensory:
 		_sensory.can_entity_see_player()
 	if _current_interest_level > 0:
 		_current_interest_level -= _interest_decay_rate * delta
-	
-	# --- FLASHLIGHT SPOTTING: Position-Aware Response ---
-	# Replaces the legacy "exposure tolerance" system.
-	# Checks every frame if the player is shining the flashlight on the Entity.
-	# Redirects to one of two behaviors based on player position:
-	#
-	#   BEHAVIOR 1 (Cowardly Outside Flinch):
-	#     Player is INSIDE the cabin, Entity is OUTSIDE.
-	#     Entity flinches and sprints laterally to evade the flashlight beam.
-	#
-	#   BEHAVIOR 2 (Lethal Outside Interception):
-	#     Player is OUTSIDE, Entity is OUTSIDE.
-	#     Entity immediately charges at 3x speed — no standoff, no flinch.
-	#
-	#   Night 5 Exception:
-	#     Entity never flinches. If spotted while player is inside, it
-	#     immediately sieges the nearest window instead.
-	#
-	# ─── FLOOR MATERIAL SAFETY GUARD ───────────────────────────────
-	# Before ANY flashlight-based state override can force a CHARGE
-	# transition, perform a definitive floor material check. If the
-	# player is standing on a "wood" group surface (cabin flooring),
-	# the Entity is strictly forbidden from charging through the walls.
-	#
-	# This is a BULLETPROOF safety override that runs BEFORE the AI's
-	# STANDOFF handler. Even if the AI's charge countdown expires and
-	# tries to transition to CHARGE, this guard will intercept it on
-	# the next physics frame and force a RETREAT instead.
-	#
-	# The check walks up the collider's parent chain to find any node
-	# in the "wood" group, ensuring it works even if the floor mesh
-	# is nested inside a grouping node.
-	var _player_is_on_wood_floor: bool = false
-	if _player:
-		var floor_raycast: RayCast3D = _player.get_node_or_null("FloorRayCast")
-		if floor_raycast and floor_raycast.is_colliding():
-			var surface_node: Node = floor_raycast.get_collider()
-			while surface_node:
-				if surface_node.is_in_group("wood"):
-					_player_is_on_wood_floor = true
-					break
-				surface_node = surface_node.get_parent()
-	
-	# ─── DEBUG MARCH LOCK ──────────────────────────────────────────
-	# When the debug march is active, skip ALL flashlight-based state
-	# overrides. The developer tool has absolute priority over player
-	# inputs during the pathfinding stress test.
-	#
-	# ─── WINDOW PEEK LOCK ──────────────────────────────────────────
-	# When the Entity is actively sieging a window (WINDOW_PEEK state),
-	# skip ALL flashlight-based state overrides. The Entity is committed
-	# to the siege — the player cannot interrupt it by shining the
-	# flashlight at the window. This prevents premature exit from the
-	# barricade damage sequence.
-	#
-	# ─── HARASS INTERCEPT ──────────────────────────────────────────
-	# When the Entity is in HARASS state and the player shines the
-	# flashlight on it, the harassment is interrupted and the Entity
-	# immediately transitions to FLINCH (Phantom Evasion). The Entity
-	# slides laterally into the darkness, denying the player the
-	# satisfaction of a direct confrontation.
-	#
-	# ─── RETREAT EXCLUSION ─────────────────────────────────────────
-	# RETREAT is excluded from the outer guard to prevent the oscillation
-	# loop: Controller sets STANDOFF → AI forces RETREAT → AI completes
-	# retreat (fade_and_relocate → OBSERVE) → Controller sets STANDOFF
-	# again. By excluding RETREAT here, the Entity can complete its
-	# retreat without being interrupted by the flashlight detection block.
-	if _state != State.WINDOW_PEEK and _state != State.HARASS and _state != State.RETREAT and _sensory and _sensory.is_player_spotting_entity():
-		var player_outside = _navigation.is_player_outside() if _navigation else false
-		
-		if player_outside:
-			# BEHAVIOR 2: Both outside → IMMEDIATE CHARGE (ALL NIGHTS)
-			# No standoff freeze, no exposure timer, no fade.
-			# The Entity screeches and sprints directly at the player.
-			#
-			# ─── FLOOR MATERIAL SAFETY GUARD ──────────────────────────
-			# Even if the navigation system reports the player as outside,
-			# double-check the floor material. If the player is on wood
-			# flooring, they are inside the cabin — do NOT charge.
-			if _player_is_on_wood_floor and _state != State.INDOOR_SEARCH:
-				# Player is on wood flooring — they are safely inside.
-				# Force a retreat instead of charging through the wall.
-				print("[Entity Controller] OUTSIDE CHARGE blocked by wood floor safety guard! Player is on cabin flooring. Forcing RETREAT.")
-				_state = State.RETREAT
-				if _ai and _ai.has_method("fade_and_relocate"):
-					_ai.fade_and_relocate()
-				elif _navigation:
-					_navigation.pick_next_vantage_point()
-				return
-			
-			if _state != State.CHARGE and _state != State.FLINCH:
-				_state = State.CHARGE
-				_nav_agent.target_position = _player.global_position
-				print("[Entity] Player spotted Entity outside! IMMEDIATE CHARGE!")
-		else:
-			# Player inside, Entity outside
-			if not _flinch_enabled:
-				# --- NIGHT 5 EXCEPTION ---
-				# Skip the standoff entirely. The Entity is relentless.
-				# Immediately accelerate into a window breach or door siege.
-				if _state != State.CHARGE and _state != State.APPROACH_WINDOW and _state != State.WINDOW_PEEK:
-					_state = State.APPROACH_WINDOW
-					_current_window_target = null
-					print("[Entity] Night 5: No standoff! Immediately sieging nearest window!")
-			else:
-				# BEHAVIOR 1: Flashlight Standoff (Nights 1-4)
-				# The Entity freezes in place while the player shines the flashlight
-				# beam on it. A 1.5-second charge countdown begins. If the player
-				# holds the beam for the full duration, the Entity charges at 3x speed.
-				# If the player breaks line of sight or turns off the flashlight,
-				# the countdown resets and the Entity drops back to observation.
-				#
-				# This replaces the old instant-flinch behavior with a high-tension
-				# standoff: the player can delay the Entity by staring at it, but
-				# must eventually look away or the Entity will charge.
-				#
-				# ─── FLOOR MATERIAL SAFETY GUARD ──────────────────────────
-				# Before initiating STANDOFF, check if the player is on wood
-				# flooring. If they are, the STANDOFF will eventually transition
-				# to RETREAT (handled by the AI's floor material check). But
-				# we also guard here to prevent the controller from ever setting
-				# STANDOFF if the player is safely inside — force RETREAT directly.
-				if _player_is_on_wood_floor and _state != State.INDOOR_SEARCH:
-					# Player is on wood flooring — they are safely inside.
-					# Do NOT initiate STANDOFF. Force a retreat immediately.
-					print("[Entity Controller] STANDOFF blocked by wood floor safety guard! Player is on cabin flooring. Forcing RETREAT.")
-					_state = State.RETREAT
-					if _ai and _ai.has_method("fade_and_relocate"):
-						_ai.fade_and_relocate()
-					elif _navigation:
-						_navigation.pick_next_vantage_point()
-					return
-				
-				if _state != State.STANDOFF and _state != State.CHARGE and _state != State.FLINCH and _state != State.RETREAT:
-					_state = State.STANDOFF
-					# Reset the charge countdown in the AI module
-					if _ai and _ai.has_method("reset_charge_countdown"):
-						_ai.reset_charge_countdown()
-					print("[Entity] Player spotted Entity from inside! STANDOFF initiated.")
 	
 	# ─── CONFIDENCE MODIFICATION: FLASHLIGHT STARE ──────────────────────
 	# While the player is staring at the Entity with the flashlight beam,
@@ -896,7 +874,7 @@ func _physics_process(delta: float) -> void:
 	
 	# --- CHASE MUSIC (ambience_d6_loop) ---
 	# Fade in when entering CHASE state, fade out when leaving.
-	var is_chasing = _state == State.CHASE
+	var is_chasing = _state == EntityAI.State.CHASE
 	if is_chasing and not _chase_music_was_playing:
 		# Entering chase — start playing and fade in
 		if _chase_music_player and _chase_music_player.stream:
@@ -973,7 +951,7 @@ func _physics_process(delta: float) -> void:
 					_window_bluff_active = false
 					_window_bluff_cooldown = randf_range(8.0, 15.0)
 					_current_window_target = null
-					_state = State.OBSERVE_FROM_TREELINE
+					request_state(EntityAI.State.OBSERVE_FROM_TREELINE)
 					velocity = Vector3.ZERO
 					print("[Entity] Window Bluff complete! Retreating to treeline.")
 				else:
@@ -989,7 +967,7 @@ func _physics_process(delta: float) -> void:
 	# cannot pathfind, and cannot transition to any other state until the
 	# stun timer expires or the generator dies (blackout).
 	# This gives the player a window to destroy the totem anchor.
-	if _state == State.STUNNED:
+	if _state == EntityAI.State.STUNNED:
 		# Decrement the stun timer
 		_stun_timer -= delta
 		
@@ -1003,7 +981,7 @@ func _physics_process(delta: float) -> void:
 		# Check if the stun has expired naturally
 		if _stun_timer <= 0.0:
 			print("[Entity] Stun expired! Entity released from overload paralysis.")
-			_state = State.OBSERVE_FROM_TREELINE
+			request_state(EntityAI.State.OBSERVE_FROM_TREELINE)
 		
 		return
 	
@@ -1014,15 +992,17 @@ func _physics_process(delta: float) -> void:
 	# uses its normal FSM states (CHASE, PATROL, etc.) but with boosted speed.
 	# The _is_enraged flag is checked by the AI speed calculations.
 	
-	# --- TRANSITION LOCK: RETREAT / STANDOFF ---
+	# --- TRANSITION LOCK: RETREAT / STANDOFF / FLINCH ---
 	# During RETREAT, force velocity to zero and skip movement processing,
 	# but STILL execute the AI update tick so that _retreat_state() can
 	# call fade_and_relocate(). Without this, the early return would create
 	# a deadlock where the AI never runs and the transition never completes.
 	# STANDOFF also locks movement — the Entity freezes in place while stared at.
+	# FLINCH is handled by the AI's _flinch_state() which computes the lateral
+	# sprint velocity. The controller applies it via move_and_slide() below.
 	# NOTE: RELOCATE is NOT included here — it is a safe initialization state only
 	# and is never used during active runtime transitions.
-	if _state == State.RETREAT or _state == State.STANDOFF:
+	if _state == EntityAI.State.RETREAT or _state == EntityAI.State.STANDOFF:
 		velocity = Vector3.ZERO
 		if _ai and _ai.has_method("process_state_logic"):
 			_ai.process_state_logic(delta)
@@ -1037,7 +1017,7 @@ func _physics_process(delta: float) -> void:
 	# (Entity is stationary at the window frame), FLINCH (lateral sprint
 	# — the Entity stays at its current Y to avoid dropping into terrain),
 	# and ATTACK_LAMP (Entity stands still while striking the lamp).
-	if not is_on_floor() and _state != State.WINDOW_PEEK and _state != State.CLIMB_WALL and _state != State.FLINCH and _state != State.ATTACK_LAMP:
+	if not is_on_floor() and _state != EntityAI.State.WINDOW_PEEK and _state != EntityAI.State.CLIMB_WALL and _state != EntityAI.State.FLINCH and _state != EntityAI.State.ATTACK_LAMP:
 
 		velocity += get_gravity() * delta
 	
@@ -1166,7 +1146,7 @@ func _debug_attack_window() -> void:
 	# Force the FSM state to WINDOW_PEEK and initialize the barricade
 	# damage timer so the Entity immediately begins damaging the window.
 	# This skips the APPROACH_WINDOW → WINDOW_PEEK transition entirely.
-	_state = State.WINDOW_PEEK
+	request_state(EntityAI.State.WINDOW_PEEK)
 	_stare_timer = 9999.0  # Stay until barricade is destroyed
 	
 	# Reset the AI's barricade damage timer so the Entity immediately
@@ -1174,15 +1154,632 @@ func _debug_attack_window() -> void:
 	if _ai and _ai.has_method("reset_barricade_timers"):
 		_ai.reset_barricade_timers()
 	
-	print("[F2] Entity state override: ", State.keys()[original_state], " → WINDOW_PEEK")
+	print("[F2] Entity state override: ", EntityAI.State.keys()[original_state], " → WINDOW_PEEK")
 	print("[F2] Entity teleported directly to window. Barricade damage sequence starting.")
 	print("[F2] Window state — glass_shattered: ", final_window_target.is_glass_shattered, ", boarded: ", final_window_target.is_boarded)
 	print("==========================================================\n")
 
 
+# ─── PUBLIC ACCESSORS (Interface Contract) ────────────────────────────────────
+# These typed accessors replace direct private variable access from sub-modules.
+# Sub-modules MUST use these instead of entity._player, entity._nav_agent, etc.
+# This creates a compile-time contract — renaming a private variable produces
+# a compile error if the accessor isn't updated.
+
+## Returns the cached player reference.
+func get_player() -> Node3D:
+	return _player
+
+## Returns the cached NightManager reference.
+## Sub-modules MUST use this instead of polling get_node_or_null("/root/NightManager") every frame.
+func get_night_manager() -> Node:
+	return _night_manager
+
+## Returns the cached portable trap reference.
+## Sub-modules MUST use this instead of calling
+## get_tree().get_first_node_in_group("portable_trap") every frame.
+func get_portable_trap() -> Node:
+	return _portable_trap
+
+## Returns the cached array of CabinLight nodes.
+## Sub-modules MUST use this instead of calling
+## get_tree().get_nodes_in_group("CabinLights") every frame.
+func get_cabin_lights() -> Array[Node]:
+	return _cabin_lights
+
+## Refreshes the cached portable trap and cabin lights references.
+## Called from _ready() and should be called whenever a new portable trap
+## is deployed or a cabin light is added/removed from the scene.
+func _refresh_cached_references() -> void:
+	_portable_trap = get_tree().get_first_node_in_group("portable_trap")
+	_cabin_lights = get_tree().get_nodes_in_group("CabinLights")
+
+## Returns the NavigationAgent3D used for pathfinding.
+func get_nav_agent() -> NavigationAgent3D:
+	return _nav_agent
+
+## Returns the current FSM state.
+func get_state() -> EntityAI.State:
+	return _state
+
+## Sets the current FSM state.
+## NOTE: This should ONLY be called by the Master Director (entity_director.gd).
+## All other code MUST use request_state() instead.
+func set_state(new_state: EntityAI.State) -> void:
+	_state = new_state
+
+## Requests a state change via the _pending_state override mechanism.
+## This is the ONLY method external code should use to request a state change.
+## The Master Director reads _pending_state at the start of evaluate_master_state()
+## and applies it immediately, then clears it to -1.
+##
+## This prevents the "Two Masters" problem by funneling ALL state changes
+## through the Director's single evaluation point.
+func request_state(new_state: EntityAI.State) -> void:
+	_pending_state = new_state
+
+## Resets all state completion flags and unlocks the state lock.
+## Called by the Master Director when it needs to force-clear the
+## Blackboard for a clean state transition (e.g., after a pending
+## state override or when entering a new night).
+##
+## This ensures that stale completion flags from a previous state
+## (e.g., is_flinch_finished = true from a FLINCH that was interrupted
+## by a pending state override) don't cause the Director to immediately
+## transition out of the new state on the next frame.
+func reset_locks() -> void:
+	state_locked = false
+	is_flinch_finished = false
+	is_approach_finished = false
+	is_window_unbarricaded = false
+	is_climb_finished = false
+	is_retreat_arrived = false
+	is_observe_finished = false
+
+
+## Returns the EntityNavigation sub-module.
+func get_navigation_module() -> Node:
+	return _navigation
+
+## Returns the EntitySensory sub-module.
+func get_sensory_module() -> Node:
+	return _sensory
+
+## Returns the EntityConfidence sub-module.
+func get_confidence_module() -> Node:
+	return _confidence
+
+## Returns the EntityAI sub-module.
+func get_ai_module() -> Node:
+	return _ai
+
+## Returns the current game time in seconds.
+func get_game_time() -> float:
+	return _game_time
+
+## Returns the monster model Node3D (visual representation).
+func get_monster_model() -> Node3D:
+	return _monster_model
+
+## Returns the AnimationStateMachinePlayback for animation control.
+func get_anim_state_machine():
+	return _anim_state_machine
+
+## Returns the growl audio player (3D spatial).
+func get_growl_audio() -> AudioStreamPlayer3D:
+	return _growl_audio
+
+## Returns the harassment audio player (3D spatial).
+func get_harass_audio() -> AudioStreamPlayer3D:
+	return _harass_audio
+
+## Returns the current window target for approach/peek states.
+func get_current_window_target() -> Node3D:
+	return _current_window_target
+
+## Returns the FuseBox node for the FUSE_SABOTAGE state.
+## Looks up the FuseBoxWaypoint from the "EntityWaypoints" group, then finds
+## the Marker3D child inside it. The Marker3D's parent is the FuseBox itself.
+## Falls back to finding the FuseBox by class name in the scene tree.
+func get_fuse_box_node():
+	# First try: Find via EntityWaypoints group (FuseBoxWaypoint)
+	var waypoints = get_tree().get_nodes_in_group("EntityWaypoints")
+	for wp in waypoints:
+		if wp.name == "FuseBoxWaypoint":
+			# The waypoint's parent should be the FuseBox
+			var parent = wp.get_parent()
+			if parent and parent is FuseBox:
+				return parent
+			# Or the Marker3D child points to the FuseBox position
+			for child in wp.get_children():
+				if child is Marker3D:
+					return child
+	
+	# Second try: Find the FuseBox by class name in the scene tree
+	var fuse_box = get_tree().get_first_node_in_group("interactable")
+	if fuse_box and fuse_box is FuseBox:
+		return fuse_box
+	
+	# Third try: Search the entire scene tree for a FuseBox node
+	if get_tree().current_scene:
+		return get_tree().current_scene.find_child("FuseBox", true, false)
+	
+	return null
+
+## Sets the current window target.
+func set_current_window_target(target: Node3D) -> void:
+	_current_window_target = target
+
+## Returns the stare timer value.
+func get_stare_timer() -> float:
+	return _stare_timer
+
+## Sets the stare timer value.
+func set_stare_timer(value: float) -> void:
+	_stare_timer = value
+
+## Returns whether the Entity is at a vantage point.
+func is_at_vantage_point() -> bool:
+	return _is_at_vantage_point
+
+## Sets whether the Entity is at a vantage point.
+func set_at_vantage_point(value: bool) -> void:
+	_is_at_vantage_point = value
+
+## Returns the last visited vantage point.
+func get_last_vantage_point() -> Node3D:
+	return _last_vantage_point
+
+## Sets the last visited vantage point.
+func set_last_vantage_point(point: Node3D) -> void:
+	_last_vantage_point = point
+
+## Returns the flinch target position.
+func get_flinch_target_pos() -> Vector3:
+	return _flinch_target_pos
+
+## Sets the flinch target position.
+func set_flinch_target_pos(pos: Vector3) -> void:
+	_flinch_target_pos = pos
+
+## Returns the flinched timer value.
+func get_flinched_timer() -> float:
+	return _flinched_timer
+
+## Sets the flinched timer value.
+func set_flinched_timer(value: float) -> void:
+	_flinched_timer = value
+
+## Returns the window bluff cooldown.
+func get_window_bluff_cooldown() -> float:
+	return _window_bluff_cooldown
+
+## Sets the window bluff cooldown.
+func set_window_bluff_cooldown(value: float) -> void:
+	_window_bluff_cooldown = value
+
+## Returns the light sabotage cooldown.
+func get_light_sabotage_cooldown() -> float:
+	return _light_sabotage_cooldown
+
+## Sets the light sabotage cooldown.
+func set_light_sabotage_cooldown(value: float) -> void:
+	_light_sabotage_cooldown = value
+
+## Returns the lamp attack timer.
+func get_lamp_attack_timer() -> float:
+	return _lamp_attack_timer
+
+## Sets the lamp attack timer.
+func set_lamp_attack_timer(value: float) -> void:
+	_lamp_attack_timer = value
+
+## Returns the indoor breach window reference.
+func get_indoor_breach_window():
+	return _indoor_breach_window
+
+## Sets the indoor breach window reference.
+func set_indoor_breach_window(window) -> void:
+	_indoor_breach_window = window
+
+## Returns the indoor landing position for INDOOR_SEARCH Phase A vault entry.
+func get_indoor_landing_position() -> Vector3:
+	return _indoor_landing_position
+
+## Sets the indoor landing position for INDOOR_SEARCH Phase A vault entry.
+func set_indoor_landing_position(pos: Vector3) -> void:
+	_indoor_landing_position = pos
+
+## Returns the cooldown value for a named sound key from the sound cooldown registry.
+## Returns 0.0 if the key doesn't exist (sound is ready to play).
+func get_sound_cooldown(sound_key: String) -> float:
+	return _sound_cooldowns.get(sound_key, 0.0)
+
+## Sets the cooldown value for a named sound key in the sound cooldown registry.
+## After setting, the sound will not play again until the cooldown counts down to <= 0.0.
+func set_sound_cooldown(sound_key: String, value: float) -> void:
+	_sound_cooldowns[sound_key] = value
+
+## Convenience accessor for the "footstep" sound cooldown.
+## Delegates to the Dictionary-based sound cooldown registry.
+## Plays the indoor footstep sound effect.
+## Called by entity_ai.gd's _window_peek_state() and _retreat_state().
+## Uses the _footstep_audio AudioStreamPlayer3D if available.
+func _play_indoor_footstep() -> void:
+	if _footstep_audio and _footstep_audio.stream:
+		_footstep_audio.pitch_scale = randf_range(0.8, 1.2)
+		_footstep_audio.play()
+
+
+func get_footstep_cooldown() -> float:
+	return get_sound_cooldown("footstep")
+
+## Convenience mutator for the "footstep" sound cooldown.
+## Delegates to the Dictionary-based sound cooldown registry.
+func set_footstep_cooldown(value: float) -> void:
+	set_sound_cooldown("footstep", value)
+
+## Returns whether a window bluff is active.
+func is_window_bluff_active() -> bool:
+	return _window_bluff_active
+
+## Sets whether a window bluff is active.
+func set_window_bluff_active(value: bool) -> void:
+	_window_bluff_active = value
+
+## Returns the window bluff timer.
+func get_window_bluff_timer() -> float:
+	return _window_bluff_timer
+
+## Sets the window bluff timer.
+func set_window_bluff_timer(value: float) -> void:
+	_window_bluff_timer = value
+
+## Returns the window bluff retreat position.
+func get_window_bluff_retreat_pos() -> Vector3:
+	return _window_bluff_retreat_pos
+
+## Sets the window bluff retreat position.
+func set_window_bluff_retreat_pos(pos: Vector3) -> void:
+	_window_bluff_retreat_pos = pos
+
+## Returns whether the light sanctuary grunt has been played.
+func has_played_light_sound() -> bool:
+	return _has_played_light_sound
+
+## Sets whether the light sanctuary grunt has been played.
+func set_has_played_light_sound(value: bool) -> void:
+	_has_played_light_sound = value
+
+## Returns whether the Entity is currently fading.
+func is_fading() -> bool:
+	return _is_fading
+
+## Sets whether the Entity is currently fading.
+func set_is_fading(value: bool) -> void:
+	_is_fading = value
+
+## Returns whether the Entity is enraged.
+func is_enraged() -> bool:
+	return _is_enraged
+
+## Sets whether the Entity is enraged.
+func set_is_enraged(value: bool) -> void:
+	_is_enraged = value
+
+## Returns the original stalk speed before enrage.
+func get_original_stalk_speed() -> float:
+	return _original_stalk_speed
+
+## Sets the original stalk speed before enrage.
+func set_original_stalk_speed(value: float) -> void:
+	_original_stalk_speed = value
+
+## Returns whether the confidence stare was active on the previous frame.
+func was_confidence_stare_active() -> bool:
+	return _confidence_stare_was_active
+
+## Sets whether the confidence stare was active on the previous frame.
+func set_confidence_stare_active(value: bool) -> void:
+	_confidence_stare_was_active = value
+
+## Returns whether sight has been logged.
+func has_logged_sight() -> bool:
+	return _has_logged_sight
+
+## Sets whether sight has been logged.
+func set_has_logged_sight(value: bool) -> void:
+	_has_logged_sight = value
+
+## Returns whether the Entity is hunting.
+func is_hunting() -> bool:
+	return _is_hunting
+
+## Sets whether the Entity is hunting.
+func set_is_hunting(value: bool) -> void:
+	_is_hunting = value
+
+## Returns the current interest level.
+func get_current_interest_level() -> float:
+	return _current_interest_level
+
+## Sets the current interest level.
+func set_current_interest_level(value: float) -> void:
+	_current_interest_level = value
+
+## Returns the interest decay rate.
+func get_interest_decay_rate() -> float:
+	return _interest_decay_rate
+
+## Returns the vision cone angle in radians.
+func get_vision_cone_angle() -> float:
+	return _vision_cone_angle
+
+## Returns the last known player position.
+func get_last_known_position() -> Vector3:
+	return _last_known_position
+
+## Sets the last known player position.
+func set_last_known_position(pos: Vector3) -> void:
+	_last_known_position = pos
+
+## Returns the path timer.
+func get_path_timer() -> float:
+	return _path_timer
+
+## Sets the path timer.
+func set_path_timer(value: float) -> void:
+	_path_timer = value
+
+## Returns the stuck timer.
+func get_stuck_timer() -> float:
+	return _stuck_timer
+
+## Sets the stuck timer.
+func set_stuck_timer(value: float) -> void:
+	_stuck_timer = value
+
+## Returns the relocate cooldown.
+func get_relocate_cooldown() -> float:
+	return _relocate_cooldown
+
+## Sets the relocate cooldown.
+func set_relocate_cooldown(value: float) -> void:
+	_relocate_cooldown = value
+
+## Returns the debug F2 cooldown.
+func get_debug_f2_cooldown() -> float:
+	return _debug_f2_cooldown
+
+## Sets the debug F2 cooldown.
+func set_debug_f2_cooldown(value: float) -> void:
+	_debug_f2_cooldown = value
+
+## Returns the chase exit grunt cooldown.
+func get_chase_exit_grunt_cooldown() -> float:
+	return _chase_exit_grunt_cooldown
+
+## Sets the chase exit grunt cooldown.
+func set_chase_exit_grunt_cooldown(value: float) -> void:
+	_chase_exit_grunt_cooldown = value
+
+## Returns the window peek timer.
+func get_window_peek_timer() -> float:
+	return _window_peek_timer
+
+## Sets the window peek timer.
+func set_window_peek_timer(value: float) -> void:
+	_window_peek_timer = value
+
+## Returns the window peek duration.
+func get_window_peek_duration() -> float:
+	return _window_peek_duration
+
+## Returns the window peek marker.
+func get_window_peek_marker() -> Node3D:
+	return _window_peek_marker
+
+## Sets the window peek marker.
+func set_window_peek_marker(marker: Node3D) -> void:
+	_window_peek_marker = marker
+
+## Returns whether the window peek spotted the player.
+func is_window_peek_spotted() -> bool:
+	return _window_peek_spotted
+
+## Sets whether the window peek spotted the player.
+func set_window_peek_spotted(value: bool) -> void:
+	_window_peek_spotted = value
+
+## Returns the window peek vanish timer.
+func get_window_peek_vanish_timer() -> float:
+	return _window_peek_vanish_timer
+
+## Sets the window peek vanish timer.
+func set_window_peek_vanish_timer(value: float) -> void:
+	_window_peek_vanish_timer = value
+
+## Returns the window peek vanish delay.
+func get_window_peek_vanish_delay() -> float:
+	return _window_peek_vanish_delay
+
+## Returns the window peek staging position.
+func get_window_peek_staging_pos() -> Vector3:
+	return _window_peek_staging_pos
+
+## Sets the window peek staging position.
+func set_window_peek_staging_pos(pos: Vector3) -> void:
+	_window_peek_staging_pos = pos
+
+## Returns the retreat timer.
+func get_retreat_timer() -> float:
+	return _retreat_timer
+
+## Sets the retreat timer.
+func set_retreat_timer(value: float) -> void:
+	_retreat_timer = value
+
+## Returns the outside log timer.
+func get_outside_log_timer() -> float:
+	return _outside_log_timer
+
+## Sets the outside log timer.
+func set_outside_log_timer(value: float) -> void:
+	_outside_log_timer = value
+
+## Returns the visited markers array.
+func get_visited_markers() -> Array[Node3D]:
+	return _visited_markers
+
+## Returns the indoor patrol index.
+func get_indoor_patrol_index() -> int:
+	return _indoor_patrol_index
+
+## Sets the indoor patrol index.
+func set_indoor_patrol_index(value: int) -> void:
+	_indoor_patrol_index = value
+
+## Returns the claw scrape audio player.
+func get_claw_scrape_player() -> AudioStreamPlayer3D:
+	return _claw_scrape_player
+
+## Returns the voice audio player.
+func get_voice_player() -> AudioStreamPlayer3D:
+	return _voice_player
+
+## Returns the voice talking 1 audio stream.
+func get_voice_talking_1() -> AudioStream:
+	return _voice_talking_1
+
+## Returns the voice talking 2 audio stream.
+func get_voice_talking_2() -> AudioStream:
+	return _voice_talking_2
+
+## Returns the voice searching audio stream.
+func get_voice_searching() -> AudioStream:
+	return _voice_searching
+
+## Returns the voice angry audio stream.
+func get_voice_angry() -> AudioStream:
+	return _voice_angry
+
+## Returns whether the angry voice has been played this charge.
+func has_voice_angry_played_this_charge() -> bool:
+	return _voice_angry_played_this_charge
+
+## Sets whether the angry voice has been played this charge.
+func set_voice_angry_played_this_charge(value: bool) -> void:
+	_voice_angry_played_this_charge = value
+
+## Returns whether the voice was in a talking state.
+func was_voice_talking() -> bool:
+	return _voice_was_talking
+
+## Sets whether the voice was in a talking state.
+func set_voice_was_talking(value: bool) -> void:
+	_voice_was_talking = value
+
+## Returns the center context-steering raycast.
+func get_ray_center() -> RayCast3D:
+	return _ray_center
+
+## Returns the left context-steering raycast.
+func get_ray_left() -> RayCast3D:
+	return _ray_left
+
+## Returns the right context-steering raycast.
+func get_ray_right() -> RayCast3D:
+	return _ray_right
+
+## Returns the saved collision mask.
+func get_saved_collision_mask() -> int:
+	return _saved_collision_mask
+
+## Sets the saved collision mask.
+func set_saved_collision_mask(value: int) -> void:
+	_saved_collision_mask = value
+
+## Returns the catch area.
+func get_catch_area() -> Area3D:
+	return _catch_area
+
+## Returns the chase music player.
+func get_chase_music_player() -> AudioStreamPlayer:
+	return _chase_music_player
+
+## Returns whether chase music was playing.
+func was_chase_music_playing() -> bool:
+	return _chase_music_was_playing
+
+## Sets whether chase music was playing.
+func set_chase_music_playing(value: bool) -> void:
+	_chase_music_was_playing = value
+
+## Returns the night ambience player.
+func get_night_ambience_player() -> AudioStreamPlayer:
+	return _night_ambience_player
+
+## Returns whether night ambience was playing.
+func was_night_ambience_playing() -> bool:
+	return _night_ambience_was_playing
+
+## Sets whether night ambience was playing.
+func set_night_ambience_playing(value: bool) -> void:
+	_night_ambience_was_playing = value
+
+## Returns the chase exit grunt player.
+func get_chase_exit_grunt_player() -> AudioStreamPlayer:
+	return _chase_exit_grunt_player
+
+## Returns the light sanctuary grunt player.
+func get_light_sanctuary_grunt_player() -> AudioStreamPlayer:
+	return _light_sanctuary_grunt_player
+
+## Returns whether the Entity was chasing on the previous frame.
+func was_chasing() -> bool:
+	return _was_chasing
+
+## Sets whether the Entity was chasing on the previous frame.
+func set_was_chasing(value: bool) -> void:
+	_was_chasing = value
+
+## Returns whether the player is on wood flooring (inside the cabin).
+func is_player_on_wood_floor() -> bool:
+	return _player_is_on_wood_floor
+
+## Sets whether the player is on wood flooring.
+func set_player_on_wood_floor(value: bool) -> void:
+	_player_is_on_wood_floor = value
+
+## Returns whether the Entity is fleeing.
+func is_fleeing() -> bool:
+	return _is_fleeing
+
+## Sets whether the Entity is fleeing.
+func set_is_fleeing(value: bool) -> void:
+	_is_fleeing = value
+
+## Returns the flee angle.
+func get_flee_angle() -> float:
+	return _flee_angle
+
+## Sets the flee angle.
+func set_flee_angle(value: float) -> void:
+	_flee_angle = value
+
+## Returns the flee direction.
+func get_flee_direction() -> int:
+	return _flee_direction
+
+## Sets the flee direction.
+func set_flee_direction(value: int) -> void:
+	_flee_direction = value
+
+
 # --- PUBLIC API ---
 
 ## Teleports the Entity to a new position behind the player.
+
 ## Uses treeline vantage points for ALL nights to prevent the Entity from
 ## teleporting inside the cabin or right next to the player.
 func _relocate_behind_player() -> void:
@@ -1216,12 +1813,11 @@ func _finalize_relocation(spawn_pos: Vector3, method: String) -> void:
 	# doesn't try to navigate from the new location to a stale old target.
 	_nav_agent.target_position = spawn_pos
 	
-	if current_night <= 2:
-		_state = State.OBSERVE_FROM_TREELINE
-	elif current_night == 3:
-		_state = State.APPROACH_WINDOW
-	else:
-		_state = State.PATROL
+	# NOTE: State transition is handled by the Master Director (entity_director.gd).
+	# The Director evaluates confidence, player position, and night rules to
+	# determine the correct state. This function ONLY handles physical placement.
+	# Set a neutral baseline state — the Director will override it next frame.
+	request_state(EntityAI.State.OBSERVE_FROM_TREELINE)
 
 
 ## Initiates a window peek sequence. Sets the state to APPROACH_WINDOW
@@ -1229,7 +1825,7 @@ func _finalize_relocation(spawn_pos: Vector3, method: String) -> void:
 func _start_window_peek() -> void:
 	if not _is_active or not _player:
 		return
-	_state = State.APPROACH_WINDOW
+	request_state(EntityAI.State.APPROACH_WINDOW)
 	_current_window_target = null
 	_nav_agent.target_position = _player.global_position
 	print("[Entity] Starting window peek sequence.")
@@ -1241,15 +1837,40 @@ func _start_window_peek() -> void:
 ## into the darkness during the FLINCH state.
 ##
 ## Called from _flinch_state() in entity_ai.gd on first entry.
+##
+## SAFETY GUARD: Only tweens modulate if the monster model is a CanvasItem
+## (Sprite3D, MeshInstance3D with StandardMaterial3D, etc.). Plain Node3D
+## instances do not have a modulate property — attempting to tween it would
+## throw "Invalid access to property or key 'modulate' on a base object of
+## type 'Node3D'". In that case, we simply hide the model instead.
 func _start_flinch_fade() -> void:
 	if not _monster_model:
 		return
-	# Kill any existing tweens on the monster model to prevent conflicts
-	var existing_tween = create_tween()
-	existing_tween.kill()
+	if not is_inside_tree():
+		return
 	
-	var fade_tween = create_tween()
-	fade_tween.tween_property(_monster_model, "modulate:a", 0.0, 1.5).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
+	var tree = get_tree()
+	if not tree:
+		return
+	
+	# Kill any existing tweens on the monster model to prevent conflicts
+	var existing_tween = tree.create_tween()
+	if existing_tween:
+		existing_tween.kill()
+	
+	# Check if the monster model supports modulate (CanvasItem-based types).
+	# Node3D does NOT have modulate — only GeometryInstance3D subclasses with
+	# material overrides or CanvasItem-based nodes do. If modulate is not
+	# available, fall back to hiding the model directly.
+	if "modulate" in _monster_model:
+		var fade_tween = tree.create_tween()
+		if fade_tween:
+			var property_tweener = fade_tween.tween_property(_monster_model, "modulate:a", 0.0, 1.5)
+			if property_tweener:
+				property_tweener.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
+	else:
+		# Fallback: hide the model directly since modulate is not available
+		_monster_model.visible = false
 
 
 ## Initiates the FLINCH state — a lateral sprint to evade the player's flashlight.
@@ -1298,8 +1919,10 @@ func _start_flinch() -> void:
 	# Sprint 8 meters laterally to clear the window's line-of-sight
 	_flinch_target_pos = global_position + lateral * side * 8.0
 	_flinched_timer = 1.5
-	_state = State.FLINCH
-	print("[Entity] FLINCH! Sprinting laterally to evade flashlight!")
+	# NOTE: State transition is handled by the Master Director (entity_director.gd).
+	# The Director evaluates is_illuminated + is_player_inside and returns FLINCH.
+	# This function ONLY sets up the flinch target position and timer.
+	print("[Entity] FLINCH setup complete! Sprinting laterally to evade flashlight!")
 
 
 func _on_caught_player() -> void:
@@ -1307,9 +1930,8 @@ func _on_caught_player() -> void:
 	velocity = Vector3.ZERO
 	if _growl_audio:
 		_growl_audio.play()
-	var nm = get_node_or_null("/root/NightManager")
-	if nm:
-		nm.horror_event.emit("entity_caught_player")
+	if _night_manager:
+		_night_manager.horror_event.emit("entity_caught_player")
 	# Unpause the game tree in case it was paused by a previous jumpscare
 	if get_tree().paused:
 		get_tree().paused = false
@@ -1321,7 +1943,7 @@ func _on_caught_player() -> void:
 func _on_catch_area_body_entered(body: Node) -> void:
 	if not _is_active:
 		return
-	if body == _player and _state == State.CHASE:
+	if body == _player and _state == EntityAI.State.CHASE:
 		print("[Entity] Player entered catch area during chase! Catching player.")
 		_on_caught_player()
 
@@ -1329,58 +1951,36 @@ func _on_catch_area_body_entered(body: Node) -> void:
 ## Called by the player controller every frame while the player is staring at
 ## the Entity with the flashlight on. look_timer ranges from 0.0 to 2.0+.
 ##
-## When look_timer > 0.1: Force the Entity into STANDOFF state — frozen in place,
-##   oriented to face the player directly.
-## When look_timer >= 1.5: Force the Entity into CHARGE state — 3x speed sprint
-##   directly at the player with a terrifying screech.
-## When look_timer decays back to 0: Return to previous state.
-func on_player_stare(look_timer: float) -> void:
+## BLACKBOARD-ONLY METHOD:
+## This method ONLY writes sensory data to the Blackboard (is_illuminated,
+## player_stare_timer). It NEVER calls set_state() — state transitions are
+## the exclusive domain of the Master Director (entity_director.gd).
+##
+## The Director reads these Blackboard values once per frame and evaluates
+## the correct state from top-to-bottom priority.
+func on_player_stare(time: float) -> void:
 	if not _is_active:
 		return
 	
-	# Don't override CHARGE — once charging, the Entity commits
-	if _state == State.CHARGE:
-		# During CHARGE, continuously update target to the player's current position
+	# Update the Blackboard — the Director will read these next frame
+	player_stare_timer = time
+	is_illuminated = (time > 0.0)
+	
+	# During CHARGE, continuously update nav target to the player's current position
+	# This is movement/pathfinding logic, NOT state transition logic.
+	if _state == EntityAI.State.CHARGE and _player:
 		_nav_agent.target_position = _player.global_position
 		return
 	
-	if look_timer >= 1.5 and _state != State.CHARGE:
-		# --- TRIGGER CHARGE ---
-		_state = State.CHARGE
-		_nav_agent.target_position = _player.global_position
-		print("[Entity] CHARGE! Player stared too long! Sprinting at 3x speed!")
+	# Orient the Entity's model to face the player directly when illuminated
+	# This is visual/orientation logic, NOT state transition logic.
+	if is_illuminated and _monster_model and _player:
+		var dir_to_player = (_player.global_position - global_position).normalized()
+		var target_angle = atan2(dir_to_player.x, dir_to_player.z)
+		_monster_model.rotation.y = lerp_angle(_monster_model.rotation.y, target_angle, 0.1)
 		
-		# Play terrifying screech sound
-		if _growl_audio:
-			_growl_audio.pitch_scale = 1.5  # Higher pitch for screech
-			_growl_audio.play()
-		
-		return
-	
-	if look_timer > 0.1:
-		# --- STANDOFF STATE ---
-		if _state != State.STANDOFF:
-			_state = State.STANDOFF
-			print("[Entity] STANDOFF! Player is staring at the Entity.")
-		
-		# Orient the Entity's model to face the player directly
-		if _monster_model and _player:
-			var dir_to_player = (_player.global_position - global_position).normalized()
-			var target_angle = atan2(dir_to_player.x, dir_to_player.z)
-			_monster_model.rotation.y = lerp_angle(_monster_model.rotation.y, target_angle, 0.1)
-		
-		# Freeze velocity
+		# Freeze velocity while illuminated — the Director handles the state
 		velocity = Vector3.ZERO
-		
-	elif _state == State.STANDOFF:
-		# Player looked away — return to previous state
-		print("[Entity] Player looked away. Exiting STANDOFF.")
-		if current_night <= 2:
-			_state = State.OBSERVE_FROM_TREELINE
-		elif current_night == 3:
-			_state = State.APPROACH_WINDOW
-		else:
-			_state = State.PATROL
 
 
 ## Physically stalks to a new vantage point using NavigationAgent3D pathfinding.
@@ -1390,7 +1990,7 @@ func on_player_stare(look_timer: float) -> void:
 ## BEHAVIOR:
 ##   1. Picks a new vantage point via entity_navigation.pick_next_vantage_point()
 ##   2. Sets the NavigationAgent3D target to that position
-##   3. Transitions to a physical movement phase (State.OBSERVE_FROM_TREELINE)
+##   3. Transitions to a physical movement phase (EntityAI.State.OBSERVE_FROM_TREELINE)
 ##      where the Entity moves at stalk speed along the computed path
 ##   4. The "Creeping Ghost" collision layer is active during this movement,
 ##      allowing the Entity to phase through tree/rock collision while still
@@ -1403,7 +2003,7 @@ func on_player_stare(look_timer: float) -> void:
 func fade_and_relocate() -> void:
 	if _is_fading:
 		return
-	print("[Entity] fade_and_relocate() called! Current state: ", State.keys()[_state])
+	print("[Entity] fade_and_relocate() called! Current state: ", EntityAI.State.keys()[_state])
 	_is_fading = true
 	
 	# Pick a new vantage point via the navigation system.
@@ -1412,9 +2012,12 @@ func fade_and_relocate() -> void:
 	
 	# Transition to OBSERVE_FROM_TREELINE — the AI will handle the physical
 	# movement toward the new vantage point via _observe_from_treeline_state().
-	# The "Creeping Ghost" collision layer is automatically applied by
-	# _update_collision_layers() each frame for this state.
-	_state = State.OBSERVE_FROM_TREELINE
+	# The NavigationAgent3D pathfinding naturally avoids the cabin and other
+	# obstacles by following the navigation mesh. The "Creeping Ghost" collision
+	# layer is automatically applied by _update_collision_layers() each frame
+	# for this state, allowing the Entity to phase through tree/rock collision
+	# while still steering around the cabin geometry.
+	request_state(EntityAI.State.OBSERVE_FROM_TREELINE)
 	
 	# Reset the stare timer so the Entity doesn't immediately try to
 	# relocate again upon arrival. The AI will set a new timer once
@@ -1525,7 +2128,7 @@ func trigger_overload_stun(trap_position: Vector3, duration: float = 30.0) -> vo
 		print("[Entity] Overload stun ignored — Entity is not active.")
 		return
 	
-	if _state == State.STUNNED:
+	if _state == EntityAI.State.STUNNED:
 		print("[Entity] Overload stun ignored — Entity is already stunned.")
 		return
 	
@@ -1538,7 +2141,7 @@ func trigger_overload_stun(trap_position: Vector3, duration: float = 30.0) -> vo
 	print("[Entity] ⚡ OVERLOAD STUN TRIGGERED! Distance to trap: %.1f units. Stun duration: %.1f seconds." % [dist_to_trap, duration])
 	
 	# Force the Entity into STUNNED state
-	_state = State.STUNNED
+	request_state(EntityAI.State.STUNNED)
 	_stun_timer = duration
 	
 	# Freeze all movement immediately
@@ -1569,7 +2172,7 @@ func trigger_overload_stun(trap_position: Vector3, duration: float = 30.0) -> vo
 ## If the Entity is NOT stunned when the blackout hits, this function does
 ## nothing — the Entity continues its normal behavior.
 func on_generator_blackout() -> void:
-	if _state != State.STUNNED:
+	if _state != EntityAI.State.STUNNED:
 		return
 	
 	print("[Entity] ⚡ BLACKOUT RELEASE! Generator died while Entity was stunned. ENRAGED!")
@@ -1584,7 +2187,7 @@ func on_generator_blackout() -> void:
 		print("[Entity] ENRAGED! Stalk speed permanently boosted from %.1f to %.1f (1.5x)." % [_original_stalk_speed, current_stalk_speed])
 	
 	# Release from stun — immediately begin hunting the player
-	_state = State.CHASE
+	request_state(EntityAI.State.CHASE)
 	_stun_timer = 0.0
 	
 	# Update nav target to the player's current position
@@ -1617,7 +2220,7 @@ func on_generator_blackout() -> void:
 ## Called automatically every time the state changes (see _physics_process).
 func _update_collision_layers() -> void:
 	match _state:
-		State.OBSERVE_FROM_TREELINE, State.PATROL:
+		EntityAI.State.OBSERVE_FROM_TREELINE, EntityAI.State.PATROL:
 			# "Creeping Ghost" mode: Disable tree/rock collision layers.
 			# The Entity phases through foliage while stalking outside.
 			# Only cabin geometry (layer 1) and player (layer 2) remain active.
@@ -1628,7 +2231,7 @@ func _update_collision_layers() -> void:
 			collision_mask |= (1 << (COLLISION_LAYER_PLAYER - 1)) # Layer 2: Player
 			# NOTE: Layers 3 (Tree) and 4 (Rock) are intentionally excluded.
 			
-		State.CHASE, State.CHARGE, State.APPROACH_WINDOW, State.WINDOW_PEEK, State.INDOOR_SEARCH, State.CLIMB_WALL, State.FLINCH, State.ATTACK_LAMP, State.RETREAT:
+		EntityAI.State.CHASE, EntityAI.State.CHARGE, EntityAI.State.APPROACH_WINDOW, EntityAI.State.WINDOW_PEEK, EntityAI.State.INDOOR_SEARCH, EntityAI.State.CLIMB_WALL, EntityAI.State.FLINCH, EntityAI.State.ATTACK_LAMP, EntityAI.State.RETREAT:
 			# Full collision mode: Re-enable ALL collision layers.
 			# The Entity must collide with everything during aggressive states
 			# to prevent phasing through doors, window frames, or cabin walls.
@@ -1673,64 +2276,51 @@ func _update_animations(_delta: float) -> void:
 	# frozen standoff. This prevents the animation state machine from caching
 	# and continuously looping the previous sprinting animation during
 	# supernatural transitions or while the Entity is locked in place.
-	# NOTE: RELOCATE is NOT included here — it is a safe initialization state
-	# only and is never used during active runtime transitions.
-	if _state == State.RETREAT or _state == State.DORMANT or _state == State.STANDOFF:
+	if _state == EntityAI.State.RETREAT or _state == EntityAI.State.DORMANT or _state == EntityAI.State.STANDOFF:
 		_anim_state_machine.travel("Idle")
 		return
 	
 	var real_vel := get_real_velocity()
 	var horz_speed := Vector2(real_vel.x, real_vel.z).length()
 	
-	match _state:
-		State.CHARGE:
-			# Use the running_crawl animation during CHARGE for a terrifying sprint
-			_anim_state_machine.travel("running_crawl")
-		State.WINDOW_PEEK:
-			# If the animation lock timer is active, play the AttackWindow
-			# animation. The lock is set to 1.5 seconds by entity_ai.gd's
-			# _window_peek_state() each time damage_barricade() is called
-			# (every 2.0s). The lock decrements by delta each frame, ensuring
-			# the animation plays for its full duration even if the next hit
-			# is 2 seconds away.
-			if _ai and _ai.has_method("is_barricade_anim_locked") and _ai.is_barricade_anim_locked():
-				_anim_state_machine.travel("AttackWindow")
-			else:
-				_anim_state_machine.travel("Idle")
-		State.INDOOR_SEARCH:
-			# Phase A (Vault Entry): Entity is climbing through the window frame.
-			# Play the EnterWindow animation until the indoor landing is reached.
-			if _ai and _ai.has_method("has_arrived_indoor") and not _ai.has_arrived_indoor():
-				_anim_state_machine.travel("EnterWindow")
-			# Phase B (Stalk Patrol): Low, creeping locomotion while hunting inside.
-			elif horz_speed > 0.2:
-				_anim_state_machine.travel("running_crawl")
-			else:
-				_anim_state_machine.travel("Idle")
-		State.CLIMB_WALL:
-			# Use running_crawl during wall climb for a spider-like ascent
-			if horz_speed > 0.2:
-				_anim_state_machine.travel("running_crawl")
-			else:
-				_anim_state_machine.travel("Idle")
-		State.FLINCH:
-			# Use running_crawl during the lateral sprint flinch
-			_anim_state_machine.travel("running_crawl")
-		State.ATTACK_LAMP:
-			# Use Stalk animation while moving toward the lamp, Idle while striking
-			if horz_speed > 0.2:
-				_anim_state_machine.travel("Stalk")
-			else:
-				_anim_state_machine.travel("Idle")
-		State.CHASE, State.APPROACH_WINDOW, State.OBSERVE_FROM_TREELINE, State.PATROL:
-
-			if real_vel.y > 0.8:
-				_anim_state_machine.travel("ClimbUp")
-			elif real_vel.y < -0.8 and not is_on_floor():
-				_anim_state_machine.travel("ClimbDown")
-			elif horz_speed > 0.2:
-				_anim_state_machine.travel("Stalk")
-			else:
-				_anim_state_machine.travel("Idle")
-		_:
-			_anim_state_machine.travel("Idle")
+	# ─── ACTION-LOCK OVERRIDES (non-movement animations) ─────────────
+	# These are distinct action animations that must play regardless of
+	# velocity. They take priority over standard locomotion blending.
+	
+	# AttackWindow: Barricade damage swing (WINDOW_PEEK)
+	if _state == EntityAI.State.WINDOW_PEEK:
+		if _ai and _ai.has_method("is_barricade_anim_locked") and _ai.is_barricade_anim_locked():
+			_anim_state_machine.travel("AttackWindow")
+			return
+	
+	# EnterWindow: Vault entry animation (INDOOR_SEARCH Phase A)
+	if _state == EntityAI.State.INDOOR_SEARCH:
+		if _ai and _ai.has_method("has_arrived_indoor") and not _ai.has_arrived_indoor():
+			_anim_state_machine.travel("EnterWindow")
+			return
+	
+	# ─── STANDARD LOCOMOTION BLENDING ────────────────────────────────
+	# Base animation selection on horizontal velocity and a posture flag.
+	# This replaces the bloated match statement that redundantly mapped
+	# each state to the same walk/crawl/idle animations.
+	
+	# Vertical movement (ClimbUp / ClimbDown) takes priority over horizontal
+	if real_vel.y > 0.8:
+		_anim_state_machine.travel("ClimbUp")
+		return
+	elif real_vel.y < -0.8 and not is_on_floor():
+		_anim_state_machine.travel("ClimbDown")
+		return
+	
+	# Determine posture based on state
+	var is_crawling: bool = (
+		_state == EntityAI.State.CHARGE or
+		_state == EntityAI.State.FLINCH or
+		_state == EntityAI.State.CLIMB_WALL or
+		(_state == EntityAI.State.INDOOR_SEARCH and _ai and _ai.has_method("has_arrived_indoor") and _ai.has_arrived_indoor())
+	)
+	
+	if horz_speed > 0.2:
+		_anim_state_machine.travel("running_crawl" if is_crawling else "Stalk")
+	else:
+		_anim_state_machine.travel("Idle")

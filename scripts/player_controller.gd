@@ -51,8 +51,8 @@ var _crosshair: Control
 # Stair climbing state
 var _was_on_floor: bool = false
 
-# Sprint unlock — locked on Night 1 until the first chase begins
-var sprint_unlocked: bool = false
+# Sprint unlock — enabled by default for development convenience
+var sprint_unlocked: bool = true
 
 # --- STANDOFF / CHARGE MECHANIC ---
 ## How long the player has been staring at the Entity with the flashlight on.
@@ -260,6 +260,18 @@ func enable_camera() -> void:
 		print("[Player] PhotoCamera acquired! Press R to toggle viewfinder.")
 	else:
 		print("[Player] WARNING: PhotoCamera node not found!")
+
+
+## Resets the camera holder rotation and camera offsets to zero.
+## Called by JumpscareManager after the jumpscare completes to fix
+## the tilted camera issue on respawn.
+func reset_camera() -> void:
+	_camera_holder.rotation = Vector3.ZERO
+	_camera_holder.global_transform.basis = Basis.IDENTITY
+	_camera.h_offset = 0.0
+	_camera.v_offset = 0.0
+	_camera.position = Vector3.ZERO
+	_head_bob_time = 0.0
 
 
 ## Toggles the CameraHUD overlay directly for debugging (Y key).
@@ -596,6 +608,23 @@ func _is_flashlight_on_entity() -> bool:
 ## Called by entity_sensory.gd to check flashlight state without string-based property access.
 func is_flashlight_on() -> bool:
 	return _has_flashlight and _flashlight != null and _flashlight.is_on
+
+
+## Returns the name of the room the player is currently in, or "Outside" if
+## the player is not inside any registered cabin interior area.
+## Uses Area3D nodes in the "Cabin_Interior" group. The room name is taken
+## from the Area3D node's name (e.g., "ComputerRoom", "Livingroom").
+func get_player_room() -> String:
+	var cabin_interiors = get_tree().get_nodes_in_group("Cabin_Interior")
+	
+	for area in cabin_interiors:
+		if area is Area3D:
+			# Check if the Player (self) is inside this area
+			if area.overlaps_body(self):
+				# Use the node's name as the room name
+				return area.name
+	
+	return "Outside"
 
 
 # --- NEW NOISE SYSTEM EMITTER ---

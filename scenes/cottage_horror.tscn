@@ -112,9 +112,11 @@ glow_levels/7 = 0.01
 density = 0.08
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_fl8v4"]
-vertices = PackedVector3Array(-250, 0, -250, 250, 0, -250, 250, 0, 250, -250, 0, 250)
-polygons = [PackedInt32Array(0, 1, 2), PackedInt32Array(0, 2, 3)]
-agent_radius = 0.2
+geometry_parsed_geometry_type = 1
+geometry_source_geometry_mode = 1
+geometry_source_group_name = &"navmesh_source"
+agent_height = 0.25
+agent_radius = 0.25
 
 [sub_resource type="StandardMaterial3D" id="Mat_ground"]
 albedo_texture = ExtResource("4_wvbas")
@@ -128,401 +130,6 @@ size = Vector3(1, 0.05, 1)
 
 [sub_resource type="BoxShape3D" id="Shape_computer"]
 size = Vector3(0.8, 0.8, 0.8)
-
-[sub_resource type="GDScript" id="GDScript_iwcjx"]
-script/source = "extends Node3D
-
-## Grid Blanket Spawner — replaces the old ring-based tree spawning with a
-## physics-aware nested grid system. Uses downward raycasts to find the actual
-## ground height, avoids roads, trails, and the cabin footprint.
-@export var spawner_enabled: bool = true
-## Array of tree PackedScenes to randomly choose from
-@export var tree_scenes: Array[PackedScene]
-
-## Array of foliage PackedScenes (bushes, ferns, mushrooms, weeds) — purely aesthetic, NO colliders
-@export var foliage_scenes: Array[PackedScene]
-
-## Direction of the road (0 is East)
-@export var road_angle: float = 0.0
-
-## Width of the \"no tree\" zone along the road
-@export var road_gap_width: float = 0.8
-
-## Half-size of the square map area. Loops from -map_bounds_size to +map_bounds_size on X and Z
-@export var map_bounds_size: float = 80.0
-
-## Distance between placement attempts in the grid
-@export var grid_step: float = 4.0
-
-## Random displacement added to each grid position to break up grid lines
-@export var position_jitter: float = 2.0
-
-## Probability (0.0–1.0) that a given grid cell actually spawns a tree.
-## Set lower to thin out the forest and reduce lag.
-@export var spawn_chance: float = 0.55
-
-## Probability (0.0–1.0) that a given grid cell spawns foliage alongside trees.
-@export var foliage_spawn_chance: float = 0.35
-
-## How many foliage pieces to spawn per tree (1 = sparse, 3-5 = lush forest floor)
-@export var foliage_per_tree: int = 4
-
-## Probability (0.0–1.0) that a grid cell spawns standalone foliage even without a tree.
-@export var standalone_foliage_chance: float = 0.6
-
-## Maximum number of standalone foliage pieces to spawn (safety cap).
-@export var max_foliage_count: int = 2000
-
-## Maximum number of trees to spawn (safety cap to prevent lag).
-@export var max_tree_count: int = 800
-
-## Center of the cabin — trees within cabin_exclusion_radius will be skipped
-@export var cabin_position: Vector3 = Vector3(9.009, 0, 0.409)
-
-## Radius around the cabin where no trees are placed (12m to prevent clipping)
-@export var cabin_exclusion_radius: float = 12.0
-
-
-func _ready() -> void:
-	if not spawner_enabled:
-		print(\"TreeSpawner is disabled via Inspector. Skipping generation.\")
-		return
-	else:	
-		# Auto-populate PizzaDoggy PSX assets if arrays are empty
-		_load_pizzadoggy_assets()
-		_spawn_trees()
-		# Second pass: fill the forest floor with standalone foliage
-		_spawn_standalone_foliage()
-
-
-func _spawn_trees() -> void:
-	var trees_spawned: int = 0
-	
-	# Nested grid loop — covers the entire map area evenly
-	for x_pos in range(-int(map_bounds_size), int(map_bounds_size), int(grid_step)):
-		for z_pos in range(-int(map_bounds_size), int(map_bounds_size), int(grid_step)):
-			# Safety cap: stop spawning once we hit the limit
-			if trees_spawned >= max_tree_count:
-				print(\"TreeSpawner: Reached max_tree_count (%d). Stopping.\" % max_tree_count)
-				return
-			
-			# Density control: only a fraction of grid cells actually spawn a tree
-			if randf() > spawn_chance:
-				continue
-			
-			# Add jitter to break up grid lines
-			var target_x = x_pos + randf_range(-position_jitter, position_jitter)
-			var target_z = z_pos + randf_range(-position_jitter, position_jitter)
-			
-			# --- ROAD ANGLE CHECK ---
-			# Calculate the angle of this position relative to the origin
-			var angle = atan2(target_z, target_x)
-			var angle_diff = abs(wrapf(angle - road_angle, -PI, PI))
-			if angle_diff < road_gap_width:
-				continue
-			
-			# --- PHYSICS RAYCAST — find the actual ground height ---
-			var space_state = get_world_3d().direct_space_state
-			if not space_state:
-				continue
-			
-			var ray_from = Vector3(target_x, 30.0, target_z)
-			var ray_to = Vector3(target_x, -20.0, target_z)
-			var query = PhysicsRayQueryParameters3D.create(ray_from, ray_to)
-			query.collide_with_areas = false
-			query.collide_with_bodies = true
-			
-			var result = space_state.intersect_ray(query)
-			if result.is_empty():
-				continue  # No ground found — skip
-			
-			# --- CABIN COLLIDER FAILSAFE ---
-			# If the raycast hit the cabin/house itself, skip (defeats badly-offset 3D meshes)
-			if result.collider.name.containsn(\"cabin\") or result.collider.name.containsn(\"house\"):
-				continue
-			
-			# --- TRAIL MESH AVOIDANCE ---
-			# Check if the collider is a trail mesh (narrow walking paths)
-			if result.collider.name.contains(\"TrailMesh\"):
-				continue
-			
-			# --- CABIN FOOTPRINT CHECK (moderate exclusion zone) ---
-			# Keep a reasonable clearing around the cabin structure itself.
-			# The cabin is roughly at (9, 0, 0.4) — we exclude a ~12m radius circle.
-			var ground_point = result.position
-			var cabin_cx = cabin_position.x
-			var cabin_cz = cabin_position.z
-			var dist_to_cabin = Vector2(ground_point.x - cabin_cx, ground_point.z - cabin_cz).length()
-			if dist_to_cabin < cabin_exclusion_radius:
-				continue
-			
-			# --- ASSET PLACEMENT ---
-			# Pick a random tree scene
-			var tree_resource = tree_scenes.pick_random()
-			if not tree_resource:
-				continue
-			var tree = tree_resource.instantiate()
-			add_child(tree)
-			trees_spawned += 1
-			
-			# Position at the exact ground intersection point
-			tree.global_position = ground_point
-			
-			# Random Y rotation
-			tree.rotation.y = randf_range(0, TAU)
-			
-			# --- ORIGIN OFFSET NORMALIZATION (PizzaDoggy PSX models) ---
-			# PizzaDoggy GLB imports often nest MeshInstance3D nodes inside Node3D wrappers
-			# with non-zero local transforms. We recursively traverse ALL descendants to
-			# neutralize offsets so the model sits correctly at the parent origin.
-			_center_node_hierarchy(tree)
-			
-			# Ensure the tree has a collider
-			_ensure_collider(tree)
-			
-			# --- FOLIAGE PLACEMENT (non-colliding undergrowth) ---
-			_spawn_foliage_near(ground_point, space_state)
-	
-	print(\"TreeSpawner: Finished. Spawned %d trees.\" % trees_spawned)
-
-
-func _spawn_foliage_near(ground_pos: Vector3, space_state: PhysicsDirectSpaceState3D) -> void:
-	## Places decorative foliage (ferns, grass, mushrooms, stones) around a tree position.
-	## Spawns multiple pieces per tree for a lush forest floor.
-	## Foliage NEVER gets colliders — purely aesthetic.
-	if foliage_scenes.is_empty():
-		return
-	
-	# Roll the dice for foliage at this location
-	if randf() > foliage_spawn_chance:
-		return
-	
-	# Spawn multiple foliage pieces around the tree for a lush undergrowth
-	var count = randi_range(1, foliage_per_tree)
-	for i in range(count):
-		_place_single_foliage(ground_pos, space_state)
-
-
-func _place_single_foliage(ground_pos: Vector3, space_state: PhysicsDirectSpaceState3D) -> void:
-	## Places one piece of foliage at a random offset from the given position.
-	var foliage_resource = foliage_scenes.pick_random()
-	if not foliage_resource:
-		return
-	
-	# Random offset around the tree (0.3 to 3.0 meters away)
-	var offset_dist = randf_range(0.3, 3.0)
-	var offset_angle = randf_range(0, TAU)
-	var foliage_x = ground_pos.x + cos(offset_angle) * offset_dist
-	var foliage_z = ground_pos.z + sin(offset_angle) * offset_dist
-	
-	# --- CABIN EXCLUSION CHECK ---
-	var dist_to_cabin = Vector2(foliage_x - cabin_position.x, foliage_z - cabin_position.z).length()
-	if dist_to_cabin < cabin_exclusion_radius:
-		return
-	
-	# Raycast to find ground height at foliage position
-	var ray_from = Vector3(foliage_x, 30.0, foliage_z)
-	var ray_to = Vector3(foliage_x, -20.0, foliage_z)
-	var query = PhysicsRayQueryParameters3D.create(ray_from, ray_to)
-	query.collide_with_areas = false
-	query.collide_with_bodies = true
-	
-	var result = space_state.intersect_ray(query)
-	if result.is_empty():
-		return
-	
-	# Skip if raycast hit the cabin/house or trail mesh
-	if result.collider.name.containsn(\"cabin\") or result.collider.name.containsn(\"house\"):
-		return
-	if result.collider.name.contains(\"TrailMesh\"):
-		return
-	
-	var foliage_ground = result.position
-	
-	var foliage = foliage_resource.instantiate()
-	add_child(foliage)
-	foliage.global_position = foliage_ground
-	foliage.rotation.y = randf_range(0, TAU)
-	
-	# Random scale variation for natural look
-	var scale_var = randf_range(0.7, 1.3)
-	foliage.scale = Vector3(scale_var, scale_var, scale_var)
-	
-	# CRITICAL: Foliage NEVER gets colliders — skip _ensure_collider entirely.
-	# The player and Entity must be able to walk straight through bushes.
-	
-	# --- ORIGIN OFFSET NORMALIZATION (PizzaDoggy PSX foliage) ---
-	_center_node_hierarchy(foliage)
-
-
-func _spawn_standalone_foliage() -> void:
-	## Second pass: fills the entire forest floor with standalone foliage
-	## (ferns, grass, mushrooms, stones) on a finer grid between trees.
-	## This creates a dense, natural-looking undergrowth layer.
-	if foliage_scenes.is_empty():
-		return
-	
-	var space_state = get_world_3d().direct_space_state
-	if not space_state:
-		return
-	
-	var foliage_spawned: int = 0
-	var foliage_grid_step = 2.0  # Finer grid than trees (4.0)
-	
-	for x_pos in range(-int(map_bounds_size), int(map_bounds_size), int(foliage_grid_step)):
-		for z_pos in range(-int(map_bounds_size), int(map_bounds_size), int(foliage_grid_step)):
-			if foliage_spawned >= max_foliage_count:
-				print(\"TreeSpawner: Reached max_foliage_count (%d). Stopping standalone foliage.\" % max_foliage_count)
-				return
-			
-			# Density control
-			if randf() > standalone_foliage_chance:
-				continue
-			
-			var target_x = x_pos + randf_range(-0.5, 0.5)
-			var target_z = z_pos + randf_range(-0.5, 0.5)
-			
-			# --- CABIN EXCLUSION ---
-			var dist_to_cabin = Vector2(target_x - cabin_position.x, target_z - cabin_position.z).length()
-			if dist_to_cabin < cabin_exclusion_radius:
-				continue
-			
-			# Raycast to find ground
-			var ray_from = Vector3(target_x, 30.0, target_z)
-			var ray_to = Vector3(target_x, -20.0, target_z)
-			var query = PhysicsRayQueryParameters3D.create(ray_from, ray_to)
-			query.collide_with_areas = false
-			query.collide_with_bodies = true
-			
-			var result = space_state.intersect_ray(query)
-			if result.is_empty():
-				continue
-			
-			# Skip cabin, house, trail meshes
-			if result.collider.name.containsn(\"cabin\") or result.collider.name.containsn(\"house\"):
-				continue
-			if result.collider.name.contains(\"TrailMesh\"):
-				continue
-			
-			var ground_pos = result.position
-			
-			var foliage_resource = foliage_scenes.pick_random()
-			if not foliage_resource:
-				continue
-			
-			var foliage = foliage_resource.instantiate()
-			add_child(foliage)
-			foliage_spawned += 1
-			foliage.global_position = ground_pos
-			foliage.rotation.y = randf_range(0, TAU)
-			
-			# Random scale variation
-			var scale_var = randf_range(0.7, 1.3)
-			foliage.scale = Vector3(scale_var, scale_var, scale_var)
-			
-			_center_node_hierarchy(foliage)
-	
-	print(\"TreeSpawner: Spawned %d standalone foliage pieces.\" % foliage_spawned)
-
-
-func _load_pizzadoggy_assets() -> void:
-	## Auto-populates tree_scenes and foliage_scenes from PizzaDoggy PSX GLB files
-	## if the arrays are empty. This allows the spawner to work without manual
-	## inspector assignment.
-	var base_path = \"res://assets/PSX Nature/Models/GLB/\"
-	
-	# --- TREES (pine + deciduous) ---
-	if tree_scenes.is_empty():
-		var tree_paths := [
-			base_path + \"pine_tree_n_1.glb\",
-			base_path + \"pine_tree_n_1_1.glb\",
-			base_path + \"pine_tree_n_1_2.glb\",
-			base_path + \"pine_tree_n_1_3.glb\",
-			base_path + \"pine_tree_n_1_4.glb\",
-			base_path + \"pine_tree_n_2.glb\",
-			base_path + \"pine_tree_n_2_1.glb\",
-			base_path + \"pine_tree_n_2_2.glb\",
-			base_path + \"pine_tree_n_2_3.glb\",
-			base_path + \"pine_tree_n_2_4.glb\",
-			base_path + \"pine_tree_n_3.glb\",
-			base_path + \"pine_tree_n_3_1.glb\",
-			base_path + \"pine_tree_n_3_2.glb\",
-			base_path + \"pine_tree_n_3_3.glb\",
-			base_path + \"pine_tree_n_3_4.glb\",
-			base_path + \"tree_1.glb\",
-			base_path + \"tree_5.glb\",
-			base_path + \"tree_6.glb\",
-		]
-		for path in tree_paths:
-			var scene = load(path) as PackedScene
-			if scene:
-				tree_scenes.append(scene)
-		print(\"TreeSpawner: Auto-loaded %d PizzaDoggy tree scenes.\" % tree_scenes.size())
-	
-	# --- FOLIAGE (ferns, grass, mushrooms, stones) ---
-	if foliage_scenes.is_empty():
-		var foliage_paths := [
-			base_path + \"fern_1.glb\",
-			base_path + \"fern_2.glb\",
-			base_path + \"fern_3.glb\",
-			base_path + \"grass_1.glb\",
-			base_path + \"grass_2.glb\",
-			base_path + \"grass_3.glb\",
-			base_path + \"grass_4.glb\",
-			base_path + \"mushroom_n_1.glb\",
-			base_path + \"mushroom_n_1_0.glb\",
-			base_path + \"mushroom_n_1_1.glb\",
-			base_path + \"mushroom_n_1_2.glb\",
-			base_path + \"mushroom_n_2.glb\",
-			base_path + \"mushroom_n_2_0.glb\",
-			base_path + \"mushroom_n_2_1.glb\",
-			base_path + \"mushroom_n_2_2.glb\",
-			base_path + \"mushroom_n_3.glb\",
-			base_path + \"mushroom_n_3_1.glb\",
-			base_path + \"mushroom_n_4.glb\",
-			base_path + \"mushroom_n_4_1.glb\",
-			base_path + \"stone_1.glb\",
-			base_path + \"stone_2.glb\",
-			base_path + \"stone_3.glb\",
-			base_path + \"stone_4.glb\",
-			base_path + \"stone_5.glb\",
-		]
-		for path in foliage_paths:
-			var scene = load(path) as PackedScene
-			if scene:
-				foliage_scenes.append(scene)
-		print(\"TreeSpawner: Auto-loaded %d PizzaDoggy foliage scenes.\" % foliage_scenes.size())
-
-
-func _center_node_hierarchy(node: Node3D) -> void:
-	## Recursively traverses all descendants and resets local positions to zero.
-	## Handles PizzaDoggy GLB imports that nest MeshInstance3D nodes inside
-	## Node3D wrappers with non-zero local transforms.
-	for child in node.get_children():
-		if child is MeshInstance3D or child is Node3D:
-			child.position = Vector3.ZERO
-			# Recurse into Node3D wrappers to catch deeper nesting
-			if child is Node3D and child.get_child_count() > 0:
-				_center_node_hierarchy(child)
-
-
-func _ensure_collider(tree_node: Node3D) -> void:
-	# This checks if the tree already has a StaticBody3D.
-	# If not, it adds a simple Cylinder collider.
-	if not tree_node.find_child(\"*StaticBody3D*\", true):
-		var static_body = StaticBody3D.new()
-		var collision_shape = CollisionShape3D.new()
-		var cylinder = CylinderShape3D.new()
-		
-		cylinder.height = 10.0  # Adjust to your tree height
-		cylinder.radius = 0.5   # Adjust to your trunk width
-		
-		collision_shape.shape = cylinder
-		static_body.add_child(collision_shape)
-		tree_node.add_child(static_body)
-		# Move the collider slightly up so it's not halfway in the ground
-		collision_shape.position.y = 5.0
-"
 
 [sub_resource type="PhysicsMaterial" id="PhysicsMaterial_vl51y"]
 
@@ -1448,113 +1055,23 @@ material = SubResource("Fog_basement")
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1000000002]
 navigation_mesh = SubResource("NavigationMesh_fl8v4")
 
-[node name="Ground" type="StaticBody3D" parent="NavigationRegion3D" unique_id=1321973830 groups=["grass"]]
-transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 0, 0, 0)
+[node name="Ground" type="StaticBody3D" parent="NavigationRegion3D" unique_id=1321973830 groups=["grass", "navmesh_source"]]
 
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Ground" unique_id=508296006]
 transform = Transform3D(500, 0, 0, 0, 1, 0, 0, 0, 500, 0.031178284, 0, 0.0006004334)
 material_override = SubResource("Mat_ground")
 mesh = SubResource("Mesh_ground")
 
-[node name="pine_tree_n_12" parent="NavigationRegion3D/Ground/Mesh" unique_id=807040485 instance=ExtResource("8_jtbog")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.27979, 0.1250019, 9.347437)
-
-[node name="Node3D7" parent="NavigationRegion3D/Ground/Mesh" unique_id=335884299 instance=ExtResource("10_mdrot")]
-transform = Transform3D(-0.99788964, 0, -0.06493318, 0, 1, 0, 0.06493318, 0, -0.99788964, 46.163666, 0.5547339, -50.05172)
-
-[node name="Node3D8" parent="NavigationRegion3D/Ground/Mesh" unique_id=494832887 instance=ExtResource("10_mdrot")]
-transform = Transform3D(-0.6955617, 0, -0.7184664, 0, 1, 0, 0.7184664, 0, -0.6955617, 38.183937, 0.5547415, -35.4927)
-
-[node name="Node3D9" parent="NavigationRegion3D/Ground/Mesh" unique_id=508752233 instance=ExtResource("10_mdrot")]
-transform = Transform3D(-0.9960209, 0, 0.08912021, 0, 1, 0, -0.08912021, 0, -0.9960209, 24.38356, 0.5547339, -47.146194)
-
-[node name="Node3D10" parent="NavigationRegion3D/Ground/Mesh" unique_id=1398654972 instance=ExtResource("10_mdrot")]
-transform = Transform3D(-0.15093282, 0, -0.9885441, 0, 1, 0, 0.9885441, 0, -0.15093282, 32.10151, -0.23728883, -61.407253)
-
 [node name="Collision" type="CollisionShape3D" parent="NavigationRegion3D/Ground" unique_id=1724641179]
 transform = Transform3D(500, 0, 0, 0, 1, 0, 0, 0, 500, 0, 0, 0)
 shape = SubResource("Shape_ground")
 
-[node name="FlashlightPickup" parent="NavigationRegion3D/Ground" unique_id=321211457 instance=ExtResource("54_flashlight")]
-transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 1.7018912, 0.26700485, 1.7224579)
-
-[node name="Fuse" parent="NavigationRegion3D/Ground" unique_id=185857692 instance=ExtResource("11_j6uu5")]
-transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 1.7111626, 0.34890792, 2.157238)
-
-[node name="Fuse2" parent="NavigationRegion3D/Ground" unique_id=517490088 instance=ExtResource("11_j6uu5")]
-transform = Transform3D(0.2, 0, 0, 0, 0.2, 0, 0, 0, 0.2, 1.7111626, 0.34890792, 2.193138)
-
-[node name="Cabin" parent="NavigationRegion3D" unique_id=1282417259 instance=ExtResource("7_cabins")]
+[node name="Cabin" parent="NavigationRegion3D" unique_id=1282417259 groups=["navmesh_source"] instance=ExtResource("7_cabins")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.009, 0.05, 0.409)
 
 [node name="Door" parent="NavigationRegion3D/Cabin" unique_id=187910433 instance=ExtResource("11_jjdw5")]
 transform = Transform3D(-5.2453668e-08, 0, -1.2, 0, 1.1, 0, 1.2, 0, -5.2453668e-08, 0.15686512, 0.7928264, 8.645942)
 required_key_name = "Cabin Key"
-
-[node name="Lamp" type="Node3D" parent="NavigationRegion3D" unique_id=409032314]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.615746, 5.7159414, 11.382706)
-visible = false
-
-[node name="OmniLight3D" type="OmniLight3D" parent="NavigationRegion3D/Lamp" unique_id=6746865]
-light_color = Color(1, 0.85, 0.5, 1)
-light_energy = 3.0
-shadow_enabled = true
-omni_range = 6.0
-
-[node name="LampFlicker" type="Node3D" parent="NavigationRegion3D/Lamp" unique_id=17860872]
-script = ExtResource("5_lamp_flicker")
-light_node_path = NodePath("../OmniLight3D")
-
-[node name="cobweb_12" parent="NavigationRegion3D" unique_id=1799062514 instance=ExtResource("13_f6rfm")]
-transform = Transform3D(0.82609826, 0, 0.5635261, 0, 1, 0, -0.5635261, 0, 0.82609826, 5.4535775, 3.4951754, 8.155066)
-
-[node name="table_large_22" parent="NavigationRegion3D" unique_id=120490383 instance=ExtResource("14_63ebo")]
-transform = Transform3D(0.0068590865, 0, -0.9999766, 0, 1, 0, 0.9999766, 0, 0.0068590865, 14.711533, 0.6831003, 16.001389)
-
-[node name="chair_mp_4_32" parent="NavigationRegion3D" unique_id=635902003 instance=ExtResource("15_0emg7")]
-transform = Transform3D(0.12202527, 0, 0.992527, 0, 1, 0, -0.992527, 0, 0.12202527, 13.863236, 0.6831002, 15.569919)
-
-[node name="DebugComputer" type="StaticBody3D" parent="NavigationRegion3D" unique_id=374033477 groups=["debug_computer"]]
-transform = Transform3D(0.07483949, 0, -0.9971956, 0, 1, 0, 0.9971956, 0, 0.07483949, 14.804108, 0.6830999, 14.900693)
-script = ExtResource("16_debug_computer")
-
-[node name="pc_mp_12" parent="NavigationRegion3D/DebugComputer" unique_id=374033478 instance=ExtResource("16_uaofw")]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="NavigationRegion3D/DebugComputer" unique_id=374033479]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
-shape = SubResource("Shape_computer")
-
-[node name="walkie_talkie_22" parent="NavigationRegion3D" unique_id=386430228 instance=ExtResource("17_xarc6")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.985503, 1.6431003, 16.613337)
-
-[node name="sofa_1_32" parent="NavigationRegion3D" unique_id=158399199 instance=ExtResource("18_0ioup")]
-transform = Transform3D(-0.9997398, 0, -0.022809586, 0, 1, 0, 0.022809586, 0, -0.9997398, 13.696034, 0.68310034, 20.297552)
-
-[node name="cardboard_box_12" parent="NavigationRegion3D" unique_id=1233261847 instance=ExtResource("19_ui7ij")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.622974, 0.6831003, 17.258347)
-
-[node name="carpet_mp_12" parent="NavigationRegion3D" unique_id=1780931632 instance=ExtResource("20_q663k")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.276798, 0.6831006, 18.377388)
-
-[node name="ashtray_12" parent="NavigationRegion3D" unique_id=1741046402 instance=ExtResource("21_1m0e5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.992285, 1.6431003, 16.230412)
-
-[node name="book_mp_12" parent="NavigationRegion3D" unique_id=1371649262 instance=ExtResource("24_yohq4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.532306, 1.6431003, 16.652176)
-
-[node name="painting_12" parent="NavigationRegion3D" unique_id=2123567333 instance=ExtResource("25_4ma01")]
-transform = Transform3D(-0.99987555, 0, 0.015777022, 0, 1, 0, -0.015777022, 0, -0.99987555, 5.2164383, 5.6632886, 20.430408)
-
-[node name="Bed" parent="NavigationRegion3D" unique_id=501505394 instance=ExtResource("26_1cglp")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.834966, 3.7331, 15.221859)
-
-[node name="TreeSpawner" type="Node3D" parent="." unique_id=447224740]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -10, 0)
-script = SubResource("GDScript_iwcjx")
-spawner_enabled = false
-tree_scenes = Array[PackedScene]([ExtResource("10_mdrot")])
-road_angle = 4.71239
-road_gap_width = 0.6
 
 [node name="Details" type="Node" parent="." unique_id=1144393623]
 
@@ -1940,6 +1457,72 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.485138, 1.6431003, 16.2146
 [node name="pc_mouse_mp_12" parent="Details/Inside Cabin" unique_id=1379710681 instance=ExtResource("49_4ma01")]
 transform = Transform3D(0.25929102, 0, -0.9657992, 0, 1, 0, 0.9657992, 0, 0.25929102, 14.519256, 1.6431003, 16.175972)
 
+[node name="FlashlightPickup" parent="Details/Inside Cabin" unique_id=321211457 instance=ExtResource("54_flashlight")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.509456, 1.3350242, 8.612289)
+
+[node name="Fuse" parent="Details/Inside Cabin" unique_id=185857692 instance=ExtResource("11_j6uu5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.555813, 1.7445396, 10.78619)
+
+[node name="Fuse2" parent="Details/Inside Cabin" unique_id=517490088 instance=ExtResource("11_j6uu5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.555813, 1.7445396, 10.96569)
+
+[node name="Lamp" type="Node3D" parent="Details/Inside Cabin" unique_id=409032314]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.615746, 5.7159414, 11.382706)
+visible = false
+
+[node name="OmniLight3D" type="OmniLight3D" parent="Details/Inside Cabin/Lamp" unique_id=6746865]
+light_color = Color(1, 0.85, 0.5, 1)
+light_energy = 3.0
+shadow_enabled = true
+omni_range = 6.0
+
+[node name="LampFlicker" type="Node3D" parent="Details/Inside Cabin/Lamp" unique_id=17860872]
+script = ExtResource("5_lamp_flicker")
+light_node_path = NodePath("../OmniLight3D")
+
+[node name="cobweb_12" parent="Details/Inside Cabin" unique_id=1799062514 instance=ExtResource("13_f6rfm")]
+transform = Transform3D(0.82609826, 0, 0.5635261, 0, 1, 0, -0.5635261, 0, 0.82609826, 5.4535775, 3.4951754, 8.155066)
+
+[node name="table_large_22" parent="Details/Inside Cabin" unique_id=120490383 instance=ExtResource("14_63ebo")]
+transform = Transform3D(0.0068590865, 0, -0.9999766, 0, 1, 0, 0.9999766, 0, 0.0068590865, 14.711533, 0.6831003, 16.001389)
+
+[node name="chair_mp_4_32" parent="Details/Inside Cabin" unique_id=635902003 instance=ExtResource("15_0emg7")]
+transform = Transform3D(0.12202527, 0, 0.992527, 0, 1, 0, -0.992527, 0, 0.12202527, 13.863236, 0.6831002, 15.569919)
+
+[node name="DebugComputer" type="StaticBody3D" parent="Details/Inside Cabin" unique_id=374033477 groups=["debug_computer"]]
+transform = Transform3D(0.07483949, 0, -0.9971956, 0, 1, 0, 0.9971956, 0, 0.07483949, 14.804108, 0.6830999, 14.900693)
+script = ExtResource("16_debug_computer")
+
+[node name="pc_mp_12" parent="Details/Inside Cabin/DebugComputer" unique_id=374033478 instance=ExtResource("16_uaofw")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Details/Inside Cabin/DebugComputer" unique_id=374033479]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("Shape_computer")
+
+[node name="walkie_talkie_22" parent="Details/Inside Cabin" unique_id=386430228 instance=ExtResource("17_xarc6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.985503, 1.6431003, 16.613337)
+
+[node name="sofa_1_32" parent="Details/Inside Cabin" unique_id=158399199 instance=ExtResource("18_0ioup")]
+transform = Transform3D(-0.9997398, 0, -0.022809586, 0, 1, 0, 0.022809586, 0, -0.9997398, 13.696034, 0.68310034, 20.297552)
+
+[node name="cardboard_box_12" parent="Details/Inside Cabin" unique_id=1233261847 instance=ExtResource("19_ui7ij")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.622974, 0.6831003, 17.258347)
+
+[node name="carpet_mp_12" parent="Details/Inside Cabin" unique_id=1780931632 instance=ExtResource("20_q663k")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.276798, 0.6831006, 18.377388)
+
+[node name="ashtray_12" parent="Details/Inside Cabin" unique_id=1741046402 instance=ExtResource("21_1m0e5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.992285, 1.6431003, 16.230412)
+
+[node name="book_mp_12" parent="Details/Inside Cabin" unique_id=1371649262 instance=ExtResource("24_yohq4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.532306, 1.6431003, 16.652176)
+
+[node name="painting_12" parent="Details/Inside Cabin" unique_id=2123567333 instance=ExtResource("25_4ma01")]
+transform = Transform3D(-0.99987555, 0, 0.015777022, 0, 1, 0, -0.015777022, 0, -0.99987555, 5.2164383, 5.6632886, 20.430408)
+
+[node name="Bed" parent="Details/Inside Cabin" unique_id=501505394 instance=ExtResource("26_1cglp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.834966, 3.7331, 15.221859)
+
 [node name="Battery" parent="." unique_id=429245273 instance=ExtResource("19_battery")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.98, -1.5)
 physics_material_override = SubResource("PhysicsMaterial_vl51y")
@@ -1994,8 +1577,6 @@ nest_name = "Nest Gamma"
 
 [node name="Camera" parent="NestLocations" unique_id=1632427029 instance=ExtResource("54_3te1r")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.240173, 1.0853814, 3.0290585)
-
-[node name="WindowMarkers" type="Node3D" parent="." unique_id=859502605 groups=["WindowMarkers"]]
 
 [node name="EntityWaypoints" type="Node3D" parent="." unique_id=1642313285]
 
@@ -2104,37 +1685,57 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.818844, 0.18468976, 13.314
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.347064, 2.7329483, 8.2177)
 window_id = "Hall_Window"
 
+[node name="IndoorBreachWaypoint" type="Marker3D" parent="Windows/CabinWindow" unique_id=2011348091]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.866895, 0.9909649)
+
 [node name="CabinWindow2" parent="Windows" unique_id=1043743832 instance=ExtResource("57_1m0e5")]
 transform = Transform3D(-0.99884087, 0, -0.048134953, 0, 1, 0, 0.048134953, 0, -0.99884087, 7.7040334, 2.7329483, 20.425827)
 window_id = "LivingRoom_Right"
+
+[node name="IndoorBreachWaypoint" type="Marker3D" parent="Windows/CabinWindow2" unique_id=633896754]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.866895, 0.9909649)
 
 [node name="CabinWindow3" parent="Windows" unique_id=1291972590 instance=ExtResource("57_1m0e5")]
 transform = Transform3D(-0.0071035363, 0, -0.9999747, 0, 1, 0, 0.9999747, 0, -0.0071035363, 15.223603, 2.8649836, 18.984535)
 window_id = "Kitchen_Right"
 
+[node name="IndoorBreachWaypoint" type="Marker3D" parent="Windows/CabinWindow3" unique_id=1119922258]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.43977737, -1.866895, 0.9940882)
+
 [node name="CabinWindow4" parent="Windows" unique_id=885898012 instance=ExtResource("57_1m0e5")]
 transform = Transform3D(-0.0071035363, 0, -0.9999747, 0, 1, 0, 0.9999747, 0, -0.0071035363, 15.223603, 2.8649836, 15.946318)
 window_id = "Kitchen_Left"
+
+[node name="IndoorBreachWaypoint" type="Marker3D" parent="Windows/CabinWindow4" unique_id=480889329]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.013884544, -1.866895, 2.9453506)
 
 [node name="CabinWindow5" parent="Windows" unique_id=671212231 instance=ExtResource("57_1m0e5")]
 transform = Transform3D(-0.99825746, 0, 0.05901034, 0, 1, 0, -0.05901034, 0, -0.99825746, 7.6797185, 5.720055, 20.384157)
 window_id = "Bedroom_Right"
 
+[node name="IndoorBreachWaypoint" type="Marker3D" parent="Windows/CabinWindow5" unique_id=2010978790]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.866895, 0.9909649)
+
 [node name="CabinWindow6" parent="Windows" unique_id=674635353 instance=ExtResource("57_1m0e5")]
 transform = Transform3D(-0.07463078, 0, -0.9972113, 0, 1, 0, 0.9972113, 0, -0.07463078, 15.243697, 5.720055, 18.996672)
 window_id = "Attic_Right"
+
+[node name="IndoorBreachWaypoint" type="Marker3D" parent="Windows/CabinWindow6" unique_id=1902915946]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.866895, 0.9909649)
 
 [node name="CabinWindow7" parent="Windows" unique_id=1075751903 instance=ExtResource("57_1m0e5")]
 transform = Transform3D(-0.07463078, 0, -0.9972113, 0, 1, 0, 0.9972113, 0, -0.07463078, 15.243697, 5.720055, 15.874119)
 window_id = "Attic_Left"
 
+[node name="IndoorBreachWaypoint" type="Marker3D" parent="Windows/CabinWindow7" unique_id=1503159864]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.84298134, -1.866895, 1.472414)
+
 [node name="CabinWindow8" parent="Windows" unique_id=806229272 instance=ExtResource("57_1m0e5")]
 transform = Transform3D(0.99996305, 0, 0.008604221, 0, 1, 0, -0.008604221, 0, 0.99996305, 7.4783688, 5.720055, 8.225384)
 window_id = "Bedroom_Front"
 
-[node name="CabinWindow9" parent="Windows" unique_id=1386283153 instance=ExtResource("57_1m0e5")]
-transform = Transform3D(0.99996305, 0, 0.008604221, 0, 1, 0, -0.008604221, 0, 0.99996305, 7.4783688, 5.720055, 8.225384)
-window_id = "Bedroom_Side"
+[node name="IndoorBreachWaypoint" type="Marker3D" parent="Windows/CabinWindow8" unique_id=1705917854]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.866895, 0.9909649)
 
 [node name="EscapeVan" parent="." unique_id=433528797 instance=ExtResource("58_uhlf3")]
 transform = Transform3D(0.1322737, 0, -0.9912132, 0, 1, 0, 0.9912132, 0, 0.1322737, -18.020033, 0.12753245, -90.755745)
@@ -2234,4 +1835,3 @@ transform = Transform3D(-0.01305464, 0, -0.99991477, 0, 1, 0, 0.99991477, 0, -0.
 [editable path="Windows/CabinWindow6"]
 [editable path="Windows/CabinWindow7"]
 [editable path="Windows/CabinWindow8"]
-[editable path="Windows/CabinWindow9"]

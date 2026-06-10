@@ -16,7 +16,7 @@ enum BoxState { BROKEN, HAS_FUSE, POWER_ON }
 ## The item_name to search for in the player's inventory.
 @export var required_item_name: String = "Fuse"
 
-var current_state: BoxState = BoxState.BROKEN
+var current_state: BoxState = BoxState.POWER_ON
 
 
 func _ready() -> void:
@@ -26,10 +26,8 @@ func _ready() -> void:
 	# InteractionManager's center-screen raycast can detect it.
 	collision_layer = 1
 	
-	# Ensure the generator starts OFF until the fuse is inserted.
-	# This guarantees the cabin is dark at scene start, forcing the
-	# player to find the fuse and restore power.
-	_set_generator_state(false)
+	# Generator starts ON for development convenience.
+	_set_generator_state(true)
 	
 	print("[FuseBox] _ready() complete. State: ", BoxState.keys()[current_state])
 

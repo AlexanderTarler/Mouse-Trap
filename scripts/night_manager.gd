@@ -58,6 +58,12 @@ var night_progress: float = 0.0
 ## Whether the current night is active
 var is_night_active: bool = false
 
+## Returns true if the Entity is allowed to approach windows on the current night.
+## Night 1 is purely passive observation — the Entity stays in the treeline.
+## From Night 2 onward, window approaches are permitted.
+func can_approach_windows() -> bool:
+	return current_night > 1
+
 ## Whether the current day phase is active (between nights)
 var is_day_active: bool = false
 
@@ -386,6 +392,135 @@ func restart_night() -> void:
 	start_night(current_night)
 
 
+## Restarts from the morning of the current day.
+## Called by the Death Screen when the player clicks "Restart from morning".
+## Fully resets the player, inventory, world state, and time to the morning
+## baseline, then waits for the natural day/night cycle to reach night again.
+func restart_from_morning() -> void:
+	print("[NightManager] restart_from_morning() — Resetting to morning baseline of Day %d." % current_night)
+	
+	# ─── TIME RESET ──────────────────────────────────────────────────
+	# Rewind the clock to morning (cycle_progress ≈ 0.125 = 6:00 AM).
+	var gt: Node = get_node_or_null("/root/GameTime")
+	if gt and gt.has_method("set_progress"):
+		gt.set_progress(0.125)
+		print("[NightManager] Time reset to morning (progress: 0.125).")
+	
+	# Force the EnvironmentController to update sky/lighting immediately.
+	var ec: Node = get_node_or_null("/root/CottageHorror/EnvironmentController")
+	if not ec:
+		ec = get_node_or_null("/root/Main/EnvironmentController")
+	if ec and ec.has_method("_apply_cycle"):
+		ec._apply_cycle()
+		print("[NightManager] EnvironmentController refreshed to daytime lighting.")
+	
+	# ─── PLAYER RESET ────────────────────────────────────────────────
+	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
+	if player:
+		# Teleport to bedroom spawn
+		var spawn_marker: Node3D = get_tree().get_first_node_in_group("BedroomSpawn") as Node3D
+		if not spawn_marker:
+			spawn_marker = get_tree().get_first_node_in_group("PlayerSpawn") as Node3D
+		if not spawn_marker:
+			spawn_marker = get_tree().current_scene.get_node_or_null("BedroomSpawn") as Node3D
+		
+		if spawn_marker:
+			player.global_position = spawn_marker.global_position
+		else:
+			player.global_position = Vector3(9.0, 1.0, 0.4)
+		
+		# Reset health/sanity
+		if player.has_method("reset_health"):
+			player.reset_health()
+		elif "health" in player:
+			player.health = 100.0
+		if "sanity" in player:
+			player.sanity = 100.0
+		
+		# Reset flashlight battery to full
+		var flashlight: Node = player.find_child("*Flashlight*", true, false)
+		if flashlight:
+			if flashlight.has_method("set_battery_level"):
+				flashlight.set_battery_level(100.0)
+			elif "battery_level" in flashlight:
+				flashlight.battery_level = 100.0
+	
+	# ─── INVENTORY RESET ─────────────────────────────────────────────
+	var inv: Node = get_node_or_null("/root/Inventory")
+	if inv:
+		inv.clear()
+		
+		var battery_res: Resource = load("res://resources/battery_resource.tres")
+		var plank_res: Resource = load("res://resources/plank_resource.tres")
+		var fuel_can_res: Resource = load("res://resources/fuel_can_resource.tres")
+		var fuse_res: Resource = load("res://resources/fuse_resource.tres")
+		
+		for i in range(3):
+			if battery_res and inv.has_method("add_item"):
+				inv.add_item(battery_res.duplicate())
+		for i in range(2):
+			if plank_res and inv.has_method("add_item"):
+				inv.add_item(plank_res.duplicate())
+		for i in range(2):
+			if fuel_can_res and inv.has_method("add_item"):
+				inv.add_item(fuel_can_res.duplicate())
+		if fuse_res and inv.has_method("add_item"):
+			inv.add_item(fuse_res.duplicate())
+		
+		print("[NightManager] Inventory reset to baseline morning items.")
+	
+	# ─── WORLD STATE RESET ───────────────────────────────────────────
+	# Clear deployed traps and cables
+	var traps: Array[Node] = get_tree().get_nodes_in_group("portable_trap")
+	for trap in traps:
+		if trap and is_instance_valid(trap):
+			trap.queue_free()
+	
+	var cables: Array[Node] = get_tree().get_nodes_in_group("power_cable")
+	for cable in cables:
+		if cable and is_instance_valid(cable):
+			cable.queue_free()
+	
+	# Reset fuse box to BROKEN and turn off generator
+	var fuse_box: Node = get_tree().get_first_node_in_group("interactable")
+	if fuse_box and fuse_box is FuseBox:
+		fuse_box.current_state = 0  # BoxState.BROKEN
+		if fuse_box.has_method("_set_generator_state"):
+			fuse_box._set_generator_state(false)
+	
+	# Turn off all cabin lights
+	var cabin_lights: Array[Node] = get_tree().get_nodes_in_group("CabinLights")
+	for light in cabin_lights:
+		if "is_switched_on" in light:
+			light.is_switched_on = false
+		if "turn_off" in light:
+			light.turn_off()
+	
+	# Reset generator state
+	is_generator_on = false
+	generator_fuel = max_fuel
+	fuel_changed.emit(generator_fuel)
+	generator_state_changed.emit(false)
+	
+	# Deactivate the Entity
+	var entity_nodes: Array[Node] = get_tree().get_nodes_in_group("entity")
+	for entity_node in entity_nodes:
+		if entity_node and entity_node.has_method("deactivate"):
+			entity_node.deactivate()
+		elif "State" in entity_node:
+			entity_node._state = 0  # State.DORMANT
+			entity_node._is_active = false
+	
+	# ─── NIGHT STATE RESET ───────────────────────────────────────────
+	is_night_active = false
+	is_day_active = true
+	night_progress = 0.0
+	_triggered_events.clear()
+	_event_timer = 0.0
+	
+	print("[NightManager] Morning restart complete. Player is safe in bed.")
+
+
 ## Resets the game state to the morning baseline of the current day.
 ## Called by JumpscareManager after the jumpscare fade-out completes.
 ## This is the player's "wake up in bed" reset — NOT a full night restart.
@@ -577,3 +712,4 @@ func get_intensity() -> float:
 	var night_factor = float(current_night) / float(total_nights)
 	var time_factor = night_progress
 	return min(1.0, night_factor * 0.6 + time_factor * 0.4)
+
