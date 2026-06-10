@@ -120,8 +120,8 @@ func _execute_jumpscare() -> void:
 		shake_tween.tween_property(camera, "v_offset", -shake_intensity, 0.05)
 		shake_tween.tween_property(camera, "h_offset", shake_intensity, 0.05)
 		
-		# Linger on the monster's face
-		await get_tree().create_timer(1.2).timeout
+		# Linger on the monster's face (extended for dramatic effect)
+		await get_tree().create_timer(3.2).timeout
 		camera.v_offset = 0
 		camera.h_offset = 0
 		

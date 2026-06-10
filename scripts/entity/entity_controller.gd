@@ -249,10 +249,10 @@ var _voice_angry: AudioStream = null
 var _harass_audio: AudioStreamPlayer3D = null
 
 ## Paths to the Entity voice audio assets.
-const VOICE_TALKING_1_PATH: String = "res://assets/audio/Entity/entity_talking_1.ogg"
-const VOICE_TALKING_2_PATH: String = "res://assets/audio/Entity/entity_talking_2.ogg"
-const VOICE_SEARCHING_PATH: String = "res://assets/audio/Entity/entity_searching.ogg"
-const VOICE_ANGRY_PATH: String = "res://assets/audio/Entity/entity_angry.ogg"
+const VOICE_TALKING_1_PATH: String = "res://assets/audio/Entity/Entity Talking.ogg"
+const VOICE_TALKING_2_PATH: String = "res://assets/audio/Entity/Entity Talking 2.ogg"
+const VOICE_SEARCHING_PATH: String = "res://assets/audio/Entity/Entity Searching.ogg"
+const VOICE_ANGRY_PATH: String = "res://assets/audio/Entity/Entity Angry.ogg"
 
 ## Whether the angry voice has been played this charge instance.
 ## Set to true when entity_angry.ogg fires during CHARGE/CHASE entry.
@@ -407,7 +407,7 @@ func _ready() -> void:
 	# resource used by the light sanctuary grunt player below.
 	_chase_exit_grunt_player = AudioStreamPlayer.new()
 	_chase_exit_grunt_player.bus = "Entity"
-	_chase_exit_grunt_player.volume_db = -6.0
+	_chase_exit_grunt_player.volume_db = -1.0
 	var grunt_stream = load(CHASE_EXIT_GRUNT_PATH) as AudioStream
 	if grunt_stream:
 		grunt_stream = grunt_stream.duplicate()
@@ -421,7 +421,7 @@ func _ready() -> void:
 	# the chase exit grunt's stream settings.
 	_light_sanctuary_grunt_player = AudioStreamPlayer.new()
 	_light_sanctuary_grunt_player.bus = "Entity"
-	_light_sanctuary_grunt_player.volume_db = -3.0  # Slightly louder than chase exit
+	_light_sanctuary_grunt_player.volume_db = 2.0  # 50% louder than original
 	_light_sanctuary_grunt_player.pitch_scale = 1.3  # Higher pitch = frustrated/angry
 	var sanctuary_stream = load(CHASE_EXIT_GRUNT_PATH) as AudioStream
 	if sanctuary_stream:
@@ -436,7 +436,7 @@ func _ready() -> void:
 	_claw_scrape_player = AudioStreamPlayer3D.new()
 	_claw_scrape_player.bus = "Entity"
 	_claw_scrape_player.max_distance = 30.0  # Audible from anywhere near the cabin
-	_claw_scrape_player.volume_db = -6.0
+	_claw_scrape_player.volume_db = -1.0
 	var scrape_stream: AudioStream = null
 	if ResourceLoader.exists(CLAW_SCRAPE_PATH):
 		scrape_stream = load(CLAW_SCRAPE_PATH) as AudioStream
@@ -463,8 +463,9 @@ func _ready() -> void:
 	_voice_player.name = "VoicePlayer"
 	_voice_player.bus = "Entity"
 	_voice_player.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_SQUARE_DISTANCE
-	_voice_player.unit_size = 4.0
+	_voice_player.unit_size = 6.0
 	_voice_player.max_distance = 40.0
+	_voice_player.volume_db = 2.0  # Boosted volume for immediate audibility during CHARGE
 	_voice_player.pitch_scale = 0.8  # Deep, guttural tone
 	add_child(_voice_player)
 	
@@ -479,7 +480,7 @@ func _ready() -> void:
 	_harass_audio.name = "HarassAudio"
 	_harass_audio.bus = "Entity"
 	_harass_audio.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_SQUARE_DISTANCE
-	_harass_audio.unit_size = 2.0
+	_harass_audio.unit_size = 3.0
 	_harass_audio.max_distance = 15.0
 	add_child(_harass_audio)
 	
@@ -874,7 +875,7 @@ func _physics_process(delta: float) -> void:
 	
 	# --- CHASE MUSIC (ambience_d6_loop) ---
 	# Fade in when entering CHASE state, fade out when leaving.
-	var is_chasing = _state == EntityAI.State.CHASE
+	var is_chasing = _state == EntityAI.State.CHASE or _state == EntityAI.State.CHARGE
 	if is_chasing and not _chase_music_was_playing:
 		# Entering chase — start playing and fade in
 		if _chase_music_player and _chase_music_player.stream:

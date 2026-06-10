@@ -3,6 +3,8 @@
 [ext_resource type="PackedScene" uid="uid://lhhyrrumnd54" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/wooden_plank_1.glb" id="1_uo6og"]
 [ext_resource type="Script" uid="uid://d3vvc4y65g0fj" path="res://scripts/cabin_window.gd" id="1_yfnpk"]
 [ext_resource type="AudioStream" uid="uid://cnr55qbh3dgjn" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Misc/hit_3.ogg" id="2_xje28"]
+[ext_resource type="AudioStream" uid="uid://yg064tcrr1k6" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Misc/break_1.ogg" id="3_break"]
+[ext_resource type="AudioStream" uid="uid://drvhyapvtvebb" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Misc/crack_1_wood.ogg" id="4_hammer"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_xje28"]
 
@@ -60,3 +62,58 @@ mesh = SubResource("BoxMesh_onr5d")
 
 [node name="ShatteredVisuals" type="Node3D" parent="." unique_id=903357451]
 visible = false
+
+[node name="BreakSound" type="AudioStreamPlayer3D" parent="." unique_id=3000000001]
+stream = ExtResource("3_break")
+
+[node name="HammerSound" type="AudioStreamPlayer3D" parent="." unique_id=3000000002]
+stream = ExtResource("4_hammer")
+
+[node name="GlassCrunchSound" type="AudioStreamPlayer3D" parent="." unique_id=3000000003]
+stream = ExtResource("3_break")
+
+[node name="GlassShards" type="CPUParticles3D" parent="PristineVisuals" unique_id=3000000004]
+emitting = false
+amount = 50
+lifetime = 1.5
+one_shot = true
+explosiveness = 1.0
+randomness = 0.5
+fixed_fps = 0
+fract_delta = false
+interpolate = true
+preprocess = 0.0
+speed_scale = 1.0
+repeat = false
+direction = Vector3(0, 0, 1)
+spread = 45.0
+flatness = 0.0
+gravity = Vector3(0, -5, 0)
+initial_velocity_min = 2.0
+initial_velocity_max = 5.0
+angular_velocity_min = 0.0
+angular_velocity_max = 360.0
+orbit_velocity_min = 0.0
+orbit_velocity_max = 0.0
+linear_accel_min = 0.0
+linear_accel_max = 0.0
+radial_accel_min = 0.0
+radial_accel_max = 0.0
+tangential_accel_min = 0.0
+tangential_accel_max = 0.0
+damping_min = 0.0
+damping_max = 0.0
+angle_min = 0.0
+angle_max = 360.0
+scale_amount_min = 0.05
+scale_amount_max = 0.15
+color = Color(0.8, 0.85, 0.9, 0.8)
+hue_variation_min = 0.0
+hue_variation_max = 0.0
+anim_speed_min = 0.0
+anim_speed_max = 0.0
+anim_offset_min = 0.0
+anim_offset_max = 0.0
+split = false
+draw_order = 0
+mesh = SubResource("BoxMesh_onr5d")

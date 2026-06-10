@@ -55,6 +55,21 @@ var _barricade_damage_timer: float = 0.0
 ## Used by INDOOR_SEARCH to distinguish Phase A (vault entry) from Phase B (patrol).
 var _has_arrived_indoor: bool = false
 
+## Timer for the EnterWindow vault animation in INDOOR_SEARCH Phase A.
+## Counts down from ENTER_WINDOW_ANIM_DURATION to 0.0 while the Entity
+## plays the vault animation. When it reaches 0.0, the Entity teleports
+## to the indoor landing position and transitions to Phase B (patrol).
+## This ensures the full vault animation plays out before the teleport,
+## creating a seamless visual effect of the Entity climbing through the
+## window frame.
+var _enter_window_anim_timer: float = 0.0
+
+## Duration of the EnterWindow vault animation in seconds.
+## The animation is ~1.5 seconds long. The Entity must play this animation
+## for its full duration before teleporting inside, ensuring the visual
+## effect of vaulting through the window frame is fully visible.
+const ENTER_WINDOW_ANIM_DURATION: float = 1.5
+
 ## Animation lock timer for barricade hits.
 ## When > 0.0, the "AttackWindow" animation is forced to play.
 ## Set to 1.5 seconds on each barricade hit, decremented by delta each frame.
@@ -443,6 +458,21 @@ func _observe_from_treeline_state(delta: float) -> void:
 	
 	_calculated_velocity.x = 0.0
 	_calculated_velocity.z = 0.0
+	
+	# ─── FACE THE CABIN WHILE IDLE ────────────────────────────────────────
+	# When the Entity is at a vantage point (not pathfinding), rotate the
+	# monster model to face the cabin center. This ensures the Entity is
+	# always looking toward the cabin while observing, creating a more
+	# menacing and intentional visual presence.
+	# The rotation is smoothly interpolated using lerp_angle for natural
+	# turning, and only applies when the Entity is stationary (not moving
+	# between vantage points).
+	var cabin_target = entity.cabin_center
+	var dir_to_cabin = (cabin_target - entity.global_position).normalized()
+	var target_cabin_angle = atan2(dir_to_cabin.x, dir_to_cabin.z)
+	var model = entity.get_monster_model()
+	if model:
+		model.rotation.y = lerp_angle(model.rotation.y, target_cabin_angle, 0.05)
 	
 	# ─── DESPERATION MECHANIC: PASSIVE TIMER ──────────────────────────────
 	# Accumulate time spent in OBSERVE_FROM_TREELINE while at the vantage
@@ -1206,166 +1236,147 @@ func _harass_state(delta: float) -> void:
 # ---------------------------------------------------------------------------
 # STATE: INDOOR_SEARCH — Entity has breached and is hunting inside the cabin
 # ---------------------------------------------------------------------------
-## Phase A: Vault entry (pathfinding to landing position).
+## Phase A: Vault entry animation (EnterWindow plays for 1.5s, then teleport).
 ## Phase B: Indoor patrol (searching for the player).
+##
+## ANIMATION-FIRST APPROACH:
+##   When INDOOR_SEARCH begins, the Entity does NOT teleport immediately.
+##   Instead, it stays at the window position and plays the "EnterWindow"
+##   vault animation for ENTER_WINDOW_ANIM_DURATION (1.5 seconds). During
+##   this time, _has_arrived_indoor is false, so entity_controller.gd's
+##   _update_animations() forces the "EnterWindow" animation.
+##
+##   After the timer expires, the Entity teleports to the indoor landing
+##   position, performs a floor-snap raycast to normalize its ground level,
+##   and transitions to Phase B (patrol). This creates a seamless visual
+##   effect of the Entity vaulting through the window frame.
 func _indoor_search_state(delta: float) -> void:
 	if not _has_arrived_indoor:
-		# Phase A: TELEPORT to the breached window's indoor landing position.
-		# The NavMesh does NOT go through walls — pathfinding to an interior
-		# position from outside is impossible. Instead, we teleport the Entity
-		# directly to the landing position on the first frame of INDOOR_SEARCH.
-		#
-		# The _update_animations() function in entity_controller.gd plays the
-		# "EnterWindow" vault animation while has_arrived_indoor() is false.
-		# Since this runs on the FIRST frame of Phase A, the animation plays
-		# for exactly one frame before _has_arrived_indoor is set to true,
-		# creating a seamless vault-through-window visual effect.
-		#
-		# Each CabinWindow has an IndoorBreachWayPoint Marker3D child node
-		# positioned ~1.5m inside the room. The Entity teleports to this
-		# position after breaking through the barricade.
-		var window_target = entity.get_current_window_target()
-		var landing_pos: Vector3
-		var has_landing: bool = false
+		# ─── PHASE A: Vault Entry Animation ──────────────────────────────
+		# On the first frame, initialize the animation timer.
+		# The Entity stays at the window position and plays the EnterWindow
+		# vault animation for the full duration.
+		if _enter_window_anim_timer <= 0.0:
+			_enter_window_anim_timer = ENTER_WINDOW_ANIM_DURATION
+			print("[INDOOR_SEARCH] Phase A: Playing EnterWindow animation for %.1f seconds." % ENTER_WINDOW_ANIM_DURATION)
 		
-		if window_target and window_target.has_method("get_indoor_landing_position"):
-			landing_pos = window_target.get_indoor_landing_position()
-			has_landing = true
-		elif window_target:
-			# Fallback: estimate a position 1.5m behind the window facing inward.
-			# CRITICAL: Flatten Y to ground level (0.0). The window's Y may be at
-			# 5.72m (upper floor) or 0.0m (ground floor). The NavMesh is at ground
-			# level, and the Entity can only pathfind on the ground floor. If we
-			# keep the window's Y, the Entity would teleport to the upper floor
-			# (attic) where there's no NavMesh and no valid pathfinding.
-			#
-			# The IndoorBreachWayPoint Marker3D should be placed at ground level
-			# for ground floor windows. For upper floor windows, the Entity must
-			# use CLIMB_WALL state instead of INDOOR_SEARCH.
-			landing_pos = window_target.global_position + window_target.global_transform.basis.z * 1.5
-			landing_pos.y = 0.0  # Force ground level
-			has_landing = true
+		# Decrement the animation timer
+		_enter_window_anim_timer -= delta
 		
-		if has_landing:
-			# ─── DEBUG: Log breach details BEFORE teleport ─────────────────
-			var window_id_str: String = ""
-			if window_target and window_target.has_method("get_window_id"):
-				window_id_str = window_target.get_window_id()
-			elif window_target and "window_id" in window_target:
-				window_id_str = str(window_target.window_id)
-			else:
-				window_id_str = "unknown"
+		# Freeze movement during the vault animation — the Entity stays
+		# at the window position while the animation plays out.
+		_calculated_velocity = Vector3.ZERO
+		
+		# ─── TIMER EXPIRED: Teleport to indoor landing position ──────────
+		if _enter_window_anim_timer <= 0.0:
+			var window_target = entity.get_current_window_target()
+			var landing_pos: Vector3
+			var has_landing: bool = false
 			
-			var entity_pos_before = entity.global_position
-			print("==========================================================")
-			print("[BREACH DEBUG] Window breached: %s" % window_id_str)
-			print("[BREACH DEBUG] Window global_position: (%.2f, %.2f, %.2f)" % [window_target.global_position.x, window_target.global_position.y, window_target.global_position.z])
-			print("[BREACH DEBUG] Entity position BEFORE teleport: (%.2f, %.2f, %.2f)" % [entity_pos_before.x, entity_pos_before.y, entity_pos_before.z])
-			print("[BREACH DEBUG] Landing position (from get_indoor_landing_position): (%.2f, %.2f, %.2f)" % [landing_pos.x, landing_pos.y, landing_pos.z])
+			if window_target and window_target.has_method("get_indoor_landing_position"):
+				landing_pos = window_target.get_indoor_landing_position()
+				has_landing = true
+			elif window_target:
+				# Fallback: estimate a position 1.5m behind the window facing inward.
+				# CRITICAL: Flatten Y to ground level (0.0). The window's Y may be at
+				# 5.72m (upper floor) or 0.0m (ground floor). The NavMesh is at ground
+				# level, and the Entity can only pathfind on the ground floor. If we
+				# keep the window's Y, the Entity would teleport to the upper floor
+				# (attic) where there's no NavMesh and no valid pathfinding.
+				landing_pos = window_target.global_position + window_target.global_transform.basis.z * 1.5
+				landing_pos.y = 0.0  # Force ground level
+				has_landing = true
 			
-			# ─── TELEPORT TO LANDING POSITION ──────────────────────────────
-			# Directly set the Entity's position to the indoor landing position.
-			# This bypasses the NavMesh entirely — the Entity cannot pathfind
-			# through walls, so teleportation is the only reliable mechanism.
-			#
-			# FLOOR SNAP: The IndoorBreachWayPoint Marker3D is placed at floor
-			# level (Y ≈ 0.0), but the Entity's CharacterBody3D origin is at the
-			# center of the collision shape (not at the feet). Setting
-			# global_position = landing_pos places the Entity's center at floor
-			# level, making it float above the ground by half its collision height.
-			#
-			# To fix this, we cast a short raycast downward from above the landing
-			# position to find the actual floor surface, then offset the Entity's
-			# Y so its feet rest on the floor. The collision shape's half-height
-			# is subtracted from the hit point to account for the origin offset.
-			entity.global_position = landing_pos
-			entity.velocity = Vector3.ZERO
+			if has_landing:
+				# ─── DEBUG: Log breach details BEFORE teleport ─────────────
+				var window_id_str: String = ""
+				if window_target and window_target.has_method("get_window_id"):
+					window_id_str = window_target.get_window_id()
+				elif window_target and "window_id" in window_target:
+					window_id_str = str(window_target.window_id)
+				else:
+					window_id_str = "unknown"
+				
+				var entity_pos_before = entity.global_position
+				print("==========================================================")
+				print("[BREACH DEBUG] Window breached: %s" % window_id_str)
+				print("[BREACH DEBUG] Window global_position: (%.2f, %.2f, %.2f)" % [window_target.global_position.x, window_target.global_position.y, window_target.global_position.z])
+				print("[BREACH DEBUG] Entity position BEFORE teleport: (%.2f, %.2f, %.2f)" % [entity_pos_before.x, entity_pos_before.y, entity_pos_before.z])
+				print("[BREACH DEBUG] Landing position: (%.2f, %.2f, %.2f)" % [landing_pos.x, landing_pos.y, landing_pos.z])
+				
+				# ─── TELEPORT TO LANDING POSITION ──────────────────────────
+				entity.global_position = landing_pos
+				entity.velocity = Vector3.ZERO
+				
+				# ─── FLOOR SNAP: Raycast downward to find the actual floor ─
+				var space_state = entity.get_world_3d().direct_space_state
+				var ray_params = PhysicsRayQueryParameters3D.new()
+				var ray_from = landing_pos + Vector3.UP * 2.0
+				var ray_to = landing_pos + Vector3.DOWN * 2.0
+				ray_params.from = ray_from
+				ray_params.to = ray_to
+				ray_params.collision_mask = 1  # Layer 1: Cabin/floor geometry
+				ray_params.exclude = [entity]
+				var ray_result = space_state.intersect_ray(ray_params)
+				
+				if ray_result and ray_result.has("position"):
+					var floor_y = ray_result.position.y
+					var collision_shape = entity.get_node_or_null("CollisionShape3D")
+					var center_to_feet: float = 0.5
+					if collision_shape and collision_shape.shape:
+						if collision_shape.shape is CapsuleShape3D:
+							var capsule: CapsuleShape3D = collision_shape.shape
+							center_to_feet = capsule.height * 0.5 + capsule.radius
+						elif collision_shape.shape is CylinderShape3D:
+							center_to_feet = collision_shape.shape.height * 0.5
+						elif collision_shape.shape is BoxShape3D:
+							center_to_feet = collision_shape.shape.size.y * 0.5
+					entity.global_position.y = floor_y + center_to_feet
+					print("[BREACH DEBUG] Floor raycast hit at Y=%.2f (center_to_feet=%.2f)" % [floor_y, center_to_feet])
+				else:
+					print("[BREACH DEBUG] WARNING — No floor found below landing position! Entity may float.")
+				
+				# ─── DEBUG: Log Entity position AFTER teleport + floor snap ─
+				var entity_pos_after = entity.global_position
+				print("[BREACH DEBUG] Entity position AFTER teleport: (%.2f, %.2f, %.2f)" % [entity_pos_after.x, entity_pos_after.y, entity_pos_after.z])
+				print("==========================================================")
+				
+				entity.get_nav_agent().target_position = landing_pos
 			
-			# ─── FLOOR SNAP: Raycast downward to find the actual floor ─────
-			# Cast from 2.0m above the landing position down to 2.0m below.
-			# This finds the floor surface even if the Marker3D is slightly
-			# above or below the actual floor mesh.
-			var space_state = entity.get_world_3d().direct_space_state
-			var ray_params = PhysicsRayQueryParameters3D.new()
-			var ray_from = landing_pos + Vector3.UP * 2.0
-			var ray_to = landing_pos + Vector3.DOWN * 2.0
-			ray_params.from = ray_from
-			ray_params.to = ray_to
-			ray_params.collision_mask = 1  # Layer 1: Cabin/floor geometry
-			ray_params.exclude = [entity]  # Exclude the Entity's own collision shape
-			var ray_result = space_state.intersect_ray(ray_params)
-			
-			if ray_result and ray_result.has("position"):
-				# Found the floor — offset the Entity's Y so its feet rest
-				# on the floor surface. The CharacterBody3D origin is at the
-				# center of the collision shape, NOT at the feet. We need to
-				# compute the distance from the shape's center to its bottom
-				# edge (where the feet touch the floor).
-				#
-				# For a CapsuleShape3D: center → bottom = height * 0.5 + radius
-				#   The capsule has a cylindrical body of `height` with hemispherical
-				#   caps of `radius` on each end. The origin is at the center of the
-				#   cylindrical body. The bottom of the lower hemisphere extends
-				#   `radius` below the cylinder's bottom edge.
-				# For a CylinderShape3D: center → bottom = height * 0.5
-				# For a BoxShape3D: center → bottom = size.y * 0.5
-				var floor_y = ray_result.position.y
-				var collision_shape = entity.get_node_or_null("CollisionShape3D")
-				var center_to_feet: float = 0.5  # Default fallback
-				if collision_shape and collision_shape.shape:
-					if collision_shape.shape is CapsuleShape3D:
-						var capsule: CapsuleShape3D = collision_shape.shape
-						center_to_feet = capsule.height * 0.5 + capsule.radius
-					elif collision_shape.shape is CylinderShape3D:
-						center_to_feet = collision_shape.shape.height * 0.5
-					elif collision_shape.shape is BoxShape3D:
-						center_to_feet = collision_shape.shape.size.y * 0.5
-				entity.global_position.y = floor_y + center_to_feet
-				print("[BREACH DEBUG] Floor raycast hit at Y=%.2f (center_to_feet=%.2f)" % [floor_y, center_to_feet])
-			else:
-				# No floor found — keep the original landing position Y
-				print("[BREACH DEBUG] WARNING — No floor found below landing position! Entity may float.")
-			
-			# ─── DEBUG: Log Entity position AFTER teleport + floor snap ────
-			var entity_pos_after = entity.global_position
-			print("[BREACH DEBUG] Entity position AFTER teleport: (%.2f, %.2f, %.2f)" % [entity_pos_after.x, entity_pos_after.y, entity_pos_after.z])
-			print("==========================================================")
-			
-			entity.get_nav_agent().target_position = landing_pos
-			
-			# Mark Phase A as complete — the EnterWindow animation played for
-			# one frame (while _has_arrived_indoor was false), creating the
-			# visual effect of vaulting through the window frame.
+			# Mark Phase A as complete — the EnterWindow animation played
+			# for the full 1.5s duration before the teleport.
 			_has_arrived_indoor = true
+			_enter_window_anim_timer = 0.0
 			_calculated_velocity = Vector3.ZERO
 			return
 		else:
-			# No window target or landing position — skip Phase A
-			_has_arrived_indoor = true
-
-	else:
-		# Phase B: Indoor patrol — pathfind toward the player's last known position
-		var player = entity.get_player()
-		if player:
-			entity.set_path_timer(entity.get_path_timer() + delta)
-			if entity.get_path_timer() >= entity.path_update_interval:
-				entity.set_path_timer(0.0)
-				entity.get_nav_agent().target_position = player.global_position
-			
-			if entity.global_position.distance_to(player.global_position) <= entity.catch_distance:
-				entity._on_caught_player()
-				return
-			
-			if entity.get_nav_agent().is_navigation_finished():
-				_calculated_velocity.x = 0.0
-				_calculated_velocity.z = 0.0
-			else:
-				var next_pos = entity.get_nav_agent().get_next_path_position()
-				var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
-				if dir_2d.length() > 0.01:
-					var move_dir_2d = dir_2d.normalized()
-					_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
-					_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
+			# Animation still playing — freeze movement
+			_calculated_velocity = Vector3.ZERO
+			return
+	
+	# ─── PHASE B: Indoor Patrol ──────────────────────────────────────────
+	# Pathfind toward the player's last known position.
+	var player = entity.get_player()
+	if player:
+		entity.set_path_timer(entity.get_path_timer() + delta)
+		if entity.get_path_timer() >= entity.path_update_interval:
+			entity.set_path_timer(0.0)
+			entity.get_nav_agent().target_position = player.global_position
+		
+		if entity.global_position.distance_to(player.global_position) <= entity.catch_distance:
+			entity._on_caught_player()
+			return
+		
+		if entity.get_nav_agent().is_navigation_finished():
+			_calculated_velocity.x = 0.0
+			_calculated_velocity.z = 0.0
+		else:
+			var next_pos = entity.get_nav_agent().get_next_path_position()
+			var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
+			if dir_2d.length() > 0.01:
+				var move_dir_2d = dir_2d.normalized()
+				_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
+				_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
 
 
 # ---------------------------------------------------------------------------

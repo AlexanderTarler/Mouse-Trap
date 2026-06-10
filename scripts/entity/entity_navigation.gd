@@ -416,6 +416,13 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 	# Gather all windows within 15 meters of the player, applying filters
 	var nearby_windows: Array[Node3D] = []
 	for w in _window_markers:
+		# ─── BOTTOM FLOOR FILTER ──────────────────────────────────────────
+		# Only target ground-floor windows (Y < 3.0 meters). Second-story
+		# windows are excluded — the Entity cannot reach them without the
+		# CLIMB_WALL state, which is not yet implemented for active sieging.
+		if w.global_position.y >= 3.0:
+			continue  # Skip second-story windows
+		
 		# ─── LIGHT SANCTUARY FILTER ──────────────────────────────────────
 		# Skip windows whose room light is switched on. The Entity avoids
 		# lit rooms entirely — it will never approach a window with an
@@ -437,6 +444,7 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 		var dist_to_player: float = w.global_position.distance_to(player.global_position)
 		if dist_to_player <= 15.0:
 			nearby_windows.append(w)
+
 	
 	# If we found nearby windows, pick one at random (tactical flanking)
 	if not nearby_windows.is_empty():
@@ -447,6 +455,8 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 	var closest_dist: float = INF
 	for w in _window_markers:
 		# Apply same filters to fallback selection
+		if w.global_position.y >= 3.0:
+			continue  # Skip second-story windows
 		if "room_light" in w and w.room_light and w.room_light.is_switched_on:
 			continue
 		if current_night == 2 and w.has_method("is_barricaded") and w.is_barricaded():

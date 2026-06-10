@@ -10,9 +10,9 @@
 [ext_resource type="Animation" uid="uid://dtl1w3b7tpikl" path="res://assets/animations/idle.anim" id="5_yani8"]
 [ext_resource type="Animation" uid="uid://braudxur0tnfw" path="res://assets/animations/attack_window.anim" id="6_0ftpn"]
 [ext_resource type="Animation" uid="uid://mfci6ht42c1g" path="res://assets/animations/walk.anim" id="6_8epmc"]
-[ext_resource type="AudioStream" uid="uid://cw28b8tguotxa" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Creatures/Monster/monster_roar_1.ogg" id="7_dk27q"]
 [ext_resource type="Animation" uid="uid://c86v4whp2u1ws" path="res://assets/animations/running_crawl.anim" id="9_c7dvl"]
 [ext_resource type="Animation" uid="uid://dh0k1xq1papke" path="res://assets/animations/entry.anim" id="9_uf1s8"]
+[ext_resource type="AudioStream" uid="uid://drejcy2576dr8" path="res://assets/audio/Entity/Entity Angry.ogg" id="13_0ftpn"]
 
 [sub_resource type="SphereShape3D" id="SphereShape_3q2p6"]
 
@@ -160,28 +160,28 @@ script = ExtResource("1_entity_navigation")
 transform = Transform3D(4, 0, 0, 0, 4, 0, 0, 0, 4, 0, -0.57255733, 0)
 
 [node name="GeneralSkeleton" parent="MonsterModel/Armature" parent_id_path=PackedInt32Array(1066769687, 512978497) index="0" unique_id=1434099574]
-bones/1/rotation = Quaternion(0.096961774, -0.1742873, -0.0162764, 0.97977424)
-bones/3/rotation = Quaternion(0.1483023, 0.35201508, 0.90928364, -0.1652121)
-bones/4/rotation = Quaternion(-0.03868326, 0.92229384, -0.37920696, 0.06387437)
-bones/5/rotation = Quaternion(-0.10889466, 0.6440518, -0.7473141, 0.12190515)
-bones/7/rotation = Quaternion(5.4814116e-08, 0.9999747, 0.007111326, -3.5850487e-08)
-bones/18/rotation = Quaternion(-0.13630414, 0.2949262, 0.93953925, 0.10819363)
-bones/21/rotation = Quaternion(0.038925275, 0.93284506, -0.3527083, -0.062304452)
-bones/22/rotation = Quaternion(0.100420356, 0.6320484, -0.7602242, -0.1117578)
-bones/23/rotation = Quaternion(-5.2408208e-08, 0.9999991, 0.0013414941, -7.0611364e-08)
-bones/33/rotation = Quaternion(0.021356294, -0.0041068867, 0.015768433, 0.9996392)
-bones/34/rotation = Quaternion(0.06581082, -0.009775179, 0.011121709, 0.99772227)
-bones/35/rotation = Quaternion(0.065895006, -0.008766327, 0.011471544, 0.99772215)
-bones/36/rotation = Quaternion(-0.05318377, 0.027625792, -0.018789021, 0.9980257)
-bones/38/rotation = Quaternion(-0.19728386, 0.12205302, -0.029842077, 0.97226113)
-bones/49/rotation = Quaternion(0.56276965, 0.43074343, 0.5246171, -0.4717282)
-bones/50/rotation = Quaternion(0.18185678, 0.87384087, -0.44967067, -0.033565823)
-bones/51/rotation = Quaternion(0.47551277, -0.5233424, 0.47551355, 0.5233424)
-bones/55/rotation = Quaternion(-0.15494588, 0.80249715, 0.18370232, 0.54611695)
-bones/58/rotation = Quaternion(0.51769733, -0.45691797, -0.5751656, -0.43863425)
-bones/59/rotation = Quaternion(-0.20076889, 0.8412739, -0.49969235, -0.047517262)
-bones/62/rotation = Quaternion(0.49412465, 0.50580686, -0.49412543, 0.5058066)
-bones/66/rotation = Quaternion(0.0633565, -0.85136807, -0.022727136, 0.52023244)
+bones/1/rotation = Quaternion(0.09868428, -0.17583555, -0.017150886, 0.9793106)
+bones/3/rotation = Quaternion(0.14824589, 0.35250002, 0.9091198, -0.16513062)
+bones/4/rotation = Quaternion(-0.0381936, 0.9213267, -0.38123137, 0.06603882)
+bones/5/rotation = Quaternion(-0.10734605, 0.64379823, -0.7480564, 0.12005176)
+bones/7/rotation = Quaternion(7.422011e-08, 0.9999645, 0.008428338, -7.6618306e-08)
+bones/18/rotation = Quaternion(-0.13690758, 0.2948683, 0.93944895, 0.10837368)
+bones/21/rotation = Quaternion(0.03843573, 0.9340998, -0.3496141, -0.061240055)
+bones/22/rotation = Quaternion(0.10005241, 0.6355886, -0.7573701, -0.11138811)
+bones/23/rotation = Quaternion(-5.4389798e-08, 0.99999905, 0.0013878434, -7.233449e-08)
+bones/33/rotation = Quaternion(0.021345539, -0.0043399152, 0.015849372, 0.9996372)
+bones/34/rotation = Quaternion(0.06607165, -0.009558317, 0.010437674, 0.9977146)
+bones/35/rotation = Quaternion(0.06615295, -0.008554062, 0.010803281, 0.9977144)
+bones/36/rotation = Quaternion(-0.05261152, 0.027673587, -0.018857619, 0.9980535)
+bones/38/rotation = Quaternion(-0.19781417, 0.12236318, -0.030462516, 0.9720952)
+bones/49/rotation = Quaternion(0.5620165, 0.4314709, 0.5247066, -0.47186166)
+bones/50/rotation = Quaternion(0.18021952, 0.8749642, -0.44820058, -0.032785516)
+bones/51/rotation = Quaternion(0.47562373, -0.5232416, 0.47562444, 0.5232416)
+bones/55/rotation = Quaternion(-0.15099461, 0.8010103, 0.18763515, 0.5480659)
+bones/58/rotation = Quaternion(0.5183667, -0.45606005, -0.575467, -0.43834126)
+bones/59/rotation = Quaternion(-0.20237914, 0.84050465, -0.5002037, -0.048897732)
+bones/62/rotation = Quaternion(0.49401954, 0.50590956, -0.49402025, 0.50590944)
+bones/66/rotation = Quaternion(0.0628307, -0.85107297, -0.022003623, 0.52080995)
 
 [node name="AnimationPlayer" parent="MonsterModel" index="1" unique_id=839234148]
 libraries/locomotion = SubResource("AnimationLibrary_dk27q")
@@ -192,7 +192,8 @@ tree_root = SubResource("AnimationNodeStateMachine_lkk1l")
 anim_player = NodePath("../MonsterModel/AnimationPlayer")
 
 [node name="GrowlAudio" type="AudioStreamPlayer3D" parent="." unique_id=2028892653]
-stream = ExtResource("7_dk27q")
+stream = ExtResource("13_0ftpn")
+volume_db = 4.0
 max_distance = 40.0
 
 [node name="FaceTarget" type="Marker3D" parent="." unique_id=513146274]
