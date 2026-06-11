@@ -15,6 +15,10 @@ var _is_open: bool = false
 var _entity_enabled: bool = true
 var _entity_toggle_btn: Button = null
 
+# Entity can_kill toggle state
+var _entity_can_kill: bool = true
+var _can_kill_toggle_btn: Button = null
+
 # UI node references
 @onready var panel: Panel = $Panel
 @onready var header: Label = $Panel/MarginContainer/VBoxContainer/Header
@@ -85,6 +89,13 @@ func _setup_entity_buttons() -> void:
 	_entity_toggle_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_entity_toggle_btn.pressed.connect(_toggle_entity_enabled)
 	entity_section.add_child(_entity_toggle_btn)
+	
+	# Entity can_kill toggle button (persistent state)
+	_can_kill_toggle_btn = Button.new()
+	_can_kill_toggle_btn.text = "Can Kill: YES"
+	_can_kill_toggle_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_can_kill_toggle_btn.pressed.connect(_toggle_can_kill)
+	entity_section.add_child(_can_kill_toggle_btn)
 
 
 func open(player: Node) -> void:
@@ -460,6 +471,33 @@ func _toggle_entity_enabled() -> void:
 		_entity.set_meta("debug_disabled", true)
 	
 	print("[Debug Console] Entity %s." % ["ENABLED" if _entity_enabled else "DISABLED"])
+
+
+## Toggles the Entity's can_kill flag between true and false.
+## When false, the Entity will CHARGE the player but NOT capture/kill them.
+## The Entity stops short and transitions back to CHASE/OBSERVE instead.
+## This is useful for testing chase behavior without triggering death scenes.
+## Updates the toggle button text and color to reflect the current state.
+func _toggle_can_kill() -> void:
+	if not _entity:
+		print("[Debug Console] Entity not found.")
+		return
+	
+	_entity_can_kill = not _entity_can_kill
+	
+	# Set the can_kill property on the Entity controller
+	if "can_kill" in _entity:
+		_entity.can_kill = _entity_can_kill
+	
+	if _entity_can_kill:
+		_can_kill_toggle_btn.text = "Can Kill: YES"
+		_can_kill_toggle_btn.remove_theme_color_override("font_color")
+	else:
+		_can_kill_toggle_btn.text = "Can Kill: NO"
+		# Color the button red when disabled for visual clarity
+		_can_kill_toggle_btn.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+	
+	print("[Debug Console] Can Kill: %s." % ["YES" if _entity_can_kill else "NO"])
 
 
 func _call_entity_method(method_name: String) -> void:

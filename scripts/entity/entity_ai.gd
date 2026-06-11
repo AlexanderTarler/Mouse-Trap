@@ -89,6 +89,30 @@ var _pending_damage_delay: float = 0.0
 ## Set to false when _pending_damage_delay reaches 0.0 and damage is applied.
 var _has_pending_damage: bool = false
 
+## ─── GLASS SHATTER ANIMATION SYNC ──────────────────────────────────────────
+## When the window is glass-only (unbarricaded), the Entity must play the
+## "AttackWindow" animation and delay the actual glass shatter until the
+## impact frame. These variables manage that timing.
+##
+## _glass_shatter_pending: When true, the Entity has started the AttackWindow
+##   swing but the glass hasn't shattered yet. Set to true when the breach
+##   delay expires on an unbarricaded window. Set to false when the impact
+##   timer fires and shatter_window() is called.
+var _glass_shatter_pending: bool = false
+
+## _glass_shatter_impact_timer: Counts down from GLASS_SHATTER_IMPACT_DELAY
+##   to 0.0. When it reaches 0.0, the glass shatter is applied. This syncs
+##   the visual destruction with the impact frame of the AttackWindow animation.
+##   Set to GLASS_SHATTER_IMPACT_DELAY when _glass_shatter_pending becomes true.
+var _glass_shatter_impact_timer: float = 0.0
+
+## Duration (in seconds) from the start of the AttackWindow animation to the
+## moment of impact where the glass should shatter. This should match the
+## animation's keyframe timing. The AttackWindow animation is ~1.5s long,
+## with the impact occurring at approximately the 0.5s mark (the swing
+## connects with the glass).
+const GLASS_SHATTER_IMPACT_DELAY: float = 0.5
+
 ## Whether a retreat target has been set for physical RETREAT pathfinding.
 ## Reset after the Entity reaches the exit point and fades out.
 var _retreat_target_set: bool = false
@@ -174,12 +198,14 @@ func is_barricade_anim_locked() -> bool:
 func has_arrived_indoor() -> bool:
 	return _has_arrived_indoor
 
-## Resets the barricade damage and siege timers to 0.0.
+## Resets the barricade damage, siege timers, and glass shatter state to 0.0.
 ## Called by entity_controller.gd's _debug_attack_window() when F2 forces
 ## the Entity into WINDOW_PEEK state.
 func reset_barricade_timers() -> void:
 	_barricade_damage_timer = 0.0
 	_siege_duration_timer = 0.0
+	_glass_shatter_pending = false
+	_glass_shatter_impact_timer = 0.0
 
 ## Resets the retreat target flag so the next RETREAT state re-selects
 ## a target position. Called by the Director after consuming the
@@ -741,14 +767,15 @@ func _evaluate_night_rules(delta: float) -> void:
 ## When entity.is_indoor_retreat is true, the Entity was caught inside the
 ## cabin by the player's flashlight. It must:
 ##   Phase 1: Pathfind to the breach window's indoor landing position
-##   Phase 2: Teleport outside (to the window's exterior), then pathfind to
-##            the farthest treeline vantage point
-##   Phase 3: Perform a 5-second flinch (lateral sprint) before signaling
-##            completion to the Director
+##   Phase 2: Teleport outside (to the window's exterior), then transition
+##            to FLINCH state for lateral evasion
 ##
 ## The is_indoor_retreat flag is set by the Director (Tier 0) when the Entity
-## is illuminated while in INDOOR_SEARCH state. Confidence is dropped to 20%.
-var _indoor_retreat_phase: int = 0  # 0=not started, 1=pathfind to window, 2=teleport outside, 3=pathfind to treeline, 4=flinch
+## is illuminated while in INDOOR_SEARCH or CHASE state. Confidence is dropped
+## to 20%. After Phase 2 teleport, the state is set to FLINCH and locked so
+## the FLINCH handler can complete its 1.5-second lateral sprint before the
+## Director re-evaluates.
+var _indoor_retreat_phase: int = 0  # 0=not started, 1=pathfind to window, 2=teleport outside → FLINCH
 
 func _retreat_state(delta: float) -> void:
 	# Lock the state — the Director must not override while we're mid-retreat
@@ -849,54 +876,25 @@ func _indoor_retreat_handler(delta: float) -> void:
 			entity.velocity = Vector3.ZERO
 			print("[INDOOR RETREAT] Phase 2: Teleported outside to (%.2f, %.2f, %.2f)" % [outside_pos.x, outside_pos.y, outside_pos.z])
 		
-		# Advance to Phase 3: Pathfind to farthest treeline
-		_indoor_retreat_phase = 3
-		var treeline_markers: Array[Node] = entity.get_tree().get_nodes_in_group("Treeline_Vantage_Points")
-		if not treeline_markers.is_empty():
-			var farthest_marker: Node3D = treeline_markers[0] as Node3D
-			var farthest_dist: float = 0.0
-			for marker in treeline_markers:
-				var m: Node3D = marker as Node3D
-				if m:
-					var d: float = entity.global_position.distance_to(m.global_position)
-					if d > farthest_dist:
-						farthest_dist = d
-						farthest_marker = m
-			entity.get_nav_agent().target_position = farthest_marker.global_position
-			print("[INDOOR RETREAT] Phase 3: Pathfinding to farthest treeline vantage point.")
-		else:
-			entity.get_nav_agent().target_position = Vector3(9.0, 0.0, 40.0)
-		
-		# Set the 5-second flinch timer — this counts down during Phase 3
-		entity.set_flinched_timer(5.0)
+		# ─── TRANSITION TO FLINCH ──────────────────────────────────────────
+		# The Entity has successfully escaped outside through the breach window.
+		# Now it must enter the FLINCH state to laterally evade the flashlight
+		# beam. We set the state to FLINCH directly and lock it so the FLINCH
+		# handler can complete its 1.5-second lateral sprint before the Director
+		# re-evaluates.
+		#
+		# The Director's Tier 0 has a special exception: if the state is FLINCH
+		# and state_locked is true, it preserves the lock instead of breaking it.
+		# This ensures the FLINCH handler runs to completion uninterrupted.
+		#
+		# The _start_flinch() call is handled by the FLINCH state handler on
+		# its first frame (it checks if timer <= 0.0 and initializes).
+		_indoor_retreat_phase = 0
+		entity.is_indoor_retreat = false
+		entity.set_state(entity.EntityAI.State.FLINCH)
+		entity.state_locked = true
 		_calculated_velocity = Vector3.ZERO
-		return
-	
-	# ─── PHASE 3: Pathfind to farthest treeline + 5-second flinch ─────────
-	if _indoor_retreat_phase == 3:
-		# Decrement the flinch timer
-		var timer = entity.get_flinched_timer()
-		timer -= delta
-		entity.set_flinched_timer(timer)
-		
-		if entity.get_nav_agent().is_navigation_finished() or timer <= 0.0:
-			# Both conditions met (arrived at treeline OR timer expired)
-			# Signal completion to the Director
-			_indoor_retreat_phase = 0
-			entity.is_indoor_retreat = false
-			entity.is_retreat_arrived = true
-			entity.state_locked = false
-			_calculated_velocity = Vector3.ZERO
-			print("[INDOOR RETREAT] Complete! Transitioning to OBSERVE_FROM_TREELINE.")
-			return
-		
-		# Pathfind toward the treeline vantage point
-		var next_pos = entity.get_nav_agent().get_next_path_position()
-		var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
-		if dir_2d.length() > 0.01:
-			var move_dir_2d = dir_2d.normalized()
-			_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
-			_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
+		print("[INDOOR RETREAT] Phase 2 complete! Teleported outside. Transitioning to FLINCH state.")
 		return
 
 
@@ -927,6 +925,22 @@ func _indoor_retreat_handler(delta: float) -> void:
 var _approach_min_timer: float = 0.0
 const APPROACH_MIN_DURATION: float = 2.0
 
+## ─── APPROACH FAILSAFE TIMEOUT ──────────────────────────────────────────────
+## If the Entity has been in APPROACH_WINDOW for more than 15 seconds without
+## arriving at the window, force a completion signal to prevent permanent
+## soft-locks. This can happen when the NavMesh can't reach the window
+## (e.g., the cabin wall blocks pathfinding) and the Entity stutters at the
+## edge of the NavMesh indefinitely.
+var _approach_failsafe_timer: float = 0.0
+const APPROACH_FAILSAFE_TIMEOUT: float = 15.0
+
+## ─── APPROACH DEBUG LOG TIMER ───────────────────────────────────────────────
+## Prints Entity and window coordinates every 2 seconds during APPROACH_WINDOW
+## to help debug pathfinding issues (e.g., Entity not moving toward the window,
+## NavMesh can't reach the target, or the Entity is stuck at the cabin wall).
+var _approach_debug_timer: float = 0.0
+const APPROACH_DEBUG_INTERVAL: float = 2.0
+
 func _approach_window_state(delta: float) -> void:
 	# Lock the state — the Director must not override while we're mid-approach
 	entity.state_locked = true
@@ -937,6 +951,21 @@ func _approach_window_state(delta: float) -> void:
 	# This prevents instant arrival when the NavigationAgent finishes
 	# prematurely (e.g., NavMesh can't reach the exact window coordinate).
 	_approach_min_timer += delta
+	_approach_failsafe_timer += delta
+	
+	# ─── FAILSAFE TIMEOUT ──────────────────────────────────────────────────
+	# If the Entity has been pathfinding for more than 15 seconds without
+	# arriving, force a completion signal. This prevents permanent soft-locks
+	# when the NavMesh can't reach the window (e.g., the cabin wall blocks
+	# pathfinding) and the Entity stutters at the edge of the NavMesh.
+	if _approach_failsafe_timer >= APPROACH_FAILSAFE_TIMEOUT:
+		print("[Entity AI] APPROACH_WINDOW FAILSAFE: %ds elapsed without arrival. Forcing completion." % APPROACH_FAILSAFE_TIMEOUT)
+		_calculated_velocity = Vector3.ZERO
+		entity.is_approach_finished = true
+		entity.state_locked = false
+		_approach_min_timer = 0.0
+		_approach_failsafe_timer = 0.0
+		return
 	
 	var window_target = entity.get_current_window_target()
 	if not window_target:
@@ -981,9 +1010,35 @@ func _approach_window_state(delta: float) -> void:
 			entity.is_approach_finished = true
 			entity.state_locked = false
 			_approach_min_timer = 0.0
+			_approach_failsafe_timer = 0.0
 			return
 	
 	if window_target:
+		# ─── PERIODIC DEBUG LOG (every 2 seconds) ────────────────────────
+		# Prints Entity and window coordinates to help debug pathfinding
+		# issues during APPROACH_WINDOW. This is especially useful for
+		# diagnosing NavMesh reachability problems where the Entity gets
+		# stuck at the edge of the NavMesh near the cabin wall.
+		_approach_debug_timer += delta
+		if _approach_debug_timer >= APPROACH_DEBUG_INTERVAL:
+			_approach_debug_timer = 0.0
+			var window_id_str: String = ""
+			if window_target.has_method("get_window_id"):
+				window_id_str = window_target.get_window_id()
+			elif "window_id" in window_target:
+				window_id_str = str(window_target.window_id)
+			var entity_pos = entity.global_position
+			var window_pos = window_target.global_position
+			var nav_target = entity.get_nav_agent().target_position
+			var nav_finished = entity.get_nav_agent().is_navigation_finished()
+			print("[APPROACH DEBUG] Entity=(%.2f, %.2f, %.2f) | Window '%s'=(%.2f, %.2f, %.2f) | NavTarget=(%.2f, %.2f, %.2f) | NavFinished=%s | dist_2d=%.2f" % [
+				entity_pos.x, entity_pos.y, entity_pos.z,
+				window_id_str, window_pos.x, window_pos.y, window_pos.z,
+				nav_target.x, nav_target.y, nav_target.z,
+				nav_finished,
+				Vector2(entity_pos.x, entity_pos.z).distance_to(Vector2(nav_target.x, nav_target.z))
+			])
+		
 		# ─── 2D DISTANCE CHECK: Ignore vertical height differences ──────
 		# The NavMesh is at ground level (Y ≈ 0.0). The window target may be
 		# at Y ≈ 3.0m (second story). Using 3D distance would include the
@@ -994,13 +1049,13 @@ func _approach_window_state(delta: float) -> void:
 		var target_pos_2d = Vector2(entity.get_nav_agent().target_position.x, entity.get_nav_agent().target_position.z)
 		var dist_2d = my_pos_2d.distance_to(target_pos_2d)
 		
-		# ─── ARRIVAL CHECK: 2D distance threshold (tightened to 2.0m) ──
-		# The Entity must be within 2.0m of the window target AND have spent
+		# ─── ARRIVAL CHECK: 2D distance threshold (generous 2.5m) ──────
+		# The Entity must be within 2.5m of the window target AND have spent
 		# at least 2.0 seconds pathfinding before signaling completion.
-		# This prevents the APPROACH_WINDOW ↔ OBSERVE_FROM_TREELINE 60fps
-		# oscillation loop where the NavigationAgent finishes prematurely
-		# (e.g., NavMesh can't reach the exact window coordinate) and the
-		# Entity signals completion while still 3.6m away from the window.
+		# The 2.5m threshold is generous enough that the Entity registers an
+		# arrival even if it has to stop at the edge of the NavMesh just
+		# outside the cabin wall (the NavMesh may not reach the exact window
+		# coordinate — the wall blocks further pathfinding).
 		#
 		# NOTE: We do NOT use is_navigation_finished() as a completion signal.
 		# The NavMesh may not reach the exact window coordinate (e.g., the
@@ -1009,7 +1064,7 @@ func _approach_window_state(delta: float) -> void:
 		# fires. But the Entity is still 3.6m away from the window — not close
 		# enough to peek inside. We rely solely on the 2D distance check.
 		var nav_finished = entity.get_nav_agent().is_navigation_finished()
-		if dist_2d <= 2.0 and _approach_min_timer >= APPROACH_MIN_DURATION:
+		if dist_2d <= 2.5 and _approach_min_timer >= APPROACH_MIN_DURATION:
 			# Arrived at window — signal completion to the Director
 			# via the Blackboard completion flag. The Director will
 			# transition to WINDOW_PEEK (Tier 3).
@@ -1017,6 +1072,7 @@ func _approach_window_state(delta: float) -> void:
 			entity.is_approach_finished = true
 			entity.state_locked = false  # Unlock — Director can now transition
 			_approach_min_timer = 0.0
+			_approach_failsafe_timer = 0.0
 			_calculated_velocity = Vector3.ZERO
 			return
 		
@@ -1089,6 +1145,31 @@ func _window_peek_state(delta: float) -> void:
 		_calculated_velocity = Vector3.ZERO
 		return
 	
+	# ─── APPROACH DEBUG LOG (every 2 seconds, continues from APPROACH_WINDOW) ──
+	# Prints Entity and window coordinates every 2 seconds during WINDOW_PEEK,
+	# continuing the same debug log pattern from APPROACH_WINDOW state.
+	# This provides continuous coordinate tracking from window selection through
+	# to breach, helping diagnose pathfinding and positioning issues.
+	_approach_debug_timer += delta
+	if _approach_debug_timer >= APPROACH_DEBUG_INTERVAL:
+		_approach_debug_timer = 0.0
+		var window_id_str: String = ""
+		if window_target.has_method("get_window_id"):
+			window_id_str = window_target.get_window_id()
+		elif "window_id" in window_target:
+			window_id_str = str(window_target.window_id)
+		var entity_pos = entity.global_position
+		var window_pos = window_target.global_position
+		var nav_target = entity.get_nav_agent().target_position
+		var nav_finished = entity.get_nav_agent().is_navigation_finished()
+		print("[APPROACH DEBUG] Entity=(%.2f, %.2f, %.2f) | Window '%s'=(%.2f, %.2f, %.2f) | NavTarget=(%.2f, %.2f, %.2f) | NavFinished=%s | dist_2d=%.2f" % [
+			entity_pos.x, entity_pos.y, entity_pos.z,
+			window_id_str, window_pos.x, window_pos.y, window_pos.z,
+			nav_target.x, nav_target.y, nav_target.z,
+			nav_finished,
+			Vector2(entity_pos.x, entity_pos.z).distance_to(Vector2(nav_target.x, nav_target.z))
+		])
+	
 	# ─── BREACH TIMER: 10-second delay before attempting breach ──────────
 	# After 10 seconds of staring, the Entity starts trying to damage the
 	# barricade (if boarded) or transitions to INDOOR_SEARCH (if unboarded).
@@ -1107,19 +1188,60 @@ func _window_peek_state(delta: float) -> void:
 			_siege_duration_timer, BREACH_DELAY, is_window_boarded, has_damage_method, current_night, entity.state_locked])
 	_window_peek_debug_counter += 1
 	
-	# Check if the window is unbarricaded (glass-only) — if so, signal
-	# completion to the Director after the breach delay.
+	# Check if the window is unbarricaded (glass-only) — if so, the Entity
+	# must play the AttackWindow animation and shatter the glass at the
+	# impact frame BEFORE transitioning to INDOOR_SEARCH.
 	# CabinWindow uses `is_boarded` (variable) to track barricade state.
 	# If is_boarded is false, the window is glass-only and can be breached.
 	var is_window_boarded: bool = "is_boarded" in window_target and window_target.is_boarded
 	if not is_window_boarded:
 		if _siege_duration_timer >= BREACH_DELAY:
-			print("[WINDOW_PEEK DEBUG] *** BREACH TRIGGERED! Window is unbarricaded, siege=%.1fs >= %ds. Setting is_window_unbarricaded=true" % [_siege_duration_timer, BREACH_DELAY])
-			entity.is_window_unbarricaded = true
-			entity.state_locked = false  # Unlock — Director can now transition
-			_has_arrived_indoor = false
-			print("[Entity AI] WINDOW_PEEK: Window is unbarricaded! Director will transition to INDOOR_SEARCH.")
-			return
+			if not _glass_shatter_pending:
+				# ─── START THE ATTACK ANIMATION ──────────────────────────
+				# The breach delay has expired. Instead of instantly
+				# transitioning to INDOOR_SEARCH, we initiate the AttackWindow
+				# animation and set a timer for the impact frame.
+				# The glass shatter will be applied when the timer fires.
+				_glass_shatter_pending = true
+				_glass_shatter_impact_timer = GLASS_SHATTER_IMPACT_DELAY
+				_barricade_anim_lock = 1.5  # Force AttackWindow animation
+				print("[WINDOW_PEEK DEBUG] *** GLASS SHATTER INITIATED! Playing AttackWindow animation. Impact in %.1fs." % GLASS_SHATTER_IMPACT_DELAY)
+			
+			# ─── COUNTDOWN TO IMPACT ────────────────────────────────────
+			# Decrement the impact timer each frame. When it reaches 0.0,
+			# the glass shatters and we signal completion to the Director.
+			if _glass_shatter_pending:
+				_glass_shatter_impact_timer -= delta
+				_barricade_anim_lock -= delta  # Keep anim lock in sync
+				if _barricade_anim_lock < 0.0:
+					_barricade_anim_lock = 0.0
+				
+				if _glass_shatter_impact_timer <= 0.0:
+					# ─── IMPACT FRAME: Shatter the glass ────────────────
+					_glass_shatter_pending = false
+					_glass_shatter_impact_timer = 0.0
+					
+					# Call shatter_window() to destroy the glass at the
+					# exact impact frame of the AttackWindow animation.
+					# This triggers _shatter_glass() which sets
+					# is_glass_shattered = true, hides PristineVisuals,
+					# shows ShatteredVisuals, plays audio, and bursts
+					# glass shard particles — all IMMEDIATELY (no deferred
+					# timer), so the visual swap is frame-perfect with the
+					# animation's impact moment.
+					if window_target.has_method("shatter_window"):
+						window_target.shatter_window()
+						print("[WINDOW_PEEK] Glass shattered at impact frame! Transitioning to INDOOR_SEARCH.")
+					
+					# Signal completion to the Director
+					entity.is_window_unbarricaded = true
+					entity.state_locked = false  # Unlock — Director can now transition
+					_has_arrived_indoor = false
+					return
+				else:
+					# Animation still playing — freeze movement and wait
+					_calculated_velocity = Vector3.ZERO
+					return
 		else:
 			if _window_peek_debug_counter % 30 == 0:
 				print("[WINDOW_PEEK DEBUG] Window is unbarricaded but siege=%.1fs < %ds. Waiting..." % [_siege_duration_timer, BREACH_DELAY])
@@ -1198,6 +1320,13 @@ func _flinch_state(delta: float) -> void:
 			entity.state_locked = false
 			_calculated_velocity = Vector3.ZERO
 			return
+		
+		# ─── START THE VISUAL FADE ────────────────────────────────────────
+		# Trigger the alpha fade tween on the monster model so the Entity
+		# visually fades into darkness as it sprints laterally. This creates
+		# a disorienting "phantom" effect that sells the supernatural evasion.
+		# The fade takes 1.5 seconds — the same duration as the flinch sprint.
+		entity._start_flinch_fade()
 	
 	# Decrement the flinch timer — _start_flinch() set it to 1.5 seconds.
 	# When it reaches 0.0, signal completion to the Director via the
@@ -1258,6 +1387,21 @@ func _indoor_search_state(delta: float) -> void:
 		# vault animation for the full duration.
 		if _enter_window_anim_timer <= 0.0:
 			_enter_window_anim_timer = ENTER_WINDOW_ANIM_DURATION
+			
+			# ─── STORE THE BREACH WINDOW ─────────────────────────────────
+			# Permanently store the window the Entity is breaching so the
+			# indoor retreat handler knows which window to flee back through
+			# when the player shines the flashlight at the Entity inside.
+			var window_target = entity.get_current_window_target()
+			if window_target and window_target is CabinWindow:
+				entity.set_indoor_breach_window(window_target)
+				var window_id_str: String = ""
+				if window_target.has_method("get_window_id"):
+					window_id_str = window_target.get_window_id()
+				elif "window_id" in window_target:
+					window_id_str = str(window_target.window_id)
+				print("[INDOOR_SEARCH] Breach window stored: %s" % window_id_str)
+			
 			print("[INDOOR_SEARCH] Phase A: Playing EnterWindow animation for %.1f seconds." % ENTER_WINDOW_ANIM_DURATION)
 		
 		# Decrement the animation timer

@@ -259,6 +259,14 @@ const VOICE_ANGRY_PATH: String = "res://assets/audio/Entity/Entity Angry.ogg"
 ## Reset to false when the Entity leaves CHARGE/CHASE state.
 var _voice_angry_played_this_charge: bool = false
 
+## ─── CAN KILL TOGGLE (Debug Console) ──────────────────────────────────────
+## When false, the Entity will CHARGE the player but NOT capture/kill them.
+## The Entity will stop short and transition back to CHASE/OBSERVE instead.
+## This is useful for testing chase behavior without triggering death scenes.
+## Toggled via the Debug Console's "Toggle Can Kill" button.
+## Default: true (Entity can capture the player).
+var can_kill: bool = true
+
 ## Tracks whether the voice player was in a "talking" state (OBSERVE_FROM_TREELINE/PATROL)
 ## on the previous frame. Used by the AI's voice management to detect transitions
 ## between talking and non-talking states for the interchangeable track cycling.
@@ -993,11 +1001,12 @@ func _physics_process(delta: float) -> void:
 	# uses its normal FSM states (CHASE, PATROL, etc.) but with boosted speed.
 	# The _is_enraged flag is checked by the AI speed calculations.
 	
-	# --- TRANSITION LOCK: RETREAT / STANDOFF / FLINCH ---
-	# During RETREAT, force velocity to zero and skip movement processing,
-	# but STILL execute the AI update tick so that _retreat_state() can
-	# call fade_and_relocate(). Without this, the early return would create
-	# a deadlock where the AI never runs and the transition never completes.
+	# --- TRANSITION LOCK: RETREAT / STANDOFF ---
+	# During RETREAT, the AI computes the escape velocity (pathfinding to the
+	# breach window or treeline). We MUST call move_and_slide() to physically
+	# apply this velocity — without it, the Entity freezes in place and the
+	# stuck detector fires after 1.5 seconds, creating an infinite relocation
+	# loop.
 	# STANDOFF also locks movement — the Entity freezes in place while stared at.
 	# FLINCH is handled by the AI's _flinch_state() which computes the lateral
 	# sprint velocity. The controller applies it via move_and_slide() below.
@@ -1008,6 +1017,7 @@ func _physics_process(delta: float) -> void:
 		if _ai and _ai.has_method("process_state_logic"):
 			_ai.process_state_logic(delta)
 			velocity = _ai.get_calculated_velocity()
+		move_and_slide()
 		_update_animations(delta)
 		return
 
@@ -1855,9 +1865,7 @@ func _start_flinch_fade() -> void:
 		return
 	
 	# Kill any existing tweens on the monster model to prevent conflicts
-	var existing_tween = tree.create_tween()
-	if existing_tween:
-		existing_tween.kill()
+	Tween.kill_tweens_on(_monster_model)
 	
 	# Check if the monster model supports modulate (CanvasItem-based types).
 	# Node3D does NOT have modulate — only GeometryInstance3D subclasses with
@@ -1923,10 +1931,19 @@ func _start_flinch() -> void:
 	# NOTE: State transition is handled by the Master Director (entity_director.gd).
 	# The Director evaluates is_illuminated + is_player_inside and returns FLINCH.
 	# This function ONLY sets up the flinch target position and timer.
-	print("[Entity] FLINCH setup complete! Sprinting laterally to evade flashlight!")
 
 
 func _on_caught_player() -> void:
+	# ─── CAN KILL GUARD ──────────────────────────────────────────────────
+	# When can_kill is false (toggled via Debug Console), the Entity will
+	# CHARGE the player but NOT capture/kill them. Instead, it stops short
+	# and transitions back to CHASE/OBSERVE. This is useful for testing
+	# chase behavior without triggering death scenes.
+	if not can_kill:
+		print("[Entity] CAN KILL is DISABLED. Entity stops short instead of capturing player.")
+		request_state(EntityAI.State.CHASE)
+		return
+	
 	_is_active = false
 	velocity = Vector3.ZERO
 	if _growl_audio:
@@ -1980,8 +1997,16 @@ func on_player_stare(time: float) -> void:
 		var target_angle = atan2(dir_to_player.x, dir_to_player.z)
 		_monster_model.rotation.y = lerp_angle(_monster_model.rotation.y, target_angle, 0.1)
 		
-		# Freeze velocity while illuminated — the Director handles the state
-		velocity = Vector3.ZERO
+		# ─── VELOCITY FREEZE GUARD ──────────────────────────────────────
+		# Only zero velocity if the Entity is in a state that should freeze
+		# when illuminated (STANDOFF, OBSERVE_FROM_TREELINE, PATROL).
+		# Do NOT zero velocity during RETREAT — the Entity needs to sprint
+		# away from the flashlight. The Director handles the state transition
+		# to RETREAT, and the RETREAT handler computes the escape velocity.
+		# Zeroing velocity here would override the escape velocity every frame,
+		# causing the Entity to freeze mid-retreat.
+		if _state != EntityAI.State.RETREAT:
+			velocity = Vector3.ZERO
 
 
 ## Physically stalks to a new vantage point using NavigationAgent3D pathfinding.

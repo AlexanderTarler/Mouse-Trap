@@ -1,14 +1,9 @@
-# Master Behavior Director - Bug Fix Plan
+# Tactical Retreat Implementation
 
-## Root Cause
+## Progress
 
-11 rogue `set_state()` calls in `entity_controller.gd` bypass the Director, causing the FLINCH/OBSERVE loop.
-
-## Fix Strategy
-
-1. Add `_pending_state` variable to entity_controller.gd
-2. Add `request_state()` method that sets `_pending_state`
-3. Update Director to read `_pending_state` at the top of `evaluate_master_state()`
-4. Convert all 11 rogue `set_state()` calls to `request_state()`
-5. Add Director rules for all transitions that were previously handled by rogue calls
-6. Keep `state_locked` mechanism intact
+- [x] Analyze existing codebase — found `_indoor_breach_window`, `is_indoor_retreat`, and `_indoor_retreat_handler` already exist
+- [x] STEP 1: Store `_indoor_breach_window` during normal INDOOR_SEARCH transition (Phase A of `_indoor_search_state`)
+- [x] STEP 2: Update Director to handle CHASE indoors + expand indoor retreat to cover CHASE state
+- [x] STEP 3: Modify indoor retreat Phase 2 to transition to FLINCH state after escaping outside (instead of Phase 3 treeline pathfinding)
+- [x] Verify all changes are consistent and complete

@@ -79,77 +79,9 @@ func accumulate_debug_log(delta: float, entity: CharacterBody3D) -> void:
 ## console. Mirrors the F3 Entity Debug overlay data for post-mortem analysis.
 ## Called every 3 seconds by accumulate_debug_log().
 func _print_debug_dump(entity: CharacterBody3D) -> void:
-	if not entity or not is_instance_valid(entity):
-		return
-	
-	var state = entity.get_state()
-	var state_name: String = "DORMANT"
-	var state_keys = _EntityAI.State.keys()
-	if state >= 0 and state < state_keys.size():
-		state_name = state_keys[state]
-	
-	var confidence_module = entity.get_confidence_module()
-	var confidence: float = confidence_module.get_confidence() if confidence_module else 0.0
-	
-	var nav_module = entity.get_navigation_module()
-	var is_player_inside: bool = not nav_module.is_player_outside() if nav_module else false
-	
-	var ai_module = entity.get_ai_module()
-	
-	var player_ref = entity.get_player()
-	var dist_to_player: float = INF
-	if player_ref:
-		dist_to_player = entity.global_position.distance_to(player_ref.global_position)
-	
-	var sensory = entity.get_sensory_module()
-	var player_spotting: bool = sensory and sensory.has_method("is_player_spotting_entity") and sensory.is_player_spotting_entity()
-	var can_see_player: bool = sensory and sensory.has_method("can_entity_see_player") and sensory.can_entity_see_player()
-	
-	var night_mgr = entity.get_night_manager()
-	var current_night: int = night_mgr.current_night if night_mgr and "current_night" in night_mgr else 1
-	var night_progress: float = night_mgr.night_progress if night_mgr and "night_progress" in night_mgr else 0.0
-	var gen_status: String = "ON" if night_mgr and night_mgr.is_generator_on else "OFF"
-	
-	var nav_finished: bool = entity.get_nav_agent().is_navigation_finished()
-	var target_pos: Vector3 = entity.get_nav_agent().target_position
-	var dist_to_target: float = entity.global_position.distance_to(target_pos)
-	
-	var velocity: Vector3 = entity.velocity
-	var speed_val: float = velocity.length()
-	
-	var charge_cd: float = ai_module._charge_countdown if ai_module and "_charge_countdown" in ai_module else 0.0
-	var barricade_timer: float = ai_module._barricade_damage_timer if ai_module and "_barricade_damage_timer" in ai_module else 0.0
-	var siege_timer: float = ai_module._siege_duration_timer if ai_module and "_siege_duration_timer" in ai_module else 0.0
-	var standoff_guard: bool = ai_module._standoff_retreat_triggered if ai_module and "_standoff_retreat_triggered" in ai_module else false
-	var wall_climb_phase2: bool = ai_module._wall_climb_phase_2 if ai_module and "_wall_climb_phase_2" in ai_module else false
-	var anim_lock: float = ai_module._barricade_anim_lock if ai_module and "_barricade_anim_lock" in ai_module else 0.0
-	var flinch_timer: float = entity._flinched_timer if "_flinched_timer" in entity else 0.0
-	
-	var stare_time: float = entity.player_stare_timer
-	var is_illuminated: bool = entity.is_illuminated
-	var state_locked: bool = entity.state_locked
-	var pending_state: int = entity._pending_state
-	
-	var is_active: bool = entity._is_active if "_is_active" in entity else false
-	
-	print("\n═══════════════════════════════════════════════════════════")
-	print("  [DIRECTOR DEBUG DUMP] — State: %s [%s]" % [state_name, "ACTIVE" if is_active else "INACTIVE"])
-	print("═══════════════════════════════════════════════════════════")
-	print("  ── BLACKBOARD ──")
-	print("  Illuminated: %s | Stare Timer: %.2fs | Pending State: %d" % [is_illuminated, stare_time, pending_state])
-	print("  State Locked: %s | Speed: %.1f m/s | Vel: (%.1f, %.1f, %.1f)" % [state_locked, speed_val, velocity.x, velocity.y, velocity.z])
-	print("  ── CONFIDENCE ──")
-	print("  Confidence: %.1f / 100.0 | Player Inside: %s" % [confidence, is_player_inside])
-	print("  ── SENSORY ──")
-	print("  Flashlight on Entity: %s | LOS: %s | Dist to Player: %.1f m" % ["YES" if player_spotting else "no", "YES" if can_see_player else "no", dist_to_player])
-	print("  ── NIGHT ──")
-	print("  Night: %d/5 | Progress: %.0f%% | Generator: %s" % [current_night, night_progress * 100.0, gen_status])
-	print("  ── NAVIGATION ──")
-	print("  Nav Finished: %s | Dist to Target: %.1f m" % ["YES" if nav_finished else "no", dist_to_target])
-	print("  ── AI INTERNALS ──")
-	print("  Charge CD: %.2fs | Barricade Timer: %.2fs | Siege Timer: %.2fs" % [charge_cd, barricade_timer, siege_timer])
-	print("  Standoff Guard: %s | Wall Climb P2: %s | Anim Lock: %.2fs | Flinch Timer: %.1fs" % ["SET" if standoff_guard else "clear", "YES" if wall_climb_phase2 else "no", anim_lock, flinch_timer])
-	print("═══════════════════════════════════════════════════════════\n")
+	# Debug dump removed to reduce console noise.
+	# Use F3 overlay for real-time debug data.
+	pass
 
 
 ## Evaluates the Blackboard data and returns the one true state for this frame.
@@ -186,7 +118,23 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	# These are checked BEFORE the state_locked guard so that flashlight
 	# reactions can forcefully interrupt any ongoing task (approach, climb, etc.).
 	# If the Entity is illuminated, we break any existing locks and react immediately.
+	#
+	# EXCEPTION: FLINCH state lock is preserved. When the Entity has just escaped
+	# from an indoor retreat (teleported outside through the breach window), the
+	# indoor retreat handler sets the state to FLINCH and locks it. The FLINCH
+	# handler must be allowed to complete its 1.5-second lateral sprint before
+	# the Director re-evaluates. Without this exception, the Director would
+	# immediately override FLINCH with CHARGE (if stare_time >= 1.5) or STANDOFF,
+	# breaking the "escape then flinch" pipeline.
 	if entity.is_illuminated:
+		# ─── FLINCH STATE LOCK PRESERVATION ──────────────────────────────
+		# If the Entity is already in FLINCH and state_locked is true, the
+		# indoor retreat handler just set this state. Preserve the lock so
+		# the FLINCH handler can complete its 1.5-second lateral sprint.
+		# The FLINCH handler will unlock when it finishes.
+		if state == entity.EntityAI.State.FLINCH and entity.state_locked:
+			return entity.EntityAI.State.FLINCH
+		
 		# Forcefully break any existing task locks so we can react
 		entity.state_locked = false
 		entity.is_approach_finished = false
@@ -199,7 +147,13 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 		# ─── INDOOR RETREAT: Entity is inside the cabin and gets flashlighted ──
 		# The Entity must rush back to the breach window and escape outside.
 		# Confidence is dropped to 20% as a psychological setback.
-		if state == entity.EntityAI.State.INDOOR_SEARCH:
+		#
+		# This covers ALL indoor states: INDOOR_SEARCH (hunting inside), CHASE
+		# (if the Entity chased the player inside), or any other state where the
+		# Entity is physically inside the cabin. The navigation module's
+		# is_player_outside() returns false when the player is inside, which
+		# means the Entity is also inside (or at the cabin).
+		if state == entity.EntityAI.State.INDOOR_SEARCH or state == entity.EntityAI.State.CHASE:
 			# Set the indoor retreat flag so the RETREAT handler knows to
 			# pathfind to the breach window instead of the farthest treeline.
 			entity.is_indoor_retreat = true
@@ -208,9 +162,16 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 			var confidence_module = entity.get_confidence_module()
 			if confidence_module:
 				confidence_module.set_confidence(20.0)
-				print("[Director] INDOOR RETREAT: Entity caught inside! Confidence set to 20%.")
 			
 			return entity.EntityAI.State.RETREAT
+		
+		# ─── APPROACH WINDOW FLINCH ──────────────────────────────────────
+		# If the Entity is actively approaching a window and gets flashlighted,
+		# it should FLINCH (sprint away) rather than STANDOFF (freeze in place).
+		# This makes the flashlight a meaningful defensive tool during window
+		# approach — the player can interrupt the Entity's advance.
+		if state == entity.EntityAI.State.APPROACH_WINDOW:
+			return entity.EntityAI.State.FLINCH
 		
 		if stare_time >= 1.5 and not is_player_inside:
 			# Player stared too long while outside — CHARGE at 3x speed
@@ -249,7 +210,6 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	var current_night: int = night_manager.current_night if night_manager else 1
 	if current_night == 1:
 		if state != entity.EntityAI.State.DORMANT and state != entity.EntityAI.State.OBSERVE_FROM_TREELINE and state != entity.EntityAI.State.RETREAT:
-			print("[Director] Night 1 restriction: forcing OBSERVE from state %s" % entity.EntityAI.State.keys()[state])
 			return entity.EntityAI.State.OBSERVE_FROM_TREELINE
 	
 	# Night 2: Entity can approach windows and peek inside, but can ONLY breach
@@ -425,7 +385,6 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 				var current_conf = confidence_module.get_confidence()
 				var new_conf = maxf(0.0, current_conf - 20.0)
 				confidence_module.set_confidence(new_conf)
-				print("[Director] FLINCH complete: Confidence reduced from %.1f to %.1f (20%% penalty)" % [current_conf, new_conf])
 			
 			# ─── ANTI-FLAP: Set cooldown to prevent immediate re-entry ──
 			# The flashlight is still on, so the Director would immediately
@@ -482,8 +441,6 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	
 	# --- TIER 7: DEFAULT BASELINE ---
 	# If nothing else matches, the Entity observes from the treeline.
-	print("[Director] TIER 7 FALLTHROUGH: state=%s, confidence=%.1f, is_player_inside=%s, is_illuminated=%s, stare_time=%.2f, state_locked=%s, is_approach_finished=%s" % [
-		entity.EntityAI.State.keys()[state], confidence, is_player_inside, entity.is_illuminated, stare_time, entity.state_locked, entity.is_approach_finished])
 	return entity.EntityAI.State.OBSERVE_FROM_TREELINE
 
 

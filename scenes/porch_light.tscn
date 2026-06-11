@@ -16,6 +16,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.21247654, 0)
 light_energy = 2.0
 light_indirect_energy = 2.0
 light_size = 1.0
+light_specular = 0.0
 shadow_enabled = true
 
 [node name="LightMeshOn" parent="." unique_id=1929942958 instance=ExtResource("2_5egqy")]

@@ -417,11 +417,15 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 	var nearby_windows: Array[Node3D] = []
 	for w in _window_markers:
 		# ─── BOTTOM FLOOR FILTER ──────────────────────────────────────────
-		# Only target ground-floor windows (Y < 3.0 meters). Second-story
-		# windows are excluded — the Entity cannot reach them without the
-		# CLIMB_WALL state, which is not yet implemented for active sieging.
-		if w.global_position.y >= 3.0:
-			continue  # Skip second-story windows
+		# Only target windows that belong to the BottomFloorWindows group.
+		# Second-story windows are excluded — the Entity cannot reach them
+		# without the CLIMB_WALL state, which is not yet implemented for
+		# active sieging. The BottomFloorWindows group is assigned in the
+		# scene editor to each ground-floor CabinWindow node (the parent of
+		# the WindowMarker). We check the parent node's group membership
+		# because the WindowMarker itself only has the "WindowMarkers" group.
+		if not w.get_parent().is_in_group("BottomFloorWindows"):
+			continue  # Skip non-ground-floor windows
 		
 		# ─── LIGHT SANCTUARY FILTER ──────────────────────────────────────
 		# Skip windows whose room light is switched on. The Entity avoids
@@ -447,25 +451,41 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 
 	
 	# If we found nearby windows, pick one at random (tactical flanking)
+	# CRITICAL: Return the PARENT node (CabinWindow), not the Marker3D itself.
+	# The Marker3D only has position data — it does NOT have the cabin_window.gd
+	# script attached. All method calls (damage_barricade(), shatter_window(),
+	# get_indoor_landing_position(), is_boarded, etc.) are on the CabinWindow
+	# parent node. Returning the Marker3D would cause silent failures when the
+	# AI tries to call these methods.
 	if not nearby_windows.is_empty():
-		return nearby_windows.pick_random()
+		var selected_marker = nearby_windows.pick_random()
+		return selected_marker.get_parent() as Node3D
 	
 	# Fallback: return the absolute closest window to the Entity (with same filters)
+	# Uses 2D distance (XZ plane) to ignore vertical height differences between
+	# the Entity (ground level, Y ≈ 0.0) and the window marker (Y ≈ 3.0m for
+	# second-story windows). This ensures the fallback correctly identifies the
+	# closest ground-floor window even if the Entity is on uneven terrain.
+	# CRITICAL: Returns the PARENT node (CabinWindow), not the Marker3D itself.
 	var closest: Node3D = null
 	var closest_dist: float = INF
+	var entity_pos_2d = Vector2(entity.global_position.x, entity.global_position.z)
 	for w in _window_markers:
 		# Apply same filters to fallback selection
-		if w.global_position.y >= 3.0:
-			continue  # Skip second-story windows
+		if not w.get_parent().is_in_group("BottomFloorWindows"):
+			continue  # Skip non-ground-floor windows
 		if "room_light" in w and w.room_light and w.room_light.is_switched_on:
 			continue
 		if current_night == 2 and w.has_method("is_barricaded") and w.is_barricaded():
 			continue
-		var d: float = entity.global_position.distance_to(w.global_position)
+		var w_pos_2d = Vector2(w.global_position.x, w.global_position.z)
+		var d: float = entity_pos_2d.distance_to(w_pos_2d)
 		if d < closest_dist:
 			closest_dist = d
 			closest = w
-	return closest
+	if closest:
+		return closest.get_parent() as Node3D
+	return null
 
 
 

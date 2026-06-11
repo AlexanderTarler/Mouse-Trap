@@ -166,27 +166,11 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	# Tick down the deferred swap timer
+	# Tick down the deferred swap timer (used only by plank break, _shatter_barricade)
 	if _deferred_swap_timer > 0.0:
 		_deferred_swap_timer -= delta
 		if _deferred_swap_timer <= 0.0:
 			_deferred_swap_timer = 0.0
-			
-			# Apply pending glass swap
-			if _deferred_glass_swap:
-				_deferred_glass_swap = false
-				_update_window_visuals()
-				# Burst glass shard GPU particles
-				if _glass_shards:
-					_glass_shards.emitting = true
-				# Layered audio: glass crunch + wood splintering simultaneously
-				if _glass_crunch_sound:
-					_glass_crunch_sound.play()
-				if _break_sound:
-					_break_sound.play()
-				# Update the navigation blocker — glass is gone but planks may still block
-				_update_nav_blocker()
-				print("[CabinWindow] Deferred glass swap applied! is_glass_shattered=", is_glass_shattered)
 			
 			# Apply pending plank swap
 			if _deferred_plank_swap:
@@ -358,6 +342,21 @@ func damage_barricade() -> bool:
 	return false
 
 
+## Public API: Shatters the glass panes and crossbars permanently.
+## This is the clean entry point called by the Entity AI after the
+## AttackWindow animation reaches the impact frame.
+##
+## Hides PristineVisuals, shows ShatteredVisuals, plays layered audio,
+## bursts glass shard particles, and disables the navigation blocker.
+##
+## IMPORTANT: This function does NOT touch the interior planks. If the window
+## was boarded up, the planks remain at full health behind the shattered frame.
+## The NavBlocker stays enabled because planks still block the path.
+func shatter_window() -> void:
+	print("[CabinWindow] shatter_window() executed on ", self.name)
+	_shatter_glass()
+
+
 ## Stage 1: Shatters the glass panes and crossbars permanently.
 ## Hides PristineVisuals, shows ShatteredVisuals, plays layered audio,
 ## bursts glass shard particles, and disables the navigation blocker.
@@ -368,16 +367,37 @@ func damage_barricade() -> bool:
 func _shatter_glass() -> void:
 	is_glass_shattered = true
 	
-	# Schedule a deferred visual swap (0.5s delay).
+	# ─── IMMEDIATE VISUAL SWAP ───────────────────────────────────────────
 	# The visual swap (pristine → shattered), glass shard particles, layered
-	# audio, and nav blocker update are all handled by _process() when the
-	# timer expires. This syncs the visual change with the impact frame of
-	# the AttackWindow animation, so the player sees the Entity's arm swing
-	# through the glass before it shatters.
-	_deferred_glass_swap = true
-	_deferred_swap_timer = 0.5
+	# audio, and nav blocker update are applied IMMEDIATELY — no deferred
+	# timer. The AI's 0.5s impact timer in entity_ai.gd already provides the
+	# animation sync (the AttackWindow animation plays for 0.5s before this
+	# function is called). Adding another 0.5s deferred swap here would create
+	# a double-delay, causing the Entity to phase through visible glass when
+	# it teleports into the cabin via INDOOR_SEARCH Phase A.
+	_update_window_visuals()
 	
-	print("[CabinWindow] Glass shattered! Deferred swap scheduled (0.5s). is_glass_shattered=", is_glass_shattered)
+	# Burst glass shard GPU particles
+	if _glass_shards:
+		_glass_shards.emitting = true
+	
+	# Layered audio: glass crunch + wood splintering simultaneously
+	if _glass_crunch_sound:
+		_glass_crunch_sound.play()
+	if _break_sound:
+		_break_sound.play()
+	
+	# Update the navigation blocker — glass is gone but planks may still block
+	_update_nav_blocker()
+	
+	# ─── BREACH DEBUG LOG ────────────────────────────────────────────────
+	# Logs which window was broken, its window_id, and the visibility state
+	# of PristineVisuals (should be false) and ShatteredVisuals (should be true).
+	var pristine_visible: bool = _pristine_visuals.visible if _pristine_visuals else false
+	var shattered_visible: bool = _shattered_visuals.visible if _shattered_visuals else false
+	print("[CabinWindow] *** WINDOW BREACHED! window_id='%s' | is_glass_shattered=%s | PristineVisuals.visible=%s | ShatteredVisuals.visible=%s" % [
+		window_id, is_glass_shattered, pristine_visible, shattered_visible
+	])
 
 
 ## Stage 2: Destroys the plank barricade, plays a break sound, disables the

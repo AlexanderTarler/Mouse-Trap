@@ -5,6 +5,7 @@
 [ext_resource type="AudioStream" uid="uid://cnr55qbh3dgjn" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Misc/hit_3.ogg" id="2_xje28"]
 [ext_resource type="AudioStream" uid="uid://yg064tcrr1k6" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Misc/break_1.ogg" id="3_break"]
 [ext_resource type="AudioStream" uid="uid://drvhyapvtvebb" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Misc/crack_1_wood.ogg" id="4_hammer"]
+[ext_resource type="Texture2D" uid="uid://dlbvhtgwc4cov" path="res://assets/Textures/Wood/Wood_08-512x512.png" id="4_o3qxs"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_xje28"]
 
@@ -13,13 +14,18 @@ size = Vector3(1, 1, 0.2)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yfnpk"]
 transparency = 1
-albedo_color = Color(0.96862745, 1, 1, 0)
-metallic = 0.8
+albedo_color = Color(0.20250002, 0.27, 0.27, 0.39215687)
+metallic = 0.4
 roughness = 0.1
+normal_enabled = true
 
 [sub_resource type="BoxMesh" id="BoxMesh_onr5d"]
 material = SubResource("StandardMaterial3D_yfnpk")
-size = Vector3(1, 1, 0.02)
+size = Vector3(1.6, 1.7, 0.02)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5vkhp"]
+albedo_color = Color(0.14871506, 0.06784308, 0, 1)
+albedo_texture = ExtResource("4_o3qxs")
 
 [node name="CabinWindow" type="Node3D" unique_id=1290486114]
 script = ExtResource("1_yfnpk")
@@ -45,7 +51,7 @@ transform = Transform3D(0.9996222, -0.00030700862, -0.02748382, -0.02748546, -0.
 visible = false
 
 [node name="WindowMarker" type="Marker3D" parent="." unique_id=1542265065 groups=["WindowMarkers"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.2150924)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.6295091, -1.4486231)
 
 [node name="BarricadeDamageAudio" type="AudioStreamPlayer3D" parent="." unique_id=2120085934]
 stream = ExtResource("2_xje28")
@@ -57,63 +63,46 @@ shape = SubResource("BoxShape3D_yfnpk")
 
 [node name="PristineVisuals" type="Node3D" parent="." unique_id=753564403]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="PristineVisuals" unique_id=227728680]
+[node name="GlassPane" type="MeshInstance3D" parent="PristineVisuals" unique_id=227728680]
 mesh = SubResource("BoxMesh_onr5d")
 
-[node name="ShatteredVisuals" type="Node3D" parent="." unique_id=903357451]
-visible = false
-
-[node name="BreakSound" type="AudioStreamPlayer3D" parent="." unique_id=3000000001]
-stream = ExtResource("3_break")
-
-[node name="HammerSound" type="AudioStreamPlayer3D" parent="." unique_id=3000000002]
-stream = ExtResource("4_hammer")
-
-[node name="GlassCrunchSound" type="AudioStreamPlayer3D" parent="." unique_id=3000000003]
-stream = ExtResource("3_break")
-
-[node name="GlassShards" type="CPUParticles3D" parent="PristineVisuals" unique_id=3000000004]
+[node name="GlassShards" type="CPUParticles3D" parent="PristineVisuals" unique_id=-1294967292]
 emitting = false
 amount = 50
 lifetime = 1.5
 one_shot = true
 explosiveness = 1.0
 randomness = 0.5
-fixed_fps = 0
 fract_delta = false
-interpolate = true
-preprocess = 0.0
-speed_scale = 1.0
-repeat = false
+mesh = SubResource("BoxMesh_onr5d")
 direction = Vector3(0, 0, 1)
-spread = 45.0
-flatness = 0.0
 gravity = Vector3(0, -5, 0)
 initial_velocity_min = 2.0
 initial_velocity_max = 5.0
-angular_velocity_min = 0.0
 angular_velocity_max = 360.0
-orbit_velocity_min = 0.0
-orbit_velocity_max = 0.0
-linear_accel_min = 0.0
-linear_accel_max = 0.0
-radial_accel_min = 0.0
-radial_accel_max = 0.0
-tangential_accel_min = 0.0
-tangential_accel_max = 0.0
-damping_min = 0.0
-damping_max = 0.0
-angle_min = 0.0
 angle_max = 360.0
 scale_amount_min = 0.05
 scale_amount_max = 0.15
 color = Color(0.8, 0.85, 0.9, 0.8)
-hue_variation_min = 0.0
-hue_variation_max = 0.0
-anim_speed_min = 0.0
-anim_speed_max = 0.0
-anim_offset_min = 0.0
-anim_offset_max = 0.0
-split = false
-draw_order = 0
-mesh = SubResource("BoxMesh_onr5d")
+
+[node name="WoodenCross" type="Node3D" parent="PristineVisuals" unique_id=421541468]
+
+[node name="VerticalBeam" type="CSGBox3D" parent="PristineVisuals/WoodenCross" unique_id=1835690666]
+material_override = SubResource("StandardMaterial3D_5vkhp")
+size = Vector3(0.05, 1.7, 0.05)
+
+[node name="HorizontalBeam" type="CSGBox3D" parent="PristineVisuals/WoodenCross" unique_id=1282402023]
+material_override = SubResource("StandardMaterial3D_5vkhp")
+size = Vector3(1.5, 0.05, 0.05)
+
+[node name="ShatteredVisuals" type="Node3D" parent="." unique_id=903357451]
+visible = false
+
+[node name="BreakSound" type="AudioStreamPlayer3D" parent="." unique_id=-1294967295]
+stream = ExtResource("3_break")
+
+[node name="HammerSound" type="AudioStreamPlayer3D" parent="." unique_id=-1294967294]
+stream = ExtResource("4_hammer")
+
+[node name="GlassCrunchSound" type="AudioStreamPlayer3D" parent="." unique_id=-1294967293]
+stream = ExtResource("3_break")
