@@ -254,12 +254,15 @@ func _update_nav_blocker() -> void:
 
 ## Returns true if this window is secure against the Entity.
 ## A window is secure if:
-##   - The room light is switched on (light sanctuary — Entity avoids it), OR
+##   - The room light is lit (light sanctuary — Entity avoids it), OR
 ##   - The window is boarded up with planks (Entity must break through), OR
 ##   - The glass is still intact (Entity must shatter it first)
+##
+## NOTE: Uses is_room_lit() instead of is_switched_on so that a light that
+## is switched on but has no generator power is NOT considered secure.
 func is_secure() -> bool:
-	# Light sanctuary: if the room light is on, the Entity cannot approach
-	if room_light and room_light.is_switched_on:
+	# Light sanctuary: if the room light is actually lit, the Entity cannot approach
+	if room_light and room_light.is_room_lit():
 		return true
 	
 	# Barricade: if boarded up, the window is secure until planks break
@@ -277,8 +280,9 @@ func is_secure() -> bool:
 ## Returns "light" if protected by room light, "planks" if boarded,
 ## "glass" if glass is intact, "" if unsecured.
 func get_secure_type() -> String:
-	if room_light and room_light.is_switched_on:
+	if room_light and room_light.is_room_lit():
 		return "light"
+
 	if is_boarded:
 		return "planks"
 	if not is_glass_shattered:

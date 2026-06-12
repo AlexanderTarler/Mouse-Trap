@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://ber2ukknc0e3n"]
 
 [ext_resource type="PackedScene" uid="uid://ciuslcp5b0twm" path="res://assets/PSX Bunkers/Models/FBX/generator_1.fbx" id="1_5yxne"]
+[ext_resource type="Script" uid="uid://batgnoo2rflnk" path="res://scripts/generator.gd" id="1_rqoq6"]
 [ext_resource type="Script" uid="uid://c83w5oahgle2v" path="res://scripts/generator_interaction.gd" id="2_w5vnv"]
-[ext_resource type="Script" uid="uid://generator_outlet_script" path="res://scripts/generator_outlet.gd" id="3_outlet"]
-
+[ext_resource type="Script" uid="uid://dcskrxu6772q2" path="res://scripts/generator_outlet.gd" id="3_outlet"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_5yxne"]
 size = Vector3(3, 2.2, 1.2)
@@ -15,6 +15,10 @@ size = Vector3(3.5, 2, 1)
 size = Vector3(0.3, 0.3, 1)
 
 [node name="Generator" type="StaticBody3D" unique_id=125374002]
+script = ExtResource("1_rqoq6")
+cabin_light_drain_rate = 0.25
+porch_light_drain_rate = 0.15
+base_drain_rate = 0.06
 
 [node name="generator_1" parent="." unique_id=1280159935 instance=ExtResource("1_5yxne")]
 
@@ -30,9 +34,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9138731, 0)
 shape = SubResource("BoxShape3D_w5vnv")
 
 [node name="GeneratorOutlet" type="Area3D" parent="." unique_id=1179567553 groups=["generator_outlet"]]
-script = ExtResource("3_outlet")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4215393, 1.6422659, 0.5340208)
-
+script = ExtResource("3_outlet")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="GeneratorOutlet" unique_id=382526836]
 shape = SubResource("BoxShape3D_ef8yp")

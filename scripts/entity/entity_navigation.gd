@@ -343,6 +343,86 @@ func get_player_room() -> String:
 	return "Outside"
 
 
+## ─── LIGHT DETECTION CONVENIENCE METHODS ─────────────────────────────────────
+## These methods delegate to the RoomLightDetector autoload singleton.
+## They provide a clean API for the Entity AI to query lighting state
+## without needing to reference the autoload directly.
+
+## Returns true if the player is currently in a lit room.
+## A room is "lit" when BOTH the light switch is ON AND the generator is running.
+func is_player_in_lit_room() -> bool:
+	var detector = _get_light_detector()
+	if detector:
+		return detector.is_player_in_lit_room()
+	return false
+
+
+## Returns true if the Entity is currently in a lit room.
+## The Entity is only inside a lit room if it has breached the cabin
+## (INDOOR_SEARCH state) and the room it's in has an active light.
+func is_entity_in_lit_room() -> bool:
+	var detector = _get_light_detector()
+	if detector:
+		return detector.is_entity_in_lit_room()
+	return false
+
+
+## Returns true if the given world position is inside a lit room.
+func is_position_in_lit_room(position: Vector3) -> bool:
+	var detector = _get_light_detector()
+	if detector:
+		return detector.is_position_in_lit_room(position)
+	return false
+
+
+## Returns the name of the room at the given position, or "Outside".
+func get_room_name_at(position: Vector3) -> String:
+	var detector = _get_light_detector()
+	if detector:
+		return detector.get_room_name_at(position)
+	return "Outside"
+
+
+## Internal helper to get the RoomLightDetector autoload.
+var _light_detector: Node = null
+func _get_light_detector() -> Node:
+	if not _light_detector or not is_instance_valid(_light_detector):
+		_light_detector = entity.get_node_or_null("/root/RoomLightDetector")
+	return _light_detector
+
+
+
+## Returns true if ALL ground-floor windows are secured by light sanctuary.
+## This means every window's room light is switched on AND the generator is
+## running, making every window "secure" via light. The Entity cannot approach
+## any window and must wait in OBSERVE_FROM_TREELINE until a light turns off.
+##
+## Used by the ALL_WINDOWS_LIT loop guard in entity_ai.gd to prevent the
+## Entity from continuously cycling frames when there are no valid windows.
+func are_all_windows_lit() -> bool:
+	if _window_markers.is_empty():
+		return false
+	
+	for w in _window_markers:
+		# Only check ground-floor windows (same filter as pick_tactical_window)
+		if not w.get_parent().is_in_group("BottomFloorWindows"):
+			continue
+		
+		# Check if this window is NOT secure due to light
+		# A window is "secure by light" when room_light.is_room_lit() returns true
+		var is_secure_by_light: bool = false
+		if "room_light" in w and w.room_light:
+			if w.room_light.has_method("is_room_lit") and w.room_light.is_room_lit():
+				is_secure_by_light = true
+		
+		if not is_secure_by_light:
+			# Found a window that is NOT lit — not all windows are lit
+			return false
+	
+	# All ground-floor windows are lit
+	return true
+
+
 ## Returns true if the player is on the second floor of the cabin.
 ## Uses a Y-axis threshold (3.0 meters above ground level).
 ## Ground floor Y ≈ 0.0, second floor Y ≈ 3.0+

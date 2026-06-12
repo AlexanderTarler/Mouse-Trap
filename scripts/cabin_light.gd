@@ -166,7 +166,20 @@ func is_generator_running() -> bool:
 	return true  # Fallback so lights function normally during testing
 
 
+## Returns true if this light is actually emitting light right now.
+## A room is considered "lit" only when BOTH:
+##   - The light switch is ON (is_switched_on == true)
+##   - The generator is running (has power)
+##
+## This is the single source of truth for the Light Detection System.
+## Used by CabinWindow, RoomLightDetector, and the Entity AI to determine
+## whether a room is safe (lit) or dangerous (dark).
+func is_room_lit() -> bool:
+	return is_switched_on and is_generator_running()
+
+
 ## Called when NightManager emits generator_state_changed.
+
 ## - Generator turning ON: triggers the startup flicker sequence.
 ## - Generator turning OFF: snaps the light off instantly (no flicker).
 func _on_generator_state_changed(is_running: bool) -> void:

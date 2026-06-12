@@ -1,9 +1,34 @@
 extends Node
 
-## Entity Sensory System — Vision cone, flashlight detection, and audio hearing.
-## Receives a reference to the parent entity_controller to read/write shared state.
+## Entity Sensory System — Vision cone (lighting-scaled), flashlight detection,
+## and audio hearing. Receives a reference to the parent entity_controller to
+## read/write shared state.
+##
+## VISION SCALING:
+##   The Entity's vision range scales dynamically based on lighting conditions.
+##   - If the player's flashlight is ON → full vision range (30m)
+##   - If the environment is dark AND flashlight is OFF → reduced range (4m)
+##   - If the environment is lit (room lights on) → moderate range (15m)
+##
+## ACOUSTIC DETECTION:
+##   The Entity can hear player noises via hear_noise(). The player emits noise
+##   based on movement state (sprint=20m, walk=10m, crouch=silent). If the Entity
+##   is within the noise radius, it updates last_known_position instantly.
 
 var entity: CharacterBody3D = null
+
+# ─── VISION CONFIGURATION ───────────────────────────────────────────────────
+## Maximum vision range when the player's flashlight is ON (full visibility).
+const VISION_RANGE_FLASHLIGHT_ON: float = 30.0
+
+## Maximum vision range when the environment is lit (room lights on).
+const VISION_RANGE_LIT_ENVIRONMENT: float = 15.0
+
+## Maximum vision range when it's dark and flashlight is OFF (severely limited).
+const VISION_RANGE_DARK: float = 10.0
+
+## The current effective vision range, recalculated each frame.
+var _current_vision_range: float = VISION_RANGE_DARK
 
 # ─── REUSABLE RAYCAST QUERY ──────────────────────────────────────────────────
 ## Single reusable PhysicsRayQueryParameters3D instance to avoid GC churn.
@@ -15,8 +40,25 @@ var _ray_query: PhysicsRayQueryParameters3D = null
 ## event occurs, avoiding expensive get_viewport().get_camera_3d() polling.
 var _cached_camera: Camera3D = null
 
+# ─── VISION UPDATE COOLDOWN ──────────────────────────────────────────────────
+## Timer that prevents can_entity_see_player() from updating last_known_position
+## or returning true for 1.0 seconds after a sighting. This creates a "blink"
+## in the Entity's vision — the player has a 1-second window to crouch, hide
+## behind a tree, and break the pathfinding target.
+##
+## Without this cooldown, the Entity updates last_known_position every single
+## frame, making it impossible to lose the Entity once spotted. The 1-second
+## gap is exactly what the player needs to break line-of-sight and escape.
+var _vision_update_cooldown: float = 0.0
+
+## Cooldown duration in seconds. After spotting the player, the Entity's vision
+## "blinks" for this duration — it cannot re-acquire the player or update
+## last_known_position via sight during this window.
+const VISION_UPDATE_COOLDOWN_DURATION: float = 1.0
+
 
 func setup(parent: CharacterBody3D) -> void:
+
 	entity = parent
 	
 	# Create reusable ray query once to avoid GC churn
@@ -44,20 +86,89 @@ func _on_camera_switched() -> void:
 	_cache_camera()
 
 
+## Calculates the effective vision range for the current frame based on
+## lighting conditions and flashlight state.
+##
+## Rules:
+##   - Player flashlight ON → full range (30m) — they're a beacon in the dark
+##   - Player is in a lit room (room lights on) → moderate range (15m)
+##   - Dark environment + flashlight OFF → severely reduced range (4m)
+func _calculate_vision_range() -> float:
+	var player = entity.get_player()
+	if not player or not is_instance_valid(player):
+		return VISION_RANGE_DARK
+	
+	# If the player's flashlight is ON, they are instantly visible at max range
+	if player.has_method("is_flashlight_on") and player.is_flashlight_on():
+		return VISION_RANGE_FLASHLIGHT_ON
+	
+	# Check if the Entity is in a lit environment using RoomLightDetector
+	# If the Entity is in a lit room, it can see moderately well
+	if RoomLightDetector.is_position_in_lit_room(entity.global_position):
+		return VISION_RANGE_LIT_ENVIRONMENT
+	
+	# Also check if the player is in a lit room — if so, the Entity can see
+	# them from the darkness at moderate range (player silhouette against light)
+	if RoomLightDetector.is_position_in_lit_room(player.global_position):
+		return VISION_RANGE_LIT_ENVIRONMENT
+	
+	# ─── CROUCH VISIBILITY MULTIPLIER ────────────────────────────────────
+	# If the player is crouching, their profile is much smaller and they
+	# blend into the darkness better. Shrink the effective vision range
+	# to 20% of the calculated value (e.g., 30m → 6m, 15m → 3m, 4m → 0.8m).
+	# This allows skilled players to actually sneak past the Entity in the
+	# dark by staying low and moving slowly.
+	if player.has_method("is_crouching") and player.is_crouching():
+		return VISION_RANGE_DARK * 0.2
+	
+	# Dark environment + no flashlight → severely limited vision
+	return VISION_RANGE_DARK
+
+
 ## Checks if the Entity can see the player via vision cone + line-of-sight raycast.
+##
+## VISION SCALING:
+##   The effective vision range is calculated dynamically each frame based on
+##   lighting conditions (see _calculate_vision_range()). If the player is
+##   beyond this range, they are invisible to the Entity regardless of FOV.
+##
+## MEMORY UPDATE:
+##   When the player IS seen, the Entity updates its last_known_position to
+##   the player's current location. This is the ONLY place last_known_position
+##   is updated via sight — acoustic detection updates it separately.
 func can_entity_see_player() -> bool:
 	var player = entity.get_player()
 	if not player or not is_instance_valid(player):
 		return false
 	
-	# 1. Are they within the Field of View cone?
+	# ─── 0. DECREMENT VISION UPDATE COOLDOWN ────────────────────────────
+	# The cooldown counts down each frame regardless of whether the player
+	# is visible. This ensures the 1-second "blink" always progresses.
+	if _vision_update_cooldown > 0.0:
+		_vision_update_cooldown -= entity.get_physics_process_delta_time()
+	
+	# ─── 1. CALCULATE EFFECTIVE VISION RANGE ─────────────────────────────
+	# Recalculate vision range based on current lighting conditions.
+	# This is cheap — just a few boolean checks and a RoomLightDetector query.
+	_current_vision_range = _calculate_vision_range()
+	
+	# ─── 2. DISTANCE CHECK ───────────────────────────────────────────────
+	# If the player is beyond the effective vision range, they are invisible
+	# regardless of FOV or line-of-sight. This is the core stealth mechanic:
+	# in the dark, the Entity can only see 4m ahead.
+	var dist_to_player = entity.global_position.distance_to(player.global_position)
+	if dist_to_player > _current_vision_range:
+		entity.set_has_logged_sight(false)
+		return false
+	
+	# ─── 3. FIELD OF VIEW CONE CHECK ─────────────────────────────────────
 	var to_player = (player.global_position - entity.global_position).normalized()
 	var forward = -entity.global_transform.basis.z
 	
 	if forward.dot(to_player) < cos(entity.get_vision_cone_angle()):
 		return false
 	
-	# 2. Is there a wall/tree in the way? (Raycast check using reusable query)
+	# ─── 4. LINE-OF-SIGHT RAYCAST ────────────────────────────────────────
 	var space = entity.get_world_3d().direct_space_state
 	var head_pos = entity.global_position + Vector3(0, 2.5, 0)
 	var player_chest = player.global_position + Vector3(0, 1.0, 0)
@@ -71,16 +182,36 @@ func can_entity_see_player() -> bool:
 	# If the raycast hits nothing, or hits the player (which is excluded so it
 	# won't be returned), then line-of-sight is clear.
 	if hit.is_empty():
+		# ─── VISION UPDATE COOLDOWN CHECK ────────────────────────────────
+		# If the cooldown is still active, the Entity's vision is "blinking"
+		# — it cannot re-acquire the player or update last_known_position.
+		# This gives the player a 1-second window to break line-of-sight.
+		if _vision_update_cooldown > 0.0:
+			return false
+		
 		if not entity.has_logged_sight():
-			print("[Entity Senses] Player spotted in vision cone!")
+			print("[Entity Senses] Player spotted in vision cone! (range=%.1fm, dist=%.1fm)" % [_current_vision_range, dist_to_player])
 			entity.set_has_logged_sight(true)
+		
+		# ─── UPDATE MEMORY ───────────────────────────────────────────────
+		# Store the player's current position as the last known position.
+		# This is the ONLY place vision updates memory — acoustic detection
+		# updates it separately via hear_noise().
 		entity.set_last_known_position(player.global_position)
 		entity.set_is_hunting(true)
 		entity.set_current_interest_level(100.0)
+		
+		# ─── TRIGGER VISION COOLDOWN ─────────────────────────────────────
+		# After a successful sighting, trigger the 1-second "blink" so the
+		# Entity cannot continuously track the player frame-by-frame.
+		_vision_update_cooldown = VISION_UPDATE_COOLDOWN_DURATION
+		
 		return true
 	
 	entity.set_has_logged_sight(false)
 	return false
+
+
 
 
 

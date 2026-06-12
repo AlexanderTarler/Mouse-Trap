@@ -1,9 +1,9 @@
-# Tactical Retreat Implementation
+# Player Stealth and Entity Memory - Implementation Progress
 
-## Progress
+## Step 1: Sensory & Memory Architecture
 
-- [x] Analyze existing codebase — found `_indoor_breach_window`, `is_indoor_retreat`, and `_indoor_retreat_handler` already exist
-- [x] STEP 1: Store `_indoor_breach_window` during normal INDOOR_SEARCH transition (Phase A of `_indoor_search_state`)
-- [x] STEP 2: Update Director to handle CHASE indoors + expand indoor retreat to cover CHASE state
-- [x] STEP 3: Modify indoor retreat Phase 2 to transition to FLINCH state after escaping outside (instead of Phase 3 treeline pathfinding)
-- [x] Verify all changes are consistent and complete
+- [ ] 1a. Overhaul `entity_sensory.gd` — Vision scaling with lighting + distance check
+- [ ] 1b. Add `hear_noise()` to `entity_controller.gd` — Acoustic detection
+- [ ] 1c. Update `player_controller.gd` — Walking noise, sprint noise radius increase
+- [ ] 1d. Modify `entity_ai.gd` — Memory-based pathfinding (target `last_known_position`)
+- [ ] 1e. Add Investigation Phase to `entity_ai.gd` — 3-5s pause at last_known_position

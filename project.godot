@@ -24,6 +24,7 @@ Inventory="*uid://bjx17mr4lkv1w"
 JumpscareManager="*uid://br0tle13g7vbi"
 RoutineManager="*res://scripts/routine_manager.gd"
 EvidenceManager="*res://scripts/evidence_manager.gd"
+RoomLightDetector="*uid://lqer7d8tsn72"
 
 [display]
 

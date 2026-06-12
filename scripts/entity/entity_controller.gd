@@ -303,12 +303,38 @@ var _light_sabotage_cooldown: float = 0.0
 ## 3.0, the Entity calls take_physical_hit() on the lamp and resets.
 var _lamp_attack_timer: float = 0.0
 
+# --- FUSE SABOTAGE TIMING ---
+## Timer counting up to 2.0 seconds between Entity strikes on the Fuse Box.
+## Incremented by delta each frame while the Entity is within hitting distance
+## of the Fuse Box. When it reaches 2.0, the Entity calls take_damage() on
+## the Fuse Box and resets.
+var _fuse_sabotage_timer: float = 0.0
+
+## ─── BLACKBOARD: Fuse Sabotage Completion Flag ──────────────────────────────
+## Set to true by _fuse_sabotage_state() when the Fuse Box is destroyed.
+## The Director checks this flag and transitions to the next appropriate state.
+## After consuming the flag, the Director resets it to false.
+var is_fuse_sabotaged: bool = false
+
 # --- OVERLOAD STUN STATE ---
 ## Timer counting down the stun duration (seconds remaining).
 ## Set by trigger_overload_stun() and decremented each frame during STUNNED.
 ## When it reaches 0.0, the Entity is released from the stun.
 var _stun_timer: float = 0.0
 
+## ─── MOTOR LOCK ──────────────────────────────────────────────────────────────
+## When true, the motor is locked and set_motor_velocity() will NOT apply
+## velocity changes. Used by the STUNNED state to freeze the Entity in place.
+## Set by lock_motor_for_stun(), cleared by unlock_motor().
+var _is_motor_locked: bool = false
+
+## ─── LAST BREACHED WINDOW (Tactical Retreat) ─────────────────────────────────
+## Permanently stores the root CabinWindow node that the Entity used to enter
+## the cabin. Set when the Entity breaches a window (INDOOR_SEARCH entry).
+## Used by the RETREAT handler to pathfind back to this window when the Entity
+## is repelled by a light sanctuary or flashlight while indoors.
+## Persists until the Entity breaches a different window.
+var last_breached_window: Node = null
 
 ## ─── PENDING STATE OVERRIDE ──────────────────────────────────────────────
 ## When set to a valid State value (>= 0), the Master Director will read this
@@ -556,6 +582,7 @@ func _ready() -> void:
 	
 	_nav_agent.path_desired_distance = 2.0
 	_nav_agent.target_desired_distance = 2.0
+	_nav_agent.radius = 0.4  # Reduced from default 0.5 by 20% for tighter pathfinding
 	
 	# Validate Model setup
 	var active_player: AnimationPlayer = null
@@ -928,72 +955,6 @@ func _physics_process(delta: float) -> void:
 	# Smooth volume interpolation for night ambience
 	_fade_audio_player(_night_ambience_player, should_play_ambience, NIGHT_AMBIENCE_VOLUME_DB, NIGHT_AMBIENCE_FADE_SPEED, delta)
 	
-	# --- WINDOW BLUFF HANDLER ---
-	# When the Entity is bluffing, it moves toward the window for 2 seconds
-	# (Phase 1), pauses for 1.5 seconds (Phase 2), then retreats to its
-	# starting position (Phase 3). This creates tension and uncertainty.
-	if _window_bluff_active:
-		_window_bluff_timer -= delta
-		
-		if _window_bluff_timer > 0.0:
-			# Phase 1: Approach — move toward the window
-			if _nav_agent.is_navigation_finished():
-				velocity = Vector3.ZERO
-			else:
-				var next_pos = _nav_agent.get_next_path_position()
-				var dir_2d := Vector2(next_pos.x - global_position.x, next_pos.z - global_position.z).normalized()
-				velocity.x = dir_2d.x * current_stalk_speed
-				velocity.z = dir_2d.y * current_stalk_speed
-		else:
-			# Phase 2 & 3: Pause then retreat
-			# After the approach timer expires, stop and stare for 1.5 seconds,
-			# then retreat back to the starting position.
-			if _window_bluff_timer > -1.5:
-				# Phase 2: Pause — stop and stare at the window
-				velocity = Vector3.ZERO
-			else:
-				# Phase 3: Retreat — move back to starting position
-				var retreat_dir = (_window_bluff_retreat_pos - global_position).normalized()
-				var dist_to_retreat = global_position.distance_to(_window_bluff_retreat_pos)
-				if dist_to_retreat < 1.0:
-					# Bluff complete — reset and return to normal behavior
-					_window_bluff_active = false
-					_window_bluff_cooldown = randf_range(8.0, 15.0)
-					_current_window_target = null
-					request_state(EntityAI.State.OBSERVE_FROM_TREELINE)
-					velocity = Vector3.ZERO
-					print("[Entity] Window Bluff complete! Retreating to treeline.")
-				else:
-					velocity.x = retreat_dir.x * current_stalk_speed * 0.7
-					velocity.z = retreat_dir.z * current_stalk_speed * 0.7
-		
-		move_and_slide()
-		_update_animations(delta)
-		return
-	
-	# --- STUNNED STATE (Porch Light Overload Trap) ---
-	# The Entity is paralyzed by the blinding porch light. It cannot move,
-	# cannot pathfind, and cannot transition to any other state until the
-	# stun timer expires or the generator dies (blackout).
-	# This gives the player a window to destroy the totem anchor.
-	if _state == EntityAI.State.STUNNED:
-		# Decrement the stun timer
-		_stun_timer -= delta
-		
-		# Freeze all movement and pathfinding
-		velocity = Vector3.ZERO
-		_nav_agent.target_position = global_position  # Keep nav target on self
-		
-		# Play writhing/pained animation (Idle with transparency flicker)
-		_update_animations(delta)
-		
-		# Check if the stun has expired naturally
-		if _stun_timer <= 0.0:
-			print("[Entity] Stun expired! Entity released from overload paralysis.")
-			request_state(EntityAI.State.OBSERVE_FROM_TREELINE)
-		
-		return
-	
 	# --- ENRAGED STATE (Blackout Release) ---
 	# The generator died while the Entity was stunned. The Entity is now
 	# permanently enraged for the rest of the night — 1.5x movement speed.
@@ -1001,18 +962,21 @@ func _physics_process(delta: float) -> void:
 	# uses its normal FSM states (CHASE, PATROL, etc.) but with boosted speed.
 	# The _is_enraged flag is checked by the AI speed calculations.
 	
-	# --- TRANSITION LOCK: RETREAT / STANDOFF ---
+	# --- TRANSITION LOCK: RETREAT / STANDOFF / STUNNED ---
 	# During RETREAT, the AI computes the escape velocity (pathfinding to the
 	# breach window or treeline). We MUST call move_and_slide() to physically
 	# apply this velocity — without it, the Entity freezes in place and the
 	# stuck detector fires after 1.5 seconds, creating an infinite relocation
 	# loop.
 	# STANDOFF also locks movement — the Entity freezes in place while stared at.
+	# STUNNED is handled by the AI's _stunned_state() which locks the motor
+	# and decrements the stun timer. The controller applies the frozen velocity
+	# via move_and_slide() below.
 	# FLINCH is handled by the AI's _flinch_state() which computes the lateral
 	# sprint velocity. The controller applies it via move_and_slide() below.
 	# NOTE: RELOCATE is NOT included here — it is a safe initialization state only
 	# and is never used during active runtime transitions.
-	if _state == EntityAI.State.RETREAT or _state == EntityAI.State.STANDOFF:
+	if _state == EntityAI.State.RETREAT or _state == EntityAI.State.STANDOFF or _state == EntityAI.State.STUNNED:
 		velocity = Vector3.ZERO
 		if _ai and _ai.has_method("process_state_logic"):
 			_ai.process_state_logic(delta)
@@ -1027,14 +991,15 @@ func _physics_process(delta: float) -> void:
 	# Gravity is bypassed during CLIMB_WALL (vertical ascent), WINDOW_PEEK
 	# (Entity is stationary at the window frame), FLINCH (lateral sprint
 	# — the Entity stays at its current Y to avoid dropping into terrain),
-	# and ATTACK_LAMP (Entity stands still while striking the lamp).
-	if not is_on_floor() and _state != EntityAI.State.WINDOW_PEEK and _state != EntityAI.State.CLIMB_WALL and _state != EntityAI.State.FLINCH and _state != EntityAI.State.ATTACK_LAMP:
+	# ATTACK_LAMP (Entity stands still while striking the lamp),
+	# and STUNNED (Entity is paralyzed by the overload trap).
+	if not is_on_floor() and _state != EntityAI.State.WINDOW_PEEK and _state != EntityAI.State.CLIMB_WALL and _state != EntityAI.State.FLINCH and _state != EntityAI.State.ATTACK_LAMP and _state != EntityAI.State.STUNNED:
 
 		velocity += get_gravity() * delta
 	
 	if _ai and _ai.has_method("process_state_logic"):
 		_ai.process_state_logic(delta)
-		velocity = _ai.get_calculated_velocity()
+		set_motor_velocity(_ai.get_calculated_velocity())
 	else:
 		velocity = Vector3.ZERO
 
@@ -1229,6 +1194,17 @@ func set_state(new_state: EntityAI.State) -> void:
 func request_state(new_state: EntityAI.State) -> void:
 	_pending_state = new_state
 
+## Returns the pending state override value, or -1 if no override is pending.
+## Called by the Master Director (entity_director.gd) at the start of
+## evaluate_master_state() to check for external state change requests.
+func get_pending_state() -> int:
+	return _pending_state
+
+## Clears the pending state override back to -1.
+## Called by the Master Director after consuming the pending state value.
+func clear_pending_state() -> void:
+	_pending_state = -1
+
 ## Resets all state completion flags and unlocks the state lock.
 ## Called by the Master Director when it needs to force-clear the
 ## Blackboard for a clean state transition (e.g., after a pending
@@ -1385,6 +1361,14 @@ func get_lamp_attack_timer() -> float:
 func set_lamp_attack_timer(value: float) -> void:
 	_lamp_attack_timer = value
 
+## Returns the fuse sabotage timer.
+func get_fuse_sabotage_timer() -> float:
+	return _fuse_sabotage_timer
+
+## Sets the fuse sabotage timer.
+func set_fuse_sabotage_timer(value: float) -> void:
+	_fuse_sabotage_timer = value
+
 ## Returns the indoor breach window reference.
 func get_indoor_breach_window():
 	return _indoor_breach_window
@@ -1534,7 +1518,36 @@ func get_last_known_position() -> Vector3:
 func set_last_known_position(pos: Vector3) -> void:
 	_last_known_position = pos
 
+
+# ─── ACOUSTIC DETECTION ──────────────────────────────────────────────────────
+## Called by player_controller.gd's make_noise() when the player emits a sound.
+##
+## The player emits noise with a radius based on movement state:
+##   - Sprinting: 20m radius (loud footsteps, heavy breathing)
+##   - Walking:   10m radius (periodic footstep sounds)
+##   - Crouching: 0m (silent movement)
+##   - Jumping:   15m radius (landing thud)
+##
+## If the Entity is within the noise radius, it instantly updates its
+## last_known_position to the noise source and enters hunting mode.
+## This is the Entity's "hearing" — it does NOT need line-of-sight to
+## detect the player through sound.
+func hear_noise(noise_position: Vector3, radius: float, intensity: float = 1.0) -> void:
+	# Calculate distance from Entity to the noise source
+	var dist = global_position.distance_to(noise_position)
+	
+	# If the Entity is within the noise radius, it hears the player
+	if dist <= radius:
+		# Update memory with the noise source position
+		_last_known_position = noise_position
+		_is_hunting = true
+		_current_interest_level = 100.0
+		
+		print("[Entity Hears] Noise detected at (%.1f, %.1f, %.1f), radius=%.1fm, dist=%.1fm" % [noise_position.x, noise_position.y, noise_position.z, radius, dist])
+
+
 ## Returns the path timer.
+
 func get_path_timer() -> float:
 	return _path_timer
 
@@ -1786,6 +1799,30 @@ func get_flee_direction() -> int:
 func set_flee_direction(value: int) -> void:
 	_flee_direction = value
 
+## ─── MOTOR LOCK API ──────────────────────────────────────────────────────────
+## These methods control the motor lock system. When the motor is locked,
+## set_motor_velocity() will NOT apply velocity changes, effectively freezing
+## the Entity in place. Used by the STUNNED state.
+
+## Sets the Entity's velocity. If the motor is locked (STUNNED state), this
+## call is silently ignored — the Entity remains frozen in place.
+## Called by entity_ai.gd's process_state_logic() to apply computed velocities.
+func set_motor_velocity(vel: Vector3) -> void:
+	if _is_motor_locked:
+		return
+	velocity = vel
+
+## Locks the motor, preventing set_motor_velocity() from applying any velocity
+## changes. Called by the STUNNED state handler to freeze the Entity in place.
+func lock_motor_for_stun() -> void:
+	_is_motor_locked = true
+	velocity = Vector3.ZERO
+
+## Unlocks the motor, allowing set_motor_velocity() to apply velocity changes
+## again. Called when the stun expires or the Entity is released by a blackout.
+func unlock_motor() -> void:
+	_is_motor_locked = false
+
 
 # --- PUBLIC API ---
 
@@ -1864,8 +1901,10 @@ func _start_flinch_fade() -> void:
 	if not tree:
 		return
 	
-	# Kill any existing tweens on the monster model to prevent conflicts
-	Tween.kill_tweens_on(_monster_model)
+	# Kill any existing tweens on the monster model to prevent conflicts.
+	# In Godot 4, we use the SceneTreeTween approach: create a new tween
+	# which automatically handles cleanup of previous tweens on the same node.
+	# Tween.kill_tweens_on() is not a valid static method in Godot 4.
 	
 	# Check if the monster model supports modulate (CanvasItem-based types).
 	# Node3D does NOT have modulate — only GeometryInstance3D subclasses with
@@ -2035,6 +2074,19 @@ func fade_and_relocate() -> void:
 	# Pick a new vantage point via the navigation system.
 	# This sets _nav_agent.target_position to the new coordinate.
 	_navigation.pick_next_vantage_point()
+	
+	# ─── NAV TARGET JITTER ──────────────────────────────────────────────
+	# Add a small random offset (±1.0m) to the nav target so the Entity
+	# doesn't arrive at the exact same spot every time. This creates more
+	# organic-looking movement and prevents the Entity from converging on
+	# a single pixel-perfect coordinate, which can cause micro-stuttering
+	# as the NavigationAgent3D tries to reach an exact point.
+	var jitter_offset = Vector3(
+		randf_range(-1.0, 1.0),
+		0.0,
+		randf_range(-1.0, 1.0)
+	)
+	_nav_agent.target_position += jitter_offset
 	
 	# Transition to OBSERVE_FROM_TREELINE — the AI will handle the physical
 	# movement toward the new vantage point via _observe_from_treeline_state().

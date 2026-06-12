@@ -181,6 +181,9 @@ func start_night(night: int) -> void:
 	is_night_active = true
 	night_started.emit(night)
 	
+	# Recalculate fuel drain to account for the Generator node's drain rates
+	recalculate_fuel_drain()
+	
 	# Night 1 exception: Entity stays hidden for the car alarm narrative
 	if night == 1:
 		print("Night 1: Entity remains hidden for the car alarm narrative event.")
@@ -270,10 +273,24 @@ func _respawn_day_items() -> void:
 
 
 ## Recalculates the dynamic fuel drain rate based on active cabin lights.
-## Iterates all nodes in the "CabinLights" group and sums their energy_drain_rate
-## for any light that is switched on while the generator is running.
+## If a Generator node (generator.gd) exists in the scene, delegates the
+## calculation to it — this allows the designer to control cabin light vs.
+## porch light drain rates separately via editor exports.
+##
+## Falls back to the legacy per-light energy_drain_rate summation if no
+## Generator node is found (backward compatibility).
+##
 ## Returns the new total drain rate.
 func recalculate_fuel_drain() -> float:
+	# Try to delegate to the Generator node if it exists
+	var generators = get_tree().get_nodes_in_group("generator_controller")
+	if not generators.is_empty():
+		var gen = generators[0]
+		if gen and gen.has_method("calculate_total_drain"):
+			current_drain_rate = gen.calculate_total_drain()
+			return current_drain_rate
+	
+	# Legacy fallback: sum per-light energy_drain_rate
 	var active_drain = base_fuel_drain
 	var lights = get_tree().get_nodes_in_group("CabinLights")
 	

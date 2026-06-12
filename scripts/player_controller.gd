@@ -376,12 +376,27 @@ func _physics_process(delta: float) -> void:
 		velocity.z = direction.z * _current_speed
 		_head_bob_active = true
 		
-		# Emit noise while running
+		# ─── ACOUSTIC DETECTION: Movement Noise ──────────────────────────
+		# The Entity can hear the player based on movement state:
+		#   Sprinting: 20m radius, every 0.5s (loud, fast footsteps)
+		#   Walking:   10m radius, every 0.6s (moderate, periodic footsteps)
+		#   Crouching: Silent (0m) — no noise emitted
+		#
+		# Each noise call updates the Entity's last_known_position if the
+		# Entity is within the noise radius. This is the core stealth mechanic:
+		# crouching = invisible to sound, walking = risky, sprinting = beacon.
 		if _is_running and is_on_floor():
 			_noise_timer += delta
 			if _noise_timer >= 0.5:
-				make_noise(12.0, 0.5)
+				make_noise(20.0, 0.5)  # Sprint: 20m radius
 				_noise_timer = 0.0
+		elif not _is_running and not _is_crouching and is_on_floor() and direction:
+			# Walking noise — periodic footsteps at 10m radius
+			_noise_timer += delta
+			if _noise_timer >= 0.6:
+				make_noise(10.0, 0.3)  # Walk: 10m radius
+				_noise_timer = 0.0
+
 	else:
 		velocity.x = move_toward(velocity.x, 0, _current_speed)
 		velocity.z = move_toward(velocity.z, 0, _current_speed)
@@ -610,10 +625,22 @@ func is_flashlight_on() -> bool:
 	return _has_flashlight and _flashlight != null and _flashlight.is_on
 
 
+## Returns true if the player is currently crouching.
+## Used by the Entity's sensory system (entity_sensory.gd) to apply the
+## crouch visibility multiplier — crouching players are much harder to see
+## in the dark (vision range reduced to 20% of normal).
+func is_crouching() -> bool:
+	return _is_crouching
+
+
 ## Returns the name of the room the player is currently in, or "Outside" if
 ## the player is not inside any registered cabin interior area.
-## Uses Area3D nodes in the "Cabin_Interior" group. The room name is taken
-## from the Area3D node's name (e.g., "ComputerRoom", "Livingroom").
+## Uses CabinRoom nodes in the "Cabin_Interior" group. The room name is taken
+## from CabinRoom.get_room_name() which respects the room_name_override export.
+##
+## NOTE: This method now prefers CabinRoom nodes (which have the room_light
+## reference) over plain Area3D nodes. If a CabinRoom is found, its
+## get_room_name() is used. Falls back to the node's name for legacy areas.
 func get_player_room() -> String:
 	var cabin_interiors = get_tree().get_nodes_in_group("Cabin_Interior")
 	
@@ -621,10 +648,13 @@ func get_player_room() -> String:
 		if area is Area3D:
 			# Check if the Player (self) is inside this area
 			if area.overlaps_body(self):
-				# Use the node's name as the room name
+				# Use CabinRoom.get_room_name() if available, else node name
+				if area.has_method("get_room_name"):
+					return area.get_room_name()
 				return area.name
 	
 	return "Outside"
+
 
 
 # --- NEW NOISE SYSTEM EMITTER ---

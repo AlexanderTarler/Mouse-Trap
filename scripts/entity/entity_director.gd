@@ -23,13 +23,17 @@ class_name EntityDirector
 ##   After consuming a flag, the Director resets it to false.
 ##
 ## EVALUATION ORDER:
+##   Tier 0: Pending State Override — checked BEFORE state_locked
 ##   Tier 0: Critical Survival & Reactions (flashlight) — checked BEFORE state_locked
-##   Tier 1: Night Rules (narrative restrictions)
-##   Tier 2: Active Aggression (chase, charge, indoor search)
-##   Tier 3: State Completion Flags (approach finished, climb finished, etc.)
-##   Tier 4: Portable Trap Attraction
-##   Tier 5: Confidence Escalation (window approach, wall climb)
-##   Tier 6: Default Baseline (observe from treeline)
+##   Tier 1: Sabotage Override (frustration-based fuse box attack) — checked BEFORE state_locked
+##   Tier 2: Night Rules (narrative restrictions)
+##   Tier 2: Stare Grace Period (anti-flap extension)
+##   Tier 3: Active Aggression (chase, charge, indoor search)
+##   Tier 4: Confidence Escalation (window approach, wall climb)
+##   Tier 5: State Completion Flags (approach finished, climb finished, etc.)
+##   Tier 6: Portable Trap Attraction
+##   Tier 7: Confidence Escalation (Fallback for non-passive states)
+##   Tier 8: Default Baseline (observe from treeline)
 
 ## ─── ANTI-FLAP COOLDOWN ──────────────────────────────────────────────────────
 ## When a state handler completes (e.g., FLINCH finishes), the Director sets
@@ -87,212 +91,347 @@ func _print_debug_dump(entity: CharacterBody3D) -> void:
 ## Evaluates the Blackboard data and returns the one true state for this frame.
 ## Called by entity_ai.gd's process_state_logic() every physics frame.
 ##
+## ARCHITECTURE:
+##   Each tier is extracted into its own private method for readability and
+##   testability. Tiers are evaluated in strict priority order. The first tier
+##   that returns a non-null value wins. If all tiers return null, the default
+##   baseline (OBSERVE_FROM_TREELINE) is returned.
+##
 ## Parameters:
 ##   entity: The entity_controller.gd instance (CharacterBody3D)
 ##
 ## Returns: EntityAI.State enum value
 func evaluate_master_state(entity: CharacterBody3D) -> int:
 	var state = entity.get_state()
-	var confidence = entity.get_confidence_module().get_confidence()
-	var is_player_inside = not entity.get_navigation_module().is_player_outside()
-	var stare_time = entity.player_stare_timer
 	
-	# ─── PENDING STATE OVERRIDE ──────────────────────────────────────
-	# Check if an external event (stun, blackout, debug, activation) has
-	# requested a state change via request_state(). If so, apply it
-	# immediately and clear the flag.
-	#
-	# This is the ONLY mechanism by which external events can force a state
-	# change. It is checked BEFORE the state_locked guard so that critical
-	# overrides (like stun release or blackout enrage) can interrupt locked
-	# states.
-	#
-	# IMPORTANT: The _pending_state is set by request_state() in the
-	# entity_controller. It is cleared to -1 after being consumed.
-	if entity._pending_state >= 0:
-		var pending = entity._pending_state
-		entity._pending_state = -1
+	# ─── TIER 0: PENDING STATE OVERRIDE ──────────────────────────────
+	# Checked BEFORE state_locked so critical overrides (stun release,
+	# blackout enrage, debug) can interrupt locked states.
+	var pending = _tier_0_pending_override(entity)
+	if pending >= 0:
 		return pending
 	
-	# --- TIER 0: CRITICAL SURVIVAL & REACTIONS (Highest Authority) ---
-	# These are checked BEFORE the state_locked guard so that flashlight
-	# reactions can forcefully interrupt any ongoing task (approach, climb, etc.).
-	# If the Entity is illuminated, we break any existing locks and react immediately.
-	#
-	# EXCEPTION: FLINCH state lock is preserved. When the Entity has just escaped
-	# from an indoor retreat (teleported outside through the breach window), the
-	# indoor retreat handler sets the state to FLINCH and locks it. The FLINCH
-	# handler must be allowed to complete its 1.5-second lateral sprint before
-	# the Director re-evaluates. Without this exception, the Director would
-	# immediately override FLINCH with CHARGE (if stare_time >= 1.5) or STANDOFF,
-	# breaking the "escape then flinch" pipeline.
-	if entity.is_illuminated:
-		# ─── FLINCH STATE LOCK PRESERVATION ──────────────────────────────
-		# If the Entity is already in FLINCH and state_locked is true, the
-		# indoor retreat handler just set this state. Preserve the lock so
-		# the FLINCH handler can complete its 1.5-second lateral sprint.
-		# The FLINCH handler will unlock when it finishes.
-		if state == entity.EntityAI.State.FLINCH and entity.state_locked:
-			return entity.EntityAI.State.FLINCH
-		
-		# Forcefully break any existing task locks so we can react
-		entity.state_locked = false
-		entity.is_approach_finished = false
-		entity.is_climb_finished = false
-		entity.is_flinch_finished = false
-		entity.is_retreat_arrived = false
-		entity.is_window_unbarricaded = false
-		entity.is_observe_finished = false
-
-		# ─── INDOOR RETREAT: Entity is inside the cabin and gets flashlighted ──
-		# The Entity must rush back to the breach window and escape outside.
-		# Confidence is dropped to 20% as a psychological setback.
-		#
-		# This covers ALL indoor states: INDOOR_SEARCH (hunting inside), CHASE
-		# (if the Entity chased the player inside), or any other state where the
-		# Entity is physically inside the cabin. The navigation module's
-		# is_player_outside() returns false when the player is inside, which
-		# means the Entity is also inside (or at the cabin).
-		if state == entity.EntityAI.State.INDOOR_SEARCH or state == entity.EntityAI.State.CHASE:
-			# Set the indoor retreat flag so the RETREAT handler knows to
-			# pathfind to the breach window instead of the farthest treeline.
-			entity.is_indoor_retreat = true
-			
-			# Drop confidence to 20% — the Entity is spooked by being caught inside
-			var confidence_module = entity.get_confidence_module()
-			if confidence_module:
-				confidence_module.set_confidence(20.0)
-			
-			return entity.EntityAI.State.RETREAT
-		
-		# ─── APPROACH WINDOW FLINCH ──────────────────────────────────────
-		# If the Entity is actively approaching a window and gets flashlighted,
-		# it should FLINCH (sprint away) rather than STANDOFF (freeze in place).
-		# This makes the flashlight a meaningful defensive tool during window
-		# approach — the player can interrupt the Entity's advance.
-		if state == entity.EntityAI.State.APPROACH_WINDOW:
-			return entity.EntityAI.State.FLINCH
-		
-		if stare_time >= 1.5 and not is_player_inside:
-			# Player stared too long while outside — CHARGE at 3x speed
-			return entity.EntityAI.State.CHARGE
-		if is_player_inside:
-			# Player is inside the cabin, Entity is outside — FLINCH away
-			return entity.EntityAI.State.FLINCH
-		# Player is outside staring — STANDOFF (frozen in place)
-		return entity.EntityAI.State.STANDOFF
+	# ─── TIER 0: CRITICAL SURVIVAL & REACTIONS ───────────────────────
+	# Checked BEFORE state_locked so flashlight reactions can forcefully
+	# interrupt any ongoing task (approach, climb, etc.).
+	var flashlight_state = _tier_0_flashlight_reaction(entity, state)
+	if flashlight_state >= 0:
+		return flashlight_state
 	
-	# --- STATE LOCK: Prevent transitions while a state handler is mid-execution ---
-	# If state_locked is true, the current state handler (e.g., _approach_window_state)
-	# is still running and has not yet signaled completion. The Director MUST return
-	# the current state to prevent "State Flapping" where the Director and FSM fight
-	# over the state variable every frame.
+	# ─── TIER 1: SABOTAGE OVERRIDE ──────────────────────────────────
+	# Checked BEFORE state_locked so frustration-based fuse box sabotage
+	# can interrupt locked states (approach, climb, indoor search, etc.).
+	# Sabotage is a psychological override — it must interrupt standard
+	# patrol/search behaviors when the Entity is frustrated by lit rooms.
 	#
-	# The state handler sets state_locked = true on entry and state_locked = false
-	# when it completes its work (usually by setting a completion flag like
-	# is_approach_finished = true).
-	#
-	# This is checked AFTER Tier 0 (flashlight reactions) so that locked states are
-	# immune to Director overrides EXCEPT for critical survival reactions.
+	# When interrupting a locked state, we safely unlock the motor and
+	# reset animation flags before transitioning to FUSE_SABOTAGE.
+	var sabotage_state = _tier_1_sabotage(entity, state)
+	if sabotage_state >= 0:
+		return sabotage_state
+	
+	# ─── STATE LOCK GUARD ─────────────────────────────────────────────
+	# After Tier 0 (flashlight reactions) and Tier 1 (sabotage override),
+	# check if the state handler is mid-execution. If locked, return the
+	# current state to prevent "State Flapping" where the Director and
+	# FSM fight over the state.
 	if entity.state_locked:
 		return state
 	
-	# --- TIER 1: NIGHT RULES (Narrative Restrictions) ---
-	# Night 1: Entity can only observe from treeline (no window approach).
-	# This is a hard narrative restriction that overrides everything.
-	#
-	# NOTE: We read current_night from NightManager, NOT GameTime.
-	# GameTime manages the day/night cycle (time of day), while NightManager
-	# tracks which narrative night the player is on (1-5). The debug console
-	# sets the night via NightManager.start_night(night), so reading from
-	# NightManager ensures the debug override is respected.
+	# ─── TIER 2: NIGHT RULES ─────────────────────────────────────────
+	var night_state = _tier_2_night_rules(entity, state)
+	if night_state >= 0:
+		return night_state
+	
+	# ─── ANTI-FLAP COOLDOWN CHECK ────────────────────────────────────
+	# If the anti-flap cooldown is active, the Director must NOT transition
+	# into FLINCH (or other locked states) even if the Blackboard conditions
+	# still match. This prevents the 60fps oscillation loop.
+	if _anti_flap_cooldown > 0.0:
+		return state
+	
+	# ─── STARE GRACE PERIOD ──────────────────────────────────────────
+	# Even after the anti-flap cooldown expires, if the stare timer is still
+	# high (> 0.5s), the Director extends the cooldown by another 0.5s.
+	var stare_grace = _tier_2_stare_grace_period(entity, state)
+	if stare_grace >= 0:
+		return stare_grace
+	
+	# ─── TIER 3: ACTIVE AGGRESSION ───────────────────────────────────
+	var aggression_state = _tier_3_active_aggression(entity, state)
+	if aggression_state >= 0:
+		return aggression_state
+	
+	# ─── TIER 4: CONFIDENCE ESCALATION (Interrupts passive states) ───
+	var confidence_state = _tier_4_confidence_escalation(entity, state)
+	if confidence_state >= 0:
+		return confidence_state
+	
+	# ─── TIER 5: STATE COMPLETION FLAGS ──────────────────────────────
+	var completion_state = _tier_5_completion_flags(entity, state)
+	if completion_state >= 0:
+		return completion_state
+	
+	# ─── TIER 6: PORTABLE TRAP ATTRACTION ────────────────────────────
+	var trap_state = _tier_6_trap_attraction(entity)
+	if trap_state >= 0:
+		return trap_state
+	
+	# ─── TIER 7: CONFIDENCE ESCALATION (Fallback for non-passive states)
+	var fallback_state = _tier_7_fallback_confidence(entity)
+	if fallback_state >= 0:
+		return fallback_state
+	
+	# ─── TIER 8: DEFAULT BASELINE ────────────────────────────────────
+	return entity.EntityAI.State.OBSERVE_FROM_TREELINE
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TIER 0: PENDING STATE OVERRIDE
+# ═══════════════════════════════════════════════════════════════════════════════
+## Checks if an external event (stun, blackout, debug, activation) has
+## requested a state change via request_state(). If so, applies it immediately
+## and clears the flag.
+##
+## This is the ONLY mechanism by which external events can force a state
+## change. It is checked BEFORE the state_locked guard so that critical
+## overrides (like stun release or blackout enrage) can interrupt locked
+## states.
+##
+## Returns: The pending state value, or -1 if no override is pending.
+func _tier_0_pending_override(entity: CharacterBody3D) -> int:
+	var pending = entity.get_pending_state()
+	if pending >= 0:
+		entity.clear_pending_state()
+		return pending
+	return -1
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TIER 0: CRITICAL SURVIVAL & REACTIONS (Flashlight)
+# ═══════════════════════════════════════════════════════════════════════════════
+## Evaluates flashlight-based reactions. These are checked BEFORE the
+## state_locked guard so that flashlight reactions can forcefully interrupt
+## any ongoing task (approach, climb, etc.).
+##
+## If the Entity is illuminated, we break any existing locks and react
+## immediately.
+##
+## EXCEPTION: FLINCH state lock is preserved. When the Entity has just escaped
+## from an indoor retreat (teleported outside through the breach window), the
+## indoor retreat handler sets the state to FLINCH and locks it. The FLINCH
+## handler must be allowed to complete its 1.5-second lateral sprint before
+## the Director re-evaluates.
+##
+## CRITICAL RULE — CHARGE IGNORES FLASHLIGHT:
+##   If the Entity is in the CHARGE state (outdoor aggression), it has already
+##   committed to the attack. The flashlight should NOT interrupt a charge.
+##   The Entity is sprinting at 3x speed and will not flinch away.
+##
+## FLINCH vs RETREAT LOGIC:
+##   - RETREAT (indoor escape): Only allowed if the Entity is in an "Aggression"
+##     state (WINDOW_PEEK, INDOOR_SEARCH, CHASE). The Entity is inside or at a
+##     window and must escape back outside.
+##   - FLINCH (lateral sprint): Only allowed if the Entity is in APPROACH_WINDOW
+##     (approaching a window from outside). The Entity dodges sideways.
+##   - STANDOFF (freeze): Default reaction when the Entity is outside and the
+##     player is staring with the flashlight.
+##
+## Returns: The target state, or -1 if no flashlight reaction applies.
+func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
+	if not entity.is_illuminated:
+		return -1
+	
+	# ─── FLINCH STATE LOCK PRESERVATION ──────────────────────────────
+	# If the Entity is already in FLINCH and state_locked is true, the
+	# indoor retreat handler just set this state. Preserve the lock so
+	# the FLINCH handler can complete its 1.5-second lateral sprint.
+	if state == entity.EntityAI.State.FLINCH and entity.state_locked:
+		return entity.EntityAI.State.FLINCH
+	
+	# ─── CHARGE IGNORES FLASHLIGHT ──────────────────────────────────
+	# The Entity has committed to a charge attack. It will NOT flinch,
+	# retreat, or standoff. The flashlight has no effect on a charging
+	# Entity — it continues sprinting at 3x speed toward the player.
+	if state == entity.EntityAI.State.CHARGE:
+		return entity.EntityAI.State.CHARGE
+	
+	# Forcefully break any existing task locks so we can react
+	entity.state_locked = false
+	entity.is_approach_finished = false
+	entity.is_climb_finished = false
+	entity.is_flinch_finished = false
+	entity.is_retreat_arrived = false
+	entity.is_window_unbarricaded = false
+	entity.is_observe_finished = false
+	
+	var is_player_inside = not entity.get_navigation_module().is_player_outside()
+	
+	# ─── AGGRESSION STATE → RETREAT ──────────────────────────────────
+	# If the Entity is in an aggression state (WINDOW_PEEK, INDOOR_SEARCH,
+	# CHASE), the flashlight forces it to RETREAT. The Entity is committed
+	# to an indoor/window action and must escape back outside.
+	if state == entity.EntityAI.State.WINDOW_PEEK or state == entity.EntityAI.State.INDOOR_SEARCH or state == entity.EntityAI.State.CHASE:
+		# Set the indoor retreat flag so the RETREAT handler knows to
+		# pathfind to the breach window instead of the farthest treeline.
+		entity.is_indoor_retreat = true
+		
+		# Drop confidence to 20% — the Entity is spooked by being caught inside
+		var confidence_module = entity.get_confidence_module()
+		if confidence_module:
+			confidence_module.set_confidence(20.0)
+		
+		return entity.EntityAI.State.RETREAT
+	
+	# ─── APPROACH WINDOW → FLINCH ───────────────────────────────────
+	# The Entity is approaching a window from outside. The flashlight
+	# causes it to flinch laterally (sideways sprint) to evade the beam.
+	if state == entity.EntityAI.State.APPROACH_WINDOW:
+		return entity.EntityAI.State.FLINCH
+	
+	# ─── OUTDOOR STARE → STANDOFF or CHARGE ─────────────────────────
+	var stare_time = entity.player_stare_timer
+	if stare_time >= 1.5 and not is_player_inside:
+		# Player stared too long while outside — CHARGE at 3x speed
+		return entity.EntityAI.State.CHARGE
+	if is_player_inside:
+		# Player is inside the cabin, Entity is outside — STANDOFF
+		# (Entity freezes in place, does NOT flinch since it's not
+		# approaching a window)
+		return entity.EntityAI.State.STANDOFF
+	# Player is outside staring — STANDOFF (frozen in place)
+	return entity.EntityAI.State.STANDOFF
+
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TIER 1: SABOTAGE OVERRIDE (Frustration-based Fuse Box Attack)
+# ═══════════════════════════════════════════════════════════════════════════════
+## Evaluates whether the Entity should abandon its current task and go straight
+## to sabotaging the Fuse Box. This is triggered when the Entity has been
+## frustrated by all windows being lit for too long (frustration >= 90.0).
+##
+## Unlike the old _tier_5_fuse_sabotage (which relied on a magic number 9999.0
+## hack on the fuse sabotage timer), this tier reads the frustration value
+## directly from the AI module via get_all_lit_frustration() and compares it
+## against the threshold via get_frustration_threshold().
+##
+## This tier is checked BEFORE the state_locked guard so that frustration-based
+## sabotage can interrupt locked states (approach, climb, indoor search, etc.).
+## When interrupting a locked state, we safely unlock the motor and reset
+## animation flags before transitioning to FUSE_SABOTAGE.
+##
+## Returns: The target state, or -1 if no sabotage override applies.
+func _tier_1_sabotage(entity: CharacterBody3D, state: int) -> int:
+	# ─── UNIVERSAL FRUSTRATION CHECK ──────────────────────────────────
+	# Read frustration directly from the AI module. This works regardless
+	# of the current state — frustration accumulates in OBSERVE_FROM_TREELINE
+	# (all windows lit), INDOOR_SEARCH (player in lit room), and CHASE
+	# (player in lit room).
+	var ai = entity.get_ai_module()
+	if not ai or not ai.has_method("get_all_lit_frustration"):
+		return -1
+	
+	var frustration = ai.get_all_lit_frustration()
+	var threshold = ai.get_frustration_threshold() if ai.has_method("get_frustration_threshold") else 90.0
+	
+	if frustration < threshold:
+		return -1
+	
+	# ─── FRUSTRATION THRESHOLD REACHED ────────────────────────────────
+	# The Entity is frustrated enough to sabotage the Fuse Box.
+	# Safely unlock the motor and reset animation flags before transitioning.
+	print("[Director] TIER 1 SABOTAGE: Frustration=%.1f >= %.1f! Interrupting state %d to sabotage Fuse Box." % [frustration, threshold, state])
+	
+	# Reset all completion flags to prevent stale state
+	entity.state_locked = false
+	entity.is_approach_finished = false
+	entity.is_climb_finished = false
+	entity.is_flinch_finished = false
+	entity.is_retreat_arrived = false
+	entity.is_window_unbarricaded = false
+	entity.is_observe_finished = false
+	entity.is_indoor_retreat = false
+	
+	# Reset AI-specific state flags
+	if ai.has_method("reset_retreat_target"):
+		ai.reset_retreat_target()
+	
+	return entity.EntityAI.State.FUSE_SABOTAGE
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TIER 2: NIGHT RULES (Narrative Restrictions)
+# ═══════════════════════════════════════════════════════════════════════════════
+## Enforces narrative night restrictions.
+## Night 1: Entity can only observe from treeline (no window approach).
+## Night 2: Entity can approach windows and peek inside, but can ONLY breach
+##   if the window is NOT boarded up.
+##
+## Returns: The target state, or -1 if no night rule applies.
+func _tier_2_night_rules(entity: CharacterBody3D, state: int) -> int:
 	var night_manager = entity.get_node_or_null("/root/NightManager")
 	var current_night: int = night_manager.current_night if night_manager else 1
+	
 	if current_night == 1:
 		if state != entity.EntityAI.State.DORMANT and state != entity.EntityAI.State.OBSERVE_FROM_TREELINE and state != entity.EntityAI.State.RETREAT:
 			return entity.EntityAI.State.OBSERVE_FROM_TREELINE
 	
-	# Night 2: Entity can approach windows and peek inside, but can ONLY breach
-	# if the window is NOT boarded up (glass-only windows). Boarded windows are
-	# immune until Night 3. This gives the player a reason to board up windows
-	# on Night 1 — they'll be safe from breaches on Night 2.
-	#
-	# We check this by looking at the current window target. If the Entity is
-	# in WINDOW_PEEK and the window is boarded, we prevent the transition to
-	# INDOOR_SEARCH by NOT consuming the is_window_unbarricaded flag.
-	# The Night 2 restriction is enforced in the WINDOW_PEEK state handler
-	# (entity_ai.gd) which checks is_boarded before setting the completion flag.
-	#
-	# Additionally, on Night 2, the Director prevents APPROACH_WINDOW from
-	# targeting windows that are boarded up. The window selection filter in
-	# entity_navigation.gd handles this at the tactical level.
-	if current_night == 2:
-		# Allow APPROACH_WINDOW and WINDOW_PEEK — the state handler will
-		# enforce the "no boarded windows" rule at the barricade level.
-		pass
+	# Night 2: Allow APPROACH_WINDOW and WINDOW_PEEK — the state handler will
+	# enforce the "no boarded windows" rule at the barricade level.
+	# Night 3+: Full aggression unlocked (no restrictions)
+	
+	return -1
 
-	
-	# --- ANTI-FLAP COOLDOWN CHECK ---
-	# If the anti-flap cooldown is active, the Director must NOT transition
-	# into FLINCH (or other locked states) even if the Blackboard conditions
-	# still match. This prevents the 60fps oscillation loop where:
-	#   FLINCH finishes → Director forces OBSERVE → Director immediately
-	#   forces FLINCH again because the flashlight is still on.
-	#
-	# The cooldown is set to 1.5 seconds after each FLINCH completion.
-	# During this window, the Director returns the current state (which
-	# should be OBSERVE_FROM_TREELINE after a FLINCH completion) instead
-	# of forcing FLINCH again.
-	#
-	# ADDITIONALLY: Even after the cooldown expires, the Director checks
-	# if the stare timer is still high (> 0.5s). If so, it extends the
-	# cooldown by another 0.5s. This creates a "stare grace period" that
-	# prevents the FLINCH loop from restarting while the player is still
-	# actively shining the flashlight on the Entity.
-	if _anti_flap_cooldown > 0.0:
-		# Anti-flap is active — skip Tier 1 flashlight reactions and
-		# return the current state. The Entity stays in OBSERVE until
-		# the cooldown expires, at which point the flashlight can
-		# trigger FLINCH again.
-		return state
-	
-	# ─── STARE GRACE PERIOD ──────────────────────────────────────────────
-	# Even after the anti-flap cooldown expires, if the stare timer is still
-	# high (> 0.5s), the Director extends the cooldown by another 0.5s.
-	# This prevents the FLINCH loop from restarting while the player is
-	# still actively shining the flashlight on the Entity.
-	#
-	# The player must release the flashlight beam for at least 0.5s before
-	# the Director will consider re-entering FLINCH. This gives the Entity
-	# a meaningful grace period to stay in OBSERVE before the flashlight
-	# can trigger FLINCH again.
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TIER 2: STARE GRACE PERIOD (Anti-Flap Extension)
+# ═══════════════════════════════════════════════════════════════════════════════
+## Even after the anti-flap cooldown expires, if the stare timer is still
+## high (> 0.5s), the Director extends the cooldown by another 0.5s.
+## This prevents the FLINCH loop from restarting while the player is still
+## actively shining the flashlight on the Entity.
+##
+## Returns: The current state (to skip further evaluation), or -1 if no
+##          grace period is needed.
+func _tier_2_stare_grace_period(entity: CharacterBody3D, state: int) -> int:
+	var stare_time = entity.player_stare_timer
 	if stare_time > 0.5 and _last_completed_state == entity.EntityAI.State.FLINCH:
 		_anti_flap_cooldown = 0.5
 		return state
+	return -1
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TIER 3: ACTIVE AGGRESSION
+# ═══════════════════════════════════════════════════════════════════════════════
+## Preserves active pursuit states — don't interrupt mid-action.
+## Also handles line-of-sight → CHASE transitions from passive states.
+##
+## Returns: The target state, or -1 if no aggression rule applies.
+func _tier_3_active_aggression(entity: CharacterBody3D, state: int) -> int:
+	# ─── HUNTING OVERRIDE: If the Entity actively hears/sees the player ──
+	# This check runs BEFORE line-of-sight and state preservation so that
+	# acoustic detection (hearing the player through walls) can trigger
+	# pursuit regardless of confidence level.
+	if entity.is_hunting():
+		var nav = entity.get_navigation_module()
+		if nav and nav.has_method("is_player_outside") and nav.is_player_outside():
+			return entity.EntityAI.State.CHARGE
+		else:
+			return entity.EntityAI.State.CHASE
 	
-	# --- TIER 2: ACTIVE AGGRESSION ---
-	# Preserve active pursuit states — don't interrupt mid-action.
+	var is_player_inside = not entity.get_navigation_module().is_player_outside()
 	
 	# ─── LINE-OF-SIGHT → CHASE ──────────────────────────────────────
-	# If the Entity can see the player and the player is outside, transition
-	# to CHASE. This is the primary mechanism for outdoor hunting — the
-	# sensory module's can_entity_see_player() raycast detects the player
-	# through the vision cone, and the Director converts that into a chase.
-	#
-	# IMPORTANT: This is checked BEFORE the CHASE preservation block so that
-	# the Entity can enter CHASE from any passive state (OBSERVE, STANDOFF,
-	# PATROL) when it spots the player outside.
-	#
-	# The sensory module's can_entity_see_player() also sets is_hunting=true
-	# and updates the last known position, so the chase has a valid target.
 	if not is_player_inside:
 		var sensory = entity.get_sensory_module()
 		if sensory and sensory.has_method("can_entity_see_player") and sensory.can_entity_see_player():
 			return entity.EntityAI.State.CHASE
 	
+	# Preserve active states
 	if state == entity.EntityAI.State.CHASE:
 		if is_player_inside:
-			# Player ran inside during chase — observe from treeline
 			return entity.EntityAI.State.OBSERVE_FROM_TREELINE
 		return entity.EntityAI.State.CHASE
 	
@@ -302,29 +441,46 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	if state == entity.EntityAI.State.CHARGE:
 		return entity.EntityAI.State.CHARGE
 	
-	# --- TIER 3: CONFIDENCE ESCALATION (Interrupts passive states) ---
-	# Checked BEFORE state completion flags so that high confidence can
-	# interrupt OBSERVE_FROM_TREELINE and force APPROACH_WINDOW or
-	# CLIMB_WALL even if the stare timer hasn't expired.
-	# This prevents the "Entity never breaches" bug where confidence
-	# reaches 100 but the Entity stays in OBSERVE forever because the
-	# completion flag loop (Tier 4) always fires first.
-	#
-	# IMPORTANT: We only apply confidence escalation when the Entity is
-	# in a passive state (OBSERVE, STANDOFF, or idle). Active states
-	# (CHASE, CHARGE, INDOOR_SEARCH, etc.) are preserved by Tier 2 above.
-	if state == entity.EntityAI.State.OBSERVE_FROM_TREELINE or state == entity.EntityAI.State.STANDOFF:
-		if confidence >= 65.0 and is_player_inside:
-			return entity.EntityAI.State.CLIMB_WALL
-		
-		if confidence >= 40.0:
-			return entity.EntityAI.State.APPROACH_WINDOW
+	return -1
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TIER 4: CONFIDENCE ESCALATION (Interrupts passive states)
+# ═══════════════════════════════════════════════════════════════════════════════
+## Checked BEFORE state completion flags so that high confidence can
+## interrupt OBSERVE_FROM_TREELINE and force APPROACH_WINDOW or
+## CLIMB_WALL even if the stare timer hasn't expired.
+##
+## IMPORTANT: We only apply confidence escalation when the Entity is
+## in a passive state (OBSERVE, STANDOFF, or idle). Active states
+## (CHASE, CHARGE, INDOOR_SEARCH, etc.) are preserved by Tier 3.
+##
+## Returns: The target state, or -1 if no escalation applies.
+func _tier_4_confidence_escalation(entity: CharacterBody3D, state: int) -> int:
+	if state != entity.EntityAI.State.OBSERVE_FROM_TREELINE and state != entity.EntityAI.State.STANDOFF:
+		return -1
 	
-	# --- TIER 4: STATE COMPLETION FLAGS ---
-	# State handlers set completion flags on the Blackboard when their work
-	# is done. The Director checks these flags and transitions accordingly.
-	# After consuming a flag, the Director resets it to prevent re-triggering.
+	var confidence = entity.get_confidence_module().get_confidence()
+	var is_player_inside = not entity.get_navigation_module().is_player_outside()
 	
+	if confidence >= 65.0 and is_player_inside:
+		return entity.EntityAI.State.CLIMB_WALL
+	
+	if confidence >= 40.0:
+		return entity.EntityAI.State.APPROACH_WINDOW
+	
+	return -1
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TIER 5: STATE COMPLETION FLAGS
+# ═══════════════════════════════════════════════════════════════════════════════
+## State handlers set completion flags on the Blackboard when their work
+## is done. The Director checks these flags and transitions accordingly.
+## After consuming a flag, the Director resets it to prevent re-triggering.
+##
+## Returns: The target state, or -1 if no completion flag is set.
+func _tier_5_completion_flags(entity: CharacterBody3D, state: int) -> int:
 	if state == entity.EntityAI.State.APPROACH_WINDOW:
 		if entity.is_approach_finished:
 			entity.is_approach_finished = false
@@ -333,10 +489,6 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	
 	if state == entity.EntityAI.State.WINDOW_PEEK:
 		# ─── NULL WINDOW TARGET GUARD ──────────────────────────────────
-		# If the window target was cleared (e.g., by FLINCH completion),
-		# the Entity has no window to peek at. Transition to
-		# OBSERVE_FROM_TREELINE so the Director re-evaluates and selects
-		# a new window on the next confidence escalation cycle.
 		if not entity.get_current_window_target():
 			entity.is_window_unbarricaded = false
 			return entity.EntityAI.State.OBSERVE_FROM_TREELINE
@@ -366,20 +518,9 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 		if entity.is_flinch_finished:
 			entity.is_flinch_finished = false
 			# ─── CLEAR WINDOW TARGET ──────────────────────────────────
-			# After FLINCH, the Entity is no longer at the window it was
-			# approaching. Clear the window target so the next APPROACH_WINDOW
-			# cycle re-selects a fresh window via pick_tactical_window().
-			# Without this, the old window target remains set, and the Entity
-			# immediately transitions to WINDOW_PEEK without actually being
-			# at the window — causing the "peeks from nowhere" bug.
 			entity.set_current_window_target(null)
 			
 			# ─── CONFIDENCE PENALTY ───────────────────────────────────
-			# Being caught by the flashlight is a psychological setback.
-			# Reduce confidence by 20% so the Entity retreats to the treeline
-			# and re-evaluates before approaching again. This prevents the
-			# FLINCH → APPROACH_WINDOW → FLINCH loop where the Entity
-			# immediately re-approaches the same window after being flinched.
 			var confidence_module = entity.get_confidence_module()
 			if confidence_module:
 				var current_conf = confidence_module.get_confidence()
@@ -387,10 +528,6 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 				confidence_module.set_confidence(new_conf)
 			
 			# ─── ANTI-FLAP: Set cooldown to prevent immediate re-entry ──
-			# The flashlight is still on, so the Director would immediately
-			# force FLINCH again on the next frame. The cooldown gives the
-			# Entity a 0.5s grace period in OBSERVE before the flashlight
-			# can trigger FLINCH again.
 			_anti_flap_cooldown = 0.5
 			_last_completed_state = entity.EntityAI.State.FLINCH
 			return entity.EntityAI.State.OBSERVE_FROM_TREELINE
@@ -399,48 +536,65 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	if state == entity.EntityAI.State.OBSERVE_FROM_TREELINE:
 		if entity.is_observe_finished:
 			entity.is_observe_finished = false
-			# ─── CONSUME THE COMPLETION FLAG ──────────────────────────
-			# The state handler has finished its observation cycle (stare
-			# timer expired). Call fade_and_relocate() to pick a new
-			# vantage point and reset timers, then stay in OBSERVE.
 			entity.fade_and_relocate()
 			return entity.EntityAI.State.OBSERVE_FROM_TREELINE
 		return entity.EntityAI.State.OBSERVE_FROM_TREELINE
-
 	
+	# ─── FUSE SABOTAGE COMPLETION ────────────────────────────────────
+	if state == entity.EntityAI.State.FUSE_SABOTAGE:
+		if entity.is_fuse_sabotaged:
+			entity.is_fuse_sabotaged = false
+			# Fuse Box destroyed! All lights are off. Transition to
+			# OBSERVE_FROM_TREELINE — the confidence system will escalate
+			# to APPROACH_WINDOW naturally since no windows are lit.
+			return entity.EntityAI.State.OBSERVE_FROM_TREELINE
+		return entity.EntityAI.State.FUSE_SABOTAGE
+	
+	# ─── PERSISTENT STATES (no completion flags) ─────────────────────
+	# These states have no completion flags — they persist until the
+	# Director overrides them via a higher-priority tier.
 	if state == entity.EntityAI.State.ATTACK_LAMP:
-		# Stay in ATTACK_LAMP — the state handler manages the approach and
-		# strike sequence. The Director will override if the Entity is
-		# illuminated (Tier 1) or if the trap is destroyed.
 		return entity.EntityAI.State.ATTACK_LAMP
 	
 	if state == entity.EntityAI.State.STUNNED:
-		# Stay in STUNNED — the controller manages the stun timer.
 		return entity.EntityAI.State.STUNNED
 	
 	if state == entity.EntityAI.State.HARASS:
-		# Stay in HARASS — the state handler manages the harassment sequence.
 		return entity.EntityAI.State.HARASS
 	
-	# --- TIER 5: PORTABLE TRAP ATTRACTION ---
-	# If a powered, deployed portable lamp exists, the Entity abandons its
-	# treeline observation and physically stalks toward the lamp to attack it.
+	return -1
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TIER 6: PORTABLE TRAP ATTRACTION
+# ═══════════════════════════════════════════════════════════════════════════════
+## If a powered, deployed portable lamp exists, the Entity abandons its
+## treeline observation and physically stalks toward the lamp to attack it.
+##
+## Returns: The target state, or -1 if no trap attraction applies.
+func _tier_6_trap_attraction(entity: CharacterBody3D) -> int:
 	var trap = entity.get_portable_trap()
 	if trap and trap.is_deployed and trap.is_powered:
 		return entity.EntityAI.State.ATTACK_LAMP
+	return -1
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# TIER 7: CONFIDENCE ESCALATION (Fallback for non-passive states)
+# ═══════════════════════════════════════════════════════════════════════════════
+## If the Entity is in an active state (e.g., PATROL, DORMANT) and
+## confidence is high, escalate to window approach. This is the fallback
+## for states that weren't caught by Tier 4 above.
+##
+## Returns: The target state, or -1 if no escalation applies.
+func _tier_7_fallback_confidence(entity: CharacterBody3D) -> int:
+	var confidence = entity.get_confidence_module().get_confidence()
+	var is_player_inside = not entity.get_navigation_module().is_player_outside()
 	
-	# --- TIER 6: CONFIDENCE ESCALATION (Fallback for non-passive states) ---
-	# If the Entity is in an active state (e.g., PATROL, DORMANT) and
-	# confidence is high, escalate to window approach. This is the fallback
-	# for states that weren't caught by Tier 3 above.
 	if confidence >= 65.0 and is_player_inside:
 		return entity.EntityAI.State.CLIMB_WALL
 	
 	if confidence >= 40.0:
 		return entity.EntityAI.State.APPROACH_WINDOW
 	
-	# --- TIER 7: DEFAULT BASELINE ---
-	# If nothing else matches, the Entity observes from the treeline.
-	return entity.EntityAI.State.OBSERVE_FROM_TREELINE
-
-
+	return -1

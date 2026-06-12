@@ -1072,6 +1072,27 @@ shape = SubResource("Shape_ground")
 [node name="Cabin" parent="NavigationRegion3D" unique_id=1282417259 groups=["navmesh_source"] instance=ExtResource("7_cabins")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.009, 0.05, 0.409)
 
+[node name="ComputerRoom" parent="NavigationRegion3D/Cabin" index="1" unique_id=846964507 node_paths=PackedStringArray("room_light")]
+room_light = NodePath("../../../Cabin Lights/CabinLightKitchen")
+
+[node name="Livingroom" parent="NavigationRegion3D/Cabin" index="2" unique_id=642684036 node_paths=PackedStringArray("room_light")]
+room_light = NodePath("../../../Cabin Lights/CabinLightLivingRoom")
+
+[node name="OfficeRoom" parent="NavigationRegion3D/Cabin" index="3" unique_id=1235840180 node_paths=PackedStringArray("room_light")]
+room_light = NodePath("../../../Cabin Lights/CabinLightOffice")
+
+[node name="UpperHallroom" parent="NavigationRegion3D/Cabin" index="4" unique_id=2093739751 node_paths=PackedStringArray("room_light")]
+room_light = NodePath("../../../Cabin Lights/CabinLightUpperHall")
+
+[node name="Hallroom" parent="NavigationRegion3D/Cabin" index="5" unique_id=1939368878 node_paths=PackedStringArray("room_light")]
+room_light = NodePath("../../../Cabin Lights/CabinLightHall")
+
+[node name="Stairs" parent="NavigationRegion3D/Cabin" index="6" unique_id=772834624 node_paths=PackedStringArray("room_light")]
+room_light = NodePath("../../../Cabin Lights/CabinLightStairs")
+
+[node name="Bedroom" parent="NavigationRegion3D/Cabin" index="7" unique_id=323671917 node_paths=PackedStringArray("room_light")]
+room_light = NodePath("../../../Cabin Lights/CabinLightBedRoom")
+
 [node name="Door" parent="NavigationRegion3D/Cabin" unique_id=187910433 instance=ExtResource("11_jjdw5")]
 transform = Transform3D(-5.2453668e-08, 0, -1.2, 0, 1.1, 0, 1.2, 0, -5.2453668e-08, 0.15686512, 0.7928264, 8.645942)
 required_key_name = "Cabin Key"
@@ -1836,6 +1857,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.336417, 0.5948738, 3.62509
 [node name="LightSwitch" parent="." unique_id=422318108 instance=ExtResource("79_q46gv")]
 transform = Transform3D(-0.01305464, 0, -0.99991477, 0, 1, 0, 0.99991477, 0, -0.01305464, 15.260162, 2.6549559, 17.225714)
 
+[editable path="NavigationRegion3D/Cabin"]
 [editable path="Details/Inside Cabin/Computer"]
 [editable path="Details/Inside Cabin/Computer/pc_monitor_mp_12"]
 [editable path="Lightswitches/LightSwitchStairBottom"]
