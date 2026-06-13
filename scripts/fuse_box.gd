@@ -16,6 +16,13 @@ enum BoxState { BROKEN, HAS_FUSE, POWER_ON }
 ## The item_name to search for in the player's inventory.
 @export var required_item_name: String = "Fuse"
 
+## Whether the fuse box should start the game in a BROKEN state.
+## When true, the generator is OFF and the player must find a Fuse item
+## and insert it before they can throw the switch to restore power.
+## When false (default), the generator starts ON for development convenience.
+## Toggle this in the inspector to control the initial state.
+@export var start_broken: bool = false
+
 var current_state: BoxState = BoxState.POWER_ON
 
 
@@ -26,8 +33,20 @@ func _ready() -> void:
 	# InteractionManager's center-screen raycast can detect it.
 	collision_layer = 1
 	
-	# Generator starts ON for development convenience.
-	_set_generator_state(true)
+	# ─── START BROKEN TOGGLE ───────────────────────────────────────
+	# If start_broken is true, initialize the fuse box in BROKEN state
+	# with the generator OFF. The player must find a Fuse item and insert
+	# it, then throw the switch to restore power.
+	# If start_broken is false (default), the generator starts ON for
+	# development convenience.
+	if start_broken:
+		current_state = BoxState.BROKEN
+		_set_generator_state(false)
+		print("[FuseBox] Starting BROKEN (start_broken=true). Generator is OFF.")
+	else:
+		current_state = BoxState.POWER_ON
+		_set_generator_state(true)
+		print("[FuseBox] Starting POWER_ON (start_broken=false). Generator is ON.")
 	
 	print("[FuseBox] _ready() complete. State: ", BoxState.keys()[current_state])
 

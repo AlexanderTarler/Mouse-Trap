@@ -7,10 +7,15 @@ extends AnimatableBody3D
 @export var open_sound: AudioStream
 @export var close_sound: AudioStream
 
-## Lock/Key system — if a required_key_name is set, the door starts locked
+## Lock/Key system — if a required_key_name is set, the door can be locked
 ## and the player needs the matching key item in their inventory to unlock it.
 ## The key is NOT consumed — the player keeps it and can lock/unlock freely.
 @export var required_key_name: String = ""
+
+## Whether this door should start the game in a locked state.
+## Only takes effect when required_key_name is also set.
+## Toggle this in the inspector to make a door start locked or unlocked.
+@export var start_locked: bool = false
 ## Sound to play when the player tries the locked door without a key.
 @export var locked_sound: AudioStream
 ## Sound to play when the door is successfully unlocked.
@@ -45,6 +50,16 @@ var is_locked: bool = false
 func _ready() -> void:
 	# Save the baseline rotation so we always return to a clean closed state
 	default_rotation_y = rotation_degrees.y
+	
+	# ─── START LOCKED TOGGLE ───────────────────────────────────────
+	# If start_locked is true and a required_key_name is set, initialize
+	# the door as locked. This allows the level designer to toggle whether
+	# a door starts locked or unlocked directly in the inspector.
+	if required_key_name != "" and start_locked:
+		is_locked = true
+		print("[Door] Door starts LOCKED (start_locked=true). Key required: ", required_key_name)
+	else:
+		is_locked = false
 	
 	# ─── CACHE THE ORIGINAL SCENE STREAM ───────────────────────────
 	# Snapshot the stream that was pre-assigned to the DoorAudio node in the

@@ -188,6 +188,32 @@ func drop_trap() -> void:
 	is_being_carried = false
 	_hand_marker = null
 	
+	# ─── GROUND-SNAPPING SAFETY NET ──────────────────────────────────────
+	# Before unfreezing physics, raycast downward to find the ground surface.
+	# This prevents the lamp from spawning mid-air (e.g., if the player drops
+	# it while standing on a slope or uneven terrain) and falling through the
+	# world geometry due to the initial velocity impulse.
+	#
+	# The raycast starts 2.0m above the lamp's current position and extends
+	# 5.0m downward. If it hits a collider on layer 1 (world/terrain), we
+	# snap the lamp's Y to the hit point + half the collision box height
+	# (0.2m) so the lamp rests cleanly on the surface.
+	var space_state: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	if space_state:
+		var ray_origin: Vector3 = global_position + Vector3.UP * 2.0
+		var ray_end: Vector3 = global_position + Vector3.DOWN * 5.0
+		var query = PhysicsRayQueryParameters3D.create(ray_origin, ray_end)
+		query.collision_mask = 1  # Layer 1: World/terrain geometry
+		var result: Dictionary = space_state.intersect_ray(query)
+		if result:
+			# Snap the lamp to the ground surface + half the collision box height
+			var ground_y: float = result.position.y
+			var box_half_height: float = 0.2  # BoxShape3D height is 0.4, half is 0.2
+			global_position.y = ground_y + box_half_height
+			print("[PortableLamp] Ground-snapped to Y=%.2f (hit: %s)" % [global_position.y, result.collider.name])
+		else:
+			print("[PortableLamp] WARNING: No ground found beneath lamp! It may fall through.")
+	
 	# Unfreeze physics so the lamp drops naturally
 	freeze = false
 	
@@ -206,7 +232,6 @@ func drop_trap() -> void:
 	if lamp_light:
 		lamp_light.visible = false
 	energy_drain_rate = 0.0
-
 	
 	# Apply a minor forward impulse so it drops naturally away from the player
 	var forward: Vector3 = Vector3.FORWARD
