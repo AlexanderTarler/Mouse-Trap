@@ -84,6 +84,15 @@ func interact() -> void:
 	# Mark the van as investigated so the alarm can never be re-activated
 	van_investigated = true
 	
+	# ─── UNLOCK SPRINT ─────────────────────────────────────────────
+	# If the player started without sprint (start_with_sprint = false),
+	# investigating the car alarm unlocks the ability to sprint.
+	# This gates sprinting behind a narrative event — the player must
+	# brave the dark to silence the alarm before they can run.
+	var player = get_tree().get_first_node_in_group("player")
+	if player and player.has_method("unlock_sprint"):
+		player.unlock_sprint()
+	
 	# Show "JOIN HIM" on the objective label for 0.5 seconds, then "FLEE"
 	var objective_label = _find_objective_label()
 	if objective_label:

@@ -1036,7 +1036,8 @@ sun = NodePath("../Sun")
 moon = NodePath("../Moonlight")
 
 [node name="Player" parent="." unique_id=92687399 instance=ExtResource("1_player")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.009, 0.5, -5)
+transform = Transform3D(-0.99980104, 0, 0.019947788, 0, 1, 0, -0.019947788, 0, -0.99980104, 9.009, 0.5, -5)
+start_with_sprint = false
 starting_items = Array[ExtResource("17_pee2b")]([ExtResource("26_battery_res"), ExtResource("26_battery_res"), ExtResource("56_plank_res"), ExtResource("6_frym3"), ExtResource("26_battery_res"), ExtResource("56_plank_res"), ExtResource("6_frym3"), ExtResource("7_en0qb"), null])
 
 [node name="HUD" parent="." unique_id=1086543120 instance=ExtResource("4_hud")]
@@ -1050,28 +1051,28 @@ starting_items = Array[ExtResource("17_pee2b")]([ExtResource("26_battery_res"), 
 [node name="TheEntity" parent="." unique_id=133456140 instance=ExtResource("16_entity")]
 
 [node name="GeneralSkeleton" parent="TheEntity/MonsterModel/Armature" parent_id_path=PackedInt32Array(133456140, 1066769687, 512978497) index="0" unique_id=1434099574]
-bones/1/rotation = Quaternion(0.10161096, -0.16827054, -0.020344673, 0.98027873)
-bones/3/rotation = Quaternion(0.14619151, 0.35871294, 0.90649045, -0.1680127)
-bones/4/rotation = Quaternion(-0.03915043, 0.9213545, -0.38234067, 0.058213647)
-bones/5/rotation = Quaternion(-0.10637706, 0.6460232, -0.74641365, 0.119183764)
-bones/7/rotation = Quaternion(-2.4356561e-08, 0.99995303, 0.0097017735, -2.5078956e-08)
-bones/18/rotation = Quaternion(-0.14048798, 0.29476053, 0.9391244, 0.10688721)
-bones/21/rotation = Quaternion(0.03508244, 0.9320326, -0.35431632, -0.0674131)
-bones/22/rotation = Quaternion(0.099383265, 0.62914956, -0.7629207, -0.1106613)
-bones/23/rotation = Quaternion(-4.1091045e-08, 0.9999995, 0.0010767875, -6.077036e-08)
-bones/33/rotation = Quaternion(0.021235188, -0.0038579155, 0.016854312, 0.9996251)
-bones/34/rotation = Quaternion(0.066806935, -0.010417849, 0.010143307, 0.99766004)
-bones/35/rotation = Quaternion(0.066894695, -0.009328445, 0.010647896, 0.9976597)
-bones/36/rotation = Quaternion(-0.05374028, 0.02779235, -0.01959404, 0.9979758)
-bones/38/rotation = Quaternion(-0.18908021, 0.122720055, -0.035949815, 0.97359955)
-bones/49/rotation = Quaternion(0.57139015, 0.42211613, 0.52441895, -0.46937847)
-bones/50/rotation = Quaternion(0.1928305, 0.8792619, -0.4340768, -0.035947293)
-bones/51/rotation = Quaternion(0.4753691, -0.523473, 0.47536975, 0.523473)
-bones/55/rotation = Quaternion(-0.14604834, 0.80696577, 0.18338779, 0.5420749)
-bones/58/rotation = Quaternion(0.5199802, -0.45521575, -0.57377, -0.43953073)
-bones/59/rotation = Quaternion(-0.20901473, 0.8390051, -0.50020176, -0.046707723)
-bones/62/rotation = Quaternion(0.49123603, 0.5086128, -0.4912368, 0.50861245)
-bones/66/rotation = Quaternion(0.06394085, -0.84635997, -0.02311032, 0.52825415)
+bones/1/rotation = Quaternion(0.10054972, -0.17694037, -0.017448978, 0.9789165)
+bones/3/rotation = Quaternion(0.1482608, 0.3569299, 0.90745384, -0.1647646)
+bones/4/rotation = Quaternion(-0.036603883, 0.9183579, -0.3882061, 0.067638375)
+bones/5/rotation = Quaternion(-0.10644592, 0.64280415, -0.7492231, 0.118898556)
+bones/7/rotation = Quaternion(4.57091e-08, 0.99993944, 0.011009451, -4.9841315e-08)
+bones/18/rotation = Quaternion(-0.13738814, 0.2947106, 0.93923384, 0.11004512)
+bones/21/rotation = Quaternion(0.03892824, 0.9358201, -0.34576574, -0.056314815)
+bones/22/rotation = Quaternion(0.10454249, 0.63425744, -0.75713265, -0.116355225)
+bones/23/rotation = Quaternion(-8.395234e-09, 1, 0.00031203692, -3.233922e-08)
+bones/33/rotation = Quaternion(0.019805964, -0.0037665148, 0.015624436, 0.99967474)
+bones/34/rotation = Quaternion(0.06393458, -0.01010697, 0.009434078, 0.9978584)
+bones/35/rotation = Quaternion(0.06397924, -0.009123943, 0.00998138, 0.99785966)
+bones/36/rotation = Quaternion(-0.050092947, 0.02731211, -0.017513195, 0.9982175)
+bones/38/rotation = Quaternion(-0.18956299, 0.12140174, -0.034475245, 0.9737243)
+bones/49/rotation = Quaternion(0.5639868, 0.42937794, 0.5251046, -0.4709763)
+bones/50/rotation = Quaternion(0.18088542, 0.8791172, -0.4394128, -0.036741294)
+bones/51/rotation = Quaternion(0.47311032, -0.52551526, 0.47311115, 0.52551514)
+bones/55/rotation = Quaternion(-0.1499386, 0.7976095, 0.18183784, 0.555223)
+bones/58/rotation = Quaternion(0.51933926, -0.45510572, -0.57526225, -0.4384507)
+bones/59/rotation = Quaternion(-0.2040926, 0.839544, -0.5013672, -0.046294484)
+bones/62/rotation = Quaternion(0.48943117, 0.51034963, -0.48943225, 0.5103494)
+bones/66/rotation = Quaternion(0.06487335, -0.8526359, -0.02157706, 0.51801336)
 
 [node name="BasementFog" type="FogVolume" parent="." unique_id=274711645]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.25, 0)
@@ -1120,6 +1121,7 @@ room_light = NodePath("../../../Cabin Lights/CabinLightBedRoom")
 [node name="Door" parent="NavigationRegion3D/Cabin" unique_id=187910433 instance=ExtResource("11_jjdw5")]
 transform = Transform3D(-5.2453668e-08, 0, -1.2, 0, 1.1, 0, 1.2, 0, -5.2453668e-08, 0.15686512, 0.7928264, 8.645942)
 required_key_name = "Cabin Key"
+start_locked = true
 
 [node name="Details" type="Node" parent="." unique_id=1144393623]
 
@@ -1860,6 +1862,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.177343, 0.45000058, 7.9317
 
 [node name="Fuse Box" parent="." unique_id=1333240661 instance=ExtResource("72_1qcio")]
 transform = Transform3D(0.05601324, 0, -0.99843013, 0, 1, 0, 0.99843013, 0, 0.05601324, 2.6413074, 2.090415, 16.497524)
+start_broken = true
 
 [node name="Note" parent="." unique_id=1059492005 instance=ExtResource("20_note")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.3207226, 0.12499976, 3.2053654)

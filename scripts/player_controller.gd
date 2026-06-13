@@ -51,6 +51,12 @@ var _crosshair: Control
 # Stair climbing state
 var _was_on_floor: bool = false
 
+## Whether the player starts the game with the ability to sprint (SHIFT).
+## When true (default), the player can sprint from the start.
+## When false, the player must interact with the car alarm during Night 1
+## to unlock sprinting. Set this in the inspector per-level.
+@export var start_with_sprint: bool = true
+
 # Sprint unlock — enabled by default for development convenience
 var sprint_unlocked: bool = true
 
@@ -90,6 +96,15 @@ func _ready() -> void:
 		if item:
 			Inventory.add_item(item)
 			print("[Player] Added starting item to inventory: ", item.item_name)
+	
+	# ─── SPRINT UNLOCK ──────────────────────────────────────────────
+	# If start_with_sprint is true (default), the player can sprint from
+	# the start. If false, sprint is locked and must be unlocked by
+	# interacting with the car alarm during Night 1.
+	sprint_unlocked = start_with_sprint
+	if not sprint_unlocked:
+		print("[Player] Sprint is LOCKED. Investigate the car alarm to unlock it.")
+	
 	_current_speed = walk_speed
 	floor_max_angle = deg_to_rad(60.0)
 	floor_snap_length = 1.2
@@ -252,6 +267,18 @@ func enable_flashlight() -> void:
 			_flashlight.is_on = false
 	print("[Player] Flashlight acquired! Press F to toggle.")
 
+## Public API: Unlocks sprinting for the player.
+## Called by escape_van.gd when the player investigates the car alarm
+## during Night 1. This allows the sprint to be gated behind a narrative
+## event when start_with_sprint is set to false in the inspector.
+func unlock_sprint() -> void:
+	if not sprint_unlocked:
+		sprint_unlocked = true
+		print("[Player] Sprint UNLOCKED! You can now hold SHIFT to run.")
+	else:
+		print("[Player] Sprint is already unlocked.")
+
+
 ## Called by camera_pickup.gd when the player picks up the Floppy Disk Camera.
 ## Marks the camera as available but does NOT equip it — the player must
 ## press R to toggle the viewfinder on/off.
@@ -337,7 +364,14 @@ func _physics_process(delta: float) -> void:
 	else:
 		if _is_crouching: _is_crouching = false
 
-	_is_running = Input.is_key_pressed(KEY_SHIFT) and sprint_unlocked and not _is_crouching and _stamina > 0.0 and not _stamina_exhausted
+	# ─── SPRINT & STAMINA ──────────────────────────────────────────────
+	# Sprint is only active when SHIFT is held AND the player is moving
+	# forward (W, A, or D). Moving backwards (S) does NOT count as sprinting
+	# — stamina only drains when sprinting in a forward direction.
+	# This prevents the player from sprinting backwards away from the Entity,
+	# which would feel unfair and break the horror tension.
+	var _is_moving_forward = Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_D)
+	_is_running = Input.is_key_pressed(KEY_SHIFT) and sprint_unlocked and not _is_crouching and _stamina > 0.0 and not _stamina_exhausted and _is_moving_forward
 	
 	if _is_crouching: _current_speed = crouch_speed
 	elif _is_running: _current_speed = run_speed
@@ -345,7 +379,7 @@ func _physics_process(delta: float) -> void:
 	
 	# --- STAMINA DRAIN / REGEN ---
 	if _is_running:
-		# Drain stamina while running
+		# Drain stamina only while sprinting forward (W, A, D — not S)
 		_stamina -= _stamina_drain_rate * delta
 		if _stamina <= 0.0:
 			_stamina = 0.0
