@@ -8,9 +8,9 @@ extends CharacterBody3D
 ##   - entity_sensory.gd   → Vision cone, flashlight detection, audio hearing
 ##   - entity_navigation.gd → Vantage point selection, outside detection
 ##
-## NOTE: The State enum is now defined in entity_ai.gd.
+## NOTE: The State enum is now defined in entity_ai.gd (class_name EntityAI).
 ## Reference states as EntityAI.State.X from this script.
-const EntityAI := preload("entity_ai.gd")
+## NO preload needed — class_name EntityAI registers it globally.
 
 @export var speed: float = 4.0
 @export var catch_distance: float = 2.5
@@ -73,6 +73,21 @@ var _entity_step_interval: float = 0.5
 
 var _player: Node3D = null
 var _state: EntityAI.State = EntityAI.State.DORMANT
+
+## Tracks the previous state for detecting transitions in set_state().
+## Used by the state transition debug log to print what triggered the change.
+var _last_state: EntityAI.State = EntityAI.State.DORMANT
+
+## ─── STATE PERSISTENCE TIMER ──────────────────────────────────────────────
+## Counts down each frame while the Entity is in an active state (FLINCH,
+## CLIMB_WALL, CHARGE, etc.). When > 0.0, the Director's State Persistence
+## Guard returns the current state, preventing Tier 3–8 evaluations from
+## overriding the state mid-execution.
+##
+## Set by state handlers on entry (e.g., _flinch_state sets this to 1.5s).
+## Decremented by delta each frame in _physics_process().
+## When it reaches 0.0, the Director is free to re-evaluate.
+var _state_timer: float = 0.0
 var _is_active: bool = false
 var _path_timer: float = 0.0
 var _stuck_timer: float = 0.0
@@ -153,6 +168,25 @@ var _current_interest_level: float = 0.0
 var _is_hunting: bool = false
 var _vision_cone_angle: float = deg_to_rad(70.0) # 140-degree field of view
 var _interest_decay_rate: float = 2.5 # How fast it loses interest
+
+## The name of the room the Entity last heard the player in (indoor search).
+## Updated by on_player_noise() when the Entity is in INDOOR_SEARCH state.
+## Used by entity_ai.gd's _indoor_search_state() to patrol toward the correct room.
+var last_known_room_name: String = ""
+
+## The exact world-space position of the last noise the Entity heard.
+## Updated by hear_noise() whenever the Entity is within the noise radius.
+## Used by entity_ai.gd's _indoor_search_state() to pathfind toward the exact
+## noise coordinate instead of the room center, giving the Entity precise
+## acoustic awareness without visual line-of-sight.
+var _last_heard_exact_position: Vector3 = Vector3.ZERO
+
+## ─── BLACKBOARD: Charge Triggered Flag ──────────────────────────────────────
+## Set to true by entity_ai.gd's _indoor_search_state() when the Entity hears
+## the player (acoustic detection) and should CHARGE instead of STALK.
+## The Director reads this flag in a new Tier 3.5 and transitions to CHARGE.
+## Reset to false by the Director after consuming the flag.
+var is_charge_triggered: bool = false
 
 # --- STATE TRACKING ---
 var _last_logged_state: EntityAI.State = EntityAI.State.DORMANT
@@ -700,10 +734,10 @@ func _on_first_chase_started() -> void:
 		_nav_agent.target_position = fallback_pos
 		print("[Entity] WARNING: No EntityVanSpawn marker found! Using fallback position.")
 	
-	# Activate the Entity (make visible) and immediately begin chasing
+	# Activate the Entity (make visible) and immediately begin stalking
 	activate()
-	request_state(EntityAI.State.CHASE)
-	print("[Entity] Cinematic arrival complete! Now chasing the player.")
+	request_state(EntityAI.State.STALK)
+	print("[Entity] Cinematic arrival complete! Now stalking the player.")
 	
 	# ─── SYSTEMIC TIME CRUNCH ──────────────────────────────────────
 	# The moment the Entity spawns, the clock is forced to exactly
@@ -853,15 +887,55 @@ func _physics_process(delta: float) -> void:
 	var is_nav_active: bool = not _nav_agent.is_navigation_finished()
 	var is_moving: bool = velocity.length_squared() > 0.01
 	var is_attack_state: bool = (
-		_state == EntityAI.State.CHASE or
+		_state == EntityAI.State.STALK or
 		_state == EntityAI.State.CHARGE or
 		_state == EntityAI.State.FLINCH or
-		_state == EntityAI.State.CLIMB_WALL or
-		_state == EntityAI.State.INDOOR_SEARCH or
+		_state == EntityAI.State.CLIMB_WALL_UP or
+		_state == EntityAI.State.CLIMB_WALL_DOWN or
 		_state == EntityAI.State.STUNNED
 	)
 	
-	if is_nav_active and not is_moving and not is_attack_state:
+	# ─── INDOOR STUCK DETECTION ──────────────────────────────────────────
+	# When the Entity is inside the cabin (INDOOR_SEARCH), the NavMesh may
+	# not have complete coverage of the interior. The Entity can get stuck
+	# on furniture, door frames, or other interior geometry that isn't on
+	# the NavMesh. We use a shorter timeout (3.0s) for indoor stuck detection
+	# to prevent the Entity from freezing indefinitely inside the cabin.
+	#
+	# BARRICADE AWARENESS:
+	# If the Entity is stuck near a boarded window, it should NOT relocate.
+	# Instead, it should attempt to damage the barricade. The barricade
+	# damage logic is handled by the WINDOW_PEEK state handler — the stuck
+	# detector simply avoids triggering relocation when the Entity is near
+	# a window target.
+	var is_indoor_stuck: bool = (
+		_state == EntityAI.State.INDOOR_SEARCH and
+		is_nav_active and
+		not is_moving
+	)
+	
+	if is_indoor_stuck:
+		_stuck_timer += delta
+		# Use a shorter timeout for indoor stuck detection (3.0s instead of 1.5s)
+		# to give the Entity more time to navigate interior geometry before
+		# triggering a relocation.
+		if _stuck_timer >= 3.0:
+			# ─── BARRICADE AWARENESS CHECK ──────────────────────────────
+			# If the Entity is stuck near a window target, don't relocate —
+			# the Entity is at the window and should be in WINDOW_PEEK state.
+			# The Director will handle the transition naturally.
+			var window_target = get_current_window_target()
+			if window_target:
+				var dist_to_window = global_position.distance_to(window_target.global_position)
+				if dist_to_window <= 5.0:
+					# Entity is near a window — don't relocate, just reset the timer
+					_stuck_timer = 0.0
+					return
+			
+			print("[Entity] INDOOR STUCK DETECTED! No movement for 3.0s while inside. Relocating.")
+			fade_and_relocate()
+			_stuck_timer = 0.0
+	elif is_nav_active and not is_moving and not is_attack_state:
 		_stuck_timer += delta
 		if _stuck_timer >= stuck_timeout:
 			print("[Entity] STUCK DETECTED! No movement for %.1fs while nav is active. Relocating." % stuck_timeout)
@@ -910,7 +984,7 @@ func _physics_process(delta: float) -> void:
 	
 	# --- CHASE MUSIC (ambience_d6_loop) ---
 	# Fade in when entering CHASE state, fade out when leaving.
-	var is_chasing = _state == EntityAI.State.CHASE or _state == EntityAI.State.CHARGE
+	var is_chasing = _state == EntityAI.State.STALK or _state == EntityAI.State.CHARGE
 	if is_chasing and not _chase_music_was_playing:
 		# Entering chase — start playing and fade in
 		if _chase_music_player and _chase_music_player.stream:
@@ -993,7 +1067,7 @@ func _physics_process(delta: float) -> void:
 	# — the Entity stays at its current Y to avoid dropping into terrain),
 	# ATTACK_LAMP (Entity stands still while striking the lamp),
 	# and STUNNED (Entity is paralyzed by the overload trap).
-	if not is_on_floor() and _state != EntityAI.State.WINDOW_PEEK and _state != EntityAI.State.CLIMB_WALL and _state != EntityAI.State.FLINCH and _state != EntityAI.State.ATTACK_LAMP and _state != EntityAI.State.STUNNED:
+	if not is_on_floor() and _state != EntityAI.State.WINDOW_PEEK and _state != EntityAI.State.CLIMB_WALL_UP and _state != EntityAI.State.CLIMB_WALL_DOWN and _state != EntityAI.State.FLINCH and _state != EntityAI.State.ATTACK_LAMP and _state != EntityAI.State.STUNNED:
 
 		velocity += get_gravity() * delta
 	
@@ -1178,10 +1252,56 @@ func get_nav_agent() -> NavigationAgent3D:
 func get_state() -> EntityAI.State:
 	return _state
 
+## Returns the state persistence timer value.
+## Used by the Director's State Persistence Guard to check if the Entity
+## is mid-execution in an active state (FLINCH, CLIMB_WALL, CHARGE, etc.).
+## When > 0.0, the Director skips Tier 3–8 evaluations.
+func get_state_timer() -> float:
+	return _state_timer
+
+## Sets the state persistence timer value.
+## Called by state handlers on entry to set the duration of the state.
+func set_state_timer(value: float) -> void:
+	_state_timer = value
+
 ## Sets the current FSM state.
 ## NOTE: This should ONLY be called by the Master Director (entity_director.gd).
 ## All other code MUST use request_state() instead.
 func set_state(new_state: EntityAI.State) -> void:
+	# ─── STATE TRANSITION DEBUG LOG ──────────────────────────────────
+	# Logs every state transition with the previous state, new state,
+	# and the trigger context (what Blackboard conditions caused it).
+	# This helps debug unexpected state changes during gameplay.
+	if _state != new_state:
+		var old_name = EntityAI.State.keys()[_state] if _state >= 0 and _state < EntityAI.State.keys().size() else "UNKNOWN"
+		var new_name = EntityAI.State.keys()[new_state] if new_state >= 0 and new_state < EntityAI.State.keys().size() else "UNKNOWN"
+		
+		# Build a trigger context string from Blackboard conditions
+		var triggers: Array[String] = []
+		if is_illuminated:
+			triggers.append("illuminated=%.2f" % player_stare_timer)
+		if state_locked:
+			triggers.append("state_locked")
+		if is_indoor_retreat:
+			triggers.append("indoor_retreat")
+		if is_approach_finished:
+			triggers.append("approach_finished")
+		if is_window_unbarricaded:
+			triggers.append("window_unbarricaded")
+		if is_flinch_finished:
+			triggers.append("flinch_finished")
+		if is_retreat_arrived:
+			triggers.append("retreat_arrived")
+		if is_observe_finished:
+			triggers.append("observe_finished")
+		if is_fuse_sabotaged:
+			triggers.append("fuse_sabotaged")
+		if _navigation:
+			triggers.append("player_inside=%s" % _navigation.is_player_inside())
+		
+		var trigger_str = ", ".join(triggers) if triggers else "director_evaluation"
+		print("[STATE TRANSITION] %s → %s | trigger: %s" % [old_name, new_name, trigger_str])
+	
 	_state = new_state
 
 ## Requests a state change via the _pending_state override mechanism.
@@ -1518,6 +1638,12 @@ func get_last_known_position() -> Vector3:
 func set_last_known_position(pos: Vector3) -> void:
 	_last_known_position = pos
 
+## Returns the exact position of the last noise the Entity heard.
+## Used by entity_ai.gd's _indoor_search_state() to pathfind toward the exact
+## noise coordinate instead of the room center.
+func get_last_heard_exact_position() -> Vector3:
+	return _last_heard_exact_position
+
 
 # ─── ACOUSTIC DETECTION ──────────────────────────────────────────────────────
 ## Called by player_controller.gd's make_noise() when the player emits a sound.
@@ -1540,8 +1666,18 @@ func hear_noise(noise_position: Vector3, radius: float, intensity: float = 1.0) 
 	if dist <= radius:
 		# Update memory with the noise source position
 		_last_known_position = noise_position
+		_last_heard_exact_position = noise_position
 		_is_hunting = true
 		_current_interest_level = 100.0
+		
+		# ─── INDOOR ROOM-LEVEL TRACKING ──────────────────────────────
+		# When inside the cabin, resolve the noise position to a room name.
+		# This gives the Entity room-level awareness without exact position.
+		if _state == EntityAI.State.INDOOR_SEARCH:
+			var detector = get_node_or_null("/root/RoomLightDetector")
+			if detector and detector.has_method("get_room_name_at"):
+				last_known_room_name = detector.get_room_name_at(noise_position)
+				print("[Entity Hears] Indoor noise tracked to room: %s" % last_known_room_name)
 		
 		print("[Entity Hears] Noise detected at (%.1f, %.1f, %.1f), radius=%.1fm, dist=%.1fm" % [noise_position.x, noise_position.y, noise_position.z, radius, dist])
 
@@ -1966,7 +2102,9 @@ func _start_flinch() -> void:
 	
 	# Sprint 8 meters laterally to clear the window's line-of-sight
 	_flinch_target_pos = global_position + lateral * side * 8.0
-	_flinched_timer = 1.5
+	# Randomized flinch duration: 3.0-5.0 seconds for all flinch scenarios
+	# (both outdoor window defense and indoor retreat escapes).
+	_flinched_timer = randf_range(3.0, 5.0)
 	# NOTE: State transition is handled by the Master Director (entity_director.gd).
 	# The Director evaluates is_illuminated + is_player_inside and returns FLINCH.
 	# This function ONLY sets up the flinch target position and timer.
@@ -1980,7 +2118,7 @@ func _on_caught_player() -> void:
 	# chase behavior without triggering death scenes.
 	if not can_kill:
 		print("[Entity] CAN KILL is DISABLED. Entity stops short instead of capturing player.")
-		request_state(EntityAI.State.CHASE)
+		request_state(EntityAI.State.STALK)
 		return
 	
 	_is_active = false
@@ -2000,7 +2138,7 @@ func _on_caught_player() -> void:
 func _on_catch_area_body_entered(body: Node) -> void:
 	if not _is_active:
 		return
-	if body == _player and _state == EntityAI.State.CHASE:
+	if body == _player and _state == EntityAI.State.STALK:
 		print("[Entity] Player entered catch area during chase! Catching player.")
 		_on_caught_player()
 
@@ -2265,7 +2403,7 @@ func on_generator_blackout() -> void:
 		print("[Entity] ENRAGED! Stalk speed permanently boosted from %.1f to %.1f (1.5x)." % [_original_stalk_speed, current_stalk_speed])
 	
 	# Release from stun — immediately begin hunting the player
-	request_state(EntityAI.State.CHASE)
+	request_state(EntityAI.State.STALK)
 	_stun_timer = 0.0
 	
 	# Update nav target to the player's current position
@@ -2298,7 +2436,7 @@ func on_generator_blackout() -> void:
 ## Called automatically every time the state changes (see _physics_process).
 func _update_collision_layers() -> void:
 	match _state:
-		EntityAI.State.OBSERVE_FROM_TREELINE, EntityAI.State.PATROL:
+		EntityAI.State.OBSERVE_FROM_TREELINE:
 			# "Creeping Ghost" mode: Disable tree/rock collision layers.
 			# The Entity phases through foliage while stalking outside.
 			# Only cabin geometry (layer 1) and player (layer 2) remain active.
@@ -2309,7 +2447,7 @@ func _update_collision_layers() -> void:
 			collision_mask |= (1 << (COLLISION_LAYER_PLAYER - 1)) # Layer 2: Player
 			# NOTE: Layers 3 (Tree) and 4 (Rock) are intentionally excluded.
 			
-		EntityAI.State.CHASE, EntityAI.State.CHARGE, EntityAI.State.APPROACH_WINDOW, EntityAI.State.WINDOW_PEEK, EntityAI.State.INDOOR_SEARCH, EntityAI.State.CLIMB_WALL, EntityAI.State.FLINCH, EntityAI.State.ATTACK_LAMP, EntityAI.State.RETREAT:
+		EntityAI.State.STALK, EntityAI.State.CHARGE, EntityAI.State.APPROACH_WINDOW, EntityAI.State.WINDOW_PEEK, EntityAI.State.INDOOR_SEARCH, EntityAI.State.CLIMB_WALL_UP, EntityAI.State.CLIMB_WALL_DOWN, EntityAI.State.FLINCH, EntityAI.State.ATTACK_LAMP, EntityAI.State.RETREAT:
 			# Full collision mode: Re-enable ALL collision layers.
 			# The Entity must collide with everything during aggressive states
 			# to prevent phasing through doors, window frames, or cabin walls.
@@ -2349,6 +2487,18 @@ func _update_animations(_delta: float) -> void:
 	# Strictly enforce model grounding offset across ALL frames
 	if _monster_model:
 		_monster_model.position = Vector3(0.0, -0.95, 0.0)
+	
+	# Flinch Override (RETREAT Phase 3)
+	# When the Entity is in RETREAT state AND the indoor retreat Phase 3
+	# flinch is active, we MUST play the "Flinch" animation instead of "Idle".
+	# This override MUST be placed BEFORE the RETREAT→Idle hard clamp below,
+	# otherwise "Idle" would smother the Flinch animation, causing the Entity
+	# to get permanently stuck in the RETREAT state (the Phase 3 timer would
+	# expire but the animation blending conflict would prevent the state from
+	# completing).
+	if _state == EntityAI.State.RETREAT and _ai and _ai.get("_retreat_indoor_phase_3") == true:
+		_anim_state_machine.travel("Flinch")
+		return
 	
 	# Hard clamp animations to Idle if we are retreating, dormant, or in a
 	# frozen standoff. This prevents the animation state machine from caching
@@ -2394,7 +2544,8 @@ func _update_animations(_delta: float) -> void:
 	var is_crawling: bool = (
 		_state == EntityAI.State.CHARGE or
 		_state == EntityAI.State.FLINCH or
-		_state == EntityAI.State.CLIMB_WALL or
+		_state == EntityAI.State.CLIMB_WALL_UP or
+		_state == EntityAI.State.CLIMB_WALL_DOWN or
 		(_state == EntityAI.State.INDOOR_SEARCH and _ai and _ai.has_method("has_arrived_indoor") and _ai.has_arrived_indoor())
 	)
 	

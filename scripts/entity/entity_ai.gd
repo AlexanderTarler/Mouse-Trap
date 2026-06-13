@@ -84,6 +84,8 @@ class_name EntityAI
 @export var flinch_sprint_multiplier: float = 1.5
 
 ## Flinch duration (in seconds) — how long the lateral sprint lasts.
+## Randomized between 3.0 and 5.0 seconds for all flinch scenarios
+## (both outdoor window defense and indoor retreat escapes).
 @export var flinch_duration: float = 1.5
 
 ## Flinch distance (in meters) — how far the Entity sprints laterally.
@@ -166,19 +168,18 @@ class_name EntityAI
 enum State {
 	DORMANT,
 	OBSERVE_FROM_TREELINE,  # Night 1 & 2 (Passive Voyeurism)
-	PATROL,                 # Wandering the map looking for clues
-	CHASE,                  # Active pursuit (Line of sight established)
-	RETREAT,                # Physically running away to deep woods
+	RETREAT,                # Indoor escape only — Entity flees through nearest broken/unboarded window
 	APPROACH_WINDOW,        # Night 3+ (Moving to glass)
 	WINDOW_PEEK,            # Night 2+ (Staring inside)
-	RELOCATE,               # Safe initialization state only — never used during active runtime
 	STANDOFF,               # Player is staring at Entity with flashlight — frozen in place
 	FLINCH,                 # Player inside, Entity outside — lateral sprint to evade flashlight
+	STALK,                  # Outdoor slow pursuit — both Entity and player outside
 	CHARGE,                 # Player stared too long — Entity sprints at 3x speed
 	INDOOR_SEARCH,          # Entity has breached a window and is hunting inside the cabin
-	CLIMB_WALL,             # Entity is climbing the exterior wall to a second-story window
+	CLIMB_WALL_UP,          # Entity is climbing the exterior wall UP to a second-story window
+	CLIMB_WALL_DOWN,        # Entity is climbing the exterior wall DOWN from a second-story window
 	STUNNED,                # Entity is paralyzed by the porch light overload trap
-	ENRAGED,                # Blackout released Entity — permanent speed boost for the rest of the night
+	ENRAGED,                # Blackout release — permanent 1.5x speed boost for rest of night
 	ATTACK_LAMP,            # Entity is physically approaching and striking the portable high-voltage lamp
 	HARASS,                 # Entity stands at a window performing psychological harassment (breathing, tapping, rattling)
 	FUSE_SABOTAGE,          # Entity is physically approaching and striking the Fuse Box to break it
@@ -189,10 +190,7 @@ var entity: CharacterBody3D = null
 ## The Master Behavior Director — the SINGLE source of truth for state transitions.
 ## NO script is allowed to call set_state() except this Director.
 ## External scripts may ONLY write data to the Entity's Blackboard.
-var _director: EntityDirector = null
-
-## Preload the Director class for typed access.
-const _DirectorClass = preload("entity_director.gd")
+var _director = null  # EntityDirector — typed via setup() to avoid cyclic preload
 
 ## The velocity vector computed by the current state's logic.
 ## Read by entity_controller.gd after process_state_logic() completes.
@@ -334,6 +332,32 @@ var _is_investigating: bool = false
 ## If the timer reaches 0.0, the Entity gives up and transitions to OBSERVE.
 var _investigation_timer: float = 0.0
 
+# ─── ROOM-CENTER SCAN STATE ────────────────────────────────────────────────────
+## When the Entity arrives at a room center (distance < 1.0m) during indoor
+## search, it enters a scanning sub-state. The Entity rotates slowly in place
+## for 4 seconds, looking for the player. If the player is spotted during the
+## scan, the Entity immediately resumes the chase. If the scan timer expires
+## without finding the player, the Entity returns to patrol.
+var _scan_timer: float = 0.0
+
+## Whether the Entity is currently in the scanning sub-state.
+## When true, the Entity rotates slowly in place, looking for the player.
+## Set to true when the Entity arrives at a room center during indoor search.
+## Set to false when the scan timer expires or the player is spotted.
+var _is_scanning: bool = false
+
+# ─── ZERO-ANIMATION STUN / STARE ENRAGE ───────────────────────────────────────
+## Timer that accumulates while the player is staring at the Entity.
+## Resets to 0.0 if the player looks away (is_being_stared_at becomes false).
+## If this timer reaches 1.5 seconds, the Entity becomes enraged
+## (entity.is_enraged = true), triggering a permanent speed boost.
+var _stare_timer: float = 0.0
+
+## Whether the Entity is currently being stared at by the player's flashlight.
+## Set by entity_controller.gd's on_player_stare() each frame.
+## Used by process_state_logic() to apply the Zero-Animation Stun.
+var _is_being_stared_at: bool = false
+
 # ─── PHASE 3: WINDOW SHOPPING UTILITY SCORER ────────────────────────────────
 ## Array of recently visited windows (max 3 entries).
 ## Each entry is the window's NodePath or unique identifier string.
@@ -343,13 +367,30 @@ var _recently_visited_windows: Array[String] = []
 ## Maximum number of entries in _recently_visited_windows.
 const MAX_RECENT_WINDOWS: int = 3
 
+## Pathfinding throttle timer (in seconds).
+## Accumulates delta each frame. When <= 0.0, the next target_position update
+## is allowed. After updating, the timer is reset to PATH_UPDATE_INTERVAL.
+## This prevents calling NavigationAgent3D.target_position = ... every physics
+## frame, which causes FPS drops due to path recalculation overhead.
+var _path_timer: float = 0.0
+
+## Minimum interval (in seconds) between NavigationAgent3D target_position updates.
+## Setting target_position triggers a path recalculation which is expensive.
+## Throttling to 300ms reduces pathfinding overhead by ~95% while maintaining
+## responsive pursuit behavior.
+const PATH_UPDATE_INTERVAL: float = 0.3
+
 func setup(parent: CharacterBody3D) -> void:
 	entity = parent
 	
 	# Initialize the Master Behavior Director
-	_director = _DirectorClass.new()
-	if _director:
-		print("[Entity AI] Master Behavior Director initialized.")
+	# Use load() instead of preload() to avoid cyclic dependency with entity_director.gd
+	# (entity_director.gd preloads entity_ai.gd, so entity_ai.gd cannot preload entity_director.gd)
+	var DirectorClass = load("res://scripts/entity/entity_director.gd")
+	if DirectorClass:
+		_director = DirectorClass.new()
+		if _director:
+			print("[Entity AI] Master Behavior Director initialized.")
 
 
 # ─── TYPED ACCESSORS (for entity_controller.gd cross-module reads) ──────────
@@ -497,7 +538,7 @@ func process_state_logic(delta: float) -> void:
 			_approach_window_state(delta)
 		State.WINDOW_PEEK:
 			_window_peek_state(delta)
-		State.CHASE, State.PATROL:
+		State.STALK:
 			_stalk_state(delta)
 		State.CHARGE:
 			_charge_state(delta)
@@ -507,8 +548,10 @@ func process_state_logic(delta: float) -> void:
 			_harass_state(delta)
 		State.INDOOR_SEARCH:
 			_indoor_search_state(delta)
-		State.CLIMB_WALL:
-			_climb_wall_state(delta)
+		State.CLIMB_WALL_UP:
+			_climb_wall_up_state(delta)
+		State.CLIMB_WALL_DOWN:
+			_climb_wall_down_state(delta)
 		State.STANDOFF:
 			# ─── FLASHLIGHT STANDOFF ──────────────────────────────────────
 			# The Entity freezes in place while the player shines the flashlight
@@ -526,6 +569,53 @@ func process_state_logic(delta: float) -> void:
 			_fuse_sabotage_state(delta)
 		_:
 			_calculated_velocity = Vector3.ZERO
+	
+	# ─── ZERO-ANIMATION STUN ─────────────────────────────────────────────
+	# If the player is staring at the Entity with the flashlight, apply the
+	# Zero-Animation Stun: freeze velocity, force Idle animation, and
+	# accumulate the stare timer for the enrage mechanic.
+	#
+	# The _is_being_stared_at flag is set by entity_controller.gd's
+	# on_player_stare() each frame. It reflects whether the player's
+	# flashlight beam is currently on the Entity.
+	#
+	# STUN RULES:
+	#   - If state is CHARGE or RETREAT, the Entity is immune to the stun
+	#     (it's already committed to an action).
+	#   - If state is any other state AND the player is staring, force
+	#     velocity to zero and play the Idle animation.
+	#   - The _stare_timer accumulates while the player stares. If the
+	#     player looks away, the timer resets to 0.0.
+	#   - If _stare_timer reaches 1.5 seconds, the Entity becomes enraged
+	#     (entity.is_enraged = true), triggering a permanent speed boost.
+	var current_state = entity.get_state()
+	if _is_being_stared_at and current_state != State.CHARGE and current_state != State.RETREAT:
+		# ─── FREEZE VELOCITY ────────────────────────────────────────────
+		# Override the calculated velocity to zero, preventing the Entity
+		# from moving while being stared at.
+		_calculated_velocity = Vector3.ZERO
+		
+		# ─── FORCE IDLE ANIMATION ──────────────────────────────────────
+		# Travel to the Idle animation in the state machine so the Entity
+		# doesn't play a "walk-in-place" animation while stunned.
+		var anim_sm = entity.get_anim_state_machine()
+		if anim_sm:
+			anim_sm.travel("Idle")
+		
+		# ─── ACCUMULATE STARE TIMER ────────────────────────────────────
+		# Count up while the player stares. If the timer reaches 1.5s,
+		# trigger the enrage mechanic.
+		_stare_timer += delta
+		if _stare_timer >= 1.5 and not entity.is_enraged:
+			entity.is_enraged = true
+			print("[Entity AI] STARE ENRAGE: Player stared for 1.5s! Entity is now ENRAGED!")
+	else:
+		# ─── RESET STARE TIMER ──────────────────────────────────────────
+		# If the player is not staring (or the Entity is in CHARGE/RETREAT),
+		# reset the stare timer so it doesn't accumulate across multiple
+		# stare sessions.
+		if _stare_timer > 0.0:
+			_stare_timer = 0.0
 	
 	# ─── SPATIAL VOICE MANAGEMENT ────────────────────────────────────────
 	# After the state dispatcher runs, manage the Entity's spatial voice
@@ -980,29 +1070,35 @@ func _stalk_state(delta: float) -> void:
 	# player inside and the player flipped the light switch), force immediate
 	# RETREAT. This check runs every frame for instant response.
 	if RoomLightDetector.is_entity_in_lit_room():
-		print("[CHASE] Light switch triggered! Entity is in a lit room. Forcing RETREAT!")
 		entity.is_indoor_retreat = true
 		entity.state_locked = false
 		_calculated_velocity = Vector3.ZERO
 		return
 	
 	# ─── PATHFINDING & MOVEMENT ───────────────────────────────────────
-	# Update the navigation path toward the player at the configured interval.
-	entity.set_path_timer(entity.get_path_timer() + delta)
-	if entity.get_path_timer() >= entity.path_update_interval:
-		entity.set_path_timer(0.0)
-	# ─── NAV TARGET JITTER ──────────────────────────────────────────────
-	# Add a small random offset (±0.5m) to the nav target so the Entity
-	# doesn't converge on the player's exact pixel coordinate. This creates
-	# more organic-looking pursuit and prevents the Entity from micro-stuttering
-	# as the NavigationAgent3D tries to reach an exact point that the player
-	# has already moved away from.
-	var jitter_offset = Vector3(
-		randf_range(-0.5, 0.5),
-		0.0,
-		randf_range(-0.5, 0.5)
-	)
-	entity.get_nav_agent().target_position = player.global_position + jitter_offset
+	# Throttle NavigationAgent3D target_position updates to prevent FPS drops.
+	# Setting target_position triggers an expensive path recalculation.
+	# Updating every frame (60fps) causes significant lag. We throttle to
+	# PATH_UPDATE_INTERVAL (300ms), reducing pathfinding overhead by ~95%.
+	#
+	# The _path_timer is reset to 0.0 on state transitions so that pathfinding
+	# initiates immediately when the Entity enters a new state.
+	_path_timer -= delta
+	if _path_timer <= 0.0:
+		_path_timer = PATH_UPDATE_INTERVAL
+		
+		# ─── NAV TARGET JITTER ──────────────────────────────────────────
+		# Add a small random offset (±0.5m) to the nav target so the Entity
+		# doesn't converge on the player's exact pixel coordinate. This creates
+		# more organic-looking pursuit and prevents the Entity from micro-stuttering
+		# as the NavigationAgent3D tries to reach an exact point that the player
+		# has already moved away from.
+		var jitter_offset = Vector3(
+			randf_range(-0.5, 0.5),
+			0.0,
+			randf_range(-0.5, 0.5)
+		)
+		entity.get_nav_agent().target_position = player.global_position + jitter_offset
 	
 	# ─── CATCH CHECK ──────────────────────────────────────────────────
 	# If the Entity is close enough to the player, catch them.
@@ -1044,12 +1140,10 @@ func _stalk_state(delta: float) -> void:
 		if sensory and sensory.has_method("can_entity_see_player") and sensory.can_entity_see_player():
 			_is_investigating = false
 			_investigation_timer = 0.0
-			print("[CHASE] Investigation interrupted! Player spotted. Resuming chase.")
 		elif entity.is_hunting() and entity.get_current_interest_level() > 50.0:
 			# Player was heard (acoustic detection) during investigation
 			_is_investigating = false
 			_investigation_timer = 0.0
-			print("[CHASE] Investigation interrupted! Player heard. Resuming chase.")
 		
 		if _investigation_timer <= 0.0:
 			# Investigation complete — give up and transition to OBSERVE
@@ -1057,7 +1151,6 @@ func _stalk_state(delta: float) -> void:
 			entity.is_observe_finished = true
 			entity.state_locked = false
 			_calculated_velocity = Vector3.ZERO
-			print("[CHASE] Investigation complete. Player not found. Giving up.")
 			return
 		else:
 			# Still investigating — freeze and wait
@@ -1080,7 +1173,6 @@ func _stalk_state(delta: float) -> void:
 			_is_investigating = true
 			_investigation_timer = 4.0
 			_calculated_velocity = Vector3.ZERO
-			print("[CHASE] Arrived at last_known_position but player not found. Investigating for 4 seconds...")
 			return
 	
 	# ─── MOVEMENT ─────────────────────────────────────────────────────
@@ -1188,6 +1280,13 @@ func _evaluate_night_rules(delta: float) -> void:
 ## the FLINCH handler can complete its 1.5-second lateral sprint before the
 ## Director re-evaluates.
 var _indoor_retreat_phase: int = 0  # 0=not started, 1=pathfind to window, 2=teleport outside → FLINCH
+
+## Phase 3 dedicated timer and flag for the indoor retreat flinch sequence.
+## Decoupled from the flinch timer system to avoid animation blending conflicts
+## with the RETREAT→Idle hard clamp in entity_controller.gd.
+var _retreat_indoor_phase_3: bool = false
+var _retreat_indoor_phase_3_timer: float = 0.0
+var _retreat_indoor_phase_3_triggered: bool = false
 
 func _retreat_state(delta: float) -> void:
 	# Lock the state — the Director must not override while we're mid-retreat
@@ -1303,11 +1402,42 @@ func _indoor_retreat_handler(delta: float) -> void:
 		# its first frame (it checks if timer <= 0.0 and initializes).
 		_indoor_retreat_phase = 0
 		entity.is_indoor_retreat = false
-		entity.set_state(entity.EntityAI.State.FLINCH)
+		entity.set_state(EntityAI.State.FLINCH)
 		entity.state_locked = true
 		_calculated_velocity = Vector3.ZERO
 		print("[INDOOR RETREAT] Phase 2 complete! Teleported outside. Transitioning to FLINCH state.")
 		return
+	
+	# ─── PHASE 3: Flinch (lateral sprint) before signaling completion ─────
+	# The Entity has escaped outside and must perform a 5-second flinch
+	# (lateral sprint) before signaling completion to the Director.
+	# This phase uses a dedicated timer and flag (_retreat_indoor_phase_3)
+	# decoupled from the flinch timer system to avoid animation blending
+	# conflicts with the RETREAT→Idle hard clamp in entity_controller.gd.
+	if _indoor_retreat_phase == 3:
+		if not _retreat_indoor_phase_3_triggered:
+			_retreat_indoor_phase_3 = true
+			_retreat_indoor_phase_3_timer = 5.0
+			_retreat_indoor_phase_3_triggered = true
+			print("[INDOOR RETREAT] Phase 3: Starting 5-second flinch (lateral sprint).")
+		
+		# Travel to Flinch animation via the state machine
+		var anim_sm = entity.get_anim_state_machine()
+		if anim_sm:
+			anim_sm.travel("Flinch")
+		
+		# Decrement the dedicated phase 3 timer
+		_retreat_indoor_phase_3_timer -= delta
+		
+		if _retreat_indoor_phase_3_timer <= 0.0:
+			# Phase 3 complete — signal completion to the Director
+			entity.is_retreat_finished = true
+			entity.state_locked = false
+			_retreat_indoor_phase_3_triggered = false
+			_retreat_indoor_phase_3 = false
+			_calculated_velocity = Vector3.ZERO
+			print("[INDOOR RETREAT] Phase 3 complete! Flinch finished. Signaling completion to Director.")
+			return
 
 
 # ---------------------------------------------------------------------------
@@ -1635,17 +1765,35 @@ func _window_peek_state(delta: float) -> void:
 					_glass_shatter_pending = false
 					_glass_shatter_impact_timer = 0.0
 					
-					# Call shatter_window() to destroy the glass at the
-					# exact impact frame of the AttackWindow animation.
-					# This triggers _shatter_glass() which sets
-					# is_glass_shattered = true, hides PristineVisuals,
-					# shows ShatteredVisuals, plays audio, and bursts
-					# glass shard particles — all IMMEDIATELY (no deferred
-					# timer), so the visual swap is frame-perfect with the
-					# animation's impact moment.
-					if window_target.has_method("shatter_window"):
-						window_target.shatter_window()
-						print("[WINDOW_PEEK] Glass shattered at impact frame! Transitioning to INDOOR_SEARCH.")
+				# Call shatter_window() to destroy the glass at the
+				# exact impact frame of the AttackWindow animation.
+				# This triggers _shatter_glass() which sets
+				# is_glass_shattered = true, hides PristineVisuals,
+				# shows ShatteredVisuals, plays audio, and bursts
+				# glass shard particles — all IMMEDIATELY (no deferred
+				# timer), so the visual swap is frame-perfect with the
+				# animation's impact moment.
+				if window_target.has_method("shatter_window"):
+					window_target.shatter_window()
+					print("[WINDOW_PEEK] Glass shattered at impact frame! Transitioning to INDOOR_SEARCH.")
+					
+					# ─── MARK WINDOW AS BREACHED ──────────────────────────
+					# Register this window on the breach cooldown system so
+					# the Entity will NOT select it for approach/breach again
+					# for 60 seconds. This prevents the infinite re-breach loop.
+					if window_target.has_method("get_window_id"):
+						var window_id = window_target.get_window_id()
+						var nav = entity.get_navigation_module()
+						if nav and nav.has_method("mark_window_breached"):
+							nav.mark_window_breached(window_id)
+					
+					# ─── RESET INDOOR SEARCH PERSISTENCE TIMER ──────────────
+					# Reset the 30-second indoor search persistence timer so the
+					# Director forces the Entity to stay in INDOOR_SEARCH for at
+					# least 30 seconds after breaching. This prevents the
+					# "Breach → Search → Give Up → Breach again" loop.
+					if _director and _director.has_method("reset_indoor_search_persistence"):
+						_director.reset_indoor_search_persistence()
 					
 					# Signal completion to the Director
 					entity.is_window_unbarricaded = true
@@ -1794,6 +1942,13 @@ func _harass_state(delta: float) -> void:
 ##   and transitions to Phase B (patrol). This creates a seamless visual
 ##   effect of the Entity vaulting through the window frame.
 func _indoor_search_state(delta: float) -> void:
+	# ─── STATE LOCK: Prevent Director from overriding during Phase A ──
+	# The EnterWindow animation must play for the full 1.5s duration
+	# before the Entity teleports inside. Without this lock, the Director's
+	# Tier 7 (fallback confidence) can force APPROACH_WINDOW, creating an
+	# infinite WINDOW_PEEK → INDOOR_SEARCH → APPROACH_WINDOW → WINDOW_PEEK loop.
+	entity.state_locked = true
+	
 	if not _has_arrived_indoor:
 		# ─── PHASE A: Vault Entry Animation ──────────────────────────────
 		# On the first frame, initialize the animation timer.
@@ -1917,6 +2072,8 @@ func _indoor_search_state(delta: float) -> void:
 	# ─── PHASE B: Indoor Patrol ──────────────────────────────────────────
 	# Pathfind toward the player's last known position.
 	# If the player is in a dark room, actively patrol between waypoints.
+	# When the Entity is hunting (has heard the player via noise), it
+	# prioritizes the player's last known position over random waypoints.
 	var player = entity.get_player()
 	if player:
 		# ─── LIGHT SWITCH RETREAT CHECK (every frame) ────────────────────
@@ -1934,30 +2091,130 @@ func _indoor_search_state(delta: float) -> void:
 			# the Director handles all state transitions.
 			return
 		
+		# ─── HUNTING PRIORITY ─────────────────────────────────────────────
+		# If the Entity is hunting (has heard the player via noise), it
+		# should pathfind toward the player's last known position instead of
+		# random patrol waypoints. This makes the Entity actively search for
+		# the player based on acoustic clues (footsteps, sprinting, etc.).
+		# The player's noise gives room-level awareness without exact position.
+		var is_hunting = entity.is_hunting()
+		var lkp = entity.get_last_known_position()
+		var dist_to_lkp = entity.global_position.distance_to(lkp)
+		
 		# ─── DARK ROOM PATROL ─────────────────────────────────────────────
 		# If the player is in a dark room (not lit), the Entity cannot track
 		# them via last_known_position effectively. Instead of standing still
 		# at a single waypoint, actively patrol between Cabin_Patrol_Waypoints.
 		# This makes the Entity pace around the cabin looking for the player.
+		#
+		# HOWEVER: If the Entity is hunting (has heard the player), it should
+		# pathfind toward the player's last known position instead of random
+		# waypoints. The patrol waypoints are only used when the Entity has
+		# no idea where the player is.
 		var player_in_lit_room = false
 		if entity.get_navigation_module().has_method("is_player_in_lit_room"):
 			player_in_lit_room = entity.get_navigation_module().is_player_in_lit_room()
 		
-		if not player_in_lit_room and not _is_investigating:
-			# Player is in the dark — patrol between waypoints
-			if _current_patrol_waypoint == Vector3.ZERO or entity.get_nav_agent().is_navigation_finished():
-				# Pick a new random waypoint from the Cabin_Patrol_Waypoints group
-				var waypoints: Array[Node] = entity.get_tree().get_nodes_in_group("Cabin_Patrol_Waypoints")
-				if not waypoints.is_empty():
-					var random_wp: Node3D = waypoints[randi() % waypoints.size()] as Node3D
-					if random_wp:
-						_current_patrol_waypoint = random_wp.global_position
-						entity.get_nav_agent().target_position = _current_patrol_waypoint
-						print("[INDOOR_SEARCH] Dark room patrol: New waypoint set to (%.2f, %.2f, %.2f)" % [_current_patrol_waypoint.x, _current_patrol_waypoint.y, _current_patrol_waypoint.z])
+		if not player_in_lit_room and not _is_investigating and not _is_scanning:
+			# ─── HUNTING OVERRIDE: Room-Center Investigation ─────────────────
+			# If the Entity heard the player (noise detection), it should
+			# pathfind toward the room center corresponding to the last heard
+			# room, rather than the player's exact coordinates. This makes the
+			# Entity smarter but fairer — it knows which room the player is in,
+			# but not the exact position within that room.
+			if is_hunting and dist_to_lkp > 2.0:
+				# ─── ROOM-CENTER PATHFINDING ──────────────────────────────
+				# If the Entity has a last_heard_room from the sensory module,
+				# resolve it to a CabinRoom node and pathfind to its center.
+				# This gives room-level awareness without exact position.
+				var sensory = entity.get_sensory_module()
+				var room_name = ""
+				if sensory and "last_heard_room" in sensory:
+					room_name = sensory.last_heard_room
+				
+				if room_name != "":
+					# Try to find the CabinRoom node by name
+					var room_node = entity.get_node_or_null("/root/GameWorld/Cabin/Rooms/" + room_name)
+					if not room_node:
+						room_node = entity.get_node_or_null("/root/GameWorld/" + room_name)
+					if not room_node:
+						room_node = entity.get_tree().get_first_node_in_group(room_name)
+					
+					if room_node and room_node.has_method("get_room_center"):
+						var room_center = room_node.get_room_center()
+						entity.get_nav_agent().target_position = room_center
+						print("[INDOOR_SEARCH] Hunting! Pathfinding toward room center of '%s' at (%.2f, %.2f, %.2f)" % [room_name, room_center.x, room_center.y, room_center.z])
+					elif room_node:
+						# Fallback: use the room node's own position
+						entity.get_nav_agent().target_position = room_node.global_position
+						print("[INDOOR_SEARCH] Hunting! Pathfinding toward room node '%s' at (%.2f, %.2f, %.2f)" % [room_name, room_node.global_position.x, room_node.global_position.y, room_node.global_position.z])
+					else:
+						# Fallback: use last known position
+						entity.get_nav_agent().target_position = lkp
+						print("[INDOOR_SEARCH] Hunting! Room '%s' not found. Pathfinding toward last known position." % room_name)
 				else:
-					# Fallback: if no waypoints exist, use last_known_position
-					_current_patrol_waypoint = entity.get_last_known_position()
-					entity.get_nav_agent().target_position = _current_patrol_waypoint
+					# No room name — fall back to last known position
+					entity.get_nav_agent().target_position = lkp
+					print("[INDOOR_SEARCH] Hunting! No room name. Pathfinding toward last known position at (%.2f, %.2f, %.2f)" % [lkp.x, lkp.y, lkp.z])
+				
+				# ─── SCAN CHECK: Arrived at room center ──────────────────
+				# If the Entity is close to the nav target (room center) and
+				# cannot see the player, enter the scanning sub-state.
+				var nav_target = entity.get_nav_agent().target_position
+				var dist_to_target = entity.global_position.distance_to(nav_target)
+				var nav_finished = entity.get_nav_agent().is_navigation_finished()
+				
+				if (nav_finished or dist_to_target <= 1.0) and not _is_scanning:
+					var can_see = false
+					if sensory and sensory.has_method("can_entity_see_player"):
+						can_see = sensory.can_entity_see_player()
+					
+					if not can_see:
+						# ─── START SCANNING ──────────────────────────────
+						# The Entity arrived at the room center but the player
+						# is not here. Enter scanning mode: rotate slowly for
+						# 4 seconds, looking for the player.
+						_is_scanning = true
+						_scan_timer = 4.0
+						_calculated_velocity = Vector3.ZERO
+						print("[INDOOR_SEARCH] Arrived at room center but player not found. Scanning for 4 seconds...")
+						return
+			else:
+				# Player is in the dark — patrol between waypoints
+				if _current_patrol_waypoint == Vector3.ZERO or entity.get_nav_agent().is_navigation_finished():
+					# Pick a new random waypoint from the Cabin_Patrol_Waypoints group.
+					# FILTER: Skip waypoints that are inside a lit room — the Entity
+					# will not enter a room that has its cabin light turned on.
+					var waypoints: Array[Node] = entity.get_tree().get_nodes_in_group("Cabin_Patrol_Waypoints")
+					if not waypoints.is_empty():
+						# Shuffle and filter for dark-room waypoints only
+						waypoints.shuffle()
+						var selected_wp: Node3D = null
+						for wp in waypoints:
+							var wp_node: Node3D = wp as Node3D
+							if not wp_node:
+								continue
+							# Check if this waypoint is in a lit room
+							var nav_module = entity.get_navigation_module()
+							if nav_module and nav_module.has_method("is_position_in_lit_room"):
+								if nav_module.is_position_in_lit_room(wp_node.global_position):
+									continue  # Skip — this waypoint is in a lit room
+							selected_wp = wp_node
+							break
+						
+						if not selected_wp:
+							# All waypoints are in lit rooms — pick the least-lit one
+							# (the one farthest from any light source)
+							selected_wp = waypoints[0] as Node3D
+						
+						if selected_wp:
+							_current_patrol_waypoint = selected_wp.global_position
+							entity.get_nav_agent().target_position = _current_patrol_waypoint
+							print("[INDOOR_SEARCH] Dark room patrol: New waypoint set to (%.2f, %.2f, %.2f)" % [_current_patrol_waypoint.x, _current_patrol_waypoint.y, _current_patrol_waypoint.z])
+					else:
+						# Fallback: if no waypoints exist, use last_known_position
+						_current_patrol_waypoint = lkp
+						entity.get_nav_agent().target_position = _current_patrol_waypoint
 			
 			# Move toward the current patrol waypoint
 			if entity.get_nav_agent().is_navigation_finished():
@@ -2034,13 +2291,13 @@ func _indoor_search_state(delta: float) -> void:
 					return
 			
 			# ─── CHECK IF WE'VE ARRIVED AT LAST_KNOWN_POSITION ───────────
-			var lkp = entity.get_last_known_position()
-			var dist_to_lkp = entity.global_position.distance_to(lkp)
+			var lkp_pos = entity.get_last_known_position()
+			var dist_to_lkp_pos = entity.global_position.distance_to(lkp_pos)
 			var nav_finished = entity.get_nav_agent().is_navigation_finished()
 			
 			# If the nav agent finished OR we're close to the last known
 			# position, AND we can't see the player, start investigating.
-			if (nav_finished or dist_to_lkp <= 3.0) and not _is_investigating:
+			if (nav_finished or dist_to_lkp_pos <= 3.0) and not _is_investigating:
 				# Check if the Entity can actually see the player right now
 				var sensory = entity.get_sensory_module()
 				var can_see_player = false
@@ -2081,6 +2338,44 @@ func _indoor_search_state(delta: float) -> void:
 				_all_lit_frustration += ALL_LIT_FRUSTRATION_RATE * delta
 				_all_lit_frustration = minf(_all_lit_frustration, ALL_LIT_FRUSTRATION_THRESHOLD)
 		
+		# ─── SCANNING SUB-STATE ──────────────────────────────────────────
+		# If the Entity is scanning (arrived at room center, looking for the
+		# player), rotate slowly in place and count down the scan timer.
+		if _is_scanning:
+			_scan_timer -= delta
+			_calculated_velocity = Vector3.ZERO
+			
+			# ─── SLOW ROTATION DURING SCAN ──────────────────────────────
+			# Rotate the monster model slowly (0.5 rad/s) to scan the room
+			# for the player. This creates a menacing "looking around" effect.
+			var model = entity.get_monster_model()
+			if model:
+				model.rotation.y += 0.5 * delta
+			
+			# ─── CHECK IF PLAYER IS SPOTTED DURING SCAN ─────────────────
+			var sensory = entity.get_sensory_module()
+			if sensory and sensory.has_method("can_entity_see_player") and sensory.can_entity_see_player():
+				_is_scanning = false
+				_scan_timer = 0.0
+				print("[INDOOR_SEARCH] Scan interrupted! Player spotted. Resuming chase.")
+			elif entity.is_hunting() and entity.get_current_interest_level() > 50.0:
+				# Player was heard during scan
+				_is_scanning = false
+				_scan_timer = 0.0
+				print("[INDOOR_SEARCH] Scan interrupted! Player heard. Resuming chase.")
+			
+			if _scan_timer <= 0.0:
+				# ─── SCAN COMPLETE ──────────────────────────────────────
+				# The Entity has scanned for 4 seconds and found nothing.
+				# Return to patrol.
+				_is_scanning = false
+				_calculated_velocity = Vector3.ZERO
+				print("[INDOOR_SEARCH] Scan complete. Player not found. Returning to patrol.")
+				return
+			else:
+				# Still scanning — freeze and rotate
+				return
+		
 		if _is_investigating:
 			_calculated_velocity = Vector3.ZERO
 		elif entity.get_nav_agent().is_navigation_finished():
@@ -2096,11 +2391,11 @@ func _indoor_search_state(delta: float) -> void:
 
 
 # ---------------------------------------------------------------------------
-# STATE: CLIMB_WALL — Exterior wall climbing to a second-story window
+# STATE: CLIMB_WALL_UP — Exterior wall climbing UP to a second-story window
 # ---------------------------------------------------------------------------
 ## Phase 1: Pathfinding to the base of the wall.
 ## Phase 2: Vertical ascent (Y-axis movement) toward the target window.
-func _climb_wall_state(delta: float) -> void:
+func _climb_wall_up_state(delta: float) -> void:
 	# Lock the state — the Director must not override while we're mid-climb
 	entity.state_locked = true
 	
@@ -2128,17 +2423,6 @@ func _climb_wall_state(delta: float) -> void:
 				_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
 		else:
 			# ─── NO WALL BASE NODE: Signal completion to break the loop ──
-			# When WallBasePosition doesn't exist in the scene tree, the
-			# handler skips directly to Phase 2. But if the Entity is already
-			# at ground level (Y ≈ 0.0), Phase 2 completes instantly, setting
-			# is_climb_finished = true. The Director then transitions to
-			# WINDOW_PEEK, which immediately fails (no window), and the
-			# Director falls through to OBSERVE_FROM_TREELINE. Next frame:
-			# confidence >= 65 → CLIMB again. 60fps oscillation.
-			#
-			# Fix: Signal completion immediately so the Director transitions
-			# to OBSERVE_FROM_TREELINE (Tier 6 default) instead of re-entering
-			# CLIMB_WALL.
 			entity.is_climb_finished = true
 			entity.state_locked = false
 			_wall_climb_phase_2 = false
@@ -2150,10 +2434,64 @@ func _climb_wall_state(delta: float) -> void:
 			_calculated_velocity = Vector3(0.0, entity.current_stalk_speed * wall_climb_speed_multiplier, 0.0)
 		else:
 			# Climb complete — signal completion to the Director
-			# via the Blackboard completion flag. The Director will
-			# transition to WINDOW_PEEK (Tier 3).
 			entity.is_climb_finished = true
 			entity.state_locked = false  # Unlock — Director can now transition
 			_calculated_velocity = Vector3.ZERO
 			_wall_climb_phase_2 = false
 			_siege_duration_timer = 0.0
+
+
+# ---------------------------------------------------------------------------
+# STATE: CLIMB_WALL_DOWN — Exterior wall climbing DOWN from a second-story window
+# ---------------------------------------------------------------------------
+## Phase 1: Vertical descent (Y-axis movement) from the window position.
+## Phase 2: Pathfinding away from the wall base after landing.
+func _climb_wall_down_state(delta: float) -> void:
+	# Lock the state — the Director must not override while we're mid-climb
+	entity.state_locked = true
+	
+	if not _wall_climb_phase_2:
+		# Phase 1: Vertical descent
+		var ground_y = 0.0  # Ground level
+		if entity.global_position.y > ground_y + 0.5:
+			# Descend at the same speed as ascent
+			_calculated_velocity = Vector3(0.0, -entity.current_stalk_speed * wall_climb_speed_multiplier, 0.0)
+			return
+		else:
+			# Reached ground — advance to Phase 2
+			_wall_climb_phase_2 = true
+			_calculated_velocity = Vector3.ZERO
+			return
+	else:
+		# Phase 2: Pathfind away from the wall to a treeline vantage point
+		if not _retreat_target_set:
+			_retreat_target_set = true
+			var treeline_markers: Array[Node] = entity.get_tree().get_nodes_in_group("Treeline_Vantage_Points")
+			if not treeline_markers.is_empty():
+				var farthest_marker: Node3D = treeline_markers[0] as Node3D
+				var farthest_dist: float = 0.0
+				for marker in treeline_markers:
+					var m: Node3D = marker as Node3D
+					if m:
+						var d: float = entity.global_position.distance_to(m.global_position)
+						if d > farthest_dist:
+							farthest_dist = d
+							farthest_marker = m
+				entity.get_nav_agent().target_position = farthest_marker.global_position
+			else:
+				entity.get_nav_agent().target_position = Vector3(9.0, 0.0, 40.0)
+		
+		if entity.get_nav_agent().is_navigation_finished():
+			# Arrived at retreat target — signal completion
+			entity.is_climb_finished = true
+			entity.state_locked = false
+			_retreat_target_set = false
+			_wall_climb_phase_2 = false
+			_calculated_velocity = Vector3.ZERO
+		else:
+			var next_pos = entity.get_nav_agent().get_next_path_position()
+			var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
+			if dir_2d.length() > 0.01:
+				var move_dir_2d = dir_2d.normalized()
+				_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
+				_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed

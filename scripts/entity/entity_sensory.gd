@@ -14,8 +14,22 @@ extends Node
 ##   The Entity can hear player noises via hear_noise(). The player emits noise
 ##   based on movement state (sprint=20m, walk=10m, crouch=silent). If the Entity
 ##   is within the noise radius, it updates last_known_position instantly.
+##
+## ROOM-LEVEL TRACKING:
+##   When noise is detected, the sensory system resolves the noise position to a
+##   room name using RoomLightDetector.get_room_name_at(). This gives the Entity
+##   room-level awareness without exact position — it knows which room the player
+##   is in, but not the precise coordinates. The Entity then pathfinds to the
+##   room's center node (global_position of the CabinRoom node) instead of the
+##   player's exact coordinates.
 
 var entity: CharacterBody3D = null
+
+## The name of the room the Entity last heard the player in.
+## Updated by hear_noise() when the Entity is in INDOOR_SEARCH state.
+## Used by entity_ai.gd's _indoor_search_state() to pathfind toward the
+## room center instead of the player's exact coordinates.
+var last_heard_room: String = ""
 
 # ─── VISION CONFIGURATION ───────────────────────────────────────────────────
 ## Maximum vision range when the player's flashlight is ON (full visibility).

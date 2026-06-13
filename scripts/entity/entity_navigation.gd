@@ -48,6 +48,23 @@ var _debug_draw_timer: float = 0.0
 
 const DEBUG_DRAW_INTERVAL: float = 1.0
 
+# ─── BREACH COOLDOWN SYSTEM ────────────────────────────────────────────────────
+## Dictionary mapping WindowID (String) to a cooldown timer (float) in seconds.
+## When a window is breached, its cooldown is set to 60.0 seconds. During this
+## time, the Entity will NOT select this window for approach/breach.
+## Decremented by delta each frame in process_navigation().
+var _breach_cooldowns: Dictionary = {}
+
+## Duration (in seconds) a window remains on cooldown after being breached.
+const BREACH_COOLDOWN_DURATION: float = 60.0
+
+## ─── ALREADY BREACHED PENALTY ────────────────────────────────────────────────
+## Utility score penalty applied to windows whose glass is already shattered.
+## This makes the Entity prefer to breach *other* windows first, creating more
+## varied and unpredictable approach patterns instead of re-breaching the same
+## window repeatedly.
+const ALREADY_BREACHED_PENALTY: float = 500.0
+
 # ─── CACHED SCENE TREE GROUPS ───────────────────────────────────────────────
 ## Cached references to scene tree groups populated once in _ready().
 ## Avoids expensive get_tree().get_nodes_in_group() calls in the AI/physics loop.
@@ -99,6 +116,12 @@ func _process(delta: float) -> void:
 	if not entity or not is_instance_valid(entity):
 		return
 	
+	# ─── BREACH COOLDOWN DECAY ──────────────────────────────────────────
+	# Decrement all breach cooldown timers by delta each frame.
+	# When a cooldown reaches 0.0 or below, the window is removed from the
+	# dictionary so it becomes available for selection again.
+	_process_breach_cooldowns(delta)
+	
 	# Periodic grid rebuild
 	_rebuild_timer += delta
 	if _rebuild_timer >= REBUILD_INTERVAL or _grid_dirty:
@@ -106,6 +129,36 @@ func _process(delta: float) -> void:
 		_scan_light_sources()
 		_rebuild_light_cost_grid()
 		_grid_dirty = false
+
+
+## Decrements all breach cooldown timers by delta. Removes entries whose
+## cooldown has expired (<= 0.0) so the window becomes available again.
+func _process_breach_cooldowns(delta: float) -> void:
+	if _breach_cooldowns.is_empty():
+		return
+	
+	var expired: Array[String] = []
+	for window_id in _breach_cooldowns.keys():
+		var remaining: float = _breach_cooldowns[window_id] - delta
+		if remaining <= 0.0:
+			expired.append(window_id)
+		else:
+			_breach_cooldowns[window_id] = remaining
+	
+	for window_id in expired:
+		_breach_cooldowns.erase(window_id)
+		print("[Navigation] Breach cooldown expired for window '%s'. Available for approach again." % window_id)
+
+
+## Marks a window as breached, setting its cooldown timer to 60.0 seconds.
+## During this time, the Entity will NOT select this window for approach/breach.
+## Called by entity_ai.gd when the glass shatters (shatter_window() is called).
+##
+## Parameters:
+##   window_id: The unique identifier string for the window (e.g., "Window_01").
+func mark_window_breached(window_id: String) -> void:
+	_breach_cooldowns[window_id] = BREACH_COOLDOWN_DURATION
+	print("[Navigation] Window '%s' marked as breached. Cooldown set to %.1f seconds." % [window_id, BREACH_COOLDOWN_DURATION])
 
 
 # ─── LIGHT SOURCE SCANNING ───────────────────────────────────────────────────
@@ -322,13 +375,47 @@ func mark_grid_dirty() -> void:
 
 # ─── LEGACY METHODS (Preserved from original entity_navigation.gd) ──────────
 
+## Timer for periodic inside/outside debug logging (every 2 seconds).
+var _inside_outside_debug_timer: float = 0.0
+
+## Returns true if the player is inside any registered cabin room.
+## Uses get_player_room() which delegates to player_controller.gd's reliable
+## overlaps_body() detection against Cabin_Interior Area3D volumes.
+##
+## If the player's room name is anything other than "Outside", they are
+## considered to be inside the cabin. This is more reliable than the old
+## distance-fallback + get_overlapping_bodies() approach, which could fail
+## when the player was in transitional spaces, hallways, or on the second
+## floor where Area3D volumes might not perfectly cover all interior spaces.
+func is_player_inside() -> bool:
+	var player = entity.get_player()
+	if not player:
+		return false
+	
+	# Delegate to player_controller.gd's get_player_room() which uses
+	# area.overlaps_body(self) — a more reliable overlap check.
+	# If the room name is anything other than "Outside", the player is inside.
+	var result = get_player_room() != "Outside"
+	
+	# ─── PERIODIC DEBUG LOG (every 2 seconds) ──────────────────────────
+	# Logs whether the player is considered inside or outside by both the
+	# player's own room detection AND the Entity's navigation module.
+	# This helps debug false "player is outside" detections that cause the
+	# Entity to incorrectly enter STALK instead of INDOOR_SEARCH.
+	_inside_outside_debug_timer += 0.016  # Approximate delta for _process
+	if _inside_outside_debug_timer >= 2.0:
+		_inside_outside_debug_timer = 0.0
+		var player_room = get_player_room()
+		var entity_inside = result
+		print("[INSIDE/OUTSIDE DEBUG] Player room='%s' | Entity thinks player is inside=%s" % [player_room, entity_inside])
+	
+	return result
+
+
 ## Returns true if the player is outside the cabin.
-## Uses get_player_room() as the single source of truth:
-##   - If get_player_room() returns "Outside" → player is outside
-##   - If get_player_room() returns any room name → player is inside
-## This ensures consistent inside/outside detection across all systems.
+## Simply inverts is_player_inside() for API compatibility.
 func is_player_outside() -> bool:
-	return get_player_room() == "Outside"
+	return not is_player_inside()
 
 
 ## Returns the name of the room the player is currently in, or "Outside" if
@@ -525,7 +612,32 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 		if current_night == 2 and w.has_method("is_barricaded") and w.is_barricaded():
 			continue  # Skip — boarded windows are immune on Night 2
 		
+		# ─── BREACH COOLDOWN FILTER ──────────────────────────────────────
+		# Skip windows that are on breach cooldown. The Entity recently
+		# breached this window and must wait 60 seconds before approaching
+		# it again. This prevents the "re-breach the same window" loop.
+		var cabin_window = w.get_parent() as CabinWindow
+		if cabin_window and cabin_window.has_method("get_window_id"):
+			var window_id = cabin_window.get_window_id()
+			if _breach_cooldowns.has(window_id) and _breach_cooldowns[window_id] > 0.0:
+				continue  # Skip — window is on breach cooldown
+		
+		# ─── ALREADY BREACHED PENALTY ────────────────────────────────────
+		# If the window's glass is already shattered, apply a massive utility
+		# score penalty so the Entity prefers to breach *other* windows first.
+		# This prevents the Entity from re-breaching the same window repeatedly.
+		# The penalty is applied as a distance offset: we artificially inflate
+		# the distance to this window, making it appear farther away than it
+		# actually is. This causes the utility scorer to rank it lower.
 		var dist_to_player: float = w.global_position.distance_to(player.global_position)
+		if cabin_window and cabin_window.is_glass_shattered:
+			# Apply the already-breached penalty by inflating the distance.
+			# The window is still selectable (not filtered out entirely), but
+			# it will rank much lower than unbreached windows. This ensures
+			# the Entity only re-breaches a window if ALL other windows are
+			# also already breached or on cooldown.
+			dist_to_player += ALREADY_BREACHED_PENALTY
+		
 		if dist_to_player <= 15.0:
 			nearby_windows.append(w)
 
@@ -558,8 +670,21 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 			continue
 		if current_night == 2 and w.has_method("is_barricaded") and w.is_barricaded():
 			continue
+		
+		# ─── BREACH COOLDOWN FILTER (fallback) ──────────────────────────
+		var cabin_window_fb = w.get_parent() as CabinWindow
+		if cabin_window_fb and cabin_window_fb.has_method("get_window_id"):
+			var window_id_fb = cabin_window_fb.get_window_id()
+			if _breach_cooldowns.has(window_id_fb) and _breach_cooldowns[window_id_fb] > 0.0:
+				continue  # Skip — window is on breach cooldown
+		
 		var w_pos_2d = Vector2(w.global_position.x, w.global_position.z)
 		var d: float = entity_pos_2d.distance_to(w_pos_2d)
+		
+		# ─── ALREADY BREACHED PENALTY (fallback) ────────────────────────
+		if cabin_window_fb and cabin_window_fb.is_glass_shattered:
+			d += ALREADY_BREACHED_PENALTY
+		
 		if d < closest_dist:
 			closest_dist = d
 			closest = w
@@ -567,6 +692,49 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 		return closest.get_parent() as Node3D
 	return null
 
+
+
+## Finds the nearest broken (glass shattered) and unboarded window to the Entity.
+## Used by the RETREAT state when the Entity is inside the cabin and needs to
+## escape through a window (e.g., when the player shines a flashlight at it
+## indoors, or a room light is turned on while the Entity is inside).
+##
+## The Entity can only exit through windows that:
+##   1. Have shattered glass (is_glass_shattered == true)
+##   2. Are NOT boarded up (is_boarded == false)
+##   3. Are on the ground floor (BottomFloorWindows group)
+##
+## Returns the CabinWindow node, or null if no suitable window is found.
+func find_nearest_broken_window() -> Node3D:
+	if _window_markers.is_empty():
+		return null
+	
+	var closest: Node3D = null
+	var closest_dist: float = INF
+	var entity_pos_2d = Vector2(entity.global_position.x, entity.global_position.z)
+	
+	for w in _window_markers:
+		# Only ground-floor windows
+		if not w.get_parent().is_in_group("BottomFloorWindows"):
+			continue
+		
+		var cabin_window = w.get_parent() as CabinWindow
+		if not cabin_window:
+			continue
+		
+		# Must have shattered glass AND not be boarded
+		if not cabin_window.is_glass_shattered:
+			continue
+		if cabin_window.is_boarded:
+			continue
+		
+		var w_pos_2d = Vector2(w.global_position.x, w.global_position.z)
+		var d: float = entity_pos_2d.distance_to(w_pos_2d)
+		if d < closest_dist:
+			closest_dist = d
+			closest = cabin_window
+	
+	return closest
 
 
 func pick_next_vantage_point() -> void:
