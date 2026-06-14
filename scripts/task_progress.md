@@ -1,29 +1,13 @@
-# Task Progress: AI State Machine Refactor
+# Fix 1: STALK vs PATROL - Visual Confirmation Gate in Director
 
-## Todo List
+- [x] Update `_tier_3_active_aggression()` in entity_director.gd: When `thinks_player_is_inside == false` AND `is_hunting()`, check `can_entity_see_player()` — if NOT visible, return OBSERVE_FROM_TREELINE instead of STALK
 
-### 1. Fix Circular Dependency
+# Fix 2: Revamp Belief Deduction (3-Waypoint Miss Rule)
 
-- [x] Delete `const EntityAI := preload("entity_ai.gd")` from entity_controller.gd line 13
-- [x] Update entity_controller.gd to use `EntityAI.State.X` via class_name (already works since entity_ai.gd has `class_name EntityAI`)
-- [x] Fix entity_director.gd's preload of entity_ai.gd (line 62) - use class_name instead
+- [x] Update `_observe_from_treeline_state()` in entity_ai.gd: Replace `set_thinks_player_is_inside(false)` with confidence boost + impatience mechanic
+- [x] Update `hear_noise()` in entity_controller.gd: Add outdoor noise detection → `set_thinks_player_is_inside(false)`
 
-### 2. Implement State Persistence Guard (entity_director.gd)
+# Fix 3: Fix Sensory Blindness through Windows
 
-- [x] Add `_state_timer` float to entity_controller.gd (Blackboard)
-- [x] Add getter/setter for state_timer in entity_controller.gd
-- [x] Add state persistence guard in entity_director.gd's evaluate_master_state()
-
-### 3. Implement Room-Center Investigation
-
-- [x] Update entity_sensory.gd to store `last_heard_room` when noise occurs
-- [x] Update entity_controller.gd to expose `last_heard_room` on Blackboard
-- [x] Update entity_ai.gd's `_indoor_search_state()` to pathfind to room center when no LOS
-- [x] Add scan timer logic (4-second rotate + scan) when arriving at room center
-
-### 4. Zero-Animation Stun
-
-- [x] Add stare-based stun logic in entity_ai.gd's main state loop
-- [x] Force velocity = Vector3.ZERO when is_being_stared_at and not CHARGE/RETREAT
-- [x] Force animation tree to travel("Idle") when stunned
-- [x] Implement `_stare_timer` that resets if player looks away, triggers enrage at 1.5s
+- [x] Update `_calculate_vision_range()` in entity_sensory.gd: Add dynamic vision range for OBSERVE_FROM_TREELINE and WINDOW_PEEK states (30-40m)
+- [x] Update `can_entity_see_player()` in entity_sensory.gd: Add belief system updates (reset misses on indoor sight, set thinks_player_is_inside=false on outdoor sight)

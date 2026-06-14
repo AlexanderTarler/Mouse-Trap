@@ -552,6 +552,15 @@ func _update_room_label() -> void:
 		_room_label.text = "📍 Room: N/A"
 
 
+## Public API: Shows a temporary message on the HUD event label.
+## Called by TotemAnchor and other interactables to display feedback text
+## (e.g., "The totem is protected by the Entity's presence...").
+## The message is displayed for 3.0 seconds, then fades out automatically
+## via the existing _show_event() message queue system.
+func show_message(msg: String) -> void:
+	_show_event(msg)
+
+
 ## Creates the purge bar UI nodes programmatically on first use.
 func _create_purge_bar_nodes() -> void:
 	# Background bar (dark gray, full-width container)

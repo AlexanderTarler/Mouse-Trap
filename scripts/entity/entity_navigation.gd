@@ -110,6 +110,27 @@ func _cache_scene_groups() -> void:
 				push_warning("VantagePoints container not found in scene root! Entity may freeze without navigation markers.")
 	
 	print("[Entity Navigation] Cached %d window markers and %d treeline markers." % [_window_markers.size(), _treeline_markers.size()])
+	
+	# ─── DOOR MARKER VERIFICATION ──────────────────────────────────────
+	# Verify that the door's IndoorBreachWaypoint marker is in the WindowMarkers
+	# group. If not, log a warning so the developer knows to add it in the scene.
+	var door_marker_found = false
+	for w in _window_markers:
+		if w.name == "IndoorBreachWaypoint" and w.get_parent() and w.get_parent().is_in_group("Door"):
+			door_marker_found = true
+			break
+	if not door_marker_found:
+		# Try to find the door marker directly
+		var door = entity.get_tree().get_first_node_in_group("Door")
+		if door:
+			var marker = door.get_node_or_null("IndoorBreachWaypoint")
+			if marker:
+				print("[Navigation] WARNING: Door's IndoorBreachWaypoint found but NOT in WindowMarkers group! Add it to the WindowMarkers group in the scene editor.")
+			else:
+				print("[Navigation] WARNING: Door node found but missing IndoorBreachWaypoint child Marker3D! Add a Marker3D named 'IndoorBreachWaypoint' as a child of the Door node.")
+		else:
+			print("[Navigation] No Door node found in 'Door' group. Door approach will be unavailable.")
+
 
 
 func _process(delta: float) -> void:
@@ -541,25 +562,33 @@ func find_nearest_second_story_window_base() -> Vector3:
 	return best_pos
 
 
-## Picks a tactical window near the player to simulate intelligent flanking.
-## Gathers all windows within 15 meters of the player, then picks one at random
-## from that subset. If no windows are within range, falls back to the absolute
-## closest window to the Entity.
+## Picks a tactical window using smart room-based deduction.
+## The Entity selects the window the player is LEAST likely to be watching,
+## based on acoustic intelligence and room lighting.
+##
+## SELECTION LOGIC:
+##   1. Identify the `last_heard_room` (from entity_sensory) — the room the
+##      Entity last heard the player in.
+##   2. Get all available ground-floor windows (with standard filters applied).
+##   3. Filter OUT any windows that belong to the `last_heard_room` — the Entity
+##      avoids approaching the room it last heard the player in, because the
+##      player is likely watching that window.
+##   4. Prefer windows that belong to UNLIT rooms (using RoomLightDetector).
+##      Dark rooms are safer approach points — the player can't see the Entity
+##      approaching through the darkness.
+##   5. If multiple candidates remain, pick the one furthest from the
+##      `last_heard_exact_position` — the Entity flanks to the opposite side
+##      of the cabin from where the player was last heard.
 ##
 ## LIGHT SANCTUARY FILTER:
 ##   Windows whose room light is switched on are EXCLUDED from selection.
 ##   The Entity will never approach a window that has an active CabinLight,
 ##   because the light makes the window "secure" — the Entity avoids lit areas.
-##   This gives the player a powerful defensive tool: turn on room lights to
-##   make that window safe.
 ##
 ## NIGHT 2 BOARDED WINDOW FILTER:
 ##   On Night 2, boarded windows are also excluded. The Entity can only
 ##   approach and peek through unboarded (glass-only) windows on Night 2.
 ##   On Night 3+, boarded windows are fair game.
-##
-## This prevents the Entity from making a beeline to the nearest window every
-## time, creating more varied and unpredictable approach patterns.
 ##
 ## Parameters:
 ##   player: The player Node3D to measure distance from.
@@ -569,127 +598,174 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 	if not player or _window_markers.is_empty():
 		return null
 	
+	# ─── GET ACOUSTIC INTELLIGENCE ──────────────────────────────────────
+	# Read the last_heard_room from the sensory module. This tells us which
+	# room the Entity last heard the player in. If empty, the Entity has no
+	# acoustic intelligence and falls back to standard selection.
+	var sensory = entity.get_sensory_module()
+	var last_heard_room: String = ""
+	if sensory and "last_heard_room" in sensory:
+		last_heard_room = sensory.last_heard_room
+	
+	# Read the last_heard_exact_position from the controller for distance
+	# calculations. This is the exact 3D position of the last noise the
+	# Entity heard.
+	var last_heard_pos: Vector3 = entity.get_last_heard_exact_position()
+	
 	# Determine the current night for boarded window filtering.
-	# NOTE: We read from NightManager, NOT GameTime. GameTime manages the
-	# day/night cycle (time of day), while NightManager tracks which narrative
-	# night the player is on (1-5). The debug console sets the night via
-	# NightManager.start_night(night), so reading from NightManager ensures
-	# the debug override is respected.
-	var current_night: int = 3  # Default to Night 3+ (no boarded restriction)
+	var current_night: int = 3
 	var night_manager = entity.get_node_or_null("/root/NightManager")
 	if night_manager and "current_night" in night_manager:
 		current_night = night_manager.current_night
 	
-	# Gather all windows within 15 meters of the player, applying filters
-	var nearby_windows: Array[Node3D] = []
+	# ─── BUILD CANDIDATE LIST ───────────────────────────────────────────
+	# Gather all ground-floor windows that pass standard filters.
+	# Each candidate is stored as a dictionary with metadata for scoring.
+	var candidates: Array[Dictionary] = []
 	for w in _window_markers:
-		# ─── BOTTOM FLOOR FILTER ──────────────────────────────────────────
-		# Only target windows that belong to the BottomFloorWindows group.
-		# Second-story windows are excluded — the Entity cannot reach them
-		# without the CLIMB_WALL state, which is not yet implemented for
-		# active sieging. The BottomFloorWindows group is assigned in the
-		# scene editor to each ground-floor CabinWindow node (the parent of
-		# the WindowMarker). We check the parent node's group membership
-		# because the WindowMarker itself only has the "WindowMarkers" group.
+		# ─── BOTTOM FLOOR FILTER ──────────────────────────────────────
 		if not w.get_parent().is_in_group("BottomFloorWindows"):
-			continue  # Skip non-ground-floor windows
+			continue
 		
-		# ─── LIGHT SANCTUARY FILTER ──────────────────────────────────────
-		# Skip windows whose room light is switched on. The Entity avoids
-		# lit rooms entirely — it will never approach a window with an
-		# active CabinLight.
-		if w.has_method("is_secure") and w.is_secure():
-			# is_secure() returns true if the room light is on, the window
-			# is boarded, OR the glass is intact. We need to distinguish
-			# between "secure due to light" and "secure due to barricade".
-			# Check the room_light directly.
-			if "room_light" in w and w.room_light and w.room_light.is_switched_on:
-				continue  # Skip — room light is on, Entity avoids this window
+		# ─── LIGHT SANCTUARY FILTER ──────────────────────────────────
+		if "room_light" in w and w.room_light and w.room_light.is_switched_on:
+			continue
 		
-		# ─── NIGHT 2 BOARDED WINDOW FILTER ──────────────────────────────
-		# On Night 2, skip boarded windows. The Entity can only approach
-		# unboarded (glass-only) windows on Night 2.
+		# ─── NIGHT 2 BOARDED WINDOW FILTER ──────────────────────────
 		if current_night == 2 and w.has_method("is_barricaded") and w.is_barricaded():
-			continue  # Skip — boarded windows are immune on Night 2
+			continue
 		
-		# ─── BREACH COOLDOWN FILTER ──────────────────────────────────────
-		# Skip windows that are on breach cooldown. The Entity recently
-		# breached this window and must wait 60 seconds before approaching
-		# it again. This prevents the "re-breach the same window" loop.
+		# ─── BREACH COOLDOWN FILTER ──────────────────────────────────
 		var cabin_window = w.get_parent() as CabinWindow
 		if cabin_window and cabin_window.has_method("get_window_id"):
 			var window_id = cabin_window.get_window_id()
 			if _breach_cooldowns.has(window_id) and _breach_cooldowns[window_id] > 0.0:
-				continue  # Skip — window is on breach cooldown
+				continue
 		
-		# ─── ALREADY BREACHED PENALTY ────────────────────────────────────
-		# If the window's glass is already shattered, apply a massive utility
-		# score penalty so the Entity prefers to breach *other* windows first.
-		# This prevents the Entity from re-breaching the same window repeatedly.
-		# The penalty is applied as a distance offset: we artificially inflate
-		# the distance to this window, making it appear farther away than it
-		# actually is. This causes the utility scorer to rank it lower.
-		var dist_to_player: float = w.global_position.distance_to(player.global_position)
-		if cabin_window and cabin_window.is_glass_shattered:
-			# Apply the already-breached penalty by inflating the distance.
-			# The window is still selectable (not filtered out entirely), but
-			# it will rank much lower than unbreached windows. This ensures
-			# the Entity only re-breaches a window if ALL other windows are
-			# also already breached or on cooldown.
-			dist_to_player += ALREADY_BREACHED_PENALTY
+		# ─── DETERMINE WHICH ROOM THIS WINDOW BELONGS TO ─────────────
+		# Use RoomLightDetector to resolve the window's position to a room name.
+		# This tells us which room the window is in, so we can apply the
+		# "avoid last_heard_room" rule.
+		var window_room: String = RoomLightDetector.get_room_name_at(w.global_position)
 		
-		if dist_to_player <= 15.0:
-			nearby_windows.append(w)
-
+		# ─── CHECK IF THE WINDOW'S ROOM IS LIT ──────────────────────
+		# Use RoomLightDetector to check if the room this window belongs to
+		# is currently lit. Unlit rooms are preferred — the Entity can approach
+		# through darkness without being seen.
+		var is_room_lit: bool = RoomLightDetector.is_position_in_lit_room(w.global_position)
+		
+		# ─── CALCULATE DISTANCE FROM LAST HEARD POSITION ────────────
+		# If we have a last_heard_exact_position, calculate the 2D distance
+		# from that position to this window. The Entity prefers windows that
+		# are FAR from where the player was last heard (flanking behavior).
+		var dist_from_last_heard: float = INF
+		if last_heard_pos != Vector3.ZERO:
+			dist_from_last_heard = Vector2(
+				w.global_position.x - last_heard_pos.x,
+				w.global_position.z - last_heard_pos.z
+			).length()
+		
+		# ─── STORE CANDIDATE ─────────────────────────────────────────
+		candidates.append({
+			"marker": w,
+			"window_room": window_room,
+			"is_room_lit": is_room_lit,
+			"dist_from_last_heard": dist_from_last_heard,
+			"is_last_heard_room": (window_room == last_heard_room and last_heard_room != "")
+		})
 	
-	# If we found nearby windows, pick one at random (tactical flanking)
+	# ─── ADD THE FRONT DOOR AS A CANDIDATE ──────────────────────────────
+	# The front door is treated as an entry point alongside windows.
+	# It gets a bonus score (preferred over windows) because it's the most
+	# direct entry point. The door is excluded if:
+	#   1. It's locked (door.is_locked == true) — the Entity can't enter
+	#   2. The door approach cooldown is active (entity._door_approach_cooldown > 0.0)
+	#      — the Entity recently tried the door and found it locked
+	#
+	# The door is added as a candidate with special metadata:
+	#   - "is_door": true (distinguishes it from window candidates)
+	#   - "dist_from_last_heard": INF (the door has no room association,
+	#     so it's always treated as "furthest from last heard position")
+	#   - "is_last_heard_room": false (the door is not a room)
+	#   - "is_room_lit": false (the door is not a room, so it's never "lit")
+	var door = get_tree().get_first_node_in_group("Door")
+	if door and door.has_method("is_in_group"):
+		var door_locked: bool = door.is_locked if "is_locked" in door else false
+		var door_cooldown: float = entity._door_approach_cooldown if "_door_approach_cooldown" in entity else 0.0
+		
+		if not door_locked and door_cooldown <= 0.0:
+			# Find the EntityDoorWaypoint marker for pathfinding
+			var door_wp: Node3D = null
+			var waypoints = get_tree().get_nodes_in_group("EntityWaypoints")
+			for wp in waypoints:
+				if wp.name == "EntityDoorWaypoint":
+					door_wp = wp
+					break
+			
+			if door_wp:
+				candidates.append({
+					"marker": door_wp,
+					"is_door": true,
+					"window_room": "Outside",
+					"is_room_lit": false,
+					"dist_from_last_heard": INF,
+					"is_last_heard_room": false
+				})
+				print("[Navigation] Door added as approach candidate (unlocked, cooldown=%.1f)." % door_cooldown)
+	
+	if candidates.is_empty():
+		return null
+	
+	# ─── STEP 1: FILTER OUT LAST_HEARD_ROOM WINDOWS ────────────────────
+
+	# Remove any windows that belong to the room the Entity last heard the
+	# player in. The Entity avoids approaching the same room — the player
+	# is likely watching that window. If ALL windows are in the last_heard_room
+	# (or last_heard_room is empty), keep all candidates.
+	var filtered: Array[Dictionary] = []
+	for c in candidates:
+		if not c["is_last_heard_room"]:
+			filtered.append(c)
+	
+	# If filtering removed everything, fall back to all candidates
+	if filtered.is_empty():
+		filtered = candidates
+	
+	# ─── STEP 2: PREFER UNLIT ROOMS ────────────────────────────────────
+	# Separate candidates into unlit (preferred) and lit (fallback).
+	var unlit_candidates: Array[Dictionary] = []
+	var lit_candidates: Array[Dictionary] = []
+	for c in filtered:
+		if not c["is_room_lit"]:
+			unlit_candidates.append(c)
+		else:
+			lit_candidates.append(c)
+	
+	# ─── STEP 3: PICK THE FURTHEST FROM LAST HEARD POSITION ────────────
+	# From the preferred group (unlit rooms), pick the window furthest from
+	# the last_heard_exact_position. This creates a flanking behavior where
+	# the Entity approaches from the opposite side of the cabin.
+	# If no unlit candidates exist, fall back to lit candidates.
+	var best_candidate: Dictionary = {}
+	var best_dist: float = -INF
+	
+	var pool = unlit_candidates if not unlit_candidates.is_empty() else lit_candidates
+	
+	for c in pool:
+		var d = c["dist_from_last_heard"]
+		if d > best_dist:
+			best_dist = d
+			best_candidate = c
+	
+	if best_candidate.is_empty():
+		# Absolute fallback: pick the first candidate
+		best_candidate = filtered[0]
+	
 	# CRITICAL: Return the PARENT node (CabinWindow), not the Marker3D itself.
-	# The Marker3D only has position data — it does NOT have the cabin_window.gd
-	# script attached. All method calls (damage_barricade(), shatter_window(),
-	# get_indoor_landing_position(), is_boarded, etc.) are on the CabinWindow
-	# parent node. Returning the Marker3D would cause silent failures when the
-	# AI tries to call these methods.
-	if not nearby_windows.is_empty():
-		var selected_marker = nearby_windows.pick_random()
+	var selected_marker: Node3D = best_candidate["marker"] as Node3D
+	if selected_marker:
 		return selected_marker.get_parent() as Node3D
 	
-	# Fallback: return the absolute closest window to the Entity (with same filters)
-	# Uses 2D distance (XZ plane) to ignore vertical height differences between
-	# the Entity (ground level, Y ≈ 0.0) and the window marker (Y ≈ 3.0m for
-	# second-story windows). This ensures the fallback correctly identifies the
-	# closest ground-floor window even if the Entity is on uneven terrain.
-	# CRITICAL: Returns the PARENT node (CabinWindow), not the Marker3D itself.
-	var closest: Node3D = null
-	var closest_dist: float = INF
-	var entity_pos_2d = Vector2(entity.global_position.x, entity.global_position.z)
-	for w in _window_markers:
-		# Apply same filters to fallback selection
-		if not w.get_parent().is_in_group("BottomFloorWindows"):
-			continue  # Skip non-ground-floor windows
-		if "room_light" in w and w.room_light and w.room_light.is_switched_on:
-			continue
-		if current_night == 2 and w.has_method("is_barricaded") and w.is_barricaded():
-			continue
-		
-		# ─── BREACH COOLDOWN FILTER (fallback) ──────────────────────────
-		var cabin_window_fb = w.get_parent() as CabinWindow
-		if cabin_window_fb and cabin_window_fb.has_method("get_window_id"):
-			var window_id_fb = cabin_window_fb.get_window_id()
-			if _breach_cooldowns.has(window_id_fb) and _breach_cooldowns[window_id_fb] > 0.0:
-				continue  # Skip — window is on breach cooldown
-		
-		var w_pos_2d = Vector2(w.global_position.x, w.global_position.z)
-		var d: float = entity_pos_2d.distance_to(w_pos_2d)
-		
-		# ─── ALREADY BREACHED PENALTY (fallback) ────────────────────────
-		if cabin_window_fb and cabin_window_fb.is_glass_shattered:
-			d += ALREADY_BREACHED_PENALTY
-		
-		if d < closest_dist:
-			closest_dist = d
-			closest = w
-	if closest:
-		return closest.get_parent() as Node3D
 	return null
 
 
@@ -746,5 +822,3 @@ func pick_next_vantage_point() -> void:
 	entity.set_last_vantage_point(best_marker)
 	entity.get_nav_agent().target_position = best_marker.global_position
 	entity.set_at_vantage_point(false)
-
-

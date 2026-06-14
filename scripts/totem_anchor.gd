@@ -3,9 +3,9 @@ class_name TotemAnchor
 
 ## TotemAnchor — The anchoring totem that binds the Entity to the cabin.
 ##
-## This is the endgame objective: the player must destroy the totem while the
-## Entity is stunned by the porch light overload trap. Destroying the totem
-## advances the RoutineManager step, which unlocks the escape van.
+## This is the endgame objective: the player must destroy the totem to banish
+## the Entity. Destroying the totem advances the RoutineManager step, which
+## unlocks the escape van.
 ##
 ## INTERACTION (HOLD-TO-PURGE):
 ## The totem uses the standard interaction system (has_method("interact") and
@@ -14,10 +14,13 @@ class_name TotemAnchor
 ## total_purge_time_required seconds to complete the destruction. Releasing
 ## the key early resets progress to zero.
 ##
-## STUN GUARD:
-## The totem can ONLY be interacted with while the Entity is in the STUNNED
-## state. If the player tries to destroy it while the Entity is active, the
-## interaction is rejected with a HUD message.
+## RACE MECHANIC:
+## The totem is ALWAYS interactable — there is no stun gate. However, the
+## Entity will kill the player if it catches them mid-purge. Stunning the
+## Entity (via the porch light overload trap) gives the player a safe window
+## to reach the totem and begin the purge. If the Entity recovers while the
+## player is still purging, the Entity becomes ENRAGED and the player must
+## decide whether to finish the purge or flee.
 ##
 ## VISUAL FEEDBACK:
 ## While purging, a progress bar is displayed on the HUD. When complete, the
@@ -42,7 +45,8 @@ var purge_progress: float = 0.0
 ## Set to false when the purge completes or the player releases the key.
 var is_being_purged: bool = false
 
-## Reference to the Entity controller for checking STUNNED state.
+## Reference to the Entity controller (optional — used for future
+## tension-based features like proximity detection during purge).
 var _entity: Node = null
 
 ## Audio player for the destruction sound effect.
@@ -113,41 +117,24 @@ func get_interact_text() -> String:
 
 
 ## Called by the InteractionManager when the player presses 'E' while looking
-## at this totem. Only allows interaction if:
-##   1. The totem has not already been purged
-##   2. The Entity is currently in the STUNNED state (overload trap active)
+## at this totem. The totem is ALWAYS interactable — there is no stun gate.
+## The player can begin the hold-to-purge at any time, but the Entity will
+## kill them if it catches them mid-purge.
 ##
-## If the Entity is not stunned, the player is shown a HUD message explaining
-## that the totem is protected by the Entity's presence.
+## Stunning the Entity (via the porch light overload trap) gives the player
+## a safe window to reach the totem and begin the purge without being
+## interrupted. If the Entity recovers mid-purge, the player must decide
+## whether to finish or flee.
 ##
-## If the Entity IS stunned, the purge begins. The player must HOLD the
-## interact key for total_purge_time_required seconds. The _process(delta)
-## loop handles the hold-to-purge accumulation, early-release reset, and
-## completion trigger.
+## The _process(delta) loop handles the hold-to-purge accumulation,
+## early-release reset, and completion trigger.
 func interact(player: Node3D = null) -> void:
 	if is_purged or is_being_purged:
 		return
 	
-	# STUN GUARD: Check if the Entity is currently stunned
-	var entity_stunned: bool = false
-	if _entity and _entity.has_method("get_state"):
-		# Use the State enum value — STUNNED = 13 (index in the enum)
-		var state_value = _entity._state
-		entity_stunned = (state_value == 13)  # State.STUNNED
-	elif _entity:
-		# Fallback: check if the Entity has a _stun_timer > 0
-		if "_stun_timer" in _entity:
-			entity_stunned = _entity._stun_timer > 0.0
-	
-	if not entity_stunned:
-		# Reject interaction — the Entity's presence protects the totem
-		_show_hud_message("The totem is protected by the Entity's presence... I must find a way to paralyze it first.")
-		print("[TotemAnchor] Interaction rejected — Entity is not stunned.")
-		return
-	
 	# ─── BEGIN PURGE SEQUENCE ───────────────────────────────────────
-	# The Entity is stunned — the player can begin the hold-to-purge.
-	# Reset progress and flip the flag so _process(delta) takes over.
+	# The totem is always interactable. Reset progress and flip the flag
+	# so _process(delta) takes over the hold-to-purge accumulation.
 	purge_progress = 0.0
 	is_being_purged = true
 	

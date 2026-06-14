@@ -107,6 +107,10 @@ func _on_camera_switched() -> void:
 ##   - Player flashlight ON → full range (30m) — they're a beacon in the dark
 ##   - Player is in a lit room (room lights on) → moderate range (15m)
 ##   - Dark environment + flashlight OFF → severely reduced range (4m)
+##   - Entity is in OBSERVE_FROM_TREELINE or WINDOW_PEEK → extended range (35m)
+##     The Entity has a clear, unobstructed view of the cabin from the treeline
+##     or through a window. The 4m dark range is for ground-level patrol, not
+##     for when the Entity is specifically positioned to observe the cabin.
 func _calculate_vision_range() -> float:
 	var player = entity.get_player()
 	if not player or not is_instance_valid(player):
@@ -115,6 +119,21 @@ func _calculate_vision_range() -> float:
 	# If the player's flashlight is ON, they are instantly visible at max range
 	if player.has_method("is_flashlight_on") and player.is_flashlight_on():
 		return VISION_RANGE_FLASHLIGHT_ON
+	
+	# ─── STATE-BASED VISION EXTENSION ──────────────────────────────────
+	# When the Entity is in OBSERVE_FROM_TREELINE or WINDOW_PEEK, it has
+	# a clear, unobstructed view of the cabin. The Entity is specifically
+	# positioned to observe the cabin from the treeline or through a window.
+	# In these states, the Entity can see much further than ground-level patrol.
+	#
+	# This fixes the "blind Entity" bug where the Entity couldn't see the
+	# player through windows because the vision range was capped at 4m (dark)
+	# or 15m (lit environment). The Entity needs at least 35m to see from
+	# the treeline vantage points to the cabin windows.
+	var entity_state = entity.get_state()
+	var is_observing = (entity_state == 1 or entity_state == 3)  # OBSERVE_FROM_TREELINE=1, WINDOW_PEEK=3
+	if is_observing:
+		return 35.0  # Extended range for treeline/window observation
 	
 	# Check if the Entity is in a lit environment using RoomLightDetector
 	# If the Entity is in a lit room, it can see moderately well
@@ -214,6 +233,25 @@ func can_entity_see_player() -> bool:
 		entity.set_last_known_position(player.global_position)
 		entity.set_is_hunting(true)
 		entity.set_current_interest_level(100.0)
+		
+		# ─── BELIEF SYSTEM: Sight-Based Player Location Deduction ──────
+		# If the Entity sees the player indoors, reset the miss counter
+		# (the player is confirmed inside). If the Entity sees the player
+		# outdoors, immediately update the belief that the player escaped.
+		var is_player_inside = RoomLightDetector.is_position_in_lit_room(player.global_position) or \
+			RoomLightDetector.get_room_name_at(player.global_position) != "Outside"
+		if is_player_inside:
+			entity.reset_consecutive_vantage_misses()
+		else:
+			entity.set_thinks_player_is_inside(false)
+			# ─── RESET MISS COUNTER ON OUTDOOR SIGHT ─────────────────────
+			# When the Entity visually confirms the player is outside, reset
+			# the consecutive miss counter to prevent stale misses from
+			# accumulating. Without this, if the Entity had 2 misses before
+			# spotting the player outside, those misses would persist and
+			# the next vantage point cycle would trigger the 3-miss impatience
+			# boost even though the Entity already knows the player escaped.
+			entity.reset_consecutive_vantage_misses()
 		
 		# ─── TRIGGER VISION COOLDOWN ─────────────────────────────────────
 		# After a successful sighting, trigger the 1-second "blink" so the

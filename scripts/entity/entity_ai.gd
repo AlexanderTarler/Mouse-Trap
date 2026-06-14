@@ -84,9 +84,11 @@ class_name EntityAI
 @export var flinch_sprint_multiplier: float = 1.5
 
 ## Flinch duration (in seconds) — how long the lateral sprint lasts.
-## Randomized between 3.0 and 5.0 seconds for all flinch scenarios
-## (both outdoor window defense and indoor retreat escapes).
-@export var flinch_duration: float = 1.5
+## NOTE: This export is overridden at runtime by entity_controller.gd's
+## _start_flinch() which uses randf_range(3.0, 5.0). This export is kept
+## as a tuning reference but the actual duration is randomized 3-5 seconds
+## for all flinch scenarios (both outdoor window defense and indoor retreat).
+@export var flinch_duration: float = 4.0
 
 ## Flinch distance (in meters) — how far the Entity sprints laterally.
 @export var flinch_distance: float = 8.0
@@ -167,7 +169,8 @@ class_name EntityAI
 
 enum State {
 	DORMANT,
-	OBSERVE_FROM_TREELINE,  # Night 1 & 2 (Passive Voyeurism)
+	OBSERVE_FROM_TREELINE,  # Night 1 & 2 (Passive Voyeurism) — DEFAULT BASELINE
+	SEARCH,                 # Player believed outside — actively searching for them
 	RETREAT,                # Indoor escape only — Entity flees through nearest broken/unboarded window
 	APPROACH_WINDOW,        # Night 3+ (Moving to glass)
 	WINDOW_PEEK,            # Night 2+ (Staring inside)
@@ -183,6 +186,7 @@ enum State {
 	ATTACK_LAMP,            # Entity is physically approaching and striking the portable high-voltage lamp
 	HARASS,                 # Entity stands at a window performing psychological harassment (breathing, tapping, rattling)
 	FUSE_SABOTAGE,          # Entity is physically approaching and striking the Fuse Box to break it
+	ENTER_THROUGH_DOOR,     # Entity walks to the front door, opens it, and enters the cabin
 }
 
 var entity: CharacterBody3D = null
@@ -211,6 +215,19 @@ var _has_arrived_indoor: bool = false
 ## creating a seamless visual effect of the Entity climbing through the
 ## window frame.
 var _enter_window_anim_timer: float = 0.0
+
+## Timer for the Door Phase A cinematic breach interpolation.
+## Counts down from (distance / speed) to 0.0 while the Entity smoothly
+## moves toward the IndoorBreachWaypoint. When it reaches 0.0, the Entity
+## snaps to the waypoint and transitions to Phase B (indoor patrol).
+## This bypasses physics/navmesh snags on the porch stairs by manually
+## interpolating the Entity's position.
+var _indoor_breach_timer: float = 0.0
+
+## The world-space landing position for the Door Phase A cinematic breach.
+## Set to the IndoorBreachWaypoint's global_position when the door entry
+## begins. The Entity interpolates toward this position each frame.
+var _landing_position: Vector3 = Vector3.ZERO
 
 ## Duration of the EnterWindow vault animation in seconds.
 ## The animation is ~1.5 seconds long. The Entity must play this animation
@@ -297,6 +314,12 @@ var _siege_duration_timer: float = 0.0
 ## Incremented each frame in _window_peek_state(). Used to throttle debug
 ## prints to every 30 frames (0.5s at 60fps) to avoid console flooding.
 var _window_peek_debug_counter: int = 0
+
+## Whether the peek assessment has been performed for the current WINDOW_PEEK
+## session. Set to true after the first assessment decision (opportunity breach
+## or abort). Prevents re-evaluation on subsequent frames, ensuring the Entity
+## commits to its choice rather than oscillating between decisions.
+var _peek_assessment_done: bool = false
 
 ## One-shot guard flag for the STANDOFF → RETREAT confidence gate.
 ## Set to true when the AI forces RETREAT due to low confidence (< 40).
@@ -532,6 +555,14 @@ func process_state_logic(delta: float) -> void:
 			_calculated_velocity = Vector3.ZERO
 		State.OBSERVE_FROM_TREELINE:
 			_observe_from_treeline_state(delta)
+		State.SEARCH:
+			# ─── OUTDOOR SEARCH ──────────────────────────────────────────
+			# The Entity believes the player is outside (thinks_player_is_inside=false)
+			# but cannot see them. It checks its sensory module for a last_heard_position.
+			# If a position exists, it pathfinds to it. If no position exists, it waits
+			# for a random interval (2-3s) before transitioning to OBSERVE_FROM_TREELINE
+			# to "reset" its view.
+			_search_state(delta)
 		State.RETREAT:
 			_retreat_state(delta)
 		State.APPROACH_WINDOW:
@@ -723,6 +754,39 @@ func _manage_spatial_voice(delta: float) -> void:
 
 
 # ---------------------------------------------------------------------------
+# STATE: SEARCH — Outdoor search when player is believed outside
+# ---------------------------------------------------------------------------
+## The Entity believes the player has escaped (thinks_player_is_inside=false)
+## but cannot see them. It checks its sensory module for a last_heard_position.
+## If a position exists, it pathfinds to it. If no position exists, it waits
+## for a random interval (2-3s) before transitioning to OBSERVE_FROM_TREELINE
+## to "reset" its view.
+##
+## This is the "blind search" state — the Entity knows the player escaped but
+## doesn't know where they went. It searches the last known location, then
+## gives up and returns to treeline observation.
+var _search_wait_timer: float = 0.0
+var _search_waiting: bool = false
+
+func _search_state(delta: float) -> void:
+	# ─── SEARCH STATE REMOVED ───────────────────────────────────────────
+	# The SEARCH state has been removed. When the Entity believes the player
+	# has escaped (thinks_player_is_inside=false), the Director now waits
+	# 5-10 seconds (outside confirmation timer) and then transitions directly
+	# to STALK. The Entity pathfinds toward the player's last known position
+	# and pursues them through the forest.
+	#
+	# This function is kept as a stub to prevent runtime errors if the
+	# Director somehow transitions to SEARCH. It immediately signals
+	# completion to return to OBSERVE_FROM_TREELINE.
+	entity.is_observe_finished = true
+	entity.state_locked = false
+	_calculated_velocity = Vector3.ZERO
+	print("[SEARCH] SEARCH state is deprecated. Returning to OBSERVE_FROM_TREELINE.")
+	return
+
+
+# ---------------------------------------------------------------------------
 # STATE: OBSERVE_FROM_TREELINE
 # ---------------------------------------------------------------------------
 
@@ -872,6 +936,26 @@ func _observe_from_treeline_state(delta: float) -> void:
 			_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
 			_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
 		return
+	else:
+		# ─── FIRST ENTRY: No nav target set ──────────────────────────────
+		# When the Entity first enters OBSERVE_FROM_TREELINE (e.g., from DORMANT
+		# at game start), the NavigationAgent3D has no target set. The Director
+		# only calls fade_and_relocate() when is_observe_finished is true, which
+		# is false on the first entry. Without a nav target, is_navigation_finished()
+		# returns true immediately, and the Entity enters the "ARRIVED" block below.
+		# But the stare timer is 0.0 (not >= 9990.0), so the "ARRIVED AT VANTAGE
+		# POINT" block never triggers. The Entity just sits there with zero velocity.
+		#
+		# FIX: If navigation is finished AND the stare timer is NOT in the 9990
+		# range (meaning we haven't just arrived), AND we haven't set a relocate
+		# target yet, call pick_next_vantage_point() to set an initial target.
+		if entity.get_stare_timer() < 9990.0 and not entity.get_relocate_target_set():
+			var nav = entity.get_navigation_module()
+			if nav and nav.has_method("pick_next_vantage_point"):
+				nav.pick_next_vantage_point()
+				entity.set_stare_timer(9999.0)  # Mark as "just arrived" so the timer init block fires
+				print("[Entity AI] OBSERVE: First entry detected. Picked initial vantage point.")
+				return
 	
 	# --- ARRIVED AT VANTAGE POINT ---
 	if entity.get_stare_timer() >= 9990.0:
@@ -925,6 +1009,76 @@ func _observe_from_treeline_state(delta: float) -> void:
 	
 	entity.set_stare_timer(entity.get_stare_timer() - delta)
 	if entity.get_stare_timer() <= 0.0:
+		# ─── 3-WAYPOINT MISS RULE: Impatience Mechanic ─────────────────
+		# The Entity finished observing at a vantage point without spotting
+		# the player. Increment the consecutive miss counter. If it reaches
+		# 3, the Entity gets IMPATIENT — it boosts its confidence to force
+		# a window approach rather than deducing the player escaped.
+		#
+		# DESIGN INTENT:
+		#   The old logic set thinks_player_is_inside=false after 3 misses,
+		#   which caused the Director to transition into STALK (outdoor
+		#   pursuit) even though the Entity hadn't visually confirmed the
+		#   player was outside. This was unfair — the Entity could "blindly"
+		#   deduce the player escaped just from staring at the cabin.
+		#
+		#   NEW LOGIC: After 3 misses, the Entity gets impatient and boosts
+		#   confidence by 30 points. This forces the confidence escalation
+		#   system (Tier 4) to trigger APPROACH_WINDOW, making the Entity
+		#   physically approach the cabin and peek through windows. The
+		#   Entity still BELIEVES the player is inside — it just can't see
+		#   them and is getting frustrated.
+		#
+		#   The Entity can ONLY conclude the player escaped if:
+		#     1. It hears a noise OUTSIDE (hear_noise() with "Outside" room)
+		#     2. It SEES the player outside (can_entity_see_player() with
+		#        outdoor room detection)
+		entity.increment_consecutive_vantage_misses()
+		var misses = entity.get_consecutive_vantage_misses()
+		if misses >= 3:
+			# ─── IMPATIENCE CONFIDENCE BOOST ──────────────────────────
+			# Boost confidence by 30 points to force a window approach.
+			# The Entity is getting impatient — it can't see the player
+			# but still believes they're inside. This makes the Entity
+			# physically approach the cabin and peek through windows.
+			var confidence_module = entity.get_confidence_module()
+			if confidence_module:
+				var current_conf = confidence_module.get_confidence()
+				var new_conf = minf(100.0, current_conf + 30.0)
+				confidence_module.set_confidence(new_conf)
+				print("[Entity AI] 3-WAYPOINT MISS RULE: %d consecutive misses! Impatience boost! Confidence: %.1f → %.1f" % [misses, current_conf, new_conf])
+			
+			# ─── CONSUME THE MISSES ─────────────────────────────────────
+			# Reset the consecutive miss counter after the confidence boost
+			# is applied. This prevents the boost from being applied again
+			# on the next frame (the stare timer would still be <= 0.0).
+			entity.reset_consecutive_vantage_misses()
+		else:
+			print("[Entity AI] Vantage miss %d/3. Player still believed inside." % misses)
+		
+		# ─── RESET THE STARE TIMER ──────────────────────────────────────
+		# CRITICAL: Reset the stare timer to a new random value so it does
+		# NOT fire again on the next frame. Without this, the timer stays
+		# at <= 0.0 and the block above fires every frame, incrementing
+		# misses 60 times per second instead of once per vantage point.
+		# This was the root cause of the "instant 3-miss" bug.
+		var conf = entity.get_confidence_module().get_confidence()
+		var wait_time: float
+		if conf >= confidence_approach_threshold:
+			wait_time = randf_range(observe_wait_high_min, observe_wait_high_max)
+		else:
+			wait_time = randf_range(observe_wait_low_min, observe_wait_low_max)
+		entity.set_stare_timer(wait_time)
+		
+		# ─── RESET RELOCATE TARGET FLAG ─────────────────────────────────
+		# CRITICAL: Reset the _relocate_target_set flag so the Entity knows
+		# it needs to pick a NEW tree on the next cycle. Without this, the
+		# Entity would arrive at the first tree, the Director would consume
+		# is_observe_finished and call fade_and_relocate(), but the Entity
+		# wouldn't know it needs to move — it would stay at the same tree
+		# forever, creating the "paralysis at first tree" bug.
+		entity.set_relocate_target_set(false)
+		
 		# ─── SIGNAL COMPLETION TO THE DIRECTOR ──────────────────────────
 		# Instead of calling fade_and_relocate() directly (which would
 		# bypass the Director and call request_state()), we set a Blackboard
@@ -1220,7 +1374,111 @@ func _charge_state(delta: float) -> void:
 			_calculated_velocity.z = move_dir_2d.y * charge_speed
 
 
+# ---------------------------------------------------------------------------
+# STATE: ENTER_THROUGH_DOOR — Walk to the front door, open it, and enter the cabin
+# ---------------------------------------------------------------------------
+## The Entity pathfinds to the EntityDoorWaypoint marker, opens the door if
+## closed, checks if the HallRoom light ("CabinLightHall") is on, and if so,
+## pauses 2 seconds before turning it off. Then it signals completion to the
+## Director, which transitions to INDOOR_SEARCH.
+##
+## PHASES:
+##   1. Pathfind to EntityDoorWaypoint
+##   2. Arrive at door → open if closed
+##   3. Check HallRoom light → if on, pause 2s then toggle off
+##   4. Signal completion (is_approach_finished = true)
+var _hall_light_pending_toggle: bool = false
+
+func _enter_through_door_state(delta: float) -> void:
+	# ─── HANDLE HALLROOM LIGHT TOGGLE DELAY ──────────────────────────
+	# If we're waiting for the 2-second pause before toggling the light,
+	# check if the timer has expired.
+	if _hall_light_pending_toggle:
+		if entity.get_state_timer() <= 0.0:
+			_hall_light_pending_toggle = false
+			var hall_light = _find_hall_light()
+			if hall_light and hall_light.has_method("toggle_light"):
+				hall_light.toggle_light()
+				print("[ENTER_THROUGH_DOOR] HallRoom light toggled OFF after 2s pause.")
+			entity.is_approach_finished = true
+			_calculated_velocity = Vector3.ZERO
+			return
+		else:
+			# Still waiting — freeze and count down
+			_calculated_velocity = Vector3.ZERO
+			return
+	
+	# ─── PHASE 1: Find the EntityDoorWaypoint ─────────────────────────
+	var waypoints = get_tree().get_nodes_in_group("EntityWaypoints")
+	var door_wp: Node3D = null
+	for wp in waypoints:
+		if wp.name == "EntityDoorWaypoint":
+			door_wp = wp
+			break
+	
+	if not door_wp:
+		# Fallback: no waypoint found, just go to INDOOR_SEARCH
+		print("[ENTER_THROUGH_DOOR] No EntityDoorWaypoint found. Signaling completion.")
+		entity.is_approach_finished = true
+		_calculated_velocity = Vector3.ZERO
+		return
+	
+	# ─── PHASE 2: Pathfinding toward the door waypoint ────────────────
+	_path_timer -= delta
+	if _path_timer <= 0.0:
+		_path_timer = PATH_UPDATE_INTERVAL
+		entity.get_nav_agent().target_position = door_wp.global_position
+	
+	var dist_to_wp = entity.global_position.distance_to(door_wp.global_position)
+	
+	# ─── PHASE 3: Arrived at door ─────────────────────────────────────
+	if dist_to_wp <= 2.5:
+		# 3a. Open the door if it's closed
+		var door = get_tree().get_first_node_in_group("Door")
+		if door and door.has_method("interact") and not door.is_open:
+			door.interact()
+			print("[ENTER_THROUGH_DOOR] Door was closed. Opened it.")
+		
+		# 3b. Check HallRoom light ("CabinLightHall")
+		var hall_light = _find_hall_light()
+		if hall_light and hall_light.is_switched_on and hall_light.is_generator_running():
+			# Light is on — pause 2 seconds, then toggle it off
+			entity.set_state_timer(2.0)
+			_hall_light_pending_toggle = true
+			_calculated_velocity = Vector3.ZERO
+			print("[ENTER_THROUGH_DOOR] HallRoom light is ON. Pausing 2s before toggling off.")
+			return
+		
+		# 3c. No light to toggle — enter immediately
+		entity.is_approach_finished = true
+		_calculated_velocity = Vector3.ZERO
+		print("[ENTER_THROUGH_DOOR] Arrived at door. Signaling completion (no light to toggle).")
+		return
+	
+	# ─── PHASE 4: Movement toward waypoint ────────────────────────────
+	if entity.get_nav_agent().is_navigation_finished():
+		_calculated_velocity = Vector3.ZERO
+	else:
+		var next_pos = entity.get_nav_agent().get_next_path_position()
+		var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
+		if dir_2d.length() > 0.01:
+			var move_dir_2d = dir_2d.normalized()
+			_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
+			_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
+
+
+## Finds the HallRoom cabin light ("CabinLightHall") in the scene.
+## Returns the CabinLight node, or null if not found.
+func _find_hall_light() -> Node:
+	var lights = get_tree().get_nodes_in_group("CabinLights")
+	for light in lights:
+		if "light_name" in light and light.light_name == "CabinLightHall":
+			return light
+	return null
+
+
 # ─── NIGHT RULES EVALUATION ──────────────────────────────────────────────────
+
 ## Evaluates night-specific infiltration capabilities and enforces
 ## night-based state restrictions. Called every decision cycle BEFORE
 ## the state dispatcher so that night rules can override state transitions.
@@ -1581,7 +1839,7 @@ func _approach_window_state(delta: float) -> void:
 				Vector2(entity_pos.x, entity_pos.z).distance_to(Vector2(nav_target.x, nav_target.z))
 			])
 		
-		# ─── 2D DISTANCE CHECK: Ignore vertical height differences ──────
+			# ─── 2D DISTANCE CHECK: Ignore vertical height differences ──────
 		# The NavMesh is at ground level (Y ≈ 0.0). The window target may be
 		# at Y ≈ 3.0m (second story). Using 3D distance would include the
 		# vertical component, making the Entity think it's farther away than
@@ -1607,16 +1865,207 @@ func _approach_window_state(delta: float) -> void:
 		# enough to peek inside. We rely solely on the 2D distance check.
 		var nav_finished = entity.get_nav_agent().is_navigation_finished()
 		if dist_2d <= approach_arrival_distance and _approach_min_timer >= approach_min_duration:
-			# Arrived at window — signal completion to the Director
-			# via the Blackboard completion flag. The Director will
-			# transition to WINDOW_PEEK (Tier 3).
-			print("[Entity AI] APPROACH_WINDOW: Arrived at window! dist_2d=%.2f, min_timer=%.2f. Setting is_approach_finished=true" % [dist_2d, _approach_min_timer])
-			entity.is_approach_finished = true
-			entity.state_locked = false  # Unlock — Director can now transition
-			_approach_min_timer = 0.0
-			_approach_failsafe_timer = 0.0
-			_calculated_velocity = Vector3.ZERO
-			return
+			# ─── DETECT IF TARGET IS A DOOR ──────────────────────────────
+			# Check if the current window target is actually the front door.
+			# The door is identified by checking if the target is a Door node
+			# (has "is_open" property) or if the target's parent is a Door.
+			# If it's a door, we handle door-specific arrival logic instead of
+			# the standard window arrival (which transitions to WINDOW_PEEK).
+			var is_door_target: bool = false
+			print("[DOOR DEBUG] Checking if target is door. window_target.name='%s', window_target.class='%s'" % [window_target.name, window_target.get_class()])
+			if window_target.has_method("is_in_group") and window_target.is_in_group("Door"):
+				is_door_target = true
+				print("[DOOR DEBUG] Target IS in Door group.")
+			elif window_target.get_parent() and window_target.get_parent().has_method("is_in_group") and window_target.get_parent().is_in_group("Door"):
+				is_door_target = true
+				print("[DOOR DEBUG] Target's parent IS in Door group. Parent name='%s'" % window_target.get_parent().name)
+			elif "is_open" in window_target:
+				is_door_target = true
+				print("[DOOR DEBUG] Target has 'is_open' property.")
+			elif "name" in window_target and window_target.name == "EntityDoorWaypoint":
+				is_door_target = true
+				print("[DOOR DEBUG] Target name IS EntityDoorWaypoint.")
+			else:
+				print("[DOOR DEBUG] Target is NOT a door. Checking parent... parent=%s" % [window_target.get_parent().name if window_target.get_parent() else "null"])
+			
+			if is_door_target:
+				# ─── SET DOOR TARGET FLAG ──────────────────────────────────
+				# Set the Blackboard flag so the Director knows this was a door
+				# approach (not a window approach). The Director reads this flag
+				# in Tier 5 to determine the correct transition:
+				#   - Window approach → WINDOW_PEEK
+				#   - Door approach (unlocked) → INDOOR_SEARCH
+				#   - Door approach (locked) → OBSERVE
+				entity.is_door_target = true
+				
+				# ─── DOOR ARRIVAL (Multi-Phase) ───────────────────────────
+				# The Entity has arrived at the door. Handle door-specific logic
+				# with a multi-phase sequence:
+				#
+				#   Phase 0: Not started (standard approach pathfinding)
+				#   Phase 1: Arrived at door — handle door state:
+				#     - Locked:   Pause 2 seconds, then return to OBSERVE
+				#     - Closed:   Pause 2 seconds, open door, advance to Phase 2
+				#     - Open:     Skip pause, advance to Phase 2
+				#   Phase 2: Walk through doorway to interior waypoint
+				#   Phase 3: Arrived inside — signal completion → INDOOR_SEARCH
+				#
+				print("[Entity AI] APPROACH_WINDOW: Arrived at DOOR! dist_2d=%.2f, min_timer=%.2f. Door phase=%d." % [dist_2d, _approach_min_timer, entity._door_phase])
+				
+				# Get the actual Door node
+				var door_node = window_target
+				if door_node.has_method("is_in_group") and not door_node.is_in_group("Door"):
+					door_node = door_node.get_parent()
+				
+				# ─── PHASE 1: Handle door state ───────────────────────────
+				if entity._door_phase == 0:
+					# Initialize Phase 1 — arrived at door
+					entity._door_phase = 1
+					entity._door_phase_timer = 2.0  # 2-second pause
+					
+					# Check if door is locked
+					if door_node and "is_locked" in door_node and door_node.is_locked:
+						# Door is locked — play rattle sound, set cooldown
+						print("[Entity AI] APPROACH_WINDOW: Door is LOCKED! Playing rattle sound.")
+						if door_node.has_method("interact"):
+							door_node.interact()  # Plays the locked rattle sound
+						entity.is_door_locked = true
+						entity._door_approach_cooldown = 30.0
+					
+					# Check if door is already open — skip the pause
+					if door_node and "is_open" in door_node and door_node.is_open:
+						entity._door_phase_timer = 0.0  # Skip pause
+						print("[Entity AI] APPROACH_WINDOW: Door already open. Skipping pause.")
+					
+					_calculated_velocity = Vector3.ZERO
+					return
+				
+				if entity._door_phase == 1:
+					# Count down the pause timer
+					entity._door_phase_timer -= delta
+					_calculated_velocity = Vector3.ZERO
+					
+					if entity._door_phase_timer > 0.0:
+						return  # Still waiting
+					
+					# ─── LOCKED DOOR: Return to OBSERVE ───────────────────
+					if entity.is_door_locked:
+						print("[Entity AI] APPROACH_WINDOW: Door locked pause complete. Returning to OBSERVE.")
+						entity.is_approach_finished = true
+						entity.state_locked = false
+						entity._door_phase = 0
+						_approach_min_timer = 0.0
+						_approach_failsafe_timer = 0.0
+						_calculated_velocity = Vector3.ZERO
+						return
+					
+					# ─── CLOSED DOOR: Open it ─────────────────────────────
+					if door_node and door_node.has_method("interact") and "is_open" in door_node and not door_node.is_open:
+						door_node.interact()
+						print("[Entity AI] APPROACH_WINDOW: Door was closed. Opened it after 2s pause.")
+					
+					# Check HallRoom light and toggle it off if on
+					var hall_light = _find_hall_light()
+					if hall_light and "is_switched_on" in hall_light and hall_light.is_switched_on:
+						if hall_light.has_method("is_generator_running") and hall_light.is_generator_running():
+							if hall_light.has_method("toggle_light"):
+								hall_light.toggle_light()
+								print("[Entity AI] APPROACH_WINDOW: HallRoom light toggled OFF.")
+					
+					# Advance to Phase 2 — walk through doorway
+					entity._door_phase = 2
+					
+					# Find the interior waypoint to pathfind to
+					var interior_waypoint: Node3D = null
+					var waypoints = entity.get_tree().get_nodes_in_group("EntityWaypoints")
+					for wp in waypoints:
+						if wp.name == "EntityDoorInteriorWaypoint":
+							interior_waypoint = wp as Node3D
+							break
+					
+					if interior_waypoint:
+						entity.get_nav_agent().target_position = interior_waypoint.global_position
+						print("[Entity AI] APPROACH_WINDOW: Pathfinding to interior waypoint: ", interior_waypoint.global_position)
+					else:
+						# Fallback: use cabin center
+						var fallback_pos = entity.cabin_center
+						fallback_pos.y = entity.global_position.y
+						entity.get_nav_agent().target_position = fallback_pos
+						print("[Entity AI] APPROACH_WINDOW: No interior waypoint found. Pathfinding to cabin center.")
+					
+					_calculated_velocity = Vector3.ZERO
+					return
+				
+				# ─── PHASE 2: Walk through doorway ────────────────────────
+				if entity._door_phase == 2:
+					# Increment the Phase 2 timer for stuck detection
+					entity._door_phase_2_timer += delta
+					
+					var nav_finished_phase2 = entity.get_nav_agent().is_navigation_finished()
+					var interior_target = entity.get_nav_agent().target_position
+					var dist_to_interior = entity.global_position.distance_to(interior_target)
+					
+					# ─── PHASE 2 FAILSAFE: Teleport if stuck for 5+ seconds ──
+					if entity._door_phase_2_timer >= 5.0:
+						print("[Entity AI] PHASE 2 FAILSAFE: Entity stuck at door for %.1f seconds! Teleporting to interior waypoint." % entity._door_phase_2_timer)
+						entity.global_position = interior_target
+						entity.is_approach_finished = true
+						entity.state_locked = false
+						entity._door_phase = 0
+						entity._door_phase_2_timer = 0.0
+						_approach_min_timer = 0.0
+						_approach_failsafe_timer = 0.0
+						_calculated_velocity = Vector3.ZERO
+						return
+					
+					# ─── NAVMESH UNREACHABLE FALLBACK ──────────────────────
+					# If the NavAgent reports navigation as finished but the Entity
+					# is still far from the interior waypoint (> 3.0m), it means the
+					# NavMesh doesn't cover the interior. Use direct movement toward
+					# the interior waypoint instead of signaling completion.
+					if nav_finished_phase2 and dist_to_interior > 3.0:
+						print("[Entity AI] PHASE 2: NavMesh unreachable (nav_finished but dist=%.2f). Using direct movement." % dist_to_interior)
+						var dir_to_interior = (interior_target - entity.global_position)
+						dir_to_interior.y = 0.0
+						if dir_to_interior.length() > 0.01:
+							var move_dir = dir_to_interior.normalized()
+							_calculated_velocity.x = move_dir.x * entity.current_stalk_speed
+							_calculated_velocity.z = move_dir.z * entity.current_stalk_speed
+						else:
+							_calculated_velocity = Vector3.ZERO
+						return
+					
+					if nav_finished_phase2 or dist_to_interior <= 2.0:
+						# Arrived inside — signal completion
+						print("[Entity AI] APPROACH_WINDOW: Walked through doorway! Arrived inside. dist=%.2f" % dist_to_interior)
+						entity.is_approach_finished = true
+						entity.state_locked = false
+						entity._door_phase = 0
+						entity._door_phase_2_timer = 0.0
+						_approach_min_timer = 0.0
+						_approach_failsafe_timer = 0.0
+						_calculated_velocity = Vector3.ZERO
+						return
+					
+					# Continue pathfinding toward interior waypoint
+					var next_pos = entity.get_nav_agent().get_next_path_position()
+					var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
+					if dir_2d.length() > 0.01:
+						var move_dir_2d = dir_2d.normalized()
+						_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
+						_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
+					else:
+						_calculated_velocity = Vector3.ZERO
+					return
+			else:
+				# ─── WINDOW ARRIVAL (existing behavior) ──────────────────
+				print("[Entity AI] APPROACH_WINDOW: Arrived at window! dist_2d=%.2f, min_timer=%.2f. Setting is_approach_finished=true" % [dist_2d, _approach_min_timer])
+				entity.is_approach_finished = true
+				entity.state_locked = false  # Unlock — Director can now transition
+				_approach_min_timer = 0.0
+				_approach_failsafe_timer = 0.0
+				_calculated_velocity = Vector3.ZERO
+				return
 		
 		entity.set_path_timer(entity.get_path_timer() + delta)
 		if entity.get_path_timer() >= entity.path_update_interval:
@@ -1652,6 +2101,16 @@ func _window_peek_state(delta: float) -> void:
 	entity.state_locked = true
 	
 	_calculated_velocity = Vector3.ZERO
+	
+	# ─── RESET PEEK ASSESSMENT ON FRESH ENTRY ────────────────────────────
+	# When the Entity first enters WINDOW_PEEK (siege timer is 0.0), reset
+	# the _peek_assessment_done flag so the peek assessment runs again.
+	# Without this reset, if the Entity aborted a previous peek (e.g., room
+	# was lit) and later re-enters WINDOW_PEEK at a different window, the
+	# stale _peek_assessment_done = true would prevent re-evaluation.
+	if _siege_duration_timer <= 0.0:
+		_peek_assessment_done = false
+	
 	_siege_duration_timer += delta
 	
 	# ─── NIGHT 2 BARRICADE GUARD ──────────────────────────────────────────
@@ -1732,6 +2191,74 @@ func _window_peek_state(delta: float) -> void:
 			_siege_duration_timer, breach_delay, is_window_boarded, has_damage_method, current_night, entity.state_locked])
 	_window_peek_debug_counter += 1
 	
+	# ─── PEEK ASSESSMENT: Opportunistic Breach Logic ─────────────────────
+	# During the peek, the Entity assesses the window's viability as a breach
+	# point. Two conditions determine the outcome:
+	#
+	#   CONDITION A: The room is UNLIT (dark) AND the player is NOT visible.
+	#     → OPPORTUNITY! The Entity sees a chance to breach undetected.
+	#       Accelerate the siege timer drastically so the breach happens fast.
+	#
+	#   CONDITION B: The room is LIT OR the player IS visible looking at it.
+	#     → BAD BREACH POINT! The Entity realizes it's a bad angle and aborts.
+	#       Set is_observe_finished to tell the Director to fall back to
+	#       OBSERVE_FROM_TREELINE and try a different angle later.
+	#
+	# This replaces the old static "siege timer" approach with a dynamic,
+	# context-aware assessment that rewards stealth (dark rooms) and punishes
+	# detection (lit rooms or direct line-of-sight).
+	#
+	# NOTE: We only perform this assessment once per peek session. The
+	# _peek_assessment_done flag prevents re-evaluation after the first
+	# decision, ensuring the Entity commits to its choice.
+	if not _peek_assessment_done:
+		# ─── IDENTIFY THE ROOM ──────────────────────────────────────────
+		# Use RoomLightDetector to determine which room this window belongs to.
+		# The window's global position is used to resolve the room name.
+		var window_pos: Vector3 = window_target.global_position
+		var room_detector = entity.get_node_or_null("/root/RoomLightDetector")
+		var window_room_lit: bool = false
+		var player_visible: bool = false
+		
+		if room_detector:
+			window_room_lit = room_detector.is_position_in_lit_room(window_pos)
+		
+		# ─── CHECK IF PLAYER IS VISIBLE ────────────────────────────────
+		# Use the sensory module's can_entity_see_player() to determine if
+		# the player is currently visible to the Entity through this window.
+		var sensory = entity.get_sensory_module()
+		if sensory and sensory.has_method("can_entity_see_player"):
+			player_visible = sensory.can_entity_see_player()
+		
+		# ─── ASSESSMENT DECISION ────────────────────────────────────────
+		if not window_room_lit and not player_visible:
+			# ─── OPPORTUNITY: Dark room, player not visible ─────────────
+			# The Entity sees an opportunity to breach undetected.
+			# Accelerate the siege timer to breach_delay + 0.1 so the
+			# breach check (_siege_duration_timer >= breach_delay) passes
+			# on the very next frame. The +0.1 buffer ensures the timer
+			# is strictly greater than breach_delay, preventing any
+			# floating-point edge case where the timer equals but doesn't
+			# exceed the threshold.
+			print("[WINDOW_PEEK] OPPORTUNITY! Room is DARK and player NOT visible. Accelerating breach!")
+			_siege_duration_timer = breach_delay + 0.1  # Immediate breach on next frame
+			_peek_assessment_done = true
+		else:
+			# ─── BAD BREACH POINT: Room is lit OR player is visible ─────
+			# The Entity realizes this is a bad breach point. Abort!
+			# Set the completion flag so the Director falls back to
+			# OBSERVE_FROM_TREELINE and tries a different angle later.
+			var reason: String = "room is LIT" if window_room_lit else ""
+			if player_visible:
+				reason += " and " if reason != "" else ""
+				reason += "player IS visible"
+			print("[WINDOW_PEEK] ABORT! Bad breach point (%s). Falling back to treeline observation." % reason)
+			entity.is_observe_finished = true
+			entity.state_locked = false
+			_calculated_velocity = Vector3.ZERO
+			_peek_assessment_done = true
+			return
+	
 	# Check if the window is unbarricaded (glass-only) — if so, the Entity
 	# must play the AttackWindow animation and shatter the glass at the
 	# impact frame BEFORE transitioning to INDOOR_SEARCH.
@@ -1761,21 +2288,27 @@ func _window_peek_state(delta: float) -> void:
 					_barricade_anim_lock = 0.0
 				
 				if _glass_shatter_impact_timer <= 0.0:
-					# ─── IMPACT FRAME: Shatter the glass ────────────────
+					# ─── IMPACT FRAME: Breach the target ────────────────
 					_glass_shatter_pending = false
 					_glass_shatter_impact_timer = 0.0
 					
-				# Call shatter_window() to destroy the glass at the
-				# exact impact frame of the AttackWindow animation.
-				# This triggers _shatter_glass() which sets
-				# is_glass_shattered = true, hides PristineVisuals,
-				# shows ShatteredVisuals, plays audio, and bursts
-				# glass shard particles — all IMMEDIATELY (no deferred
-				# timer), so the visual swap is frame-perfect with the
-				# animation's impact moment.
-				if window_target.has_method("shatter_window"):
-					window_target.shatter_window()
-					print("[WINDOW_PEEK] Glass shattered at impact frame! Transitioning to INDOOR_SEARCH.")
+					# ─── SAFE TYPE-CHECK: Door vs Window Breach ──────────
+					# The Entity can approach both windows (CabinWindow) and
+					# doors (AnimatableBody3D with Door script). Each has a
+					# different breach method:
+					#   - Window: shatter_window() — destroys glass panes
+					#   - Door:   break_door() — forces the door open
+					# Use duck-typing (has_method) to safely dispatch to the
+					# correct breach method without hard type-casting.
+					if window_target.has_method("shatter_window"):
+						window_target.shatter_window()
+						print("[WINDOW_PEEK] Glass shattered at impact frame! Transitioning to INDOOR_SEARCH.")
+					elif window_target.has_method("break_door"):
+						window_target.break_door()
+						print("[WINDOW_PEEK] Door forced open at impact frame! Transitioning to INDOOR_SEARCH.")
+					else:
+						print("[WINDOW_PEEK] WARNING: Target has no breach method! window_target=%s (class=%s)" % [window_target.name, window_target.get_class()])
+
 					
 					# ─── MARK WINDOW AS BREACHED ──────────────────────────
 					# Register this window on the breach cooldown system so
@@ -1942,12 +2475,109 @@ func _harass_state(delta: float) -> void:
 ##   and transitions to Phase B (patrol). This creates a seamless visual
 ##   effect of the Entity vaulting through the window frame.
 func _indoor_search_state(delta: float) -> void:
+	# ─── DOOR ENTRY: Cinematic Phase A (interpolate to IndoorBreachWaypoint) ──
+	# If the Entity entered through the front door (was_door_entry flag set by
+	# the Director), play a cinematic Door Phase A: lock the state, smoothly
+	# interpolate the Entity's position toward the IndoorBreachWaypoint, then
+	# snap to the waypoint when finished. This bypasses physics/navmesh snags
+	# on the porch stairs by manually moving the Entity each frame.
+	if entity.was_door_entry:
+		if not entity.state_locked:
+			entity.state_locked = true
+			# ─── ENABLE GHOST MODE ────────────────────────────────────────
+			# Disable ALL collision layers/masks so the Entity phases through
+			# the doorframe, porch stairs, and threshold colliders during the
+			# cinematic interpolation. Without this, the Entity can snag on
+			# the doorframe geometry and get stuck mid-interpolation.
+			entity.set_ghost_mode(true)
+			# Find the IndoorBreachWaypoint from the current window target (the door)
+			var door_waypoint = entity.get_current_window_target()
+			if door_waypoint and door_waypoint.get_parent():
+				var door_node = door_waypoint.get_parent()
+				var indoor_waypoint = door_node.get_node_or_null("IndoorBreachWaypoint")
+				if indoor_waypoint:
+					_landing_position = indoor_waypoint.global_position
+					var dist = entity.global_position.distance_to(_landing_position)
+					var walk_speed = entity.speed if entity.speed > 0 else 2.5
+					_indoor_breach_timer = dist / walk_speed
+					print("[INDOOR_SEARCH] Door Phase A: Interpolating to IndoorBreachWaypoint at (%.2f, %.2f, %.2f), dist=%.2f, timer=%.2fs" % [_landing_position.x, _landing_position.y, _landing_position.z, dist, _indoor_breach_timer])
+				else:
+					# Fallback: no IndoorBreachWaypoint found — use cabin center
+					_landing_position = entity.cabin_center
+					_landing_position.y = entity.global_position.y
+					_indoor_breach_timer = 1.0
+					print("[INDOOR_SEARCH] Door Phase A: No IndoorBreachWaypoint found. Using cabin center fallback.")
+			else:
+				# Fallback: no door target — use cabin center
+				_landing_position = entity.cabin_center
+				_landing_position.y = entity.global_position.y
+				_indoor_breach_timer = 1.0
+				print("[INDOOR_SEARCH] Door Phase A: No door target found. Using cabin center fallback.")
+		
+		if _indoor_breach_timer > 0:
+			_indoor_breach_timer -= delta
+			# Manually interpolate position to bypass physics/navmesh snags!
+			var move_speed = entity.speed if entity.speed > 0 else 2.5
+			entity.global_position = entity.global_position.move_toward(_landing_position, move_speed * delta)
+			# Keep calculated velocity ZERO so move_and_slide doesn't interfere
+			_calculated_velocity = Vector3.ZERO
+			return
+		
+		# Timer finished: Snap to final position and unlock
+		entity.global_position = _landing_position
+		# ─── DISABLE GHOST MODE ───────────────────────────────────────────
+		# Restore collision layers/masks now that the Entity is safely inside
+		# the cabin. Without this, the Entity would fall through the floor.
+		entity.set_ghost_mode(false)
+		_has_arrived_indoor = true
+		entity.state_locked = false
+		entity.was_door_entry = false  # Consume flag
+		_calculated_velocity = Vector3.ZERO
+		
+		# ─── INDOOR SEARCH PERSISTENCE ─────────────────────────────────
+		# Reset the 30-second persistence timer so the Director's
+		# INDOOR_SEARCH preservation guard keeps the Entity inside.
+		# Without this, the Director would immediately return
+		# OBSERVE_FROM_TREELINE on the next frame (because the
+		# persistence timer is 0.0 for door entries), causing the
+		# infinite INDOOR_SEARCH → OBSERVE → APPROACH → INDOOR_SEARCH loop.
+		if _director and _director.has_method("reset_indoor_search_persistence"):
+			_director.reset_indoor_search_persistence()
+		
+		# ─── FORCE IMMEDIATE NAV TARGET ──────────────────────────────────
+		# After Door Phase A completes, the Entity is snapped to the
+		# IndoorBreachWaypoint. But it has no last_known_position set
+		# (it just entered through the door — it hasn't "heard" the player
+		# yet). Without a nav target, Phase B patrol has nowhere to go and
+		# the Entity stands still.
+		#
+		# Force the nav target to the player's current position so the
+		# Entity immediately starts pathfinding toward the player.
+		# Also reset the _path_timer so the first path update fires
+		# immediately (not after a 300ms delay).
+		#
+		# CRITICAL: Also update the last_known_position to the player's
+		# current position. Phase B reads lkp for pathfinding, and if lkp
+		# is stale (e.g., from outdoor noises heard 10+ seconds ago), the
+		# Entity will pathfind to the wrong location and stand still.
+		var door_entry_player = entity.get_player()
+		if door_entry_player:
+			var player_pos = door_entry_player.global_position
+			entity.get_nav_agent().target_position = player_pos
+			entity.set_last_known_position(player_pos)
+			_path_timer = 0.0
+			print("[INDOOR_SEARCH] Door Phase A: Nav target + LKP forced to player position (%.2f, %.2f, %.2f)" % [player_pos.x, player_pos.y, player_pos.z])
+		
+		print("[INDOOR_SEARCH] Door Phase A complete! Snapped to IndoorBreachWaypoint. Transitioning to Phase B patrol.")
+		# Fall through to Phase B below
+	
 	# ─── STATE LOCK: Prevent Director from overriding during Phase A ──
 	# The EnterWindow animation must play for the full 1.5s duration
 	# before the Entity teleports inside. Without this lock, the Director's
 	# Tier 7 (fallback confidence) can force APPROACH_WINDOW, creating an
 	# infinite WINDOW_PEEK → INDOOR_SEARCH → APPROACH_WINDOW → WINDOW_PEEK loop.
-	entity.state_locked = true
+	if not _has_arrived_indoor:
+		entity.state_locked = true
 	
 	if not _has_arrived_indoor:
 		# ─── PHASE A: Vault Entry Animation ──────────────────────────────

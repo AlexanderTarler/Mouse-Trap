@@ -72,6 +72,7 @@ func _setup_entity_buttons() -> void:
 	var buttons_data = [
 		{"text": "Force Relocate", "method": "_force_relocate"},
 		{"text": "Force Window Peek", "method": "_force_window_peek"},
+		{"text": "Force Door Approach", "method": "_force_door_approach"},
 		{"text": "Toggle Stalking", "method": "_toggle_stalking"},
 	]
 	
@@ -430,6 +431,108 @@ func _force_window_peek() -> void:
 		print("[Debug Console] Entity not found or missing _start_window_peek.")
 
 
+## Forces the Entity to approach the front door.
+## Sets Entity confidence to 40, finds the front door, sets it as the current
+## window target, and forces the Entity into APPROACH_WINDOW state.
+## This is a development tool for testing the door approach behavior.
+func _force_door_approach() -> void:
+	print("[Debug Console] Forcing Entity door approach...")
+	if not _entity:
+		print("[Debug Console] Entity not found.")
+		return
+	
+	# ─── SET CONFIDENCE TO 40 ───────────────────────────────────────
+	# The Director's Tier 4 confidence escalation checks confidence >= 40
+	# to transition to APPROACH_WINDOW. Setting it to 40 ensures the
+	# Entity will attempt to approach a target.
+	var confidence_module = _entity.get_confidence_module() if _entity.has_method("get_confidence_module") else null
+	if confidence_module:
+		confidence_module.set_confidence(40.0)
+		print("[Debug Console] Entity confidence set to 40.0.")
+	else:
+		print("[Debug Console] WARNING: Could not find confidence module.")
+	
+	# ─── FIND THE FRONT DOOR ────────────────────────────────────────
+	# Look for the EntityDoorWaypoint marker in the EntityWaypoints group.
+	# This is the same marker used by pick_tactical_window() in entity_navigation.gd.
+	var door_wp: Node3D = null
+	var waypoints = get_tree().get_nodes_in_group("EntityWaypoints")
+	for wp in waypoints:
+		if wp.name == "EntityDoorWaypoint":
+			door_wp = wp
+			break
+	
+	if not door_wp:
+		print("[Debug Console] WARNING: EntityDoorWaypoint not found! Trying Door group fallback.")
+		# Fallback: try to find the door via the "Door" group and use its IndoorBreachWaypoint marker.
+		var door = get_tree().get_first_node_in_group("Door")
+		if door:
+			# First try to find the IndoorBreachWaypoint marker as a child of the door
+			var door_marker = door.get_node_or_null("IndoorBreachWaypoint")
+			if door_marker:
+				door_wp = door_marker as Node3D
+				print("[Debug Console] Found door via 'Door' group with IndoorBreachWaypoint marker.")
+			else:
+				# Fallback: use the door node itself as the target
+				door_wp = door as Node3D
+				print("[Debug Console] Door found via 'Door' group (no IndoorBreachWaypoint marker). Using door node directly.")
+
+	
+	if not door_wp:
+		print("[Debug Console] ERROR: No door target found! Cannot force door approach.")
+		return
+	
+	# ─── SET THE DOOR AS THE CURRENT WINDOW TARGET ──────────────────
+	# The APPROACH_WINDOW handler uses get_current_window_target() to know
+	# where to pathfind. Setting it to the door waypoint makes the Entity
+	# walk toward the front door.
+	if _entity.has_method("set_current_window_target"):
+		_entity.set_current_window_target(door_wp)
+		print("[Debug Console] Door set as current window target: %s (class=%s)" % [door_wp.name, door_wp.get_class()])
+		# Debug: print the door_wp's parent info
+		if door_wp.get_parent():
+			print("[Debug Console] Door target parent: %s (class=%s)" % [door_wp.get_parent().name, door_wp.get_parent().get_class()])
+	else:
+		print("[Debug Console] ERROR: Entity missing set_current_window_target method.")
+		return
+	
+	# ─── RESET COMPLETION FLAGS ─────────────────────────────────────
+	# Clear any stale completion flags that might interfere with the
+	# APPROACH_WINDOW state.
+	if "is_approach_finished" in _entity:
+		_entity.is_approach_finished = false
+	if "is_observe_finished" in _entity:
+		_entity.is_observe_finished = false
+	if "is_flinch_finished" in _entity:
+		_entity.is_flinch_finished = false
+	if "is_retreat_arrived" in _entity:
+		_entity.is_retreat_arrived = false
+	if "is_window_unbarricaded" in _entity:
+		_entity.is_window_unbarricaded = false
+	if "is_climb_finished" in _entity:
+		_entity.is_climb_finished = false
+	if "state_locked" in _entity:
+		_entity.state_locked = false
+	# Also reset door phase to ensure clean start
+	if "_door_phase" in _entity:
+		_entity._door_phase = 0
+	if "_door_phase_timer" in _entity:
+		_entity._door_phase_timer = 0.0
+	if "is_door_locked" in _entity:
+		_entity.is_door_locked = false
+	if "_door_approach_cooldown" in _entity:
+		_entity._door_approach_cooldown = 0.0
+	
+	# ─── FORCE APPROACH_WINDOW STATE ────────────────────────────────
+	# Use request_state() to set the pending state override. The Director
+	# will pick this up on the next frame and apply it.
+	if _entity.has_method("request_state"):
+		_entity.request_state(EntityAI.State.APPROACH_WINDOW)
+		print("[Debug Console] Entity forced into APPROACH_WINDOW state (door target).")
+	else:
+		print("[Debug Console] ERROR: Entity missing request_state method.")
+
+
 func _toggle_stalking() -> void:
 	print("[Debug Console] Toggling Entity stalking...")
 	if not _entity:
@@ -506,6 +609,8 @@ func _call_entity_method(method_name: String) -> void:
 			_force_relocate()
 		"_force_window_peek":
 			_force_window_peek()
+		"_force_door_approach":
+			_force_door_approach()
 		"_toggle_stalking":
 			_toggle_stalking()
 		_:

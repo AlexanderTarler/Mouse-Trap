@@ -115,6 +115,21 @@ var _cabin_lights: Array[Node] = []
 ## Written by on_player_stare(). Read by the Master Director (entity_director.gd).
 var is_illuminated: bool = false
 
+## ─── BELIEF SYSTEM: Player Location Deduction ──────────────────────────────
+## Whether the Entity BELIEVES the player is still inside the cabin.
+## Defaults to true — the Entity assumes the player is inside until proven
+## otherwise through sight, sound, or deductive reasoning (3-waypoint miss rule).
+## Written by entity_sensory.gd and entity_ai.gd. Read by entity_director.gd.
+var thinks_player_is_inside: bool = true
+
+## Counter for consecutive vantage point observations that yielded no sighting
+## of the player. Incremented by entity_ai.gd's _observe_from_treeline_state()
+## each time the Entity finishes observing at a vantage point without spotting
+## the player. When >= 3, the Entity deduces the player must have escaped and
+## sets thinks_player_is_inside = false.
+## Reset to 0 by entity_sensory.gd when the Entity hears or sees the player indoors.
+var _consecutive_vantage_misses: int = 0
+
 ## How long the player has been staring at the Entity with the flashlight on.
 ## Written by on_player_stare(). Read by the Master Director (entity_director.gd).
 ## Range: 0.0 to 2.0+. 1.5+ triggers CHARGE if player is outside.
@@ -141,6 +156,13 @@ var is_window_unbarricaded: bool = false
 ## The Director checks this flag and transitions to WINDOW_PEEK.
 var is_climb_finished: bool = false
 
+## Set to true by the Director when transitioning to INDOOR_SEARCH from a door
+## approach (rather than a window breach). The _indoor_search_state() handler
+## checks this flag to bypass Phase A (vault animation + teleport math) and
+## go straight to Phase B (indoor patrol pathfinding).
+## Reset to false by _indoor_search_state() after consuming the flag.
+var was_door_entry: bool = false
+
 ## Set to true by _retreat_state() when the Entity arrives at the farthest treeline
 ## vantage point. The Director checks this flag and transitions to OBSERVE_FROM_TREELINE.
 var is_retreat_arrived: bool = false
@@ -153,6 +175,16 @@ var is_flinch_finished: bool = false
 ## stare timer expires. The Director checks this flag, calls fade_and_relocate()
 ## for the setup work, and transitions to OBSERVE_FROM_TREELINE.
 var is_observe_finished: bool = false
+
+## ─── RELOCATE TARGET SET FLAG ─────────────────────────────────────────────────
+## Set to true by fade_and_relocate() when a new vantage point target has been
+## picked and the nav agent is pathfinding toward it. Reset to false by the
+## _observe_from_treeline_state() timer expiration block so the Entity knows
+## to pick a NEW tree on the next cycle (rather than looping at the current one).
+## This prevents the "paralysis at first tree" bug where the Entity finishes
+## observing, signals completion, the Director consumes the flag and calls
+## fade_and_relocate(), but the Entity doesn't know it needs to move.
+var _relocate_target_set: bool = false
 
 ## ─── INDOOR RETREAT FLAG ──────────────────────────────────────────────────────
 ## Set to true by the Director (Tier 0) when the Entity is illuminated while in
@@ -370,9 +402,53 @@ var _is_motor_locked: bool = false
 ## Persists until the Entity breaches a different window.
 var last_breached_window: Node = null
 
+## ─── DOOR APPROACH COOLDOWN ──────────────────────────────────────────────
+## Cooldown timer preventing the Entity from immediately re-attempting the
+## door after finding it locked. Set to 30.0 seconds when the Entity tries
+## the door and finds it locked. Decremented each frame. While > 0.0, the
+## door is excluded from pick_tactical_window() candidates.
+var _door_approach_cooldown: float = 0.0
+
+## ─── DOOR LOCKED FLAG ────────────────────────────────────────────────────
+## Set to true by _approach_window_state() when the Entity arrives at the
+## door and finds it locked. The Director reads this flag in Tier 5 and
+## transitions to OBSERVE_FROM_TREELINE instead of INDOOR_SEARCH.
+## Reset to false by the Director after consuming the flag.
+var is_door_locked: bool = false
+
+## ─── DOOR TARGET FLAG ────────────────────────────────────────────────────
+## Set to true by _approach_window_state() when the current window target
+## is detected as a door (not a window). The Director reads this flag in
+## Tier 5 to distinguish between a window approach (→ WINDOW_PEEK) and a
+## door approach (→ INDOOR_SEARCH if unlocked, OBSERVE if locked).
+## Reset to false by the Director after consuming the flag.
+var is_door_target: bool = false
+
+## ─── DOOR PHASE TIMER ────────────────────────────────────────────────────
+## Counts down the 2-second pause when the Entity arrives at a closed or
+## locked door. Used by _approach_window_state() to manage the multi-phase
+## door entry sequence:
+##   Phase 0: Not started (standard approach)
+##   Phase 1: Arrived at door — handling door state (locked/closed/open)
+##   Phase 2: Walking through doorway to interior waypoint
+var _door_phase: int = 0
+
+## Timer for the door phase. Counts down from 2.0 seconds for locked/closed
+## door pauses. Decremented each frame in _approach_window_state().
+var _door_phase_timer: float = 0.0
+
+## ─── DOOR PHASE 2 TIMER ──────────────────────────────────────────────────
+## Timer that counts UP while the Entity is in Phase 2 (walking through the
+## doorway). If the Entity has been in Phase 2 for more than 5.0 seconds
+## without reaching the interior waypoint, the failsafe triggers a teleport
+## to the interior waypoint to prevent the Entity from getting stuck.
+## Reset to 0.0 when Phase 2 starts or when the Entity completes Phase 2.
+var _door_phase_2_timer: float = 0.0
+
 ## ─── PENDING STATE OVERRIDE ──────────────────────────────────────────────
 ## When set to a valid State value (>= 0), the Master Director will read this
 ## at the START of evaluate_master_state() and apply it immediately, then
+
 ## clear it to -1. This is the ONLY mechanism by which external events (stun,
 ## blackout, debug, activation) can request a state change.
 ##
@@ -432,6 +508,17 @@ const COLLISION_LAYER_PLAYER: int = 2 # Layer 2: Player body
 ## Stores the original collision mask before "Creeping Ghost" modifications.
 ## Restored when the Entity transitions to an aggressive state.
 var _saved_collision_mask: int = 0
+
+## ─── GHOST MODE ──────────────────────────────────────────────────────────────
+## When enabled, the Entity disables ALL physics interactions (collision layers
+## and masks) so it can pass through geometry without snagging. Used during the
+## Door Phase A cinematic interpolation to prevent the Entity from getting stuck
+## on the doorframe, porch stairs, or threshold colliders.
+##
+## IMPORTANT: Ghost mode also disables gravity by zeroing out the Y velocity
+## each frame. The caller MUST call set_ghost_mode(false) when the interpolation
+## completes, otherwise the Entity will fall through the floor.
+var _ghost_mode: bool = false
 
 # ─── CONTEXT-STEERING RAYCAST ARRAY ──────────────────────────────────────────
 # Three RayCast3D nodes used for obstacle avoidance when the Entity is stalking
@@ -850,6 +937,10 @@ func _physics_process(delta: float) -> void:
 	if _chase_exit_grunt_cooldown > 0.0:
 		_chase_exit_grunt_cooldown -= delta
 	
+	# Door approach cooldown decrement (locked door retry timer)
+	if _door_approach_cooldown > 0.0:
+		_door_approach_cooldown -= delta
+	
 	# ─── DEBUG: F2 — Window Siege Stress Test ──────────────────────────────
 	# Development-only shortcut to stress-test the outside-to-inside sequential
 	# window destruction system (glass shatter → plank damage → breach → INDOOR_SEARCH).
@@ -908,32 +999,33 @@ func _physics_process(delta: float) -> void:
 	# damage logic is handled by the WINDOW_PEEK state handler — the stuck
 	# detector simply avoids triggering relocation when the Entity is near
 	# a window target.
-	var is_indoor_stuck: bool = (
-		_state == EntityAI.State.INDOOR_SEARCH and
-		is_nav_active and
-		not is_moving
-	)
-	
-	if is_indoor_stuck:
-		_stuck_timer += delta
-		# Use a shorter timeout for indoor stuck detection (3.0s instead of 1.5s)
-		# to give the Entity more time to navigate interior geometry before
-		# triggering a relocation.
-		if _stuck_timer >= 3.0:
-			# ─── BARRICADE AWARENESS CHECK ──────────────────────────────
-			# If the Entity is stuck near a window target, don't relocate —
-			# the Entity is at the window and should be in WINDOW_PEEK state.
-			# The Director will handle the transition naturally.
-			var window_target = get_current_window_target()
-			if window_target:
-				var dist_to_window = global_position.distance_to(window_target.global_position)
-				if dist_to_window <= 5.0:
-					# Entity is near a window — don't relocate, just reset the timer
-					_stuck_timer = 0.0
-					return
-			
-			print("[Entity] INDOOR STUCK DETECTED! No movement for 3.0s while inside. Relocating.")
-			fade_and_relocate()
+	if _state == EntityAI.State.INDOOR_SEARCH:
+		# ─── INDOOR STUCK DETECTION ──────────────────────────────────────
+		# When the Entity is inside the cabin (INDOOR_SEARCH), the NavMesh
+		# may not have complete coverage of the interior. The Entity can get
+		# stuck on furniture, door frames, or other interior geometry.
+		# Use a 3.0s timeout for indoor stuck detection.
+		#
+		# CRITICAL: Reset the timer whenever the Entity IS moving, so that
+		# the timer only accumulates while the Entity is genuinely stuck
+		# (not moving AND nav is active, meaning it's trying to move but can't).
+		if is_nav_active and not is_moving:
+			_stuck_timer += delta
+			if _stuck_timer >= 3.0:
+				# ─── BARRICADE AWARENESS CHECK ──────────────────────────
+				# If the Entity is stuck near a window target, don't relocate
+				var window_target = get_current_window_target()
+				if window_target:
+					var dist_to_window = global_position.distance_to(window_target.global_position)
+					if dist_to_window <= 5.0:
+						_stuck_timer = 0.0
+						return
+				
+				print("[Entity] INDOOR STUCK DETECTED! No movement for 3.0s while inside. Relocating.")
+				fade_and_relocate()
+				_stuck_timer = 0.0
+		else:
+			# Entity is moving or nav is finished — reset the stuck timer
 			_stuck_timer = 0.0
 	elif is_nav_active and not is_moving and not is_attack_state:
 		_stuck_timer += delta
@@ -1059,6 +1151,21 @@ func _physics_process(delta: float) -> void:
 		_update_animations(delta)
 		return
 
+	
+	# --- GHOST MODE: Skip physics entirely during cinematic interpolation ---
+	# When ghost mode is active, the Entity has NO collision layers/masks set.
+	# Calling move_and_slide() would be pointless — the Entity would fall through
+	# the floor due to gravity. Instead, we skip gravity, skip move_and_slide(),
+	# and let the AI's _indoor_search_state() handle the position interpolation
+	# manually via entity.global_position = move_toward(...).
+	if _ghost_mode:
+		# Process AI logic so the Door Phase A interpolation runs
+		if _ai and _ai.has_method("process_state_logic"):
+			_ai.process_state_logic(delta)
+		# Do NOT apply gravity or call move_and_slide() — the AI handles position
+		# manually via entity.global_position = move_toward(...)
+		_update_animations(delta)
+		return
 	
 	# --- STANDARD ACTIVE NAVIGATION ---
 
@@ -1645,6 +1752,51 @@ func get_last_heard_exact_position() -> Vector3:
 	return _last_heard_exact_position
 
 
+## ─── BELIEF SYSTEM ACCESSORS ──────────────────────────────────────────────────
+## These accessors provide read/write access to the Entity's belief about the
+## player's location. The Director reads thinks_player_is_inside to determine
+## whether the player is inside or outside. The sensory and AI modules write
+## to these based on sight, sound, and deductive reasoning.
+
+## Returns whether the Entity BELIEVES the player is still inside the cabin.
+## Defaults to true. Set to false when the Entity deduces the player escaped.
+func get_thinks_player_is_inside() -> bool:
+	return thinks_player_is_inside
+
+## Sets whether the Entity believes the player is inside the cabin.
+## Called by entity_sensory.gd (sight/sound) and entity_ai.gd (3-waypoint miss rule).
+func set_thinks_player_is_inside(value: bool) -> void:
+	thinks_player_is_inside = value
+
+## Returns whether a new relocate target has been set.
+func get_relocate_target_set() -> bool:
+	return _relocate_target_set
+
+## Sets whether a new relocate target has been set.
+func set_relocate_target_set(value: bool) -> void:
+	_relocate_target_set = value
+
+## Returns the number of consecutive vantage point observations that yielded
+## no sighting of the player. When >= 3, the Entity deduces the player escaped.
+func get_consecutive_vantage_misses() -> int:
+	return _consecutive_vantage_misses
+
+## Sets the consecutive vantage misses counter.
+func set_consecutive_vantage_misses(value: int) -> void:
+	_consecutive_vantage_misses = value
+
+## Increments the consecutive vantage misses counter by 1.
+## Called by entity_ai.gd's _observe_from_treeline_state() each time the Entity
+## finishes observing at a vantage point without spotting the player.
+func increment_consecutive_vantage_misses() -> void:
+	_consecutive_vantage_misses += 1
+
+## Resets the consecutive vantage misses counter to 0.
+## Called by entity_sensory.gd when the Entity hears or sees the player indoors.
+func reset_consecutive_vantage_misses() -> void:
+	_consecutive_vantage_misses = 0
+
+
 # ─── ACOUSTIC DETECTION ──────────────────────────────────────────────────────
 ## Called by player_controller.gd's make_noise() when the player emits a sound.
 ##
@@ -1678,6 +1830,43 @@ func hear_noise(noise_position: Vector3, radius: float, intensity: float = 1.0) 
 			if detector and detector.has_method("get_room_name_at"):
 				last_known_room_name = detector.get_room_name_at(noise_position)
 				print("[Entity Hears] Indoor noise tracked to room: %s" % last_known_room_name)
+		
+		# ─── INDOOR/OUTDOOR NOISE DETECTION ──────────────────────────
+		# Use RoomLightDetector to determine if the noise source is inside
+		# or outside the cabin. This is the Entity's ONLY way to deduce
+		# the player has escaped via acoustic intelligence.
+		#
+		# INDOOR NOISE: The player is still inside the cabin. Reset the
+		#   miss counter so the 3-waypoint miss rule doesn't falsely
+		#   deduce an escape. The Entity has fresh evidence the player
+		#   is still indoors.
+		#
+		# OUTDOOR NOISE: The player has escaped! The Entity hears the
+		#   player outside the cabin (e.g., snapping twigs in the yard).
+		#   Immediately update the belief system — the Entity now KNOWS
+		#   the player is outside. This is the ONLY way the Entity can
+		#   conclude the player escaped via hearing alone.
+		var detector = get_node_or_null("/root/RoomLightDetector")
+		if detector and detector.has_method("get_room_name_at"):
+			var room_name = detector.get_room_name_at(noise_position)
+			if room_name != "Outside":
+				# ─── INDOOR NOISE: Player is still inside! ──────────────
+				# The Entity hears the player inside the cabin. This is
+				# definitive acoustic evidence that the player is indoors.
+				# Update the belief system immediately so the Director
+				# knows the player is inside and does NOT transition to
+				# STALK (outdoor pursuit).
+				_consecutive_vantage_misses = 0
+				thinks_player_is_inside = true
+				print("[Entity Hears] Indoor noise! Player is inside! thinks_player_is_inside=true. Reset consecutive vantage misses to 0.")
+			else:
+				# ─── OUTDOOR NOISE: Player has escaped! ──────────────
+				# The Entity hears the player outside the cabin. This is
+				# definitive acoustic evidence that the player is no longer
+				# inside. Update the belief system immediately so the
+				# Director can transition to STALK (outdoor pursuit).
+				thinks_player_is_inside = false
+				print("[Entity Hears] OUTDOOR noise detected! Player has escaped! thinks_player_is_inside=false.")
 		
 		print("[Entity Hears] Noise detected at (%.1f, %.1f, %.1f), radius=%.1fm, dist=%.1fm" % [noise_position.x, noise_position.y, noise_position.z, radius, dist])
 
@@ -2063,7 +2252,8 @@ func _start_flinch_fade() -> void:
 ## Called when the player is INSIDE the cabin and shines the flashlight at the
 ## Entity while it is OUTSIDE. The Entity does NOT fade/teleport — it sprints
 ## laterally (perpendicular to the player's camera view) at 1.5x speed for
-## 1.5 seconds, then transitions to RELOCATE to pick a new vantage point.
+## 3.0-5.0 seconds (randomized), then transitions to RELOCATE to pick a new
+## vantage point.
 ##
 ## DOT PRODUCT ZERO GUARD:
 ## If the Entity is dead-center in the flashlight beam, the dot product of
@@ -2212,6 +2402,14 @@ func fade_and_relocate() -> void:
 	# Pick a new vantage point via the navigation system.
 	# This sets _nav_agent.target_position to the new coordinate.
 	_navigation.pick_next_vantage_point()
+	
+	# ─── RELOCATE TARGET SET ────────────────────────────────────────────
+	# Mark that a new relocate target has been set. This flag is consumed
+	# by the _observe_from_treeline_state() timer expiration block, which
+	# resets it to false so the Entity knows to pick a NEW tree on the
+	# next cycle (rather than looping at the current one).
+	# This prevents the "paralysis at first tree" bug.
+	_relocate_target_set = true
 	
 	# ─── NAV TARGET JITTER ──────────────────────────────────────────────
 	# Add a small random offset (±1.0m) to the nav target so the Entity
@@ -2421,6 +2619,36 @@ func on_generator_blackout() -> void:
 		hsm.play_distant_monster()
 
 
+## ─── GHOST MODE ──────────────────────────────────────────────────────────────
+## Toggles "Ghost Mode" on/off. When enabled, the Entity disables ALL physics
+## interactions (collision layers and masks) so it can pass through geometry
+## without snagging. Used during the Door Phase A cinematic interpolation to
+## prevent the Entity from getting stuck on the doorframe, porch stairs, or
+## threshold colliders.
+##
+## Ghost mode also disables gravity by zeroing out the Y velocity each frame
+## in _physics_process(). The caller MUST call set_ghost_mode(false) when the
+## interpolation completes, otherwise the Entity will fall through the floor.
+func set_ghost_mode(enabled: bool) -> void:
+	_ghost_mode = enabled
+	if enabled:
+		# Save the current collision mask so we can restore it later
+		_saved_collision_mask = collision_mask
+		# Disable ALL collision layers and masks — the Entity phases through everything
+		collision_layer = 0
+		collision_mask = 0
+		# Disable gravity by zeroing velocity
+		velocity = Vector3.ZERO
+		print("[Entity] GHOST MODE ENABLED — Collision disabled. Entity will phase through geometry.")
+	else:
+		# Restore the saved collision mask
+		collision_mask = _saved_collision_mask
+		# Restore the collision layer (default: layer 1)
+		collision_layer = 1
+		velocity = Vector3.ZERO
+		print("[Entity] GHOST MODE DISABLED — Collision restored.")
+
+
 ## ─── "CREEPING GHOST" COLLISION LAYER SYSTEM ──────────────────────────────────
 ## Updates the Entity's collision mask based on the current state.
 ##
@@ -2436,12 +2664,14 @@ func on_generator_blackout() -> void:
 ## Called automatically every time the state changes (see _physics_process).
 func _update_collision_layers() -> void:
 	match _state:
-		EntityAI.State.OBSERVE_FROM_TREELINE:
+		EntityAI.State.OBSERVE_FROM_TREELINE, EntityAI.State.SEARCH:
 			# "Creeping Ghost" mode: Disable tree/rock collision layers.
 			# The Entity phases through foliage while stalking outside.
 			# Only cabin geometry (layer 1) and player (layer 2) remain active.
 			# This prevents the Entity from getting stuck on trees while
 			# physically pathfinding between vantage points.
+			# SEARCH uses the same collision mode as OBSERVE_FROM_TREELINE
+			# since both are outdoor wandering states.
 			collision_mask = 0
 			collision_mask |= (1 << (COLLISION_LAYER_CABIN - 1))  # Layer 1: Cabin
 			collision_mask |= (1 << (COLLISION_LAYER_PLAYER - 1)) # Layer 2: Player
@@ -2521,10 +2751,14 @@ func _update_animations(_delta: float) -> void:
 			_anim_state_machine.travel("AttackWindow")
 			return
 	
-	# EnterWindow: Vault entry animation (INDOOR_SEARCH Phase A)
+	# EnterWindow: Vault or Door entry animation (INDOOR_SEARCH Phase A)
 	if _state == EntityAI.State.INDOOR_SEARCH:
 		if _ai and _ai.has_method("has_arrived_indoor") and not _ai.has_arrived_indoor():
-			_anim_state_machine.travel("EnterWindow")
+			# Door entry: play the Stalk (walking) animation instead of vaulting
+			if was_door_entry:
+				_anim_state_machine.travel("Stalk")
+			else:
+				_anim_state_machine.travel("EnterWindow")
 			return
 	
 	# ─── STANDARD LOCOMOTION BLENDING ────────────────────────────────

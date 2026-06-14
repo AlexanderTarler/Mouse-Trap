@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Mouse Trap"
-run/main_scene="res://scenes/cottage_horror.tscn"
+run/main_scene="res://scenes/ui/main_menu.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
 
@@ -25,6 +25,7 @@ JumpscareManager="*uid://br0tle13g7vbi"
 RoutineManager="*res://scripts/routine_manager.gd"
 EvidenceManager="*res://scripts/evidence_manager.gd"
 RoomLightDetector="*uid://lqer7d8tsn72"
+EndgameManager="*res://scripts/managers/endgame_manager.gd"
 
 [display]
 
@@ -42,6 +43,7 @@ WindowMarkers=""
 navmesh_source=""
 BottomFloorWindows=""
 UpperFloorWindows=""
+EntityWaypoints=""
 
 [input]
 

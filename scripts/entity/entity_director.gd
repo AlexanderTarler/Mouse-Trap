@@ -76,11 +76,49 @@ var _indoor_search_persistence_timer: float = 0.0
 ## Duration (in seconds) the Entity must stay in INDOOR_SEARCH after breaching.
 const INDOOR_SEARCH_PERSISTENCE_DURATION: float = 30.0
 
+## ─── OUTSIDE CONFIRMATION TIMER ──────────────────────────────────────────────
+## When the Entity deduces the player has escaped (thinks_player_is_inside=false),
+## this timer counts DOWN from a random value between 5-10 seconds. The Entity
+## must remain in OBSERVE_FROM_TREELINE until the timer reaches 0.0, at which
+## point it "confirms" the player is truly outside and transitions to SEARCH.
+##
+## This prevents the Entity from immediately SEARCHing the moment it loses sight
+## of the player or the 3-waypoint miss rule fires. The random delay (5-10s)
+## gives the player time to actually sneak away before the Entity starts
+## actively looking for them.
+##
+## Reset to a new random value whenever thinks_player_is_inside flips back to
+## true (player was heard or sighted indoors again).
+var _outside_confirmation_timer: float = 0.0
+
+## Whether the confirmation timer has been initialized with a random value.
+## Set to false when thinks_player_is_inside flips to false, triggering a new
+## random timer value on the next frame. Set to true after initialization.
+var _outside_confirmation_initialized: bool = false
+
+## Minimum duration (in seconds) for the outside confirmation timer.
+const OUTSIDE_CONFIRMATION_MIN: float = 5.0
+
+## Maximum duration (in seconds) for the outside confirmation timer.
+const OUTSIDE_CONFIRMATION_MAX: float = 10.0
+
 ## Resets the indoor search persistence timer to 30.0 seconds.
 ## Called by entity_ai.gd when the Entity enters INDOOR_SEARCH state.
 func reset_indoor_search_persistence() -> void:
 	_indoor_search_persistence_timer = INDOOR_SEARCH_PERSISTENCE_DURATION
 	print("[Director] Indoor search persistence timer set to %.1f seconds." % INDOOR_SEARCH_PERSISTENCE_DURATION)
+
+
+## Resets the outside confirmation timer so the Entity must wait another
+## 5-10 seconds in OBSERVE_FROM_TREELINE before re-entering SEARCH.
+## Called by entity_ai.gd's _search_state() when SEARCH completes.
+## This prevents the Director from immediately returning SEARCH on the
+## next frame after SEARCH completes (the timer would be at 0.0 and
+## _outside_confirmation_initialized would still be true).
+func reset_outside_confirmation() -> void:
+	_outside_confirmation_timer = 0.0
+	_outside_confirmation_initialized = false
+	print("[Director] Outside confirmation timer reset for next SEARCH cycle.")
 
 
 ## Called by entity_ai.gd's process_state_logic() every physics frame to
@@ -129,8 +167,9 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	# ─── INDOOR SEARCH PERSISTENCE TIMER DECAY ──────────────────────────
 	# Decrement the indoor search persistence timer each frame so it counts
 	# down from 30.0 to 0.0 while the Entity is in INDOOR_SEARCH.
-	# When it reaches 0.0, the Tier 8 guard no longer applies, allowing the
-	# Director to transition to OBSERVE_FROM_TREELINE if appropriate.
+	# When it reaches 0.0, the preservation guard (after state lock check)
+	# no longer applies, allowing the Director to transition to
+	# OBSERVE_FROM_TREELINE if appropriate.
 	if state == EntityAI.State.INDOOR_SEARCH and _indoor_search_persistence_timer > 0.0:
 		_indoor_search_persistence_timer -= entity.get_physics_process_delta_time()
 	
@@ -167,6 +206,23 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	# FSM fight over the state.
 	if entity.state_locked:
 		return state
+	
+	# ─── INDOOR SEARCH PRESERVATION GUARD ──────────────────────────────
+	# If the Entity is currently in INDOOR_SEARCH and the persistence timer
+	# is still active, do NOT allow Tiers 2-8 to override it with outdoor
+	# behaviors (OBSERVE_FROM_TREELINE, APPROACH_WINDOW, CLIMB_WALL_UP, etc.).
+	#
+	# This prevents the infinite loop where the Entity enters the cabin
+	# through the door, the Director immediately returns OBSERVE_FROM_TREELINE
+	# (because was_door_entry was consumed by the Door Phase A handler), and
+	# the Entity re-enters APPROACH_WINDOW → INDOOR_SEARCH → OBSERVE → ...
+	#
+	# Higher-priority overrides (Tier 0 pending, Tier 0 flashlight, Tier 1
+	# sabotage) are checked ABOVE this guard and can still interrupt.
+	# When the persistence timer reaches 0.0 (after 30 seconds), this guard
+	# no longer applies and the Director can transition to OBSERVE_FROM_TREELINE.
+	if state == EntityAI.State.INDOOR_SEARCH and _indoor_search_persistence_timer > 0.0:
+		return EntityAI.State.INDOOR_SEARCH
 	
 	# ─── STATE PERSISTENCE GUARD ──────────────────────────────────────
 	# If the Entity is in an active state (FLINCH, CLIMB_WALL, CHARGE, etc.)
@@ -228,15 +284,16 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	# ─── TIER 8: DEFAULT BASELINE ────────────────────────────────────
 	# ─── INDOOR SEARCH PERSISTENCE ──────────────────────────────────────
 	# If the Entity has breached a window (last_breached_window is not null)
-	# and is currently in INDOOR_SEARCH, force it to stay in INDOOR_SEARCH
-	# for at least 30 seconds regardless of whether it has found the player.
+	# OR entered through the door (was_door_entry is true), and is currently
+	# in INDOOR_SEARCH, force it to stay in INDOOR_SEARCH for at least 30
+	# seconds regardless of whether it has found the player.
 	# This prevents the "Breach → Search → Give Up → Breach again" loop.
 	#
 	# The 30-second timer is tracked via the _indoor_search_persistence_timer.
 	# It is reset to 30.0 when the Entity enters INDOOR_SEARCH and decremented
 	# each frame. While the timer is active, the Director returns INDOOR_SEARCH
 	# as the default baseline instead of OBSERVE_FROM_TREELINE.
-	if state == EntityAI.State.INDOOR_SEARCH and entity.last_breached_window != null:
+	if state == EntityAI.State.INDOOR_SEARCH and (entity.last_breached_window != null or entity.was_door_entry):
 		if _indoor_search_persistence_timer > 0.0:
 			return EntityAI.State.INDOOR_SEARCH
 	
@@ -265,20 +322,29 @@ func _tier_0_pending_override(entity: CharacterBody3D) -> int:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TIER 0: CRITICAL SURVIVAL & REACTIONS (Flashlight)
+# TIER 0: CRITICAL SURVIVAL & REACTIONS (Flashlight + Light Switch)
 # ═══════════════════════════════════════════════════════════════════════════════
-## Evaluates flashlight-based reactions. These are checked BEFORE the
-## state_locked guard so that flashlight reactions can forcefully interrupt
-## any ongoing task (approach, climb, etc.).
+## Evaluates flashlight-based reactions AND light-switch indoor retreat.
+## These are checked BEFORE the state_locked guard so that reactions can
+## forcefully interrupt any ongoing task (approach, climb, etc.).
 ##
-## If the Entity is illuminated, we break any existing locks and react
-## immediately.
+## LIGHT SWITCH RETREAT (is_indoor_retreat):
+##   When the Entity is inside the cabin (INDOOR_SEARCH) and a room light
+##   is turned on, entity_ai.gd's _indoor_search_state() sets the
+##   is_indoor_retreat flag on the Blackboard. This tier detects that flag
+##   and transitions to RETREAT — even if the flashlight is NOT shining.
+##   This handles the "Entity will not enter a lit room" and "Entity inside
+##   a room that gets its light turned on → RETREAT" rules from the design doc.
+##
+## FLASHLIGHT REACTIONS:
+##   If the Entity is illuminated, we break any existing locks and react
+##   immediately.
 ##
 ## EXCEPTION: FLINCH state lock is preserved. When the Entity has just escaped
 ## from an indoor retreat (teleported outside through the breach window), the
 ## indoor retreat handler sets the state to FLINCH and locks it. The FLINCH
-## handler must be allowed to complete its 1.5-second lateral sprint before
-## the Director re-evaluates.
+## handler must be allowed to complete its lateral sprint before the Director
+## re-evaluates.
 ##
 ## CRITICAL RULE — CHARGE IGNORES FLASHLIGHT:
 ##   If the Entity is in the CHARGE state (outdoor aggression), it has already
@@ -296,13 +362,41 @@ func _tier_0_pending_override(entity: CharacterBody3D) -> int:
 ##
 ## Returns: The target state, or -1 if no flashlight reaction applies.
 func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
+	# ─── LIGHT SWITCH RETREAT (is_indoor_retreat) ──────────────────────
+	# Checked BEFORE is_illuminated so that a light switch flip triggers
+	# RETREAT even if the flashlight is not currently shining on the Entity.
+	# The is_indoor_retreat flag is set by entity_ai.gd's _indoor_search_state()
+	# when RoomLightDetector.is_entity_in_lit_room() returns true.
+	#
+	# This handles two design doc rules:
+	#   1. "The Entity will not enter a room that has a cabin light turned on."
+	#   2. "If the Entity is inside a room that gets its cabin light turned on,
+	#      it goes into RETREAT state."
+	if entity.is_indoor_retreat:
+		# Forcefully break any existing task locks so we can react
+		entity.state_locked = false
+		entity.is_approach_finished = false
+		entity.is_climb_finished = false
+		entity.is_flinch_finished = false
+		entity.is_retreat_arrived = false
+		entity.is_window_unbarricaded = false
+		entity.is_observe_finished = false
+		
+		# Drop confidence to 20% — the Entity is spooked by being caught inside
+		var confidence_module = entity.get_confidence_module()
+		if confidence_module:
+			confidence_module.set_confidence(20.0)
+		
+		print("[Director] Light switch retreat! is_indoor_retreat=true. Transitioning to RETREAT.")
+		return EntityAI.State.RETREAT
+	
 	if not entity.is_illuminated:
 		return -1
 	
 	# ─── FLINCH STATE LOCK PRESERVATION ──────────────────────────────
 	# If the Entity is already in FLINCH and state_locked is true, the
 	# indoor retreat handler just set this state. Preserve the lock so
-	# the FLINCH handler can complete its 1.5-second lateral sprint.
+	# the FLINCH handler can complete its lateral sprint.
 	if state == EntityAI.State.FLINCH and entity.state_locked:
 		return EntityAI.State.FLINCH
 	
@@ -322,15 +416,15 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 	entity.is_window_unbarricaded = false
 	entity.is_observe_finished = false
 	
-	# ─── SAFELY CHECK PLAYER LOCATION ───────────────────────────────
-	# Null-check the navigation module to prevent crashes if it's not
-	# initialized yet. Default to "player is outside" if unavailable.
-	var nav = entity.get_navigation_module()
-	var is_player_inside = false
-	if nav and nav.has_method("is_player_outside"):
-		is_player_inside = not nav.is_player_outside()
+	# ─── SAFELY CHECK PLAYER LOCATION (BELIEF SYSTEM) ──────────────
+	# The Director NO LONGER magically knows the player's actual location.
+	# It relies entirely on the Entity's belief system (thinks_player_is_inside),
+	# which is updated by entity_sensory.gd (sight/sound) and entity_ai.gd
+	# (3-waypoint miss rule). Default to "player is outside" if unavailable.
+	var is_player_inside = entity.get_thinks_player_is_inside() if entity.has_method("get_thinks_player_is_inside") else false
 	
 	# ─── INDOOR AGGRESSION STATE → RETREAT (Player inside, Entity inside) ──
+
 	# If the Entity is inside the cabin (INDOOR_SEARCH, WINDOW_PEEK) and the
 	# player shines the flashlight, the Entity must RETREAT — run to the nearest
 	# broken/unboarded window, leave through it, then FLINCH.
@@ -498,13 +592,64 @@ func _tier_2_stare_grace_period(entity: CharacterBody3D, state: int) -> int:
 ##
 ## Returns: The target state, or -1 if no aggression rule applies.
 func _tier_3_active_aggression(entity: CharacterBody3D, state: int) -> int:
-	# ─── SAFELY CHECK PLAYER LOCATION ───────────────────────────────
-	# Null-check the navigation module to prevent crashes if it's not
-	# initialized yet. Default to "player is outside" if unavailable.
+	# ─── GROUND TRUTH: Player Room Detection ───────────────────────
+	# The definitive source of truth for whether the player is inside or outside.
+	# Uses entity_navigation.gd's get_player_room() which delegates to
+	# player_controller.gd's overlaps_body() detection against Cabin_Interior
+	# Area3D volumes. This is the most reliable method — it uses actual physics
+	# overlap checks rather than position-based heuristics.
+	#
+	# If the navigation module's get_player_room() returns "Outside", the player
+	# is truly outside. Any other room name means the player is inside the cabin.
+	#
+	# This is used as the definitive gate for ALL STALK transitions. The Entity
+	# can ONLY enter STALK if the player's actual room is "Outside".
 	var nav = entity.get_navigation_module()
-	var is_player_inside = false
-	if nav and nav.has_method("is_player_outside"):
-		is_player_inside = not nav.is_player_outside()
+	var player_room: String = "Outside"
+	if nav and nav.has_method("get_player_room"):
+		player_room = nav.get_player_room()
+	var is_player_actually_outside: bool = (player_room == "Outside")
+	
+	# ─── BELIEF SYSTEM SYNC ──────────────────────────────────────────
+	# Keep the Entity's belief system (thinks_player_is_inside) in sync with
+	# the ground truth. If the player's actual room is not "Outside", the
+	# Entity should believe the player is inside — regardless of what the
+	# acoustic detection or 3-waypoint miss rule says.
+	#
+	# This prevents the "stale belief" bug where the Entity hears the player
+	# outside (setting thinks_player_is_inside=false), the player goes back
+	# inside, but the belief system never flips back because the indoor noise
+	# position is incorrectly classified as "Outside" by RoomLightDetector.
+	if is_player_actually_outside:
+		entity.set_thinks_player_is_inside(false)
+	else:
+		entity.set_thinks_player_is_inside(true)
+	
+	# ─── OUTSIDE CONFIRMATION TIMER MANAGEMENT ──────────────────────
+	# When the player is actually outside (ground truth), a random timer
+	# (5-10 seconds) starts counting DOWN. The Entity must remain in
+	# OBSERVE_FROM_TREELINE until the timer reaches 0.0, at which point
+	# it "confirms" the player is truly outside and transitions to STALK.
+	#
+	# If the player is inside, reset the timer to 0.0 and clear the
+	# initialized flag.
+	if not is_player_actually_outside:
+		if _outside_confirmation_timer > 0.0 or _outside_confirmation_initialized:
+			_outside_confirmation_timer = 0.0
+			_outside_confirmation_initialized = false
+			print("[Director] Outside confirmation timer RESET (player room='%s')." % player_room)
+	else:
+		# Player is actually outside — initialize the timer with a random value
+		# if it hasn't been initialized yet.
+		if not _outside_confirmation_initialized:
+			_outside_confirmation_timer = randf_range(OUTSIDE_CONFIRMATION_MIN, OUTSIDE_CONFIRMATION_MAX)
+			_outside_confirmation_initialized = true
+			print("[Director] Outside confirmation timer set to %.1f seconds (random %d-%d range). Player room='%s'." % [_outside_confirmation_timer, OUTSIDE_CONFIRMATION_MIN, OUTSIDE_CONFIRMATION_MAX, player_room])
+		
+		# Count down the timer
+		_outside_confirmation_timer -= entity.get_physics_process_delta_time()
+		if _outside_confirmation_timer < 0.0:
+			_outside_confirmation_timer = 0.0
 	
 	# ─── HUNTING OVERRIDE: If the Entity actively hears the player ──
 	# This check runs BEFORE line-of-sight and state preservation so that
@@ -512,22 +657,56 @@ func _tier_3_active_aggression(entity: CharacterBody3D, state: int) -> int:
 	# pursuit regardless of confidence level.
 	#
 	# RULES:
-	#   - Player outside → STALK (slow pursuit toward the player's last
-	#     known position). The Entity does NOT CHARGE from hearing alone —
-	#     CHARGE is reserved for flashlight stare (outdoor) or seeing the
-	#     player indoors.
-	#   - Player inside → Return -1 (no match) so the evaluation falls
-	#     through to Tier 4 (confidence escalation) and Tier 5 (completion
-	#     flags). The Entity knows the player is inside but cannot STALK
-	#     them — STALK is an outdoor pursuit state for when both are outside.
-	#     The Entity will naturally escalate to APPROACH_WINDOW via confidence
-	#     escalation, or relocate to a new vantage point via the completion
-	#     flag system. Returning OBSERVE_FROM_TREELINE here would prevent
-	#     Tier 4 and Tier 5 from ever running, trapping the Entity in place.
+	#   - Player outside AND visually confirmed → STALK (slow pursuit toward
+	#     the player's last known position). The Entity does NOT CHARGE from
+	#     hearing alone — CHARGE is reserved for flashlight stare (outdoor)
+	#     or seeing the player indoors.
+	#   - Player outside BUT NOT visually confirmed → STALK (outdoor pursuit).
+	#     The Entity heard something but can't see the player, so it enters
+	#     STALK mode — pathfinding to the last heard position, then pursuing
+	#     the player through the forest.
+	#   - Player inside → If the Entity is currently in STALK, it should
+	#     exit STALK and fall through to confidence escalation (Tier 4),
+	#     which will naturally select the door or a window via
+	#     pick_tactical_window(). The door is already a permanent option
+	#     in the window selection system.
 	if entity.is_hunting():
-		if is_player_inside:
-			return -1  # Fall through to confidence escalation and completion flags
+		if not is_player_actually_outside:
+			# Player is inside. If the Entity is currently in STALK, it
+			# should exit STALK and fall through to confidence escalation
+			# (Tier 4) which will naturally select the door or a window
+			# via pick_tactical_window(). The door is already a permanent
+			# option in the window selection system.
+			if state == EntityAI.State.STALK:
+				# Exit STALK — fall through to Tier 4 confidence escalation
+				# which will pick the best entry point (door or window).
+				return -1
+			
+			# Not in STALK — fall through to confidence escalation and
+			# completion flags as before.
+			return -1
+		
+		# ─── VISUAL CONFIRMATION GATE ──────────────────────────────────
+		# The Entity heard the player outside, but it needs VISUAL confirmation
+		# before it can STALK. Without this gate, the Entity would magically
+		# know the player's exact location from hearing alone and pursue them
+		# through the dark forest — which is unfair and omniscient.
+		# If the Entity cannot SEE the player, it enters SEARCH mode —
+		# pathfinding to the last heard position, then waiting before
+		# returning to treeline observation.
+		var sensory = entity.get_sensory_module()
+		var can_see_player = sensory and sensory.has_method("can_entity_see_player") and sensory.can_entity_see_player()
+		if not can_see_player:
+			# ─── OUTSIDE CONFIRMATION GATE ──────────────────────────────
+			# Even when hunting, the Entity must wait for the confirmation
+			# timer before entering STALK. This prevents the Entity from
+			# immediately STALKing the moment it hears a noise outside.
+			if _outside_confirmation_timer > 0.0:
+				return EntityAI.State.OBSERVE_FROM_TREELINE
+			return EntityAI.State.STALK
+		
 		return EntityAI.State.STALK
+
 	
 	# ─── LINE-OF-SIGHT → STALK (both outside) or CHARGE (both inside) ──
 	# If both the Entity and player are outside, line-of-sight triggers STALK
@@ -550,31 +729,87 @@ func _tier_3_active_aggression(entity: CharacterBody3D, state: int) -> int:
 	var can_see_player = sensory and sensory.has_method("can_entity_see_player") and sensory.can_entity_see_player()
 	
 	if can_see_player:
-		if is_player_inside and state == EntityAI.State.INDOOR_SEARCH:
-			# Both inside — CHARGE at 3x speed to attack the player
-			return EntityAI.State.CHARGE
+		if not is_player_actually_outside:
+			# Player is inside the cabin. The Entity is outside (OBSERVE,
+			# APPROACH_WINDOW, etc.) and sees the player through a window.
+			# Do NOT STALK — STALK is outdoor pursuit. Fall through to
+			# confidence escalation (APPROACH_WINDOW/CLIMB_WALL) or
+			# state completion flags.
+			# Exception: If the Entity is already inside (INDOOR_SEARCH),
+			# CHARGE at 3x speed to attack the player.
+			if state == EntityAI.State.INDOOR_SEARCH:
+				return EntityAI.State.CHARGE
+			return -1  # Fall through to Tier 4 (confidence escalation)
 		else:
-			# Both outside or player inside (Entity outside) — STALK
+			# Both outside — STALK (slow, menacing pursuit)
 			return EntityAI.State.STALK
 	
-	# ─── STALK LOST LINE-OF-SIGHT → INVESTIGATE LAST KNOWN POSITION ──
-	# If the Entity was STALKING but lost line-of-sight, it should search
-	# for the player at the last known position. The STALK state handler
-	# handles this internally via _is_investigating.
-	if state == EntityAI.State.STALK:
-		return EntityAI.State.STALK
-	
-	# Preserve active states
-	if state == EntityAI.State.STALK:
-		if is_player_inside:
+	# ─── PLAYER BELIEVED OUTSIDE BUT NOT VISIBLE → STALK ──────────
+	# The Entity believes the player has escaped (thinks_player_is_inside=false)
+	# but cannot see them. Instead of immediately STALKing, the Entity must
+	# wait for the confirmation timer (random 5-10 seconds) to count down to
+	# 0.0 first. During this delay, the Entity stays in OBSERVE_FROM_TREELINE,
+	# continuing to watch the cabin from the treeline.
+	#
+	# This gives the player time to actually sneak away before the Entity
+	# starts actively looking for them. The confirmation timer is managed
+	# at the top of this function (initialized with a random value, counted
+	# down each frame).
+	#
+	# If the Entity still believes the player is inside, fall through to
+	# state preservation below (keep the current state).
+	#
+	# REALITY CHECK GATE:
+	# Even if the Entity BELIEVES the player is outside (thinks_player_is_inside=false),
+	# we double-check against the navigation module's ACTUAL player location
+	# (is_player_actually_outside, computed at the top of this function via
+	# get_player_room()). This prevents the Entity from STALKing when the
+	# player has gone back inside but the belief system hasn't been updated.
+	if is_player_actually_outside:
+		# ─── REALITY CHECK: Is the player ACTUALLY outside? ─────────────
+		# The Entity's belief system may be stale (e.g., the Entity heard the
+		# player outside 10 seconds ago, but the player has since gone back
+		# inside without making noise). We verify against the navigation
+		# module's real-time player location (computed at the top of this
+		# function via get_player_room()) to avoid STALKing an indoor player.
+		if _outside_confirmation_timer > 0.0:
+			# ─── STILL CONFIRMING: Stay in OBSERVE_FROM_TREELINE ─────────
+			# The Entity has deduced the player might be outside, but hasn't
+			# confirmed it yet. It continues watching the cabin from the
+			# treeline. The confirmation timer is counting down each frame.
+			# Once it reaches 0.0, the Entity will transition to STALK.
 			return EntityAI.State.OBSERVE_FROM_TREELINE
+		
+		# ─── CONFIRMED: Player is truly outside. Start STALKING. ────────
+		print("[Director] Outside confirmed! Timer reached 0.0. Transitioning to STALK.")
 		return EntityAI.State.STALK
 	
-	if state == EntityAI.State.INDOOR_SEARCH:
-		return EntityAI.State.INDOOR_SEARCH
-	
-	if state == EntityAI.State.CHARGE:
-		return EntityAI.State.CHARGE
+	# ─── STALK STATE HANDLING ─────────────────────────────────────────
+	# If the Entity is in STALK, check whether the player is still outside.
+	# If the player is outside, preserve STALK (the Entity continues pursuing).
+	# If the player entered the cabin, the Entity should exit STALK and fall
+	# through to confidence escalation (Tier 4), which will naturally select
+	# the door or a window via pick_tactical_window(). The door is already a
+	# permanent option in the window selection system.
+	if state == EntityAI.State.STALK:
+		if not is_player_actually_outside:
+			# Player entered the cabin. The Entity should stop STALKING
+			# and fall through to confidence escalation (Tier 4) which
+			# will naturally select the door or a window via
+			# pick_tactical_window(). The door is already a permanent
+			# option in the window selection system.
+			var confidence = entity.get_confidence_module().get_confidence()
+			var is_player_inside_belief = entity.get_thinks_player_is_inside() if entity.has_method("get_thinks_player_is_inside") else false
+			if confidence >= 65.0 and is_player_inside_belief:
+				return EntityAI.State.CLIMB_WALL_UP
+			if confidence >= 40.0:
+				return EntityAI.State.APPROACH_WINDOW
+			return EntityAI.State.OBSERVE_FROM_TREELINE
+		
+		# Player is still outside — preserve STALK (continue pursuing)
+		return EntityAI.State.STALK
+
+
 	
 	return -1
 
@@ -597,11 +832,8 @@ func _tier_4_confidence_escalation(entity: CharacterBody3D, state: int) -> int:
 	
 	var confidence = entity.get_confidence_module().get_confidence()
 	
-	# Safely check if player is inside — default to false if nav module unavailable
-	var nav = entity.get_navigation_module()
-	var is_player_inside = false
-	if nav and nav.has_method("is_player_outside"):
-		is_player_inside = not nav.is_player_outside()
+	# Safely check if player is inside (BELIEF SYSTEM) — default to false
+	var is_player_inside = entity.get_thinks_player_is_inside() if entity.has_method("get_thinks_player_is_inside") else false
 	
 	if confidence >= 65.0 and is_player_inside:
 		return EntityAI.State.CLIMB_WALL_UP
@@ -624,13 +856,67 @@ func _tier_5_completion_flags(entity: CharacterBody3D, state: int) -> int:
 	if state == EntityAI.State.APPROACH_WINDOW:
 		if entity.is_approach_finished:
 			entity.is_approach_finished = false
-			return EntityAI.State.WINDOW_PEEK
-		return EntityAI.State.APPROACH_WINDOW
+			# ─── DOOR VS WINDOW DISPATCH ───────────────────────────────
+			# The APPROACH_WINDOW handler now handles both windows AND the
+			# front door using a multi-phase sequence.
+			#
+			# WINDOW: Standard window approach. Transition to WINDOW_PEEK.
+			#   This is the default case — if is_door_target is false, the
+			#   Entity approached a window, not a door.
+			#
+			# LOCKED DOOR: The door was locked. The Entity paused 2 seconds,
+			#   played the rattle sound, and signaled completion. Transition
+			#   to OBSERVE_FROM_TREELINE — the Entity gives up and returns
+			#   to treeline observation. The 30-second door approach cooldown
+			#   prevents immediate re-attempt.
+			#
+			# UNLOCKED DOOR (closed or open): The Entity opened the door,
+			#   walked through the doorway to the interior waypoint, and
+			#   signaled completion. Transition to INDOOR_SEARCH — the Entity
+			#   has entered the cabin through the front door.
+			#
+			# CRITICAL: We check is_door_target FIRST to distinguish between
+			# a window approach and a door approach. If is_door_target is
+			# false, this was a window — go to WINDOW_PEEK. If true, check
+			# is_door_locked to determine the door outcome.
+			if not entity.is_door_target:
+				# ─── WINDOW APPROACH ────────────────────────────────────
+				# The Entity approached a window, not a door. Transition to
+				# WINDOW_PEEK to begin the peek/breach sequence.
+				print("[Director] APPROACH_WINDOW (window) complete! Transitioning to WINDOW_PEEK.")
+				return EntityAI.State.WINDOW_PEEK
+			
+			# ─── DOOR APPROACH ──────────────────────────────────────────
+			# The Entity approached the front door. Consume the door target
+			# flag and check if the door was locked.
+			entity.is_door_target = false
+			if entity.is_door_locked:
+				entity.is_door_locked = false
+				print("[Director] APPROACH_WINDOW (door) complete! Door was LOCKED. Returning to OBSERVE_FROM_TREELINE.")
+				return EntityAI.State.OBSERVE_FROM_TREELINE
+			# Door was unlocked — the Entity walked through the doorway and is now inside the cabin.
+			# Transition to INDOOR_SEARCH to begin hunting the player indoors.
+			# Set the was_door_entry flag so _indoor_search_state() can bypass Phase A
+			# (vault animation + teleport math) and go straight to Phase B (patrol).
+			entity.was_door_entry = true
+			print("[Director] APPROACH_WINDOW (door) complete! Door was UNLOCKED. Entering cabin via INDOOR_SEARCH.")
+			return EntityAI.State.INDOOR_SEARCH
+
 	
 	if state == EntityAI.State.WINDOW_PEEK:
 		# ─── NULL WINDOW TARGET GUARD ──────────────────────────────────
 		if not entity.get_current_window_target():
 			entity.is_window_unbarricaded = false
+			return EntityAI.State.OBSERVE_FROM_TREELINE
+		
+		# ─── PEEK ABORT HANDLING ──────────────────────────────────────
+		# The peek assessment in entity_ai.gd's _window_peek_state() may
+		# determine this is a bad breach point (room is lit OR player is
+		# visible). In that case, it sets is_observe_finished to signal
+		# the Director to fall back to treeline observation and try a
+		# different angle later.
+		if entity.is_observe_finished:
+			entity.is_observe_finished = false
 			return EntityAI.State.OBSERVE_FROM_TREELINE
 		
 		if entity.is_window_unbarricaded:
@@ -678,6 +964,13 @@ func _tier_5_completion_flags(entity: CharacterBody3D, state: int) -> int:
 			_last_completed_state = EntityAI.State.FLINCH
 			return EntityAI.State.OBSERVE_FROM_TREELINE
 		return EntityAI.State.FLINCH
+	
+	if state == EntityAI.State.SEARCH:
+		# SEARCH is deprecated — redirect to STALK.
+		# The SEARCH state handler in entity_ai.gd is a stub that immediately
+		# signals completion. Instead of going through the stub, we redirect
+		# directly to STALK so the Entity pursues the player through the forest.
+		return EntityAI.State.STALK
 	
 	if state == EntityAI.State.OBSERVE_FROM_TREELINE:
 		if entity.is_observe_finished:
@@ -762,11 +1055,8 @@ func _tier_7_fallback_confidence(entity: CharacterBody3D) -> int:
 	
 	var confidence = entity.get_confidence_module().get_confidence()
 	
-	# Safely check if player is inside — default to false if nav module unavailable
-	var nav = entity.get_navigation_module()
-	var is_player_inside = false
-	if nav and nav.has_method("is_player_outside"):
-		is_player_inside = not nav.is_player_outside()
+	# Safely check if player is inside (BELIEF SYSTEM) — default to false
+	var is_player_inside = entity.get_thinks_player_is_inside() if entity.has_method("get_thinks_player_is_inside") else false
 	
 	if confidence >= 65.0 and is_player_inside:
 		return EntityAI.State.CLIMB_WALL_UP

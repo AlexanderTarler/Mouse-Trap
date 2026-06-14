@@ -230,7 +230,43 @@ func _play_lock_unlock_sound(is_locking: bool) -> void:
 		door_audio.play()
 
 
+## Forces the door open (used by the Entity AI during WINDOW_PEEK breach).
+## This is the door equivalent of CabinWindow.shatter_window().
+## The Entity smashes through the door, unlocking and flinging it open.
+## Called by entity_ai.gd's _window_peek_state() when the target is a door.
+func break_door() -> void:
+	print("[Door] Entity forcing door open via break_door()!")
+	
+	# Unlock the door if it was locked
+	if is_locked:
+		is_locked = false
+		print("[Door] Door force-unlocked by Entity!")
+	
+	# Open the door if it's closed
+	if not is_open:
+		is_open = true
+		is_animating = true
+		
+		var target_angle = default_rotation_y + open_angle
+		var tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+		tween.tween_property(self, "rotation_degrees:y", target_angle, swing_speed * 0.5)  # Faster swing for Entity
+		tween.tween_callback(func(): is_animating = false)
+		
+		# Play door open sound
+		if door_audio:
+			var target_stream = open_sound if open_sound else _original_scene_stream
+			if target_stream:
+				door_audio.stream = target_stream
+				door_audio.pitch_scale = randf_range(0.8, 1.0)  # Slightly lower pitch for menacing effect
+				door_audio.play()
+		
+		print("[Door] Door forced open by Entity!")
+	else:
+		print("[Door] Door was already open.")
+
+
 ## Checks if the Night 1 bedtime routine should advance to Step 4.
+
 ## Called when the player locks the door. Only advances if:
 ##   - We're on Step 3 of the routine
 ##   - All cabin lights are switched off
