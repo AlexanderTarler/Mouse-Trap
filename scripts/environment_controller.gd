@@ -148,7 +148,7 @@ func _apply_cycle() -> void:
 	# Smoothly transitions through the horizon (sun_height crosses 0).
 	# We use a smoothstep-like transition in the range -0.2 to 0.2 for a
 	# natural dusk/dawn glow that lasts a few minutes of game time.
-	var raw_day_factor: float = sun_height / 0.2  # -1 to 1 mapped to -5 to 5
+	var raw_day_factor: float = sun_height / 0.4  # -1 to 1 mapped to -5 to 5
 	var day_factor: float = clampf((raw_day_factor + 1.0) / 2.0, 0.0, 1.0)
 	
 	# --- 1. Rotate the Sun and Moon ---

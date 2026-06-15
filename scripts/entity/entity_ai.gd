@@ -229,6 +229,21 @@ var _indoor_breach_timer: float = 0.0
 ## begins. The Entity interpolates toward this position each frame.
 var _landing_position: Vector3 = Vector3.ZERO
 
+## Timer that forces the Entity to stay in INDOOR_SEARCH for a minimum
+## duration before it can give up and transition to OBSERVE_FROM_TREELINE.
+## Set to INDOOR_SEARCH_MIN_DURATION (15.0s) when the Entity enters
+## INDOOR_SEARCH. Decremented by delta each frame in _indoor_search_state().
+## While the timer is active, the investigation sub-state will NOT set
+## is_observe_finished = true, preventing the Entity from giving up too
+## early and creating the infinite INDOOR_SEARCH → OBSERVE → APPROACH loop.
+var _indoor_search_timer: float = 0.0
+
+## Minimum duration (in seconds) the Entity must stay in INDOOR_SEARCH
+## before it can give up and transition to OBSERVE_FROM_TREELINE.
+## This prevents the infinite loop where the Entity enters the cabin,
+## immediately gives up, and re-enters APPROACH_WINDOW.
+const INDOOR_SEARCH_MIN_DURATION: float = 15.0
+
 ## Duration of the EnterWindow vault animation in seconds.
 ## The animation is ~1.5 seconds long. The Entity must play this animation
 ## for its full duration before teleporting inside, ensuring the visual
@@ -544,6 +559,15 @@ func process_state_logic(delta: float) -> void:
 			if confidence_module and confidence_module.has_method("remove_continuous_modifier"):
 				confidence_module.remove_continuous_modifier("desperation_passive")
 				print("[Entity AI] Desperation: Removed passive modifier (Entity left OBSERVE state).")
+	
+	# ─── INDOOR SEARCH TIMER DECREMENT ──────────────────────────────────
+	# Decrement the indoor search minimum duration timer each frame.
+	# When the timer reaches 0.0, set the Blackboard flag so the Director
+	# knows the Entity has been inside long enough and can give up.
+	if _indoor_search_timer > 0.0:
+		_indoor_search_timer -= delta
+		if _indoor_search_timer <= 0.0:
+			entity.is_indoor_search_finished = true
 	
 	# --- STATE DISPATCHER ---
 	# Execute Movement/Physics for the current state.
@@ -1689,7 +1713,11 @@ func _indoor_retreat_handler(delta: float) -> void:
 		
 		if _retreat_indoor_phase_3_timer <= 0.0:
 			# Phase 3 complete — signal completion to the Director
-			entity.is_retreat_finished = true
+			# Use is_retreat_arrived (the existing Blackboard property) instead of
+			# is_retreat_finished (which doesn't exist on entity_controller.gd).
+			# The Director checks is_retreat_arrived in Tier 0 to transition to
+			# OBSERVE_FROM_TREELINE after a retreat completes.
+			entity.is_retreat_arrived = true
 			entity.state_locked = false
 			_retreat_indoor_phase_3_triggered = false
 			_retreat_indoor_phase_3 = false
@@ -2544,6 +2572,16 @@ func _indoor_search_state(delta: float) -> void:
 		if _director and _director.has_method("reset_indoor_search_persistence"):
 			_director.reset_indoor_search_persistence()
 		
+		# ─── INDOOR SEARCH MINIMUM DURATION TIMER ─────────────────────
+		# Set the minimum duration timer so the Entity cannot immediately
+		# give up and transition to OBSERVE_FROM_TREELINE. The Entity must
+		# stay inside for at least INDOOR_SEARCH_MIN_DURATION (15.0s)
+		# before it can give up. This prevents the infinite loop where the
+		# Entity enters through the door, immediately investigates, gives
+		# up, and re-enters APPROACH_WINDOW.
+		_indoor_search_timer = INDOOR_SEARCH_MIN_DURATION
+		print("[INDOOR_SEARCH] Door entry: Indoor search minimum duration timer set to %.1f seconds." % INDOOR_SEARCH_MIN_DURATION)
+		
 		# ─── FORCE IMMEDIATE NAV TARGET ──────────────────────────────────
 		# After Door Phase A completes, the Entity is snapped to the
 		# IndoorBreachWaypoint. But it has no last_known_position set
@@ -2693,331 +2731,36 @@ func _indoor_search_state(delta: float) -> void:
 			_has_arrived_indoor = true
 			_enter_window_anim_timer = 0.0
 			_calculated_velocity = Vector3.ZERO
+			
+			# ─── INDOOR SEARCH MINIMUM DURATION TIMER ─────────────────────
+			# Set the minimum duration timer so the Entity cannot immediately
+			# give up and transition to OBSERVE_FROM_TREELINE. The Entity must
+			# stay inside for at least INDOOR_SEARCH_MIN_DURATION (15.0s)
+			# before it can give up. This prevents the infinite loop where the
+			# Entity enters through the window, immediately investigates, gives
+			# up, and re-enters APPROACH_WINDOW.
+			_indoor_search_timer = INDOOR_SEARCH_MIN_DURATION
+			print("[INDOOR_SEARCH] Window breach: Indoor search minimum duration timer set to %.1f seconds." % INDOOR_SEARCH_MIN_DURATION)
 			return
 		else:
 			# Animation still playing — freeze movement
 			_calculated_velocity = Vector3.ZERO
 			return
 	
-	# ─── PHASE B: Indoor Patrol ──────────────────────────────────────────
-	# Pathfind toward the player's last known position.
-	# If the player is in a dark room, actively patrol between waypoints.
-	# When the Entity is hunting (has heard the player via noise), it
-	# prioritizes the player's last known position over random waypoints.
-	var player = entity.get_player()
-	if player:
-		# ─── LIGHT SWITCH RETREAT CHECK (every frame) ────────────────────
-		# If the Entity is standing in a lit room (player flipped the light
-		# switch), it panics and immediately executes the RETREAT state.
-		# This check runs EVERY FRAME for instant response — the player
-		# flipping a light switch needs immediate reaction, not a 0.3s delay.
-		if RoomLightDetector.is_entity_in_lit_room():
-			print("[INDOOR_SEARCH] Light switch triggered! Entity is in a lit room. Forcing RETREAT!")
-			entity.is_indoor_retreat = true
-			entity.state_locked = false
+	# PHASE B: Hunt the player
+	if _has_arrived_indoor:
+		var nav = entity.get_nav_agent()
+		
+		if nav.is_navigation_finished():
 			_calculated_velocity = Vector3.ZERO
-			# The Director will pick up the RETREAT state on the next
-			# evaluation cycle. We don't call set_state() directly —
-			# the Director handles all state transitions.
 			return
+			
+		var next_pos = nav.get_next_path_position()
+		var dir = entity.global_position.direction_to(next_pos)
+		dir.y = 0 # Keep movement horizontal
 		
-		# ─── HUNTING PRIORITY ─────────────────────────────────────────────
-		# If the Entity is hunting (has heard the player via noise), it
-		# should pathfind toward the player's last known position instead of
-		# random patrol waypoints. This makes the Entity actively search for
-		# the player based on acoustic clues (footsteps, sprinting, etc.).
-		# The player's noise gives room-level awareness without exact position.
-		var is_hunting = entity.is_hunting()
-		var lkp = entity.get_last_known_position()
-		var dist_to_lkp = entity.global_position.distance_to(lkp)
-		
-		# ─── DARK ROOM PATROL ─────────────────────────────────────────────
-		# If the player is in a dark room (not lit), the Entity cannot track
-		# them via last_known_position effectively. Instead of standing still
-		# at a single waypoint, actively patrol between Cabin_Patrol_Waypoints.
-		# This makes the Entity pace around the cabin looking for the player.
-		#
-		# HOWEVER: If the Entity is hunting (has heard the player), it should
-		# pathfind toward the player's last known position instead of random
-		# waypoints. The patrol waypoints are only used when the Entity has
-		# no idea where the player is.
-		var player_in_lit_room = false
-		if entity.get_navigation_module().has_method("is_player_in_lit_room"):
-			player_in_lit_room = entity.get_navigation_module().is_player_in_lit_room()
-		
-		if not player_in_lit_room and not _is_investigating and not _is_scanning:
-			# ─── HUNTING OVERRIDE: Room-Center Investigation ─────────────────
-			# If the Entity heard the player (noise detection), it should
-			# pathfind toward the room center corresponding to the last heard
-			# room, rather than the player's exact coordinates. This makes the
-			# Entity smarter but fairer — it knows which room the player is in,
-			# but not the exact position within that room.
-			if is_hunting and dist_to_lkp > 2.0:
-				# ─── ROOM-CENTER PATHFINDING ──────────────────────────────
-				# If the Entity has a last_heard_room from the sensory module,
-				# resolve it to a CabinRoom node and pathfind to its center.
-				# This gives room-level awareness without exact position.
-				var sensory = entity.get_sensory_module()
-				var room_name = ""
-				if sensory and "last_heard_room" in sensory:
-					room_name = sensory.last_heard_room
-				
-				if room_name != "":
-					# Try to find the CabinRoom node by name
-					var room_node = entity.get_node_or_null("/root/GameWorld/Cabin/Rooms/" + room_name)
-					if not room_node:
-						room_node = entity.get_node_or_null("/root/GameWorld/" + room_name)
-					if not room_node:
-						room_node = entity.get_tree().get_first_node_in_group(room_name)
-					
-					if room_node and room_node.has_method("get_room_center"):
-						var room_center = room_node.get_room_center()
-						entity.get_nav_agent().target_position = room_center
-						print("[INDOOR_SEARCH] Hunting! Pathfinding toward room center of '%s' at (%.2f, %.2f, %.2f)" % [room_name, room_center.x, room_center.y, room_center.z])
-					elif room_node:
-						# Fallback: use the room node's own position
-						entity.get_nav_agent().target_position = room_node.global_position
-						print("[INDOOR_SEARCH] Hunting! Pathfinding toward room node '%s' at (%.2f, %.2f, %.2f)" % [room_name, room_node.global_position.x, room_node.global_position.y, room_node.global_position.z])
-					else:
-						# Fallback: use last known position
-						entity.get_nav_agent().target_position = lkp
-						print("[INDOOR_SEARCH] Hunting! Room '%s' not found. Pathfinding toward last known position." % room_name)
-				else:
-					# No room name — fall back to last known position
-					entity.get_nav_agent().target_position = lkp
-					print("[INDOOR_SEARCH] Hunting! No room name. Pathfinding toward last known position at (%.2f, %.2f, %.2f)" % [lkp.x, lkp.y, lkp.z])
-				
-				# ─── SCAN CHECK: Arrived at room center ──────────────────
-				# If the Entity is close to the nav target (room center) and
-				# cannot see the player, enter the scanning sub-state.
-				var nav_target = entity.get_nav_agent().target_position
-				var dist_to_target = entity.global_position.distance_to(nav_target)
-				var nav_finished = entity.get_nav_agent().is_navigation_finished()
-				
-				if (nav_finished or dist_to_target <= 1.0) and not _is_scanning:
-					var can_see = false
-					if sensory and sensory.has_method("can_entity_see_player"):
-						can_see = sensory.can_entity_see_player()
-					
-					if not can_see:
-						# ─── START SCANNING ──────────────────────────────
-						# The Entity arrived at the room center but the player
-						# is not here. Enter scanning mode: rotate slowly for
-						# 4 seconds, looking for the player.
-						_is_scanning = true
-						_scan_timer = 4.0
-						_calculated_velocity = Vector3.ZERO
-						print("[INDOOR_SEARCH] Arrived at room center but player not found. Scanning for 4 seconds...")
-						return
-			else:
-				# Player is in the dark — patrol between waypoints
-				if _current_patrol_waypoint == Vector3.ZERO or entity.get_nav_agent().is_navigation_finished():
-					# Pick a new random waypoint from the Cabin_Patrol_Waypoints group.
-					# FILTER: Skip waypoints that are inside a lit room — the Entity
-					# will not enter a room that has its cabin light turned on.
-					var waypoints: Array[Node] = entity.get_tree().get_nodes_in_group("Cabin_Patrol_Waypoints")
-					if not waypoints.is_empty():
-						# Shuffle and filter for dark-room waypoints only
-						waypoints.shuffle()
-						var selected_wp: Node3D = null
-						for wp in waypoints:
-							var wp_node: Node3D = wp as Node3D
-							if not wp_node:
-								continue
-							# Check if this waypoint is in a lit room
-							var nav_module = entity.get_navigation_module()
-							if nav_module and nav_module.has_method("is_position_in_lit_room"):
-								if nav_module.is_position_in_lit_room(wp_node.global_position):
-									continue  # Skip — this waypoint is in a lit room
-							selected_wp = wp_node
-							break
-						
-						if not selected_wp:
-							# All waypoints are in lit rooms — pick the least-lit one
-							# (the one farthest from any light source)
-							selected_wp = waypoints[0] as Node3D
-						
-						if selected_wp:
-							_current_patrol_waypoint = selected_wp.global_position
-							entity.get_nav_agent().target_position = _current_patrol_waypoint
-							print("[INDOOR_SEARCH] Dark room patrol: New waypoint set to (%.2f, %.2f, %.2f)" % [_current_patrol_waypoint.x, _current_patrol_waypoint.y, _current_patrol_waypoint.z])
-					else:
-						# Fallback: if no waypoints exist, use last_known_position
-						_current_patrol_waypoint = lkp
-						entity.get_nav_agent().target_position = _current_patrol_waypoint
-			
-			# Move toward the current patrol waypoint
-			if entity.get_nav_agent().is_navigation_finished():
-				_calculated_velocity.x = 0.0
-				_calculated_velocity.z = 0.0
-			else:
-				var next_pos = entity.get_nav_agent().get_next_path_position()
-				var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
-				if dir_2d.length() > 0.01:
-					var move_dir_2d = dir_2d.normalized()
-					_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
-					_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
-			
-			# ─── CATCH CHECK ──────────────────────────────────────────────
-			if entity.global_position.distance_to(player.global_position) <= entity.catch_distance:
-				entity._on_caught_player()
-				return
-			
-			# ─── UNIVERSAL FRUSTRATION: LIT ROOM BLOCK ─────────────────
-			# Even during patrol, accumulate frustration if the player is in
-			# a lit room (shouldn't happen here since we checked above, but
-			# keep for consistency).
-			if entity.get_navigation_module().has_method("is_player_in_lit_room"):
-				if player_in_lit_room:
-					_all_lit_frustration += ALL_LIT_FRUSTRATION_RATE * delta
-					_all_lit_frustration = minf(_all_lit_frustration, ALL_LIT_FRUSTRATION_THRESHOLD)
-			return
-		
-		entity.set_path_timer(entity.get_path_timer() + delta)
-		if entity.get_path_timer() >= entity.path_update_interval:
-			entity.set_path_timer(0.0)
-			
-			# ─── INVESTIGATION CONFUSION CHECK ───────────────────────────
-			# If the Entity has arrived at the last_known_position and cannot
-			# see the player, enter the Investigation sub-state. The Entity
-			# stops, plays a searching animation, and waits 4 seconds before
-			# giving up and transitioning to OBSERVE_FROM_TREELINE.
-			if _is_investigating:
-				# Already investigating — count down the timer
-				_investigation_timer -= delta
-				
-				# ─── SEARCHING ANIMATION ─────────────────────────────────
-				# Play the searching animation (head turning left/right).
-				# The animation state machine handles the visual — we just
-				# keep the Entity frozen in place.
-				_calculated_velocity = Vector3.ZERO
-				
-				# ─── CHECK IF PLAYER IS SPOTTED DURING INVESTIGATION ─────
-				# If the Entity sees or hears the player during the 4-second
-				# investigation window, it immediately resumes the chase.
-				var sensory = entity.get_sensory_module()
-				if sensory and sensory.has_method("can_entity_see_player") and sensory.can_entity_see_player():
-					_is_investigating = false
-					_investigation_timer = 0.0
-					print("[INDOOR_SEARCH] Investigation interrupted! Player spotted. Resuming chase.")
-				elif entity.is_hunting() and entity.get_current_interest_level() > 50.0:
-					# Player was heard (acoustic detection) during investigation
-					_is_investigating = false
-					_investigation_timer = 0.0
-					print("[INDOOR_SEARCH] Investigation interrupted! Player heard. Resuming chase.")
-				
-				if _investigation_timer <= 0.0:
-					# ─── INVESTIGATION COMPLETE ──────────────────────────
-					# The Entity has searched for 4 seconds and found nothing.
-					# Give up and transition to OBSERVE_FROM_TREELINE.
-					_is_investigating = false
-					entity.is_observe_finished = true
-					entity.state_locked = false
-					_calculated_velocity = Vector3.ZERO
-					print("[INDOOR_SEARCH] Investigation complete. Player not found. Giving up.")
-					return
-				else:
-					# Still investigating — freeze and wait
-					return
-			
-			# ─── CHECK IF WE'VE ARRIVED AT LAST_KNOWN_POSITION ───────────
-			var lkp_pos = entity.get_last_known_position()
-			var dist_to_lkp_pos = entity.global_position.distance_to(lkp_pos)
-			var nav_finished = entity.get_nav_agent().is_navigation_finished()
-			
-			# If the nav agent finished OR we're close to the last known
-			# position, AND we can't see the player, start investigating.
-			if (nav_finished or dist_to_lkp_pos <= 3.0) and not _is_investigating:
-				# Check if the Entity can actually see the player right now
-				var sensory = entity.get_sensory_module()
-				var can_see_player = false
-				if sensory and sensory.has_method("can_entity_see_player"):
-					can_see_player = sensory.can_entity_see_player()
-				
-				if not can_see_player:
-					# ─── START INVESTIGATION ─────────────────────────────
-					# The Entity arrived at the last known position but the
-					# player is not here. Enter confusion mode: search for
-					# 4 seconds, then give up.
-					_is_investigating = true
-					_investigation_timer = 4.0
-					_calculated_velocity = Vector3.ZERO
-					print("[INDOOR_SEARCH] Arrived at last_known_position but player not found. Investigating for 4 seconds...")
-					return
-			
-			# ─── STANDARD PATHFINDING ────────────────────────────────────
-			# If not investigating, pathfind toward the player normally.
-			# Use last_known_position as the target so the Entity doesn't
-			# magically track the player's exact current position.
-			if not _is_investigating:
-				entity.get_nav_agent().target_position = entity.get_last_known_position()
-		
-		if entity.global_position.distance_to(player.global_position) <= entity.catch_distance:
-			entity._on_caught_player()
-			return
-		
-		# ─── UNIVERSAL FRUSTRATION: LIT ROOM BLOCK ─────────────────────
-		# If the player is in a lit room and the Entity is inside the cabin
-		# (INDOOR_SEARCH), accumulate frustration. The Entity can't reach
-		# the player through the light sanctuary, so it gets frustrated.
-		# When frustration reaches the threshold, the Director's Tier 1
-		# Sabotage will transition to FUSE_SABOTAGE to kill the generator.
-		if entity.get_navigation_module().has_method("is_player_in_lit_room"):
-			var player_in_lit = entity.get_navigation_module().is_player_in_lit_room()
-			if player_in_lit:
-				_all_lit_frustration += ALL_LIT_FRUSTRATION_RATE * delta
-				_all_lit_frustration = minf(_all_lit_frustration, ALL_LIT_FRUSTRATION_THRESHOLD)
-		
-		# ─── SCANNING SUB-STATE ──────────────────────────────────────────
-		# If the Entity is scanning (arrived at room center, looking for the
-		# player), rotate slowly in place and count down the scan timer.
-		if _is_scanning:
-			_scan_timer -= delta
-			_calculated_velocity = Vector3.ZERO
-			
-			# ─── SLOW ROTATION DURING SCAN ──────────────────────────────
-			# Rotate the monster model slowly (0.5 rad/s) to scan the room
-			# for the player. This creates a menacing "looking around" effect.
-			var model = entity.get_monster_model()
-			if model:
-				model.rotation.y += 0.5 * delta
-			
-			# ─── CHECK IF PLAYER IS SPOTTED DURING SCAN ─────────────────
-			var sensory = entity.get_sensory_module()
-			if sensory and sensory.has_method("can_entity_see_player") and sensory.can_entity_see_player():
-				_is_scanning = false
-				_scan_timer = 0.0
-				print("[INDOOR_SEARCH] Scan interrupted! Player spotted. Resuming chase.")
-			elif entity.is_hunting() and entity.get_current_interest_level() > 50.0:
-				# Player was heard during scan
-				_is_scanning = false
-				_scan_timer = 0.0
-				print("[INDOOR_SEARCH] Scan interrupted! Player heard. Resuming chase.")
-			
-			if _scan_timer <= 0.0:
-				# ─── SCAN COMPLETE ──────────────────────────────────────
-				# The Entity has scanned for 4 seconds and found nothing.
-				# Return to patrol.
-				_is_scanning = false
-				_calculated_velocity = Vector3.ZERO
-				print("[INDOOR_SEARCH] Scan complete. Player not found. Returning to patrol.")
-				return
-			else:
-				# Still scanning — freeze and rotate
-				return
-		
-		if _is_investigating:
-			_calculated_velocity = Vector3.ZERO
-		elif entity.get_nav_agent().is_navigation_finished():
-			_calculated_velocity.x = 0.0
-			_calculated_velocity.z = 0.0
-		else:
-			var next_pos = entity.get_nav_agent().get_next_path_position()
-			var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
-			if dir_2d.length() > 0.01:
-				var move_dir_2d = dir_2d.normalized()
-				_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
-				_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
+		# Apply the velocity! (Scale speed for indoors if desired)
+		_calculated_velocity = dir.normalized() * (entity.speed * 0.8)
 
 
 # ---------------------------------------------------------------------------

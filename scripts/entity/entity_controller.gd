@@ -176,6 +176,13 @@ var is_flinch_finished: bool = false
 ## for the setup work, and transitions to OBSERVE_FROM_TREELINE.
 var is_observe_finished: bool = false
 
+## Set to true by entity_ai.gd's process_state_logic() when the indoor search
+## minimum duration timer (_indoor_search_timer) reaches 0.0. The Director
+## checks this flag in the INDOOR_SEARCH preservation guard to know the Entity
+## has been inside long enough and can be allowed to transition back outside.
+## Reset to false by the Director after consuming the flag.
+var is_indoor_search_finished: bool = false
+
 ## ─── RELOCATE TARGET SET FLAG ─────────────────────────────────────────────────
 ## Set to true by fade_and_relocate() when a new vantage point target has been
 ## picked and the nav agent is pathfinding toward it. Reset to false by the

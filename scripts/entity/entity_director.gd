@@ -208,9 +208,15 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 		return state
 	
 	# ─── INDOOR SEARCH PRESERVATION GUARD ──────────────────────────────
-	# If the Entity is currently in INDOOR_SEARCH and the persistence timer
-	# is still active, do NOT allow Tiers 2-8 to override it with outdoor
-	# behaviors (OBSERVE_FROM_TREELINE, APPROACH_WINDOW, CLIMB_WALL_UP, etc.).
+	# If the Entity is currently in INDOOR_SEARCH, do NOT allow Tiers 2-8
+	# to override it with outdoor behaviors (OBSERVE_FROM_TREELINE,
+	# APPROACH_WINDOW, CLIMB_WALL_UP, etc.).
+	#
+	# This is a HARD LOCK — the Director will NOT transition away from
+	# INDOOR_SEARCH under any circumstances (except Tier 0/1 critical
+	# overrides checked above). The Entity stays inside hunting until
+	# the AI's internal _indoor_search_timer expires and the AI sets
+	# is_indoor_search_finished = true, which is consumed here.
 	#
 	# This prevents the infinite loop where the Entity enters the cabin
 	# through the door, the Director immediately returns OBSERVE_FROM_TREELINE
@@ -219,10 +225,13 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	#
 	# Higher-priority overrides (Tier 0 pending, Tier 0 flashlight, Tier 1
 	# sabotage) are checked ABOVE this guard and can still interrupt.
-	# When the persistence timer reaches 0.0 (after 30 seconds), this guard
-	# no longer applies and the Director can transition to OBSERVE_FROM_TREELINE.
-	if state == EntityAI.State.INDOOR_SEARCH and _indoor_search_persistence_timer > 0.0:
-		return EntityAI.State.INDOOR_SEARCH
+	if state == EntityAI.State.INDOOR_SEARCH:
+		# Only allow escape if the search timer has actually expired
+		if entity.get("is_indoor_search_finished") == true:
+			entity.is_indoor_search_finished = false  # Consume/Reset the flag!
+			pass  # Allow logic to continue down the tiers so it can leave the house
+		else:
+			return EntityAI.State.INDOOR_SEARCH  # Block all transitions! Keep hunting.
 	
 	# ─── STATE PERSISTENCE GUARD ──────────────────────────────────────
 	# If the Entity is in an active state (FLINCH, CLIMB_WALL, CHARGE, etc.)
