@@ -44,6 +44,19 @@ const VISION_RANGE_DARK: float = 10.0
 ## The current effective vision range, recalculated each frame.
 var _current_vision_range: float = VISION_RANGE_DARK
 
+## ─── CONFIGURABLE VISION CONE ────────────────────────────────────────────────
+## The Entity's peripheral vision angle in degrees. The Entity can see the player
+## if the player is within this angle of the Entity's forward direction.
+## Default: 45.0 degrees (90-degree total FOV, left + right).
+## Lower values = narrower cone (easier to flank), higher = wider (harder to sneak).
+@export var vision_angle_degrees: float = 45.0
+
+## Pre-computed dot-product threshold for the vision cone.
+## Calculated once from vision_angle_degrees to avoid calling cos() every frame.
+## The Entity's forward vector dot to_player must be >= this value for the
+## player to be within the vision cone.
+var _vision_dot_threshold: float = cos(deg_to_rad(vision_angle_degrees))
+
 # ─── REUSABLE RAYCAST QUERY ──────────────────────────────────────────────────
 ## Single reusable PhysicsRayQueryParameters3D instance to avoid GC churn.
 ## Created once in setup(), then .from and .to are updated per check.
@@ -71,15 +84,19 @@ var _vision_update_cooldown: float = 0.0
 const VISION_UPDATE_COOLDOWN_DURATION: float = 1.0
 
 
+func _ready() -> void:
+	# Cache the camera reference once the tree is fully loaded.
+	# Using call_deferred ensures all nodes are initialized before we try
+	# to find the Camera3D node on the player.
+	_cache_camera.call_deferred()
+
+
 func setup(parent: CharacterBody3D) -> void:
 
 	entity = parent
 	
 	# Create reusable ray query once to avoid GC churn
 	_ray_query = PhysicsRayQueryParameters3D.new()
-	
-	# Cache the active camera reference
-	_cache_camera()
 	
 	# Listen for camera switch events to update the cached reference
 	if entity.get_tree().current_scene:
@@ -90,7 +107,10 @@ func setup(parent: CharacterBody3D) -> void:
 
 ## Caches the current active 3D camera.
 func _cache_camera() -> void:
-	if entity and entity.get_viewport():
+	var player = entity.get_player() if entity else null
+	if player and player.has_node("Camera3D"):
+		_cached_camera = player.get_node("Camera3D")
+	elif entity and entity.get_viewport():
 		_cached_camera = entity.get_viewport().get_camera_3d()
 
 
@@ -98,6 +118,44 @@ func _cache_camera() -> void:
 ## Updates the cached camera reference to avoid polling every frame.
 func _on_camera_switched() -> void:
 	_cache_camera()
+
+
+## ─── REUSABLE RAYCAST HELPER ────────────────────────────────────────────────
+## Checks whether a target world-space position is visible from the Entity's
+## head position (eyes at Y+2.5). Returns true if nothing blocks the line of
+## sight between the Entity and the target.
+##
+## This replaces all manual space.intersect_ray() boilerplate with a single
+## reusable helper that handles physics state setup, ray query reuse, and
+## collision exclusion automatically.
+##
+## Parameters:
+##   target_pos: The world-space position to check visibility for.
+##   max_dist:   Maximum distance the Entity can see. If the target is beyond
+##               this range, the function returns false without raycasting.
+##
+## Returns:
+##   true if the target is within max_dist AND nothing blocks the line of sight.
+func is_point_visible(target_pos: Vector3, max_dist: float) -> bool:
+	if not entity:
+		return false
+	
+	# Early-out distance check — skip raycasting if target is too far
+	var dist_sq = entity.global_position.distance_squared_to(target_pos)
+	if dist_sq > max_dist * max_dist:
+		return false
+	
+	var space = entity.get_world_3d().direct_space_state
+	var head_pos = entity.global_position + Vector3(0, 2.5, 0)
+	
+	# Reuse the single _ray_query instance — just update from/to
+	_ray_query.from = head_pos
+	_ray_query.to = target_pos
+	_ray_query.exclude = [entity]
+	
+	var result = space.intersect_ray(_ray_query)
+	# Returns true if nothing is blocking the view (result is empty)
+	return result.is_empty()
 
 
 ## Calculates the effective vision range for the current frame based on
@@ -198,23 +256,17 @@ func can_entity_see_player() -> bool:
 	var to_player = (player.global_position - entity.global_position).normalized()
 	var forward = -entity.global_transform.basis.z
 	
-	if forward.dot(to_player) < cos(entity.get_vision_cone_angle()):
+	# Use the pre-computed _vision_dot_threshold instead of calling cos() every frame.
+	# _vision_dot_threshold is calculated once from vision_angle_degrees in the
+	# variable declaration, avoiding redundant trig math on every vision check.
+	if forward.dot(to_player) < _vision_dot_threshold:
 		return false
 	
 	# ─── 4. LINE-OF-SIGHT RAYCAST ────────────────────────────────────────
-	var space = entity.get_world_3d().direct_space_state
-	var head_pos = entity.global_position + Vector3(0, 2.5, 0)
+	# Use the reusable is_point_visible() helper which handles physics state
+	# setup, ray query reuse, and collision exclusion automatically.
 	var player_chest = player.global_position + Vector3(0, 1.0, 0)
-	
-	# Reuse the single _ray_query instance — just update from/to
-	_ray_query.from = head_pos
-	_ray_query.to = player_chest
-	_ray_query.exclude = [entity, player]
-	
-	var hit = space.intersect_ray(_ray_query)
-	# If the raycast hits nothing, or hits the player (which is excluded so it
-	# won't be returned), then line-of-sight is clear.
-	if hit.is_empty():
+	if is_point_visible(player_chest, _current_vision_range):
 		# ─── VISION UPDATE COOLDOWN CHECK ────────────────────────────────
 		# If the cooldown is still active, the Entity's vision is "blinking"
 		# — it cannot re-acquire the player or update last_known_position.
@@ -374,20 +426,17 @@ func is_player_looking_at_window(window_pos: Vector3) -> bool:
 	to_window.y = 0.0
 	to_window = to_window.normalized()
 	
-	# 20-degree cone (cos(20°) ≈ 0.94)
+	# Use the pre-computed _vision_dot_threshold for the cone check.
+	# With the default 45-degree vision angle, cos(45°) ≈ 0.707, which gives
+	# a 90-degree total FOV (left + right). This is wider than the original
+	# hardcoded 20-degree cone (cos(20°) ≈ 0.94), making the HARASS state
+	# more responsive to the player's gaze.
 	var dot_product: float = cam_forward.dot(to_window)
-	if dot_product < 0.94:
+	if dot_product < _vision_dot_threshold:
 		return false
 	
 	# Line-of-sight raycast: check if anything blocks the view to the window
-	var space = entity.get_world_3d().direct_space_state
-	
-	# Reuse the single _ray_query instance — just update from/to
-	_ray_query.from = cam.global_position
-	_ray_query.to = window_pos
-	_ray_query.exclude = [entity, player]
-	
-	var hit = space.intersect_ray(_ray_query)
-	# If the ray hits nothing, the player has a clear view of the window.
-	return hit.is_empty()
+	# Use the reusable is_point_visible() helper which handles physics state
+	# setup, ray query reuse, and collision exclusion automatically.
+	return is_point_visible(window_pos, 35.0)
 

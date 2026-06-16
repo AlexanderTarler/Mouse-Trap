@@ -110,32 +110,12 @@ var _portable_trap: Node = null
 # Updated by _refresh_cabin_lights() when lights are added/removed.
 var _cabin_lights: Array[Node] = []
 
-# --- BLACKBOARD: Sensory Data (written by external scripts, read by Director) ---
-## Whether the Entity is currently illuminated by the player's flashlight beam.
-## Written by on_player_stare(). Read by the Master Director (entity_director.gd).
-var is_illuminated: bool = false
+# ─── THE BLACKBOARD ──────────────────────────────────────────────────────────
+# Shared state variables read/written by the Director, AI, and Sensory modules.
+# Organized into groups for clarity in the Godot Inspector.
 
-## ─── BELIEF SYSTEM: Player Location Deduction ──────────────────────────────
-## Whether the Entity BELIEVES the player is still inside the cabin.
-## Defaults to true — the Entity assumes the player is inside until proven
-## otherwise through sight, sound, or deductive reasoning (3-waypoint miss rule).
-## Written by entity_sensory.gd and entity_ai.gd. Read by entity_director.gd.
-var thinks_player_is_inside: bool = true
+@export_group("Blackboard - State Flags")
 
-## Counter for consecutive vantage point observations that yielded no sighting
-## of the player. Incremented by entity_ai.gd's _observe_from_treeline_state()
-## each time the Entity finishes observing at a vantage point without spotting
-## the player. When >= 3, the Entity deduces the player must have escaped and
-## sets thinks_player_is_inside = false.
-## Reset to 0 by entity_sensory.gd when the Entity hears or sees the player indoors.
-var _consecutive_vantage_misses: int = 0
-
-## How long the player has been staring at the Entity with the flashlight on.
-## Written by on_player_stare(). Read by the Master Director (entity_director.gd).
-## Range: 0.0 to 2.0+. 1.5+ triggers CHARGE if player is outside.
-var player_stare_timer: float = 0.0
-
-# --- BLACKBOARD: State Lock (prevents Director from overriding mid-execution) ---
 ## When true, the Master Director MUST return the current state, preventing
 ## transitions until the state handler unlocks it.
 ## Set to true by state handlers on entry, set to false on completion.
@@ -143,7 +123,6 @@ var player_stare_timer: float = 0.0
 ## the state variable every frame.
 var state_locked: bool = false
 
-# --- BLACKBOARD: State Completion Flags (written by FSM handlers, read by Director) ---
 ## Set to true by _approach_window_state() when the Entity arrives at the target window.
 ## The Director checks this flag and transitions to WINDOW_PEEK.
 var is_approach_finished: bool = false
@@ -176,30 +155,44 @@ var is_flinch_finished: bool = false
 ## for the setup work, and transitions to OBSERVE_FROM_TREELINE.
 var is_observe_finished: bool = false
 
-## Set to true by entity_ai.gd's process_state_logic() when the indoor search
-## minimum duration timer (_indoor_search_timer) reaches 0.0. The Director
-## checks this flag in the INDOOR_SEARCH preservation guard to know the Entity
-## has been inside long enough and can be allowed to transition back outside.
-## Reset to false by the Director after consuming the flag.
-var is_indoor_search_finished: bool = false
-
-## ─── RELOCATE TARGET SET FLAG ─────────────────────────────────────────────────
-## Set to true by fade_and_relocate() when a new vantage point target has been
-## picked and the nav agent is pathfinding toward it. Reset to false by the
-## _observe_from_treeline_state() timer expiration block so the Entity knows
-## to pick a NEW tree on the next cycle (rather than looping at the current one).
-## This prevents the "paralysis at first tree" bug where the Entity finishes
-## observing, signals completion, the Director consumes the flag and calls
-## fade_and_relocate(), but the Entity doesn't know it needs to move.
-var _relocate_target_set: bool = false
-
-## ─── INDOOR RETREAT FLAG ──────────────────────────────────────────────────────
 ## Set to true by the Director (Tier 0) when the Entity is illuminated while in
 ## INDOOR_SEARCH state. The RETREAT handler reads this flag to know it should
 ## pathfind to the breach window (instead of the farthest treeline), teleport
 ## outside, and perform a 5-second flinch before transitioning to OBSERVE.
 ## Reset to false by the RETREAT handler when the indoor retreat completes.
 var is_indoor_retreat: bool = false
+
+@export_group("Blackboard - Sensory Data")
+
+## Whether the Entity is currently illuminated by the player's flashlight beam.
+## Written by on_player_stare(). Read by the Master Director (entity_director.gd).
+var is_illuminated: bool = false
+
+## Whether the Entity BELIEVES the player is still inside the cabin.
+## Defaults to true — the Entity assumes the player is inside until proven
+## otherwise through sight, sound, or deductive reasoning (3-waypoint miss rule).
+## Written by entity_sensory.gd and entity_ai.gd. Read by entity_director.gd.
+var thinks_player_is_inside: bool = true
+
+## Number of consecutive vantage point observations that yielded no sighting
+## of the player. When >= 3, the Entity deduces the player escaped (3-waypoint
+## miss rule). Incremented by entity_ai.gd's _observe_from_treeline_state().
+## Reset to 0 by entity_sensory.gd when the player is seen or heard indoors.
+var _consecutive_vantage_misses: int = 0
+
+## How long the player has been staring at the Entity with the flashlight on.
+## Written by on_player_stare(). Read by the Master Director (entity_director.gd).
+## Range: 0.0 to 2.0+. 1.5+ triggers CHARGE if player is outside.
+var player_stare_timer: float = 0.0
+
+## The last world-space position the Entity knows the player was at.
+## Written by entity_sensory.gd when the player is seen or heard.
+## Read by entity_ai.gd for pathfinding toward the player.
+var last_known_position: Vector3 = Vector3.ZERO
+
+## Whether the player is currently within the Entity's line of sight.
+## Written by entity_sensory.gd each frame. Read by the Director and AI.
+var player_in_sight: bool = false
 
 # --- SENSORY & HUNTING VARIABLES ---
 var _last_known_position: Vector3 = Vector3.ZERO
@@ -239,6 +232,13 @@ var _is_fading: bool = false
 var _is_fleeing: bool = false
 var _flee_angle: float = 0.0
 var _flee_direction: int = 1
+
+## Whether a new relocate target (vantage point) has been set for the current
+## observation cycle. Used by entity_ai.gd's _observe_from_treeline_state() to
+## avoid calling pick_next_vantage_point() every frame — the Entity only needs
+## one target per cycle. Reset to false when the Entity arrives at the vantage
+## point or when the observation cycle completes.
+var _relocate_target_set: bool = false
 
 # --- NIGHT DIFFICULTY (set by entity_ai.gd) ---
 var current_night: int = 1
@@ -2248,9 +2248,37 @@ func _start_flinch_fade() -> void:
 			var property_tweener = fade_tween.tween_property(_monster_model, "modulate:a", 0.0, 1.5)
 			if property_tweener:
 				property_tweener.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
+			# Restore visibility after the fade completes so the model
+			# reappears when the Entity transitions out of FLINCH state.
+			# Without this, the model stays invisible forever after a
+			# FLINCH that follows an indoor RETREAT.
+			fade_tween.tween_callback(_restore_model_visibility)
 	else:
-		# Fallback: hide the model directly since modulate is not available
+		# Fallback: hide the model directly since modulate is not available.
+		# Schedule a delayed restoration so the model reappears after the
+		# flinch duration (1.5s) completes.
 		_monster_model.visible = false
+		var restore_tween = tree.create_tween()
+		if restore_tween:
+			restore_tween.tween_interval(1.5)
+			restore_tween.tween_callback(_restore_model_visibility)
+
+
+## Restores the monster model's visibility after a flinch fade-out.
+## Called by _start_flinch_fade() via tween callback to ensure the model
+## reappears after the flinch completes. Without this, the model stays
+## invisible forever if the modulate fallback hid it.
+func _restore_model_visibility() -> void:
+	if not _monster_model:
+		return
+	# Only restore visibility if the Entity is still active (not deactivated).
+	# If the Entity was deactivated during the flinch, the deactivate() call
+	# already handles visibility.
+	if _is_active:
+		_monster_model.visible = true
+		# Also reset modulate alpha in case the tween left it at 0.0
+		if "modulate" in _monster_model:
+			_monster_model.modulate.a = 1.0
 
 
 ## Initiates the FLINCH state — a lateral sprint to evade the player's flashlight.
@@ -2754,13 +2782,13 @@ func _update_animations(_delta: float) -> void:
 	
 	# AttackWindow: Barricade damage swing (WINDOW_PEEK)
 	if _state == EntityAI.State.WINDOW_PEEK:
-		if _ai and _ai.has_method("is_barricade_anim_locked") and _ai.is_barricade_anim_locked():
+		if _ai and _ai.is_barricade_anim_locked():
 			_anim_state_machine.travel("AttackWindow")
 			return
 	
 	# EnterWindow: Vault or Door entry animation (INDOOR_SEARCH Phase A)
 	if _state == EntityAI.State.INDOOR_SEARCH:
-		if _ai and _ai.has_method("has_arrived_indoor") and not _ai.has_arrived_indoor():
+		if _ai and _ai.get("_has_arrived_indoor") == false:
 			# Door entry: play the Stalk (walking) animation instead of vaulting
 			if was_door_entry:
 				_anim_state_machine.travel("Stalk")
@@ -2782,13 +2810,16 @@ func _update_animations(_delta: float) -> void:
 		return
 	
 	# Determine posture based on state
-	var is_crawling: bool = (
-		_state == EntityAI.State.CHARGE or
-		_state == EntityAI.State.FLINCH or
-		_state == EntityAI.State.CLIMB_WALL_UP or
-		_state == EntityAI.State.CLIMB_WALL_DOWN or
-		(_state == EntityAI.State.INDOOR_SEARCH and _ai and _ai.has_method("has_arrived_indoor") and _ai.has_arrived_indoor())
-	)
+	var crawling_states: Array = [
+		EntityAI.State.CHARGE,
+		EntityAI.State.FLINCH,
+		EntityAI.State.CLIMB_WALL_UP,
+		EntityAI.State.CLIMB_WALL_DOWN
+	]
+	var is_crawling: bool = _state in crawling_states
+	# INDOOR_SEARCH uses running_crawl only after Phase A (vault/door entry) completes
+	if not is_crawling and _state == EntityAI.State.INDOOR_SEARCH:
+		is_crawling = _ai and _ai.get("_has_arrived_indoor") == true
 	
 	if horz_speed > 0.2:
 		_anim_state_machine.travel("running_crawl" if is_crawling else "Stalk")

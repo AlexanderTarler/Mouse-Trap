@@ -34,7 +34,14 @@ const EntityAI := preload("entity_ai.gd")
 var entity: CharacterBody3D = null
 
 ## Current confidence value (0.0–100.0).
-var confidence: float = 15.0
+## Uses a setter to automatically clamp between 0.0 and 100.0,
+## and emits confidence_changed signal whenever the value changes.
+var confidence: float = 15.0:
+	set(value):
+		var new_val = clampf(value, 0.0, 100.0)
+		if confidence != new_val:
+			confidence = new_val
+			confidence_changed.emit(confidence)
 
 ## Whether the debug overlay (F3) is active.
 var debug_overlay_active: bool = false
@@ -99,6 +106,9 @@ var _debug_ai_label: Label = null
 var _f3_was_pressed: bool = false
 
 # ─── SIGNALS ─────────────────────────────────────────────────────────────────
+## Emitted when confidence value changes (via setter).
+signal confidence_changed(new_value: float)
+
 ## Emitted when confidence crosses a threshold boundary.
 ## threshold_name: "WINDOW_APPROACH", "BREACH", "CLIMAX", "RETREAT"
 ## direction: "above" or "below"
@@ -215,28 +225,29 @@ func _process(delta: float) -> void:
 	
 	# ─── 1. APPLY ACTIVE MODIFIERS ──────────────────────────────────
 	_debug_modifier_strings.clear()
-	var expired_sources: Array[String] = []
+	var current_time: float = Time.get_ticks_msec() / 1000.0
+	var keys_to_remove: Array[String] = []
 	
 	for source in _active_modifiers:
 		var mod_data: Dictionary = _active_modifiers[source]
 		var rate: float = mod_data.get("rate", 0.0)
 		var expires_at: float = mod_data.get("expires_at", -1.0)
 		
-		# Check expiration
-		if expires_at > 0.0 and entity._game_time >= expires_at:
-			expired_sources.append(source)
+		# Check expiration using engine time (decoupled from entity._game_time)
+		if expires_at > 0.0 and current_time >= expires_at:
+			keys_to_remove.append(source)
 			continue
 		
-		# Apply the modifier
+		# Apply the modifier (setter auto-clamps and emits signal)
 		confidence += rate * delta
 		
 		# Build debug string
 		var sign: String = "+" if rate >= 0.0 else ""
 		_debug_modifier_strings.append("%s%.1f/s %s" % [sign, rate, source])
 	
-	# Remove expired modifiers
-	for source in expired_sources:
-		_active_modifiers.erase(source)
+	# Remove expired modifiers safely (after iteration)
+	for key in keys_to_remove:
+		remove_continuous_modifier(key)
 	
 	# ─── 2. APPLY NIGHT PROGRESSION MODIFIER ────────────────────────
 	var nm: Node = entity.get_night_manager()
@@ -282,10 +293,8 @@ func _process(delta: float) -> void:
 		# the resting value. Without this removal, the drift would pull
 		# confidence back down to 23.0, fighting the night progress modifier.
 	
-	# ─── 4. CLAMP ───────────────────────────────────────────────────
-	confidence = clampf(confidence, 0.0, 100.0)
-	
-	# ─── 5. UPDATE DEBUG OVERLAY ────────────────────────────────────
+	# ─── 4. UPDATE DEBUG OVERLAY ────────────────────────────────────
+	# NOTE: No manual clamp needed — the setter on `confidence` handles it.
 	if debug_overlay_active:
 		_update_debug_overlay()
 
@@ -438,15 +447,17 @@ func get_confidence() -> float:
 ## Used by the Master Director to apply psychological penalties (e.g., -20%
 ## after FLINCH) or by external systems that need to override confidence.
 ## This bypasses the modifier system and directly sets the value.
+## NOTE: The setter on `confidence` auto-clamps and emits the signal.
 func set_confidence(value: float) -> void:
-	confidence = clampf(value, 0.0, 100.0)
+	confidence = value
 
 
 ## Applies an instantaneous confidence modification.
 ## amount: The delta to apply (positive = more bold, negative = more timid).
 ## source: A human-readable string identifying the source (for debug overlay).
+## NOTE: The setter on `confidence` auto-clamps and emits the signal.
 func modify(amount: float, source: String) -> void:
-	confidence = clampf(confidence + amount, 0.0, 100.0)
+	confidence += amount
 	# NOTE: Debug log removed to reduce console spam during flashlight stare.
 	# The F3 Entity Debug overlay shows real-time confidence changes.
 	# Uncomment the line below if you need to debug confidence modifications:
@@ -458,10 +469,11 @@ func modify(amount: float, source: String) -> void:
 ## source: A human-readable string identifying the source.
 ## duration: If > 0, the modifier auto-expires after this many seconds.
 ##           If <= 0, the modifier is permanent until explicitly removed.
+## NOTE: Uses Time.get_ticks_msec() for expiration (decoupled from entity._game_time).
 func add_continuous_modifier(rate: float, source: String, duration: float = -1.0) -> void:
 	var expires_at: float = -1.0
 	if duration > 0.0:
-		expires_at = entity._game_time + duration if "game_time" in entity else -1.0
+		expires_at = (Time.get_ticks_msec() / 1000.0) + duration
 	
 	_active_modifiers[source] = {
 		"rate": rate,

@@ -18,10 +18,14 @@
 [ext_resource type="Script" uid="uid://cy2xdrbwuqogc" path="res://scripts/debug_computer.gd" id="16_debug_computer"]
 [ext_resource type="PackedScene" uid="uid://dudqc5j4ccimh" path="res://scenes/monster_entity.tscn" id="16_entity"]
 [ext_resource type="PackedScene" uid="uid://b35tkexyh5e1r" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/pc_mp_1.glb" id="16_uaofw"]
+[ext_resource type="Texture2D" uid="uid://bw8vl22ys1m00" path="res://assets/Textures/Grass/Grass_01-512x512.png" id="16_ybmve"]
+[ext_resource type="Image" uid="uid://c3ypy8a4sbfe8" path="res://scenes/CottageHorror/Heightmap_0_0.res" id="17_4op5w"]
 [ext_resource type="PackedScene" uid="uid://w2nhpuaugrii" path="res://scenes/inventory_ui.tscn" id="17_inv_ui"]
 [ext_resource type="Script" uid="uid://baixx1fs8cosb" path="res://scripts/items/item_data.gd" id="17_pee2b"]
+[ext_resource type="Texture2D" uid="uid://dlbvhtgwc4cov" path="res://assets/Textures/Wood/Wood_08-512x512.png" id="17_pjlug"]
 [ext_resource type="PackedScene" uid="uid://w56fc53h33lt" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/walkie_talkie_2.glb" id="17_xarc6"]
 [ext_resource type="PackedScene" uid="uid://djjrpkdlgtc3w" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/sofa_1_3.glb" id="18_0ioup"]
+[ext_resource type="Image" uid="uid://dboy530q14flx" path="res://scenes/CottageHorror/Splatmap_0_0_0.res" id="18_pjlug"]
 [ext_resource type="PackedScene" uid="uid://dkc0lfxbh7ef3" path="res://scenes/battery.tscn" id="19_battery"]
 [ext_resource type="PackedScene" uid="uid://c2wx8r8v7rdcc" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/cardboard_box_1.glb" id="19_ui7ij"]
 [ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0c6" path="res://scenes/note.tscn" id="20_note"]
@@ -131,6 +135,22 @@ size = Vector3(1, 0.05, 1)
 
 [sub_resource type="BoxShape3D" id="Shape_ground"]
 size = Vector3(1, 0.05, 1)
+
+[sub_resource type="TextureSetResource" id="TextureSetResource_og0af"]
+albedoTexture = ExtResource("16_ybmve")
+
+[sub_resource type="TextureSetResource" id="TextureSetResource_ihije"]
+albedoTexture = ExtResource("17_pjlug")
+
+[sub_resource type="TextureSetsResource" id="TextureSetsResource_ihije"]
+textureSets = Array[TextureSetResource]([SubResource("TextureSetResource_og0af"), SubResource("TextureSetResource_ihije")])
+
+[sub_resource type="ZoneResource" id="ZoneResource_4te7d"]
+heightMapImage = ExtResource("17_4op5w")
+splatmapsImage = Array[Image]([ExtResource("18_pjlug")])
+
+[sub_resource type="ZonesResource" id="ZonesResource_wnxms"]
+zones = Array[ZoneResource]([SubResource("ZoneResource_4te7d")])
 
 [sub_resource type="BoxShape3D" id="Shape_computer"]
 size = Vector3(0.8, 0.8, 0.8)
@@ -1052,53 +1072,53 @@ starting_items = Array[ExtResource("17_pee2b")]([ExtResource("26_battery_res"), 
 
 [node name="TheEntity" parent="." unique_id=133456140 instance=ExtResource("16_entity")]
 
-[node name="GeneralSkeleton" parent="TheEntity/MonsterModel/Armature" parent_id_path=PackedInt32Array(133456140, 1066769687, 644815059) index="0" unique_id=1285590891]
+[node name="GeneralSkeleton" parent="TheEntity/MonsterModel/Armature" parent_id_path=PackedInt32Array(133456140, 1066769687, 1936907856) index="0" unique_id=2043102841]
 bones/1/position = Vector3(7.1477103e-16, 0.5163654, -1.9073484e-07)
-bones/1/rotation = Quaternion(0.099797755, -0.16710614, -0.01788846, 0.98071206)
-bones/3/rotation = Quaternion(0.14663155, 0.35516948, 0.90787596, -0.16767547)
-bones/4/rotation = Quaternion(-0.038346656, 0.9249286, -0.3742083, 0.05481517)
-bones/5/rotation = Quaternion(-0.10837736, 0.6496142, -0.7426106, 0.12159468)
-bones/7/rotation = Quaternion(1.935236e-08, 0.9999623, 0.00869195, -1.295369e-08)
+bones/1/rotation = Quaternion(0.101489045, -0.16661479, -0.019559769, 0.9805901)
+bones/3/rotation = Quaternion(0.14609297, 0.35763702, 0.9068908, -0.16823122)
+bones/4/rotation = Quaternion(-0.03903306, 0.923535, -0.37742293, 0.05578275)
+bones/5/rotation = Quaternion(-0.10707679, 0.64889354, -0.74370676, 0.1198843)
+bones/7/rotation = Quaternion(-4.67715e-09, 0.9999554, 0.009446286, -2.1116204e-08)
 bones/13/rotation = Quaternion(0.055654135, 0.9920107, 0.11319772, -0.0019226)
 bones/14/rotation = Quaternion(-3.6584552e-06, 0.0005131077, 4.2143807e-07, 0.9999999)
 bones/15/rotation = Quaternion(0.076093405, 0.9966753, 0.029118868, -0.00044202578)
 bones/16/rotation = Quaternion(0.055171393, -0.0010390141, 0.095898114, 0.9938605)
 bones/17/rotation = Quaternion(-6.291776e-06, -4.3780256e-06, 5.4604578e-05, 1)
-bones/18/rotation = Quaternion(-0.13818176, 0.29558223, 0.9393387, 0.10573532)
+bones/18/rotation = Quaternion(-0.13991864, 0.29550406, 0.93909186, 0.1058616)
 bones/19/rotation = Quaternion(0.056392245, 0.0011053431, -0.09530741, 0.9938487)
 bones/20/rotation = Quaternion(-1.6391124e-07, 5.1395023e-06, -3.1955915e-07, 1)
-bones/21/rotation = Quaternion(0.035811204, 0.9308094, -0.35695115, -0.069982454)
-bones/22/rotation = Quaternion(0.09739015, 0.62751055, -0.76485866, -0.10833695)
-bones/23/rotation = Quaternion(-4.511966e-08, 0.99999934, 0.001171016, -6.42735e-08)
+bones/21/rotation = Quaternion(0.034744613, 0.9310818, -0.35636845, -0.069864325)
+bones/22/rotation = Quaternion(0.0980199, 0.6282885, -0.7640242, -0.10914534)
+bones/23/rotation = Quaternion(-4.2730417e-08, 0.9999994, 0.0011151321, -6.21959e-08)
 bones/30/rotation = Quaternion(-0.07992296, 0.99640846, 0.027971046, 0.00045664218)
 bones/31/rotation = Quaternion(-0.06395222, 0.99162203, 0.11221314, 0.002023953)
 bones/32/rotation = Quaternion(6.6919114e-05, -0.0004713491, 1.1572959e-05, 0.9999999)
-bones/33/rotation = Quaternion(0.021019045, -0.004642729, 0.015370449, 0.9996502)
-bones/34/rotation = Quaternion(0.066449165, -0.010609094, 0.010575019, 0.99767745)
-bones/35/rotation = Quaternion(0.066543736, -0.009539157, 0.011018355, 0.9976771)
-bones/36/rotation = Quaternion(-0.053662535, 0.027945086, -0.0202879, 0.9979619)
-bones/38/rotation = Quaternion(-0.19077164, 0.12343512, -0.034218423, 0.97324157)
+bones/33/rotation = Quaternion(0.021201009, -0.0040924386, 0.01617215, 0.99963605)
+bones/34/rotation = Quaternion(0.06666134, -0.010495673, 0.010318984, 0.99766713)
+bones/35/rotation = Quaternion(0.06675188, -0.009414191, 0.010798649, 0.99766684)
+bones/36/rotation = Quaternion(-0.053708646, 0.027854506, -0.019876398, 0.9979702)
+bones/38/rotation = Quaternion(-0.18870912, 0.12333806, -0.035739645, 0.9736012)
 bones/44/rotation = Quaternion(0.5553307, 0.4378072, 0.55535257, 0.4376256)
 bones/45/rotation = Quaternion(0.70710677, 0, 0, 0.70710677)
 bones/46/rotation = Quaternion(0.70710677, 0, 0, 0.70710677)
-bones/49/rotation = Quaternion(0.5710054, 0.4227506, 0.5240893, -0.46964365)
-bones/50/rotation = Quaternion(0.18992604, 0.8775322, -0.43873125, -0.037153475)
-bones/51/rotation = Quaternion(0.47487745, -0.523919, 0.47487822, 0.52391887)
+bones/49/rotation = Quaternion(0.5711342, 0.42246747, 0.5242795, -0.4695295)
+bones/50/rotation = Quaternion(0.19236512, 0.87853587, -0.43568632, -0.036712475)
+bones/51/rotation = Quaternion(0.4751691, -0.5236546, 0.47516975, 0.52365446)
 bones/52/rotation = Quaternion(-1.4402243e-05, 0.05814151, -3.2060643e-06, 0.99830836)
 bones/53/rotation = Quaternion(-4.4193257e-06, -0.022627244, -2.299094e-06, 0.99974394)
 bones/54/rotation = Quaternion(-0.18214808, -0.056142513, 0.027052697, 0.98129416)
-bones/55/rotation = Quaternion(-0.14423266, 0.81019455, 0.18334292, 0.53774273)
+bones/55/rotation = Quaternion(-0.1460793, 0.8090168, 0.18292339, 0.5391583)
 bones/56/rotation = Quaternion(1.0427851e-06, -0.68863297, -2.8382983e-06, 0.7251101)
 bones/57/rotation = Quaternion(-1.616404e-06, -0.026315825, 9.9523e-07, 0.9996537)
-bones/58/rotation = Quaternion(0.518735, -0.45656782, -0.5736913, -0.43970245)
-bones/59/rotation = Quaternion(-0.20682617, 0.8399623, -0.4995543, -0.046172146)
+bones/58/rotation = Quaternion(0.51955944, -0.45565656, -0.5737789, -0.4395598)
+bones/59/rotation = Quaternion(-0.20774855, 0.8394294, -0.4999478, -0.04744798)
 bones/60/rotation = Quaternion(4.792486e-06, 0.6883474, 9.4870745e-07, 0.72538114)
 bones/61/rotation = Quaternion(-1.4819798e-06, 0.018204879, -7.7312615e-07, 0.9998343)
-bones/62/rotation = Quaternion(0.49071705, 0.50911355, -0.4907177, 0.5091133)
+bones/62/rotation = Quaternion(0.4909923, 0.5088481, -0.49099308, 0.5088477)
 bones/63/rotation = Quaternion(-5.324506e-07, -0.007917172, 1.9019343e-07, 0.99996865)
 bones/64/rotation = Quaternion(-4.7708186e-06, 0.025208157, 2.2074698e-06, 0.99968225)
 bones/65/rotation = Quaternion(-0.19514786, -0.0077227657, -0.0013557363, 0.9807425)
-bones/66/rotation = Quaternion(0.06412632, -0.84554386, -0.024729863, 0.5294637)
+bones/66/rotation = Quaternion(0.06387583, -0.8443134, -0.023553088, 0.5315073)
 bones/67/rotation = Quaternion(-3.161178e-06, 0.59033084, 0.8071614, -8.2857e-06)
 
 [node name="BasementFog" type="FogVolume" parent="." unique_id=274711645]
@@ -1114,6 +1134,7 @@ navigation_mesh = SubResource("NavigationMesh_fl8v4")
 
 [node name="Mesh" type="MeshInstance3D" parent="NavigationRegion3D/Ground" unique_id=508296006]
 transform = Transform3D(500, 0, 0, 0, 1, 0, 0, 0, 500, 0.031178284, 0, 0.0006004334)
+visible = false
 material_override = SubResource("Mat_ground")
 mesh = SubResource("Mesh_ground")
 
@@ -1157,6 +1178,14 @@ transform = Transform3D(1, 0, 7.1054274e-15, 0, 1, 0, -7.1054274e-15, 0, 1, 0.12
 
 [node name="EntityDoorWaypoint" type="Marker3D" parent="NavigationRegion3D/Cabin/Door" unique_id=1490195547 groups=["EntityWaypoints"]]
 transform = Transform3D(-3.6426158e-08, 0, 0.8333333, 0, 0.9090909, 0, -0.8333333, 0, -3.6426158e-08, 0.5089021, 0.057816803, -1.0853219)
+
+[node name="TerraBrush" type="TerraBrush" parent="NavigationRegion3D" unique_id=19020360]
+dataPath = "res://scenes/CottageHorror"
+textureSets = SubResource("TextureSetsResource_ihije")
+textureDetail = 512
+terrainZones = SubResource("ZonesResource_wnxms")
+physics_interpolation_mode = 2
+metadata/_edit_lock_ = true
 
 [node name="Details" type="Node" parent="." unique_id=1144393623]
 

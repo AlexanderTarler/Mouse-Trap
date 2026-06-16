@@ -215,8 +215,7 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	# This is a HARD LOCK — the Director will NOT transition away from
 	# INDOOR_SEARCH under any circumstances (except Tier 0/1 critical
 	# overrides checked above). The Entity stays inside hunting until
-	# the AI's internal _indoor_search_timer expires and the AI sets
-	# is_indoor_search_finished = true, which is consumed here.
+	# the _indoor_search_persistence_timer expires (30 seconds).
 	#
 	# This prevents the infinite loop where the Entity enters the cabin
 	# through the door, the Director immediately returns OBSERVE_FROM_TREELINE
@@ -226,9 +225,8 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	# Higher-priority overrides (Tier 0 pending, Tier 0 flashlight, Tier 1
 	# sabotage) are checked ABOVE this guard and can still interrupt.
 	if state == EntityAI.State.INDOOR_SEARCH:
-		# Only allow escape if the search timer has actually expired
-		if entity.get("is_indoor_search_finished") == true:
-			entity.is_indoor_search_finished = false  # Consume/Reset the flag!
+		# Only allow escape if the persistence timer has actually expired
+		if _indoor_search_persistence_timer <= 0.0:
 			pass  # Allow logic to continue down the tiers so it can leave the house
 		else:
 			return EntityAI.State.INDOOR_SEARCH  # Block all transitions! Keep hunting.
@@ -1044,22 +1042,9 @@ func _tier_7_fallback_confidence(entity: CharacterBody3D) -> int:
 	var state = entity.get_state()
 	
 	# ─── ACTIVE STATE GUARD ──────────────────────────────────────────────
-	# Do NOT override active indoor states. The Entity is already engaged
-	# in a meaningful behavior (indoor search, charge, etc.) and should not
-	# be redirected to APPROACH_WINDOW by fallback confidence.
-	if state == EntityAI.State.INDOOR_SEARCH:
-		return -1
-	if state == EntityAI.State.CHARGE:
-		return -1
-	if state == EntityAI.State.STALK:
-		return -1
-	if state == EntityAI.State.FLINCH:
-		return -1
-	if state == EntityAI.State.RETREAT:
-		return -1
-	if state == EntityAI.State.FUSE_SABOTAGE:
-		return -1
-	if state == EntityAI.State.ATTACK_LAMP:
+	# Do NOT override active states. The Entity is already engaged
+	# in a meaningful behavior and should not be redirected.
+	if state in EntityAI.UNINTERRUPTIBLE_STATES:
 		return -1
 	
 	var confidence = entity.get_confidence_module().get_confidence()

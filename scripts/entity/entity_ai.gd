@@ -189,6 +189,25 @@ enum State {
 	ENTER_THROUGH_DOOR,     # Entity walks to the front door, opens it, and enters the cabin
 }
 
+## ─── STATE CATEGORIES ──────────────────────────────────────────────────────
+## These constant arrays group states by behavior category for use by the
+## Director (entity_director.gd) and Controller (entity_controller.gd).
+## Using `state in EntityAI.UNINTERRUPTIBLE_STATES` is cleaner and safer
+## than maintaining brittle `if state == X or state == Y` chains.
+
+## States that are highly active and should NOT be interrupted by the
+## Director's fallback confidence escalation (Tier 7). The Entity is
+## already engaged in a meaningful behavior and should not be redirected.
+const UNINTERRUPTIBLE_STATES: Array = [
+	State.INDOOR_SEARCH,
+	State.CHARGE,
+	State.STALK,
+	State.FLINCH,
+	State.RETREAT,
+	State.FUSE_SABOTAGE,
+	State.ATTACK_LAMP
+]
+
 var entity: CharacterBody3D = null
 
 ## The Master Behavior Director — the SINGLE source of truth for state transitions.
@@ -229,20 +248,12 @@ var _indoor_breach_timer: float = 0.0
 ## begins. The Entity interpolates toward this position each frame.
 var _landing_position: Vector3 = Vector3.ZERO
 
-## Timer that forces the Entity to stay in INDOOR_SEARCH for a minimum
-## duration before it can give up and transition to OBSERVE_FROM_TREELINE.
-## Set to INDOOR_SEARCH_MIN_DURATION (15.0s) when the Entity enters
-## INDOOR_SEARCH. Decremented by delta each frame in _indoor_search_state().
-## While the timer is active, the investigation sub-state will NOT set
-## is_observe_finished = true, preventing the Entity from giving up too
-## early and creating the infinite INDOOR_SEARCH → OBSERVE → APPROACH loop.
-var _indoor_search_timer: float = 0.0
-
-## Minimum duration (in seconds) the Entity must stay in INDOOR_SEARCH
-## before it can give up and transition to OBSERVE_FROM_TREELINE.
-## This prevents the infinite loop where the Entity enters the cabin,
-## immediately gives up, and re-enters APPROACH_WINDOW.
-const INDOOR_SEARCH_MIN_DURATION: float = 15.0
+## NOTE: The indoor search persistence timer has been REMOVED from this module.
+## The Director (entity_director.gd) is now the SINGLE source of truth for
+## how long the Entity must stay inside after breaching. The Director's
+## _indoor_search_persistence_timer (30.0s) controls this duration.
+## The AI module no longer makes "give up" decisions — that's the Director's job.
+## See entity_director.gd's Tier 8 for the persistence guard logic.
 
 ## Duration of the EnterWindow vault animation in seconds.
 ## The animation is ~1.5 seconds long. The Entity must play this animation
@@ -560,14 +571,13 @@ func process_state_logic(delta: float) -> void:
 				confidence_module.remove_continuous_modifier("desperation_passive")
 				print("[Entity AI] Desperation: Removed passive modifier (Entity left OBSERVE state).")
 	
-	# ─── INDOOR SEARCH TIMER DECREMENT ──────────────────────────────────
-	# Decrement the indoor search minimum duration timer each frame.
-	# When the timer reaches 0.0, set the Blackboard flag so the Director
-	# knows the Entity has been inside long enough and can give up.
-	if _indoor_search_timer > 0.0:
-		_indoor_search_timer -= delta
-		if _indoor_search_timer <= 0.0:
-			entity.is_indoor_search_finished = true
+	# ─── INDOOR SEARCH PERSISTENCE ─────────────────────────────────────
+	# The indoor search persistence timer is managed by the Director
+	# (entity_director.gd), NOT by this module. The Director's
+	# _indoor_search_persistence_timer (30.0s) is the single source of
+	# truth for how long the Entity must stay inside after breaching.
+	# The AI module no longer makes "give up" decisions — that's the
+	# Director's job. See entity_director.gd's Tier 8 for the guard logic.
 	
 	# --- STATE DISPATCHER ---
 	# Execute Movement/Physics for the current state.
@@ -2572,15 +2582,12 @@ func _indoor_search_state(delta: float) -> void:
 		if _director and _director.has_method("reset_indoor_search_persistence"):
 			_director.reset_indoor_search_persistence()
 		
-		# ─── INDOOR SEARCH MINIMUM DURATION TIMER ─────────────────────
-		# Set the minimum duration timer so the Entity cannot immediately
-		# give up and transition to OBSERVE_FROM_TREELINE. The Entity must
-		# stay inside for at least INDOOR_SEARCH_MIN_DURATION (15.0s)
-		# before it can give up. This prevents the infinite loop where the
-		# Entity enters through the door, immediately investigates, gives
-		# up, and re-enters APPROACH_WINDOW.
-		_indoor_search_timer = INDOOR_SEARCH_MIN_DURATION
-		print("[INDOOR_SEARCH] Door entry: Indoor search minimum duration timer set to %.1f seconds." % INDOOR_SEARCH_MIN_DURATION)
+		# ─── INDOOR SEARCH PERSISTENCE ─────────────────────────────────
+		# The Director's _indoor_search_persistence_timer (30.0s) is the
+		# single source of truth for how long the Entity must stay inside.
+		# The AI module no longer makes "give up" decisions — that's the
+		# Director's job. The persistence timer was already reset above
+		# via _director.reset_indoor_search_persistence().
 		
 		# ─── FORCE IMMEDIATE NAV TARGET ──────────────────────────────────
 		# After Door Phase A completes, the Entity is snapped to the
@@ -2732,15 +2739,13 @@ func _indoor_search_state(delta: float) -> void:
 			_enter_window_anim_timer = 0.0
 			_calculated_velocity = Vector3.ZERO
 			
-			# ─── INDOOR SEARCH MINIMUM DURATION TIMER ─────────────────────
-			# Set the minimum duration timer so the Entity cannot immediately
-			# give up and transition to OBSERVE_FROM_TREELINE. The Entity must
-			# stay inside for at least INDOOR_SEARCH_MIN_DURATION (15.0s)
-			# before it can give up. This prevents the infinite loop where the
-			# Entity enters through the window, immediately investigates, gives
-			# up, and re-enters APPROACH_WINDOW.
-			_indoor_search_timer = INDOOR_SEARCH_MIN_DURATION
-			print("[INDOOR_SEARCH] Window breach: Indoor search minimum duration timer set to %.1f seconds." % INDOOR_SEARCH_MIN_DURATION)
+			# ─── INDOOR SEARCH PERSISTENCE ─────────────────────────────────
+			# The Director's _indoor_search_persistence_timer (30.0s) is the
+			# single source of truth for how long the Entity must stay inside.
+			# The AI module no longer makes "give up" decisions — that's the
+			# Director's job. The persistence timer was already reset above
+			# via _director.reset_indoor_search_persistence() (called from
+			# the WINDOW_PEEK state handler when the glass shatters).
 			return
 		else:
 			# Animation still playing — freeze movement
@@ -2751,7 +2756,32 @@ func _indoor_search_state(delta: float) -> void:
 	if _has_arrived_indoor:
 		var nav = entity.get_nav_agent()
 		
+		# ─── PATH UPDATE COOLDOWN ──────────────────────────────────────────
+		# Only update the nav target every path_update_interval seconds.
+		# Without this cooldown, is_navigation_finished() returns true
+		# immediately after setting a new target (the NavigationAgent3D
+		# hasn't had time to compute a path yet), creating an infinite loop:
+		#   navigation finished → set new target → navigation finished
+		#   → set new target → ... (Entity never moves)
+		_path_timer += delta
+		
+		# ─── SET NAV TARGET TO PLAYER ──────────────────────────────────────
+		# When the Entity first enters Phase B (either through a window breach
+		# or door entry), the NavigationAgent3D may have no valid target set.
+		# For window breaches, the target was set to the landing position itself
+		# (line 2727), so is_navigation_finished() returns true immediately.
+		# For door entries, the target was set to the player's position (line 2604).
+		#
+		# If navigation is finished AND the path update cooldown has elapsed,
+		# set the target to the player's current position so the Entity starts
+		# pathfinding toward the player. This prevents the Entity from standing
+		# still after entering the cabin.
 		if nav.is_navigation_finished():
+			if _path_timer >= entity.path_update_interval:
+				var player = entity.get_player()
+				if player:
+					nav.target_position = player.global_position
+					_path_timer = 0.0
 			_calculated_velocity = Vector3.ZERO
 			return
 			

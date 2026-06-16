@@ -71,6 +71,11 @@ const ALREADY_BREACHED_PENALTY: float = 500.0
 var _window_markers: Array[Node3D] = []
 var _treeline_markers: Array[Node3D] = []
 
+## Pre-cached array of actual CabinWindow nodes on the ground floor.
+## Populated once in _cache_scene_groups() by iterating _window_markers.
+## Eliminates repeated get_parent() and is_in_group() calls inside hot loops.
+var _bottom_floor_windows: Array[CabinWindow] = []
+
 
 func setup(parent: CharacterBody3D) -> void:
 	entity = parent
@@ -110,6 +115,17 @@ func _cache_scene_groups() -> void:
 				push_warning("VantagePoints container not found in scene root! Entity may freeze without navigation markers.")
 	
 	print("[Entity Navigation] Cached %d window markers and %d treeline markers." % [_window_markers.size(), _treeline_markers.size()])
+	
+	# ─── PRE-CACHE BOTTOM FLOOR WINDOWS ──────────────────────────────────
+	# Populate _bottom_floor_windows by iterating _window_markers once.
+	# This eliminates repeated get_parent() and is_in_group() calls inside
+	# hot loops like find_nearest_broken_window() and are_all_windows_lit().
+	for w in _window_markers:
+		var parent = w.get_parent()
+		if parent is CabinWindow and parent.is_in_group("BottomFloorWindows"):
+			_bottom_floor_windows.append(parent as CabinWindow)
+	
+	print("[Navigation] Pre-cached %d bottom-floor CabinWindow nodes." % _bottom_floor_windows.size())
 	
 	# ─── DOOR MARKER VERIFICATION ──────────────────────────────────────
 	# Verify that the door's IndoorBreachWaypoint marker is in the WindowMarkers
@@ -508,19 +524,15 @@ func _get_light_detector() -> Node:
 ## Used by the ALL_WINDOWS_LIT loop guard in entity_ai.gd to prevent the
 ## Entity from continuously cycling frames when there are no valid windows.
 func are_all_windows_lit() -> bool:
-	if _window_markers.is_empty():
+	if _bottom_floor_windows.is_empty():
 		return false
 	
-	for w in _window_markers:
-		# Only check ground-floor windows (same filter as pick_tactical_window)
-		if not w.get_parent().is_in_group("BottomFloorWindows"):
-			continue
-		
+	for cabin_window in _bottom_floor_windows:
 		# Check if this window is NOT secure due to light
 		# A window is "secure by light" when room_light.is_room_lit() returns true
 		var is_secure_by_light: bool = false
-		if "room_light" in w and w.room_light:
-			if w.room_light.has_method("is_room_lit") and w.room_light.is_room_lit():
+		if cabin_window.room_light:
+			if cabin_window.room_light.has_method("is_room_lit") and cabin_window.room_light.is_room_lit():
 				is_secure_by_light = true
 		
 		if not is_secure_by_light:
@@ -549,15 +561,16 @@ func is_player_on_second_floor() -> bool:
 ## Used by CLIMB_WALL state to determine where to begin the vertical ascent.
 func find_nearest_second_story_window_base() -> Vector3:
 	var best_pos = Vector3.ZERO
-	var shortest = INF
+	var shortest_sq = INF
+	var entity_pos = entity.global_position
 	for w in _window_markers:
 		if w.global_position.y < 3.0:
 			continue  # Skip ground-floor windows
-		# Project the window position down to ground level
-		var base_pos = Vector3(w.global_position.x, 0.0, w.global_position.z)
-		var d = entity.global_position.distance_to(base_pos)
-		if d < shortest:
-			shortest = d
+		# Project the window position down to ground level (flatten Y)
+		var base_pos = Vector3(w.global_position.x, entity_pos.y, w.global_position.z)
+		var d_sq = entity_pos.distance_squared_to(base_pos)
+		if d_sq < shortest_sq:
+			shortest_sq = d_sq
 			best_pos = base_pos
 	return best_pos
 
@@ -655,15 +668,16 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 		var is_room_lit: bool = RoomLightDetector.is_position_in_lit_room(w.global_position)
 		
 		# ─── CALCULATE DISTANCE FROM LAST HEARD POSITION ────────────
-		# If we have a last_heard_exact_position, calculate the 2D distance
-		# from that position to this window. The Entity prefers windows that
-		# are FAR from where the player was last heard (flanking behavior).
+		# If we have a last_heard_exact_position, calculate the distance
+		# from that position to this window using squared distance with
+		# flattened Y to avoid Vector2 allocations. The Entity prefers
+		# windows that are FAR from where the player was last heard
+		# (flanking behavior).
 		var dist_from_last_heard: float = INF
 		if last_heard_pos != Vector3.ZERO:
-			dist_from_last_heard = Vector2(
-				w.global_position.x - last_heard_pos.x,
-				w.global_position.z - last_heard_pos.z
-			).length()
+			var w_pos = w.global_position
+			w_pos.y = last_heard_pos.y  # Flatten Y to ignore height differences
+			dist_from_last_heard = last_heard_pos.distance_squared_to(w_pos)
 		
 		# ─── STORE CANDIDATE ─────────────────────────────────────────
 		candidates.append({
@@ -782,32 +796,26 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 ##
 ## Returns the CabinWindow node, or null if no suitable window is found.
 func find_nearest_broken_window() -> Node3D:
-	if _window_markers.is_empty():
+	if _bottom_floor_windows.is_empty():
 		return null
 	
 	var closest: Node3D = null
-	var closest_dist: float = INF
-	var entity_pos_2d = Vector2(entity.global_position.x, entity.global_position.z)
+	var closest_dist_sq: float = INF
+	var entity_pos = entity.global_position
 	
-	for w in _window_markers:
-		# Only ground-floor windows
-		if not w.get_parent().is_in_group("BottomFloorWindows"):
-			continue
-		
-		var cabin_window = w.get_parent() as CabinWindow
-		if not cabin_window:
-			continue
-		
+	for cabin_window in _bottom_floor_windows:
 		# Must have shattered glass AND not be boarded
 		if not cabin_window.is_glass_shattered:
 			continue
 		if cabin_window.is_boarded:
 			continue
 		
-		var w_pos_2d = Vector2(w.global_position.x, w.global_position.z)
-		var d: float = entity_pos_2d.distance_to(w_pos_2d)
-		if d < closest_dist:
-			closest_dist = d
+		# Flatten Y to ignore height differences (compare in 2D XZ plane)
+		var w_pos = cabin_window.global_position
+		w_pos.y = entity_pos.y
+		var d_sq: float = entity_pos.distance_squared_to(w_pos)
+		if d_sq < closest_dist_sq:
+			closest_dist_sq = d_sq
 			closest = cabin_window
 	
 	return closest
