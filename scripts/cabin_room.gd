@@ -75,16 +75,18 @@ func contains_point(point: Vector3) -> bool:
 		return false
 	
 	# Use intersect_point to check if the point is inside this area
-	var query := PhysicsPointQueryParameters3D.new()
+	var query = PhysicsPointQueryParameters3D.new()
 	query.position = point
 	query.collide_with_areas = true
 	query.collide_with_bodies = false
 	
-	var results := space_state.intersect_point(query)
-	for result in results:
-		if result.collider == self:
-			return true
+	# NEW: Explicitly tell the query to only look at the physics layer this room lives on!
+	# This prevents the query from missing the room or getting blocked by other triggers.
+	query.collision_mask = self.collision_layer 
 	
+	var results = space_state.intersect_point(query)
+	for res in results:
+		if res.collider == self:
+			return true
 	return false
-
 
