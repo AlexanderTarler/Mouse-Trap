@@ -2527,14 +2527,14 @@ func _find_room_path(start_room: String, target_room: String) -> Array[String]:
 		return [start_room]
 	
 	var visited: Dictionary = {}
-	var queue: Array[Array] = []  # Each element is [room_name, path_so_far]
+	var queue: Array = []  # Each element is [room_name, path_so_far]
 	queue.append([start_room, [start_room]])
 	visited[start_room] = true
 	
 	while queue.size() > 0:
 		var entry = queue.pop_front()
 		var current_room: String = entry[0]
-		var path: Array[String] = entry[1]
+		var path: Array = entry[1]  # Untyped Array — will be cast to Array[String] at the call site
 		
 		var neighbors: Array = INDOOR_ROOM_GRAPH.get(current_room, [])
 		for neighbor in neighbors:
@@ -2902,7 +2902,7 @@ func _indoor_search_state(delta: float) -> void:
 			
 			# Compute BFS room path if both rooms are valid
 			if entity_room != "" and player_room != "":
-				_room_path = _find_room_path(entity_room, player_room)
+				_room_path = _find_room_path(entity_room, player_room) as Array[String]
 				_current_room_index = 0
 				
 				if _room_path.size() > 0:
