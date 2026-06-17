@@ -91,6 +91,32 @@ var current_drain_rate: float = 0.12
 func _ready() -> void:
 	# Try to find GameTime via the scene tree (autoloads are children of /root)
 	_find_game_time()
+	
+	# ─── READ STARTING FUEL FROM GENERATOR NODE ──────────────────────────
+	# The Generator node (generator.gd) has a starting_fuel_percent export
+	# that controls the initial fuel level. Read it here and apply it to
+	# generator_fuel. This allows the designer to set the starting fuel
+	# percentage directly in the Inspector on generator.tscn.
+	_apply_starting_fuel()
+
+
+## Reads the starting_fuel_percent from the Generator node and applies it
+## to generator_fuel. Called during _ready() so the fuel level is set before
+## the first night starts.
+func _apply_starting_fuel() -> void:
+	var generators = get_tree().get_nodes_in_group("generator_controller")
+	if not generators.is_empty():
+		var gen = generators[0]
+		if gen and "starting_fuel_percent" in gen:
+			var fuel_pct = gen.starting_fuel_percent
+			generator_fuel = max_fuel * (fuel_pct / 100.0)
+			generator_fuel = clampf(generator_fuel, 0.0, max_fuel)
+			print("[NightManager] Starting fuel set to %.1f%% (%.1f / %.1f) from Generator node." % [fuel_pct, generator_fuel, max_fuel])
+		else:
+			print("[NightManager] Generator node has no starting_fuel_percent. Using default: %.1f / %.1f" % [generator_fuel, max_fuel])
+	else:
+		print("[NightManager] No Generator node found. Using default fuel: %.1f / %.1f" % [generator_fuel, max_fuel])
+
 
 
 func _find_game_time() -> void:

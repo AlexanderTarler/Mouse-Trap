@@ -830,3 +830,20 @@ func pick_next_vantage_point() -> void:
 	entity.set_last_vantage_point(best_marker)
 	entity.get_nav_agent().target_position = best_marker.global_position
 	entity.set_at_vantage_point(false)
+	
+	# ─── DEBUG TARGET INJECTION ──────────────────────────────────────────
+	# If the Entity is in INDOOR_SEARCH or APPROACH_WINDOW, warn when the
+	# NavTarget is being set to a point more than 10 meters from the cabin
+	# center. This helps identify which script is overriding the NavTarget
+	# while the Entity is trying to approach the door or breach the interior.
+	#
+	# A valid approach/breach target should be near the cabin (within 10m).
+	# If the target is in the forest (e.g., (30.45, 0, -10.52)), something
+	# is wrong — the Entity is being redirected to a treeline vantage point
+	# instead of the door/window it was approaching.
+	var entity_state = entity.get_state()
+	if entity_state == EntityAI.State.INDOOR_SEARCH or entity_state == EntityAI.State.APPROACH_WINDOW:
+		var cabin_dist = best_marker.global_position.distance_to(entity.cabin_center)
+		if cabin_dist > 10.0:
+			push_warning("[NAV_OVERRIDE] pick_next_vantage_point() setting target to (%.1f, %.1f, %.1f) — %.1fm from cabin! Entity state=%s" % [best_marker.global_position.x, best_marker.global_position.y, best_marker.global_position.z, cabin_dist, EntityAI.State.keys()[entity_state]])
+

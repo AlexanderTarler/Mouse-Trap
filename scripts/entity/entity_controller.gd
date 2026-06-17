@@ -93,6 +93,30 @@ var _path_timer: float = 0.0
 var _stuck_timer: float = 0.0
 var _game_time: float = 0.0
 
+# ─── POSITION-BASED STUCK DETECTION ──────────────────────────────────────────
+## Tracks the Entity's position over time to detect "treadmilling" — where the
+## Entity has non-zero velocity but is NOT making progress toward its target
+## (e.g., pushing against an invisible wall, stuck on a door threshold, or
+## pathfinding to an unreachable NavMesh edge).
+##
+## Unlike the velocity-based stuck detector (which checks get_real_velocity()),
+## this detector compares the Entity's actual position frame-over-frame. If the
+## position hasn't changed by more than 0.1m for 2+ seconds while the nav agent
+## is active, it logs a detailed diagnostic including:
+##   - Where the Entity is (current position)
+##   - Where it's trying to go (nav target position)
+##   - What it's colliding with (last slide collision)
+##
+## This is specifically designed to catch the "doorway treadmill" bug where the
+## Entity has velocity (~0.5 m/s) but is sliding along a wall/doorframe instead
+## of moving toward the IndoorBreachWaypoint.
+var _pos_stuck_timer: float = 0.0
+var _last_stuck_position: Vector3 = Vector3.ZERO
+var _pos_stuck_logged: bool = false  # Prevents spam-logging every frame after first detection
+const POS_STUCK_TIMEOUT: float = 2.0  # Seconds before logging the diagnostic
+const POS_STUCK_THRESHOLD: float = 0.1  # Meters — minimum movement to reset the timer
+
+
 # Cached NightManager reference — resolved once in _initialize_entity().
 # Sub-modules access this via get_night_manager() instead of polling
 # get_node_or_null("/root/NightManager") every frame.
@@ -122,6 +146,34 @@ var _cabin_lights: Array[Node] = []
 ## This prevents "State Flapping" where the Director and FSM fight over
 ## the state variable every frame.
 var state_locked: bool = false
+
+## ─── BREACH LOCK ──────────────────────────────────────────────────────────────
+## When true, the Sensory System and Director Tier logic must NOT be allowed
+## to override the state. This prevents the Entity from aborting its door/window
+## breach due to sensory interference (hearing the player outside, seeing the
+## player outside, etc.).
+##
+## Set to true by _indoor_search_state() when Door Phase A begins.
+## Set to false when Door Phase A completes (arrival at IndoorBreachWaypoint).
+## Automatically force-unlocked after 5 seconds via the timeout in _physics_process().
+##
+## This is the "Breach Lock" — the Entity commits to the doorway and ignores
+## all outside noise until fully inside.
+var is_breach_locked: bool = false
+
+## Timer tracking how long is_breach_locked has been active.
+## Used by the 5-second timeout in _physics_process() to force-unlock
+## if the breach takes too long.
+var _breach_lock_timer: float = 0.0
+
+## ─── DOOR BREACH COOLDOWN ────────────────────────────────────────────────────
+## Timestamp (in seconds from Time.get_ticks_msec() / 1000.0) of the last
+## successful door breach. Used by the Director's Tier 7 to enforce a 15-second
+## cooldown on APPROACH_WINDOW after a door breach, preventing the looping bug
+## where the Entity breaches → Director sees player inside → triggers
+## APPROACH_WINDOW again → Entity jitters/teleports back to the door.
+## Set to -999.0 initially so the cooldown check always passes on first breach.
+var last_door_breach_time: float = -999.0
 
 ## Set to true by _approach_window_state() when the Entity arrives at the target window.
 ## The Director checks this flag and transitions to WINDOW_PEEK.
@@ -548,6 +600,13 @@ var _ray_right: RayCast3D = null
 # the visual model to the actual ground surface.
 var _floor_ray: RayCast3D = null
 
+## When true, the Floor RayCast ground snapping is temporarily disabled.
+## Used during Door Phase 2 (walking through the doorway) to allow the Entity
+## to use standard physics to walk up the stairs. Without this, the ground
+## snapping hovers the Entity above the stair treads, preventing it from
+## climbing to the interior waypoint.
+var _floor_snap_disabled: bool = false
+
 # ─── DEBUG: Position Logging Timer ────────────────────────────────────────────
 # Counts up each frame. Every 2 seconds, logs the Entity's global_position
 # (especially Y) and what the floor raycast is colliding with.
@@ -968,7 +1027,15 @@ func _physics_process(delta: float) -> void:
 			var hit_normal = _floor_ray.get_collision_normal()
 			var collider = _floor_ray.get_collider()
 			var collider_name = collider.name if collider else "null"
-			hit_info = "collider=%s hit_y=%.3f normal=%s" % [collider_name, hit_point.y, hit_normal]
+			# ─── GROUND NOISE FILTER ──────────────────────────────────
+			# The floor raycast ALWAYS hits the ground (it's pointing down).
+			# "GroundFloorCollision" is the cabin floor — it's not useful info.
+			# Filter it out so the debug log only shows non-ground collisions
+			# (e.g., stairs, furniture, door thresholds).
+			if collider_name.contains("Ground") or collider_name.contains("Floor"):
+				hit_info = "collider=Ground hit_y=%.3f normal=%s" % [hit_point.y, hit_normal]
+			else:
+				hit_info = "collider=%s hit_y=%.3f normal=%s" % [collider_name, hit_point.y, hit_normal]
 		else:
 			hit_info = "NO_HIT"
 		print("[Entity DEBUG] pos=(%.3f, %.3f, %.3f) state=%s floor_ray=%s" % [
@@ -976,6 +1043,7 @@ func _physics_process(delta: float) -> void:
 			EntityAI.State.keys()[_state] if _state >= 0 and _state < EntityAI.State.keys().size() else "UNKNOWN",
 			hit_info
 		])
+
 	
 	_game_time += delta
 	
@@ -1077,16 +1145,75 @@ func _physics_process(delta: float) -> void:
 	var is_stranded = not is_nav_active and dist_to_target > 1.0
 	
 	if _state == EntityAI.State.INDOOR_SEARCH:
+			# ─── BREACH LOCK GUARD ──────────────────────────────────────────
+		# If the Entity is in Door Phase A (breach in progress), do NOT
+		# trigger stuck detection. The Entity is walking toward the
+		# IndoorBreachWaypoint and may appear "stranded" because the NavMesh
+		# doesn't cover the cabin interior. The breach frame-count gate in
+		# entity_ai.gd's _indoor_search_state() handles the arrival timing.
+		# Without this guard, the stuck detector fires at 3 seconds and
+		# teleports the Entity to the breach waypoint, bypassing the frame-
+		# count gate and causing the "instant breach" bug.
+		if _ai and _ai.has_method("is_breach_in_progress") and _ai.is_breach_in_progress():
+			_stuck_timer = 0.0
+			return
+		
+		# ─── BREACH LOCK TIMEOUT ──────────────────────────────────────────
+		# If is_breach_locked has been active for more than 5.0 seconds,
+		# force-unlock it and teleport the Entity to the indoor breach waypoint.
+		# This prevents the Entity from getting permanently stuck in the breach
+		# lock if the pathfinding fails to reach the IndoorBreachWaypoint.
+		if is_breach_locked:
+			_breach_lock_timer += delta
+			if _breach_lock_timer > 5.0:
+				print("[BREACH_LOCK] TIMEOUT! Breach lock active for %.1f seconds. Force-unlocking and teleporting to indoor waypoint." % _breach_lock_timer)
+				is_breach_locked = false
+				_breach_lock_timer = 0.0
+				# Teleport to the indoor breach waypoint
+				if _ai and _ai.has_method("get_indoor_breach_waypoint"):
+					global_position = _ai.get_indoor_breach_waypoint()
+					print("[BREACH_LOCK] Teleported to indoor breach waypoint via timeout.")
+		else:
+			_breach_lock_timer = 0.0
+
+		
+		# [TRACE] Log stuck detection state for INDOOR_SEARCH
+		var real_vel_stuck = get_real_velocity()
 		if is_stranded or (is_nav_active and not is_moving):
 			_stuck_timer += delta
+			print("[TRACE_STUCK] INDOOR_SEARCH: is_stranded=%s, is_nav_active=%s, is_moving=%s, stuck_timer=%.2f/3.0, dist_to_target=%.2f, vel_len=%.3f" % [is_stranded, is_nav_active, is_moving, _stuck_timer, dist_to_target, real_vel_stuck.length()])
 			if _stuck_timer > 3.0:
 				# ─── BARRICADE AWARENESS CHECK ──────────────────────────
+				# DOOR ENTRY GUARD: If the Entity entered through a door
+				# (was_door_entry == true), the _current_window_target is the
+				# Door's WindowMarker, which is right next to the Entity.
+				# Checking dist_to_window <= 5.0 would ALWAYS be true,
+				# creating an infinite reset loop that prevents
+				# fade_and_relocate() from ever firing.
+				# Only apply the barricade awareness check for WINDOW entries.
+				# DO NOT rely on the transient was_door_entry flag — it gets consumed
+				# by the early arrival check in entity_ai.gd's _indoor_search_state()
+				# on the first frame, making it false for all subsequent frames.
+				# Instead, dynamically check if the _current_window_target's parent
+				# belongs to the "Door" group. If it's a door, skip the barricade
+				# reset so the stuck timer can reach 3.0s and trigger the failsafe
+				# teleport to the indoor breach waypoint.
 				var window_target = get_current_window_target()
 				if window_target:
-					var dist_to_window = global_position.distance_to(window_target.global_position)
-					if dist_to_window <= 5.0:
-						_stuck_timer = 0.0
-						return
+					# Check if the target is actually a door marker (not a window)
+					var is_door = false
+					var parent = window_target.get_parent()
+					if parent and parent.is_in_group("Door"):
+						is_door = true
+					
+					# Only reset the timer if it's an actual window, NOT a door!
+					if not is_door:
+						var dist_to_window = global_position.distance_to(window_target.global_position)
+						if dist_to_window <= 5.0:
+							print("[TRACE_STUCK] INDOOR_SEARCH: Near window (dist=%.2f <= 5.0). Resetting stuck timer." % dist_to_window)
+							_stuck_timer = 0.0
+							return
+
 				
 				# ─── FAILSAFE: Teleport to indoor breach waypoint ──────
 				# If stranded indoors (NavMesh can't reach the player),
@@ -1101,18 +1228,141 @@ func _physics_process(delta: float) -> void:
 					fade_and_relocate()
 				_stuck_timer = 0.0
 		else:
+			if _stuck_timer > 0.0:
+				print("[TRACE_STUCK] INDOOR_SEARCH: Unstuck! Resetting timer. is_stranded=%s, is_nav_active=%s, is_moving=%s" % [is_stranded, is_nav_active, is_moving])
 			_stuck_timer = 0.0
 	elif is_nav_active and not is_moving and not is_attack_state:
-		_stuck_timer += delta
-		if _stuck_timer >= stuck_timeout:
-			var real_vel := get_real_velocity()
-			print("[Entity] STUCK DETECTED! No movement for %.1fs while nav is active. real_vel=(%.3f, %.3f, %.3f) len=%.3f. Relocating." % [stuck_timeout, real_vel.x, real_vel.y, real_vel.z, real_vel.length()])
-			fade_and_relocate()
+		# ─── DOOR PHASE GUARD ──────────────────────────────────────────
+		# During APPROACH_WINDOW, the Entity intentionally pauses at the
+		# door for 2 seconds (Door Phase 1) while the AI checks if the door
+		# is locked, opens it, etc. During this pause, velocity is zero and
+		# the nav agent is still active (not finished). Without this guard,
+		# the stuck detector fires after 1.5s and triggers fade_and_relocate(),
+		# teleporting the Entity away from the door it just arrived at.
+		#
+		# We detect this by checking if the Entity is in APPROACH_WINDOW
+		# state AND the door phase is active (_door_phase > 0). If so,
+		# we skip the stuck detection entirely — the Entity is intentionally
+		# waiting, not stuck.
+		var is_door_phase_active = (_state == EntityAI.State.APPROACH_WINDOW and _door_phase > 0)
+		
+		if not is_door_phase_active:
+			_stuck_timer += delta
+			if _stuck_timer >= stuck_timeout:
+				var real_vel := get_real_velocity()
+				print("[Entity] STUCK DETECTED! No movement for %.1fs while nav is active. real_vel=(%.3f, %.3f, %.3f) len=%.3f. Relocating." % [stuck_timeout, real_vel.x, real_vel.y, real_vel.z, real_vel.length()])
+				fade_and_relocate()
+				_stuck_timer = 0.0
+		else:
+			# Reset the stuck timer while waiting at the door
 			_stuck_timer = 0.0
 	else:
 		_stuck_timer = 0.0
+
+	
+	# ─── POSITION-BASED STUCK DETECTION ──────────────────────────────────────
+	# Tracks whether the Entity has been at the same coordinates for 2+ seconds
+	# while the nav agent is active. This catches "treadmilling" — where the
+	# Entity has non-zero velocity but is NOT making progress toward its target
+	# (e.g., pushing against an invisible wall, stuck on a door threshold, or
+	# pathfinding to an unreachable NavMesh edge).
+	#
+	# Unlike the velocity-based stuck detector above (which checks
+	# get_real_velocity().length_squared() > 0.01), this detector compares the
+	# Entity's actual position frame-over-frame. If the position hasn't changed
+	# by more than POS_STUCK_THRESHOLD (0.1m) for POS_STUCK_TIMEOUT (2.0s)
+	# while the nav agent is active, it logs a detailed diagnostic.
+	#
+	# The diagnostic includes:
+	#   - Where the Entity is (current global_position)
+	#   - Where it's trying to go (nav target_position)
+	#   - What it's colliding with (last slide collision collider name)
+	#
+	# This is specifically designed to catch the "doorway treadmill" bug where
+	# the Entity has velocity (~0.5 m/s) but is sliding along a wall/doorframe
+	# instead of moving toward the IndoorBreachWaypoint.
+	#
+	# ATTACK STATE GUARD:
+	#   Position-based stuck detection is disabled during CHASE, CHARGE, FLINCH,
+	#   CLIMB_WALL, and STUNNED — same as the velocity-based detector.
+	#
+	# INDOOR_SEARCH GUARD:
+	#   Position-based stuck detection is also disabled during INDOOR_SEARCH
+	#   because the NavMesh may not cover the cabin interior, causing the
+	#   Entity to appear "stuck" when it's actually stranded. The INDOOR_SEARCH
+	#   state has its own dedicated stuck detection logic above.
+	if not is_attack_state and _state != EntityAI.State.INDOOR_SEARCH:
+		var current_pos = global_position
+		var pos_changed = current_pos.distance_squared_to(_last_stuck_position) > POS_STUCK_THRESHOLD * POS_STUCK_THRESHOLD
+		
+		if is_nav_active and not pos_changed:
+			_pos_stuck_timer += delta
+			if _pos_stuck_timer >= POS_STUCK_TIMEOUT and not _pos_stuck_logged:
+				_pos_stuck_logged = true
+				
+				# ─── BUILD DIAGNOSTIC ──────────────────────────────────
+				# Gather information about what the Entity is colliding with
+				# by checking ALL slide collisions from move_and_slide().
+				# We iterate through ALL collisions and filter out the ground
+				# ("GroundFloorCollision") so we only see the actual obstacle
+				# blocking the Entity (e.g., doorframe, ramp, wall).
+				#
+				# GROUND NOISE FILTER:
+				# The Entity is always colliding with the ground (it walks on it).
+				# "GroundFloorCollision" is the name of the cabin's floor StaticBody3D.
+				# We skip it because it's not the thing blocking the Entity — it's
+				# the thing the Entity is standing on. Without this filter, the log
+				# always says "GroundFloorCollision" and never reveals the actual
+				# obstacle (doorframe, ramp edge, porch post, etc.).
+				var collision_info = "none"
+				var slide_count = get_slide_collision_count()
+				for i in range(slide_count):
+					var collision = get_slide_collision(i)
+					if not collision:
+						continue
+					var collider = collision.get_collider()
+					if not collider:
+						continue
+					var collider_name = collider.name if collider else "null"
+					var collider_class = collider.get_class() if collider else "null"
+					
+					# ─── GROUND NOISE FILTER ──────────────────────────
+					# Skip "GroundFloorCollision" — it's the floor, not an obstacle.
+					# Also skip any collider whose name contains "Ground" or "Floor"
+					# to catch variations (GroundCollision, FloorMesh, etc.).
+					if collider_name.contains("Ground") or collider_name.contains("Floor"):
+						continue
+					
+					collision_info = "%s (%s)" % [collider_name, collider_class]
+					break  # Use the first non-ground collision found
+				
+				var nav_target = _nav_agent.target_position
+				var real_vel = get_real_velocity()
+				var state_name = EntityAI.State.keys()[_state] if _state >= 0 and _state < EntityAI.State.keys().size() else "UNKNOWN"
+				
+				print("[POS_STUCK] Entity stuck at same position for %.1fs!" % _pos_stuck_timer)
+				print("[POS_STUCK]   Position:      (%.3f, %.3f, %.3f)" % [current_pos.x, current_pos.y, current_pos.z])
+				print("[POS_STUCK]   Nav Target:    (%.3f, %.3f, %.3f)" % [nav_target.x, nav_target.y, nav_target.z])
+				print("[POS_STUCK]   Dist to Target: %.2fm" % current_pos.distance_to(nav_target))
+				print("[POS_STUCK]   State:         %s" % state_name)
+				print("[POS_STUCK]   Real Velocity: (%.3f, %.3f, %.3f) len=%.3f" % [real_vel.x, real_vel.y, real_vel.z, real_vel.length()])
+				print("[POS_STUCK]   Last Collision: %s" % collision_info)
+				print("[POS_STUCK]   Nav Finished:  %s" % _nav_agent.is_navigation_finished())
+
+		else:
+			# Reset the timer and log flag if the Entity moved or nav finished
+			if pos_changed or not is_nav_active:
+				_pos_stuck_timer = 0.0
+				_pos_stuck_logged = false
+				_last_stuck_position = current_pos
+	else:
+		# Reset for attack states and INDOOR_SEARCH
+		_pos_stuck_timer = 0.0
+		_pos_stuck_logged = false
+		_last_stuck_position = global_position
 	
 	# --- BACKGROUND SENSE PROCESSING (runs every frame regardless of state) ---
+
 	if _sensory:
 		_sensory.can_entity_see_player()
 	if _current_interest_level > 0:
@@ -1250,12 +1500,18 @@ func _physics_process(delta: float) -> void:
 	# After move_and_slide(), use the Floor RayCast to hover the invisible
 	# physics sphere above terrain and snap the visual model to the ground.
 	# This permanently prevents the Entity from snagging on geometry.
+	#
+	# DISABLE GUARD: When _floor_snap_disabled is true (Door Phase 2), the
+	# ground snapping is temporarily disabled to allow the Entity to use
+	# standard physics to walk up the stairs. Without this, the lerp hovers
+	# the Entity above stair treads, preventing it from climbing to the
+	# interior waypoint.
 	var is_climbing = _state in [EntityAI.State.CLIMB_WALL_UP, EntityAI.State.CLIMB_WALL_DOWN]
 	var is_ghosting = false
 	if _state == EntityAI.State.INDOOR_SEARCH and _ai and _ai.has_method("has_arrived_indoor"):
 		is_ghosting = not _ai.has_arrived_indoor()
 	
-	if not is_climbing and not is_ghosting:
+	if not is_climbing and not is_ghosting and not _floor_snap_disabled:
 		if _floor_ray.is_colliding():
 			var floor_y = _floor_ray.get_collision_point().y
 			
@@ -2902,10 +3158,16 @@ func _update_animations(_delta: float) -> void:
 	# each state to the same walk/crawl/idle animations.
 	
 	# Vertical movement (ClimbUp / ClimbDown) takes priority over horizontal
-	if real_vel.y > 0.8:
+	# GUARD: Only play ClimbUp/ClimbDown if the Entity is actually in a climbing
+	# state. The Floating Sphere Ground Snapping system uses lerp() to hover the
+	# Entity above terrain, which can create upward velocity (real_vel.y > 0.8)
+	# when moving over slopes or uneven ground. Without this guard, the Entity
+	# would play the ClimbUp animation every time it drifts upward over a hill.
+	var _is_climbing_anim = _state in [EntityAI.State.CLIMB_WALL_UP, EntityAI.State.CLIMB_WALL_DOWN]
+	if _is_climbing_anim and real_vel.y > 0.8:
 		_anim_state_machine.travel("ClimbUp")
 		return
-	elif real_vel.y < -0.8 and not is_on_floor():
+	elif _is_climbing_anim and real_vel.y < -0.8 and not is_on_floor():
 		_anim_state_machine.travel("ClimbDown")
 		return
 	

@@ -36,10 +36,18 @@ class_name Generator
 ## Default: 0.12 fuel units per second.
 @export var base_drain_rate: float = 0.12
 
+## Starting fuel percentage (0.0 to 100.0).
+## Controls how much fuel the generator has at the start of the game.
+## Set this in the Inspector on generator.tscn to configure the initial
+## fuel level without modifying code. Default: 100.0 (full tank).
+## The NightManager reads this value during _ready() to set generator_fuel.
+@export var starting_fuel_percent: float = 100.0
+
 
 func _ready() -> void:
 	add_to_group("generator_controller")
-	print("[Generator] Initialized. Base drain: %.2f, Cabin light drain: %.2f, Porch light drain: %.2f" % [base_drain_rate, cabin_light_drain_rate, porch_light_drain_rate])
+	print("[Generator] Initialized. Base drain: %.2f, Cabin light drain: %.2f, Porch light drain: %.2f, Starting fuel: %.0f%%" % [base_drain_rate, cabin_light_drain_rate, porch_light_drain_rate, starting_fuel_percent])
+
 
 
 ## Calculates the total fuel drain rate based on which lights are currently

@@ -57,8 +57,22 @@ var _was_on_floor: bool = false
 ## to unlock sprinting. Set this in the inspector per-level.
 @export var start_with_sprint: bool = true
 
+## Whether the player starts the game with a flashlight already equipped.
+## When true (default), the player can toggle the flashlight with F from
+## the very start of the game without needing to find the flashlight pickup.
+## When false, the player must find and pick up flashlight.tscn in the world
+## before they can use the flashlight.
+@export var start_with_flashlight: bool = true
+
+## Whether the player starts the game with the Cabin Key in their inventory.
+## When true, the player has the key_resource.tres added to their inventory
+## at game start, allowing them to unlock the front door immediately.
+## When false (default), the player must find the key in the world.
+@export var start_with_key: bool = false
+
 # Sprint unlock — enabled by default for development convenience
 var sprint_unlocked: bool = true
+
 
 # --- STANDOFF / CHARGE MECHANIC ---
 ## How long the player has been staring at the Entity with the flashlight on.
@@ -111,11 +125,38 @@ func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	add_to_group("player")
 	
+	# ─── FLASHLIGHT INIT ─────────────────────────────────────────────
+	# If start_with_flashlight is true (default), the player can toggle the
+	# flashlight with F from the very start. If false, the player must find
+	# the flashlight pickup in the world first.
 	if _flashlight:
-		# Flashlight starts disabled until the player picks up flashlight.tscn
-		_flashlight.visible = false
-		if _flashlight.has_method("toggle") and _flashlight.is_on:
-			_flashlight.is_on = false
+		if start_with_flashlight:
+			_has_flashlight = true
+			_flashlight_on = false
+			_flashlight.visible = false
+			if _flashlight.has_method("toggle") and _flashlight.is_on:
+				_flashlight.is_on = false
+			print("[Player] Starting with flashlight equipped. Press F to toggle.")
+		else:
+			# Flashlight starts disabled until the player picks up flashlight.tscn
+			_has_flashlight = false
+			_flashlight.visible = false
+			if _flashlight.has_method("toggle") and _flashlight.is_on:
+				_flashlight.is_on = false
+			print("[Player] Flashlight LOCKED. Find the flashlight pickup to unlock it.")
+	
+	# ─── KEY INIT ────────────────────────────────────────────────────
+	# If start_with_key is true, add the Cabin Key to the player's inventory
+	# at game start. This allows the player to unlock the front door immediately
+	# without needing to find the key in the world.
+	if start_with_key:
+		var key_res = load("res://resources/key_resource.tres")
+		if key_res:
+			Inventory.add_item(key_res)
+			print("[Player] Starting with Cabin Key in inventory. Front door is unlocked.")
+		else:
+			print("[Player] WARNING: Could not load key_resource.tres for start_with_key!")
+
 	
 	if _interaction_manager and _interaction_manager.has_method("set_camera"):
 		_interaction_manager.set_camera(_camera)

@@ -164,6 +164,10 @@ func _print_debug_dump(entity: CharacterBody3D) -> void:
 func evaluate_master_state(entity: CharacterBody3D) -> int:
 	var state = entity.get_state()
 	
+	# [TRACE] Log Director evaluation when in INDOOR_SEARCH
+	if state == EntityAI.State.INDOOR_SEARCH:
+		print("[TRACE_DIRECTOR] evaluate_master_state: state=INDOOR_SEARCH, state_locked=%s, was_door_entry=%s, persistence_timer=%.1f" % [entity.state_locked, entity.was_door_entry, _indoor_search_persistence_timer])
+	
 	# ─── INDOOR SEARCH PERSISTENCE TIMER DECAY ──────────────────────────
 	# Decrement the indoor search persistence timer each frame so it counts
 	# down from 30.0 to 0.0 while the Entity is in INDOOR_SEARCH.
@@ -178,6 +182,8 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	# blackout enrage, debug) can interrupt locked states.
 	var pending = _tier_0_pending_override(entity)
 	if pending >= 0:
+		if state == EntityAI.State.INDOOR_SEARCH:
+			print("[TRACE_DIRECTOR] TIER 0 PENDING OVERRIDE returning %d (interrupting INDOOR_SEARCH!)" % pending)
 		return pending
 	
 	# ─── TIER 0: CRITICAL SURVIVAL & REACTIONS ───────────────────────
@@ -185,6 +191,8 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	# interrupt any ongoing task (approach, climb, etc.).
 	var flashlight_state = _tier_0_flashlight_reaction(entity, state)
 	if flashlight_state >= 0:
+		if state == EntityAI.State.INDOOR_SEARCH:
+			print("[TRACE_DIRECTOR] TIER 0 FLASHLIGHT returning %d (interrupting INDOOR_SEARCH!)" % flashlight_state)
 		return flashlight_state
 	
 	# ─── TIER 1: SABOTAGE OVERRIDE ──────────────────────────────────
@@ -197,7 +205,31 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	# reset animation flags before transitioning to FUSE_SABOTAGE.
 	var sabotage_state = _tier_1_sabotage(entity, state)
 	if sabotage_state >= 0:
+		if state == EntityAI.State.INDOOR_SEARCH:
+			print("[TRACE_DIRECTOR] TIER 1 SABOTAGE returning %d (interrupting INDOOR_SEARCH!)" % sabotage_state)
 		return sabotage_state
+	
+	# ─── BREACH LOCK GUARD ────────────────────────────────────────────
+	# After Tier 0 (flashlight reactions) and Tier 1 (sabotage override),
+	# check if the Entity is mid-breach (walking through the doorway).
+	# When is_breach_locked is true, the Entity is in Door Phase A of
+	# INDOOR_SEARCH and MUST NOT be interrupted by sensory-driven state
+	# overrides (Tiers 2-8). This prevents the "Sensory Interference" bug
+	# where the Entity sees the player outside during Door Phase A and
+	# aborts the search.
+	#
+	# Unlike state_locked (which is set by state handlers for animation
+	# locks), is_breach_locked is a HARD lock that prevents ANY tier
+	# (including Tier 0 flashlight and Tier 1 sabotage) from overriding
+	# the state while the Entity is physically walking through the doorway.
+	#
+	# The lock is released when:
+	#   1. Door Phase A completes (Entity reaches IndoorBreachWaypoint)
+	#   2. The 5-second timeout fires (entity_controller.gd force-teleports)
+	if entity.is_breach_locked:
+		if state == EntityAI.State.INDOOR_SEARCH:
+			print("[TRACE_DIRECTOR] BREACH LOCKED! is_breach_locked=true. Returning INDOOR_SEARCH (preserving breach lock).")
+		return state
 	
 	# ─── STATE LOCK GUARD ─────────────────────────────────────────────
 	# After Tier 0 (flashlight reactions) and Tier 1 (sabotage override),
@@ -205,7 +237,10 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	# current state to prevent "State Flapping" where the Director and
 	# FSM fight over the state.
 	if entity.state_locked:
+		if state == EntityAI.State.INDOOR_SEARCH:
+			print("[TRACE_DIRECTOR] STATE LOCKED! Returning INDOOR_SEARCH (preserving lock).")
 		return state
+
 	
 	# ─── INDOOR SEARCH PRESERVATION GUARD ──────────────────────────────
 	# If the Entity is currently in INDOOR_SEARCH, do NOT allow Tiers 2-8
@@ -227,8 +262,10 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	if state == EntityAI.State.INDOOR_SEARCH:
 		# Only allow escape if the persistence timer has actually expired
 		if _indoor_search_persistence_timer <= 0.0:
+			print("[TRACE_DIRECTOR] INDOOR_SEARCH preservation: timer EXPIRED (%.1f). Allowing escape." % _indoor_search_persistence_timer)
 			pass  # Allow logic to continue down the tiers so it can leave the house
 		else:
+			print("[TRACE_DIRECTOR] INDOOR_SEARCH preservation: timer=%.1f > 0. BLOCKING all transitions!" % _indoor_search_persistence_timer)
 			return EntityAI.State.INDOOR_SEARCH  # Block all transitions! Keep hunting.
 	
 	# ─── STATE PERSISTENCE GUARD ──────────────────────────────────────
@@ -242,11 +279,15 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	# sets this to 1.5s) and decremented each frame in _physics_process().
 	# When it reaches 0.0, the Director is free to re-evaluate.
 	if entity.get_state_timer() > 0.0:
+		if state == EntityAI.State.INDOOR_SEARCH:
+			print("[TRACE_DIRECTOR] STATE PERSISTENCE GUARD: timer=%.3f > 0. Preserving INDOOR_SEARCH." % entity.get_state_timer())
 		return state
 	
 	# ─── TIER 2: NIGHT RULES ─────────────────────────────────────────
 	var night_state = _tier_2_night_rules(entity, state)
 	if night_state >= 0:
+		if state == EntityAI.State.INDOOR_SEARCH:
+			print("[TRACE_DIRECTOR] TIER 2 NIGHT RULES returning %d (interrupting INDOOR_SEARCH!)" % night_state)
 		return night_state
 	
 	# ─── ANTI-FLAP COOLDOWN CHECK ────────────────────────────────────
@@ -254,6 +295,8 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	# into FLINCH (or other locked states) even if the Blackboard conditions
 	# still match. This prevents the 60fps oscillation loop.
 	if _anti_flap_cooldown > 0.0:
+		if state == EntityAI.State.INDOOR_SEARCH:
+			print("[TRACE_DIRECTOR] ANTI-FLAP COOLDOWN: %.3f > 0. Preserving INDOOR_SEARCH." % _anti_flap_cooldown)
 		return state
 	
 	# ─── STARE GRACE PERIOD ──────────────────────────────────────────
@@ -261,31 +304,43 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	# high (> 0.5s), the Director extends the cooldown by another 0.5s.
 	var stare_grace = _tier_2_stare_grace_period(entity, state)
 	if stare_grace >= 0:
+		if state == EntityAI.State.INDOOR_SEARCH:
+			print("[TRACE_DIRECTOR] TIER 2 STARE GRACE returning %d (interrupting INDOOR_SEARCH!)" % stare_grace)
 		return stare_grace
 	
 	# ─── TIER 3: ACTIVE AGGRESSION ───────────────────────────────────
 	var aggression_state = _tier_3_active_aggression(entity, state)
 	if aggression_state >= 0:
+		if state == EntityAI.State.INDOOR_SEARCH:
+			print("[TRACE_DIRECTOR] TIER 3 AGGRESSION returning %d (interrupting INDOOR_SEARCH!)" % aggression_state)
 		return aggression_state
 	
 	# ─── TIER 4: CONFIDENCE ESCALATION (Interrupts passive states) ───
 	var confidence_state = _tier_4_confidence_escalation(entity, state)
 	if confidence_state >= 0:
+		if state == EntityAI.State.INDOOR_SEARCH:
+			print("[TRACE_DIRECTOR] TIER 4 CONFIDENCE returning %d (interrupting INDOOR_SEARCH!)" % confidence_state)
 		return confidence_state
 	
 	# ─── TIER 5: STATE COMPLETION FLAGS ──────────────────────────────
 	var completion_state = _tier_5_completion_flags(entity, state)
 	if completion_state >= 0:
+		if state == EntityAI.State.INDOOR_SEARCH:
+			print("[TRACE_DIRECTOR] TIER 5 COMPLETION returning %d (interrupting INDOOR_SEARCH!)" % completion_state)
 		return completion_state
 	
 	# ─── TIER 6: PORTABLE TRAP ATTRACTION ────────────────────────────
 	var trap_state = _tier_6_trap_attraction(entity)
 	if trap_state >= 0:
+		if state == EntityAI.State.INDOOR_SEARCH:
+			print("[TRACE_DIRECTOR] TIER 6 TRAP returning %d (interrupting INDOOR_SEARCH!)" % trap_state)
 		return trap_state
 	
 	# ─── TIER 7: CONFIDENCE ESCALATION (Fallback for non-passive states)
 	var fallback_state = _tier_7_fallback_confidence(entity)
 	if fallback_state >= 0:
+		if state == EntityAI.State.INDOOR_SEARCH:
+			print("[TRACE_DIRECTOR] TIER 7 FALLBACK returning %d (interrupting INDOOR_SEARCH!)" % fallback_state)
 		return fallback_state
 	
 	# ─── TIER 8: DEFAULT BASELINE ────────────────────────────────────
@@ -300,10 +355,23 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	# It is reset to 30.0 when the Entity enters INDOOR_SEARCH and decremented
 	# each frame. While the timer is active, the Director returns INDOOR_SEARCH
 	# as the default baseline instead of OBSERVE_FROM_TREELINE.
-	if state == EntityAI.State.INDOOR_SEARCH and (entity.last_breached_window != null or entity.was_door_entry):
+	#
+	# NOTE: was_door_entry is consumed (set to false) by the Ghost Breach block
+	# in entity_ai.gd before the Director evaluates. So we also check
+	# last_door_breach_time as an alternative trigger — if the Entity has
+	# breached the door within the last 30 seconds, it should stay inside.
+	var _door_breach_recently: bool = false
+	var _current_time = Time.get_ticks_msec() / 1000.0
+	var _time_since_door_breach = _current_time - entity.last_door_breach_time
+	if _time_since_door_breach < 30.0:
+		_door_breach_recently = true
+	
+	if state == EntityAI.State.INDOOR_SEARCH and (entity.last_breached_window != null or entity.was_door_entry or _door_breach_recently):
 		if _indoor_search_persistence_timer > 0.0:
+			print("[TRACE_DIRECTOR] TIER 8 BASELINE: INDOOR_SEARCH persistence timer=%.1f > 0. Keeping INDOOR_SEARCH." % _indoor_search_persistence_timer)
 			return EntityAI.State.INDOOR_SEARCH
 	
+	print("[TRACE_DIRECTOR] TIER 8 BASELINE: Returning OBSERVE_FROM_TREELINE (state=%s, persistence=%.1f)" % [EntityAI.State.keys()[state], _indoor_search_persistence_timer])
 	return EntityAI.State.OBSERVE_FROM_TREELINE
 
 
@@ -1045,6 +1113,20 @@ func _tier_7_fallback_confidence(entity: CharacterBody3D) -> int:
 	# Do NOT override active states. The Entity is already engaged
 	# in a meaningful behavior and should not be redirected.
 	if state in EntityAI.UNINTERRUPTIBLE_STATES:
+		return -1
+	
+	# ─── DOOR BREACH COOLDOWN GUARD ──────────────────────────────────────
+	# After a successful door breach, enforce a 15-second cooldown before
+	# the Director can trigger APPROACH_WINDOW again. This prevents the
+	# looping bug where the Entity breaches → Director sees player inside →
+	# triggers APPROACH_WINDOW again → Entity jitters/teleports back to the door.
+	#
+	# The timestamp is set by entity_ai.gd's Ghost Breach block when the
+	# Entity teleports to the IndoorBreachWaypoint. If the current time is
+	# less than 15 seconds after the last breach, block APPROACH_WINDOW.
+	var current_time = Time.get_ticks_msec() / 1000.0
+	var time_since_breach = current_time - entity.last_door_breach_time
+	if time_since_breach < 15.0:
 		return -1
 	
 	var confidence = entity.get_confidence_module().get_confidence()

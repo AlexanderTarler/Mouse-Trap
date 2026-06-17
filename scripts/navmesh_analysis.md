@@ -97,3 +97,77 @@ Look for the `[Entity] STUCK DETECTED!` print in the console output.
 - [ ] **Step 5:** Temporarily disable `CollisionShape3D` — does Entity move?
 - [ ] **Step 6:** `avoidance_enabled` is now OFF by default (set in code)
 - [ ] **Step 7:** `path_desired_distance` = 1.0, `target_desired_distance` = 1.5 (set in code)
+
+---
+
+## NavMesh Verification: Invisible Ramp Source Geometry
+
+The "Invisible Ramp" (a StaticBody3D spanning the porch to the cabin floor) must be properly included as a "Source Geometry" for the NavigationRegion3D bake. If the ramp is excluded, the NavMesh won't cover the threshold gap, and the Entity will lose its path at the doorway.
+
+### How to Verify the Ramp is Included
+
+1. **Select the NavigationRegion3D node** in the scene tree (child of the cabin or world environment).
+
+2. **In the Inspector**, find the **"Source Geometry"** property under the NavigationRegion3D section.
+
+3. **Check the Source Geometry list:**
+   - It should include the **Invisible Ramp** StaticBody3D by name or path.
+   - If the ramp is NOT listed, click **"Add Element"** and drag the ramp node into the slot.
+
+4. **Verify Collision Layer Masks:**
+   - The ramp's **Collision Layer** must match the NavigationRegion3D's **Geometry Collision Mask**.
+   - Default: Ramp on Layer 1, NavigationRegion3D's mask includes Layer 1.
+   - If the ramp is on a custom layer (e.g., Layer 3), the NavigationRegion3D's mask must include that layer.
+   - **To check:** Select the ramp StaticBody3D → Inspector → Collision → Layer. Note which layers are enabled.
+   - **To check:** Select the NavigationRegion3D → Inspector → NavigationRegion3D → Geometry Collision Mask. Ensure the ramp's layer is checked.
+
+5. **Rebake the NavMesh:**
+   - With the NavigationRegion3D selected, click **"Bake NavMesh"** in the toolbar at the top of the 3D viewport.
+   - Wait for the bake to complete (look for the blue NavMesh surface to update).
+
+6. **Verify the Ramp is Baked:**
+   - Enable **Debug → Visible Navigation** in the top menu.
+   - Look at the doorway area. The blue NavMesh surface should extend from the porch across the ramp and into the cabin interior.
+   - If there's a gap in the blue surface at the doorway, the ramp is NOT being included in the bake.
+
+### Common Issues
+
+| Symptom                                                  | Cause                                                | Fix                                                                                       |
+| -------------------------------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Blue NavMesh stops at the door threshold                 | Ramp not in Source Geometry list                     | Add ramp to Source Geometry                                                               |
+| Blue NavMesh covers the ramp but Entity still gets stuck | Ramp collision layer mismatch                        | Match ramp's collision layer to NavigationRegion3D's Geometry Collision Mask              |
+| Ramp is in Source Geometry but NavMesh doesn't cover it  | Ramp's collision shape is too thin or misaligned     | Ensure the ramp's CollisionShape3D is thick enough (at least 0.1m) and spans the full gap |
+| Entity falls through the ramp                            | Ramp is not a StaticBody3D or has no collision shape | Convert to StaticBody3D with a BoxShape3D collision                                       |
+
+### Quick Script to Verify Ramp Inclusion
+
+If you want to verify programmatically, add this to any debug script:
+
+```gdscript
+# Check if the ramp is in the NavigationRegion3D's source geometry
+var nav_region = get_node("/root/WorldEnvironment/NavigationRegion3D")  # Adjust path
+var ramp = get_node("/root/WorldEnvironment/InvisibleRamp")  # Adjust path
+
+if nav_region and ramp:
+	var sources = nav_region.source_geometry
+	var ramp_found = false
+	for source in sources:
+		if source == ramp:
+			ramp_found = true
+			break
+
+	if ramp_found:
+		print("[NAVMESH] Ramp IS in NavigationRegion3D source geometry.")
+	else:
+		push_warning("[NAVMESH] Ramp is NOT in NavigationRegion3D source geometry! Add it to fix doorway pathfinding.")
+
+	# Check collision layer mask
+	var ramp_layers = ramp.collision_layer
+	var nav_mask = nav_region.geometry_collision_mask
+	if ramp_layers & nav_mask:
+		print("[NAVMESH] Ramp collision layer %d matches NavigationRegion3D mask %d." % [ramp_layers, nav_mask])
+	else:
+		push_warning("[NAVMESH] Ramp collision layer %d does NOT match NavigationRegion3D mask %d!" % [ramp_layers, nav_mask])
+else:
+	push_warning("[NAVMESH] Could not find NavigationRegion3D or InvisibleRamp nodes.")
+```

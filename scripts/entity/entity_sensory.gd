@@ -232,11 +232,26 @@ func can_entity_see_player() -> bool:
 	if not player or not is_instance_valid(player):
 		return false
 	
+	# ─── BREACH LOCK GUARD ──────────────────────────────────────────────
+	# If the Entity is mid-breach (walking through the doorway), skip all
+	# sensory updates. The Entity is committed to entering the cabin and
+	# should NOT be distracted by seeing the player outside during Door
+	# Phase A. This prevents the "Sensory Interference" bug where the
+	# Entity sees the player outside, flips thinks_player_is_inside=false,
+	# and aborts the INDOOR_SEARCH state.
+	#
+	# The is_breach_locked flag is set by entity_ai.gd's _indoor_search_state()
+	# Door Phase A and cleared when the breach completes or the 5-second
+	# timeout fires.
+	if entity.is_breach_locked:
+		return false
+	
 	# ─── 0. DECREMENT VISION UPDATE COOLDOWN ────────────────────────────
 	# The cooldown counts down each frame regardless of whether the player
 	# is visible. This ensures the 1-second "blink" always progresses.
 	if _vision_update_cooldown > 0.0:
 		_vision_update_cooldown -= entity.get_physics_process_delta_time()
+
 	
 	# ─── 1. CALCULATE EFFECTIVE VISION RANGE ─────────────────────────────
 	# Recalculate vision range based on current lighting conditions.

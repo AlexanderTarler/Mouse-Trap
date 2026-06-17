@@ -45,6 +45,7 @@ BottomFloorWindows=""
 UpperFloorWindows=""
 EntityWaypoints=""
 ignore_navmesh=""
+IndoorBreachWaypoints=""
 
 [input]
 

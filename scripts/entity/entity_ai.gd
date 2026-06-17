@@ -240,6 +240,20 @@ var _enter_window_anim_timer: float = 0.0
 ## begins. The Entity interpolates toward this position each frame.
 var _landing_position: Vector3 = Vector3.ZERO
 
+## Frame counter for the Door Phase A breach protocol.
+## Incremented each frame during Door Phase A to prevent the "instant breach"
+## bug. The arrival check (distance < 1.5m) is gated by requiring at least
+## 5 frames to pass before it can trigger. This gives the Entity time to
+## actually move through the doorway visually.
+var _breach_frame_count: int = 0
+
+## Breach lock flag — set to true during Door Phase A of INDOOR_SEARCH.
+## Prevents the stuck detector in entity_controller.gd from firing while
+## the Entity is walking toward the IndoorBreachWaypoint. The NavMesh may
+## not cover the cabin interior, making the Entity appear "stranded" even
+## though it's actively pathfinding through the doorway.
+var _breach_in_progress: bool = false
+
 ## NOTE: The indoor search persistence timer has been REMOVED from this module.
 ## The Director (entity_director.gd) is now the SINGLE source of truth for
 ## how long the Entity must stay inside after breaching. The Director's
@@ -254,6 +268,21 @@ var _landing_position: Vector3 = Vector3.ZERO
 ## NOTE: This is now an @export variable (enter_window_anim_duration).
 ## The const is kept as a fallback for the initial value.
 const ENTER_WINDOW_ANIM_DURATION: float = 1.5
+
+## ─── INDOOR ROOM GRAPH ──────────────────────────────────────────────────────
+## Adjacency graph of all cabin rooms. Used by BFS pathfinding to compute the
+## shortest room-to-room path during INDOOR_SEARCH Phase B.
+## Each key is a room name, and the value is an array of directly connected
+## neighbor room names.
+const INDOOR_ROOM_GRAPH: Dictionary = {
+	"HallRoom": ["LivingRoom", "Stairs"],
+	"LivingRoom": ["HallRoom", "ComputerRoom"],
+	"ComputerRoom": ["LivingRoom"],
+	"Stairs": ["HallRoom", "UpperHallRoom"],
+	"UpperHallRoom": ["Stairs", "OfficeRoom", "BedRoom"],
+	"OfficeRoom": ["UpperHallRoom"],
+	"BedRoom": ["UpperHallRoom"]
+}
 
 ## Animation lock timer for barricade hits.
 ## When > 0.0, the "AttackWindow" animation is forced to play.
@@ -413,6 +442,18 @@ var _recently_visited_windows: Array[String] = []
 ## Maximum number of entries in _recently_visited_windows.
 const MAX_RECENT_WINDOWS: int = 3
 
+## ─── INDOOR ROOM NAVIGATION ────────────────────────────────────────────────
+## BFS-computed room path for INDOOR_SEARCH Phase B room-to-room navigation.
+## When the Entity is inside the cabin, it navigates through rooms by following
+## doorway markers. _room_path contains the ordered list of room names to
+## traverse, and _current_room_index tracks progress through the path.
+var _room_path: Array[String] = []
+var _current_room_index: int = 0
+
+## Throttle timer for re-checking the player's current room during indoor search.
+## Updated every 1.0 seconds to avoid expensive RoomLightDetector lookups.
+var _room_path_recheck_timer: float = 0.0
+
 ## Pathfinding throttle timer (in seconds).
 ## Accumulates delta each frame. When <= 0.0, the next target_position update
 ## is allowed. After updating, the timer is reset to PATH_UPDATE_INTERVAL.
@@ -484,6 +525,15 @@ func get_calculated_velocity() -> Vector3:
 	return _calculated_velocity
 
 
+## Returns whether the Entity is currently in the Door Phase A breach protocol.
+## Used by entity_controller.gd's stuck detector to skip stuck detection
+## while the Entity is walking toward the IndoorBreachWaypoint. The NavMesh
+## may not cover the cabin interior, making the Entity appear "stranded"
+## even though it's actively pathfinding through the doorway.
+func is_breach_in_progress() -> bool:
+	return _breach_in_progress
+
+
 ## Returns the current all-windows-lit frustration value.
 ## Used by the Director (Tier 1 Sabotage) to check if the Entity has been
 ## frustrated by all windows being lit for too long, without relying on
@@ -543,6 +593,10 @@ func process_state_logic(delta: float) -> void:
 			
 			# Apply the Director's decision
 			if entity.get_state() != intended_state:
+				# [TRACE] Log state transitions during INDOOR_SEARCH
+				var current_state = entity.get_state()
+				if current_state == EntityAI.State.INDOOR_SEARCH or intended_state == EntityAI.State.INDOOR_SEARCH:
+					print("[TRACE_STATE] Director transition: %s → %s" % [EntityAI.State.keys()[current_state], EntityAI.State.keys()[intended_state]])
 				entity.set_state(intended_state)
 
 	
@@ -2004,6 +2058,10 @@ func _approach_window_state(delta: float) -> void:
 					if door_node and door_node.has_method("interact") and "is_open" in door_node and not door_node.is_open:
 						door_node.interact()
 						print("[Entity AI] APPROACH_WINDOW: Door was closed. Opened it after 2s pause.")
+						# ─── DEBUG: Log Entity position at door open ──────────────
+						print("[Entity AI] APPROACH_WINDOW: Entity position at door open: (%.2f, %.2f, %.2f)" % [entity.global_position.x, entity.global_position.y, entity.global_position.z])
+						if door_node:
+							print("[Entity AI] APPROACH_WINDOW: Door position: (%.2f, %.2f, %.2f)" % [door_node.global_position.x, door_node.global_position.y, door_node.global_position.z])
 					
 					# Check HallRoom light and toggle it off if on
 					var hall_light = _find_hall_light()
@@ -2016,87 +2074,47 @@ func _approach_window_state(delta: float) -> void:
 					# Advance to Phase 2 — walk through doorway
 					entity._door_phase = 2
 					
-					# Find the interior waypoint to pathfind to
-					var interior_waypoint: Node3D = null
-					var waypoints = entity.get_tree().get_nodes_in_group("EntityWaypoints")
-					for wp in waypoints:
-						if wp.name == "EntityDoorInteriorWaypoint":
-							interior_waypoint = wp as Node3D
-							break
+					# ─── RESET FAILSAFE TIMER ──────────────────────────────────
+					# CRITICAL: Reset the approach failsafe timer when Phase 2
+					# begins. The failsafe timer starts counting from the moment
+					# the Entity enters APPROACH_WINDOW (line ~1822). By the time
+					# the Entity has pathfound to the door, waited 2 seconds, and
+					# opened it, ~14 seconds may have elapsed. Without this reset,
+					# the 15-second failsafe fires almost immediately after Phase 2
+					# starts, causing the Director to transition to INDOOR_SEARCH
+					# before the Entity has walked through the doorway.
+					_approach_failsafe_timer = 0.0
 					
-					if interior_waypoint:
-						entity.get_nav_agent().target_position = interior_waypoint.global_position
-						print("[Entity AI] APPROACH_WINDOW: Pathfinding to interior waypoint: ", interior_waypoint.global_position)
-					else:
-						# Fallback: use cabin center
-						var fallback_pos = entity.cabin_center
-						fallback_pos.y = entity.global_position.y
-						entity.get_nav_agent().target_position = fallback_pos
-						print("[Entity AI] APPROACH_WINDOW: No interior waypoint found. Pathfinding to cabin center.")
+					# ─── PHASE 2: Walk through doorway ────────────────────────
+					# The Entity walks through the doorway using standard 2D-flattened
+					# NavMesh pathfinding. The controller's move_and_slide() + Floor
+					# RayCast handles Y-axis elevation (stairs, threshold) automatically.
+					#
+					# CRITICAL: We do NOT teleport the Entity to the IndoorBreachWaypoint
+					# here. That is the sole responsibility of INDOOR_SEARCH Door Phase A.
+					# APPROACH_WINDOW only gets the Entity to the door — INDOOR_SEARCH
+					# handles the interior teleport. This prevents the "instant breach"
+					# bug where the Entity arrives inside before INDOOR_SEARCH even starts.
+					#
+					# The Entity walks to the EntityDoorWaypoint (just outside the door),
+					# NOT the interior waypoint. The NavMesh covers the exterior, so
+					# pathfinding works reliably. Once the Entity arrives at the door,
+					# we signal completion and let INDOOR_SEARCH handle the interior.
 					
+					# ─── SIGNAL COMPLETION ──────────────────────────────────
+					# The Entity has arrived at the door. Set was_door_entry = true
+					# so INDOOR_SEARCH knows to enter Door Phase A (walk to the
+					# IndoorBreachWaypoint). No teleport — the Entity stays at the
+					# door and INDOOR_SEARCH handles the interior navigation.
+					entity.was_door_entry = true
+					entity.is_approach_finished = true
+					entity.state_locked = false
+					entity._door_phase = 0
+					entity._door_phase_2_timer = 0.0
+					_approach_min_timer = 0.0
+					_approach_failsafe_timer = 0.0
 					_calculated_velocity = Vector3.ZERO
-					return
-				
-				# ─── PHASE 2: Walk through doorway ────────────────────────
-				if entity._door_phase == 2:
-					# Increment the Phase 2 timer for stuck detection
-					entity._door_phase_2_timer += delta
-					
-					var nav_finished_phase2 = entity.get_nav_agent().is_navigation_finished()
-					var interior_target = entity.get_nav_agent().target_position
-					var dist_to_interior = entity.global_position.distance_to(interior_target)
-					
-					# ─── PHASE 2 FAILSAFE: Teleport if stuck for 5+ seconds ──
-					if entity._door_phase_2_timer >= 5.0:
-						print("[Entity AI] PHASE 2 FAILSAFE: Entity stuck at door for %.1f seconds! Teleporting to interior waypoint." % entity._door_phase_2_timer)
-						entity.global_position = interior_target
-						entity.is_approach_finished = true
-						entity.state_locked = false
-						entity._door_phase = 0
-						entity._door_phase_2_timer = 0.0
-						_approach_min_timer = 0.0
-						_approach_failsafe_timer = 0.0
-						_calculated_velocity = Vector3.ZERO
-						return
-					
-					# ─── NAVMESH UNREACHABLE FALLBACK ──────────────────────
-					# If the NavAgent reports navigation as finished but the Entity
-					# is still far from the interior waypoint (> 3.0m), it means the
-					# NavMesh doesn't cover the interior. Use direct movement toward
-					# the interior waypoint instead of signaling completion.
-					if nav_finished_phase2 and dist_to_interior > 3.0:
-						print("[Entity AI] PHASE 2: NavMesh unreachable (nav_finished but dist=%.2f). Using direct movement." % dist_to_interior)
-						var dir_to_interior = (interior_target - entity.global_position)
-						dir_to_interior.y = 0.0
-						if dir_to_interior.length() > 0.01:
-							var move_dir = dir_to_interior.normalized()
-							_calculated_velocity.x = move_dir.x * entity.current_stalk_speed
-							_calculated_velocity.z = move_dir.z * entity.current_stalk_speed
-						else:
-							_calculated_velocity = Vector3.ZERO
-						return
-					
-					if nav_finished_phase2 or dist_to_interior <= 2.0:
-						# Arrived inside — signal completion
-						print("[Entity AI] APPROACH_WINDOW: Walked through doorway! Arrived inside. dist=%.2f" % dist_to_interior)
-						entity.is_approach_finished = true
-						entity.state_locked = false
-						entity._door_phase = 0
-						entity._door_phase_2_timer = 0.0
-						_approach_min_timer = 0.0
-						_approach_failsafe_timer = 0.0
-						_calculated_velocity = Vector3.ZERO
-						return
-					
-					# Continue pathfinding toward interior waypoint
-					var next_pos = entity.get_nav_agent().get_next_path_position()
-					var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
-					if dir_2d.length() > 0.01:
-						var move_dir_2d = dir_2d.normalized()
-						_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
-						_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
-					else:
-						_calculated_velocity = Vector3.ZERO
+					print("[Entity AI] APPROACH_WINDOW: Door Phase 1 complete. Signaling completion. INDOOR_SEARCH will handle interior teleport.")
 					return
 			else:
 				# ─── WINDOW ARRIVAL (existing behavior) ──────────────────
@@ -2498,6 +2516,61 @@ func _harass_state(delta: float) -> void:
 	# Harassment sounds and animations are handled by the controller
 
 
+# ─── INDOOR ROOM NAVIGATION HELPERS ──────────────────────────────────────────
+
+## BFS (Breadth-First Search) through the INDOOR_ROOM_GRAPH to find the
+## shortest path from start_room to target_room.
+## Returns an Array[String] of room names in order, or an empty array if
+## no path exists.
+func _find_room_path(start_room: String, target_room: String) -> Array[String]:
+	if start_room == target_room:
+		return [start_room]
+	
+	var visited: Dictionary = {}
+	var queue: Array[Array] = []  # Each element is [room_name, path_so_far]
+	queue.append([start_room, [start_room]])
+	visited[start_room] = true
+	
+	while queue.size() > 0:
+		var entry = queue.pop_front()
+		var current_room: String = entry[0]
+		var path: Array[String] = entry[1]
+		
+		var neighbors: Array = INDOOR_ROOM_GRAPH.get(current_room, [])
+		for neighbor in neighbors:
+			if visited.has(neighbor):
+				continue
+			visited[neighbor] = true
+			var new_path = path.duplicate()
+			new_path.append(neighbor)
+			if neighbor == target_room:
+				return new_path
+			queue.append([neighbor, new_path])
+	
+	# No path found — return empty array
+	return []
+
+
+## Finds the world-space position of the doorway between two adjacent rooms.
+## Scans the scene for DoorwayPosition markers (children of CabinRoom nodes)
+## that have the appropriate "from_room" and "to_room" metadata.
+## Returns Vector3.ZERO if no doorway is found.
+func _get_doorway_position(from_room: String, to_room: String) -> Vector3:
+	# Search for DoorwayPosition markers in the scene
+	var doorway_markers = get_tree().get_nodes_in_group("DoorwayPositions")
+	for marker in doorway_markers:
+		if marker.has_meta("from_room") and marker.has_meta("to_room"):
+			var marker_from: String = marker.get_meta("from_room")
+			var marker_to: String = marker.get_meta("to_room")
+			# Check both directions (doorways are bidirectional)
+			if (marker_from == from_room and marker_to == to_room) or \
+			   (marker_from == to_room and marker_to == from_room):
+				return marker.global_position
+	
+	# Fallback: no doorway marker found — return zero vector
+	return Vector3.ZERO
+
+
 # ---------------------------------------------------------------------------
 # STATE: INDOOR_SEARCH — Entity has breached and is hunting inside the cabin
 # ---------------------------------------------------------------------------
@@ -2516,6 +2589,9 @@ func _harass_state(delta: float) -> void:
 ##   and transitions to Phase B (patrol). This creates a seamless visual
 ##   effect of the Entity vaulting through the window frame.
 func _indoor_search_state(delta: float) -> void:
+	# [TRACE_BREACH] Function entered
+	print("[TRACE_BREACH] _indoor_search_state() ENTERED. _has_arrived_indoor=%s, _enter_window_anim_timer=%.3f, was_door_entry=%s, state_locked=%s" % [_has_arrived_indoor, _enter_window_anim_timer, entity.was_door_entry if entity else "NO_ENTITY", entity.state_locked if entity else "NO_ENTITY"])
+	
 	# ─── DOOR ENTRY: Phase A (velocity-based walk to IndoorBreachWaypoint) ──
 	# ─── DOOR ENTRY: THE BREACH PROTOCOL ─────────────────────────────────────
 	# When the Entity enters through the front door (was_door_entry == true),
@@ -2531,13 +2607,48 @@ func _indoor_search_state(delta: float) -> void:
 	# WINDOW ENTRIES (was_door_entry == false) are handled below in the
 	# standard Phase A block (EnterWindow animation + teleport).
 	if entity.was_door_entry:
+		# ─── DOOR PHASE A: Walk to IndoorBreachWaypoint ────────────────────
+		# The Entity walks through the doorway using standard 2D-flattened
+		# NavMesh pathfinding. The controller's move_and_slide() + Floor RayCast
+		# handles Y-axis elevation (stairs, threshold) automatically.
+		#
+		# CRITICAL: There is NO "early arrival" shortcut here. Even if the Entity
+		# is already close to the IndoorBreachWaypoint (because APPROACH_WINDOW
+		# Phase 2 walked it to the EntityDoorInteriorWaypoint), we ALWAYS go
+		# through the standard pathfinding loop. This ensures the Breach Protocol
+		# takes at least a few frames of actual movement, preventing the "instant
+		# breach" bug where _has_arrived_indoor is set to true on the very first
+		# frame without any visual movement through the doorway.
+		#
+		# The CSG threshold pop (Y+0.2 lift) is applied every frame during
+		# Door Phase A to help the physics engine clear the door threshold lip.
+		var door_waypoint = entity.get_current_window_target()
+		
+		# ─── STATE LOCK + NAV TARGET SETUP (first frame only) ─────────────
 		if not entity.state_locked:
 			entity.state_locked = true
+			
+			# ─── BREACH LOCK ──────────────────────────────────────────────
+			# Set the breach lock flag to prevent the stuck detector in
+			# entity_controller.gd from firing while the Entity is walking
+			# toward the IndoorBreachWaypoint. The NavMesh may not cover the
+			# cabin interior, making the Entity appear "stranded" even though
+			# it's actively pathfinding through the doorway.
+			#
+			# Also set is_breach_locked on the controller so the Director's
+			# evaluate_master_state() can block sensory-driven state overrides
+			# (Tiers 2-8) while the Entity is mid-breach. This prevents the
+			# "Sensory Interference" bug where the Entity sees the player
+			# outside during Door Phase A and aborts the search.
+			_breach_in_progress = true
+			entity.is_breach_locked = true
+			print("[TRACE_BREACH] BREACH LOCK: is_breach_locked=true, _breach_in_progress=true")
+
+			
 			# ─── SET NAV TARGET TO BREACH WAYPOINT ─────────────────────────
 			# Find the IndoorBreachWaypoint from the current window target (the door)
 			# and set it as the NavigationAgent3D target. The standard 2D-flattened
 			# pathfinding loop below handles movement toward this waypoint.
-			var door_waypoint = entity.get_current_window_target()
 			if door_waypoint and door_waypoint.get_parent():
 				var door_node = door_waypoint.get_parent()
 				var indoor_waypoint = door_node.get_node_or_null("IndoorBreachWaypoint")
@@ -2558,59 +2669,51 @@ func _indoor_search_state(delta: float) -> void:
 				entity.get_nav_agent().target_position = _landing_position
 				print("[INDOOR_SEARCH] Breach Protocol: No door target found. Using cabin center fallback.")
 		
-		# ─── STANDARD 2D PATHFINDING ──────────────────────────────────────
-		# The Entity walks toward the IndoorBreachWaypoint using the same
-		# 2D-flattened pathfinding as outdoor states. The controller's
-		# move_and_slide() + Floor RayCast handles Y-axis elevation.
-		# No Ghost Mode, no 3D velocity override — just standard navigation.
-		var nav = entity.get_nav_agent()
-		if nav and not nav.is_navigation_finished():
-			var next_pos = nav.get_next_path_position()
-			var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
-			if dir_2d.length() > 0.01:
-				var move_dir_2d = dir_2d.normalized()
-				_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
-				_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
-			else:
-				_calculated_velocity = Vector3.ZERO
-		else:
-			_calculated_velocity = Vector3.ZERO
+		# ─── GHOST BREACH ─────────────────────────────────────────────────
+		# Absolute override: No lerps, no navigation, no physics.
+		# Kill physics entirely, teleport to the waypoint immediately,
+		# and clear the breach lock. This bypasses the trimesh snag on the
+		# threshold entirely.
+		entity.velocity = Vector3.ZERO
+		_calculated_velocity = Vector3.ZERO
 		
-		# ─── ARRIVAL CHECK ────────────────────────────────────────────────
-		# Check the horizontal distance (Y-flattened) to the landing position.
-		# If within 1.0 meters, the Entity has crossed the threshold.
-		var door_dist = entity.global_position.distance_to(_landing_position)
-		if door_dist < 1.5:
-			# ─── BREACH COMPLETE ──────────────────────────────────────────
-			_has_arrived_indoor = true
-			entity.state_locked = false
-			entity.was_door_entry = false  # Consume flag
-			_calculated_velocity = Vector3.ZERO
-			
-			# ─── INDOOR SEARCH PERSISTENCE ────────────────────────────────
-			# Reset the 30-second persistence timer so the Director's
-			# INDOOR_SEARCH preservation guard keeps the Entity inside.
-			if _director and _director.has_method("reset_indoor_search_persistence"):
-				_director.reset_indoor_search_persistence()
-			
-			# ─── FORCE IMMEDIATE NAV TARGET ───────────────────────────────
-			# After the breach completes, the Entity has no last_known_position
-			# set (it just entered through the door). Force the nav target to
-			# the player's current position so Phase B immediately starts
-			# pathfinding toward the player.
-			var door_entry_player = entity.get_player()
-			if door_entry_player:
-				var player_pos = door_entry_player.global_position
-				entity.get_nav_agent().target_position = player_pos
-				entity.set_last_known_position(player_pos)
-				_path_timer = 0.0
-				print("[INDOOR_SEARCH] Breach Protocol complete! Nav target + LKP forced to player position (%.2f, %.2f, %.2f)" % [player_pos.x, player_pos.y, player_pos.z])
-			
-			print("[INDOOR_SEARCH] Breach Protocol complete! Walked through doorway. Transitioning to Phase B patrol.")
-			# Fall through to Phase B below
-		else:
-			# Still walking — return early so we don't fall through to Phase B
-			return
+		# TELEPORT to the waypoint immediately
+		entity.global_position = _landing_position
+		
+		# Mark arrival
+		_has_arrived_indoor = true
+		
+		# Finalize Breach
+		entity.state_locked = false
+		entity.was_door_entry = false
+		_breach_frame_count = 0
+		_breach_in_progress = false
+		entity.is_breach_locked = false
+		
+		# ─── INDOOR SEARCH PERSISTENCE TIMER ──────────────────────────────
+		# Reset the 30-second indoor search persistence timer so the Director's
+		# INDOOR_SEARCH preservation guard keeps the Entity inside for at least
+		# 30 seconds. Without this, the Director immediately returns
+		# OBSERVE_FROM_TREELINE on the next frame, creating an infinite loop:
+		#   APPROACH_WINDOW → INDOOR_SEARCH → OBSERVE → APPROACH_WINDOW → ...
+		if _director and _director.has_method("reset_indoor_search_persistence"):
+			_director.reset_indoor_search_persistence()
+		
+		# ─── DOOR BREACH TIMESTAMP ────────────────────────────────────────
+		# Record the current time so the Director's Tier 7 can enforce a
+		# 15-second cooldown on APPROACH_WINDOW after a successful door breach.
+		# This prevents the looping bug where the Entity breaches → Director
+		# sees player inside → triggers APPROACH_WINDOW again → Entity jitters.
+		entity.last_door_breach_time = Time.get_ticks_msec() / 1000.0
+		print("[INDOOR_SEARCH] Door breach timestamp set: %.3f" % entity.last_door_breach_time)
+		
+		# Force nav target to player position to begin hunt
+		var player = entity.get_player()
+		if player:
+			entity.get_nav_agent().target_position = player.global_position
+		
+		print("[INDOOR_SEARCH] GHOST BREACH: Teleported to interior waypoint. Physics ignored.")
+		return
 	
 	# ─── STATE LOCK: Prevent Director from overriding during Phase A ──
 	# The EnterWindow animation must play for the full 1.5s duration
@@ -2748,7 +2851,23 @@ func _indoor_search_state(delta: float) -> void:
 			_calculated_velocity = Vector3.ZERO
 			return
 	
-	# PHASE B: Hunt the player
+	# ─── PHASE B: Room-Graph BFS Patrol ─────────────────────────────────────
+	# The Entity navigates through the cabin using the INDOOR_ROOM_GRAPH and
+	# DoorwayPosition markers. Instead of pathfinding directly to the player
+	# (which the NavMesh may not support indoors), the Entity computes a
+	# room-to-room path using BFS and navigates through doorway markers.
+	#
+	# FLOW:
+	#   1. Every 1.0s, re-check the player's current room via RoomLightDetector
+	#   2. Compute a BFS room path from the Entity's current room to the
+	#      player's room using INDOOR_ROOM_GRAPH
+	#   3. Navigate to the next doorway marker on the path
+	#   4. When the Entity arrives at a doorway, advance to the next room
+	#   5. When the Entity arrives at the player's room, switch to direct
+	#      player pursuit (last resort)
+	#
+	# This replaces the old NavMesh-based direct player pursuit which failed
+	# indoors because the cabin interior may not have NavMesh coverage.
 	if _has_arrived_indoor:
 		var nav = entity.get_nav_agent()
 		var player = entity.get_player()
@@ -2763,60 +2882,108 @@ func _indoor_search_state(delta: float) -> void:
 			_calculated_velocity = Vector3.ZERO
 			return
 		
-		# ─── PATH UPDATE COOLDOWN ──────────────────────────────────────────
-		# Only update the nav target every path_update_interval seconds.
-		# Without this cooldown, is_navigation_finished() returns true
-		# immediately after setting a new target (the NavigationAgent3D
-		# hasn't had time to compute a path yet), creating an infinite loop:
-		#   navigation finished → set new target → navigation finished
-		#   → set new target → ... (Entity never moves)
-		_path_timer += delta
-		
-		# ─── SET NAV TARGET TO PLAYER ──────────────────────────────────────
-		# When the Entity first enters Phase B (either through a window breach
-		# or door entry), the NavigationAgent3D may have no valid target set.
-		# For window breaches, the target was set to the landing position itself
-		# (line 2727), so is_navigation_finished() returns true immediately.
-		# For door entries, the target was set to the player's position (line 2604).
-		#
-		# If navigation is finished AND the path update cooldown has elapsed,
-		# set the target to the player's current position so the Entity starts
-		# pathfinding toward the player. This prevents the Entity from standing
-		# still after entering the cabin.
-		if nav.is_navigation_finished():
-			if _path_timer >= entity.path_update_interval:
-				if player:
-					nav.target_position = player.global_position
-					_path_timer = 0.0
-					# ─── INDOOR SEARCH DEBUG: Log nav target update ──────
-					print("[INDOOR_SEARCH DEBUG] Phase B: Nav finished. Setting target to player at (%.2f, %.2f, %.2f)" % [player.global_position.x, player.global_position.y, player.global_position.z])
-			_calculated_velocity = Vector3.ZERO
-			return
-		
-		# ─── INDOOR SEARCH DEBUG: Log where Entity is trying to go ──────
-		# Logs every 30 frames (~0.5s at 60fps) to show the next path
-		# position and the distance to the final nav target.
-		if _indoor_search_debug_counter % 30 == 0:
-			var next_pos_debug = nav.get_next_path_position()
-			var nav_target = nav.target_position
-			var dist_to_target = entity.global_position.distance_to(nav_target)
-			var dist_to_next = entity.global_position.distance_to(next_pos_debug)
-			var has_path = nav.get_current_navigation_path().size() > 0
-			print("[INDOOR_SEARCH DEBUG] Phase B: Entity=(%.2f, %.2f, %.2f) | NextPathPos=(%.2f, %.2f, %.2f) | NavTarget=(%.2f, %.2f, %.2f) | dist_to_target=%.2f | dist_to_next=%.2f | has_path=%s" % [
-				entity.global_position.x, entity.global_position.y, entity.global_position.z,
-				next_pos_debug.x, next_pos_debug.y, next_pos_debug.z,
-				nav_target.x, nav_target.y, nav_target.z,
-				dist_to_target, dist_to_next, has_path
-			])
-		_indoor_search_debug_counter += 1
+		# ─── ROOM PATH RECHECK (every 1.0s) ───────────────────────────────
+		# Throttle the room path re-evaluation to avoid expensive
+		# RoomLightDetector lookups every frame. Every 1.0 seconds, we
+		# re-check the player's current room and recompute the BFS path.
+		_room_path_recheck_timer += delta
+		if _room_path_recheck_timer >= 1.0:
+			_room_path_recheck_timer = 0.0
 			
-		var next_pos = nav.get_next_path_position()
-		var dir = entity.global_position.direction_to(next_pos)
-		dir.y = 0 # Keep movement horizontal
+			# Determine the Entity's current room
+			var room_detector = entity.get_node_or_null("/root/RoomLightDetector")
+			var entity_room: String = ""
+			var player_room: String = ""
+			
+			if room_detector:
+				entity_room = room_detector.get_room_name_at(entity.global_position)
+				if player:
+					player_room = room_detector.get_room_name_at(player.global_position)
+			
+			# Compute BFS room path if both rooms are valid
+			if entity_room != "" and player_room != "":
+				_room_path = _find_room_path(entity_room, player_room)
+				_current_room_index = 0
+				
+				if _room_path.size() > 0:
+					print("[INDOOR_SEARCH] Room path: %s → %s (path: %s)" % [entity_room, player_room, " → ".join(_room_path)])
+				else:
+					print("[INDOOR_SEARCH] No room path found from '%s' to '%s'. Using direct player pursuit." % [entity_room, player_room])
 		
-		# Apply the velocity! (Scale speed for indoors if desired)
-		_calculated_velocity = dir.normalized() * (entity.speed * 0.8)
-
+		# ─── ROOM PATH NAVIGATION ─────────────────────────────────────────
+		# If we have a valid room path with at least 2 rooms (meaning we need
+		# to traverse at least one doorway), navigate toward the next doorway.
+		if _room_path.size() >= 2 and _current_room_index < _room_path.size() - 1:
+			var from_room = _room_path[_current_room_index]
+			var to_room = _room_path[_current_room_index + 1]
+			var doorway_pos = _get_doorway_position(from_room, to_room)
+			
+			if doorway_pos != Vector3.ZERO:
+				# Set the nav target to the doorway position
+				_path_timer += delta
+				if _path_timer >= entity.path_update_interval:
+					_path_timer = 0.0
+					nav.target_position = doorway_pos
+				
+				# Check if we've arrived at the doorway
+				var dist_to_doorway = entity.global_position.distance_to(doorway_pos)
+				if dist_to_doorway <= 1.5:
+					# Arrived at doorway — advance to the next room
+					_current_room_index += 1
+					print("[INDOOR_SEARCH] Arrived at doorway %s→%s. Advancing to room %s." % [from_room, to_room, to_room])
+					
+					# If we've reached the player's room, clear the room path
+					# so the Entity switches to direct player pursuit
+					if _current_room_index >= _room_path.size() - 1:
+						_room_path = []
+						_current_room_index = 0
+						print("[INDOOR_SEARCH] Reached player's room. Switching to direct pursuit.")
+				
+				# Move toward the doorway
+				if nav.is_navigation_finished():
+					# NavMesh finished but we haven't arrived — use direct movement
+					var dir_to_doorway = (doorway_pos - entity.global_position)
+					dir_to_doorway.y = 0.0
+					if dir_to_doorway.length() > 0.01:
+						var move_dir = dir_to_doorway.normalized()
+						_calculated_velocity.x = move_dir.x * entity.current_stalk_speed
+						_calculated_velocity.z = move_dir.z * entity.current_stalk_speed
+					else:
+						_calculated_velocity = Vector3.ZERO
+				else:
+					var next_pos = nav.get_next_path_position()
+					var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
+					if dir_2d.length() > 0.01:
+						var move_dir_2d = dir_2d.normalized()
+						_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
+						_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
+					else:
+						_calculated_velocity = Vector3.ZERO
+				return
+		
+		# ─── DIRECT PLAYER PURSUIT (fallback) ─────────────────────────────
+		# If no room path is available (e.g., Entity and player are in the
+		# same room, or the room detector failed), fall back to direct
+		# NavMesh-based pursuit toward the player's position.
+		if player:
+			_path_timer += delta
+			if _path_timer >= entity.path_update_interval:
+				_path_timer = 0.0
+				nav.target_position = player.global_position
+			
+			if nav.is_navigation_finished():
+				_calculated_velocity = Vector3.ZERO
+			else:
+				var next_pos = nav.get_next_path_position()
+				var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
+				if dir_2d.length() > 0.01:
+					var move_dir_2d = dir_2d.normalized()
+					_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
+					_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
+				else:
+					_calculated_velocity = Vector3.ZERO
+		else:
+			_calculated_velocity = Vector3.ZERO
 
 # ---------------------------------------------------------------------------
 # STATE: CLIMB_WALL_UP — Exterior wall climbing UP to a second-story window
