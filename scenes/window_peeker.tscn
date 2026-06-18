@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://d4m5lq0f7k3x2"]
+
+[ext_resource type="Script" uid="uid://breh4bg8kji14" path="res://scripts/window_peeker.gd" id="1_3q6q2"]
+[ext_resource type="PackedScene" uid="uid://bcqrmxmkjwbhc" path="res://assets/character models/elkdemongodot.glb" id="2_krxyj"]
+[ext_resource type="AnimationLibrary" uid="uid://b185n7gby261i" path="res://assets/animations/locomotion.res" id="3_6iw7i"]
+
+[node name="WindowPeeker" type="Node3D" unique_id=361877183]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0, -0.88953555, 0)
+script = ExtResource("1_3q6q2")
+model_offset = Vector3(0, -1, -0.3)
+
+[node name="MonsterModel" parent="." unique_id=1842083676 instance=ExtResource("2_krxyj")]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1213969294]
+libraries/locomotion = ExtResource("3_6iw7i")
+
+[node name="AnimationTree" type="AnimationTree" parent="." unique_id=564348231]
+root_node = NodePath("../AnimationPlayer")

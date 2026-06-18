@@ -26,6 +26,7 @@ RoutineManager="*res://scripts/routine_manager.gd"
 EvidenceManager="*res://scripts/evidence_manager.gd"
 RoomLightDetector="*uid://lqer7d8tsn72"
 EndgameManager="*res://scripts/managers/endgame_manager.gd"
+PeekerManager="*res://scripts/peeker_manager.gd"
 
 [display]
 

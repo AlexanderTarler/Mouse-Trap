@@ -19,6 +19,10 @@ var _entity_toggle_btn: Button = null
 var _entity_can_kill: bool = true
 var _can_kill_toggle_btn: Button = null
 
+# Peeker vanish-on-sight toggle state
+var _peeker_vanish_on_sight: bool = true
+var _peeker_vanish_toggle_btn: Button = null
+
 # UI node references
 @onready var panel: Panel = $Panel
 @onready var header: Label = $Panel/MarginContainer/VBoxContainer/Header
@@ -97,6 +101,13 @@ func _setup_entity_buttons() -> void:
 	_can_kill_toggle_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_can_kill_toggle_btn.pressed.connect(_toggle_can_kill)
 	entity_section.add_child(_can_kill_toggle_btn)
+	
+	# Peeker vanish-on-sight toggle button (persistent state)
+	_peeker_vanish_toggle_btn = Button.new()
+	_peeker_vanish_toggle_btn.text = "Peeker Vanish: YES"
+	_peeker_vanish_toggle_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_peeker_vanish_toggle_btn.pressed.connect(_toggle_peeker_vanish)
+	entity_section.add_child(_peeker_vanish_toggle_btn)
 
 
 func open(player: Node) -> void:
@@ -601,6 +612,30 @@ func _toggle_can_kill() -> void:
 		_can_kill_toggle_btn.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
 	
 	print("[Debug Console] Can Kill: %s." % ["YES" if _entity_can_kill else "NO"])
+
+
+## Toggles the Peeker's vanish-on-sight behavior between true and false.
+## When false, the peeker will NOT vanish when the player looks at it —
+## it stays visible and completes its full animation cycle.
+## This is useful for testing the peeker's animation without it disappearing.
+## Updates the toggle button text and color to reflect the current state.
+func _toggle_peeker_vanish() -> void:
+	_peeker_vanish_on_sight = not _peeker_vanish_on_sight
+	
+	# Sync with the PeekerManager autoload
+	var pm = get_node_or_null("/root/PeekerManager")
+	if pm:
+		pm.peeker_vanish_on_sight = _peeker_vanish_on_sight
+	
+	if _peeker_vanish_on_sight:
+		_peeker_vanish_toggle_btn.text = "Peeker Vanish: YES"
+		_peeker_vanish_toggle_btn.remove_theme_color_override("font_color")
+	else:
+		_peeker_vanish_toggle_btn.text = "Peeker Vanish: NO"
+		# Color the button red when disabled for visual clarity
+		_peeker_vanish_toggle_btn.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+	
+	print("[Debug Console] Peeker Vanish on Sight: %s." % ["YES" if _peeker_vanish_on_sight else "NO"])
 
 
 func _call_entity_method(method_name: String) -> void:

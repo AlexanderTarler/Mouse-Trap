@@ -80,6 +80,17 @@ var _game_time: Node = null
 var _find_gt_attempts: int = 0
 const _MAX_FIND_GT_ATTEMPTS: int = 60
 
+# --- NIGHT 1 PEEKER ---
+## Timer counting up to the peeker spawn delay (5 seconds into Night 1).
+var _peeker_timer: float = 0.0
+
+## Whether the Night 1 peeker has already been spawned this night.
+## Prevents multiple spawns from the same night.
+var _peeker_spawned: bool = false
+
+## Delay in seconds before the Night 1 peeker spawns after the night starts.
+const PEEKER_SPAWN_DELAY: float = 5.0
+
 # --- POWER GRID ---
 var is_generator_on: bool = true
 var generator_fuel: float = 50.0
@@ -182,6 +193,15 @@ func _process(delta: float) -> void:
 		if _event_timer >= 5.0:
 			_event_timer = 0.0
 			_check_time_events()
+	
+	# --- NIGHT 1 PEEKER: 5-second timer ---
+	# After 5 seconds into Night 1, spawn a WindowPeeker at a random
+	# cabin window that the player is not currently looking at.
+	if is_night_active and current_night == 1 and not _peeker_spawned:
+		_peeker_timer += delta
+		if _peeker_timer >= PEEKER_SPAWN_DELAY:
+			_peeker_spawned = true
+			_trigger_night_1_peeker()
 
 
 func _on_game_night_started() -> void:
@@ -203,6 +223,9 @@ func start_night(night: int) -> void:
 	night_progress = 0.0
 	_triggered_events.clear()
 	_event_timer = 0.0
+	# Reset Night 1 Peeker state so it can trigger again if the night restarts
+	_peeker_timer = 0.0
+	_peeker_spawned = false
 	is_day_active = false
 	is_night_active = true
 	night_started.emit(night)
@@ -386,6 +409,18 @@ func _trigger_event(event_name: String) -> void:
 		print("[Horror Event] LIGHTS FLICKER! The cabin lights are flickering! Night %d at progress %.0f%%" % [current_night, night_progress * 100.0])
 	else:
 		print("Horror event: %s" % event_name)
+
+
+## Triggers the Night 1 Peeker event.
+## Calls PeekerManager.spawn_night_1_peeker() to spawn a WindowPeeker
+## at a random cabin window that the player is not currently looking at.
+func _trigger_night_1_peeker() -> void:
+	var pm = get_node_or_null("/root/PeekerManager")
+	if pm and pm.has_method("spawn_night_1_peeker"):
+		pm.spawn_night_1_peeker()
+		print("[NightManager] Night 1 Peeker event triggered after %.1f seconds." % PEEKER_SPAWN_DELAY)
+	else:
+		print("[NightManager] PeekerManager not found! Cannot spawn Night 1 Peeker.")
 
 
 ## Called by the EscapeVan when the player interacts with the car.
