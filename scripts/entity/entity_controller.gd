@@ -214,6 +214,22 @@ var is_observe_finished: bool = false
 ## Reset to false by the RETREAT handler when the indoor retreat completes.
 var is_indoor_retreat: bool = false
 
+## ─── TRAVERSE STAIRS COMPLETION FLAG ──────────────────────────────────────────
+## Set to true by entity_ai.gd's _traverse_stairs_state() when the Entity
+## completes the ghost climb between waypoints (Phase 3 arrival).
+## The Director checks this flag in Tier 5 and transitions back to INDOOR_SEARCH.
+## Reset to false by the Director after consuming the flag.
+var _stairs_traversed: bool = false
+
+## ─── PHYSICS SUSPENSION FLAG ──────────────────────────────────────────────────
+## When true, the core physics calculations (gravity, ground snapping, and
+## move_and_slide()) are bypassed in _physics_process(). Used by the
+## TRAVERSE_STAIRS state to manually lerp the Entity's global_position
+## without the physics motor fighting back.
+## Set to true by entity_ai.gd's _traverse_stairs_state() on Phase 2 entry.
+## Set to false on Phase 3 arrival (restoring normal physics).
+var is_physics_suspended: bool = false
+
 @export_group("Blackboard - Sensory Data")
 
 ## Whether the Entity is currently illuminated by the player's flashlight beam.
@@ -1478,60 +1494,75 @@ func _physics_process(delta: float) -> void:
 		return
 
 	
-	# --- STANDARD ACTIVE NAVIGATION ---
-	# NOTE: Native CharacterBody3D gravity is REMOVED. The Entity uses a
-	# SphereShape3D with Floating motion mode. Y-axis elevation is handled
-	# entirely by the Floor RayCast ground-snapping system below, which
-	# prevents the Entity from snagging on stairs, rocks, or door thresholds.
-	# Ghost Mode is also REMOVED — the Breach Protocol uses standard NavMesh
-	# pathfinding with 2D-flattened velocity, and the Floating Sphere handles
-	# Y-axis elevation automatically.
-
+	# ─── AI STATE LOGIC (runs regardless of physics suspension) ──────────
+	# The AI state machine must continue running even when physics is
+	# suspended (TRAVERSE_STAIRS Phase 2 Ghost Climb). The _traverse_stairs_state()
+	# manually lerps the Entity's global_position and does not need
+	# move_and_slide() — but it still needs to be called every frame to
+	# progress the lerp toward the END waypoint.
 	if _ai and _ai.has_method("process_state_logic"):
 		_ai.process_state_logic(delta)
-		set_motor_velocity(_ai.get_calculated_velocity())
+		if not is_physics_suspended:
+			set_motor_velocity(_ai.get_calculated_velocity())
 	else:
 		velocity = Vector3.ZERO
-
 	
-	move_and_slide()
-	
-	# ─── FLOATING SPHERE GROUND SNAPPING ──────────────────────────────
-	# After move_and_slide(), use the Floor RayCast to hover the invisible
-	# physics sphere above terrain and snap the visual model to the ground.
-	# This permanently prevents the Entity from snagging on geometry.
+	# ─── PHYSICS SUSPENSION GUARD ─────────────────────────────────────────
+	# When is_physics_suspended is true (TRAVERSE_STAIRS Phase 2 Ghost Climb),
+	# the core physics calculations (gravity, ground snapping, and
+	# move_and_slide()) are bypassed. The AI's _traverse_stairs_state()
+	# manually lerps the Entity's global_position instead.
 	#
-	# DISABLE GUARD: When _floor_snap_disabled is true (Door Phase 2), the
-	# ground snapping is temporarily disabled to allow the Entity to use
-	# standard physics to walk up the stairs. Without this, the lerp hovers
-	# the Entity above stair treads, preventing it from climbing to the
-	# interior waypoint.
-	var is_climbing = _state in [EntityAI.State.CLIMB_WALL_UP, EntityAI.State.CLIMB_WALL_DOWN]
-	var is_ghosting = false
-	if _state == EntityAI.State.INDOOR_SEARCH and _ai and _ai.has_method("has_arrived_indoor"):
-		is_ghosting = not _ai.has_arrived_indoor()
-	
-	if not is_climbing and not is_ghosting and not _floor_snap_disabled:
-		if _floor_ray.is_colliding():
-			var floor_y = _floor_ray.get_collision_point().y
-			
-			# Hover the physics sphere 0.3m above the ground (just above floor surface)
-			# to clear small bumps (door thresholds, rug edges) while staying low
-			# enough to pass under doorframes and between furniture.
-			global_position.y = lerp(global_position.y, floor_y + 0.3, 15.0 * delta)
-			
-			# Snap the visual model perfectly down to the actual floor surface.
-			if _monster_model:
-				_monster_model.global_position.y = floor_y
-		else:
-			# Fallback gravity if the raycast misses (e.g., Entity is airborne
-			# or above a gap in the NavMesh geometry).
-			velocity += get_gravity() * delta
-	
-	var flat_vel = Vector2(velocity.x, velocity.z)
-	if flat_vel.length_squared() > 0.05 and _monster_model:
-		var target_angle = atan2(flat_vel.x, flat_vel.y)
-		_monster_model.rotation.y = lerp_angle(_monster_model.rotation.y, target_angle, delta * 10.0)
+	# State updates, sensory pulses, and animation updates still run — only
+	# the physical movement calculations are bypassed.
+	if not is_physics_suspended:
+		# --- STANDARD ACTIVE NAVIGATION ---
+		# NOTE: Native CharacterBody3D gravity is REMOVED. The Entity uses a
+		# SphereShape3D with Floating motion mode. Y-axis elevation is handled
+		# entirely by the Floor RayCast ground-snapping system below, which
+		# prevents the Entity from snagging on stairs, rocks, or door thresholds.
+		# Ghost Mode is also REMOVED — the Breach Protocol uses standard NavMesh
+		# pathfinding with 2D-flattened velocity, and the Floating Sphere handles
+		# Y-axis elevation automatically.
+
+		move_and_slide()
+		
+		# ─── FLOATING SPHERE GROUND SNAPPING ──────────────────────────────
+		# After move_and_slide(), use the Floor RayCast to hover the invisible
+		# physics sphere above terrain and snap the visual model to the ground.
+		# This permanently prevents the Entity from snagging on geometry.
+		#
+		# DISABLE GUARD: When _floor_snap_disabled is true (Door Phase 2), the
+		# ground snapping is temporarily disabled to allow the Entity to use
+		# standard physics to walk up the stairs. Without this, the lerp hovers
+		# the Entity above stair treads, preventing it from climbing to the
+		# interior waypoint.
+		var is_climbing = _state in [EntityAI.State.CLIMB_WALL_UP, EntityAI.State.CLIMB_WALL_DOWN]
+		var is_ghosting = false
+		if _state == EntityAI.State.INDOOR_SEARCH and _ai and _ai.has_method("has_arrived_indoor"):
+			is_ghosting = not _ai.has_arrived_indoor()
+		
+		if not is_climbing and not is_ghosting and not _floor_snap_disabled:
+			if _floor_ray.is_colliding():
+				var floor_y = _floor_ray.get_collision_point().y
+				
+				# Hover the physics sphere 0.3m above the ground (just above floor surface)
+				# to clear small bumps (door thresholds, rug edges) while staying low
+				# enough to pass under doorframes and between furniture.
+				global_position.y = lerp(global_position.y, floor_y + 0.3, 15.0 * delta)
+				
+				# Snap the visual model perfectly down to the actual floor surface.
+				if _monster_model:
+					_monster_model.global_position.y = floor_y
+			else:
+				# Fallback gravity if the raycast misses (e.g., Entity is airborne
+				# or above a gap in the NavMesh geometry).
+				velocity += get_gravity() * delta
+		
+		var flat_vel = Vector2(velocity.x, velocity.z)
+		if flat_vel.length_squared() > 0.05 and _monster_model:
+			var target_angle = atan2(flat_vel.x, flat_vel.y)
+			_monster_model.rotation.y = lerp_angle(_monster_model.rotation.y, target_angle, delta * 10.0)
 	
 	_update_animations(delta)
 
@@ -1799,6 +1830,30 @@ func get_navigation_module() -> Node:
 ## Returns the EntitySensory sub-module.
 func get_sensory_module() -> Node:
 	return _sensory
+
+## ─── FLOOR AWARENESS PASSTHROUGH ──────────────────────────────────────────────
+## Delegates to entity_sensory.gd's get_player_floor() method.
+## Returns which floor the player is currently on based on their room name.
+## One of: "LOWER", "UPPER", "STAIRS", or "UNKNOWN".
+func get_player_floor() -> String:
+	if _sensory and _sensory.has_method("get_player_floor"):
+		return _sensory.get_player_floor()
+	return "UNKNOWN"
+
+## Delegates to entity_sensory.gd's get_entity_floor() method.
+## Returns which floor the Entity is currently on based on its Y position.
+## One of: "LOWER", "UPPER", or "UNKNOWN".
+func get_entity_floor() -> String:
+	if _sensory and _sensory.has_method("get_entity_floor"):
+		return _sensory.get_entity_floor()
+	return "UNKNOWN"
+
+## Returns the CollisionShape3D node for the Entity's physics body.
+## Used by the TRAVERSE_STAIRS state to disable/re-enable the collision
+## shape during the ghost climb phase, preventing the Entity from
+## colliding with the stairs geometry while lerping between waypoints.
+func get_collision_shape() -> CollisionShape3D:
+	return _collision_shape
 
 ## Returns the EntityConfidence sub-module.
 func get_confidence_module() -> Node:

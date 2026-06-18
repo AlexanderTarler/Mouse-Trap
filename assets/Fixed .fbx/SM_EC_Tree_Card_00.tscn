@@ -1,0 +1,49 @@
+[gd_scene format=4 uid="uid://bcaivjqs62vii"]
+
+[ext_resource type="Texture2D" uid="uid://dij3jwbwmlvup" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Trees_CL_1.png" id="1_xa0qb"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8c6d1"]
+resource_name = "M_EC_Trees_0"
+transparency = 4
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_xa0qb")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_l70e2"]
+_surfaces = [{
+"aabb": AABB(-1.1140878, -0.047384433, -2.3951543e-09, 2.1530862, 3.863463, 1e-05),
+"format": 34359742465,
+"index_count": 24,
+"index_data": PackedByteArray("AAABAAIAAgADAAAAAQAAAAQABAAFAAEABgAEAAAAAAAHAAYABwAAAAMAAwAIAAcA"),
+"name": "M_EC_Trees_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 9,
+"vertex_data": PackedByteArray("AxTCtHzYj7MA4kEkAxTCtC4WQr1AzQIubpqOvy4WQr1AzQIubpqOv3zYj7MA4kEk5v2EP3zYj7MA4kEk5v2EPy4WQr1AzQIu5v2EP6E6dEAAmCSxAxTCtKE6dEAAmCSxbpqOv6E6dEAAmCSx")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_8dxo6"]
+resource_name = "SM_EC_Tree_Card_00"
+_surfaces = [{
+"aabb": AABB(-1.1140878, -0.047384433, -2.3951543e-09, 2.1530862, 3.863463, 1e-05),
+"attribute_data": PackedByteArray("3RGNPdD2/D7dEY09AAAAPwDuUrYAAAA/AO5SttD2/D6cUQg+0Pb8PpxRCD4AAAA/nFEIPqCRhzycUQg+0Pb8Pt0RjT3Q9vw+3RGNPaCRhzzdEY09oJGHPN0RjT3Q9vw+AO5SttD2/D4A7lK2oJGHPA=="),
+"format": 34359742487,
+"index_count": 24,
+"index_data": PackedByteArray("AAABAAIAAgADAAAAAQAAAAQABAAFAAEABgAHAAgACAAJAAYACgALAAwADAANAAoA"),
+"material": SubResource("StandardMaterial3D_8c6d1"),
+"name": "M_EC_Trees_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 14,
+"vertex_data": PackedByteArray("AxTCtHzYj7MA4kEkAxTCtC4WQr1AzQIubpqOvy4WQr1AzQIubpqOv3zYj7MA4kEk5v2EP3zYj7MA4kEk5v2EPy4WQr1AzQIu5v2EP6E6dEAAmCSx5v2EP3zYj7MA4kEkAxTCtHzYj7MA4kEkAxTCtKE6dEAAmCSxAxTCtKE6dEAAmCSxAxTCtHzYj7MA4kEkbpqOv3zYj7MA4kEkbpqOv6E6dEAAmCSx/3//f////7//f/9/////v/9//3////+//3//f////7//f/9/////v/9//3////+//3//f////7//f/9/////v/9//3////+//3//f////7//f/9/////v/9//3////+//3//f////7//f/9/////vw==")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_l70e2")
+
+[node name="SM_EC_Tree_Card_00" type="Node3D" unique_id=1115532029]
+
+[node name="SM_EC_Tree_Card_00" type="MeshInstance3D" parent="." unique_id=38825690]
+mesh = SubResource("ArrayMesh_8dxo6")

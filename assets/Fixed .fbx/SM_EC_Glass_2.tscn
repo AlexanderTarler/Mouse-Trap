@@ -1,0 +1,46 @@
+[gd_scene format=4 uid="uid://c2btsjc77bw2e"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_8lg8t"]
+resource_name = "M_EC_Glass_0"
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.048940208, 0.07947161, 0.37974414, 1)
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_fr88a"]
+_surfaces = [{
+"aabb": AABB(-0.8644066, -0.5604706, -0.010000026, 1.7288132, 1.1209412, 0.010000052),
+"format": 34359742465,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAwACAAEAAQAEAAMABAABAAAAAwAEAAUAAAAFAAQABQAGAAMABgAFAAAAAgADAAYAAAAHAAYABgAHAAIAAgAHAAAA"),
+"name": "M_EC_Glass_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("wEldPwB7Dz/ept+ywEldPwB7D7/ept+ywEldvwB7D7/ept8ywEldvwB7D7/u1iO8wEldPwB7D78m1yO8wEldPwB7Dz8m1yO8wEldvwB7Dz/u1iO8wEldvwB7Dz/ept8y")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_4bt73"]
+resource_name = "SM_EC_Glass_2"
+_surfaces = [{
+"aabb": AABB(-0.8644066, -0.5604706, -0.010000026, 1.7288132, 1.1209412, 0.010000052),
+"attribute_data": PackedByteArray("AACAPwAAAAAAAIA/AACAPwAAAAAAAIA/AAAAAAAAAAAAAIA/AAAAAAAAAAAAAAAAAAAAAAAAgD8AAIA/AACAPwAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAAAAAIA/AAAAAAAAgD8AAAAAAACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AACAPwAAgD8AAIA/AACAPwAAAAAAAIA/AAAAAAAAAAAAAAAAAACAPwAAAAAAAIA/AAAAAAAAAAAAAAAA"),
+"format": 34359742487,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQACAAJAAoACgALAAgADAANAA4ADgAPAAwAEAARABIAEgATABAAFAAVABYAFgAXABQA"),
+"material": SubResource("StandardMaterial3D_8lg8t"),
+"name": "M_EC_Glass_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 24,
+"vertex_data": PackedByteArray("wEldPwB7Dz/ept+ywEldPwB7D7/ept+ywEldvwB7D7/ept8ywEldvwB7Dz/ept8ywEldPwB7Dz8m1yO8wEldvwB7Dz/u1iO8wEldvwB7D7/u1iO8wEldPwB7D78m1yO8wEldvwB7Dz/u1iO8wEldvwB7Dz/ept8ywEldvwB7D7/ept8ywEldvwB7D7/u1iO8wEldvwB7D7/u1iO8wEldvwB7D7/ept8ywEldPwB7D7/ept+ywEldPwB7D78m1yO8wEldPwB7D78m1yO8wEldPwB7D7/ept+ywEldPwB7Dz/ept+ywEldPwB7Dz8m1yO8wEldvwB7Dz/u1iO8wEldPwB7Dz8m1yO8wEldPwB7Dz/ept+ywEldvwB7Dz/ept8y/3//f////7//f/9/////v/9//3////+//3//f////78AAP//////PwAA//////8/AAD//////z8AAP//////PwAA/3////+/AAD/f////78AAP9/////vwAA/3////+//38AAP///7//fwAA////v/9/AAD///+//38AAP///7////9/////v////3////+/////f////7////9/////v/9///////+//3///////7//f///////v/9///////+/")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_fr88a")
+
+[node name="SM_EC_Glass_2" type="Node3D" unique_id=540157094]
+
+[node name="SM_EC_Glass_2" type="MeshInstance3D" parent="." unique_id=1310217628]
+mesh = SubResource("ArrayMesh_4bt73")

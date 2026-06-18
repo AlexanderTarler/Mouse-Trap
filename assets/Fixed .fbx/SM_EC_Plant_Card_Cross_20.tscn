@@ -1,0 +1,49 @@
+[gd_scene format=4 uid="uid://bc38ppdw756b2"]
+
+[ext_resource type="Texture2D" uid="uid://c5nh3hqqk8gkj" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Plants_CL_0.png" id="1_7tifa"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_e42w6"]
+resource_name = "M_EC_Plants_0"
+transparency = 4
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_7tifa")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_arre0"]
+_surfaces = [{
+"aabb": AABB(-0.1862583, 4.23193e-06, -0.34719658, 0.34719467, 0.7870017, 0.34719467),
+"format": 34359742465,
+"index_count": 12,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQA"),
+"name": "M_EC_Plants_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("ESrhMgAAjjaww7G+aSEiKgAAjjYAAAC2aSEiKrmnSD8AAAC2JSrhMrmnSD/Aw7G+YcwkPgDHUTu2B0C+f7o+vgDHUTu2B0C+f7o+vjl5ST+2B0C+gcwkPjl5ST+2B0C+")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_hy3vu"]
+resource_name = "SM_EC_Plant_Card_Cross_20"
+_surfaces = [{
+"aabb": AABB(-0.1862583, 4.23193e-06, -0.34719658, 0.34719467, 0.7870017, 0.34719467),
+"attribute_data": PackedByteArray("KcA2P8KbSz+8hyA/wptLP7yHID/ncRk/KsA2P+ZxGT8pwDY/wptLP7yHID/Cm0s/vIcgP+dxGT8qwDY/5nEZPw=="),
+"format": 34359742487,
+"index_count": 12,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQA"),
+"material": SubResource("StandardMaterial3D_e42w6"),
+"name": "M_EC_Plants_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("ESrhMgAAjjaww7G+aSEiKgAAjjYAAAC2aSEiKrmnSD8AAAC2JSrhMrmnSD/Aw7G+YcwkPgDHUTu2B0C+f7o+vgDHUTu2B0C+f7o+vjl5ST+2B0C+gcwkPjl5ST+2B0C+/v//f/7/AID+//9///////7//3/+/wCA/v//f/7/AID/f/9//v//v/9//3////+//3//f/7//7//f/9//v//vw==")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_arre0")
+
+[node name="SM_EC_Plant_Card_Cross_20" type="Node3D" unique_id=913883695]
+
+[node name="SM_EC_Plant_Card_Cross_20" type="MeshInstance3D" parent="." unique_id=363196164]
+mesh = SubResource("ArrayMesh_hy3vu")

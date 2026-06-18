@@ -1,0 +1,50 @@
+[gd_scene format=4 uid="uid://bmhnjo7ywr0yn"]
+
+[ext_resource type="Texture2D" uid="uid://rym4mi86k6xo" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/TreeLine_CL_0.png" id="1_bkd7d"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_k030d"]
+resource_name = "M_EC_TreeLine_0"
+transparency = 4
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_bkd7d")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_c1hni"]
+_surfaces = [{
+"aabb": AABB(-15, -3.019916e-07, 0, 15, 1e-05, 5.5149317),
+"format": 34359742465,
+"index_count": 90,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAACAAEAAQAFAAQABgAEAAUABQAHAAYACAAGAAcABwAJAAgACgAIAAkACQALAAoADAAKAAsACwANAAwADgAMAA0ADQAPAA4AEAAOAA8ADwARABAAEgAQABEAEQATABIAFAASABMAEwAVABQAFgAUABUAFQAXABYAGAAWABcAFwAZABgAGgAYABkAGQAbABoAHAAaABsAGwAdABwAHgAcAB0AHQAfAB4A"),
+"name": "M_EC_TreeLine_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 32,
+"vertex_data": PackedByteArray("AAAAANyd9TNSerBAAACAv9yd9TNSerBAAACAv2khorQAAAAAAAAAAGkhorQAAAAAAAAAwGkhorQAAAAAAAAAwNyd9TNSerBAAABAwGkhorQAAAAAAABAwNyd9TNSerBAAACAwGkhorQAAAAAAACAwNyd9TNSerBAAACgwGkhorQAAAAAAACgwNyd9TNSerBAAADAwGkhorQAAAAAAADAwNyd9TNSerBAAADgwGkhorQAAAAAAADgwNyd9TNSerBAAAAAwWkhorQAAAAAAAAAwdyd9TNSerBAAAAQwWkhorQAAAAAAAAQwdyd9TNSerBAAAAgwWkhorQAAAAAAAAgwdyd9TNSerBAAAAwwWkhorQAAAAAAAAwwdyd9TNSerBAAABAwWkhorQAAAAAAABAwdyd9TNSerBAAABQwWkhorQAAAAAAABQwdyd9TNSerBAAABgwWkhorQAAAAAAABgwdyd9TNSerBAAABwwWkhorQAAAAAAABwwdyd9TNSerBA")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_jylc1"]
+resource_name = "SM_EC_TreeLine_1_002"
+_surfaces = [{
+"aabb": AABB(-15, -3.019916e-07, 0, 15, 1e-05, 5.5149317),
+"attribute_data": PackedByteArray("AACAP1wLnz4g+W4/XAufPiD5bj8AAIA/AACAPwAAgD9A8l0/AACAP0HyXT9cC58+rP2MPVwLnz7tXR81VAufPgBdHzX+/38/q/2MPQAAgD9bmgo+XAufPlqaCj4AAIA/3bVOPlwLnz7ctU4+AACAP7JoiT5cC58+3bVOPlwLnz7ctU4+AACAP7FoiT4AAIA/cnarPlwLnz5xdqs+AACAPzOEzT5cC58+cnarPlwLnz5xdqs+AACAPzKEzT4AAIA/9ZHvPlwLnz70ke8+AACAP9rPCD9cC58+3M8IPwAAgD++1hk/XAufPr3WGT8AAIA/nt0qP1wLnz6+1hk/XAufPr3WGT8AAIA/nt0qPwAAgD9/5Ds/XAufPp7dKj9cC58+nt0qPwAAgD9+5Ds/AACAP1/rTD9cC58+X+tMPwAAgD9B8l0/XAufPl/rTD9cC58+X+tMPwAAgD9A8l0/AACAPw=="),
+"format": 34359742487,
+"index_count": 90,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAACAAEAAQAFAAQABgAHAAgACAAJAAYACgAGAAkACQALAAoADAAKAAsACwANAAwADgAPABAAEAARAA4AEgAOABEAEQATABIAFAAVABYAFgAXABQAGAAUABcAFwAZABgAGgAYABkAGQAbABoAHAAaABsAGwAdABwAHgAfACAAIAAhAB4AIgAjACQAJAAlACIAJgAiACUAJQAnACYAKAApACoAKgArACgA"),
+"material": SubResource("StandardMaterial3D_k030d"),
+"name": "M_EC_TreeLine_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 44,
+"vertex_data": PackedByteArray("AAAAANyd9TNSerBAAACAv9yd9TNSerBAAACAv2khorQAAAAAAAAAAGkhorQAAAAAAAAAwGkhorQAAAAAAAAAwNyd9TNSerBAAABgwdyd9TNSerBAAABwwdyd9TNSerBAAABwwWkhorQAAAAAAABgwWkhorQAAAAAAABQwdyd9TNSerBAAABQwWkhorQAAAAAAABAwdyd9TNSerBAAABAwWkhorQAAAAAAAAwwdyd9TNSerBAAABAwdyd9TNSerBAAABAwWkhorQAAAAAAAAwwWkhorQAAAAAAAAgwdyd9TNSerBAAAAgwWkhorQAAAAAAAAQwdyd9TNSerBAAAAgwdyd9TNSerBAAAAgwWkhorQAAAAAAAAQwWkhorQAAAAAAAAAwdyd9TNSerBAAAAAwWkhorQAAAAAAADgwNyd9TNSerBAAADgwGkhorQAAAAAAADAwNyd9TNSerBAAADAwGkhorQAAAAAAACgwNyd9TNSerBAAADAwNyd9TNSerBAAADAwGkhorQAAAAAAACgwGkhorQAAAAAAACAwNyd9TNSerBAAACgwNyd9TNSerBAAACgwGkhorQAAAAAAACAwGkhorQAAAAAAABAwNyd9TNSerBAAABAwGkhorQAAAAAAAAAwNyd9TNSerBAAABAwNyd9TNSerBAAABAwGkhorQAAAAAAAAAwGkhorQAAAAA/3///////z//f///////P/9///////8//3///////z//f///////P/9///////8//3////7//z//f////v//P/9////+//8//3////7//z//f///////P/9///////8//3///////z//f///////P/9///////8//3///////z//f///////P/9///////8//3///////z//f///////P/9///////8//3///////z//f///////P/9///////8//3///////z//f///////P/9///////8//3///////z//f///////P/9///////8//3///////z//f///////P/9///////8//3///////z//f///////P/9///////8//3///////z//f///////P/9///////8//3///////z//f///////P/9///////8//3///////z//f///////Pw==")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_c1hni")
+
+[node name="SM_EC_TreeLine_1_002" type="Node3D" unique_id=621500852]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 0, 0)
+
+[node name="SM_EC_TreeLine_1_002" type="MeshInstance3D" parent="." unique_id=649812893]
+mesh = SubResource("ArrayMesh_jylc1")

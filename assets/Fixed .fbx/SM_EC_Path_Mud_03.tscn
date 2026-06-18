@@ -1,0 +1,48 @@
+[gd_scene format=4 uid="uid://bmhptbnjfk0ym"]
+
+[ext_resource type="Texture2D" uid="uid://c1vo8xsq6v2o2" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Path_CL_1.png" id="1_2ipaa"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ck5jv"]
+resource_name = "M_EC_PathMud_0"
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_2ipaa")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_3rutj"]
+_surfaces = [{
+"aabb": AABB(0, -2.3841858e-07, 0, 4, 1.0000006, 1e-05),
+"format": 34359742465,
+"index_count": 24,
+"index_data": PackedByteArray("AAABAAIAAgADAAAAAwACAAQABAAFAAMABQAEAAYABgAHAAUABwAGAAgACAAJAAcA"),
+"name": "M_EC_PathMud_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 10,
+"vertex_data": PackedByteArray("AAAAAAAAwDQAAAAAAAAAAAMAgD8AAAAAAACAPwIAgD8AAAAAAACAPwAAgDQAAAAAAAAAQAAAgD8AAAAAAAAAQAAAADQAAAAAAABAQP7/fz8AAAAAAABAQAAAAAAAAAAAAACAQPz/fz8AAAAAAACAQAAAgLQAAAAA")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_gjek5"]
+resource_name = "SM_EC_Path_Mud_03"
+_surfaces = [{
+"aabb": AABB(0, -2.3841858e-07, 0, 4, 1.0000006, 1e-05),
+"attribute_data": PackedByteArray("AAAsN0z6fz8AACw3UPs/PxABgD5Q+z8/EAGAPkz6fz9kAAA/UPs/P2QAAD9M+n8/QgBAP1D7Pz9AAEA/TPp/Pw8AgD9Q+z8/DwCAP0z6fz8="),
+"format": 34359742487,
+"index_count": 24,
+"index_data": PackedByteArray("AAABAAIAAgADAAAAAwACAAQABAAFAAMABQAEAAYABgAHAAUABwAGAAgACAAJAAcA"),
+"material": SubResource("StandardMaterial3D_ck5jv"),
+"name": "M_EC_PathMud_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 10,
+"vertex_data": PackedByteArray("AAAAAAAAwDQAAAAAAAAAAAMAgD8AAAAAAACAPwIAgD8AAAAAAACAPwAAgDQAAAAAAAAAQAAAgD8AAAAAAAAAQAAAADQAAAAAAABAQP7/fz8AAAAAAABAQAAAAAAAAAAAAACAQPz/fz8AAAAAAACAQAAAgLQAAAAA/3//f/7//7//f/9//v//v/9//3/+//+//3//f/7//7//f/9//v//v/9//3/+//+//3//f/7//7//f/9//v//v/9//3/+//+//3//f/7//78=")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_3rutj")
+
+[node name="SM_EC_Path_Mud_03" type="Node3D" unique_id=345404187]
+
+[node name="SM_EC_Path_Mud_03" type="MeshInstance3D" parent="." unique_id=157715971]
+mesh = SubResource("ArrayMesh_gjek5")

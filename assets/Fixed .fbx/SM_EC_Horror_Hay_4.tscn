@@ -1,0 +1,53 @@
+[gd_scene format=4 uid="uid://vryklsdhpgjb"]
+
+[ext_resource type="Texture2D" uid="uid://bl4ow1l348klr" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/HorrorHay_CL_1.png" id="1_31c85"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bku17"]
+resource_name = "M_EC_HorrorHay_1"
+transparency = 2
+alpha_scissor_threshold = 0.5
+alpha_antialiasing_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_31c85")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_1ccbs"]
+_surfaces = [{
+"aabb": AABB(-1.25, -0.8, -0.8, 2.5, 1.6, 1.6),
+"format": 34359742465,
+"index_count": 96,
+"index_data": PackedByteArray("AwAKAAsACwAKAAIAAAACAAoACgAMAAAADAAKAAMAAgAAAA0AAwAFAAwAAAAMAA4ADgAMAAUADgANAAAACAAFAAMABQAIAA4AAwAJAAgACwAJAAMADgAIAAcABwAIAAkACQAGAAcABgAJAAsABwAGAA8ACwAPAAYABwAQAA4ADwAQAAcADgAQAAQABAANAA4AEAAPAAEAAQAEABAAAQAPAAsAEQANAAQABAABABEACwARAAEADQARAAIAAgARAAsA"),
+"lods": [0.53729665, PackedByteArray("AAABAAIAAQAAAAQAAgAFAAAABAAAAAUAAgABAAMABQACAAMABAAGAAEAAQAGAAMABwAEAAUABgAEAAcABQAIAAcACAAFAAMACQAGAAcABwAIAAkABgAJAAMAAwAJAAgA"), 1.762181, PackedByteArray("AAABAAIAAgABAAMAAQAAAAQAAgAFAAAABAAAAAUABQACAAMABAAGAAEABAAFAAYAAQAGAAMAAwAGAAUA")],
+"name": "M_EC_HorrorHay_1",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 18,
+"vertex_data": PackedByteArray("AACgv0YrEb9AdhA/AACgP0B2ED9CKxE/AACgP0ArEb89dhA/AACgPzt2EL9DKxG/AACgv0B2ED9GKxE/AACgv0B2EL9HKxG/AACgP0UrET8+dhC/AACgv0crET9AdhC/AACgv90AADvNzEy/AACgP0sBADvIzEy/AACgP8fMTL9Y//+6AACgP5SsCjQa5jizAACgv83MTL/dAAC7AACgvyQAALvNzEw/AACgv4g1RSYb5riyAACgP8rMTD/m/f86AACgv83MTD8kAAA7AACgP6b6/7rIzEw/")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_dod1k"]
+resource_name = "SM_EC_Horror_Hay_4"
+_surfaces = [{
+"aabb": AABB(-1.25, -0.8, -0.8, 2.5, 1.6, 1.6),
+"attribute_data": PackedByteArray("AAAAADSe6j4TaPk+AAAAABNo+T4ynuo+AAAAAAAAAAATaPk+9cJrPwAAAAA0nuo+AAAAAPXCaz8TaPk+Mp7qPgAAAAD1wms/FGj5PjCe6j4TaPk+9cJrPwAAAAAAAAAAE2j5PgAAAADFdUg/yQhTP1tBBz9VBB0//3djP+g/oT6VQyI/ANzUPZVjBD+G2KA+OfBFP9D10D3+FmE/BDgdPwAAAAA0nuo+FGj5PjCeaj4AAAAAMJ5qPsZ1SD8A3NQ9WYofP4uFUz848EU/i4VTP/93Yz9WBB0/rVw1P0ik7T6UQyI/yQhTP1tBBz/mP6E+Sr0yP0Sk7T7+FmE/itigPpVjBD8COB0/WoofP9D10D0AAAAANJ5qPhJo+T4wnmo+FGj5PgeJMD8AAAAACIkwPwAAAAAIiTA/FGj5PgaJMD8="),
+"format": 34359742487,
+"index_count": 96,
+"index_data": PackedByteArray("DwAaABsAGwAaAA0AGwAXAA8ADQAcABsAEAAXABsAGwAcAA4AGwAdABAADgAdABsAEwAZAB4AHgAZABgAHgAfABMAGAAgAB4AEgAfAB4AHgAgABEAHgAhABIAEQAhAB4AAgAAACIAIgAjAAIAIwAiAAMAAwABACMABgAEACQAJAAlAAYAJQAkAAcABwAFACUACgAIACYAJgAnAAoAJwAmABQAFAAJACcAFQAJABQAFAAWABUADAAVABYAFgALAAwA"),
+"lods": [0.53729665, PackedByteArray("AAABAAIAAQAAAAMABAAFAAYABQAEAAcACAAJAAoACQAIABQAFQAJABQAFAAWABUADAAVABYAFgALAAwADQAOAA8ADgAQAA8AEAAXAA8AEQASABMAGAARABMAEwAZABgA"), 1.762181, PackedByteArray("AAABAAIAAQAAAAMABAAFAAYABQAEAAcACAAJAAoACAALAAkADAAJAAsADQAOAA8ADgAQAA8AEQASABMA")],
+"material": SubResource("StandardMaterial3D_bku17"),
+"name": "M_EC_HorrorHay_1",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 40,
+"vertex_data": PackedByteArray("AACgv0YrEb9AdhA/AACgP0B2ED9CKxE/AACgP0ArEb89dhA/AACgv0B2ED9GKxE/AACgP0ArEb89dhA/AACgv0B2EL9HKxG/AACgv0YrEb9AdhA/AACgPzt2EL9DKxG/AACgv0B2ED9GKxE/AACgP0UrET8+dhC/AACgP0B2ED9CKxE/AACgv0B2EL9HKxG/AACgPzt2EL9DKxG/AACgP0ArEb89dhA/AACgP0B2ED9CKxE/AACgPzt2EL9DKxG/AACgP0UrET8+dhC/AACgv0B2ED9GKxE/AACgv0YrEb9AdhA/AACgv0B2EL9HKxG/AACgv0crET9AdhC/AACgP0sBADvIzEy/AACgv90AADvNzEy/AACgP0sBADvIzEy/AACgv0crET9AdhC/AACgv90AADvNzEy/AACgP8fMTL9Y//+6AACgP5SsCjQa5jizAACgP6b6/7rIzEw/AACgP8rMTD/m/f86AACgv4g1RSYb5riyAACgv83MTL/dAAC7AACgv83MTD8kAAA7AACgvyQAALvNzEw/AACgvyQAALvNzEw/AACgP6b6/7rIzEw/AACgP8fMTL9Y//+6AACgv83MTL/dAAC7AACgv83MTD8kAAA7AACgP8rMTD/m/f86/3/XP/7//7//f9e/////v/9/1z////+//3/Xv////7//f9c//v//PyfAAAD+//8//3/XP/7//z8nwAAA/v//P/9/17////+/17////7//7//f9e//v//vyfAAAD+//+/J8AAAP7//7////9/q6UAgP7//39TWgCA////f6ulAID+//9/q6UAgAAA/3+rpQCAAAD/f6ulAIAAAP9/q6UAgNe////+//+/r/////7//7+v/////v//v////3+rpQCAAAD/f1NaAIAAAP9/U1oAgP///3+rpQCA////f6ulAID///9/U1oAgP///39TWgCAAAD/f6ulAIAAAP9/q6UAgAAA/3+rpQCAAAD/f6ulAID/f69/////v/9/r3////+/T4AAAP7//z9PgAAA/v//P/9/r//+//+//3+v//7//78=")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_1ccbs")
+
+[node name="SM_EC_Horror_Hay_4" type="Node3D" unique_id=772487727]
+
+[node name="SM_EC_Horror_Hay_4" type="MeshInstance3D" parent="." unique_id=1272056486]
+mesh = SubResource("ArrayMesh_dod1k")

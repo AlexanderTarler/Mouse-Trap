@@ -1,0 +1,51 @@
+[gd_scene format=4 uid="uid://whevggjd0tlp"]
+
+[ext_resource type="Texture2D" uid="uid://dh3yq43e6yc5e" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Barn_Final_0_CL.png" id="1_sdkuo"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_maisg"]
+resource_name = "M_EC_Barn_0"
+transparency = 2
+alpha_scissor_threshold = 0.5
+alpha_antialiasing_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_sdkuo")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_cx0e1"]
+_surfaces = [{
+"aabb": AABB(-1.4584169, -2.861023e-06, -0.1, 1.4584107, 3.430026, 0.1),
+"format": 34359742465,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAwABAAAAAgAEAAAAAQADAAUABQACAAEABgAEAAIAAgAFAAYABwAAAAQAAAAHAAMABAAGAAcABQADAAcABwAGAAUA"),
+"name": "M_EC_Barn_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("AADQtoCFW0AAAAAAAADQtgAAQLYAAAAAaK26vwAAQLYAAAAAAADQtgAAQLbNzMy9aK26v4CFW0AAAAAAaK26vwAAQLbNzMy9aK26v4CFW0DNzMy9AADQtoCFW0DNzMy9")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_xal8b"]
+resource_name = "SM_EC_Barn_Door_Single_00"
+_surfaces = [{
+"aabb": AABB(-1.4584169, -2.861023e-06, -0.1, 1.4584107, 3.430026, 0.1),
+"attribute_data": PackedByteArray("PuZGPh1NSD895kY+gC5/P0Qf0z2ALn8/Rh/TPR1NSD8+5kY+HU1IP0Yf0z0dTUg/RB/TPYAufz895kY+gC5/P0Qf0z2ALn8/RB/TPfSffT895kY+9J99Pz3mRj6ALn8/PeZGPoAufz8NrEA+gC5/Pw6sQD4dTUg/PuZGPh1NSD8+5kY+HU1IPz7mRj7k/0k/Rh/TPeT/ST9GH9M9HU1IP0Yf0z0dTUg/WtfhPR1NSD9Y1+E9gC5/P0Qf0z2ALn8/"),
+"format": 34359742487,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQACAAJAAoACgALAAgADAANAA4ADgAPAAwAEAARABIAEgATABAAFAAVABYAFgAXABQA"),
+"material": SubResource("StandardMaterial3D_maisg"),
+"name": "M_EC_Barn_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 24,
+"vertex_data": PackedByteArray("AADQtoCFW0AAAAAAAADQtgAAQLYAAAAAaK26vwAAQLYAAAAAaK26v4CFW0AAAAAAAADQtoCFW0DNzMy9aK26v4CFW0DNzMy9aK26vwAAQLbNzMy9AADQtgAAQLbNzMy9aK26vwAAQLbNzMy9aK26vwAAQLYAAAAAAADQtgAAQLYAAAAAAADQtgAAQLbNzMy9AADQtgAAQLbNzMy9AADQtgAAQLYAAAAAAADQtoCFW0AAAAAAAADQtoCFW0DNzMy9AADQtoCFW0DNzMy9AADQtoCFW0AAAAAAaK26v4CFW0AAAAAAaK26v4CFW0DNzMy9aK26v4CFW0DNzMy9aK26v4CFW0AAAAAAaK26vwAAQLYAAAAAaK26vwAAQLbNzMy9/3//f////7//f/9/////v/9//3////+//3//f////7//////////P/////////8//////////z//////////P/9/AAD///+//38AAP///7//fwAA////v/9/AAD///+/////f/////////9//////////3//////////f///////f///////v/9///////+//3///////7//f///////vwAA/3//f/+/AAD/f/9//78AAP9//3//vwAA/3//f/+/")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_cx0e1")
+
+[node name="SM_EC_Barn_Door_Single_00" type="Node3D" unique_id=859546804]
+
+[node name="SM_EC_Barn_Door_Single_00" type="MeshInstance3D" parent="." unique_id=1525563427]
+mesh = SubResource("ArrayMesh_xal8b")

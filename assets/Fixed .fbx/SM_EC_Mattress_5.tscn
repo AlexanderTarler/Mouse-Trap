@@ -1,0 +1,49 @@
+[gd_scene format=4 uid="uid://mif32ksdc04v"]
+
+[ext_resource type="Texture2D" uid="uid://dr4p3nw1uwxo4" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/House_CL_0.png" id="1_u773m"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_xitwl"]
+resource_name = "M_EC_House_0"
+transparency = 4
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_u773m")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_kisva"]
+_surfaces = [{
+"aabb": AABB(-1.0000005, -0.24586535, -0.10948645, 2.0000007, 0.9958648, 0.2189729),
+"format": 34359742465,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAwACAAEAAgAEAAAAAAAEAAUAAQAGAAMABgABAAAABQADAAYAAAAHAAYABgAHAAUABQAHAAAACAAJAAoACgALAAgA"),
+"name": "M_EC_House_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 12,
+"vertex_data": PackedByteArray("+P9/P+7/Pz9vOuC9BACAv+7/Pz9vOuC9AQCAv3DDe75vOuC9AACAv/bCe75vOuA9/f9/P3DDe75vOuC9AgCAP/bCe75vOuA9//9/v/f/Pz9vOuA9AgCAP/f/Pz9vOuA9AACAPyDEe75vOuC9AACAvyDEe75vOuC9AACAv3jDe75vOuA9AgCAP3jDe75vOuA9")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_ajb5l"]
+resource_name = "SM_EC_Mattress_5"
+_surfaces = [{
+"aabb": AABB(-1.0000005, -0.24586535, -0.10948645, 2.0000007, 0.9958648, 0.2189729),
+"attribute_data": PackedByteArray("1lQTPwCqhj7WVBM/zu+mPoVSGz/M76Y+hVIbPwCqhj5lGBM/NvumPmUYEz9qtYY+llYRP2q1hj6WVhE/NvumPs5DFT9OraY+/4ETP06tpj7/gRM/AKqGPs5DFT8AqoY+6pkTPy7Kpj7Rohs/LsqmPtGiGz+QRqM+6pkTP5BGoz7caRQ/rkGKPtxpFD8QvoY+w3IcPxC+hj7Dchw/rkGKPrC4HD8AqoY+sLgcP06tpj7fgBM/Tq2mPt+AEz8AqoY+"),
+"format": 34359742487,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQACAAJAAoACgALAAgADAANAA4ADgAPAAwAEAARABIAEgATABAAFAAVABYAFgAXABQA"),
+"material": SubResource("StandardMaterial3D_xitwl"),
+"name": "M_EC_House_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 24,
+"vertex_data": PackedByteArray("+P9/P+7/Pz9vOuC9BACAv+7/Pz9vOuC9AQCAv3DDe75vOuC9/f9/P3DDe75vOuC9AACAPyDEe75vOuC9AACAvyDEe75vOuC9AACAv3jDe75vOuA9AgCAP3jDe75vOuA9//9/v/f/Pz9vOuA9BACAv+7/Pz9vOuC9+P9/P+7/Pz9vOuC9AgCAP/f/Pz9vOuA9+P9/P+7/Pz9vOuC9/f9/P3DDe75vOuC9AgCAP/bCe75vOuA9AgCAP/f/Pz9vOuA9AACAv/bCe75vOuA9AQCAv3DDe75vOuC9BACAv+7/Pz9vOuC9//9/v/f/Pz9vOuA9AgCAP/bCe75vOuA9AACAv/bCe75vOuA9//9/v/f/Pz9vOuA9AgCAP/f/Pz9vOuA9//////9//n///////3/+f///////f/5///////9//n//fwAAAAD+f/9/AAD+//5//38AAAAA/n//fwAAAAD+f/9/////f/+//3////9//7//f////3//v/9/////f/+//v//f/9//n/+//9//3/+f/7//3//f/5//v//f/9//n8AAP9//3/+/wAA/3//f/7/AAD/f/9//v8AAP9//3/+//9//3//fwCA/3//f/9/AID/f/9//38AgP9//3//fwCA")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_kisva")
+
+[node name="SM_EC_Mattress_5" type="Node3D" unique_id=1020598292]
+
+[node name="SM_EC_Mattress_5" type="MeshInstance3D" parent="." unique_id=676856281]
+mesh = SubResource("ArrayMesh_ajb5l")

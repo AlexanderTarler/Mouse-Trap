@@ -1,0 +1,49 @@
+[gd_scene format=4 uid="uid://b6g7eowcc7bv8"]
+
+[ext_resource type="Texture2D" uid="uid://c5nh3hqqk8gkj" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Plants_CL_0.png" id="1_vapdo"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_n0oor"]
+resource_name = "M_EC_Plants_0"
+transparency = 4
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_vapdo")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_2gyaj"]
+_surfaces = [{
+"aabb": AABB(-1.9073486e-06, -3.7550926e-06, 0, 0.2866745, 0.73672944, 1e-05),
+"format": 34359742465,
+"index_count": 6,
+"index_data": PackedByteArray("AAABAAIAAgADAAAA"),
+"name": "M_EC_Plants_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 4,
+"vertex_data": PackedByteArray("wMaSPgAAfLYAAAAAAAAAtgAAfLYAAAAAAAAAtg6aPD8AAAAAwMaSPg6aPD8AAAAA")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_jpdu7"]
+resource_name = "SM_EC_Plant_Card_13"
+_surfaces = [{
+"aabb": AABB(-1.9073486e-06, -3.7550926e-06, 0, 0.2866745, 0.73672944, 1e-05),
+"attribute_data": PackedByteArray("iF1SPxAPnz6mBEA/EA+fPqgEQD/QgwE+iF1SP9SDAT4="),
+"format": 34359742487,
+"index_count": 6,
+"index_data": PackedByteArray("AAABAAIAAgADAAAA"),
+"material": SubResource("StandardMaterial3D_n0oor"),
+"name": "M_EC_Plants_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 4,
+"vertex_data": PackedByteArray("wMaSPgAAfLYAAAAAAAAAtgAAfLYAAAAAAAAAtg6aPD8AAAAAwMaSPg6aPD8AAAAA/3//f/7//7//f/9/////v/9//3/+//+//3//f/7//78=")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_2gyaj")
+
+[node name="SM_EC_Plant_Card_13" type="Node3D" unique_id=1381509294]
+
+[node name="SM_EC_Plant_Card_13" type="MeshInstance3D" parent="." unique_id=836660515]
+mesh = SubResource("ArrayMesh_jpdu7")

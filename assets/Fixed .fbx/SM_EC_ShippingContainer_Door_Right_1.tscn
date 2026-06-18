@@ -1,0 +1,51 @@
+[gd_scene format=4 uid="uid://bsf7wuwpu5e"]
+
+[ext_resource type="Texture2D" uid="uid://bk2pr88caarr0" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/ShippingContainer_CL_0.png" id="1_v14tr"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_i140q"]
+resource_name = "M_EC_ShippingContainer_0"
+transparency = 2
+alpha_scissor_threshold = 0.5
+alpha_antialiasing_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_v14tr")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_ta3do"]
+_surfaces = [{
+"aabb": AABB(-1.5000002, 0, 0, 1.5, 0.049999997, 2.6026778),
+"format": 34359742465,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAwABAAAAAgAEAAAAAQADAAUABQACAAEABgAEAAIAAgAFAAYABwAAAAQAAAAHAAMABAAGAAcABQADAAcABwAGAAUA"),
+"name": "M_EC_ShippingContainer_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("AgDAvwAAAAAAAAAAAgDAvwAAAABGkiZAAACAtAAAAABFkiZAAgDAv8zMTD1GkiZAAACAtAAAAAAAAAAAAACAtMzMTD1FkiZAAACAtMzMTD0AAAAAAgDAv8zMTD0AAAAA")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_adyko"]
+resource_name = "SM_EC_ShippingContainer_Door_Right_1_001"
+_surfaces = [{
+"aabb": AABB(-1.5000002, 0, 0, 1.5, 0.049999997, 2.6026778),
+"attribute_data": PackedByteArray("9FtQP5L97z71W1A/AG6cPkhZaD8Cbpw+SFloP5L97z5IWWg/Am6cPvVbUD8Abpw+9FtQP5L97z5IWWg/kv3vPkhZaD+S/e8+SFloP5L97z5IWWg/Am6cPkhZaD8Cbpw+SFloPwJunD5IWWg/Am6cPvVbUD8Abpw+9VtQPwBunD71W1A/AG6cPvVbUD8Abpw+9FtQP5L97z70W1A/kv3vPvRbUD+S/e8+9FtQP5L97z5IWWg/kv3vPkhZaD+S/e8+"),
+"format": 34359742487,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQACAAJAAoACgALAAgADAANAA4ADgAPAAwAEAARABIAEgATABAAFAAVABYAFgAXABQA"),
+"material": SubResource("StandardMaterial3D_i140q"),
+"name": "M_EC_ShippingContainer_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 24,
+"vertex_data": PackedByteArray("AgDAvwAAAAAAAAAAAgDAvwAAAABGkiZAAACAtAAAAABFkiZAAACAtAAAAAAAAAAAAACAtMzMTD1FkiZAAgDAv8zMTD1GkiZAAgDAv8zMTD0AAAAAAACAtMzMTD0AAAAAAACAtMzMTD0AAAAAAACAtAAAAAAAAAAAAACAtAAAAABFkiZAAACAtMzMTD1FkiZAAACAtMzMTD1FkiZAAACAtAAAAABFkiZAAgDAvwAAAABGkiZAAgDAv8zMTD1GkiZAAgDAv8zMTD1GkiZAAgDAvwAAAABGkiZAAgDAvwAAAAAAAAAAAgDAv8zMTD0AAAAAAgDAv8zMTD0AAAAAAgDAvwAAAAAAAAAAAACAtAAAAAAAAAAAAACAtMzMTD0AAAAA/38AAP7//7//fwAA/v//v/9/AAD+//+//38AAP///7//f////v//P/9////+//8//3////7//z//f///////P////3////+/////f////7////9/////v////3////+//3//f////z//f/9/////P/9//3////8//3//f////z8AAP9/////vwAA/3////+/AAD/f////78AAP9/////v/////////+//////////7//////////v/////////+/")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_ta3do")
+
+[node name="SM_EC_ShippingContainer_Door_Right_1" type="Node3D" unique_id=1449717705]
+
+[node name="SM_EC_ShippingContainer_Door_Right_1" type="MeshInstance3D" parent="." unique_id=493654586]
+mesh = SubResource("ArrayMesh_adyko")

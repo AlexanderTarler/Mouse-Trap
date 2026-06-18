@@ -1,0 +1,48 @@
+[gd_scene format=4 uid="uid://bkciv1ugekqxw"]
+
+[ext_resource type="Texture2D" uid="uid://cbirraqidrm2k" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Bush_CL_0.png" id="1_l73k0"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_a81rh"]
+resource_name = "M_EC_Bush_0"
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_l73k0")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_yobq1"]
+_surfaces = [{
+"aabb": AABB(0, -0.50000167, 8.1460215e-08, 2, 1.0000029, 2.0000002),
+"format": 34359742465,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAgABAAMAAgAEAAAABQAAAAEABAAAAAUAAQADAAUABgAEAAIABQAGAAQAAwAHAAIABwADAAUAAgAHAAYABQAGAAcA"),
+"name": "M_EC_Bush_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("AAAANBQAAD/BENEzAAAAQP7//z60ENEzAAAAQP3//z4AAABAAAAAQBwAAL86764zAAAANBIAAD8AAABAAAAAAAQAAL9J764zAAAAAAMAAL8BAABA////PxsAAL8BAABA")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_4wewe"]
+resource_name = "SM_EC_Bush_Wall_0"
+_surfaces = [{
+"aabb": AABB(0, -0.50000167, 8.1460215e-08, 2, 1.0000029, 2.0000002),
+"attribute_data": PackedByteArray("AAAAAAAAAAAAAIA/AAAAAAAAgD8AAIA/AAAAAAAAgD8AAAAAAAAAAAAAAAAAAIA/AACAPwAAgD8AAIA/AAAAAP7//z4AAAA0AAAAPwAAgD8AAIA/AACAPwAAgD8AAAAAAAAAAAAAAAAAAAAAAACAPwAAAD8AAIA//v//PgAAADQAAIA/AAAAAAAAgD8AAAA/AAAAAAAAAD8AAAAAAAAAAAAAgD8AAAA/AACAPwAAgD8AAAAAAACAPwAAAAAAAAA/"),
+"format": 34359742487,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQACAAJAAoACgALAAgADAANAA4ADgAPAAwAEAARABIAEgATABAAFAAVABYAFgAXABQA"),
+"material": SubResource("StandardMaterial3D_a81rh"),
+"name": "M_EC_Bush_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 24,
+"vertex_data": PackedByteArray("AAAANBQAAD/BENEzAAAAQP7//z60ENEzAAAAQP3//z4AAABAAAAANBIAAD8AAABAAAAAAAQAAL9J764zAAAAAAMAAL8BAABA////PxsAAL8BAABAAAAAQBwAAL86764zAAAAQBwAAL86764z////PxsAAL8BAABAAAAAQP3//z4AAABAAAAAQP7//z60ENEzAAAAAAQAAL9J764zAAAAAAMAAL8BAABAAAAANBIAAD8AAABAAAAANBQAAD/BENEzAAAAQP3//z4AAABA////PxsAAL8BAABAAAAAAAMAAL8BAABAAAAANBIAAD8AAABAAAAAQP7//z60ENEzAAAAQBwAAL86764zAAAAAAQAAL9J764zAAAANBQAAD/BENEz/3/+//7//7//f/7//v//v/9//v/+//+//3/+//7//7//fwAA/v//P/9/AAD+//8//38AAP7//z//fwAA/v//P/7//3//fwAA/v//f/9/AAD+//9//38AAP7//3//fwAA/v//f/9/AAD+//9//38AAP7//3//fwAA/v//f/9/AAD/f/9//v//v/9//3/+//+//3//f/7//7//f/9//v//v/9//3/+//+//3//f/7//7//f/9//v//v/9//3/+//+/")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_yobq1")
+
+[node name="SM_EC_Bush_Wall_0" type="Node3D" unique_id=1491463161]
+
+[node name="SM_EC_Bush_Wall_0" type="MeshInstance3D" parent="." unique_id=280511277]
+mesh = SubResource("ArrayMesh_4wewe")

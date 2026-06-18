@@ -1,0 +1,49 @@
+[gd_scene format=4 uid="uid://dsy21dlx8lp1k"]
+
+[ext_resource type="Texture2D" uid="uid://dij3jwbwmlvup" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Trees_CL_1.png" id="1_idadb"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_f40em"]
+resource_name = "M_EC_Trees_0"
+transparency = 4
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_idadb")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_j1jn7"]
+_surfaces = [{
+"aabb": AABB(-0.42528033, -0.054121744, -0.25518772, 0.46703026, 0.31394362, 0.5192511),
+"format": 34359742465,
+"index_count": 18,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQACAAJAAoACgALAAgA"),
+"name": "M_EC_Trees_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 12,
+"vertex_data": PackedByteArray("gFgiOmAHhT7AgagvAABWtQAAgLR3D/gvTjh7vsCuXb3gUAQwWL7ZvgCI/DsKtPUv9wErPWAHhT7Z/aK8YR0pPa1rfrTPmp+8cvQQvsOuXb1rixM+ASWNvtWH/DtSM4c+dHTjOWAHhT5dt0c9Bf4VtVn1gbRU50U9avovvr2uXb3/zgG+NIeYvimI/Dv3p4K+")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_4cblr"]
+resource_name = "SM_EC_Tree_Part_Cross_08"
+_surfaces = [{
+"aabb": AABB(-0.42528033, -0.054121744, -0.25518772, 0.46703026, 0.31394362, 0.5192511),
+"attribute_data": PackedByteArray("VSlWP7Btfz28JlY/AD3CPbIkUj9oGNA9GjRPP9BDwD1VKVY/sG1/PbwmVj8APcI9siRSP2gY0D0aNE8/0EPAPVUpVj+wbX89vCZWPwA9wj2yJFI/aBjQPRo0Tz/QQ8A9"),
+"format": 34359742487,
+"index_count": 18,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQACAAJAAoACgALAAgA"),
+"material": SubResource("StandardMaterial3D_f40em"),
+"name": "M_EC_Trees_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 12,
+"vertex_data": PackedByteArray("gFgiOmAHhT7AgagvAABWtQAAgLR3D/gvTjh7vsCuXb3gUAQwWL7ZvgCI/DsKtPUv9wErPWAHhT7Z/aK8YR0pPa1rfrTPmp+8cvQQvsOuXb1rixM+ASWNvtWH/DtSM4c+dHTjOWAHhT5dt0c9Bf4VtVn1gbRU50U9avovvr2uXb3/zgG+NIeYvimI/Dv3p4K+/3//f/7//7//f/9//v//v/9//3/+//+//3//f/7//79vvP9//v833m+8/3/+/zfeb7z/f/7/N95vvP9//v833mc//39mv/+/Zz//f2a//79nP/9/Zr//v2c//39mv/+/")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_j1jn7")
+
+[node name="SM_EC_Tree_Part_Cross_08" type="Node3D" unique_id=1996395978]
+
+[node name="SM_EC_Tree_Part_Cross_08" type="MeshInstance3D" parent="." unique_id=1637460458]
+mesh = SubResource("ArrayMesh_4cblr")

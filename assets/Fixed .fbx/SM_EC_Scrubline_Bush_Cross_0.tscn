@@ -1,0 +1,51 @@
+[gd_scene format=4 uid="uid://bu054a7xlc61n"]
+
+[ext_resource type="Texture2D" uid="uid://dmhhtu2c3xbtl" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Scrubline_Bush_CL_0.png" id="1_c1ge6"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_julyp"]
+resource_name = "M_EC_ScrublineBush_0"
+transparency = 2
+alpha_scissor_threshold = 0.5
+alpha_antialiasing_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_c1ge6")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_s8bhx"]
+_surfaces = [{
+"aabb": AABB(-1.6367146, -1.6367145, -4.0159102e-06, 3.273429, 3.273429, 3.0326006),
+"format": 34359742465,
+"index_count": 12,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQA"),
+"name": "M_EC_ScrublineBush_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("qFDiM91/0T8QFkJAa0K9NNx/0b8QFkJALK4ENNx/0b8AAIS2Vq4EtN1/0T8AAIS23H/RP5TWdTQQFkJA3H/RPwAAqKpowIa23X/RvwAAqKpowIa23X/Rv5XWdTQQFkJA")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_xa661"]
+resource_name = "SM_EC_Scrubline_Bush_Cross_0"
+_surfaces = [{
+"aabb": AABB(-1.6367146, -1.6367145, -4.0159102e-06, 3.273429, 3.273429, 3.0326006),
+"attribute_data": PackedByteArray("mgYMP8jzZD6IxnQ/yPNkPojGdD8UU3s/mgYMPxRTez+IxnQ/yPNkPojGdD8UU3s/mgYMPxRTez+aBgw/yPNkPg=="),
+"format": 34359742487,
+"index_count": 12,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQA"),
+"material": SubResource("StandardMaterial3D_julyp"),
+"name": "M_EC_ScrublineBush_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("qFDiM91/0T8QFkJAa0K9NNx/0b8QFkJALK4ENNx/0b8AAIS2Vq4EtN1/0T8AAIS23H/RP5TWdTQQFkJA3H/RPwAAqKpowIa23X/RvwAAqKpowIa23X/Rv5XWdTQQFkJAAAD/f/9/AIAAAP9//38AgAAA/3//fwCAAAD/f/9/AID/fwAA////v/9/AAD///+//38AAP///7//fwAA////vw==")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_s8bhx")
+
+[node name="SM_EC_Scrubline_Bush_Cross_0" type="Node3D" unique_id=1191876853]
+
+[node name="SM_EC_Scrubline_Bush_Cross_0" type="MeshInstance3D" parent="." unique_id=483993048]
+mesh = SubResource("ArrayMesh_xa661")

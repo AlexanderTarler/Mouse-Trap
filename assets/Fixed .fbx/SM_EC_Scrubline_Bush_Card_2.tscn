@@ -1,0 +1,51 @@
+[gd_scene format=4 uid="uid://bbylm8jf30wqm"]
+
+[ext_resource type="Texture2D" uid="uid://dmhhtu2c3xbtl" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Scrubline_Bush_CL_0.png" id="1_3evgp"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_kjfvy"]
+resource_name = "M_EC_ScrublineBush_0"
+transparency = 2
+alpha_scissor_threshold = 0.5
+alpha_antialiasing_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_3evgp")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_t6lnh"]
+_surfaces = [{
+"aabb": AABB(-1.0379226, 5.0448534e-13, 6.70689e-06, 2.0758452, 1e-05, 1.7729053),
+"format": 34359742465,
+"index_count": 6,
+"index_data": PackedByteArray("AAABAAIAAgADAAAA"),
+"name": "M_EC_ScrublineBush_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 4,
+"vertex_data": PackedByteArray("ptqEP7i4DzTI7uI/ptqEPwAADiu/C+E2ptqEvwAADiu/C+E2ptqEv7i4DzTI7uI/")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_2m6e4"]
+resource_name = "SM_EC_Scrubline_Bush_Card_2"
+_surfaces = [{
+"aabb": AABB(-1.0379226, 5.0448534e-13, 6.70689e-06, 2.0758452, 1e-05, 1.7729053),
+"attribute_data": PackedByteArray("Cs0CP0AMuD0KzQI/0HgIP26/gD7QeAg/br+APkgMuD0="),
+"format": 34359742487,
+"index_count": 6,
+"index_data": PackedByteArray("AAABAAIAAgADAAAA"),
+"material": SubResource("StandardMaterial3D_kjfvy"),
+"name": "M_EC_ScrublineBush_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 4,
+"vertex_data": PackedByteArray("ptqEP7i4DzTI7uI/ptqEPwAADiu/C+E2ptqEvwAADiu/C+E2ptqEv7i4DzTI7uI//38AAP///7//fwAA////v/9/AAD///+//38AAP///78=")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_t6lnh")
+
+[node name="SM_EC_Scrubline_Bush_Card_2" type="Node3D" unique_id=10843932]
+
+[node name="SM_EC_Scrubline_Bush_Card_2" type="MeshInstance3D" parent="." unique_id=462033320]
+mesh = SubResource("ArrayMesh_2m6e4")

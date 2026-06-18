@@ -1,0 +1,51 @@
+[gd_scene format=4 uid="uid://dauud6ngyhk8n"]
+
+[ext_resource type="Texture2D" uid="uid://bl4ow1l348klr" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/HorrorHay_CL_1.png" id="1_5xkoc"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ogeob"]
+resource_name = "M_EC_HorrorHay_1"
+transparency = 2
+alpha_scissor_threshold = 0.5
+alpha_antialiasing_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_5xkoc")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_ttxt3"]
+_surfaces = [{
+"aabb": AABB(-0.9742441, -0.45823818, -0.45935693, 1.9484882, 0.9164765, 0.9209454),
+"format": 34359742465,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAwACAAEAAQAEAAMABAABAAAAAgADAAUABQADAAQABQAGAAIAAgAGAAAAAAAGAAUABQAHAAAAAAAHAAQABAAHAAUA"),
+"name": "M_EC_HorrorHay_1",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("EGh5Pyye6j6kMOu+EGh5PzKe6r7VMOu+EGh5Pxie6r4kVew+EGh5vySe6r4kVew+EGh5v8Cd6r7VMOu+EGh5vy6e6j5SVew+EGh5Pyme6j5SVew+EGh5vzee6j6kMOu+")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_4vfln"]
+resource_name = "SM_EC_Horror_Hay_0"
+_surfaces = [{
+"aabb": AABB(-0.9742441, -0.45823818, -0.45935693, 1.9484882, 0.9164765, 0.9209454),
+"attribute_data": PackedByteArray("AAAAADSe6j4Unmo+NJ7qPhWeaj71wms/AAAAAPXCaz8jnuo+Mp7qPhSeaj40nuo+FZ5qPvXCaz8inuo+9cJrPxNo+T4ynuo+AAAAADSe6j4AAAAAAAAAABNo+T4AAAAAAAAAAPXCaz8TaPk+9cJrPxNo+T4ynuo+AAAAADSe6j4AAAAA9cJrPwAAAAA0nuo+FGj5PjCe6j4TaPk+9cJrPxRo+T4wnuo+AAAAADSe6j4AAAAAAAAAABNo+T4AAAAA"),
+"format": 34359742487,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQACAAJAAoACgALAAgADAANAA4ADgAPAAwAEAARABIAEgATABAAFAAVABYAFgAXABQA"),
+"material": SubResource("StandardMaterial3D_ogeob"),
+"name": "M_EC_HorrorHay_1",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 24,
+"vertex_data": PackedByteArray("EGh5Pyye6j6kMOu+EGh5PzKe6r7VMOu+EGh5Pxie6r4kVew+EGh5Pyme6j5SVew+EGh5v8Cd6r7VMOu+EGh5vzee6j6kMOu+EGh5vy6e6j5SVew+EGh5vySe6r4kVew+EGh5Pxie6r4kVew+EGh5vySe6r4kVew+EGh5vy6e6j5SVew+EGh5Pyme6j5SVew+EGh5vySe6r4kVew+EGh5Pxie6r4kVew+EGh5PzKe6r7VMOu+EGh5v8Cd6r7VMOu+EGh5vy6e6j5SVew+EGh5vzee6j6kMOu+EGh5Pyye6j6kMOu+EGh5Pyme6j5SVew+EGh5Pyye6j6kMOu+EGh5vzee6j6kMOu+EGh5v8Cd6r7VMOu+EGh5PzKe6r7VMOu+/v//f/9/AID+//9//38AgP7//3//fwCA/v//f/9/AIAAAP9//3/+fwAA/3//f/5/AAD/f/9//n8AAP9//3/+f/9//3////+//3//f/7//7//f/9/////v/9//3////+//38AAP7//z//fwAA/v//P/9/AAD+//8//38AAP7//z//f/7//v//v/9//v/+//+//3/+//7//7//f/7//v//vwAA///+//+/AAD//////78AAP///v//vwAA///+//+/")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_ttxt3")
+
+[node name="SM_EC_Horror_Hay_0" type="Node3D" unique_id=967730349]
+
+[node name="SM_EC_Horror_Hay_0" type="MeshInstance3D" parent="." unique_id=1986712277]
+mesh = SubResource("ArrayMesh_4vfln")

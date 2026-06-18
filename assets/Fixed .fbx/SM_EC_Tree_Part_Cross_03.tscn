@@ -1,0 +1,49 @@
+[gd_scene format=4 uid="uid://bt566da4ivk4b"]
+
+[ext_resource type="Texture2D" uid="uid://dij3jwbwmlvup" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Trees_CL_1.png" id="1_b6mlb"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pa1he"]
+resource_name = "M_EC_Trees_0"
+transparency = 4
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_b6mlb")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_86r3y"]
+_surfaces = [{
+"aabb": AABB(-2.9802322e-07, -0.26013693, -0.553126, 0.84510976, 0.6429062, 1.1267822),
+"format": 34359742465,
+"index_count": 45,
+"index_data": PackedByteArray("AAABAAIAAAACAAMAAAAEAAEAAAAFAAQABQAGAAQABwAIAAkABwAJAAoABwALAAgABwAMAAsADAANAAsADgAPABAADgAQABEADgASAA8ADgATABIAEwAUABIA"),
+"name": "M_EC_Trees_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 21,
+"vertex_data": PackedByteArray("Ag4sPzwNLL5Adg2w8PolPVb6wz7Ax2Gw38axPrzuAD5wdTqwGFlYP7ANCz1IYSywANhkOW4NsD7g0VuwtprJPqowhb5Auf6vAACgtAAAfDZNLyew9OkCPz0NLL6Ziec+Yel7PVb6wz4jwRI8SliPPrzuAD4VmGU+EnciP6oNCz0i2xI/B1EGPW4NsD6zWp68XFGgPqswhb41hYM+x60FPUUZfDZenJ+8nDkBPzoNLL7aJ9y+QEh6PVb6wz5pkJ88kJmNPr3uAD7fj0u+bFcgP7sNCz2qmQ2/vU4GPW4NsD4PRUU9wlaePqkwhb4Uem2+yK0FPVXBezYl6EU9")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_wum4a"]
+resource_name = "SM_EC_Tree_Part_Cross_03"
+_surfaces = [{
+"aabb": AABB(-2.9802322e-07, -0.26013693, -0.553126, 0.84510976, 0.6429062, 1.1267822),
+"attribute_data": PackedByteArray("/69iP+SkvD6bXlg/emOZPk5hXT901Kk+oINlP1y3rz4Mtlc/LOGbPu8jXj9aisI+ILVXP5zjsT7/r2I/5KS8PpteWD96Y5k+TmFdP3TUqT6gg2U/XLevPgy2Vz8s4Zs+7yNeP1qKwj4gtVc/nOOxPv+vYj/kpLw+m15YP3pjmT5OYV0/dNSpPqCDZT9ct68+DLZXPyzhmz7vI14/WorCPiC1Vz+c47E+"),
+"format": 34359742487,
+"index_count": 45,
+"index_data": PackedByteArray("AAABAAIAAAACAAMAAAAEAAEAAAAFAAQABQAGAAQABwAIAAkABwAJAAoABwALAAgABwAMAAsADAANAAsADgAPABAADgAQABEADgASAA8ADgATABIAEwAUABIA"),
+"material": SubResource("StandardMaterial3D_pa1he"),
+"name": "M_EC_Trees_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 21,
+"vertex_data": PackedByteArray("Ag4sPzwNLL5Adg2w8PolPVb6wz7Ax2Gw38axPrzuAD5wdTqwGFlYP7ANCz1IYSywANhkOW4NsD7g0VuwtprJPqowhb5Auf6vAACgtAAAfDZNLyew9OkCPz0NLL6Ziec+Yel7PVb6wz4jwRI8SliPPrzuAD4VmGU+EnciP6oNCz0i2xI/B1EGPW4NsD6zWp68XFGgPqswhb41hYM+x60FPUUZfDZenJ+8nDkBPzoNLL7aJ9y+QEh6PVb6wz5pkJ88kJmNPr3uAD7fj0u+bFcgP7sNCz2qmQ2/vU4GPW4NsD4PRUU9wlaePqkwhb4Uem2+yK0FPVXBezYl6EU9/3//f/7//7//f/9//v//v/9//3/+//+//3//f/7//7//f/9//v//v/9//3/+//+//3//f/7//795QP9/eMD/v3lA/394wP+/eUD/f3jA/795QP9/eMD/v3lA/394wP+/eUD/f3jA/795QP9/eMD/v2nA/3/+/8qfacD/f/7/NOBpwP9//v804GnA/3/+/8qfacD/f/7/NOBpwP9//v804GnA/3/+/8qf")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_86r3y")
+
+[node name="SM_EC_Tree_Part_Cross_03" type="Node3D" unique_id=102917893]
+
+[node name="SM_EC_Tree_Part_Cross_03" type="MeshInstance3D" parent="." unique_id=1686947708]
+mesh = SubResource("ArrayMesh_wum4a")

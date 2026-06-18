@@ -1,0 +1,48 @@
+[gd_scene format=4 uid="uid://yljyw1sommyo"]
+
+[ext_resource type="Texture2D" uid="uid://c5f4mmf48i5l7" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Concrete_CL_0.png" id="1_hkddj"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rwy40"]
+resource_name = "M_EC_Concrete_0"
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_hkddj")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_7drxt"]
+_surfaces = [{
+"aabb": AABB(-2.0017686, 4.7683702e-07, 6.265217e-08, 2.0017707, 2.0001338, 0.99999994),
+"format": 34359742465,
+"index_count": 30,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAADAAIAAAADAAQAAgAFAAQAAQAAAAYABAAGAAAABgAEAAUABgAHAAEABQAHAAYA"),
+"name": "M_EC_Concrete_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("8BwAwDMCAEAAAIA/+RwAwDMCAEBliwY0DIkINTICAEBliwY0QyIWNjICAEAAAIA/AAAANvv//zQAAIA/AQDANP///zRliwY08RwAwISRKDUAAIA/+hwAwIeRKDVli4Yz")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_b360q"]
+resource_name = "SM_EC_ConcreteBlock_0"
+_surfaces = [{
+"aabb": AABB(-2.0017686, 4.7683702e-07, 6.265217e-08, 2.0017707, 2.0001338, 0.99999994),
+"attribute_data": PackedByteArray("wwdCPzCMcz4AAIA/MIxzPgAAgD8DAD0/wwdCPwMAPT/S/UI/KLNvPtL9Qj9F9j0/Cx+CPkX2PT8JH4I+MLNvPiYLhD44jHM+JguEPgAAgDPDB0I/AAAAAMMHQj8wjHM+AAAAAAQAPT8AAAAANIxzPiYLhD44jHM+KAuEPgMAPT8oC4Q+AwA9P8MHQj8DAD0/xAdCPwAAgD8oC4Q+AACAPw=="),
+"format": 34359742487,
+"index_count": 30,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQACAAJAAoACgALAAgADAANAA4ADgAPAAwAEAARABIAEgATABAA"),
+"material": SubResource("StandardMaterial3D_rwy40"),
+"name": "M_EC_Concrete_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 20,
+"vertex_data": PackedByteArray("8BwAwDMCAEAAAIA/+RwAwDMCAEBliwY0DIkINTICAEBliwY0QyIWNjICAEAAAIA/8BwAwDMCAEAAAIA/QyIWNjICAEAAAIA/AAAANvv//zQAAIA/8RwAwISRKDUAAIA/8RwAwISRKDUAAIA/+hwAwIeRKDVli4Yz+RwAwDMCAEBliwY08BwAwDMCAEAAAIA/AQDANP///zRliwY0+hwAwIeRKDVli4Yz8RwAwISRKDUAAIA/AAAANvv//zQAAIA/AAAANvv//zQAAIA/QyIWNjICAEAAAIA/DIkINTICAEBliwY0AQDANP///zRliwY0/3/+/wAAAID/f/7/AAAAgP9//v8AAACA/3/+/wAAAID/f/9//3/+//9//3//f////3//f/9//v//f/9//3/+/wAA/3//f/7/AAD/f/9//v8AAP9//3/+/wAA/3//f/7//38AAP9//7//fwAA/3//v/9/AAD/f/+//38AAP9//7/+//9//3////7//3//f////v//f/9//v/+//9//3///w==")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_7drxt")
+
+[node name="SM_EC_ConcreteBlock_0" type="Node3D" unique_id=3698126]
+
+[node name="SM_EC_ConcreteBlock_0" type="MeshInstance3D" parent="." unique_id=837660266]
+mesh = SubResource("ArrayMesh_b360q")

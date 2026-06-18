@@ -1,0 +1,49 @@
+[gd_scene format=4 uid="uid://c7haau15lcjtx"]
+
+[ext_resource type="Texture2D" uid="uid://dij3jwbwmlvup" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Trees_CL_1.png" id="1_57fma"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_03287"]
+resource_name = "M_EC_Trees_0"
+transparency = 4
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_57fma")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_ueh0k"]
+_surfaces = [{
+"aabb": AABB(-0.0039313883, -0.05391264, 6.7002937e-10, 0.48818153, 0.27474833, 1e-05),
+"format": 34359742465,
+"index_count": 9,
+"index_data": PackedByteArray("AAABAAIAAAADAAEAAwAEAAEA"),
+"name": "M_EC_Trees_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 5,
+"vertex_data": PackedByteArray("PLDHPoDTXL24O2IwqNbSPZCMSz6AjTswou/3PmBOjj2wV08wAAAItQAAgDRE/Fkw4NKAu8AiYj4gLTgw")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_ekedf"]
+resource_name = "SM_EC_Tree_Part_Card_10"
+_surfaces = [{
+"aabb": AABB(-0.0039313883, -0.05391264, 6.7002937e-10, 0.48818153, 0.27474833, 1e-05),
+"attribute_data": PackedByteArray("kFxgPwDsyj33q1s/SDmKPazmYT/gU6s9Zv1ZP0AevT327Fk/gJOEPQ=="),
+"format": 34359742487,
+"index_count": 9,
+"index_data": PackedByteArray("AAABAAIAAAADAAEAAwAEAAEA"),
+"material": SubResource("StandardMaterial3D_03287"),
+"name": "M_EC_Trees_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 5,
+"vertex_data": PackedByteArray("PLDHPoDTXL24O2IwqNbSPZCMSz6AjTswou/3PmBOjj2wV08wAAAItQAAgDRE/Fkw4NKAu8AiYj4gLTgw/3//f/7//7//f/9//v//v/9//3/+//+//3//f/7//7//f/9//v//vw==")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_ueh0k")
+
+[node name="SM_EC_Tree_Part_Card_10" type="Node3D" unique_id=431525864]
+
+[node name="SM_EC_Tree_Part_Card_10" type="MeshInstance3D" parent="." unique_id=343363342]
+mesh = SubResource("ArrayMesh_ekedf")

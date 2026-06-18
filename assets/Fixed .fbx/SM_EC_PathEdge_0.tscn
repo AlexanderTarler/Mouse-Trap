@@ -1,0 +1,50 @@
+[gd_scene format=4 uid="uid://ceu87y7u8yn0y"]
+
+[ext_resource type="Texture2D" uid="uid://dhiytt54r3iwl" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Path_CL_0.png" id="1_vu4l8"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hr8vy"]
+resource_name = "M_EC_Path_0"
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_vu4l8")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_c8atd"]
+_surfaces = [{
+"aabb": AABB(-1.1214805, -1.5000019, 0, 2.1889467, 3, 1e-05),
+"format": 34359742465,
+"index_count": 36,
+"index_data": PackedByteArray("AAAKAAIAAgADAAAABAACAAoACgAAAAEACgAFAAQAAQALAAoABQAKAAsACwABAAgACwAGAAUACAAHAAsABgALAAcABwAJAAYA"),
+"lods": [0.00040490652, PackedByteArray("AAABAAIAAgADAAAABAACAAEAAQAFAAQAAQAGAAUABgABAAcACAAHAAEABwAJAAYA")],
+"name": "M_EC_Path_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 12,
+"vertex_data": PackedByteArray("u6KIP77//z4AAAAAu6KIPyAAAL8AAAAA6LSBtu//vz8AAAAAu6KIP+//vz8AAAAArIyPv+//vz8AAAAArIyPv77//z4AAAAArIyPvyAAAL8AAAAA6LSBthAAwL8AAAAAu6KIPxAAwL8AAAAArIyPvxAAwL8AAAAA6LSBtr7//z4AAAAA6LSBtiAAAL8AAAAA")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_wxw4d"]
+resource_name = "SM_EC_PathEdge_0"
+_surfaces = [{
+"aabb": AABB(-1.1214805, -1.5000019, 0, 2.1889467, 3, 1e-05),
+"attribute_data": PackedByteArray("zKIGPmbHBEHNogY+GpIIQS2XoDu2/ABB3aIGPrT8AEFoKAO+tfwAQXYoA75mxwRBdigDvhqSCEEtk6A7zFwMQc2iBj7MXAxBfygDvsxcDEEtk6A7Z8cEQS2ToDsakghB"),
+"format": 34359742487,
+"index_count": 36,
+"index_data": PackedByteArray("AAAKAAIAAgADAAAABAACAAoACgAAAAEACgAFAAQAAQALAAoABQAKAAsACwABAAgACwAGAAUACAAHAAsABgALAAcABwAJAAYA"),
+"lods": [0.00040490652, PackedByteArray("AAABAAIAAgADAAAABAACAAEAAQAFAAQAAQAGAAUABgABAAcACAAHAAEABwAJAAYA")],
+"material": SubResource("StandardMaterial3D_hr8vy"),
+"name": "M_EC_Path_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 12,
+"vertex_data": PackedByteArray("u6KIP77//z4AAAAAu6KIPyAAAL8AAAAA6LSBtu//vz8AAAAAu6KIP+//vz8AAAAArIyPv+//vz8AAAAArIyPv77//z4AAAAArIyPvyAAAL8AAAAA6LSBthAAwL8AAAAAu6KIPxAAwL8AAAAArIyPvxAAwL8AAAAA6LSBtr7//z4AAAAA6LSBtiAAAL8AAAAA/3//f/7//7//f/9//v//v/9//3/+//+//3//f/7//7//f/9//v//v/9//3/+//+//3//f////7//f/9/////v/9//3////+//3//f////7//f/9//v//v/9//3/+//+/")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_c8atd")
+
+[node name="SM_EC_PathEdge_0" type="Node3D" unique_id=1673964586]
+
+[node name="SM_EC_PathEdge_0" type="MeshInstance3D" parent="." unique_id=1806730776]
+mesh = SubResource("ArrayMesh_wxw4d")

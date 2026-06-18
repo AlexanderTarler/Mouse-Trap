@@ -1,0 +1,49 @@
+[gd_scene format=4 uid="uid://i3g4q8oqfo1r"]
+
+[ext_resource type="Texture2D" uid="uid://dr4p3nw1uwxo4" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/House_CL_0.png" id="1_ofvcb"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_y1vpx"]
+resource_name = "M_EC_House_0"
+transparency = 4
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_ofvcb")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_if3wd"]
+_surfaces = [{
+"aabb": AABB(-1.5, -1.5, -0.1, 3, 3, 0.1),
+"format": 34359742465,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAwABAAAAAgAEAAAAAQADAAUABQACAAEABgAEAAIAAgAFAAYABwAAAAQAAAAHAAMABAAGAAcABQADAAcABwAGAAUA"),
+"name": "M_EC_House_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("AADAPwAAwD8AAAAAAADAPwAAwL8AAAAAAADAvwAAwL8AAAAAAADAPwAAwL/NzMy9AADAvwAAwD8AAAAAAADAvwAAwL/NzMy9AADAvwAAwD/NzMy9AADAPwAAwD/NzMy9")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_u5p1y"]
+resource_name = "SM_EC_House_Wall_3x3_4_001"
+_surfaces = [{
+"aabb": AABB(-1.5, -1.5, -0.1, 3, 3, 0.1),
+"attribute_data": PackedByteArray("HKV+P5zGxT4cpX4/Qrz1PjqjZj9CvPU+OqNmP5zGxT4cpX4/nMbFPjqjZj+cxsU+OqNmP0K89T4cpX4/Qrz1PjqjZj+cxsU+OqNmP5zGxT46o2Y/Qrz1PjqjZj9CvPU+OqNmP0K89T46o2Y/Qrz1Phylfj9CvPU+HKV+P0K89T4cpX4/Qrz1Phylfj9CvPU+HKV+P5zGxT4cpX4/nMbFPhylfj+cxsU+HKV+P5zGxT46o2Y/nMbFPjqjZj+cxsU+"),
+"format": 34359742487,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQACAAJAAoACgALAAgADAANAA4ADgAPAAwAEAARABIAEgATABAAFAAVABYAFgAXABQA"),
+"material": SubResource("StandardMaterial3D_y1vpx"),
+"name": "M_EC_House_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 24,
+"vertex_data": PackedByteArray("AADAPwAAwD8AAAAAAADAPwAAwL8AAAAAAADAvwAAwL8AAAAAAADAvwAAwD8AAAAAAADAPwAAwD/NzMy9AADAvwAAwD/NzMy9AADAvwAAwL/NzMy9AADAPwAAwL/NzMy9AADAvwAAwD/NzMy9AADAvwAAwD8AAAAAAADAvwAAwL8AAAAAAADAvwAAwL/NzMy9AADAvwAAwL/NzMy9AADAvwAAwL8AAAAAAADAPwAAwL8AAAAAAADAPwAAwL/NzMy9AADAPwAAwL/NzMy9AADAPwAAwL8AAAAAAADAPwAAwD8AAAAAAADAPwAAwD/NzMy9AADAPwAAwD/NzMy9AADAPwAAwD8AAAAAAADAvwAAwD8AAAAAAADAvwAAwD/NzMy9/3//f////7//f/9/////v/9//3////+//3//f////7//////////P/////////8//////////z//////////PwAA/3////+/AAD/f////78AAP9/////vwAA/3////+//38AAP///7//fwAA////v/9/AAD///+//38AAP///7////9/////v////3////+/////f////7////9/////v/9///////+//3///////7//f///////v/9///////+/")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_if3wd")
+
+[node name="SM_EC_House_Wall_3x3_4" type="Node3D" unique_id=297865281]
+
+[node name="SM_EC_House_Wall_3x3_4" type="MeshInstance3D" parent="." unique_id=998561495]
+mesh = SubResource("ArrayMesh_u5p1y")

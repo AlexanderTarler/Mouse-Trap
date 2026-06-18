@@ -1,0 +1,49 @@
+[gd_scene format=4 uid="uid://c4tm0e1qvt4is"]
+
+[ext_resource type="Texture2D" uid="uid://c1215s0dkonlg" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/RoadBlock_CL_0.png" id="1_gdeuf"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_q44yk"]
+resource_name = "M_EC_RoadBlock_0"
+transparency = 4
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_gdeuf")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_qfwxb"]
+_surfaces = [{
+"aabb": AABB(0, -9.536743e-07, -0.01, 5.4754925, 0.21263313, 0.01),
+"format": 34359742465,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAwABAAAAAgAEAAAAAQADAAUABQACAAEABgAEAAIAAgAFAAYABwAAAAQAAAAHAAMABAAGAAcABQADAAcABwAGAAUA"),
+"name": "M_EC_RoadBlock_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("PDevQAAAgLUAAAAAAAAAAAAAgLUAAAAAAAAAAEC8WT4AAAAAAAAAAAAAgLUK1yO8PDevQEC8WT4AAAAAAAAAAEC8WT4K1yO8PDevQEC8WT4K1yO8PDevQAAAgLUK1yO8")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_74cpc"]
+resource_name = "SM_EC_Traffic_Tape_00"
+_surfaces = [{
+"aabb": AABB(0, -9.536743e-07, -0.01, 5.4754925, 0.21263313, 0.01),
+"attribute_data": PackedByteArray("msI+P+jQMT73Tc4+6NAxPvdNzj4gNSQ+msI+PyA1JD74Tc4+6NAxPvhNzj4gNSQ+msI+PyA1JD6awj4/6NAxPvdNzj4gNSQ+903OPiA1JD73Tc4+6NAxPvdNzj7o0DE+903OPujQMT73Tc4+6NAxPprCPj/o0DE+msI+P+jQMT6awj4/IDUkPprCPj8gNSQ+903OPiA1JD73Tc4+IDUkPprCPj/o0DE+msI+P+jQMT6awj4/IDUkPprCPj8gNSQ+"),
+"format": 34359742487,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQACAAJAAoACgALAAgADAANAA4ADgAPAAwAEAARABIAEgATABAAFAAVABYAFgAXABQA"),
+"material": SubResource("StandardMaterial3D_q44yk"),
+"name": "M_EC_RoadBlock_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 24,
+"vertex_data": PackedByteArray("PDevQAAAgLUAAAAAAAAAAAAAgLUAAAAAAAAAAEC8WT4AAAAAPDevQEC8WT4AAAAAPDevQAAAgLUK1yO8PDevQEC8WT4K1yO8AAAAAEC8WT4K1yO8AAAAAAAAgLUK1yO8AAAAAEC8WT4K1yO8AAAAAEC8WT4AAAAAAAAAAAAAgLUAAAAAAAAAAAAAgLUK1yO8AAAAAAAAgLUK1yO8AAAAAAAAgLUAAAAAPDevQAAAgLUAAAAAPDevQAAAgLUK1yO8PDevQEC8WT4K1yO8PDevQEC8WT4AAAAAAAAAAEC8WT4AAAAAAAAAAEC8WT4K1yO8PDevQAAAgLUK1yO8PDevQAAAgLUAAAAAPDevQEC8WT4AAAAAPDevQEC8WT4K1yO8/3//f////7//f/9/////v/9//3////+//3//f////7//////AAD/v/////8AAP+//////wAA/7//////AAD/vwAA/3////+/AAD/f////78AAP9/////vwAA/3////+//38AAP///7//fwAA////v/9/AAD///+//38AAP///7//f///////v/9///////+//3///////7//f///////v////3////+/////f////7////9/////v////3////+/")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_qfwxb")
+
+[node name="SM_EC_Traffic_Tape_00" type="Node3D" unique_id=1347225901]
+
+[node name="SM_EC_Traffic_Tape_00" type="MeshInstance3D" parent="." unique_id=987881477]
+mesh = SubResource("ArrayMesh_74cpc")

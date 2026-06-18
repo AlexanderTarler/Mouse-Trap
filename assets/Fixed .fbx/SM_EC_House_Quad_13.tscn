@@ -1,0 +1,49 @@
+[gd_scene format=4 uid="uid://cjcg4bwb1rs7f"]
+
+[ext_resource type="Texture2D" uid="uid://dr4p3nw1uwxo4" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/House_CL_0.png" id="1_gxnj4"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_3pyj3"]
+resource_name = "M_EC_House_0"
+transparency = 4
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_gxnj4")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_y4fug"]
+_surfaces = [{
+"aabb": AABB(-1.4942132, -1.4906616, 0, 2.9884264, 2.9813232, 1e-05),
+"format": 34359742465,
+"index_count": 6,
+"index_data": PackedByteArray("AAABAAIAAgADAAAA"),
+"name": "M_EC_House_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 4,
+"vertex_data": PackedByteArray("YUK/vwDOvj8AAAAAYUK/PwDOvj8AAAAAYUK/PwDOvr8AAAAAYUK/vwDOvr8AAAAA")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_2uto7"]
+resource_name = "SM_EC_House_Quad_13"
+_surfaces = [{
+"aabb": AABB(-1.4942132, -1.4906616, 0, 2.9884264, 2.9813232, 1e-05),
+"attribute_data": PackedByteArray("aaDIPhyrCz4Dcfg+IKsLPgJx+D4YEms+aaDIPhgSaz4="),
+"format": 34359742487,
+"index_count": 6,
+"index_data": PackedByteArray("AAABAAIAAgADAAAA"),
+"material": SubResource("StandardMaterial3D_3pyj3"),
+"name": "M_EC_House_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 4,
+"vertex_data": PackedByteArray("YUK/vwDOvj8AAAAAYUK/PwDOvj8AAAAAYUK/PwDOvr8AAAAAYUK/vwDOvr8AAAAA/3//f/7//7//f/9//v//v/9//3/+//+//3//f////78=")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_y4fug")
+
+[node name="SM_EC_House_Quad_13" type="Node3D" unique_id=1500460464]
+
+[node name="SM_EC_House_Quad_13" type="MeshInstance3D" parent="." unique_id=1639672237]
+mesh = SubResource("ArrayMesh_2uto7")

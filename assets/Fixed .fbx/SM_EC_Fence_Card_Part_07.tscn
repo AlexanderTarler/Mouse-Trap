@@ -1,0 +1,51 @@
+[gd_scene format=4 uid="uid://d1iifnuntush3"]
+
+[ext_resource type="Texture2D" uid="uid://ym0anr8irfe7" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Fences_CL_0.png" id="1_kgiuy"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_i40so"]
+resource_name = "M_EC_Fence_0"
+transparency = 2
+alpha_scissor_threshold = 0.5
+alpha_antialiasing_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_kgiuy")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_5cyyh"]
+_surfaces = [{
+"aabb": AABB(-0.850162, -0.57408214, 0, 0.98324585, 0.99288654, 1e-05),
+"format": 34359742465,
+"index_count": 105,
+"index_data": PackedByteArray("AAABAAIAAgADAAAAAwACAAQABQADAAQAAgAGAAQABQAEAAcACAAJAAcACgAIAAcACgAHAAsACwAHAAQADAAKAAsADQAEAAYABAANAAsACwANAAwABgAOAA0ADQAOAA8ADwAMAA0ADAAPABAADAAQABEADwASABAAEwAQABIAEgAUABMAFQAWABcAFwAYABUAFQAZABYAGQAaABYAGwAaABkAGwAcABoAGwAdABwAHgAbABkAFQAfABkAGQAfAB4AFQAgAB8AIQAeAB8AHwAiACEA"),
+"name": "M_EC_Fence_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 35,
+"vertex_data": PackedByteArray("IGHxPYht1j4AAAAAAOIHPoht1j4AAAAAAOIHPhRDwz4AAAAAgK3wPRD6wj4AAAAAQO3JPQjAuT4AAAAAAI5hPYj4wj4AAAAAAOIHPgjAuT4AAAAAgBhiPQjAuT4AAAAARHNZvxSmiT4AAAAARHNZvwjAuT4AAAAAAMpkPRSmiT4AAAAAgMpkPTTtrz4AAAAAoFbLPRSmiT4AAAAAwFbLPTTtrz4AAAAAAOIHPjTtrz4AAAAAAOIHPhSmiT4AAAAAgJHwPRR6gD4AAAAAIFbLPRR6gD4AAAAAAOIHPhR6gD4AAAAAQNnwPcjtbD4AAAAAAOIHPsjtbD4AAAAAgBGxPQB6474AAAAAgBGxPXg9Cb8AAAAAfIdZv3g9Cb8AAAAAOKRZvwB6474AAAAAQF3xPQTdB78AAAAAQF3xPaw9Cb8AAAAAIEcIPgTdB78AAAAAQF3xPQz3Er8AAAAAIEcIPgz3Er8AAAAAIEcIPmhV2b4AAAAAQF3xPWhV2b4AAAAAgBGxPUBV2b4AAAAAIEcIPggMxr4AAAAAQF3xPQgMxr4AAAAA")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_0jsir"]
+resource_name = "SM_EC_Fence_Card_Part_07"
+_surfaces = [{
+"aabb": AABB(-0.850162, -0.57408214, 0, 0.98324585, 0.99288654, 1e-05),
+"attribute_data": PackedByteArray("bBA8Pjr+Qj8v9z0+Ov5CPy73PT7w/UQ/KQU8PoYCRT9lmDk+5vtFPy73PT7m+0U/RgQ0PqACRT+cCDQ+5vtFP0Q0gD0qAEs/RDSAPeb7RT9OcjQ+KgBLPzMeND4tAkc/Ba85Pi4CRz8tBzo+KgBLPy73PT4qAEs/Lvc9Pi4CRz9sAzw+DPVLP/v+OT4M9Us/Lvc9Pgz1Sz/oBzw+XgBNPy33PT5eAE0/Lvc9Pub7RT8u9z0+LgJHPwWvOT4uAkc/ZZg5Pub7RT8sCjg+sRRxPy4KOD6l+3U/ASCAPQL4dT89A4A9QAhxPyoQPD4isnU/KhA8PpT7dT/WAz4+IrJ1PyoQPD7xAng/1gM+PvECeD/WAz4+4gVwPysQPD7iBXA/LQo4PlAGcD/WAz4+8gJuPyoQPD7yAm4/"),
+"format": 34359742487,
+"index_count": 105,
+"index_data": PackedByteArray("AAABAAIAAgADAAAAAwACAAQAAgAFAAQABgADAAQABgAEAAcACAAJAAcACgAIAAcACwAHAAQACgAHAAsABAAMAAsADQAKAAsACwAMAA0ADgANAAwADAAPAA4ADQAOABAADQAQABEADgASABAAEwAQABIAEgAUABMAFQAWABcAFwAYABUAGQAaABsAGwAcABkAGQAdABoAHQAeABoAHwAeAB0AHwAgAB4AHwAhACAAIgAfAB0AGQAjAB0AHQAjACIAGQAkACMAJQAiACMAIwAmACUA"),
+"material": SubResource("StandardMaterial3D_i40so"),
+"name": "M_EC_Fence_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 39,
+"vertex_data": PackedByteArray("IGHxPYht1j4AAAAAAOIHPoht1j4AAAAAAOIHPhRDwz4AAAAAgK3wPRD6wj4AAAAAQO3JPQjAuT4AAAAAAOIHPgjAuT4AAAAAAI5hPYj4wj4AAAAAgBhiPQjAuT4AAAAARHNZvxSmiT4AAAAARHNZvwjAuT4AAAAAAMpkPRSmiT4AAAAAgMpkPTTtrz4AAAAAwFbLPTTtrz4AAAAAoFbLPRSmiT4AAAAAAOIHPhSmiT4AAAAAAOIHPjTtrz4AAAAAgJHwPRR6gD4AAAAAIFbLPRR6gD4AAAAAAOIHPhR6gD4AAAAAQNnwPcjtbD4AAAAAAOIHPsjtbD4AAAAAAOIHPgjAuT4AAAAAAOIHPjTtrz4AAAAAwFbLPTTtrz4AAAAAQO3JPQjAuT4AAAAAgBGxPQB6474AAAAAgBGxPXg9Cb8AAAAAfIdZv3g9Cb8AAAAAOKRZvwB6474AAAAAQF3xPQTdB78AAAAAQF3xPaw9Cb8AAAAAIEcIPgTdB78AAAAAQF3xPQz3Er8AAAAAIEcIPgz3Er8AAAAAIEcIPmhV2b4AAAAAQF3xPWhV2b4AAAAAgBGxPUBV2b4AAAAAIEcIPggMxr4AAAAAQF3xPQgMxr4AAAAA/3//f4v/OcD/f/9/////v/9//3/+/n/A/3//f2n+ycD/f/9/4v8NwP9//3////+//3//f/7//7//f/9//v//v/9//3////+//3//f////7//f/9//v//v/9//3/4//u//3//f/7//7//f/9//v//v/9//3////+//3//f////7//f/9/////v/9//3////+//3//f////7//f/9/////v/9//3////+//3//f////7//f/9/////v/9//3////+//3//f////7//f/9/+//9v/9//3/6/wHA/3//f+D/DsD/f/9/3/8PwP9//3/9//6//3//f/n/AsD/f/9/+f8CwP9//3/6/wHA/3//f////7//f/9/////v/9//3/6//2//3//f9z/7r//f/9/////v/9//3////+/")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_5cyyh")
+
+[node name="SM_EC_Fence_Card_Part_07" type="Node3D" unique_id=777348795]
+
+[node name="SM_EC_Fence_Card_Part_07" type="MeshInstance3D" parent="." unique_id=108422371]
+mesh = SubResource("ArrayMesh_0jsir")

@@ -1,0 +1,51 @@
+[gd_scene format=4 uid="uid://cpshy8uy7yccg"]
+
+[ext_resource type="Texture2D" uid="uid://dij3jwbwmlvup" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Trees_CL_1.png" id="1_oural"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jsvj0"]
+resource_name = "M_EC_Trees_0"
+transparency = 4
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_oural")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_bhalr"]
+_surfaces = [{
+"aabb": AABB(-0.9932188, -7.4985934e-08, -1.0650702, 2.058289, 3.7863886, 2.058289),
+"format": 34359742465,
+"index_count": 36,
+"index_data": PackedByteArray("AAAEAAwAAAAMAAMAAgADAAwADAABAAIAAQAMAAQABAAFAAEABgAHAA0ADQAHAAkABgANAAgACQAKAA0ACAANAAoACgALAAgA"),
+"lods": [0.0008124155, PackedByteArray("AAABAAIAAgADAAAAAQAAAAQABAAFAAEABgAHAAgACAAHAAkACQAKAAgACgALAAgA")],
+"name": "M_EC_Trees_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 14,
+"vertex_data": PackedByteArray("AABAtTFUckD4WP0zAABAtb2bIKi4mP0zlkN+v72bIKi4mP0zlkN+vypI8T/4WP0zOFSIPypI8T/4WP0zOFSIP72bIKi4mP0zUEU0tDFUckA6XoY1nD+YsytI8T83VIi/KNmjMilI8T+YQ34/uV6ZMyyurDM4VIi/AVn9Mx4yc6kAAEA1UEotNPQHobOWQ34/AABAtSpI8T/4WP0zThXRsipI8T/KM2Y1")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_nf2bv"]
+resource_name = "SM_EC_Tree_Cross_05"
+_surfaces = [{
+"aabb": AABB(-0.9932188, -7.4985934e-08, -1.0650702, 2.058289, 3.7863886, 2.058289),
+"attribute_data": PackedByteArray("Q/UuP8LXAD9D9S4/cA56PwsRHz9wDno/CxEfP9CvPT/L/z8/0K89P8v/Pz9wDno/Q/UuP8LXAD/L/z8/0K89PwsRHz/Qrz0/y/8/P9sBej9D9S4/3AF6PwsRHz/cAXo/Q/UuP9CvPT9D9S4/0K89PwsRHz/Qrz0/y/8/P9CvPT9D9S4/cA56P0P1Lj/Qrz0/Q/UuP9CvPT9D9S4/wtcAP0P1Lj/Qrz0/CxEfP9CvPT9D9S4/0K89P0P1Lj/Qrz0/y/8/P9CvPT9D9S4/3AF6Pw=="),
+"format": 34359742487,
+"index_count": 36,
+"index_data": PackedByteArray("AAAEAAwAAAAMAAMADQABAAIAAgAOAA0ADwAFABAAEAARAA8ABgAHABIAEwAUAAgAFQAWAAoACgALABUAFwAYAAkACQAZABcA"),
+"lods": [0.0008124155, PackedByteArray("AAABAAIAAgADAAAAAQAAAAQABAAFAAEABgAHAAgACAAHAAkACQAKAAgACgALAAgA")],
+"material": SubResource("StandardMaterial3D_jsvj0"),
+"name": "M_EC_Trees_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 26,
+"vertex_data": PackedByteArray("AABAtTFUckD4WP0zAABAtb2bIKi4mP0zlkN+v72bIKi4mP0zlkN+vypI8T/4WP0zOFSIPypI8T/4WP0zOFSIP72bIKi4mP0zUEU0tDFUckA6XoY1nD+YsytI8T83VIi/KNmjMilI8T+YQ34/uV6ZMyyurDM4VIi/AVn9Mx4yc6kAAEA1UEotNPQHobOWQ34/AABAtSpI8T/4WP0zAABAtSpI8T/4WP0zlkN+vypI8T/4WP0zOFSIPypI8T/4WP0zAABAtb2bIKi4mP0zAABAtSpI8T/4WP0zThXRsipI8T/KM2Y1UEU0tDFUckA6XoY1ThXRsipI8T/KM2Y1KNmjMilI8T+YQ34/ThXRsipI8T/KM2Y1ThXRsipI8T/KM2Y1nD+YsytI8T83VIi/AVn9Mx4yc6kAAEA1/3//f////7//f/9/////v/9//3////+//3//f////7//f/9/////v/9//3////+/////f/////////9//////////3//////////fwAAAID///9//////////3///////3//f////7//f/9/////v/9//3////+//3//f////7//f/9/////v/9//3////+/////f/////////9//////////3//////////f/////////9//////////38AAACA////f/////////9/AAAAgA==")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_bhalr")
+
+[node name="SM_EC_Tree_Cross_05" type="Node3D" unique_id=1719826104]
+
+[node name="SM_EC_Tree_Cross_05" type="MeshInstance3D" parent="." unique_id=1419140580]
+mesh = SubResource("ArrayMesh_nf2bv")

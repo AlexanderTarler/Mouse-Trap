@@ -1,0 +1,51 @@
+[gd_scene format=4 uid="uid://dd7syj0q3jts3"]
+
+[ext_resource type="Texture2D" uid="uid://ym0anr8irfe7" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Fences_CL_0.png" id="1_4si4d"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_gwswa"]
+resource_name = "M_EC_Fence_0"
+transparency = 2
+alpha_scissor_threshold = 0.5
+alpha_antialiasing_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_4si4d")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_jox61"]
+_surfaces = [{
+"aabb": AABB(-0.05970186, -0.532685, -0.009068131, 0.11940372, 1.06537, 0.018136263),
+"format": 34359742465,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAgABAAMAAgAEAAAABQADAAEAAQAAAAUAAwAGAAIABAACAAYABgADAAUAAAAEAAcABgAHAAQABwAFAAAABQAHAAYA"),
+"name": "M_EC_Fence_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("8Il0vQteCD+AkhQ88Il0PQteCD+AkhQ88Il0PQteCL+AkhQ88Il0PQteCD+AkhS88Il0vQteCL+AkhQ88Il0vQteCD+AkhS88Il0PQteCL+AkhS88Il0vQteCL+AkhS8")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_rmh7p"]
+resource_name = "SM_EC_Fence_Part_18"
+_surfaces = [{
+"aabb": AABB(-0.05970186, -0.532685, -0.009068131, 0.11940372, 1.06537, 0.018136263),
+"attribute_data": PackedByteArray("1dTgPYAOATyIZP89gA4BPIpk/z3kJ4A+19TgPeQngD7V1OA9gA4BPNfU4D3kJ4A+imT/PeQngD6IZP89gA4BPIhk/z2ADgE8imT/PeQngD6KZP895CeAPohk/z2ADgE81dTgPYAOATyIZP89gA4BPIhk/z2ADgE81dTgPYAOATyKZP89VId3PtfU4D1Uh3c+19TgPVSHdz6KZP89VId3PtfU4D3kJ4A+1dTgPYAOATzV1OA9gA4BPNfU4D3kJ4A+"),
+"format": 34359742487,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQACAAJAAoACgALAAgADAANAA4ADgAPAAwAEAARABIAEgATABAAFAAVABYAFgAXABQA"),
+"material": SubResource("StandardMaterial3D_gwswa"),
+"name": "M_EC_Fence_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 24,
+"vertex_data": PackedByteArray("8Il0vQteCD+AkhQ88Il0PQteCD+AkhQ88Il0PQteCL+AkhQ88Il0vQteCL+AkhQ88Il0vQteCD+AkhS88Il0vQteCL+AkhS88Il0PQteCL+AkhS88Il0PQteCD+AkhS88Il0PQteCD+AkhS88Il0PQteCL+AkhS88Il0PQteCL+AkhQ88Il0PQteCD+AkhQ88Il0vQteCD+AkhS88Il0PQteCD+AkhS88Il0PQteCD+AkhQ88Il0vQteCD+AkhQ88Il0PQteCL+AkhS88Il0vQteCL+AkhS88Il0vQteCL+AkhQ88Il0PQteCL+AkhQ88Il0vQteCL+AkhS88Il0vQteCD+AkhS88Il0vQteCD+AkhQ88Il0vQteCL+AkhQ8/3//f////7//f/9/////v/9//3////+//3//f////7//////////P/////////8//////////z//////////P////3////+/////f////7////9/////v////3////+//3///////7//f///////v/9///////+//3///////7//fwAA////v/9/AAD///+//38AAP///7//fwAA////vwAA/3////+/AAD/f////78AAP9/////vwAA/3////+/")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_jox61")
+
+[node name="SM_EC_Fence_Part_18" type="Node3D" unique_id=1475938411]
+
+[node name="SM_EC_Fence_Part_18" type="MeshInstance3D" parent="." unique_id=1305704229]
+mesh = SubResource("ArrayMesh_rmh7p")

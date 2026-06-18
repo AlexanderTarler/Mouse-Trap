@@ -1,0 +1,51 @@
+[gd_scene format=4 uid="uid://dumq8cvctasbb"]
+
+[ext_resource type="Texture2D" uid="uid://ym0anr8irfe7" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Fences_CL_0.png" id="1_3dkjm"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0vr3r"]
+resource_name = "M_EC_Fence_0"
+transparency = 2
+alpha_scissor_threshold = 0.5
+alpha_antialiasing_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_3dkjm")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_f7kfm"]
+_surfaces = [{
+"aabb": AABB(-0.06106019, -0.57939196, 0, 0.12212062, 1.1587834, 1e-05),
+"format": 34359742465,
+"index_count": 6,
+"index_data": PackedByteArray("AAABAAIAAgADAAAA"),
+"name": "M_EC_Fence_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 4,
+"vertex_data": PackedByteArray("gBp6PQBTFD8AAAAAgBp6PQhTFL8AAAAAQBp6vQhTFL8AAAAAQBp6vQBTFD8AAAAA")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_531l5"]
+resource_name = "SM_EC_Fence_Card_Part_00"
+_surfaces = [{
+"aabb": AABB(-0.06106019, -0.57939196, 0, 0.12212062, 1.1587834, 1e-05),
+"attribute_data": PackedByteArray("dKRdPuQYBD90pF0+aPlBP+/9TT5o+UE/7/1NPuQYBD8="),
+"format": 34359742487,
+"index_count": 6,
+"index_data": PackedByteArray("AAABAAIAAgADAAAA"),
+"material": SubResource("StandardMaterial3D_0vr3r"),
+"name": "M_EC_Fence_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 4,
+"vertex_data": PackedByteArray("gBp6PQBTFD8AAAAAgBp6PQhTFL8AAAAAQBp6vQhTFL8AAAAAQBp6vQBTFD8AAAAA/3//f////7//f/9/////v/9//3////+//3//f////78=")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_f7kfm")
+
+[node name="SM_EC_Fence_Card_Part_00" type="Node3D" unique_id=2008003245]
+
+[node name="SM_EC_Fence_Card_Part_00" type="MeshInstance3D" parent="." unique_id=1765669414]
+mesh = SubResource("ArrayMesh_531l5")

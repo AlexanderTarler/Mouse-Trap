@@ -1,0 +1,48 @@
+[gd_scene format=4 uid="uid://bj3jfgpqtkh67"]
+
+[ext_resource type="Texture2D" uid="uid://dfqa4gklco1m5" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Grass_CL_0.png" id="1_ke7m0"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_y47bi"]
+resource_name = "M_EC_Grass_0"
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_ke7m0")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_8g44m"]
+_surfaces = [{
+"aabb": AABB(0.099304706, -0.025129236, 0, 4, 4, 1e-05),
+"format": 34359742465,
+"index_count": 6,
+"index_data": PackedByteArray("AAABAAIAAgADAAAA"),
+"name": "M_EC_Grass_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 4,
+"vertex_data": PackedByteArray("gS2DQElkfkAAAAAAgS2DQNTbzbwAAAAARGDLPdTbzbwAAAAARGDLPUlkfkAAAAAA")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_431ra"]
+resource_name = "SM_EC_Grass_0"
+_surfaces = [{
+"aabb": AABB(0.099304706, -0.025129236, 0, 4, 4, 1e-05),
+"attribute_data": PackedByteArray("AACAPwAAAAAAAIA/AACAPwAAAAAAAIA/AAAAAAAAAAA="),
+"format": 34359742487,
+"index_count": 6,
+"index_data": PackedByteArray("AAABAAIAAgADAAAA"),
+"material": SubResource("StandardMaterial3D_y47bi"),
+"name": "M_EC_Grass_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 4,
+"vertex_data": PackedByteArray("gS2DQElkfkAAAAAAgS2DQNTbzbwAAAAARGDLPdTbzbwAAAAARGDLPUlkfkAAAAAA/3//f////7//f/9/////v/9//3////+//3//f////78=")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_8g44m")
+
+[node name="SM_EC_Grass_0" type="Node3D" unique_id=583849686]
+
+[node name="SM_EC_Grass_0" type="MeshInstance3D" parent="." unique_id=30955065]
+mesh = SubResource("ArrayMesh_431ra")

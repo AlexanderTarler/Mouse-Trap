@@ -1,0 +1,49 @@
+[gd_scene format=4 uid="uid://borr7yelgd667"]
+
+[ext_resource type="Texture2D" uid="uid://dij3jwbwmlvup" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Trees_CL_1.png" id="1_ylhkv"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fu7dx"]
+resource_name = "M_EC_Trees_0"
+transparency = 4
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_ylhkv")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_5otgm"]
+_surfaces = [{
+"aabb": AABB(-0.5705023, -0.19731754, -1.7009683e-10, 0.5705015, 0.48491192, 1e-05),
+"format": 34359742465,
+"index_count": 12,
+"index_data": PackedByteArray("AAABAAIAAAADAAEAAwAEAAEAAwAFAAQA"),
+"name": "M_EC_Trees_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 6,
+"vertex_data": PackedByteArray("AABQtQAANDYEsC6tDl7OvZI/kz4ABjuvAPAGvJI/kz4ABjuvwUI+vpwNSr6AzNsunG/hvpAIFT3AsASucAwSvxgf+L0AAX0u")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_230pk"]
+resource_name = "SM_EC_Tree_Part_Card_07"
+_surfaces = [{
+"aabb": AABB(-0.5705023, -0.19731754, -1.7009683e-10, 0.5705015, 0.48491192, 1e-05),
+"attribute_data": PackedByteArray("zFBWP1gSKD5iq1Q/LEEDPl4uVj8sQQM+u0dTPwhVQT5UH08/AGojPs7+TD/slDc+"),
+"format": 34359742487,
+"index_count": 12,
+"index_data": PackedByteArray("AAABAAIAAAADAAEAAwAEAAEAAwAFAAQA"),
+"material": SubResource("StandardMaterial3D_fu7dx"),
+"name": "M_EC_Trees_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 6,
+"vertex_data": PackedByteArray("AABQtQAANDYEsC6tDl7OvZI/kz4ABjuvAPAGvJI/kz4ABjuvwUI+vpwNSr6AzNsunG/hvpAIFT3AsASucAwSvxgf+L0AAX0u/3//f/7//7//f/9/////v/9//3////+//3//f////7//f/9//v//v/9//3/+//+/")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_5otgm")
+
+[node name="SM_EC_Tree_Part_Card_07" type="Node3D" unique_id=751312755]
+
+[node name="SM_EC_Tree_Part_Card_07" type="MeshInstance3D" parent="." unique_id=2078803563]
+mesh = SubResource("ArrayMesh_230pk")

@@ -1,0 +1,50 @@
+[gd_scene format=4 uid="uid://bi4vhiu1s4v7u"]
+
+[ext_resource type="Texture2D" uid="uid://c1vo8xsq6v2o2" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Path_CL_1.png" id="1_dvixk"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_icift"]
+resource_name = "M_EC_PathMud_0"
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_dvixk")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_evv23"]
+_surfaces = [{
+"aabb": AABB(0, -2.3841858e-07, 0, 4.0000005, 3.0000005, 1e-05),
+"format": 34359742465,
+"index_count": 72,
+"index_data": PackedByteArray("AAABAA4ADgACAAAADwAOAAEAAQADAA8AAgAOABAAEAAFAAIABwAFABAAEAAGAAcAEQAQAA4ABgAQABEADgAPABEAEQAEAAYABAARABIAEgARAA8AEgAJAAQACQASAAgACAAKAAkACwAIABIADwATABIAEgATAAsAEwAPAAMAAwAMABMACwATAAwADAANAAsA"),
+"lods": [0.00038138498, PackedByteArray("AAABAAIAAwACAAEAAgADAAQABAAFAAIABgAFAAQABQAGAAcACAAEAAMACAAJAAQACAAKAAkACAADAAsACwADAAwADAANAAsA")],
+"name": "M_EC_PathMud_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 20,
+"vertex_data": PackedByteArray("AAAANQEAQEAAAAAABACAPwAAQEAAAAAAAACANAEAAEAAAAAAAgAAQAAAQEAAAAAAAAAAQAAAgDMAAAAAAAAANAMAgD8AAAAAAACAPwAAgDQAAAAAAAAAAAAAwDQAAAAAAACAQPr/fz8AAAAAAABAQAAAALQAAAAAAACAQAAAgLQAAAAAAACAQP3//z8AAAAAAgBAQP//P0AAAAAAAQCAQP7/P0AAAAAAAgCAPwAAAEAAAAAAAQAAQAAAAEAAAAAAAACAPwIAgD8AAAAAAAAAQAAAgD8AAAAAAABAQP3/fz8AAAAAAQBAQP7//z8AAAAA")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_0jk2a"]
+resource_name = "SM_EC_Path_Mud_04"
+_surfaces = [{
+"aabb": AABB(0, -2.3841858e-07, 0, 4.0000005, 3.0000005, 1e-05),
+"attribute_data": PackedByteArray("AAAsNwAA07cQAYA+AADStwAALDdY9X8+ZAAAPwAA0rdkAAA/UPs/PwAALDem+P8+EAGAPlD7Pz8AACw3UPs/Pw4AgD+o+P8+QgBAP1D7Pz8PAIA/UPs/Pw4AgD9c9X8+QgBAPwAA0rcPAIA/AADTtw4BgD5c9X8+ZAAAP1j1fz4QAYA+qPj/PmMAAD+q+P8+QQBAP6j4/z5AAEA/WPV/Pg=="),
+"format": 34359742487,
+"index_count": 72,
+"index_data": PackedByteArray("AAABAA4ADgACAAAADwAOAAEAAQADAA8AAgAOABAAEAAFAAIABwAFABAAEAAGAAcAEQAQAA4ABgAQABEADgAPABEAEQAEAAYABAARABIAEgARAA8AEgAJAAQACQASAAgACAAKAAkACwAIABIADwATABIAEgATAAsAEwAPAAMAAwAMABMACwATAAwADAANAAsA"),
+"lods": [0.00038138498, PackedByteArray("AAABAAIAAwACAAEAAgADAAQABAAFAAIABgAFAAQABQAGAAcACAAEAAMACAAJAAQACAAKAAkACAADAAsACwADAAwADAANAAsA")],
+"material": SubResource("StandardMaterial3D_icift"),
+"name": "M_EC_PathMud_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 20,
+"vertex_data": PackedByteArray("AAAANQEAQEAAAAAABACAPwAAQEAAAAAAAACANAEAAEAAAAAAAgAAQAAAQEAAAAAAAAAAQAAAgDMAAAAAAAAANAMAgD8AAAAAAACAPwAAgDQAAAAAAAAAAAAAwDQAAAAAAACAQPr/fz8AAAAAAABAQAAAALQAAAAAAACAQAAAgLQAAAAAAACAQP3//z8AAAAAAgBAQP//P0AAAAAAAQCAQP7/P0AAAAAAAgCAPwAAAEAAAAAAAQAAQAAAAEAAAAAAAACAPwIAgD8AAAAAAAAAQAAAgD8AAAAAAABAQP3/fz8AAAAAAQBAQP7//z8AAAAA/3//f/7//7//f/9/////v/9//3////+//3//f/7//7//f/9//v//v/9//3/+//+//3//f/7//7//f/9/////v/9//3/+//+//3//f/7//7//f/9//v//v/9//3/+//+//3//f/7//7//f/9//v//v/9//3////+//3//f/7//7//f/9/////v/9//3/+//+//3//f/7//7//f/9/////vw==")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_evv23")
+
+[node name="SM_EC_Path_Mud_04" type="Node3D" unique_id=937269063]
+
+[node name="SM_EC_Path_Mud_04" type="MeshInstance3D" parent="." unique_id=1439324342]
+mesh = SubResource("ArrayMesh_0jk2a")

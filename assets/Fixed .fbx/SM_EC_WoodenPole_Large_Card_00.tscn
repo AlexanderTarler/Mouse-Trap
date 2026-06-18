@@ -1,0 +1,51 @@
+[gd_scene format=4 uid="uid://bjljiclf506ka"]
+
+[ext_resource type="Texture2D" uid="uid://ym0anr8irfe7" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Fences_CL_0.png" id="1_se60r"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7mr6l"]
+resource_name = "M_EC_Fence_0"
+transparency = 2
+alpha_scissor_threshold = 0.5
+alpha_antialiasing_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_se60r")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_02g6f"]
+_surfaces = [{
+"aabb": AABB(-0.1208545, -1.4305115e-06, -0.022958755, 0.2585107, 7.8526654, 0.041602552),
+"format": 34359742465,
+"index_count": 24,
+"index_data": PackedByteArray("AAABAAIAAgADAAAAAQAAAAQABQACAAEABAAGAAEAAQAHAAUAAQAGAAgACAAHAAEA"),
+"name": "M_EC_Fence_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 9,
+"vertex_data": PackedByteArray("kIDqvb+6e0DgkYS8gENmPL+6e0CAjVo8AFeqOwAAwLXgupg8kIL3vQAAwLUAuxi8QK7dva7t+UAAFLy8cN/sPQAAwLUAuxi8QGy7PAZJ+0DQ8wM8uMQBPr+6e0DgkYS8wPUMPnUr+kDwE7y8")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_tg5ks"]
+resource_name = "SM_EC_WoodenPole_Large_Card_00"
+_surfaces = [{
+"aabb": AABB(-0.1208545, -1.4305115e-06, -0.022958755, 0.2585107, 7.8526654, 0.041602552),
+"attribute_data": PackedByteArray("t2luP1YYUz+4aW4/fNJcPzxO4D7M0lw/PU7gPv4gUz+4aW4/fNJcP7dpbj+j/2U/PU7gPizvZT88TuA+zNJcP/abbD+D2mo/svhtP0KedD+nGOA+cp50P6cY4D5M5Go//tlsP3bcfT+nGOA+mst9P6cY4D5ynnQ/svhtP0KedD8="),
+"format": 34359742487,
+"index_count": 24,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQACAAJAAoACgALAAgADAANAA4ADgAPAAwA"),
+"material": SubResource("StandardMaterial3D_7mr6l"),
+"name": "M_EC_Fence_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 16,
+"vertex_data": PackedByteArray("kIDqvb+6e0DgkYS8gENmPL+6e0CAjVo8AFeqOwAAwLXgupg8kIL3vQAAwLUAuxi8gENmPL+6e0CAjVo8uMQBPr+6e0DgkYS8cN/sPQAAwLUAuxi8AFeqOwAAwLXgupg8QK7dva7t+UAAFLy8QGy7PAZJ+0DQ8wM8gENmPL+6e0CAjVo8kIDqvb+6e0DgkYS8wPUMPnUr+kDwE7y8uMQBPr+6e0DgkYS8gENmPL+6e0CAjVo8QGy7PAZJ+0DQ8wM8dWg0gHmA2f91aDSAeYDZ/3VoNIBrgOP/dWg0gGuA4/8zmhaAiIDU/zOaFoCJgNP/M5oWgHiA2v8zmhaAeIDa/89nNIB5gNn/z2c0gHmA2f/PZzSAbIDi/89nNIBrgOL/5ZoWgHiA2v/lmhaAiIDT/+WaFoCIgNT/5ZoWgHeA2v8=")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_02g6f")
+
+[node name="SM_EC_WoodenPole_Large_Card_00" type="Node3D" unique_id=676890716]
+
+[node name="SM_EC_WoodenPole_Large_Card_00" type="MeshInstance3D" parent="." unique_id=1375265429]
+mesh = SubResource("ArrayMesh_tg5ks")

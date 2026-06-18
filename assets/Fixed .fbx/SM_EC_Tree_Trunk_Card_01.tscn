@@ -1,0 +1,49 @@
+[gd_scene format=4 uid="uid://y7ssednue55i"]
+
+[ext_resource type="Texture2D" uid="uid://dij3jwbwmlvup" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Trees_CL_1.png" id="1_64cgj"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nxdf4"]
+resource_name = "M_EC_Trees_0"
+transparency = 4
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_64cgj")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_gsxph"]
+_surfaces = [{
+"aabb": AABB(-0.12111583, -1.4899032e-07, -2.0793038e-09, 0.22043636, 3.7336283, 1e-05),
+"format": 34359742465,
+"index_count": 12,
+"index_data": PackedByteArray("AAABAAIAAgADAAAAAQAAAAQABAAFAAEA"),
+"name": "M_EC_Trees_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 6,
+"vertex_data": PackedByteArray("AABgNMPzbkCA4w6xAABgNCb6H7QAU78klAv4vSb6H7QAU78klAv4vcPzbkCA4w6xkGjLPcPzbkCA4w6xkGjLPSb6H7QAU78k")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_07god"]
+resource_name = "SM_EC_Tree_Trunk_Card_01"
+_surfaces = [{
+"aabb": AABB(-0.12111583, -1.4899032e-07, -2.0793038e-09, 0.22043636, 3.7336283, 1e-05),
+"attribute_data": PackedByteArray("bihtP3bQAj9sKG0/uE56P+Etaz+4Tno/4y1rP3fQAj/Rx24/dtACP8/Hbj+4Tno/bChtP7hOej9uKG0/dtACPw=="),
+"format": 34359742487,
+"index_count": 12,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQA"),
+"material": SubResource("StandardMaterial3D_nxdf4"),
+"name": "M_EC_Trees_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("AABgNMPzbkCA4w6xAABgNCb6H7QAU78klAv4vSb6H7QAU78klAv4vcPzbkCA4w6xkGjLPcPzbkCA4w6xkGjLPSb6H7QAU78kAABgNCb6H7QAU78kAABgNMPzbkCA4w6x/3//f/7//7//f/9/////v/9//3////+//3//f/7//7//f/9/////v/9//3////+//3//f////7//f/9/////vw==")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_gsxph")
+
+[node name="SM_EC_Tree_Trunk_Card_01" type="Node3D" unique_id=1711000130]
+
+[node name="SM_EC_Tree_Trunk_Card_01" type="MeshInstance3D" parent="." unique_id=590213836]
+mesh = SubResource("ArrayMesh_07god")

@@ -1,0 +1,48 @@
+[gd_scene format=4 uid="uid://bnhdoqq6jutr1"]
+
+[ext_resource type="Texture2D" uid="uid://c5f4mmf48i5l7" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Concrete_CL_0.png" id="1_tpah8"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_prhpd"]
+resource_name = "M_EC_Concrete_0"
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_tpah8")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_6ejub"]
+_surfaces = [{
+"aabb": AABB(-2.0017684, 1.3907741e-07, -3.872059e-08, 2.0017705, 2.000134, 1.0000001),
+"format": 34359742465,
+"index_count": 18,
+"index_data": PackedByteArray("AAABAAIAAAADAAEABAADAAAAAgAFAAAAAAAFAAQABAAFAAIA"),
+"name": "M_EC_Concrete_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 6,
+"vertex_data": PackedByteArray("8BwAwDMCAEABAIA/+RwAwDMCAEBliwY0DIkINTICAEBliwY09BwAwLbNmzS9TSaz0Lm5NU9VFTTzNpmyQyIWNjICAEABAIA/")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_joids"]
+resource_name = "SM_EC_ConcreteBlock_0_001"
+_surfaces = [{
+"aabb": AABB(-2.0017684, 1.3907741e-07, -3.872059e-08, 2.0017705, 2.000134, 1.0000001),
+"attribute_data": PackedByteArray("wwdCPzCMcz4AAIA/MIxzPgAAgD8DAD0/wwdCPwMAPT/DB0I/MIxzPiYLhD44jHM+wwdCPwAAAADS/UI/KLNvPtL9Qj9F9j0/T22LPkX2PT9ObYs+NLNvPigLhD4AAIA/wwdCPwMAPT/EB0I/AACAPw=="),
+"format": 34359742487,
+"index_count": 18,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABwAIAAkACQAKAAcACwAMAA0A"),
+"material": SubResource("StandardMaterial3D_prhpd"),
+"name": "M_EC_Concrete_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 14,
+"vertex_data": PackedByteArray("8BwAwDMCAEABAIA/+RwAwDMCAEBliwY0DIkINTICAEBliwY0QyIWNjICAEABAIA/8BwAwDMCAEABAIA/9BwAwLbNmzS9TSaz+RwAwDMCAEBliwY08BwAwDMCAEABAIA/QyIWNjICAEABAIA/0Lm5NU9VFTTzNpmy9BwAwLbNmzS9TSaz0Lm5NU9VFTTzNpmyQyIWNjICAEABAIA/DIkINTICAEBliwY0/3/+/wAAAID/f/7/AAAAgP9//v8AAACA/3/+/wAAAIAAAP9//3+p6gAA/3//f6nqAAD/f/9/qer/f1VV/3+p6v9/VVX/f6nq/39VVf9/qer/f1VV/3+p6v7//3//f/7//v//f/9//v/+//9//3/+/w==")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_6ejub")
+
+[node name="SM_EC_ConcreteBlock_0_001" type="Node3D" unique_id=808851407]
+
+[node name="SM_EC_ConcreteBlock_0_001" type="MeshInstance3D" parent="." unique_id=778794049]
+mesh = SubResource("ArrayMesh_joids")

@@ -1,0 +1,85 @@
+PSX Rural Environment Pack
+End User Licence Agreement
+
+Copyright © Rob Hickman / Caliber Creations.
+All rights reserved.
+
+By purchasing, downloading, or using this asset pack, you agree to the following terms.
+
+1. What you can do
+
+You may use the assets from PSX Rural Environment Pack in personal, commercial, and free projects.
+
+This includes, but is not limited to:
+
+- video games
+- game jam projects
+- prototypes
+- demos
+- rendered images
+- videos
+- trailers
+- interactive media
+- commercial releases
+
+You may modify, edit, recolour, resize, combine, or adapt the assets for use in your own projects.
+
+You may use the assets in any game engine or software, including Unity, Unreal Engine, Godot, Blender, or custom engines.
+
+You may include the assets in compiled builds of your game or project.
+
+Credit is appreciated but not required.
+
+Suggested credit:
+
+"PSX Rural Environment Pack by Caliber Creations"
+
+2. What you cannot do
+
+You may not resell, redistribute, share, upload, give away, or repackage the assets as standalone files.
+
+You may not sell or distribute the assets as part of another asset pack, texture pack, model pack, template project, or marketplace product.
+
+You may not upload the raw source files, including but not limited to Blender files, FBX files, textures, materials, Unity packages, prefabs, or source images, in a way that allows other people to download or extract them as reusable assets.
+
+You may not claim ownership or authorship of the original assets.
+
+You may not use the assets to train, fine-tune, or create datasets for generative AI models.
+
+You may not mint, sell, or distribute the assets as NFTs or blockchain-based collectibles.
+
+3. Team use
+
+A single purchase may be used by one individual or by one small development team working on the same project.
+
+The assets may be shared internally with team members only for the purpose of working on that project.
+
+Team members may not use the assets separately outside of that project unless they have their own licence.
+
+4. Game releases and modding
+
+You may release games that include these assets, including commercial games.
+
+Your released project must not expose the raw asset files in a way that allows users to easily extract and reuse them outside of your project.
+
+You may use the assets in modding projects, provided the original raw assets are not redistributed as a standalone asset pack or resource library.
+
+5. No warranty
+
+The assets are provided "as is", without warranty of any kind.
+
+The creator is not responsible for any loss, damage, legal issue, project issue, compatibility issue, or other problem caused by use of the assets.
+
+6. Ownership
+
+The original assets remain the property of Rob Hickman / Caliber Creations.
+
+Purchasing or downloading this pack gives you a licence to use the assets under these terms. It does not transfer ownership of the original assets.
+
+7. Refunds
+
+Refunds are handled according to the platform where the asset pack was purchased.
+
+8. Contact
+
+For questions about this licence, contact the creator through the itch.io product page.

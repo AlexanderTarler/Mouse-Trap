@@ -1,0 +1,49 @@
+[gd_scene format=4 uid="uid://nqg42ibi6g8"]
+
+[ext_resource type="Texture2D" uid="uid://c1215s0dkonlg" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/RoadBlock_CL_0.png" id="1_x7j87"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yh8oh"]
+resource_name = "M_EC_RoadBlock_0"
+transparency = 4
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_x7j87")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_lnxcy"]
+_surfaces = [{
+"aabb": AABB(-0.08632295, -1.2501035, 1.1175871e-07, 3.635802, 1.572258, 1.4648095),
+"format": 34359742465,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAgABAAMAAwABAAAAAgAEAAAAAAAFAAMABQAAAAQAAwAGAAIABgADAAUABAACAAYABQAHAAYABgAHAAQABAAHAAUA"),
+"name": "M_EC_RoadBlock_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("FsqwvSnxpL4AAPAzOKiQPSUXbb7ifrs/IFlSQGLwi7+OI7s/Ai81PgwpKT7dfrs/Gx5YQGQDoL8AAJc0FMmwPW7xpD4AAIc0zSZZQLtQMr+LI7s/qipjQHYVG78AgAY1")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_gb5ov"]
+resource_name = "SM_EC_Traffic_Block_0"
+_surfaces = [{
+"aabb": AABB(-0.08632295, -1.2501035, 1.1175871e-07, 3.635802, 1.572258, 1.4648095),
+"attribute_data": PackedByteArray("I6sUPUim2D7ieTU9vpipPo46gT68mKk+ZlCFPkam2D6OOoE+YBhpPvl5NT1gGGk+VqsUPbyZoz5mUIU+vJmjPuJ5NT2qWYI+jjqBPqxZgj6OOoE+rINqPuJ5NT2sg2o+E6mpO7yZoz5WqxQ9vJmjPic1CD1gGGk+HID4O2AYaT7YhIM+YBhpPp4ThT68maM+sElqPryZoz5owGw+YBhpPpjX4jxWIZc+zKvhPGhfez7CCmo+aF97Pjowaj5WIZc+"),
+"format": 34359742487,
+"index_count": 36,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQACAAJAAoACgALAAgADAANAA4ADgAPAAwAEAARABIAEgATABAAFAAVABYAFgAXABQA"),
+"material": SubResource("StandardMaterial3D_yh8oh"),
+"name": "M_EC_RoadBlock_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 24,
+"vertex_data": PackedByteArray("FsqwvSnxpL4AAPAzOKiQPSUXbb7ifrs/IFlSQGLwi7+OI7s/Gx5YQGQDoL8AAJc0zSZZQLtQMr+LI7s/Ai81PgwpKT7dfrs/FMmwPW7xpD4AAIc0qipjQHYVG78AgAY1Ai81PgwpKT7dfrs/zSZZQLtQMr+LI7s/IFlSQGLwi7+OI7s/OKiQPSUXbb7ifrs/FsqwvSnxpL4AAPAzFMmwPW7xpD4AAIc0Ai81PgwpKT7dfrs/OKiQPSUXbb7ifrs/zSZZQLtQMr+LI7s/qipjQHYVG78AgAY1Gx5YQGQDoL8AAJc0IFlSQGLwi7+OI7s/FMmwPW7xpD4AAIc0FsqwvSnxpL4AAPAzGx5YQGQDoL8AAJc0qipjQHYVG78AgAY1wWbIIfXkcrLBZsgh9uRvssFmyCHz5HaywWbIIfPkebI+mTXe8+SITT6ZNd735I5NPpk13vbkjE0+mTXe8eSGTRmA+H/35I5NGYD4f/fkjk0ZgPh/9+SOTRmA+H/35I5NxyE+mQybhg3HIT6ZDJuGDcchPpkMm4YNxyE+mQybhg063r9mDJt48jrev2YMm3jyOt6/ZgybePI63r9mDJt48v7//v/y5Hiy/v/+//LkeLL+//7/8uR4sv7//v/y5Hiy")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_lnxcy")
+
+[node name="SM_EC_Traffic_Block_0" type="Node3D" unique_id=1057307531]
+
+[node name="SM_EC_Traffic_Block_0" type="MeshInstance3D" parent="." unique_id=1066987752]
+mesh = SubResource("ArrayMesh_gb5ov")

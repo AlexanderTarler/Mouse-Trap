@@ -1,0 +1,51 @@
+[gd_scene format=4 uid="uid://d4nc5i4qu85wd"]
+
+[ext_resource type="Texture2D" uid="uid://dr4p3nw1uwxo4" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/House_CL_0.png" id="1_fnd6y"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_a3rcq"]
+resource_name = "M_EC_House_0"
+transparency = 4
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_fnd6y")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_ogmup"]
+_surfaces = [{
+"aabb": AABB(-0.21685314, -0.7546387, 0, 0.4337042, 0.754633, 0.32628357),
+"format": 34359742465,
+"index_count": 66,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQAEAARABIAEgATABAACAAJAAoACgALAAgADAANAA4ADgAPAAwAFAAVABYAFgAVABcAFgAYABQAGQAXABUAFQAUABkAFwAaABYAGAAWABoAGgAXABkAFAAYABsAGgAbABgAGwAZABQAGQAbABoA"),
+"lods": [0.27251437, PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQACAAJAAoACgALAAgADAANAA4ADgAPAAwA")],
+"name": "M_EC_House_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 28,
+"vertex_data": PackedByteArray("Bg5evhljNL+jDqc+Bg5evhljNL8AAAA0Bg5evgAAObcAAAA0Bg5evgAAObejDqc++g1ePhljNL+jDqc++g1ePgAAObejDqc++g1ePgAAObcAAAA0+g1ePhljNL8AAAA0NA5ePhljNL+eDqc+Gg5evhljNL+cDqc+Gg5evgAAObecDqc+NA5ePgAAObeeDqc+NA5ePhljNL8AAAA0NA5ePgAAObcAAAA0Gg5evgAAObcAAAA0Gg5evhljNL8AAAA0Lg5ePgCUv7akDqc+wA5evgAAvrakDqc+wA5evgAAvrYAAAA0Lg5ePgCUv7YAAAA04A1evgAwQb+gDqc+4A1ePgAwQb+gDqc+4A1ePgAwQb8AAAAA4A1ePjNjNL+gDqc+4A1evgAwQb8AAAAA4A1evjNjNL+gDqc+4A1ePjNjNL8AAAAA4A1evjNjNL8AAAAA")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_o40vd"]
+resource_name = "SM_EC_House_Kitchen_Cupboard_Static_05"
+_surfaces = [{
+"aabb": AABB(-0.21685314, -0.7546387, 0, 0.4337042, 0.754633, 0.32628357),
+"attribute_data": PackedByteArray("FaYKP+ZOIj8Vpgo/lOUkP6jQBD+U5SQ/qNAEP+ZOIj/24RU/5k4iP4kMED/mTiI/iQwQP5TlJD/24RU/lOUkP6upED8aph4/q6kQP/MWIj8+1Ao/8xYiPz7UCj8aph4/128VPxqmHj9qmg8/GqYeP2qaDz/zFiI/128VP/MWIj8MUQg/5k4iP9W5BD/mTiI/1bkEP5TlJD8MUQg/lOUkP2iBbD5eiaE+RmJ6Pl6JoT5GYno+1MGmPmiBbD7SwaY+aIFsPl6JoT5ogWw+0sGmPkZiej7UwaY+RmJ6Pl6JoT7mmW0+hoOmPuaZbT6qx6E+UA1vPqrHoT5QDW8+hoOmPn+mez4MArg+3RBvPgoCuD7dEG8+Vki3Pn+mez5YSLc+yId+PqrHoT7Ih34+iIOmPl4UfT6Ig6Y+XhR9PqrHoT7lWG0+YLuhPofueT5gu6E+h+55PhR1oj7lWG0+FHWiPg=="),
+"format": 34359742487,
+"index_count": 66,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQAEAARABIAEgATABAACAAJAAoACgALAAgADAANAA4ADgAPAAwAFAAVABYAFgAXABQAGAAZABoAGgAbABgAHAAdAB4AHgAfABwAIAAhACIAIgAjACAAJAAlACYAJgAnACQAKAApACoAKgArACgA"),
+"lods": [0.27251437, PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQACAAJAAoACgALAAgADAANAA4ADgAPAAwA")],
+"material": SubResource("StandardMaterial3D_a3rcq"),
+"name": "M_EC_House_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 44,
+"vertex_data": PackedByteArray("Bg5evhljNL+jDqc+Bg5evhljNL8AAAA0Bg5evgAAObcAAAA0Bg5evgAAObejDqc++g1ePhljNL+jDqc++g1ePgAAObejDqc++g1ePgAAObcAAAA0+g1ePhljNL8AAAA0NA5ePhljNL+eDqc+Gg5evhljNL+cDqc+Gg5evgAAObecDqc+NA5ePgAAObeeDqc+NA5ePhljNL8AAAA0NA5ePgAAObcAAAA0Gg5evgAAObcAAAA0Gg5evhljNL8AAAA0Lg5ePgCUv7akDqc+wA5evgAAvrakDqc+wA5evgAAvrYAAAA0Lg5ePgCUv7YAAAA04A1evgAwQb+gDqc+4A1ePgAwQb+gDqc+4A1ePgAwQb8AAAAA4A1evgAwQb8AAAAA4A1evjNjNL+gDqc+4A1evjNjNL8AAAAA4A1ePjNjNL8AAAAA4A1ePjNjNL+gDqc+4A1evjNjNL8AAAAA4A1evjNjNL+gDqc+4A1evgAwQb+gDqc+4A1evgAwQb8AAAAA4A1ePjNjNL8AAAAA4A1evjNjNL8AAAAA4A1evgAwQb8AAAAA4A1ePgAwQb8AAAAA4A1ePjNjNL+gDqc+4A1ePjNjNL8AAAAA4A1ePgAwQb8AAAAA4A1ePgAwQb+gDqc+4A1evjNjNL+gDqc+4A1ePjNjNL+gDqc+4A1ePgAwQb+gDqc+4A1evgAwQb+gDqc+AAD/f/9/AIAAAP9//38AgAAA/3//fwCAAAD/f/9/AID///9//3/+f////3//f/5/////f/9//n////9//3/+f/9//3//fwCA/3//f/9/AID/f/9//38AgP9//3//fwCA//////9//n///////3/+f///////f/5///////9//n//f/7/////P/9//v/+//8//3/+/////z//f/7//v//P/9/AAD+//+//38AAP///7//fwAA/v//v/9/AAD+//+//3////7//z//f////v//P/9////+//8//3///////z8AAP9//38AgAAA/3//fwCAAAD/f/9/AIAAAP9//38AgP/////+//+///////7//7///////v//v//////+//+/////f/9///////9//3///////3//f///////f/9/////f/9/////v/9//3////+//3//f////7//f/9/////vw==")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_ogmup")
+
+[node name="SM_EC_House_Kitchen_Cupboard_Static_05" type="Node3D" unique_id=1272238836]
+
+[node name="SM_EC_House_Kitchen_Cupboard_Static_05" type="MeshInstance3D" parent="." unique_id=409399935]
+mesh = SubResource("ArrayMesh_o40vd")

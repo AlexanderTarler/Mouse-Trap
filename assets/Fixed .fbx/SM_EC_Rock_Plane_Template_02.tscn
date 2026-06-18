@@ -1,0 +1,49 @@
+[gd_scene format=4 uid="uid://beol1n3mw0wmk"]
+
+[ext_resource type="Texture2D" uid="uid://c1215s0dkonlg" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/RoadBlock_CL_0.png" id="1_bipdg"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0r33r"]
+resource_name = "M_EC_RoadBlock_0"
+transparency = 4
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_bipdg")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_riywy"]
+_surfaces = [{
+"aabb": AABB(-1.5, -1.5, 0, 3, 3, 1e-05),
+"format": 34359742465,
+"index_count": 54,
+"index_data": PackedByteArray("AAABAAIAAgADAAAAAQAAAAQABQACAAEABAAGAAEABgAEAAcABwAIAAYAAQAJAAUACQABAAYACgAFAAkACQALAAoABgAMAAkACwAJAAwADAAGAAgADAANAAsACAAOAAwADQAMAA4ADgAPAA0A"),
+"name": "M_EC_RoadBlock_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 16,
+"vertex_data": PackedByteArray("/v//vgAAwD8AAAAA/v//vv7//z4AAAAAAADAv/7//z4AAAAAAADAvwAAwD8AAAAAAgAAPwAAwD8AAAAAAADAvwIAAL8AAAAAAgAAP/7//z4AAAAAAADAPwAAwD8AAAAAAADAP/7//z4AAAAA/v//vgIAAL8AAAAAAADAvwAAwL8AAAAA/v//vgAAwL8AAAAAAgAAPwIAAL8AAAAAAgAAPwAAwL8AAAAAAADAPwIAAL8AAAAAAADAPwAAwL8AAAAA")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_px350"]
+resource_name = "SM_EC_Rock_Plane_Template_02"
+_surfaces = [{
+"aabb": AABB(-1.5, -1.5, 0, 3, 3, 1e-05),
+"attribute_data": PackedByteArray("zZ2LPRgM4D7NnYs9aOz/Ptv8wzto7P8+2/zDOxgM4D7NnYs9GAzgPs2diz1o7P8+2/zDO2js/z7b/MM7GAzgPs2diz0YDOA+zZ2LPWjs/z7b/MM7aOz/Ptv8wzsYDOA+zZ2LPRgM4D7NnYs9aOz/Ptv8wzto7P8+2/zDOxgM4D7NnYs9GAzgPs2diz1o7P8+2/zDO2js/z7b/MM7GAzgPs2diz0YDOA+zZ2LPWjs/z7b/MM7aOz/Ptv8wzsYDOA+zZ2LPRgM4D7NnYs9aOz/Ptv8wzto7P8+2/zDOxgM4D7NnYs9GAzgPs2diz1o7P8+2/zDO2js/z7b/MM7GAzgPs2diz0YDOA+zZ2LPWjs/z7b/MM7aOz/Ptv8wzsYDOA+"),
+"format": 34359742487,
+"index_count": 54,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQACAAJAAoACgALAAgADAANAA4ADgAPAAwAEAARABIAEgATABAAFAAVABYAFgAXABQAGAAZABoAGgAbABgAHAAdAB4AHgAfABwAIAAhACIAIgAjACAA"),
+"material": SubResource("StandardMaterial3D_0r33r"),
+"name": "M_EC_RoadBlock_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 36,
+"vertex_data": PackedByteArray("/v//vgAAwD8AAAAA/v//vv7//z4AAAAAAADAv/7//z4AAAAAAADAvwAAwD8AAAAAAgAAPwAAwD8AAAAAAgAAP/7//z4AAAAA/v//vv7//z4AAAAA/v//vgAAwD8AAAAA/v//vv7//z4AAAAA/v//vgIAAL8AAAAAAADAvwIAAL8AAAAAAADAv/7//z4AAAAAAgAAP/7//z4AAAAAAgAAPwIAAL8AAAAA/v//vgIAAL8AAAAA/v//vv7//z4AAAAAAADAPwAAwD8AAAAAAADAP/7//z4AAAAAAgAAP/7//z4AAAAAAgAAPwAAwD8AAAAAAADAP/7//z4AAAAAAADAPwIAAL8AAAAAAgAAPwIAAL8AAAAAAgAAP/7//z4AAAAA/v//vgIAAL8AAAAA/v//vgAAwL8AAAAAAADAvwAAwL8AAAAAAADAvwIAAL8AAAAAAgAAPwIAAL8AAAAAAgAAPwAAwL8AAAAA/v//vgAAwL8AAAAA/v//vgIAAL8AAAAAAADAPwIAAL8AAAAAAADAPwAAwL8AAAAAAgAAPwAAwL8AAAAAAgAAPwIAAL8AAAAA/3//f////7//f/9/////v/9//3////+//3//f////7//f/9/////v/9//3////+//3//f////7//f/9/////v/9//3////+//3//f////7//f/9/////v/9//3////+//3//f////7//f/9/////v/9//3////+//3//f////7//f/9/////v/9//3////+//3//f////7//f/9/////v/9//3////+//3//f////7//f/9/////v/9//3////+//3//f////7//f/9/////v/9//3////+//3//f////7//f/9/////v/9//3////+//3//f////7//f/9/////v/9//3////+//3//f////7//f/9/////v/9//3////+/")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_riywy")
+
+[node name="SM_EC_Rock_Plane_Template_02" type="Node3D" unique_id=700056608]
+
+[node name="SM_EC_Rock_Plane_Template_02" type="MeshInstance3D" parent="." unique_id=1227603449]
+mesh = SubResource("ArrayMesh_px350")

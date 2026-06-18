@@ -1,0 +1,49 @@
+[gd_scene format=4 uid="uid://f7vu16fpr86m"]
+
+[ext_resource type="Texture2D" uid="uid://c5nh3hqqk8gkj" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Plants_CL_0.png" id="1_n3n1s"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_i4rmn"]
+resource_name = "M_EC_Plants_0"
+transparency = 4
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_n3n1s")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_v24kh"]
+_surfaces = [{
+"aabb": AABB(1.4305115e-06, -0.0031963587, -0.11967564, 0.23846102, 1.0589724, 0.23846102),
+"format": 34359742465,
+"index_count": 12,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQA"),
+"name": "M_EC_Plants_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("gC90Pqsjhz8AAAAAgC90PgAAwDQAAAAAAADANQAAwDQAAAAAAADANasjhz8AAAAAAj7wPeu6hj+AGPW9Aj7wPQB6UbuAGPW9AD7wPQB6UbvARfM9AD7wPeu6hj/ARfM9")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_svv66"]
+resource_name = "SM_EC_Plant_Card_Cross_04"
+_surfaces = [{
+"aabb": AABB(1.4305115e-06, -0.0031963587, -0.11967564, 0.23846102, 1.0589724, 0.23846102),
+"attribute_data": PackedByteArray("1DcwPiIS4z7VNzA+5ho1PxZY5j3mGjU/FljmPSIS4z7UNzA+IhLjPtU3MD7mGjU/FljmPeYaNT8WWOY9IhLjPg=="),
+"format": 34359742487,
+"index_count": 12,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQA"),
+"material": SubResource("StandardMaterial3D_i4rmn"),
+"name": "M_EC_Plants_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("gC90Pqsjhz8AAAAAgC90PgAAwDQAAAAAAADANQAAwDQAAAAAAADANasjhz8AAAAAAj7wPeu6hj+AGPW9Aj7wPQB6UbuAGPW9AD7wPQB6UbvARfM9AD7wPeu6hj/ARfM9/3//f////7//f/9/////v/9//3////+//3//f////7/+//9///////7//3///////v//f//////+//9//////w==")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_v24kh")
+
+[node name="SM_EC_Plant_Card_Cross_04" type="Node3D" unique_id=5495999]
+
+[node name="SM_EC_Plant_Card_Cross_04" type="MeshInstance3D" parent="." unique_id=1763363363]
+mesh = SubResource("ArrayMesh_svv66")

@@ -1,0 +1,49 @@
+[gd_scene format=4 uid="uid://bllkrbrd60v42"]
+
+[ext_resource type="Texture2D" uid="uid://dij3jwbwmlvup" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Trees_CL_1.png" id="1_fqjnt"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vvi3f"]
+resource_name = "M_EC_Trees_0"
+transparency = 4
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_fqjnt")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_524o8"]
+_surfaces = [{
+"aabb": AABB(-0.9886556, -2.580868e-08, -3.1272407e-10, 1.9773113, 3.7371073, 0.34184632),
+"format": 34359742465,
+"index_count": 12,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAADAAIAAgAFAAQA"),
+"name": "M_EC_Trees_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 6,
+"vertex_data": PackedByteArray("iRh9P8Qsb0B7Bq8+iRh9P+Ox3bJ7Bq8+AAAAAAAAAAAAAAAAAAAAAMQsb0AA7KuviRh9v8Qsb0B7Bq8+iRh9v+Ox3bJ7Bq8+")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_js5di"]
+resource_name = "SM_EC_Tree_Card_Bent_05"
+_surfaces = [{
+"aabb": AABB(-0.9886556, -2.580868e-08, -3.1272407e-10, 1.9773113, 3.7371073, 0.34184632),
+"attribute_data": PackedByteArray("ERc/Pz4oAz8RFz8/fAR6Px0oLz98BHo/HSgvPz4oAz8pOR8/PigDPx0oLz8+KAM/HSgvP3wEej8oOR8/fAR6Pw=="),
+"format": 34359742487,
+"index_count": 12,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQA"),
+"material": SubResource("StandardMaterial3D_vvi3f"),
+"name": "M_EC_Trees_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 8,
+"vertex_data": PackedByteArray("iRh9P8Qsb0B7Bq8+iRh9P+Ox3bJ7Bq8+AAAAAAAAAAAAAAAAAAAAAMQsb0AA7KuviRh9v8Qsb0B7Bq8+AAAAAMQsb0AA7KuvAAAAAAAAAAAAAAAAiRh9v+Ox3bJ7Bq8+HF//fxzf/78cX/9/HN//vxxf/38c3/+/HF//fxzf/7/ioP9///9w0OKg/3///3DQ4qD/f///cNDioP9///9w0A==")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_524o8")
+
+[node name="SM_EC_Tree_Card_Bent_05" type="Node3D" unique_id=289093245]
+
+[node name="SM_EC_Tree_Card_Bent_05" type="MeshInstance3D" parent="." unique_id=2086389820]
+mesh = SubResource("ArrayMesh_js5di")

@@ -1,0 +1,48 @@
+[gd_scene format=4 uid="uid://gcvd1ygvae6"]
+
+[ext_resource type="Texture2D" uid="uid://qxf7h235dou4" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Tunnel_CL_0.png" id="1_t4bll"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_j2nhc"]
+resource_name = "M_EC_ConcreteTunnel_0"
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_t4bll")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_k8oad"]
+_surfaces = [{
+"aabb": AABB(-4.88762e-07, -1.5000006, -2.0661228e-07, 1e-05, 3.0000005, 3.4842865),
+"format": 34359742465,
+"index_count": 51,
+"index_data": PackedByteArray("AAABAAIAAAACAAMAAAADAAQAAAAEAAUAAAAFAAYAAAAHAAEACAAAAAYABwAJAAEABwAKAAkACgALAAkACAAGAAwADQAIAAwADgANAAwADwAOAAwAEAAPAAwAEQAQAAwAEQAMABIA"),
+"name": "M_EC_ConcreteTunnel_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 19,
+"vertex_data": PackedByteArray("y3LWtIbpnD/JbTRATO8uKgAAALWM/l5AT43LM3TwlL6rQF1AcJdHNJoKEr9x8VdAszyQNLUTU79zDE9AVou2NGKRhb8H+kJA0nLWNIvpnL/JbTRATou2tFyRhT8H+kJA5YfvtNpDrz+h9iNAKY3Ls1jwlD6rQF1AqjyQtKgTUz9zDE9AXZdHtIwKEj9x8VdA7YfvNOBDr7+h9iNA1hkBtTjtvD/QHBJAeDMDtf7/vz89d/0/eDMDtf7/vz9gmwgzejMDNQIAwL8n2V20fDMDNQUAwL+Bef0/zRkBNSztvL8VHRJA")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_ektp1"]
+resource_name = "SM_EC_ConcreteTunnel_DoorWay_Card_0"
+_surfaces = [{
+"aabb": AABB(-4.88762e-07, -1.5000006, -2.0661228e-07, 1e-05, 3.0000005, 3.4842865),
+"attribute_data": PackedByteArray("nb8FPxUfSj9oihA/i9pdP1sZED89iWI/u8AOP0sJZz9rfww/IiBrP91vCT97pm4/nL8FPwGWcT/dbwk/nA5NP+OSAT9C0Ec/XBkQP9orWT9rfww/9ZRQP7zADj/Nq1Q/45IBP9bkcz9/GPo+chhGP79E8D4AwEU/DQGwPgDART8NAbA+lP91P1FF8D6V/3U/oBj6PqKcdT8="),
+"format": 34359742487,
+"index_count": 51,
+"index_data": PackedByteArray("AAABAAIAAAACAAMAAAADAAQAAAAEAAUAAAAFAAYAAAAHAAEACAAAAAYABwAJAAEABwAKAAkACgALAAkACAAGAAwADQAIAAwADgANAAwADwAOAAwAEAAPAAwAEQAQAAwAEQAMABIA"),
+"material": SubResource("StandardMaterial3D_j2nhc"),
+"name": "M_EC_ConcreteTunnel_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 19,
+"vertex_data": PackedByteArray("y3LWtIbpnD/JbTRATO8uKgAAALWM/l5AT43LM3TwlL6rQF1AcJdHNJoKEr9x8VdAszyQNLUTU79zDE9AVou2NGKRhb8H+kJA0nLWNIvpnL/JbTRATou2tFyRhT8H+kJA5YfvtNpDrz+h9iNAKY3Ls1jwlD6rQF1AqjyQtKgTUz9zDE9AXZdHtIwKEj9x8VdA7YfvNOBDr7+h9iNA1hkBtTjtvD/QHBJAeDMDtf7/vz89d/0/eDMDtf7/vz9gmwgzejMDNQIAwL8n2V20fDMDNQUAwL+Bef0/zRkBNSztvL8VHRJAAAD/f/9//78AAP9//3//vwAA/3//f/+/AAD/f/9//78AAP9//3//vwAA/3//f/+/AAD/f/9//78AAP9//3//vwAA/3//f/+/AAD/f/9//78AAP9//3//vwAA/3//f/+/AAD/f/9/+r8AAP9//3+qvwAA/3//f8S/AAD/f/9//r8AAP9//3/+vwAA/3//f/+/AAD/f/9//78=")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_k8oad")
+
+[node name="SM_EC_ConcreteTunnel_DoorWay_Card_0" type="Node3D" unique_id=1505296726]
+
+[node name="SM_EC_ConcreteTunnel_DoorWay_Card_0" type="MeshInstance3D" parent="." unique_id=1913978501]
+mesh = SubResource("ArrayMesh_ektp1")

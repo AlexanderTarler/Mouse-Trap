@@ -1,0 +1,49 @@
+[gd_scene format=4 uid="uid://bcjy0rctnxheg"]
+
+[ext_resource type="Texture2D" uid="uid://dr4p3nw1uwxo4" path="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/House_CL_0.png" id="1_an28b"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fkiy7"]
+resource_name = "M_EC_House_0"
+transparency = 4
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_an28b")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_2oq2b"]
+_surfaces = [{
+"aabb": AABB(-0.32154346, -0.7546387, 0, 0.643087, 0.7546389, 1.457676),
+"format": 34359742465,
+"index_count": 66,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQACAAJAAoACgALAAgADAANAA4ADgAPAAwAEAARABIAEgATABAAFAAVABYAFgAXABQAFAAXABgAFwAWABkAGQAYABcAGQAWABUAGAAaABQAGgAYABkAFQAUABoAGQAbABoAGgAbABUAFQAbABkA"),
+"name": "M_EC_House_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 28,
+"vertex_data": PackedByteArray("+KCkvrZiNL8glbo/+KCkvrZiNL8AAAAA+KCkvgAAq7YAAAAA+KCkvgAAq7Yglbo/CKGkPrZiNL8glbo/CKGkPgAAq7Yglbo/CKGkPgAAq7YAAAAACKGkPrZiNL8AAAAAXKGkPgAAYDQglbo/VaGkvgAAkDQglbo/VaGkvgAAkDQAAAAAXKGkPgAAYDQAAAAAOKGkPrZiNL8glbo/AqGkvrZiNL8glbo/AqGkvgAAq7Yglbo/OKGkPgAAq7Yglbo/OKGkPrZiNL8AAAAAOKGkPgAAq7YAAAAAAqGkvgAAq7YAAAAAAqGkvrZiNL8AAAAAWKGkvv4vQb8hlbo/WKGkPv4vQb8hlbo/WKGkPgAwQb8AAAA0WKGkvgAwQb8AAAA0WKGkvjNjNL8AAAA0WKGkPjNjNL8AAAA0WKGkvjJjNL8hlbo/WKGkPjJjNL8hlbo/")
+}]
+blend_shape_mode = 0
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_024ab"]
+resource_name = "SM_EC_House_Kitchen_Cupboard_Static_00"
+_surfaces = [{
+"aabb": AABB(-0.32154346, -0.7546387, 0, 0.643087, 0.7546389, 1.457676),
+"attribute_data": PackedByteArray("FaYKPw1VGT8Vpgo/lOUkP6jQBD+U5SQ/qNAEPw1VGT/24RU/DVUZP4kMED8NVRk/iQwQP5TlJD/24RU/lOUkP9QMCj8NVRk/1bkEPw1VGT/VuQQ/lOUkP9MMCj+U5SQ/128VP9r8HD/XbxU/8xYiP2qaDz/zFiI/apoPP9r8HD/XbxU/2vwcP2qaDz/a/Bw/apoPP/MWIj/XbxU/8xYiP9iWiz58iqE+3auVPnqKoT7dq5U+mq64PtiWiz6crrg+5nKLPvRtoT7mcos+lsC4Pvu8lT6UwLg++7yVPvJtoT4l/4s+RKq3PiX/iz5IhKI+2riMPkiEoj7auIw+RKq3PoCzkD5Mpqc+gbOQPkrBsD5G/o8+SsGwPkP+jz5Mpqc+F66UPkSEoj7MZ5U+RISiPsxnlT5Aqrc+F66UPkCqtz6r9Ys+0tOhPixKlT7Q06E+LEqVPoSNoj6r9Ys+ho2iPg=="),
+"format": 34359742487,
+"index_count": 66,
+"index_data": PackedByteArray("AAABAAIAAgADAAAABAAFAAYABgAHAAQACAAJAAoACgALAAgADAANAA4ADgAPAAwAEAARABIAEgATABAAFAAVABYAFgAXABQAGAAZABoAGgAbABgAHAAdAB4AHgAfABwAIAAhACIAIgAjACAAJAAlACYAJgAnACQAKAApACoAKgArACgA"),
+"material": SubResource("StandardMaterial3D_fkiy7"),
+"name": "M_EC_House_0",
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 44,
+"vertex_data": PackedByteArray("+KCkvrZiNL8glbo/+KCkvrZiNL8AAAAA+KCkvgAAq7YAAAAA+KCkvgAAq7Yglbo/CKGkPrZiNL8glbo/CKGkPgAAq7Yglbo/CKGkPgAAq7YAAAAACKGkPrZiNL8AAAAAXKGkPgAAYDQglbo/VaGkvgAAkDQglbo/VaGkvgAAkDQAAAAAXKGkPgAAYDQAAAAAOKGkPrZiNL8glbo/AqGkvrZiNL8glbo/AqGkvgAAq7Yglbo/OKGkPgAAq7Yglbo/OKGkPrZiNL8AAAAAOKGkPgAAq7YAAAAAAqGkvgAAq7YAAAAAAqGkvrZiNL8AAAAAWKGkvv4vQb8hlbo/WKGkPv4vQb8hlbo/WKGkPgAwQb8AAAA0WKGkvgAwQb8AAAA0WKGkvjJjNL8hlbo/WKGkvjNjNL8AAAA0WKGkPjNjNL8AAAA0WKGkPjJjNL8hlbo/WKGkvjNjNL8AAAA0WKGkvjJjNL8hlbo/WKGkvv4vQb8hlbo/WKGkvgAwQb8AAAA0WKGkPjNjNL8AAAA0WKGkvjNjNL8AAAA0WKGkvgAwQb8AAAA0WKGkPgAwQb8AAAA0WKGkPv4vQb8hlbo/WKGkPjJjNL8hlbo/WKGkPjNjNL8AAAA0WKGkPgAwQb8AAAA0WKGkvjJjNL8hlbo/WKGkPjJjNL8hlbo/WKGkPv4vQb8hlbo/WKGkvv4vQb8hlbo/AAD/f/9/AIAAAP9//38AgAAA/3//fwCAAAD/f/9/AID///9//3/+f////3//f/5/////f/9//n////9//3/+f/9//v////8//3/+//7//z//f/7/////P/9//v/+//8//3//f/9/AID/f/9//38AgP9//3//fwCA/3//f/9/AID//////3/+f///////f/5///////9//n///////3/+f/9/AAD///+//38AAP///7//fwAA////v/9/AAD///+//3///////z//f///////P/9///////8//3///////z8AAP9//38AgAAA/3//fwCAAAD/f/9/AIAAAP9//38AgP//////f/////////9//////////3//////////f///////f/9///////9//3///////3//f///////f/9/////f/9//v//v/9//3/+//+//3//f/7//7//f/9//v//vw==")
+}]
+blend_shape_mode = 0
+shadow_mesh = SubResource("ArrayMesh_2oq2b")
+
+[node name="SM_EC_House_Kitchen_Cupboard_Static_00" type="Node3D" unique_id=1599931340]
+
+[node name="SM_EC_House_Kitchen_Cupboard_Static_00" type="MeshInstance3D" parent="." unique_id=316681280]
+mesh = SubResource("ArrayMesh_024ab")
