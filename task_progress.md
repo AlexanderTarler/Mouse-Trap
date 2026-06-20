@@ -1,35 +1,28 @@
-# Day 1 Hasselmus Nest Documentation System
+# Day 1 Onboarding Implementation
 
-## Todo List
+## Phase-Based Boolean System
 
-### 1. Create photo_camera.gd ✅
+### Phase 1: Entry — "Get inside the cabin."
 
-- [x] Create a camera tool script that detects nest objects via raycast
-- [x] Store photographed nest IDs to prevent duplicate documentation
-- [x] On successful photo: mark nest as documented, notify RoutineManager
-- [x] Each nest requires exactly ONE unique photo
-
-### 2. Update hasselmus_nest.gd ✅
-
-- [x] Add `is_photographed` flag (separate from old `is_documented`)
-- [x] Add `photograph()` method called by the camera
-- [x] Keep old `interact()` for backward compatibility but deprecate it
-- [x] Add group "photographable_nests" for camera detection
-
-### 3. Update computer_ui.gd — Pre-check Guard ✅
-
-- [x] Add `_all_nests_photographed()` check before allowing correlation
-- [x] If not all nests photographed: show error about "FLOATING FIELD SAMPLES"
-- [x] Keep `nest_data_uploaded = false` until guard passes
-- [x] Only Profile A (eco-survey) uses the nest guard
-
-### 4. Update routine_manager.gd ✅
-
-- [x] Already compatible — `document_nest()` called by camera photo
-- [x] Keep existing step advancement logic (3 nests → Step 1)
-
-### 5. Verify Integration
-
-- [ ] Test: photograph 3 nests → computer shows eco-survey → correct correlation → phone drop
-- [ ] Test: try correlating without all nests photographed → error message
-- [ ] Test: wrong dropdown selections → Win98 error
+- [x] 1. Refactor `routine_manager.gd` with Phase-based boolean system
+- [x] 2. Add `_apply_dev_mode_settings()` to `night_manager.gd`
+- [x] 3. Modify `door.gd` to call RoutineManager for locked/unlocked
+- [x] 4. Modify `inventory/inventory.gd` to detect key pickup
+- [x] 5. Modify `player_controller.gd` to detect cabin entry
+- [x] 6. Create CabinApproachTrigger in `cottage_horror.tscn`
+- [x] 7. Modify `fuse_box.gd` to call RoutineManager
+- [x] 8. Modify `generator_interaction.gd` to call RoutineManager
+- [x] 9. Modify `pc_interactable.gd` to call RoutineManager
+- [x] 10. Modify `bed_interactable.gd` for Phase 3 + Day 2 transition
+- [x] 11. Update `night_manager.gd` time management (4:00 PM start, pause/unpause)
+- [x] 12. Update `horror_hud.gd` to work with new RoutineManager signals
+- [x] 13. Modify `cabin_light.gd` to notify RoutineManager when lights are toggled off
+- [x] 14. Add `start_in_dev_mode` export to `player_controller.gd` and `player.tscn`
+- [x] 15. Fix: `current_night` starts at 0 (Day 1) instead of 1 (Night 1)
+- [x] 16. Fix: Cabin entry detection only triggers on "Outside" → inside transition
+- [x] 17. Fix: `_find_game_time()` no longer auto-starts night when `current_night == 0`
+- [x] 18. Fix: `_on_scene_ready()` waits for player to exist before setting spawn/dev mode
+- [x] 19. Fix: `setup_player_spawn()` searches for "PlayerSpawn" under "PlayerSpawnpoints" Node3D
+- [x] 20. Fix: `_set_initial_time()` triggers `night_started` signal via `set_progress()` — use direct assignment instead
+- [x] 21. Fix: `_on_scene_ready()` 60-frame wait loop exits before player appears — use `_process()` polling instead
+- [x] 22. Fix: Cabin entry `_previous_room` starts as "Outside" causing false trigger — use `""` calibration frame instead

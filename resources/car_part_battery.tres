@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://d2q7k3f1x6p8"]
+
+[ext_resource type="Script" uid="uid://baixx1fs8cosb" path="res://scripts/items/item_data.gd" id="1_8lbpg"]
+
+[resource]
+script = ExtResource("1_8lbpg")
+item_name = "Car Battery"
+item_description = "A heavy 12V car battery. This might fit in the van."
+item_type = 7
+metadata/_custom_type_script = "uid://baixx1fs8cosb"

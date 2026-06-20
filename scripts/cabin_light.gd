@@ -75,6 +75,16 @@ func toggle_light() -> void:
 	var nm = get_node_or_null("/root/NightManager")
 	if nm and nm.has_method("recalculate_fuel_drain"):
 		nm.recalculate_fuel_drain()
+	
+	# ─── DAY 1 ONBOARDING: PHASE 3 — LIGHT TOGGLED OFF ────────────────
+	# Notify RoutineManager that a light was toggled off.
+	# RoutineManager will check if all lights are off and advance the
+	# bedtime routine if conditions are met.
+	if not is_switched_on:
+		var rm = get_node_or_null("/root/RoutineManager")
+		if rm and rm.has_method("on_light_toggled_off"):
+			rm.on_light_toggled_off()
+
 
 
 ## Updates the light's visibility based on the switch state and generator power.

@@ -2254,7 +2254,6 @@ func hear_noise(noise_position: Vector3, radius: float, intensity: float = 1.0) 
 				# STALK (outdoor pursuit).
 				_consecutive_vantage_misses = 0
 				thinks_player_is_inside = true
-				print("[Entity Hears] Indoor noise! Player is inside! thinks_player_is_inside=true. Reset consecutive vantage misses to 0.")
 			else:
 				# ─── OUTDOOR NOISE: Player has escaped! ──────────────
 				# The Entity hears the player outside the cabin. This is
@@ -2262,9 +2261,8 @@ func hear_noise(noise_position: Vector3, radius: float, intensity: float = 1.0) 
 				# inside. Update the belief system immediately so the
 				# Director can transition to STALK (outdoor pursuit).
 				thinks_player_is_inside = false
-				print("[Entity Hears] OUTDOOR noise detected! Player has escaped! thinks_player_is_inside=false.")
 		
-		print("[Entity Hears] Noise detected at (%.1f, %.1f, %.1f), radius=%.1fm, dist=%.1fm" % [noise_position.x, noise_position.y, noise_position.z, radius, dist])
+		
 
 
 ## Returns the path timer.
@@ -2731,7 +2729,6 @@ func _on_caught_player() -> void:
 	# and transitions back to CHASE/OBSERVE. This is useful for testing
 	# chase behavior without triggering death scenes.
 	if not can_kill:
-		print("[Entity] CAN KILL is DISABLED. Entity stops short instead of capturing player.")
 		request_state(EntityAI.State.STALK)
 		return
 	

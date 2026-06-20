@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://b3nan7x2k5r1"]
+
+[ext_resource type="Script" uid="uid://baixx1fs8cosb" path="res://scripts/items/item_data.gd" id="1_8lbpg"]
+
+[resource]
+script = ExtResource("1_8lbpg")
+item_name = "Radiator"
+item_description = "A rusted car radiator. Still looks functional."
+item_type = 7
+metadata/_custom_type_script = "uid://baixx1fs8cosb"

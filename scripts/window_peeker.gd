@@ -116,12 +116,14 @@ func is_player_looking_at_me() -> bool:
 	
 	# Calculate the angle between the camera's forward vector and the
 	# direction from the camera to this peeker's position.
+	# NOTE: Y component is KEPT in both vectors so the player must actually
+	# look at the peeker's vertical position. Without Y, a peeker on the
+	# second floor would trigger when looking through a first-floor window
+	# directly below it.
 	var cam_forward: Vector3 = -_cached_camera.global_transform.basis.z
-	cam_forward.y = 0.0
 	cam_forward = cam_forward.normalized()
 	
 	var to_peeker: Vector3 = global_position - _cached_camera.global_position
-	to_peeker.y = 0.0
 	to_peeker = to_peeker.normalized()
 	
 	# Dot-product gaze cone check
@@ -133,7 +135,9 @@ func is_player_looking_at_me() -> bool:
 const DUCK_DOWN_DISTANCE: float = -1.5
 
 ## Duration of the duck-down tween in seconds.
-const DUCK_DOWN_DURATION: float = 0.3
+## Increased by 50% (from 0.3 to 0.45) so the peeker lingers longer
+## after being spotted, giving the player a more impactful sighting.
+const DUCK_DOWN_DURATION: float = 0.45
 
 ## Whether this peeker is currently in the duck-down (vanish) sequence.
 var _is_vanishing: bool = false

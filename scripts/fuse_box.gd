@@ -57,6 +57,13 @@ func _ready() -> void:
 ## interactables in the codebase (door.gd, generator_interaction.gd, etc.).
 func interact() -> void:
 	print("[FuseBox] interact() called! Current state: ", BoxState.keys()[current_state])
+	
+	# ─── DAY 1 ONBOARDING: PHASE 2 — FUSE BOX INTERACTED ────────────────
+	# Notify RoutineManager that the player first interacted with the fuse box.
+	var rm = get_node_or_null("/root/RoutineManager")
+	if rm and rm.has_method("on_fuse_box_interacted"):
+		rm.on_fuse_box_interacted()
+	
 	match current_state:
 		BoxState.BROKEN:
 			attempt_fuse_insertion()
@@ -75,6 +82,12 @@ func attempt_fuse_insertion() -> void:
 		current_state = BoxState.HAS_FUSE
 		fuse_inserted.emit()
 		print("[FuseBox] You slot the heavy ceramic fuse into the terminal block. The switch can now be thrown.")
+		
+		# ─── DAY 1 ONBOARDING: PHASE 2 — FUSE INSERTED ──────────────────
+		# Notify RoutineManager that the fuse has been inserted.
+		var rm = get_node_or_null("/root/RoutineManager")
+		if rm and rm.has_method("on_fuse_inserted"):
+			rm.on_fuse_inserted()
 	else:
 		print("[FuseBox] The fuse block is empty. The main circuit breaker is completely dead.")
 
@@ -85,6 +98,13 @@ func throw_switch() -> void:
 	_set_generator_state(true)
 	power_restored.emit()
 	print("[FuseBox] The lever snaps down. The old generator spools up, and lights flicker to life!")
+	
+	# ─── DAY 1 ONBOARDING: PHASE 2 — FUSE FIXED ────────────────────────
+	# Notify RoutineManager that the fuse box has been fixed.
+	var rm = get_node_or_null("/root/RoutineManager")
+	if rm and rm.has_method("on_fuse_fixed"):
+		rm.on_fuse_fixed()
+
 
 
 ## Sets the NightManager generator state and emits the state change signal

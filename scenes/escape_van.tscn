@@ -25,3 +25,6 @@ stream = ExtResource("2_hxwsh")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.956003, 2.0793147)
 visible = false
 light_color = Color(1, 0, 0, 1)
+
+[node name="RepairAudio" type="AudioStreamPlayer3D" parent="." unique_id=389210561]
+volume_db = -6.0

@@ -256,6 +256,10 @@ func interact() -> void:
 	# Block interaction if the generator is off
 	if not _is_powered:
 		print("[PCInteractable] The monitor is dead. There's no power grid activity.")
+		# Notify RoutineManager that the player tried the computer without power
+		var rm = get_node_or_null("/root/RoutineManager")
+		if rm and rm.has_method("on_computer_tried_no_power"):
+			rm.on_computer_tried_no_power()
 		return
 
 	if not _computer_ui:
@@ -342,6 +346,15 @@ func _on_sit_tween_completed() -> void:
 		if _computer_ui.computer_closed.is_connected(_on_computer_closed):
 			_computer_ui.computer_closed.disconnect(_on_computer_closed)
 		_computer_ui.computer_closed.connect(_on_computer_closed)
+	
+	# ─── DAY 1 ONBOARDING: PHASE 2 — COMPUTER USED ──────────────────────
+	# Notify RoutineManager that the player has successfully used the computer.
+	# This marks Phase 2 as complete, allowing the player to proceed to Phase 3
+	# (lock the door and go to bed).
+	var rm = get_node_or_null("/root/RoutineManager")
+	if rm and rm.has_method("on_computer_used"):
+		rm.on_computer_used()
+
 
 
 ## Called when the ComputerUI emits computer_closed (player exits the terminal).

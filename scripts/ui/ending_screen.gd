@@ -56,17 +56,17 @@ func setup_ending(ending_type: int) -> void:
 		ending_name = em.get_ending_name(ending_type)
 	
 	match ending_type:
-		0:  # Ending.SURVIVAL
-			title_label.text = "SURVIVED"
-			subtitle_label.text = "The dawn breaks. You made it through the night.\nThe Entity retreats into the shadows... for now."
-		
-		1:  # Ending.PURGE
-			title_label.text = "TOTEM DESTROYED"
-			subtitle_label.text = "The anchor is broken! The Entity is banished.\nYou are free."
-		
-		2:  # Ending.DEATH
+		0:  # Ending.DEATH
 			title_label.text = "YOU DIED"
 			subtitle_label.text = "The Entity caught you.\nThe darkness claims another soul."
+		
+		1:  # Ending.ESCAPE_MEDIOCRE
+			title_label.text = "ESCAPED... BARELY"
+			subtitle_label.text = "You repaired the van and got out alive.\nBut the Entity is still out there... waiting."
+		
+		2:  # Ending.ESCAPE_GOOD
+			title_label.text = "VICTORY"
+			subtitle_label.text = "You destroyed the Totem and escaped!\nThe Entity is banished forever."
 		
 		_:
 			title_label.text = "GAME OVER"

@@ -8,11 +8,11 @@ class_name TotemAnchor
 ## unlocks the escape van.
 ##
 ## INTERACTION (HOLD-TO-PURGE):
-## The totem uses the standard interaction system (has_method("interact") and
-## has_method("get_interact_text")). When the player presses 'E' while looking
-## at it, the purge begins. The player must HOLD the interact key for
-## total_purge_time_required seconds to complete the destruction. Releasing
-## the key early resets progress to zero.
+## Fully autonomous — no InteractionManager dependency. _process() checks the
+## physical 'E' key (Input.is_physical_key_pressed(KEY_E)), player distance
+## (5m), and a generous camera dot-product (53-degree cone, cos=0.6) to manage
+## its own hold-to-purge state. The InteractionManager's get_interact_text()
+## is kept only for the prompt display.
 ##
 ## RACE MECHANIC:
 ## The totem is ALWAYS interactable — there is no stun gate. However, the
@@ -24,8 +24,8 @@ class_name TotemAnchor
 ##
 ## VISUAL FEEDBACK:
 ## While purging, a progress bar is displayed on the HUD. When complete, the
-## totem plays a burning/destruction sound, spawns particle sparks, and
-## becomes non-interactable (is_purged = true).
+## totem plays a burning/destruction sound, spawns particle sparks, defeats
+## the Entity, and becomes non-interactable (is_purged = true).
 
 ## Whether this totem has been destroyed (purged).
 ## Once true, the totem cannot be interacted with again.
@@ -41,12 +41,11 @@ var purge_progress: float = 0.0
 @export var total_purge_time_required: float = 4.0
 
 ## Whether the player is currently actively purging the anchor.
-## Set to true by interact() when the Entity is stunned.
+## Set to true by interact() when the purge starts.
 ## Set to false when the purge completes or the player releases the key.
 var is_being_purged: bool = false
 
-## Reference to the Entity controller (optional — used for future
-## tension-based features like proximity detection during purge).
+## Reference to the Entity controller (used for the defeat sequence).
 var _entity: Node = null
 
 ## Audio player for the destruction sound effect.
@@ -57,6 +56,11 @@ var _spark_particles: GPUParticles3D = null
 
 ## The prompt text shown when the player looks at the totem.
 const INTERACT_PROMPT: String = "[E] Destroy Totem Anchor"
+
+## Maximum distance the player can be from the totem to continue purging.
+## Set to 8.0 to account for the interaction raycast range (typically 5-6m)
+## plus some leeway so the player doesn't accidentally break the hold.
+const MAX_PURGE_DISTANCE: float = 8.0
 
 
 func _ready() -> void:
@@ -116,69 +120,65 @@ func get_interact_text() -> String:
 	return INTERACT_PROMPT
 
 
-## Called by the InteractionManager when the player presses 'E' while looking
-## at this totem. The totem is ALWAYS interactable — there is no stun gate.
-## The player can begin the hold-to-purge at any time, but the Entity will
-## kill them if it catches them mid-purge.
-##
-## Stunning the Entity (via the porch light overload trap) gives the player
-## a safe window to reach the totem and begin the purge without being
-## interrupted. If the Entity recovers mid-purge, the player must decide
-## whether to finish or flee.
-##
-## The _process(delta) loop handles the hold-to-purge accumulation,
-## early-release reset, and completion trigger.
-func interact(player: Node3D = null) -> void:
-	if is_purged or is_being_purged:
-		return
-	
-	# ─── BEGIN PURGE SEQUENCE ───────────────────────────────────────
-	# The totem is always interactable. Reset progress and flip the flag
-	# so _process(delta) takes over the hold-to-purge accumulation.
-	purge_progress = 0.0
-	is_being_purged = true
-	
-	# Show the HUD progress bar
-	var hud = get_tree().get_first_node_in_group("hud")
-	if hud and hud.has_method("show_purge_progress"):
-		hud.show_purge_progress()
-	
-	print("[TotemAnchor] Purge sequence started! Hold interact for %.1f seconds." % total_purge_time_required)
-
-
-## Called every frame. If is_being_purged is true, checks whether the player
-## continues to hold the interact key. If released early, resets progress and
-## hides the progress bar. If held long enough, triggers the final destruction.
+## Called every frame. Fully autonomous — no InteractionManager dependency.
+## Checks the physical 'E' key, player distance (5m), and a generous camera
+## dot-product (53-degree cone, cos=0.6) to manage its own hold-to-purge state.
 func _process(delta: float) -> void:
+	if is_purged:
+		return
+	
+	# 1. Is the player physically holding the 'E' key?
+	if Input.is_physical_key_pressed(KEY_E):
+		var player = get_tree().get_first_node_in_group("player")
+		if not player:
+			player = get_tree().get_first_node_in_group("Player")
+		
+		# 2. Is the player within 5 meters?
+		if player and global_position.distance_to(player.global_position) <= 5.0:
+			
+			# 3. Is the player generally looking at the totem? (Very generous 53-degree cone)
+			var cam = get_viewport().get_camera_3d()
+			if cam:
+				var to_totem = (global_position - cam.global_position).normalized()
+				var cam_forward = -cam.global_transform.basis.z
+				if cam_forward.dot(to_totem) > 0.6:
+					_maintain_purge(delta)
+					return
+	
+	# If we drop down here, 'E' is released, player walked away, or looked away.
+	if is_being_purged:
+		_abort_purge()
+
+
+## Maintains the purge state. Called every frame from _process() while all
+## conditions (E key held, within 5m, looking at totem) are met.
+func _maintain_purge(delta: float) -> void:
 	if not is_being_purged:
-		return
-	
-	# ─── EARLY RELEASE CHECK ────────────────────────────────────────
-	# If the player releases the interact key, abort the purge and reset.
-	if not Input.is_action_pressed("interact"):
+		is_being_purged = true
 		purge_progress = 0.0
-		is_being_purged = false
-		
-		# Hide the HUD progress bar
+		print("[TotemAnchor] Purge started via 'E' key!")
 		var hud = get_tree().get_first_node_in_group("hud")
-		if hud and hud.has_method("hide_purge_progress"):
-			hud.hide_purge_progress()
-		
-		print("[TotemAnchor] Purge aborted — interact key released early.")
-		return
+		if hud and hud.has_method("show_purge_progress"):
+			hud.show_purge_progress()
 	
-	# ─── ACCUMULATE PROGRESS ────────────────────────────────────────
 	purge_progress += delta
 	
-	# Update the HUD progress bar
 	var hud = get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("update_purge_progress"):
-		var ratio: float = clampf(purge_progress / total_purge_time_required, 0.0, 1.0)
-		hud.update_purge_progress(ratio)
+		hud.update_purge_progress(purge_progress / total_purge_time_required)
 	
-	# ─── COMPLETION CHECK ───────────────────────────────────────────
 	if purge_progress >= total_purge_time_required:
 		_complete_purge()
+
+
+## Aborts the purge sequence. Resets progress and hides the progress bar.
+func _abort_purge() -> void:
+	is_being_purged = false
+	purge_progress = 0.0
+	print("[TotemAnchor] Purge aborted.")
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("hide_purge_progress"):
+		hud.hide_purge_progress()
 
 
 ## Executes the final destruction mechanics when the purge completes.
@@ -206,6 +206,9 @@ func _complete_purge() -> void:
 	# Show HUD feedback
 	_show_hud_message("The totem crumbles to ash! The Entity is anchored no more!")
 	
+	# ─── DEFEAT THE ENTITY ──────────────────────────────────────────
+	_defeat_entity()
+	
 	# Advance the RoutineManager step to unlock the escape van
 	var rm = get_node_or_null("/root/RoutineManager")
 	if rm and rm.has_method("advance_step"):
@@ -218,6 +221,46 @@ func _complete_purge() -> void:
 	var tween = create_tween()
 	tween.tween_property(self, "scale", Vector3.ZERO, 1.0)
 	tween.tween_callback(queue_free)
+
+
+## Defeats the Entity: plays a death scream, hides it, and disables it
+## completely so it can no longer interact with the game world.
+func _defeat_entity() -> void:
+	if not _entity or not is_instance_valid(_entity):
+		print("[TotemAnchor] No Entity found to defeat. It may have already been banished.")
+		return
+	
+	print("[TotemAnchor] Defeating Entity...")
+	
+	# ─── PLAY DEATH SCREAM ──────────────────────────────────────────
+	# Find the GrowlAudio player on the Entity and play it with a
+	# distorted pitch to sound like a dying scream.
+	var growl_audio: AudioStreamPlayer3D = _entity.get_node_or_null("GrowlAudio")
+	if growl_audio:
+		growl_audio.pitch_scale = randf_range(0.3, 0.6)  # Low, distorted, dying
+		growl_audio.play()
+		print("[TotemAnchor] Entity death scream played.")
+	else:
+		print("[TotemAnchor] WARNING: Entity has no GrowlAudio node.")
+	
+	# ─── DISABLE THE ENTITY COMPLETELY ─────────────────────────────
+	# Hide the visual model
+	_entity.hide()
+	
+	# Disable processing — the Entity will no longer think, move, or react
+	_entity.process_mode = Node.PROCESS_MODE_DISABLED
+	
+	# Disable the collision shape so the Entity can't block or push the player
+	var collision_shape = _entity.get_node_or_null("CollisionShape3D")
+	if collision_shape:
+		collision_shape.set_deferred("disabled", true)
+	
+	# Also disable the catch area if it exists
+	var catch_area = _entity.get_node_or_null("CatchArea")
+	if catch_area:
+		catch_area.monitoring = false
+	
+	print("[TotemAnchor] Entity defeated and disabled!")
 
 
 ## Shows a temporary message on the HUD.

@@ -199,14 +199,17 @@ func _spawn_initial_contents() -> void:
 		else:
 			print("[ScrapHeap] %s: Fuse resource not found, skipping fuse spawn." % scrap_heap_id)
 
-	# If this heap is flagged for a car part, add a placeholder slot
+	# If this heap is flagged for a car part, add a random car part item
 	if will_contain_car_part:
-		contents.append({
-			"item_data": null,
-			"quantity": 1,
-			"is_car_part_slot": true
-		})
-		print("[ScrapHeap] %s: Reserved a car part slot (item to be added later)." % scrap_heap_id)
+		var car_part = _get_random_car_part_data()
+		if car_part:
+			contents.append({
+				"item_data": car_part,
+				"quantity": 1
+			})
+			print("[ScrapHeap] %s: Car part spawned: %s" % [scrap_heap_id, car_part.item_name])
+		else:
+			print("[ScrapHeap] %s: Car part resource not found, skipping." % scrap_heap_id)
 
 	print("[ScrapHeap] %s: Initial contents spawned with %d item types." % [scrap_heap_id, contents.size()])
 
@@ -229,6 +232,29 @@ func _get_random_item_data():
 	var plank = _try_load_resource("res://resources/plank_resource.tres")
 	if plank:
 		pool.append(plank)
+	
+	if pool.is_empty():
+		return null
+	return pool[randi() % pool.size()]
+
+
+## Returns a random car part ItemData resource from the 3 possible parts.
+## The player needs all 3 to repair the van, but they only find one per
+## scrap heap — they must scavenge multiple heaps to collect them all.
+func _get_random_car_part_data():
+	var pool = []
+	
+	var battery = _try_load_resource("res://resources/car_part_battery.tres")
+	if battery:
+		pool.append(battery)
+	
+	var radiator = _try_load_resource("res://resources/car_part_radiator.tres")
+	if radiator:
+		pool.append(radiator)
+	
+	var wiring = _try_load_resource("res://resources/car_part_wiring.tres")
+	if wiring:
+		pool.append(wiring)
 	
 	if pool.is_empty():
 		return null

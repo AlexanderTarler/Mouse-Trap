@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://d0uq0x2m2q0cd"]
+
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_item_data"]
+[ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0c6" path="res://scenes/note.tscn" id="2_note_scene"]
+
+
+[resource]
+script = ExtResource("1_item_data")
+item_name = "Arvid's Note"
+item_description = "A crumpled note, hastily written. The handwriting is jagged and frantic."
+item_type = 1
+note_text = "They aren't who they say they are. This 'preservation' company is studying it. If anyone finds this, check my terminal. The override key is STENBERG_1996. I've set up a trap using the porch light, I just need to find some wire to finish it..."
+scene_to_spawn = ExtResource("2_note_scene")

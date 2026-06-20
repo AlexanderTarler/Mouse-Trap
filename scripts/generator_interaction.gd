@@ -80,12 +80,12 @@ func _apply_fuel(nm: Node, fuel_can: ItemData) -> void:
 	# Recalculate fuel drain to account for any lights that may have been off
 	nm.recalculate_fuel_drain()
 	
-	# Advance the Night 1 bedtime routine to the next step.
-	# Only advance if we're on Step 2 (refill generator) to prevent
-	# premature advancement if the player refuels before the computer upload.
+	# ─── DAY 1 ONBOARDING: PHASE 2 — GENERATOR REFILLED ────────────────
+	# Notify RoutineManager that the generator has been refilled.
 	var rm = get_node_or_null("/root/RoutineManager")
-	if rm and rm.has_method("advance_step") and rm.current_step == 2:
-		rm.advance_step()
+	if rm and rm.has_method("on_generator_refilled"):
+		rm.on_generator_refilled()
+
 	
 	print("[Generator] Refueled successfully! Fuel: %.1f / %.1f" % [nm.generator_fuel, nm.max_fuel])
 

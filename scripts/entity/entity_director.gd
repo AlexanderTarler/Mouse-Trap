@@ -913,7 +913,6 @@ func _tier_3_active_aggression(entity: CharacterBody3D, state: int) -> int:
 			return EntityAI.State.OBSERVE_FROM_TREELINE
 		
 		# ─── CONFIRMED: Player is truly outside. Start STALKING. ────────
-		print("[Director] Outside confirmed! Timer reached 0.0. Transitioning to STALK.")
 		return EntityAI.State.STALK
 	
 	# ─── STALK STATE HANDLING ─────────────────────────────────────────

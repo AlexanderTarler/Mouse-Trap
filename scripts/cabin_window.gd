@@ -46,6 +46,12 @@ class_name CabinWindow
 ## Assign this in the scene editor to link the window to its room light.
 @export var room_light: CabinLight = null
 
+## ─── TUTORIAL: Broken Window ────────────────────────────────────────────────
+## If true, this window starts the game with shattered glass and no planks.
+## Used for the Day 1 tutorial where the player must fix a drafty window.
+## Set this to true on the Hall_Window node in the cabin scene.
+@export var start_broken: bool = false
+
 ## Whether this window is currently boarded up with planks
 var is_boarded: bool = false
 
@@ -123,6 +129,31 @@ var _deferred_swap_timer: float = 0.0
 func _ready() -> void:
 	# Add to the WindowMarkers group so the Entity AI can find this window
 	add_to_group("WindowMarkers")
+	
+	# ─── TUTORIAL: Broken Window Initial State ──────────────────────────
+	# If this window is flagged as the tutorial broken window (start_broken),
+	# check the NightManager's tutorial_window_fixed flag. If the window has
+	# already been fixed in a previous session (persisted across scene reloads),
+	# skip the broken initialization — the window stays boarded.
+	#
+	# If the window hasn't been fixed yet, set it to broken state:
+	#   - is_glass_shattered = true (glass is gone)
+	#   - is_boarded = false (no planks)
+	#   - planks_remaining = 0 (no planks to break)
+	#
+	# This allows the tutorial window to persist its fixed state across
+	# scene reloads (death → restart, save/load, etc.) via the NightManager
+	# flag, while still starting broken on a fresh game.
+	if start_broken:
+		var nm = get_node_or_null("/root/NightManager")
+		var already_fixed = nm and "tutorial_window_fixed" in nm and nm.tutorial_window_fixed
+		if not already_fixed:
+			is_glass_shattered = true
+			is_boarded = false
+			planks_remaining = 0
+			print("[CabinWindow] Tutorial window '%s' initialized as BROKEN. Player must fix the draft." % window_id)
+		else:
+			print("[CabinWindow] Tutorial window '%s' already fixed (NightManager flag). Keeping boarded state." % window_id)
 	
 	# Initialize plank visibility based on initial state
 	_update_plank_visuals()
@@ -470,6 +501,27 @@ func interact() -> void:
 	# Play hammer sound
 	if _hammer_sound:
 		_hammer_sound.play()
+	
+	# ─── TUTORIAL: Persist the "fixed" flag ──────────────────────────────
+	# If this is the tutorial broken window (start_broken), set the
+	# NightManager's tutorial_window_fixed flag to true. This ensures the
+	# window stays boarded across scene reloads (death → restart, save/load).
+	#
+	# The flag is checked in _ready() — if already fixed, the window skips
+	# the broken initialization and keeps its boarded state.
+	if start_broken:
+		var nm = get_node_or_null("/root/NightManager")
+		if nm:
+			nm.tutorial_window_fixed = true
+			print("[CabinWindow] Tutorial window '%s' fixed! NightManager flag set." % window_id)
+		
+		# ─── DAY 1 ONBOARDING: PHASE 2B — WINDOW PATCHED ────────────────
+		# Notify RoutineManager that the player has patched the broken
+		# tutorial window. This advances the objective to "Lock the front
+		# door and go to bed."
+		var rm = get_node_or_null("/root/RoutineManager")
+		if rm and rm.has_method("on_window_patched"):
+			rm.on_window_patched()
 	
 	print("[CabinWindow] Window boarded up! Planks: %d (glass_shattered: %s)" % [planks_remaining, str(is_glass_shattered)])
 

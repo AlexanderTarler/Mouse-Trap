@@ -11,7 +11,8 @@ enum ItemType {
 	PLANK,
 	FUEL,
 	KEY,
-	CABLE_SPOOL
+	CABLE_SPOOL,
+	CAR_PART
 }
 
 

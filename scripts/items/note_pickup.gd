@@ -65,6 +65,18 @@ func _on_note_closed() -> void:
 	# Add the pending item to inventory now that the note has been read
 	if _pending_item_data and Inventory.add_item(_pending_item_data):
 		print("[NotePickup] Note added to inventory after closing: ", _pending_item_data.item_name)
+		
+		# ─── ARVID'S NOTE: SET PERSISTENCE FLAG ──────────────────────
+		# If the player just read Arvid's Note, set the arvid_password_found
+		# flag on NightManager. This tells the ComputerUI's RECOVER_DATA.EXE
+		# to auto-fill the decryption key, so the player doesn't need to
+		# memorize and manually type "STENBERG_1996".
+		if _pending_item_data.item_name == "Arvid's Note":
+			var night_manager = get_node_or_null("/root/NightManager")
+			if night_manager:
+				night_manager.arvid_password_found = true
+				print("[NotePickup] Arvid's Note discovered! NightManager.arvid_password_found = true")
+		
 		_pending_item_data = null
 		queue_free()
 	else:

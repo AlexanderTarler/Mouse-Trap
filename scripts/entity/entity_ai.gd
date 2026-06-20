@@ -762,7 +762,6 @@ func process_state_logic(delta: float) -> void:
 		_stare_timer += delta
 		if _stare_timer >= 1.5 and not entity.is_enraged:
 			entity.is_enraged = true
-			print("[Entity AI] STARE ENRAGE: Player stared for 1.5s! Entity is now ENRAGED!")
 	else:
 		# ─── RESET STARE TIMER ──────────────────────────────────────────────
 		# If the player is not staring (or the Entity is in CHARGE/RETREAT),
@@ -834,7 +833,6 @@ func _manage_spatial_voice(delta: float) -> void:
 				voice_player.stream = angry_stream
 				voice_player.play()
 				entity.set_voice_angry_played_this_charge(true)
-				print("[Entity AI] VOICE: Playing Entity_Angry.ogg (CHARGE one-shot)")
 		
 		# ─── WINDOW_PEEK: Random talking voice (looping) ───────────────────
 		elif current_state == State.WINDOW_PEEK:
@@ -856,7 +854,6 @@ func _manage_spatial_voice(delta: float) -> void:
 					selected_stream.loop = true
 				voice_player.stream = selected_stream
 				voice_player.play()
-				print("[Entity AI] VOICE: Playing Entity_Talking.ogg (WINDOW_PEEK looping)")
 		
 		# ─── OBSERVE_FROM_TREELINE: Searching voice (looping) ──────────────
 		elif current_state == State.OBSERVE_FROM_TREELINE:
@@ -867,7 +864,6 @@ func _manage_spatial_voice(delta: float) -> void:
 					search_stream.loop = true
 				voice_player.stream = search_stream
 				voice_player.play()
-				print("[Entity AI] VOICE: Playing Entity_Searching.ogg (OBSERVE looping)")
 		
 		# ─── ALL OTHER STATES: Stop voice ──────────────────────────────────
 		else:
@@ -905,7 +901,6 @@ func _search_state(delta: float) -> void:
 	entity.is_observe_finished = true
 	entity.state_locked = false
 	_calculated_velocity = Vector3.ZERO
-	print("[SEARCH] SEARCH state is deprecated. Returning to OBSERVE_FROM_TREELINE.")
 	return
 
 
@@ -965,7 +960,7 @@ func _observe_from_treeline_state(delta: float) -> void:
 		# cycling to APPROACH_WINDOW and back.
 		if _all_lit_cooldown_timer <= 0.0:
 			_all_lit_cooldown_timer = ALL_LIT_MIN_COOLDOWN
-			print("[Entity AI] ALL WINDOWS LIT: All windows secured by light. Cooldown %.1fs started." % ALL_LIT_MIN_COOLDOWN)
+
 		
 		# Decrement the cooldown timer
 		_all_lit_cooldown_timer -= delta

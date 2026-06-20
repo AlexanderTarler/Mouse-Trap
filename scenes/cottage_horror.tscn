@@ -5,9 +5,11 @@
 [ext_resource type="Texture2D" uid="uid://dy3y4yrk61pwv" path="res://assets/Textures/Grass/Grass_03-512x512.png" id="4_wvbas"]
 [ext_resource type="Script" uid="uid://cvaqel187lqwe" path="res://scripts/lamp_flicker.gd" id="5_lamp_flicker"]
 [ext_resource type="Resource" uid="uid://d0q6l3m5p7k2" path="res://resources/fuel_can_resource.tres" id="6_frym3"]
+[ext_resource type="Resource" uid="uid://d2q7k3f1x6p8" path="res://resources/car_part_battery.tres" id="7_a2wau"]
 [ext_resource type="PackedScene" uid="uid://cl2nlt2tucxol" path="res://scenes/cabin.tscn" id="7_cabins"]
-[ext_resource type="Resource" uid="uid://d0uq0x2m2q0dd" path="res://resources/fuse_resource.tres" id="7_en0qb"]
 [ext_resource type="PackedScene" uid="uid://cfsq6j2xnoxm" path="res://assets/PSX Nature/Models/GLB/pine_tree_n_1.glb" id="8_jtbog"]
+[ext_resource type="Resource" uid="uid://b3nan7x2k5r1" path="res://resources/car_part_radiator.tres" id="8_npxpa"]
+[ext_resource type="Resource" uid="uid://c4n8m1x3k7t2" path="res://resources/car_part_wiring.tres" id="9_21nt7"]
 [ext_resource type="PackedScene" uid="uid://dqnqvwoaib6mc" path="res://scenes/trees.tscn" id="10_mdrot"]
 [ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0de" path="res://scenes/fuse.tscn" id="11_j6uu5"]
 [ext_resource type="PackedScene" uid="uid://dpnaxk3u44vbj" path="res://scenes/door.tscn" id="11_jjdw5"]
@@ -95,6 +97,8 @@
 [ext_resource type="PackedScene" uid="uid://2i74mh0okmkf" path="res://assets/PSX Bunkers/Models/other-formats/GLB/wood_pallet_1.glb" id="92_a2wau"]
 [ext_resource type="PackedScene" uid="uid://bc8ulccsml4bv" path="res://assets/PSX Bunkers/Models/other-formats/GLB/wood_pallet_2.glb" id="93_npxpa"]
 [ext_resource type="PackedScene" uid="uid://bmhnjo7ywr0yn" path="res://assets/Fixed .fbx/SM_EC_TreeLine_1_002.tscn" id="95_e1coq"]
+[ext_resource type="PackedScene" uid="uid://d2q3b4f5c6e7g" path="res://scenes/wooden_plank.tscn" id="99_21nt7"]
+[ext_resource type="Script" uid="uid://dwjkqjp5uuaqn" path="res://scripts/cabin_approach_trigger.gd" id="100_cabin_approach"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_50dpl"]
 sky_top_color = Color(0.4, 0.6, 1, 1)
@@ -151,8 +155,6 @@ size = Vector3(1, 0.05, 1)
 size = Vector3(1, 0.05, 1)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_bcf24"]
-
-[sub_resource type="BoxMesh" id="BoxMesh_nbp5p"]
 
 [sub_resource type="TextureSetResource" id="TextureSetResource_og0af"]
 albedoTexture = ExtResource("16_ybmve")
@@ -1079,7 +1081,7 @@ moon = NodePath("../Moonlight")
 [node name="Player" parent="." unique_id=92687399 instance=ExtResource("1_player")]
 transform = Transform3D(-0.99980104, 0, 0.019947788, 0, 1, 0, -0.019947788, 0, -0.99980104, 9.009, 2.1229591, 15.193073)
 start_with_key = true
-starting_items = Array[ExtResource("17_pee2b")]([ExtResource("26_battery_res"), ExtResource("26_battery_res"), ExtResource("56_plank_res"), ExtResource("6_frym3"), ExtResource("26_battery_res"), ExtResource("56_plank_res"), ExtResource("6_frym3"), ExtResource("7_en0qb"), null])
+starting_items = Array[ExtResource("17_pee2b")]([ExtResource("26_battery_res"), ExtResource("26_battery_res"), ExtResource("56_plank_res"), ExtResource("6_frym3"), ExtResource("26_battery_res"), ExtResource("7_a2wau"), ExtResource("8_npxpa"), ExtResource("9_21nt7")])
 
 [node name="HUD" parent="." unique_id=1086543120 instance=ExtResource("4_hud")]
 
@@ -1093,28 +1095,28 @@ starting_items = Array[ExtResource("17_pee2b")]([ExtResource("26_battery_res"), 
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.19840884, 0)
 
 [node name="GeneralSkeleton" parent="TheEntity/MonsterModel/Armature" parent_id_path=PackedInt32Array(133456140, 1066769687, 1936907856) index="0" unique_id=2043102841]
-bones/1/rotation = Quaternion(0.10151172, -0.16910802, -0.020476302, 0.9801421)
-bones/3/rotation = Quaternion(0.14589602, 0.35936186, 0.9063107, -0.16785279)
-bones/4/rotation = Quaternion(-0.03943315, 0.92019373, -0.38485724, 0.05977937)
-bones/5/rotation = Quaternion(-0.10630725, 0.6452896, -0.7470817, 0.11903425)
-bones/7/rotation = Quaternion(-3.4303568e-08, 0.9999518, 0.009830911, -2.7081935e-08)
-bones/18/rotation = Quaternion(-0.14078905, 0.2947809, 0.9389733, 0.10775873)
-bones/21/rotation = Quaternion(0.03517024, 0.9321915, -0.3540923, -0.06633825)
-bones/22/rotation = Quaternion(0.10012468, 0.62967306, -0.7622722, -0.11148171)
-bones/23/rotation = Quaternion(-4.0262414e-08, 0.9999995, 0.0010574058, -6.0049814e-08)
-bones/33/rotation = Quaternion(0.021252457, -0.0037393745, 0.017199108, 0.9996193)
-bones/34/rotation = Quaternion(0.06688051, -0.010378512, 0.010054508, 0.99765635)
-bones/35/rotation = Quaternion(0.06696687, -0.0092851035, 0.010571695, 0.997656)
-bones/36/rotation = Quaternion(-0.053683043, 0.027710307, -0.019196764, 0.9979889)
-bones/38/rotation = Quaternion(-0.18924879, 0.12258156, -0.035736892, 0.97359216)
-bones/49/rotation = Quaternion(0.5718467, 0.4216312, 0.5245068, -0.46915996)
-bones/50/rotation = Quaternion(0.1931248, 0.8799408, -0.43260935, -0.035443008)
-bones/51/rotation = Quaternion(0.47547016, -0.52338123, 0.47547075, 0.52338123)
-bones/55/rotation = Quaternion(-0.14660433, 0.8061322, 0.1827572, 0.54337645)
-bones/58/rotation = Quaternion(0.52023476, -0.4548964, -0.5738581, -0.43944508)
-bones/59/rotation = Quaternion(-0.20991322, 0.8386386, -0.5004637, -0.046454065)
-bones/62/rotation = Quaternion(0.49074304, 0.5090885, -0.49074382, 0.50908816)
-bones/66/rotation = Quaternion(0.064448334, -0.84790164, -0.023033706, 0.52571726)
+bones/1/rotation = Quaternion(0.10192617, -0.17194317, -0.019023726, 0.97963506)
+bones/3/rotation = Quaternion(0.14573455, 0.36013764, 0.9062697, -0.16654608)
+bones/4/rotation = Quaternion(-0.039882872, 0.91820586, -0.3885432, 0.06589111)
+bones/5/rotation = Quaternion(-0.108476505, 0.6431759, -0.7482472, 0.121177234)
+bones/7/rotation = Quaternion(-7.4454114e-08, 0.99994755, 0.010249933, -3.3014597e-08)
+bones/18/rotation = Quaternion(-0.14171179, 0.29521808, 0.9384184, 0.110160045)
+bones/21/rotation = Quaternion(0.03421144, 0.93346786, -0.35125092, -0.06395552)
+bones/22/rotation = Quaternion(0.100503504, 0.6305566, -0.76142675, -0.11192334)
+bones/23/rotation = Quaternion(-3.624447e-08, 0.9999995, 0.00096342666, -5.6555944e-08)
+bones/33/rotation = Quaternion(0.020442095, -0.004195406, 0.015126238, 0.9996679)
+bones/34/rotation = Quaternion(0.06616138, -0.0111594265, 0.00936971, 0.99770254)
+bones/35/rotation = Quaternion(0.066232175, -0.010105884, 0.010100531, 0.99770194)
+bones/36/rotation = Quaternion(-0.05355954, 0.027320292, -0.017871872, 0.99803084)
+bones/38/rotation = Quaternion(-0.19174446, 0.12084746, -0.03425065, 0.973374)
+bones/49/rotation = Quaternion(0.5633703, 0.43015537, 0.524512, -0.47166473)
+bones/50/rotation = Quaternion(0.1802847, 0.8780674, -0.4416676, -0.03774696)
+bones/51/rotation = Quaternion(0.4748163, -0.52397424, 0.47481737, 0.52397424)
+bones/55/rotation = Quaternion(-0.14833955, 0.80305177, 0.19262558, 0.54405755)
+bones/58/rotation = Quaternion(0.52107346, -0.45367706, -0.57444763, -0.43894148)
+bones/59/rotation = Quaternion(-0.21029802, 0.83749735, -0.50209993, -0.04763035)
+bones/62/rotation = Quaternion(0.4879369, 0.5117784, -0.48793793, 0.5117783)
+bones/66/rotation = Quaternion(0.06716118, -0.85289395, -0.02220879, 0.5172698)
 
 [node name="BasementFog" type="FogVolume" parent="." unique_id=274711645]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.25, 0)
@@ -1123,7 +1125,7 @@ shape = 0
 material = SubResource("Fog_basement")
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1000000002]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.044345856, -9.536743e-07, -0.01592493)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.04576969, 0.0054545403, -0.010467052)
 navigation_mesh = SubResource("NavigationMesh_fl8v4")
 
 [node name="Ground" type="StaticBody3D" parent="NavigationRegion3D" unique_id=1321973830 groups=["grass", "navmesh_source"]]
@@ -1195,8 +1197,13 @@ transform = Transform3D(1, 0, 0, 0, 4.235794, -0.7961394, 0, 5.572975, 0.6051134
 [node name="CollisionShape3D" type="CollisionShape3D" parent="NavigationRegion3D/Cabin/StaticBody3D" unique_id=1181757346]
 shape = SubResource("BoxShape3D_bcf24")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="NavigationRegion3D/Cabin/StaticBody3D/CollisionShape3D" unique_id=756531140]
-mesh = SubResource("BoxMesh_nbp5p")
+[node name="CabinApproachTrigger" type="Area3D" parent="NavigationRegion3D" unique_id=1000000100]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.293419, 1, 9.329647)
+collision_layer = 0
+script = ExtResource("100_cabin_approach")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavigationRegion3D/CabinApproachTrigger" unique_id=1000000101]
+shape = SubResource("BoxShape3D_bcf24")
 
 [node name="TerraBrush" type="TerraBrush" parent="NavigationRegion3D" unique_id=19020360]
 dataPath = "res://scenes/CottageHorror"
@@ -1613,7 +1620,7 @@ transform = Transform3D(0.25929102, 0, -0.9657992, 0, 1, 0, 0.9657992, 0, 0.2592
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.509456, 1.3350242, 8.612289)
 
 [node name="Fuse" parent="Details/Inside Cabin" unique_id=185857692 instance=ExtResource("11_j6uu5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.555813, 1.7445396, 10.78619)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.61513996, 1.7445396, 10.78619)
 
 [node name="Fuse2" parent="Details/Inside Cabin" unique_id=517490088 instance=ExtResource("11_j6uu5")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.555813, 1.7445396, 10.96569)
@@ -1887,6 +1894,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.866895, 0.9909649)
 transform = Transform3D(-0.0071035363, 0, -0.9999747, 0, 1, 0, 0.9999747, 0, -0.0071035363, 15.451465, 2.4673076, 18.984535)
 window_id = "Kitchen_Right"
 room_light = NodePath("../../../Cabin Lights/CabinLightKitchen")
+start_broken = true
 
 [node name="WindowMarker" parent="Windows/BottomFloorWindows/ComputerRoomWindowRight" index="2" unique_id=1542265065]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.2213926, -1.4486227)
@@ -2008,7 +2016,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.0981007, 0.12499976, 1.7629
 item_data = ExtResource("25_hearth_fragment")
 
 [node name="painting_82" parent="." unique_id=385348132 instance=ExtResource("76_h7pim")]
-transform = Transform3D(-0.9999998, 0, 0.00062832236, 0, 1, 0, -0.00062832236, 0, -0.9999998, 3.9166112, 5.4883156, 20.44899)
+transform = Transform3D(-0.9999998, 0, 0.00062832236, 0, 1, 0, -0.00062832236, 0, -0.9999998, 3.9166112, 5.4883156, 20.41617)
 
 [node name="PortableLight" parent="." unique_id=279815332 instance=ExtResource("77_0wr2x")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.248568, 8.125, 2.4327326)
@@ -2254,6 +2262,26 @@ transform = Transform3D(2, 0, 0, 0, -8.742278e-08, 2, 0, -2, -8.742278e-08, 22.5
 
 [node name="SM_EC_TreeLine_1_017" parent="Treeline4" unique_id=1628452180 instance=ExtResource("95_e1coq")]
 transform = Transform3D(2, 0, 0, 0, -8.742278e-08, 2, 0, -2, -8.742278e-08, 7.547784, 0.024999142, 127.47403)
+
+[node name="PlayerSpawnpoints" type="Node3D" parent="." unique_id=1926606194]
+
+[node name="PlayerSpawnDev" type="Marker3D" parent="PlayerSpawnpoints" unique_id=2108965539]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.753334, 1.5806512, 15.999334)
+
+[node name="PlayerSpawn" type="Marker3D" parent="PlayerSpawnpoints" unique_id=671929833]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.291382, 0.78542304, -87.620735)
+
+[node name="WoodenPlank" parent="." unique_id=781322769 instance=ExtResource("99_21nt7")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 13.536745, 0.030454654, 23.16672)
+
+[node name="WoodenPlank2" parent="." unique_id=2080515188 instance=ExtResource("99_21nt7")]
+transform = Transform3D(0.33356845, 0, -0.49873042, 0, 0.59999996, 0, 0.49873042, 0, 0.33356845, 14.1220045, 0.030454654, 23.027525)
+
+[node name="WoodenPlank3" parent="." unique_id=912416397 instance=ExtResource("99_21nt7")]
+transform = Transform3D(-0.01552821, 0, -0.599799, 0, 0.59999996, 0, 0.599799, 0, -0.01552821, 13.432912, 0.23394132, 22.801744)
+
+[node name="WoodenPlank4" parent="." unique_id=1023865148 instance=ExtResource("99_21nt7")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 11.499455, 0.85903156, 18.802843)
 
 [editable path="TheEntity"]
 [editable path="TheEntity/MonsterModel"]

@@ -31,7 +31,37 @@ func add_item(item) -> bool:
 	print("[Inventory] Item added. Total items: ", items.size())
 	item_added.emit(item)
 	inventory_changed.emit()
+	
+	# ─── DAY 1 ONBOARDING: PHASE 1 — KEY PICKED UP ──────────────────────
+	# If the player picked up the Cabin Key, notify RoutineManager.
+	if item.item_name == "Cabin Key":
+		var rm = get_node_or_null("/root/RoutineManager")
+		if rm and rm.has_method("on_key_picked_up"):
+			rm.on_key_picked_up()
+	
+	# ─── DAY 1 ONBOARDING: PHASE 2 — FUSE PICKED UP ─────────────────────
+	# If the player picked up a Fuse, notify RoutineManager.
+	if item.item_name == "Fuse":
+		var rm = get_node_or_null("/root/RoutineManager")
+		if rm and rm.has_method("on_fuse_picked_up"):
+			rm.on_fuse_picked_up()
+	
+	# ─── DAY 1 ONBOARDING: PHASE 2 — FUEL CAN PICKED UP ─────────────────
+	# If the player picked up a Fuel Can, notify RoutineManager.
+	if item.item_name == "Fuel Can":
+		var rm = get_node_or_null("/root/RoutineManager")
+		if rm and rm.has_method("on_fuel_can_picked_up"):
+			rm.on_fuel_can_picked_up()
+	
+	# ─── DAY 1 ONBOARDING: PHASE 2B — PLANK PICKED UP ───────────────────
+	# If the player picked up a Wooden Plank, notify RoutineManager.
+	if item.item_name == "Wooden Plank":
+		var rm = get_node_or_null("/root/RoutineManager")
+		if rm and rm.has_method("on_plank_picked_up"):
+			rm.on_plank_picked_up()
+	
 	return true
+
 
 
 func remove_item(item) -> void:

@@ -626,10 +626,11 @@ func _on_correlation_success(night: int) -> void:
 		if nm:
 			nm.horror_event.emit("nest_data_uploaded")
 		
-		# Advance the Night 1 bedtime routine to Step 2 (Refill Generator)
+		# ─── DAY 1 ONBOARDING: COMPUTER TASK COMPLETE ─────────────────
+		# Notify RoutineManager that the computer login task is done.
 		var rm = get_node_or_null("/root/RoutineManager")
-		if rm and rm.has_method("advance_step"):
-			rm.advance_step()
+		if rm and rm.has_method("complete_task"):
+			rm.complete_task("computer")
 		
 		# --- PHONE DROP + TIME START ---
 		_trigger_phone_drop_event()
@@ -849,6 +850,18 @@ func _on_recovery_open() -> void:
 	_recovery_status.text = ""
 	_key_input.text = ""
 	_status_label.text = "RECOVER_DATA.EXE — Data Sectors Corrupted"
+	
+	# ─── AUTO-FILL DECRYPTION KEY ───────────────────────────────────
+	# If the player has found Arvid's Note in the world, auto-fill the
+	# LineEdit with the decryption key so they don't need to memorize and
+	# manually type "STENBERG_1996". This improves UX by removing the
+	# need to alt-tab or write down the password.
+	var night_manager = get_node_or_null("/root/NightManager")
+	if night_manager and night_manager.arvid_password_found:
+		_key_input.text = ARVID_DECRYPTION_KEY
+		_recovery_status.text = "[color=green]Decryption key auto-filled from recovered field data.[/color]"
+		print("[ComputerUI] Arvid's Note found! Decryption key auto-filled.")
+	
 	print("[ComputerUI] Recovery panel opened. Waiting for decryption key.")
 
 

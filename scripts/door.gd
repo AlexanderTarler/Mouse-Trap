@@ -91,7 +91,15 @@ func interact() -> void:
 	if required_key_name != "" and is_locked:
 		_play_locked_sound()
 		print("[Door] Door is locked! Hold E to unlock. Need: ", required_key_name)
+		
+		# ─── DAY 1 ONBOARDING: PHASE 1 — TRIED LOCKED DOOR ──────────────
+		# Notify RoutineManager that the player tried the locked door.
+		var rm = get_node_or_null("/root/RoutineManager")
+		if rm and rm.has_method("on_door_tried_locked"):
+			rm.on_door_tried_locked()
+		
 		return
+
 	
 	# Normal door toggle (open/close)
 	is_open = not is_open
@@ -148,6 +156,21 @@ func toggle_lock() -> void:
 		_play_lock_unlock_sound(false)  # false = unlock sound
 		is_locked = false
 		print("[Door] Door unlocked! (stays closed — tap E to open)")
+		
+		# ─── DAY 1 ONBOARDING: UNPAUSE TIME ──────────────────────────
+		# When the player unlocks the cabin door with the CabinKey,
+		# unpause the game clock so the Day 1 onboarding timer starts.
+		# This is the trigger that transitions from "Enter the cabin"
+		# to "Get settled in the cabin."
+		var nm = get_node_or_null("/root/NightManager")
+		if nm and nm.has_method("unpause_time"):
+			nm.unpause_time()
+		
+		# ─── DAY 1 ONBOARDING: PHASE 1 — DOOR UNLOCKED ────────────────
+		# Notify RoutineManager that the player unlocked the door.
+		var rm = get_node_or_null("/root/RoutineManager")
+		if rm and rm.has_method("on_door_unlocked"):
+			rm.on_door_unlocked()
 	else:
 		# Lock (door stays closed)
 		print("[Door] Locking door with: ", required_key_name)
@@ -155,8 +178,12 @@ func toggle_lock() -> void:
 		is_locked = true
 		print("[Door] Door locked! (stays closed)")
 		
-		# Check if we should advance the Night 1 bedtime routine
-		_check_routine_advance()
+		# ─── DAY 1 ONBOARDING: PHASE 3 — DOOR LOCKED ───────────────────
+		# Notify RoutineManager that the player locked the door.
+		var rm = get_node_or_null("/root/RoutineManager")
+		if rm and rm.has_method("on_door_locked"):
+			rm.on_door_locked()
+
 
 
 ## Checks the player's inventory for an item matching required_key_name.

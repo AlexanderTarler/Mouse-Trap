@@ -4,18 +4,19 @@ extends Node
 ## and orchestrates the transition from gameplay to the ending sequences.
 ##
 ## Three possible endings:
-##   SURVIVAL — The player survived until dawn (all nights completed).
-##   PURGE    — The player successfully destroyed the TotemAnchor.
-##   DEATH    — The player was caught by the Entity.
+##   DEATH           — The player was caught by the Entity. (BAD)
+##   ESCAPE_MEDIOCRE — The player repaired the van and escaped, but did NOT
+##                     destroy the TotemAnchor. The Entity is still out there.
+##   ESCAPE_GOOD     — The player repaired the van AND destroyed the TotemAnchor
+##                     before escaping. The Entity is banished.
 ##
 ## INTEGRATION:
-##   - NightManager emits night_ended → we check if all nights are done → SURVIVAL
-##   - TotemAnchor calls trigger_purge_ending() → PURGE
 ##   - JumpscareManager calls trigger_death_ending() → DEATH
+##   - EscapeVan calls start_ending_sequence(totem_destroyed) → ESCAPE_GOOD or ESCAPE_MEDIOCRE
 ##
 ## USAGE:
 ##   var em = get_node("/root/EndgameManager")
-##   em.trigger_purge_ending()
+##   em.trigger_death_ending()
 
 signal ending_triggered(ending: Ending)
 signal ending_sequence_started(ending: Ending)
@@ -23,16 +24,16 @@ signal ending_sequence_completed(ending: Ending)
 
 ## The three possible endings the player can achieve.
 enum Ending {
-	SURVIVAL,    # Survived until dawn (all 5 nights) without engaging the Totem
-	PURGE,       # Successfully destroyed the TotemAnchor
-	DEATH,       # Caught by the Entity
+	DEATH,           # Caught by the Entity (BAD)
+	ESCAPE_MEDIOCRE, # Repaired the van and escaped, but did NOT destroy the Totem
+	ESCAPE_GOOD,     # Repaired the van AND destroyed the Totem before escaping
 }
 
 ## Human-readable names for each ending (used for debug logging and UI).
 const ENDING_NAMES: Dictionary = {
-	Ending.SURVIVAL: "Survival",
-	Ending.PURGE: "Purge",
 	Ending.DEATH: "Death",
+	Ending.ESCAPE_MEDIOCRE: "Escape (Mediocre)",
+	Ending.ESCAPE_GOOD: "Escape (Good)",
 }
 
 ## The ending that was triggered (NONE until one fires).
@@ -44,84 +45,12 @@ var is_ending_active: bool = false
 ## Whether the ending sequence is currently playing (cinematic, fade, etc.).
 var is_sequence_playing: bool = false
 
-## Reference to NightManager for detecting all-nights-survived.
-var _night_manager: Node = null
-
-## Reference to RoutineManager for detecting totem purge completion.
-var _routine_manager: Node = null
-
 
 func _ready() -> void:
 	print("[EndgameManager] Initialized. Waiting for ending conditions.")
-	
-	# Connect to NightManager to detect when all nights are survived.
-	_night_manager = get_node_or_null("/root/NightManager")
-	if _night_manager:
-		_night_manager.night_ended.connect(_on_night_ended)
-		print("[EndgameManager] Connected to NightManager.")
-	else:
-		# Retry next frame — NightManager might not be ready yet
-		call_deferred("_find_night_manager")
-	
-	# Connect to RoutineManager to detect totem purge completion.
-	_routine_manager = get_node_or_null("/root/RoutineManager")
-	if _routine_manager:
-		_routine_manager.routine_step_changed.connect(_on_routine_step_changed)
-		print("[EndgameManager] Connected to RoutineManager.")
-	else:
-		call_deferred("_find_routine_manager")
-
-
-func _find_night_manager() -> void:
-	_night_manager = get_node_or_null("/root/NightManager")
-	if _night_manager:
-		_night_manager.night_ended.connect(_on_night_ended)
-		print("[EndgameManager] Connected to NightManager (deferred).")
-	else:
-		call_deferred("_find_night_manager")
-
-
-func _find_routine_manager() -> void:
-	_routine_manager = get_node_or_null("/root/RoutineManager")
-	if _routine_manager:
-		_routine_manager.routine_step_changed.connect(_on_routine_step_changed)
-		print("[EndgameManager] Connected to RoutineManager (deferred).")
-	else:
-		call_deferred("_find_routine_manager")
 
 
 ## ─── ENDING TRIGGERS ──────────────────────────────────────────────────
-
-## Called by NightManager when a night ends.
-## If all 5 nights have been completed, triggers the SURVIVAL ending.
-func _on_night_ended(night: int) -> void:
-	if is_ending_active:
-		return
-	
-	if _night_manager and night >= _night_manager.total_nights:
-		_trigger_ending(Ending.SURVIVAL)
-
-
-## Called by RoutineManager when the routine step advances.
-## If the step advances to the totem-destroyed state, triggers the PURGE ending.
-func _on_routine_step_changed(step: int, _objective_text: String) -> void:
-	if is_ending_active:
-		return
-	
-	# The RoutineManager advances to step 5 when the totem is destroyed.
-	# (Step 0-4 are the bedtime routine; step 5 is the totem purge completion.)
-	if step >= 5:
-		_trigger_ending(Ending.PURGE)
-
-
-## Public API: Called by TotemAnchor when the player successfully destroys the totem.
-## Triggers the PURGE ending immediately.
-func trigger_purge_ending() -> void:
-	if is_ending_active:
-		print("[EndgameManager] Ending already active. Ignoring duplicate PURGE trigger.")
-		return
-	_trigger_ending(Ending.PURGE)
-
 
 ## Public API: Called by JumpscareManager when the player is caught by the Entity.
 ## Triggers the DEATH ending immediately.
@@ -130,6 +59,21 @@ func trigger_death_ending() -> void:
 		print("[EndgameManager] Ending already active. Ignoring duplicate DEATH trigger.")
 		return
 	_trigger_ending(Ending.DEATH)
+
+
+## Public API: Called by EscapeVan when the player escapes in the repaired van.
+## Triggers ESCAPE_GOOD (if totem was destroyed) or ESCAPE_MEDIOCRE (if not).
+func start_ending_sequence(totem_destroyed: bool) -> void:
+	if is_ending_active:
+		print("[EndgameManager] Ending already active. Ignoring duplicate escape trigger.")
+		return
+	
+	if totem_destroyed:
+		print("[EndgameManager] Player escaped with totem destroyed! GOOD ending.")
+		_trigger_ending(Ending.ESCAPE_GOOD)
+	else:
+		print("[EndgameManager] Player escaped without destroying the totem. MEDIOCRE ending.")
+		_trigger_ending(Ending.ESCAPE_MEDIOCRE)
 
 
 ## ─── INTERNAL ─────────────────────────────────────────────────────────
@@ -174,14 +118,14 @@ func _play_ending_sequence(ending: Ending) -> void:
 	
 	# ─── ENDING-SPECIFIC LOGIC ───────────────────────────────────────
 	match ending:
-		Ending.SURVIVAL:
-			print("[EndgameManager] SURVIVAL: All nights survived! The dawn breaks.")
-		
-		Ending.PURGE:
-			print("[EndgameManager] PURGE: The Totem is destroyed! The Entity is banished.")
-		
 		Ending.DEATH:
-			print("[EndgameManager] DEATH: The Entity caught the player.")
+			print("[EndgameManager] DEATH: The Entity caught the player. (BAD)")
+		
+		Ending.ESCAPE_MEDIOCRE:
+			print("[EndgameManager] ESCAPE_MEDIOCRE: Player escaped in the van, but the Entity is still out there.")
+		
+		Ending.ESCAPE_GOOD:
+			print("[EndgameManager] ESCAPE_GOOD: Player escaped in the van AND destroyed the Totem! The Entity is banished!")
 	
 	# ─── INSTANTIATE ENDING SCREEN ──────────────────────────────────
 	# Load and instance the ending screen overlay.

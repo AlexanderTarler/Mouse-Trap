@@ -70,6 +70,20 @@ var _was_on_floor: bool = false
 ## When false (default), the player must find the key in the world.
 @export var start_with_key: bool = false
 
+## Whether the player starts the game in "Dev Mode".
+## When true, the NightManager's is_dev_mode is set to true, which:
+##   - Unlocks sprint, flashlight, key, and all starting items
+##   - Unlocks the front door
+##   - Powers on the fuse box
+##   - Fills the generator to 100%
+##   - Unpauses time immediately
+##   - Skips the Day 1 onboarding sequence
+##   - Allows the Entity to approach windows on any night
+## When false (default), the player must work through the full onboarding.
+## Toggle this in the Player node's inspector for quick testing.
+@export var start_in_dev_mode: bool = false
+
+
 # Sprint unlock — enabled by default for development convenience
 var sprint_unlocked: bool = true
 
@@ -157,7 +171,20 @@ func _ready() -> void:
 		else:
 			print("[Player] WARNING: Could not load key_resource.tres for start_with_key!")
 
+	# ─── DEV MODE PROPAGATION ────────────────────────────────────────
+	# If start_in_dev_mode is true, propagate it to NightManager so the
+	# entire game system knows we're in dev mode. This unlocks sprint,
+	# flashlight, key, all starting items, powers on the fuse box, fills
+	# the generator, unpauses time, and skips the Day 1 onboarding sequence.
+	if start_in_dev_mode:
+		var nm = get_node_or_null("/root/NightManager")
+		if nm:
+			nm.is_dev_mode = true
+			print("[Player] Dev Mode ENABLED via player scene export. NightManager.is_dev_mode = true.")
+		else:
+			print("[Player] WARNING: NightManager not found! Cannot propagate dev mode.")
 	
+
 	if _interaction_manager and _interaction_manager.has_method("set_camera"):
 		_interaction_manager.set_camera(_camera)
 	elif _interaction_manager:
@@ -590,9 +617,52 @@ func _update_crouch(delta: float) -> void:
 	cam_pos.y = lerp(cam_pos.y, target_cam_height, delta * crouch_transition_speed)
 	_camera_holder.position = cam_pos
 
+# --- CABIN ENTRY DETECTION ---
+## Tracks whether the player has been detected inside the cabin.
+## Used to notify RoutineManager when the player enters the cabin
+## (fallback in case the door unlock trigger doesn't fire).
+var _cabin_entry_reported: bool = false
+
+## Tracks the player's previous room to detect transitions from "Outside" to inside.
+## Starts as empty string ("") for first-frame calibration.
+## On the first frame, _previous_room is set to the actual current room without
+## triggering entry detection. This prevents false triggers when the player
+## starts inside the cabin (e.g. dev mode spawn, death respawn, or scene reload).
+var _previous_room: String = ""
+
+
+
 # --- STANDOFF / CHARGE: LOOK TIMER & CAMERA SHAKE ---
 func _process(delta: float) -> void:
+	# ─── CABIN ENTRY DETECTION ──────────────────────────────────────────
+	# Check if the player has entered the cabin (fallback detection).
+	# This is a safety net in case the door unlock trigger doesn't fire.
+	# Only triggers on a transition from "Outside" to inside — the player
+	# must physically walk through the door to trigger this. Starting inside
+	# the cabin (e.g. after a death respawn) will NOT falsely trigger entry.
+	if not _cabin_entry_reported:
+		var room = get_player_room()
+		
+		# First frame calibration: _previous_room starts as "" (empty).
+		# On the first frame, just record the current room without triggering
+		# entry detection. This prevents false triggers when the player starts
+		# inside the cabin (e.g. dev mode spawn, death respawn, or scene reload).
+		if _previous_room == "":
+			_previous_room = room
+		# Only report entry if the player was previously "Outside" and is now inside.
+		# The player must physically walk through the door to trigger this.
+		elif _previous_room == "Outside" and room != "Outside":
+			_cabin_entry_reported = true
+			var rm = get_node_or_null("/root/RoutineManager")
+			if rm and rm.has_method("on_player_entered_cabin"):
+				rm.on_player_entered_cabin()
+				print("[Player] Cabin entry detected via room check: ", room)
+		_previous_room = room
+
+
+	
 	# Find the StandoffEffect node on the HUD (lazy init)
+
 	if not _standoff_effect:
 		var hud = get_node_or_null("/root/CottageHorror/HorrorHUD")
 		if not hud:

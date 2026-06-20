@@ -54,6 +54,8 @@ floor_max_angle = 1.0472
 floor_snap_length = 1.2
 script = ExtResource("1_player")
 standing_height = 2.0
+start_in_dev_mode = false
+
 wood_footsteps = Array[AudioStream]([ExtResource("6_tuyoq"), ExtResource("3_wnwbv"), ExtResource("4_gl8cc"), ExtResource("5_487ah"), ExtResource("6_md1ol"), ExtResource("7_bj30b"), ExtResource("8_jc3p3"), ExtResource("9_hax0n"), ExtResource("10_t4otl"), ExtResource("11_j2b1d"), ExtResource("12_cs1tg"), ExtResource("13_2dvfe"), ExtResource("14_giy8y"), ExtResource("15_fdfoy"), ExtResource("16_hhpqf"), ExtResource("17_g5jhy"), ExtResource("18_holxr"), ExtResource("19_mx1m4"), ExtResource("20_4gjji"), ExtResource("21_u2ulf")])
 grass_footsteps = Array[AudioStream]([ExtResource("28_hhpqf"), ExtResource("29_g5jhy"), ExtResource("30_holxr"), ExtResource("31_mx1m4"), ExtResource("32_4gjji"), ExtResource("33_u2ulf"), ExtResource("34_6e8lb"), ExtResource("35_2gdjj"), ExtResource("36_sc3ue"), ExtResource("37_lxlsd"), ExtResource("38_ha2mi"), ExtResource("39_apa73"), ExtResource("40_74r1k")])
 starting_items = Array[ExtResource("35_hhpqf")]([ExtResource("36_g5jhy"), ExtResource("36_g5jhy"), ExtResource("36_g5jhy"), ExtResource("37_holxr"), ExtResource("38_mx1m4"), ExtResource("36_g5jhy"), ExtResource("37_holxr"), ExtResource("38_mx1m4"), null, null])
