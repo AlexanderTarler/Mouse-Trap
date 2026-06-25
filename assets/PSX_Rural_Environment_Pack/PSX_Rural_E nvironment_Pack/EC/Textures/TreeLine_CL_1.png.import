@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cqqxrmxy3dyrl"
-path.s3tc="res://.godot/imported/TreeLine_CL_1.png-eebec7d844f414558674ab93fd79b002.s3tc.ctex"
+path.s3tc="res://.godot/imported/TreeLine_CL_1.png-2662f32c025fc6f7206105225e3e68ff.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/textures/TreeLine_CL_1.png"
-dest_files=["res://.godot/imported/TreeLine_CL_1.png-eebec7d844f414558674ab93fd79b002.s3tc.ctex"]
+source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/TreeLine_CL_1.png"
+dest_files=["res://.godot/imported/TreeLine_CL_1.png-2662f32c025fc6f7206105225e3e68ff.s3tc.ctex"]
 
 [params]
 

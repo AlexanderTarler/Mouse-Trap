@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cgu4nvkdn5d56"
-path.s3tc="res://.godot/imported/StoneWall_CL_0.png-9aa70b3ec1c4753e183bb7ee66ec5753.s3tc.ctex"
+path.s3tc="res://.godot/imported/StoneWall_CL_0.png-40970a59449de121175a5b01a7da56c2.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/textures/StoneWall_CL_0.png"
-dest_files=["res://.godot/imported/StoneWall_CL_0.png-9aa70b3ec1c4753e183bb7ee66ec5753.s3tc.ctex"]
+source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/StoneWall_CL_0.png"
+dest_files=["res://.godot/imported/StoneWall_CL_0.png-40970a59449de121175a5b01a7da56c2.s3tc.ctex"]
 
 [params]
 

@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dbqeas5g3omdv"
-path.s3tc="res://.godot/imported/OakBark_CL_0.png-c5e027c203727cfc95c7e8c58c2c71cc.s3tc.ctex"
+path.s3tc="res://.godot/imported/OakBark_CL_0.png-1d2b6656d6e3be832405ec43b5e90424.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/textures/OakBark_CL_0.png"
-dest_files=["res://.godot/imported/OakBark_CL_0.png-c5e027c203727cfc95c7e8c58c2c71cc.s3tc.ctex"]
+source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/OakBark_CL_0.png"
+dest_files=["res://.godot/imported/OakBark_CL_0.png-1d2b6656d6e3be832405ec43b5e90424.s3tc.ctex"]
 
 [params]
 

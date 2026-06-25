@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c04jtn42si07e"
-path.s3tc="res://.godot/imported/Crop_CL_0.png-791baf8fe16c96f584fdc27a679e9090.s3tc.ctex"
+path.s3tc="res://.godot/imported/Crop_CL_0.png-a12afa5c356a933bae922ccd84f24e45.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/textures/Crop_CL_0.png"
-dest_files=["res://.godot/imported/Crop_CL_0.png-791baf8fe16c96f584fdc27a679e9090.s3tc.ctex"]
+source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Crop_CL_0.png"
+dest_files=["res://.godot/imported/Crop_CL_0.png-a12afa5c356a933bae922ccd84f24e45.s3tc.ctex"]
 
 [params]
 

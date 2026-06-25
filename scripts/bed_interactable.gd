@@ -101,19 +101,25 @@ func interact(player: Node3D = null) -> void:
 		return
 	
 	# ─── CONDITION 2: DAY 2 — DOCUMENT NESTS (current_night == 1) ────
-	# On Day 2, the player must document 3 nests and log them on the
-	# computer before they can go to bed. When they sleep, they transition
-	# to Night 2 (current_night becomes 2) with the car alarm sequence.
-	# The peeker appears during the nighttime of Day 2 (natural night cycle)
-	# if the player hasn't gone to bed yet.
+	# On Day 2, the player must document 3 nests AND upload the data on
+	# the computer before they can go to bed. When they sleep, they
+	# transition to Night 2 (current_night becomes 2) with the car alarm
+	# sequence. The peeker appears during the nighttime of Day 2 (natural
+	# night cycle) if the player hasn't gone to bed yet.
 	if current_night == 1:
 		# Check if the player has completed the nest documentation
 		var rm = get_node_or_null("/root/RoutineManager")
 		var nests_done = rm and rm.nests_documented >= 3 if rm else false
+		var data_uploaded = rm and rm.nests_uploaded if rm else false
 		
 		if not nests_done:
 			_show_hud_message("I should document all the nests first before going to bed.")
 			return
+		
+		if not data_uploaded:
+			_show_hud_message("I should upload the nest data on the computer first before going to bed.")
+			return
+
 		
 		# ─── CINEMATIC FADE TO BLACK ──────────────────────────────
 		if player.has_method("set_physics_process"):

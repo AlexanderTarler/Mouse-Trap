@@ -189,7 +189,6 @@ theme_override_font_sizes/font_size = 11
 disabled = true
 text = "EXECUTE OVERLOAD_PORCH_GRID"
 
-
 [node name="ContentPanel" type="Panel" parent="MainWindow/HBoxContainer" unique_id=1319873479]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -201,6 +200,8 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_colors/default_color = Color(0, 0, 0, 1)
 bbcode_enabled = true
 text = "Welcome to the Archival System v3.1
@@ -208,7 +209,6 @@ text = "Welcome to the Archival System v3.1
 Select a category from the left to view records."
 
 [node name="DataEntryPanel" type="Panel" parent="MainWindow/HBoxContainer" unique_id=499745863]
-visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -218,11 +218,12 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_content")
 layout_mode = 0
 offset_left = 8.0
 offset_top = 8.0
-offset_right = 392.0
+offset_right = 264.0
 offset_bottom = 392.0
 
 [node name="FormTitle" type="Label" parent="MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox" unique_id=150160350]
 layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 12
 text = "FIELD_LOG.EXE — Data Correlation"
 vertical_alignment = 1
@@ -232,6 +233,7 @@ layout_mode = 2
 
 [node name="SourceLabel" type="Label" parent="MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox" unique_id=527506968]
 layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 11
 text = "Evidence Source:"
 
@@ -248,6 +250,7 @@ popup/item_2/id = 2
 
 [node name="AnomalyLabel" type="Label" parent="MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox" unique_id=1793234525]
 layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 11
 text = "Anomaly Type:"
 
@@ -264,6 +267,7 @@ popup/item_2/id = 2
 
 [node name="FrequencyLabel" type="Label" parent="MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox" unique_id=893935492]
 layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 11
 text = "Resonant Frequency:"
 

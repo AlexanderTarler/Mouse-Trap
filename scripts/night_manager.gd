@@ -662,11 +662,16 @@ func start_night(night: int) -> void:
 		tutorial_window_fixed = false
 		print("[NightManager] Tutorial window flag reset for Night 1.")
 	
-	# Night 1 exception: Entity stays hidden for the car alarm narrative.
+	# Night 1 & 2 exception: Entity stays hidden for the car alarm narrative.
+	# The Entity only appears when the player interacts with the van via
+	# _on_first_chase_started(). This covers both:
+	#   - Night 1: The initial Day 1 → Day 2 transition (eco-survey complete)
+	#   - Night 2: The Day 2 → Night 2 transition (nests documented + uploaded)
 	# DEV MODE: Bypass this restriction — activate the Entity immediately
 	# so the developer can test navigation and behavior on any night.
-	if night == 1 and not is_dev_mode:
-		print("Night 1: Entity remains hidden for the car alarm narrative event.")
+	if night <= 2 and not is_dev_mode:
+		print("Night %d: Entity remains hidden for the car alarm narrative event." % night)
+
 	else:
 		# Check if the Entity has been manually disabled via the debug console.
 		# The debug console sets a meta flag "debug_disabled" on the Entity node

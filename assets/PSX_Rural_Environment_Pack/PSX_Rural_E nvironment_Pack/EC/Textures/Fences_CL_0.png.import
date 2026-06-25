@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ym0anr8irfe7"
-path.s3tc="res://.godot/imported/Fences_CL_0.png-ed01c8f617d89edfb84c32fd75dc2a36.s3tc.ctex"
+path.s3tc="res://.godot/imported/Fences_CL_0.png-c55ec1b1ecad7c0aa06f4123c972de94.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/textures/Fences_CL_0.png"
-dest_files=["res://.godot/imported/Fences_CL_0.png-ed01c8f617d89edfb84c32fd75dc2a36.s3tc.ctex"]
+source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Fences_CL_0.png"
+dest_files=["res://.godot/imported/Fences_CL_0.png-c55ec1b1ecad7c0aa06f4123c972de94.s3tc.ctex"]
 
 [params]
 

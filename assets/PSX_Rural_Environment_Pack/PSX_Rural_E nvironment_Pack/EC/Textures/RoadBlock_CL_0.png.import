@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c1215s0dkonlg"
-path.s3tc="res://.godot/imported/RoadBlock_CL_0.png-c2ca3c858e51355b04e75260188163d4.s3tc.ctex"
+path.s3tc="res://.godot/imported/RoadBlock_CL_0.png-c739fb522df100c58141f658429148e6.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/textures/RoadBlock_CL_0.png"
-dest_files=["res://.godot/imported/RoadBlock_CL_0.png-c2ca3c858e51355b04e75260188163d4.s3tc.ctex"]
+source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/RoadBlock_CL_0.png"
+dest_files=["res://.godot/imported/RoadBlock_CL_0.png-c739fb522df100c58141f658429148e6.s3tc.ctex"]
 
 [params]
 

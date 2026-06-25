@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://tqjipcwxvemj"
-path.s3tc="res://.godot/imported/Scrubline_CL_1.png-f04503c9dfbc791dacabc829425bfaf6.s3tc.ctex"
+path.s3tc="res://.godot/imported/Scrubline_CL_1.png-0994a3c9c72fc983c6aee5e5b1be179d.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/textures/Scrubline_CL_1.png"
-dest_files=["res://.godot/imported/Scrubline_CL_1.png-f04503c9dfbc791dacabc829425bfaf6.s3tc.ctex"]
+source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Scrubline_CL_1.png"
+dest_files=["res://.godot/imported/Scrubline_CL_1.png-0994a3c9c72fc983c6aee5e5b1be179d.s3tc.ctex"]
 
 [params]
 

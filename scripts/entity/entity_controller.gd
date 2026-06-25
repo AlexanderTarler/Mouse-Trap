@@ -867,12 +867,15 @@ func _initialize_entity() -> void:
 		_night_manager.night_ended.connect(_on_night_ended)
 		_night_manager.first_chase_started.connect(_on_first_chase_started)
 		if _night_manager.is_night_active:
-			# Night 1 exception: Entity stays hidden for the car alarm narrative
-			if _night_manager.current_night == 1:
-				print("[Entity] Night 1 at startup: Staying hidden for car alarm narrative.")
+			# Night 1 & 2 exception: Entity stays hidden for the car alarm narrative.
+			# The Entity only appears when the player interacts with the van via
+			# _on_first_chase_started().
+			if _night_manager.current_night <= 2:
+				print("[Entity] Night %d at startup: Staying hidden for car alarm narrative." % _night_manager.current_night)
 			else:
 				activate()
 				_relocate_behind_player()
+
 	else:
 		call_deferred("_initialize_entity")
 
@@ -881,11 +884,15 @@ func _on_night_started(night: int) -> void:
 	if _ai and _ai.has_method("on_night_started"):
 		_ai.on_night_started(night) # AI updates its speed/chance stats
 	
-	# Night 1 exception: Entity stays hidden for the car alarm narrative event.
-	# The Entity only appears when the player interacts with the van.
-	if night == 1:
-		print("[Entity] Night 1: Staying hidden for car alarm narrative.")
+	# Night 1 & 2 exception: Entity stays hidden for the car alarm narrative.
+	# The Entity only appears when the player interacts with the van via
+	# _on_first_chase_started(). This covers both:
+	#   - Night 1: The initial Day 1 → Day 2 transition (eco-survey complete)
+	#   - Night 2: The Day 2 → Night 2 transition (nests documented + uploaded)
+	if night <= 2:
+		print("[Entity] Night %d: Staying hidden for car alarm narrative. Entity will spawn when player investigates the van." % night)
 		return
+
 	
 	# Check if the Entity has been manually disabled via the debug console.
 	# The debug console sets a meta flag "debug_disabled" when the player

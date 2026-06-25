@@ -57,6 +57,11 @@ var _unlocked_profiles: Dictionary = {}
 ## This gates the Day 1 phone drop / time start progression.
 var _eco_survey_completed: bool = false
 
+## Debug override: when set to true, _on_correlate_data will always pass
+## regardless of the player's dropdown selections or nest photo status.
+## Useful for testing and debugging progression without solving the puzzle.
+@export var always_pass_correlation: bool = false
+
 ## ─────────────────────────────────────────────────────────────────────────────
 ## RECOVER_DATA.EXE — Arvid Stenberg's hidden field diary state
 ## ─────────────────────────────────────────────────────────────────────────────
@@ -517,6 +522,13 @@ func _get_current_night() -> int:
 ##   - Clears the content display and shows a critical error message
 ##   - Keeps nest_data_uploaded = false
 func _on_correlate_data() -> void:
+	# Debug override: if always_pass_correlation is true, skip all validation
+	# and immediately treat the correlation as successful.
+	if always_pass_correlation:
+		print("[ComputerUI] Debug override active — correlation auto-passed.")
+		_on_correlation_success(_get_current_night())
+		return
+	
 	# Get the selected indices from the dropdowns
 	var source_idx: int = _dropdown_source.selected if _dropdown_source else 0
 	var anomaly_idx: int = _dropdown_anomaly.selected if _dropdown_anomaly else 0
@@ -636,6 +648,15 @@ func _on_correlation_success(night: int) -> void:
 		_trigger_phone_drop_event()
 		
 		print("[ComputerUI] Night 1 eco-survey correlated! Day 1 progression triggered.")
+	
+	# Day 2 (current_night == 1): Nest data upload complete.
+	# Notify RoutineManager so the HUD objective advances to "Go to bed."
+	if night == 1 and _eco_survey_completed:
+		var rm = get_node_or_null("/root/RoutineManager")
+		if rm and rm.has_method("on_nest_data_uploaded"):
+			rm.on_nest_data_uploaded()
+			print("[ComputerUI] Nest data upload registered with RoutineManager.")
+
 	
 	# Switch back to content display view
 	_data_entry_panel.visible = false

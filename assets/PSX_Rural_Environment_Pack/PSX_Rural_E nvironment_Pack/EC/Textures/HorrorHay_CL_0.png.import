@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cdkxqbj40ents"
-path.s3tc="res://.godot/imported/HorrorHay_CL_0.png-21ef286663ef9d164cec39d05bfec391.s3tc.ctex"
+path.s3tc="res://.godot/imported/HorrorHay_CL_0.png-c3d49868aae858e0c6ecf76bf828fc1d.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/textures/HorrorHay_CL_0.png"
-dest_files=["res://.godot/imported/HorrorHay_CL_0.png-21ef286663ef9d164cec39d05bfec391.s3tc.ctex"]
+source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/HorrorHay_CL_0.png"
+dest_files=["res://.godot/imported/HorrorHay_CL_0.png-c3d49868aae858e0c6ecf76bf828fc1d.s3tc.ctex"]
 
 [params]
 

@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bq12p31rn7trb"
-path.s3tc="res://.godot/imported/Sheetmetal_CL_1.png-d6028eb1fb21033dd9d3bae8ba4efff8.s3tc.ctex"
+path.s3tc="res://.godot/imported/Sheetmetal_CL_1.png-2d02bf3b9bbe947bbc8f4285fd3f11f4.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/textures/Sheetmetal_CL_1.png"
-dest_files=["res://.godot/imported/Sheetmetal_CL_1.png-d6028eb1fb21033dd9d3bae8ba4efff8.s3tc.ctex"]
+source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Sheetmetal_CL_1.png"
+dest_files=["res://.godot/imported/Sheetmetal_CL_1.png-2d02bf3b9bbe947bbc8f4285fd3f11f4.s3tc.ctex"]
 
 [params]
 

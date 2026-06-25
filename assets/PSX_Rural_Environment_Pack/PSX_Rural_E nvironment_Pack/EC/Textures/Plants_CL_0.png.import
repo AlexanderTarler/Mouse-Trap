@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c5nh3hqqk8gkj"
-path.s3tc="res://.godot/imported/Plants_CL_0.png-cc937ced92acf42df34d2bbb0322cdc4.s3tc.ctex"
+path.s3tc="res://.godot/imported/Plants_CL_0.png-c374ace3394f4266ed6a40999d0a0fd1.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/textures/Plants_CL_0.png"
-dest_files=["res://.godot/imported/Plants_CL_0.png-cc937ced92acf42df34d2bbb0322cdc4.s3tc.ctex"]
+source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Plants_CL_0.png"
+dest_files=["res://.godot/imported/Plants_CL_0.png-c374ace3394f4266ed6a40999d0a0fd1.s3tc.ctex"]
 
 [params]
 

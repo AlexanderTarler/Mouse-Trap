@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dh3yq43e6yc5e"
-path.s3tc="res://.godot/imported/Barn_Final_0_CL.png-5f9d87e24371e0b77f856f11fcb1d2df.s3tc.ctex"
+path.s3tc="res://.godot/imported/Barn_Final_0_CL.png-a24bb68fd963f5d095ad1092d59ad786.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/textures/Barn_Final_0_CL.png"
-dest_files=["res://.godot/imported/Barn_Final_0_CL.png-5f9d87e24371e0b77f856f11fcb1d2df.s3tc.ctex"]
+source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Barn_Final_0_CL.png"
+dest_files=["res://.godot/imported/Barn_Final_0_CL.png-a24bb68fd963f5d095ad1092d59ad786.s3tc.ctex"]
 
 [params]
 

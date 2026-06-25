@@ -51,6 +51,12 @@ var phase3_complete: bool = false            # All Phase 3 done (→ Day 2)
 ## progress (e.g., "Nest documented! (1/3)").
 var nests_documented: int = 0
 
+## Whether the player has successfully uploaded the nest data via the
+## computer's FIELD_LOG.EXE correlation. Set by computer_ui.gd when the
+## Day 2 correlation succeeds. The bed checks this before allowing sleep.
+var nests_uploaded: bool = false
+
+
 ## Reference to NightManager for setting the completion flag.
 var _night_manager: Node = null
 
@@ -63,9 +69,19 @@ func _ready() -> void:
 ## Returns the current objective text based on the Phase state.
 ## Called by HorrorHUD to initialize the objective label on startup.
 func get_current_objective() -> String:
+	# Day 2 — Nest documentation (after Day 1 onboarding is complete)
+	if nests_uploaded:
+		return "Go to bed."
+	if nests_documented >= 3:
+		return "Upload nest data on the computer."
+	if nests_documented > 0:
+		return "Document the nests."
+
+	
 	# Phase 3
 	if phase3_complete:
 		return "Day 1 complete. Rest well."
+
 	if phase3_door_locked:
 		return "Go to bed."
 	if phase3_bed_used:
@@ -122,8 +138,17 @@ func _update_hud() -> void:
 	var text = get_current_objective()
 	# Determine step number for the signal
 	var step = 0
-	if phase3_complete:
+	# Day 2 — Nest documentation steps
+	if nests_uploaded:
+		step = 19
+	elif nests_documented >= 3:
+		step = 18
+	elif nests_documented > 0:
+		step = 17
+
+	elif phase3_complete:
 		step = 16
+
 	elif phase3_door_locked:
 		step = 15
 	elif phase2b_complete:
@@ -368,9 +393,29 @@ func on_bed_interacted() -> bool:
 
 ## Called by hasselmus_nest.gd when the player documents a nest.
 ## Increments the nests_documented counter so the HUD can display progress.
+## When all 3 nests are documented, updates the HUD objective to prompt
+## the player to upload the data on the computer.
 func document_nest(nest_id: String) -> void:
 	nests_documented += 1
 	print("[RoutineManager] Nest '%s' documented! (%d/3)" % [nest_id, nests_documented])
+	
+	# When all 3 nests are documented, update the HUD objective
+	# so the player knows to go back to the computer and upload the data.
+	if nests_documented >= 3:
+		print("[RoutineManager] All 3 nests documented! Player should upload data on the computer.")
+		_update_hud()
+
+
+## Called by computer_ui.gd when the player successfully correlates the
+## nest data on the computer (FIELD_LOG.EXE). Sets nests_uploaded = true
+## and updates the HUD objective to prompt the player to go to bed.
+func on_nest_data_uploaded() -> void:
+	if nests_uploaded:
+		return
+	nests_uploaded = true
+	print("[RoutineManager] Nest data uploaded on computer! Player should go to bed.")
+	_update_hud()
+
 
 
 ## Resets all phase state (for new game / restart).
