@@ -84,9 +84,19 @@ const HITS_PER_PLANK: int = 3
 ## Reference to an AudioStreamPlayer3D for the plank hammer sound
 @onready var _hammer_sound: AudioStreamPlayer3D = $HammerSound if has_node("HammerSound") else null
 
-## Reference to the IndoorBreachWayPoint Marker3D — positioned ~1.5m inside the room
+## Reference to the DoorBreachWaypoint Marker3D — positioned ~1.5m inside the room
 ## behind the window opening. The Entity navigates here after shattering the barricade.
-@onready var _indoor_breach_waypoint: Marker3D = $IndoorBreachWaypoint if has_node("IndoorBreachWaypoint") else null
+## Found via the "DoorBreachWaypoint" group instead of a hardcoded node name.
+@onready var _indoor_breach_waypoint: Marker3D = _find_door_breach_waypoint()
+
+## Finds the DoorBreachWaypoint marker in this window's children via the group.
+## Returns the Marker3D node, or null if not found.
+func _find_door_breach_waypoint() -> Marker3D:
+	var children = get_children()
+	for child in children:
+		if child is Marker3D and child.is_in_group("DoorBreachWaypoint"):
+			return child
+	return null
 
 # --- TWO-STAGE VISUAL STATE BRANCH ---
 ## PristineVisuals: Clean frame with intact crossbars and glass panes.

@@ -41,6 +41,17 @@ class_name EntityAI
 ## signal to prevent permanent soft-locks.
 @export var approach_failsafe_timeout: float = 15.0
 
+## Arrival distance (in meters) for Phase 2 of the door approach.
+## The Entity must be within this distance of the IndoorBreachWaypoint before
+## signaling completion. A tight threshold (0.3m) ensures the Entity has
+## physically walked through the doorway before transitioning to INDOOR_SEARCH.
+@export var door_phase_2_arrival_distance: float = 0.02
+
+## Failsafe timeout (in seconds) for Phase 2 of the door approach.
+## If the Entity has been pathfinding to the IndoorBreachWaypoint for this long
+## without arriving, force a completion signal to prevent soft-locks.
+@export var door_phase_2_failsafe_timeout: float = 5.0
+
 ## Debug log interval (in seconds) for APPROACH_WINDOW and WINDOW_PEEK.
 ## Prints Entity and window coordinates at this interval to help debug
 ## pathfinding issues.
@@ -113,6 +124,11 @@ class_name EntityAI
 
 ## Fuse sabotage range (in meters) — how close the Entity must be to strike the Fuse Box.
 @export var fuse_sabotage_range: float = 2.5
+
+## Fuse sabotage stuck timeout (in seconds) — if the Entity has been within 5m of the
+## EntityFuseWaypoint for this long without reaching the 2.5m arrival threshold,
+## teleport directly to the waypoint to prevent soft-locks from geometry blocking.
+@export var fuse_sabotage_stuck_timeout: float = 4.0
 
 ## Approach arrival distance (in meters) — 2D distance threshold for arriving at a window.
 @export var approach_arrival_distance: float = 2.5
@@ -195,7 +211,8 @@ enum State {
 	ENRAGED,                # Blackout release — permanent 1.5x speed boost for rest of night
 	ATTACK_LAMP,            # Entity is physically approaching and striking the portable high-voltage lamp
 	HARASS,                 # Entity stands at a window performing psychological harassment (breathing, tapping, rattling)
-	FUSE_SABOTAGE,          # Entity is physically approaching and striking the Fuse Box to break it
+	FUSE_SABOTAGE,          # Entity is physically approaching and striking the Fuse Box to break it (frustration-based)
+	SABOTAGE_FUSE,          # Entity pathfinds to EntityFuseWaypoint and breaks the Fuse Box (door-prerequisite)
 	ENTER_THROUGH_DOOR,     # Entity walks to the front door, opens it, and enters the cabin
 	TRAVERSE_STAIRS,        # Entity uses off-mesh link waypoints to navigate the stairs between floors
 }
@@ -216,6 +233,7 @@ const UNINTERRUPTIBLE_STATES: Array = [
 	State.FLINCH,
 	State.RETREAT,
 	State.FUSE_SABOTAGE,
+	State.SABOTAGE_FUSE,
 	State.ATTACK_LAMP,
 	State.TRAVERSE_STAIRS
 ]
@@ -473,6 +491,13 @@ var _room_path_recheck_timer: float = 0.0
 ## frame, which causes FPS drops due to path recalculation overhead.
 var _path_timer: float = 0.0
 
+## Stuck timer for SABOTAGE_FUSE state. Accumulates delta while the Entity is
+## within 5m of the EntityFuseWaypoint but hasn't reached the 2.5m arrival
+## threshold. If this timer exceeds fuse_sabotage_stuck_timeout (4.0s), the
+## Entity teleports directly to the waypoint to prevent soft-locks from
+## geometry blocking (e.g., crates blocking the last 0.07m of the path).
+var _sabotage_stuck_timer: float = 0.0
+
 ## Minimum interval (in seconds) between NavigationAgent3D target_position updates.
 ## Setting target_position triggers a path recalculation which is expensive.
 ## Throttling to 300ms reduces pathfinding overhead by ~95% while maintaining
@@ -717,6 +742,8 @@ func process_state_logic(delta: float) -> void:
 			_attack_lamp_state(delta)
 		State.FUSE_SABOTAGE:
 			_fuse_sabotage_state(delta)
+		State.SABOTAGE_FUSE:
+			_sabotage_fuse_state(delta)
 		State.TRAVERSE_STAIRS:
 			_traverse_stairs_state(delta)
 		State.ENTER_THROUGH_DOOR:
@@ -1331,6 +1358,197 @@ func _fuse_sabotage_state(delta: float) -> void:
 
 
 # ---------------------------------------------------------------------------
+# STATE: SABOTAGE_FUSE — Door-prerequisite sabotage of the Fuse Box
+# ---------------------------------------------------------------------------
+## The Entity pathfinds to the EntityFuseWaypoint marker and breaks the
+## Fuse Box. This is triggered by the Director's Tier 1 when the Entity
+## wants to approach the door but the porch light is on (generator powered).
+##
+## Unlike FUSE_SABOTAGE (frustration-based brute-force attack), this state
+## is a "surgical" one-shot: the Entity walks to the waypoint, calls
+## break_fuse() directly, and signals completion immediately.
+##
+## The EntityFuseWaypoint is a Marker3D node tagged with the "EntityFuseWaypoint"
+## group, placed near the Fuse Box so the Entity can pathfind to it.
+func _sabotage_fuse_state(delta: float) -> void:
+	# Lock the state — the Director must not override while we're mid-sabotage
+	entity.state_locked = true
+	
+	var fuse_box = entity.get_fuse_box_node()
+	
+	if not fuse_box or not is_instance_valid(fuse_box):
+		# Fuse Box doesn't exist or was destroyed — signal completion
+		entity.is_fuse_sabotaged = true
+		entity.state_locked = false
+		_calculated_velocity = Vector3.ZERO
+		return
+	
+	# Check if the Fuse Box is already destroyed
+	if fuse_box.has_method("is_powered") and not fuse_box.is_powered():
+		# Already broken — signal completion
+		entity.is_fuse_sabotaged = true
+		entity.state_locked = false
+		_calculated_velocity = Vector3.ZERO
+		print("[SABOTAGE_FUSE] Fuse Box already broken. Signaling completion.")
+		return
+	
+	# ─── FIND THE ENTITY FUSE WAYPOINT ──────────────────────────────────
+	var fuse_waypoint: Node3D = null
+	var waypoints = get_tree().get_nodes_in_group("EntityFuseWaypoint")
+	if not waypoints.is_empty():
+		fuse_waypoint = waypoints[0] as Node3D
+	
+	if not fuse_waypoint:
+		# Fallback: no waypoint found, pathfind directly to the Fuse Box
+		print("[SABOTAGE_FUSE] No EntityFuseWaypoint found. Pathfinding directly to Fuse Box.")
+		_path_timer -= delta
+		if _path_timer <= 0.0:
+			_path_timer = PATH_UPDATE_INTERVAL
+			entity.get_nav_agent().target_position = fuse_box.global_position
+		
+		var dist_to_fuse = entity.global_position.distance_to(fuse_box.global_position)
+		if dist_to_fuse <= fuse_sabotage_range:
+			# In range — break the fuse box immediately
+			fuse_box.break_fuse()
+			entity.is_fuse_sabotaged = true
+			entity.state_locked = false
+			_calculated_velocity = Vector3.ZERO
+			print("[SABOTAGE_FUSE] Fuse Box broken! Signaling completion.")
+			return
+		
+		# Pathfinding toward the Fuse Box
+		if entity.get_nav_agent().is_navigation_finished():
+			_calculated_velocity.x = 0.0
+			_calculated_velocity.z = 0.0
+		else:
+			var next_pos = entity.get_nav_agent().get_next_path_position()
+			var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
+			if dir_2d.length() > 0.01:
+				var move_dir_2d = dir_2d.normalized()
+				_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
+				_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
+		return
+	
+	# ─── PATHFIND TOWARD THE FUSE WAYPOINT ──────────────────────────────
+	_path_timer -= delta
+	if _path_timer <= 0.0:
+		_path_timer = PATH_UPDATE_INTERVAL
+		entity.get_nav_agent().target_position = fuse_waypoint.global_position
+	
+	var dist_to_wp = entity.global_position.distance_to(fuse_waypoint.global_position)
+	
+	# ─── STUCK DETECTION ────────────────────────────────────────────────
+	# If the Entity is within 5m of the waypoint but hasn't reached the
+	# 2.5m arrival threshold, accumulate the stuck timer. This handles
+	# cases where geometry (e.g., crates, pallets) blocks the last few
+	# meters of the path. If the timer exceeds the timeout, teleport
+	# directly to the waypoint to prevent soft-locks.
+	if dist_to_wp <= 5.0 and dist_to_wp > 2.5:
+		_sabotage_stuck_timer += delta
+		if _sabotage_stuck_timer >= fuse_sabotage_stuck_timeout:
+			print("[SABOTAGE_FUSE] STUCK TIMEOUT! Entity stuck at dist=%.2f for %.1fs. Teleporting to waypoint." % [dist_to_wp, _sabotage_stuck_timer])
+			entity.global_position = fuse_waypoint.global_position
+			entity.velocity = Vector3.ZERO
+			_sabotage_stuck_timer = 0.0
+			# Now check arrival immediately
+			fuse_box.break_fuse()
+			entity.is_fuse_sabotaged = true
+			entity.state_locked = false
+			_calculated_velocity = Vector3.ZERO
+			# ─── RELOCATE TO TREELINE VANTAGE POINT ──────────────────────────
+			# After teleporting to the EntityFuseWaypoint, the Entity is at
+			# (1.154, 0.172, 16.596) — inside the cabin area near the fuse box.
+			# The NavMesh cannot find a path from this position to any window,
+			# causing the APPROACH_WINDOW state to fail (15s timeout) and the
+			# Entity to get stuck. Relocate to a treeline vantage point so the
+			# next APPROACH_WINDOW starts from a valid NavMesh position.
+			_relocate_to_treeline_after_sabotage()
+			print("[SABOTAGE_FUSE] Teleported to EntityFuseWaypoint. Fuse Box broken! Relocated to treeline. Signaling completion.")
+			return
+	elif dist_to_wp <= 2.5:
+		# Arrived at the waypoint — reset stuck timer and break the fuse box
+		_sabotage_stuck_timer = 0.0
+		fuse_box.break_fuse()
+		entity.is_fuse_sabotaged = true
+		entity.state_locked = false
+		_calculated_velocity = Vector3.ZERO
+		# ─── RELOCATE TO TREELINE VANTAGE POINT ──────────────────────────
+		# After breaking the fuse box, the Entity is at the EntityFuseWaypoint
+		# position (inside the cabin area). Relocate to a treeline vantage point
+		# so the next APPROACH_WINDOW starts from a valid NavMesh position.
+		_relocate_to_treeline_after_sabotage()
+		print("[SABOTAGE_FUSE] Arrived at EntityFuseWaypoint (dist=%.2f). Fuse Box broken! Relocated to treeline. Signaling completion." % dist_to_wp)
+		return
+	else:
+		# Far from the waypoint — reset stuck timer (not stuck yet)
+		_sabotage_stuck_timer = 0.0
+	
+	# ─── MOVEMENT TOWARD WAYPOINT ──────────────────────────────────────
+	if entity.get_nav_agent().is_navigation_finished():
+		_calculated_velocity.x = 0.0
+		_calculated_velocity.z = 0.0
+	else:
+		var next_pos = entity.get_nav_agent().get_next_path_position()
+		var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
+		if dir_2d.length() > 0.01:
+			var move_dir_2d = dir_2d.normalized()
+			_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
+			_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
+
+
+## ─── SABOTAGE RELOCATION HELPER ──────────────────────────────────────────
+## After the Entity breaks the Fuse Box (SABOTAGE_FUSE), it is at the
+## EntityFuseWaypoint position (1.154, 0.172, 16.596) — inside the cabin area
+## near the fuse box. The NavMesh cannot find a path from this position to any
+## window, causing the APPROACH_WINDOW state to fail (15s timeout) and the
+## Entity to get stuck.
+##
+## This function relocates the Entity to a random treeline vantage point so
+## the next APPROACH_WINDOW starts from a valid NavMesh position.
+func _relocate_to_treeline_after_sabotage() -> void:
+	var nav = entity.get_navigation_module()
+	if nav and nav.has_method("pick_next_vantage_point"):
+		nav.pick_next_vantage_point()
+	
+	# Get the new nav target position and teleport there
+	var nav_agent = entity.get_nav_agent()
+	if nav_agent:
+		var target_pos = nav_agent.target_position
+		# Only teleport if the target is valid (not zero) and far enough away
+		if target_pos != Vector3.ZERO and target_pos.distance_to(entity.global_position) > 5.0:
+			# ─── SNAP TO NAVMESH FLOOR ────────────────────────────────────────
+			# The treeline vantage point's Y coordinate may be above the NavMesh
+			# surface (e.g., floating in the air at Y ≈ 1.0+). Use Godot's
+			# NavigationServer3D.map_get_closest_point() to project the target
+			# position onto the NavMesh floor, ensuring the Entity lands on solid
+			# ground instead of floating in mid-air.
+			var nav_map = entity.get_world_3d().navigation_map
+			var snapped_pos = NavigationServer3D.map_get_closest_point(nav_map, target_pos)
+			# Preserve the target's XZ but use the NavMesh-snapped Y
+			snapped_pos.x = target_pos.x
+			snapped_pos.z = target_pos.z
+			entity.global_position = snapped_pos
+			entity.velocity = Vector3.ZERO
+			print("[SABOTAGE_RELOCATE] Teleported to treeline vantage point at (%.2f, %.2f, %.2f) [snapped to NavMesh Y=%.2f]" % [target_pos.x, target_pos.y, target_pos.z, snapped_pos.y])
+		else:
+			# Fallback: try to find a treeline marker directly
+			var treeline_markers = entity.get_tree().get_nodes_in_group("Treeline_Vantage_Points")
+			if not treeline_markers.is_empty():
+				var marker = treeline_markers[randi() % treeline_markers.size()] as Node3D
+				if marker:
+					# ─── SNAP TO NAVMESH FLOOR ────────────────────────────────
+					# Same NavMesh snapping for the fallback marker position.
+					var nav_map = entity.get_world_3d().navigation_map
+					var snapped_pos = NavigationServer3D.map_get_closest_point(nav_map, marker.global_position)
+					snapped_pos.x = marker.global_position.x
+					snapped_pos.z = marker.global_position.z
+					entity.global_position = snapped_pos
+					entity.velocity = Vector3.ZERO
+					nav_agent.target_position = marker.global_position
+					print("[SABOTAGE_RELOCATE] Fallback: Teleported to treeline marker at (%.2f, %.2f, %.2f) [snapped to NavMesh Y=%.2f]" % [marker.global_position.x, marker.global_position.y, marker.global_position.z, snapped_pos.y])
+
+
+# ---------------------------------------------------------------------------
 # STATE: STALK (CHASE / PATROL)
 # ---------------------------------------------------------------------------
 
@@ -1891,8 +2109,59 @@ func _approach_window_state(delta: float) -> void:
 	# arriving, force a completion signal. This prevents permanent soft-locks
 	# when the NavMesh can't reach the window (e.g., the cabin wall blocks
 	# pathfinding) and the Entity stutters at the edge of the NavMesh.
+	#
+	# DOOR HANDLING: If the window_target is a door, the failsafe must
+	# teleport the Entity to the IndoorBreachWaypoint (just like Phase 2's
+	# failsafe) instead of just signaling completion. Without this, the
+	# Entity gets stuck outside the door and the Director transitions to
+	# INDOOR_SEARCH with was_door_entry=true but the Entity is still 15m
+	# away in the forest — the INDOOR_SEARCH Phase A door entry handler
+	# can't pathfind from there, causing a desync.
 	if _approach_failsafe_timer >= approach_failsafe_timeout:
 		print("[Entity AI] APPROACH_WINDOW FAILSAFE: %ds elapsed without arrival. Forcing completion." % approach_failsafe_timeout)
+		
+		# ─── CHECK IF TARGET IS A DOOR ────────────────────────────────────
+		var failsafe_window_target = entity.get_current_window_target()
+		var is_door_failsafe: bool = false
+		if failsafe_window_target:
+			if failsafe_window_target.has_method("is_in_group") and failsafe_window_target.is_in_group("Door"):
+				is_door_failsafe = true
+			elif failsafe_window_target.get_parent() and failsafe_window_target.get_parent().has_method("is_in_group") and failsafe_window_target.get_parent().is_in_group("Door"):
+				is_door_failsafe = true
+			elif "is_open" in failsafe_window_target:
+				is_door_failsafe = true
+		
+		if is_door_failsafe:
+			# ─── DOOR FAILSAFE: Teleport to IndoorBreachWaypoint ──────────
+			# The Entity failed to reach the door within 15 seconds. Teleport
+			# directly to the IndoorBreachWaypoint so the INDOOR_SEARCH Phase A
+			# handler can immediately detect arrival and start Phase B patrol.
+			# Use the waypoint's exact Y coordinate to avoid floor clipping.
+			print("[Entity AI] APPROACH_WINDOW FAILSAFE: Door target detected. Teleporting to IndoorBreachWaypoint.")
+			var door_node_fs = failsafe_window_target
+			if door_node_fs.has_method("is_in_group") and not door_node_fs.is_in_group("Door"):
+				door_node_fs = door_node_fs.get_parent()
+			var breach_wp_fs: Node3D = null
+			if door_node_fs:
+				var breach_wps_fs = door_node_fs.get_tree().get_nodes_in_group("DoorBreachWaypoint")
+				for wp in breach_wps_fs:
+					if wp.get_parent() == door_node_fs:
+						breach_wp_fs = wp
+						break
+			if breach_wp_fs:
+				var teleport_pos = breach_wp_fs.global_position
+				entity.global_position = teleport_pos
+				entity.velocity = Vector3.ZERO
+				print("[Entity AI] APPROACH_WINDOW FAILSAFE: Teleported to IndoorBreachWaypoint at ", teleport_pos)
+			
+			entity.was_door_entry = true
+			entity.is_door_target = true
+		else:
+			# ─── WINDOW FAILSAFE: Standard completion (no teleport) ───────
+			# For window targets, just signal completion. The Director will
+			# transition to OBSERVE_FROM_TREELINE and try a different window.
+			print("[Entity AI] APPROACH_WINDOW FAILSAFE: Window target. Signaling completion without teleport.")
+		
 		_calculated_velocity = Vector3.ZERO
 		entity.is_approach_finished = true
 		entity.state_locked = false
@@ -1972,15 +2241,43 @@ func _approach_window_state(delta: float) -> void:
 				Vector2(entity_pos.x, entity_pos.z).distance_to(Vector2(nav_target.x, nav_target.z))
 			])
 		
+		# ─── SET NAV TARGET TO WINDOW POSITION ─────────────────────────────
+		# CRITICAL: The NavigationAgent's target_position must be explicitly
+		# set to the window's position every frame (throttled to 300ms).
+		# Without this, the target_position retains the stale value from the
+		# previous state (e.g., a treeline vantage point from OBSERVE state).
+		# The Entity would pathfind to the old treeline marker, the 2D distance
+		# check would pass (because it's close to the old target), and the
+		# "Arrived at DOOR!" logic would trigger while the Entity is still
+		# 25 meters away in the forest.
+		#
+		# We flatten Y to the Entity's current Y so the NavMesh can find a
+		# ground-level path to the window's XZ position. Second-story windows
+		# have Y ≈ 3.0m, but the NavMesh is at ground level (Y ≈ 0.0).
+		# Setting target_position to the raw 3D coordinate would cause the
+		# NavigationAgent3D to fail — it can't find a path to a point 3m
+		# above the NavMesh surface.
+		_path_timer -= delta
+		if _path_timer <= 0.0:
+			_path_timer = PATH_UPDATE_INTERVAL
+			var flat_window_pos = window_target.global_position
+			flat_window_pos.y = entity.global_position.y
+			entity.get_nav_agent().target_position = flat_window_pos
+		
 		# ─── 2D DISTANCE CHECK: Ignore vertical height differences ─────────
 		# The NavMesh is at ground level (Y ≈ 0.0). The window target may be
 		# at Y ≈ 3.0m (second story). Using 3D distance would include the
 		# vertical component, making the Entity think it's farther away than
 		# it actually is. We project both positions to 2D (XZ plane) for an
 		# accurate ground-level distance check.
+		#
+		# NOTE: We measure distance to the window_target's XZ position, NOT
+		# the NavigationAgent's target_position. The nav target may be slightly
+		# offset due to jitter or pathfinding quirks, but the window's actual
+		# position is the ground truth for arrival detection.
 		var my_pos_2d = Vector2(entity.global_position.x, entity.global_position.z)
-		var target_pos_2d = Vector2(entity.get_nav_agent().target_position.x, entity.get_nav_agent().target_position.z)
-		var dist_2d = my_pos_2d.distance_to(target_pos_2d)
+		var window_pos_2d = Vector2(window_target.global_position.x, window_target.global_position.z)
+		var dist_2d = my_pos_2d.distance_to(window_pos_2d)
 		
 		# ─── ARRIVAL CHECK: 2D distance threshold (generous 2.5m) ──────────
 		# The Entity must be within 2.5m of the window target AND have spent
@@ -1997,13 +2294,188 @@ func _approach_window_state(delta: float) -> void:
 		# fires. But the Entity is still 3.6m away from the window — not close
 		# enough to peek inside. We rely solely on the 2D distance check.
 		var nav_finished = entity.get_nav_agent().is_navigation_finished()
+		# ─── DOOR PHASE 2 LOOP: Runs every frame when _door_phase == 2 ─────
+		# This MUST be checked BEFORE the arrival check below, because once
+		# the Entity enters Phase 2 (walking through the doorway), the Phase 2
+		# loop needs to run every frame independently of the distance check.
+		# If we put it inside the arrival check block, the arrival check
+		# re-fires every frame (dist is still < 2.5m), causing the Phase 2
+		# loop to re-enter from scratch each frame — the ghost motor lerps
+		# the position, but the "Arrived at DOOR!" print floods the console
+		# and the logic is re-entered unnecessarily.
+		#
+		# BREACH LOCK: When _door_phase == 2, the Entity is mid-breach
+		# (walking through the doorway via ghost motor). We set
+		# is_breach_locked = true to prevent the Director from transitioning
+		# to INDOOR_SEARCH before the ghost motor reaches the
+		# IndoorBreachWaypoint. The Director's breach lock guard (checked
+		# BEFORE state_locked) returns the current state when is_breach_locked
+		# is true, preventing premature transition.
+		if entity._door_phase == 2:
+			# ─── SET BREACH LOCK ON FIRST FRAME OF PHASE 2 ──────────────────
+			# This prevents the Director from transitioning to INDOOR_SEARCH
+			# before the ghost motor has lerped the Entity through the doorway
+			# to the IndoorBreachWaypoint. The lock is released when Phase 2
+			# completes (arrival check below) or the failsafe fires.
+			entity.is_breach_locked = true
+			
+			entity._door_phase_2_timer += delta
+			
+			# ─── FAILSAFE TIMEOUT ─────────────────────────────────────────────
+			if entity._door_phase_2_timer >= door_phase_2_failsafe_timeout:
+				print("[Entity AI] APPROACH_WINDOW: Phase 2 FAILSAFE! %ds elapsed without arrival. Forcing completion and teleporting." % door_phase_2_failsafe_timeout)
+				
+				# ─── TELEPORT TO BREACH WAYPOINT ────────────────────────────────
+				# The Entity failed to reach the IndoorBreachWaypoint within the
+				# 5-second timeout (likely stuck on the door collision). Teleport
+				# directly to the waypoint using its exact Y coordinate (the waypoint
+				# is placed above the indoor floor at Y ≈ 0.62). Using the Entity's
+				# current Y (outside terrain at Y ≈ 0.33) would clip it into the
+				# floorboards, causing permanent collision mesh entrapment.
+				var door_node2 = window_target
+				if door_node2.has_method("is_in_group") and not door_node2.is_in_group("Door"):
+					door_node2 = door_node2.get_parent()
+				var breach_wp: Node3D = null
+				if door_node2:
+					var breach_wps = door_node2.get_tree().get_nodes_in_group("DoorBreachWaypoint")
+					for wp in breach_wps:
+						if wp.get_parent() == door_node2:
+							breach_wp = wp
+							break
+				if breach_wp:
+					# USE THE WAYPOINT'S Y COORDINATE to avoid clipping into the floor
+					var teleport_pos = breach_wp.global_position
+					entity.global_position = teleport_pos
+					entity.velocity = Vector3.ZERO
+					print("[Entity AI] APPROACH_WINDOW: Phase 2 FAILSAFE teleported to IndoorBreachWaypoint at ", teleport_pos)
+				
+				entity.is_breach_locked = false
+				entity.was_door_entry = true
+				entity.is_approach_finished = true
+				entity.state_locked = false
+				entity._door_phase = 0
+				entity._door_phase_2_timer = 0.0
+				_approach_min_timer = 0.0
+				_approach_failsafe_timer = 0.0
+				_calculated_velocity = Vector3.ZERO
+				# Restore physics in case ghost motor was active
+				entity.set_collision_mask_value(1, true)
+				if entity.has_method("get_collision_shape"):
+					entity.get_collision_shape().disabled = false
+				entity.is_physics_suspended = false
+				return
+			
+			# ─── RESOLVE THE BREACH WAYPOINT POSITION ────────────────────────
+			var door_node2 = window_target
+			if door_node2.has_method("is_in_group") and not door_node2.is_in_group("Door"):
+				door_node2 = door_node2.get_parent()
+			var breach_wp: Node3D = null
+			if door_node2:
+				var breach_wps = door_node2.get_tree().get_nodes_in_group("DoorBreachWaypoint")
+				for wp in breach_wps:
+					if wp.get_parent() == door_node2:
+						breach_wp = wp
+						break
+			
+			if not breach_wp:
+				print("[Entity AI] APPROACH_WINDOW: No DoorBreachWaypoint found on Door. Signaling completion.")
+				entity.is_breach_locked = false
+				entity.was_door_entry = true
+				entity.is_approach_finished = true
+				entity.state_locked = false
+				entity._door_phase = 0
+				entity._door_phase_2_timer = 0.0
+				_approach_min_timer = 0.0
+				_approach_failsafe_timer = 0.0
+				_calculated_velocity = Vector3.ZERO
+				return
+			
+			var waypoint_pos = breach_wp.global_position
+			waypoint_pos.y = entity.global_position.y  # Flatten Y
+			
+			# ─── ARRIVAL CHECK ───────────────────────────────────────────────
+			var dist_to_wp2 = entity.global_position.distance_to(waypoint_pos)
+			if dist_to_wp2 <= door_phase_2_arrival_distance:
+				print("[Entity AI] APPROACH_WINDOW: Phase 2 complete! Arrived at IndoorBreachWaypoint (dist=%.2f). Signaling completion." % dist_to_wp2)
+				entity.is_breach_locked = false
+				entity.was_door_entry = true
+				entity.is_approach_finished = true
+				entity.state_locked = false
+				entity._door_phase = 0
+				entity._door_phase_2_timer = 0.0
+				_approach_min_timer = 0.0
+				_approach_failsafe_timer = 0.0
+				_calculated_velocity = Vector3.ZERO
+				# Restore physics in case ghost motor was active
+				entity.set_collision_mask_value(1, true)
+				if entity.has_method("get_collision_shape"):
+					entity.get_collision_shape().disabled = false
+				entity.is_physics_suspended = false
+				return
+			
+			# ─── NAVMESH PATHFINDING ────────────────────────────────────────
+			var nav_finished2 = entity.get_nav_agent().is_navigation_finished()
+			
+			if not nav_finished2:
+				# NavMesh path is active — follow it
+				entity.set_path_timer(entity.get_path_timer() + delta)
+				if entity.get_path_timer() >= entity.path_update_interval:
+					entity.set_path_timer(0.0)
+					entity.get_nav_agent().target_position = waypoint_pos
+				
+				var next_pos = entity.get_nav_agent().get_next_path_position()
+				var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
+				if dir_2d.length() > 0.01:
+					var move_dir_2d = dir_2d.normalized()
+					_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
+					_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
+				return
+			
+			# ─── GHOST MOTOR FALLBACK ────────────────────────────────────────
+			print("[Entity AI] APPROACH_WINDOW: Phase 2 GHOST MOTOR! Nav finished at dist=%.2f. Lerping to waypoint." % dist_to_wp2)
+			
+			# ─── RESET PHASE 2 FAILSAFE TIMER ────────────────────────────────
+			# The NavMesh pathfinding phase may have consumed most of the 5-second
+			# failsafe budget. Reset the timer here so the ghost motor gets a full
+			# 5 seconds to lerp the Entity through the doorway. Without this reset,
+			# the combined NavMesh + ghost motor time can exceed the 5-second limit,
+			# causing the failsafe to fire prematurely and skip the IndoorBreachWaypoint.
+			entity._door_phase_2_timer = 0.0
+			
+			# Disable collision so the Entity phases through the doorway
+			entity.set_collision_mask_value(1, false)
+			if entity.has_method("get_collision_shape"):
+				entity.get_collision_shape().disabled = true
+			entity.is_physics_suspended = true
+			entity.velocity = Vector3.ZERO
+			
+			# Lerp toward the waypoint
+			var ghost_speed = entity.current_stalk_speed * 1.0  # Normal walk speed
+			var new_pos = entity.global_position.move_toward(waypoint_pos, ghost_speed * delta)
+			entity.global_position = new_pos
+			_calculated_velocity = Vector3.ZERO
+			return
+		
+		# ─── ARRIVAL CHECK: 2D distance threshold (generous 2.5m) ──────────
+		# The Entity must be within 2.5m of the window target AND have spent
+		# at least 2.0 seconds pathfinding before signaling completion.
+		# The 2.5m threshold is generous enough that the Entity registers an
+		# arrival even if it has to stop at the edge of the NavMesh just
+		# outside the cabin wall (the NavMesh may not reach the exact window
+		# coordinate — the wall blocks further pathfinding).
+		#
+		# NOTE: We do NOT use is_navigation_finished() as a completion signal.
+		# The NavMesh may not reach the exact window coordinate (e.g., the
+		# cabin wall blocks further pathfinding). In that case, the Entity
+		# gets as close as the NavMesh allows and then is_navigation_finished()
+		# fires. But the Entity is still 3.6m away from the window — not close
+		# enough to peek inside. We rely solely on the 2D distance check.
+		#
+		# NOTE: This block handles Phase 0→1 transitions (arriving at the door
+		# for the first time). Once _door_phase >= 1, the Phase 1 and Phase 2
+		# loops above handle the rest independently.
 		if dist_2d <= approach_arrival_distance and _approach_min_timer >= approach_min_duration:
 			# ─── DETECT IF TARGET IS A DOOR ─────────────────────────────────
-			# Check if the current window target is actually the front door.
-			# The door is identified by checking if the target is a Door node
-			# (has "is_open" property) or if the target's parent is a Door.
-			# If it's a door, we handle door-specific arrival logic instead of
-			# the standard window arrival (which transitions to WINDOW_PEEK).
 			var is_door_target: bool = false
 			print("[DOOR DEBUG] Checking if target is door. window_target.name='%s', window_target.class='%s'" % [window_target.name, window_target.get_class()])
 			if window_target.has_method("is_in_group") and window_target.is_in_group("Door"):
@@ -2023,25 +2495,12 @@ func _approach_window_state(delta: float) -> void:
 			
 			if is_door_target:
 				# ─── SET DOOR TARGET FLAG ───────────────────────────────────
-				# Set the Blackboard flag so the Director knows this was a door
-				# approach (not a window approach). The Director reads this flag
-				# in Tier 5 to determine the correct transition:
-				#   - Window approach → WINDOW_PEEK
-				#   - Door approach (unlocked) → INDOOR_SEARCH
-				#   - Door approach (locked) → OBSERVE
 				entity.is_door_target = true
 				
 				# ─── DOOR ARRIVAL (Multi-Phase) ─────────────────────────────
-				# The Entity has arrived at the door. Handle door-specific logic
-				# with a multi-phase sequence:
-				#
-				#   Phase 0: Not started (standard approach pathfinding)
-				#   Phase 1: Arrived at door — handle door state:
-				#     - Locked:   Pause 2 seconds, then return to OBSERVE
-				#     - Closed:   Pause 2 seconds, open door, advance to Phase 2
-				#     - Open:     Skip pause, advance to Phase 2
-				#   Phase 2: Walk through doorway to interior waypoint
-				#   Phase 3: Arrived inside — signal completion → INDOOR_SEARCH
+				# Phase 0: Not started (standard approach pathfinding)
+				# Phase 1: Arrived at door — handle door state
+				# Phase 2: Walk through doorway to interior waypoint (handled above)
 				#
 				print("[Entity AI] APPROACH_WINDOW: Arrived at DOOR! dist_2d=%.2f, min_timer=%.2f. Door phase=%d." % [dist_2d, _approach_min_timer, entity._door_phase])
 				
@@ -2056,18 +2515,25 @@ func _approach_window_state(delta: float) -> void:
 					entity._door_phase = 1
 					entity._door_phase_timer = 2.0  # 2-second pause
 					
+					# ─── RESET FAILSAFE TIMER ON DOOR ARRIVAL ───────────────────
+					# The Entity has physically arrived at the door. Reset the
+					# 15-second failsafe timer so it doesn't fire while the Entity
+					# is waiting for the 2-second pause or opening the door.
+					# The failsafe should only measure time spent PATHFINDING to
+					# the door, not time spent interacting with it.
+					_approach_failsafe_timer = 0.0
+					
 					# Check if door is locked
 					if door_node and "is_locked" in door_node and door_node.is_locked:
-						# Door is locked — play rattle sound, set cooldown
 						print("[Entity AI] APPROACH_WINDOW: Door is LOCKED! Playing rattle sound.")
 						if door_node.has_method("interact"):
-							door_node.interact()  # Plays the locked rattle sound
+							door_node.interact()
 						entity.is_door_locked = true
 						entity._door_approach_cooldown = 30.0
 					
 					# Check if door is already open — skip the pause
 					if door_node and "is_open" in door_node and door_node.is_open:
-						entity._door_phase_timer = 0.0  # Skip pause
+						entity._door_phase_timer = 0.0
 						print("[Entity AI] APPROACH_WINDOW: Door already open. Skipping pause.")
 					
 					_calculated_velocity = Vector3.ZERO
@@ -2096,7 +2562,6 @@ func _approach_window_state(delta: float) -> void:
 					if door_node and door_node.has_method("interact") and "is_open" in door_node and not door_node.is_open:
 						door_node.interact()
 						print("[Entity AI] APPROACH_WINDOW: Door was closed. Opened it after 2s pause.")
-						# ─── DEBUG: Log Entity position at door open ─────────
 						print("[Entity AI] APPROACH_WINDOW: Entity position at door open: (%.2f, %.2f, %.2f)" % [entity.global_position.x, entity.global_position.y, entity.global_position.z])
 						if door_node:
 							print("[Entity AI] APPROACH_WINDOW: Door position: (%.2f, %.2f, %.2f)" % [door_node.global_position.x, door_node.global_position.y, door_node.global_position.z])
@@ -2109,81 +2574,32 @@ func _approach_window_state(delta: float) -> void:
 								hall_light.toggle_light()
 								print("[Entity AI] APPROACH_WINDOW: HallRoom light toggled OFF.")
 					
+					# ─── RESET FAILSAFE TIMER ───────────────────────────────
+					_approach_failsafe_timer = 0.0
+					
 					# Advance to Phase 2 — walk through doorway
 					entity._door_phase = 2
+					entity._door_phase_2_timer = 0.0  # Reset failsafe timer so Phase 2 gets a full 5s budget
 					
-					# ─── RESET FAILSAFE TIMER ───────────────────────────────
-					# CRITICAL: Reset the approach failsafe timer when Phase 2
-					# begins. The failsafe timer starts counting from the moment
-					# the Entity enters APPROACH_WINDOW (line ~1822). By the time
-					# the Entity has pathfound to the door, waited 2 seconds, and
-					# opened it, ~14 seconds may have elapsed. Without this reset,
-					# the 15-second failsafe fires almost immediately after Phase 2
-					# starts, causing the Director to transition to INDOOR_SEARCH
-					# before the Entity has walked through the doorway.
-					_approach_failsafe_timer = 0.0
+					# ─── PHASE 2 INIT: Set NavigationAgent target ──────────────
+					var door_breach_wp: Node3D = null
+					if door_node:
+						# Find the breach waypoint via the "DoorBreachWaypoint" group
+						var breach_wps = door_node.get_tree().get_nodes_in_group("DoorBreachWaypoint")
+						for wp in breach_wps:
+							if wp.get_parent() == door_node:
+								door_breach_wp = wp
+								break
 					
-					# ─── PHASE 2: Walk through doorway ───────────────────────
-					# The Entity walks through the doorway using standard 2D-flattened
-					# NavMesh pathfinding. The controller's move_and_slide() + Floor
-					# RayCast handles Y-axis elevation (stairs, threshold) automatically.
-					#
-					# CRITICAL: We do NOT teleport the Entity to the IndoorBreachWaypoint
-					# here. That is the sole responsibility of INDOOR_SEARCH Door Phase A.
-					# APPROACH_WINDOW only gets the Entity to the door — INDOOR_SEARCH
-					# handles the interior teleport. This prevents the "instant breach"
-					# bug where the Entity arrives inside before INDOOR_SEARCH even starts.
-					#
-					# The Entity walks to the EntityDoorWaypoint (just outside the door),
-					# NOT the interior waypoint. The NavMesh covers the exterior, so
-					# pathfinding works reliably. Once the Entity arrives at the door,
-					# we signal completion and let INDOOR_SEARCH handle the interior.
-					
-					# ─── SIGNAL COMPLETION ───────────────────────────────────
-					# The Entity has arrived at the door. Set was_door_entry = true
-					# so INDOOR_SEARCH knows to enter Door Phase A (walk to the
-					# IndoorBreachWaypoint). No teleport — the Entity stays at the
-					# door and INDOOR_SEARCH handles the interior navigation.
-					entity.was_door_entry = true
-					entity.is_approach_finished = true
-					entity.state_locked = false
-					entity._door_phase = 0
-					entity._door_phase_2_timer = 0.0
-					_approach_min_timer = 0.0
-					_approach_failsafe_timer = 0.0
-					_calculated_velocity = Vector3.ZERO
-					print("[Entity AI] APPROACH_WINDOW: Door Phase 1 complete. Signaling completion. INDOOR_SEARCH will handle interior teleport.")
-					return
-			else:
-				# ─── WINDOW ARRIVAL (existing behavior) ─────────────────────
-				print("[Entity AI] APPROACH_WINDOW: Arrived at window! dist_2d=%.2f, min_timer=%.2f. Setting is_approach_finished=true" % [dist_2d, _approach_min_timer])
-				entity.is_approach_finished = true
-				entity.state_locked = false  # Unlock — Director can now transition
-				_approach_min_timer = 0.0
-				_approach_failsafe_timer = 0.0
-				_calculated_velocity = Vector3.ZERO
-				return
-		
-		entity.set_path_timer(entity.get_path_timer() + delta)
-		if entity.get_path_timer() >= entity.path_update_interval:
-			entity.set_path_timer(0.0)
-			# ─── FLATTEN Y-AXIS on path update too ─────────────────────────
-			# Every time we refresh the path, ensure the target is at ground
-			# level so the NavigationAgent3D can find a valid path.
-			var flat_target = window_target.global_position
-			flat_target.y = entity.global_position.y
-			entity.get_nav_agent().target_position = flat_target
-		
-		if nav_finished:
-			_calculated_velocity.x = 0.0
-			_calculated_velocity.z = 0.0
-		else:
-			var next_pos = entity.get_nav_agent().get_next_path_position()
-			var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
-			if dir_2d.length() > 0.01:
-				var move_dir_2d = dir_2d.normalized()
-				_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
-				_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
+					if not door_breach_wp:
+						print("[Entity AI] APPROACH_WINDOW: No DoorBreachWaypoint found on Door node. Falling back to immediate completion.")
+						entity.was_door_entry = true
+						entity.is_approach_finished = true
+						entity.state_locked = false
+						entity._door_phase = 0
+						entity._door_phase_2_timer = 0.0
+						_approach_min_timer = 0.0
+						_approach_failsafe_timer = 0.0
 
 
 
@@ -2654,24 +3070,113 @@ func _indoor_search_state(delta: float) -> void:
 	
 	# ─── PHASE A: Vault/Door Entry ───────────────────────────────────
 	if not _has_arrived_indoor:
-		# ─── DOOR ENTRY (Phase A bypass) ─────────────────────────────
+		# ─── DOOR ENTRY (Phase A navigation) ─────────────────────────
 		# If the Entity entered through the door (was_door_entry is true),
-		# skip the vault animation and teleport math. The Entity is already
-		# inside the cabin — it just needs to start patrolling.
+		# it must physically navigate to the IndoorBreachWaypoint past the
+		# threshold before Phase B (patrol) can begin. This ensures the
+		# Entity walks through the doorway and reaches the interior waypoint
+		# before it starts patrolling rooms.
 		if entity.was_door_entry:
-			entity.was_door_entry = false
-			_has_arrived_indoor = true
-			entity.is_breach_locked = false
-			entity.state_locked = false
-			# Reset the indoor search persistence timer
-			var director = _director
-			if director and director.has_method("reset_indoor_search_persistence"):
-				director.reset_indoor_search_persistence()
-			print("[INDOOR_SEARCH] Door entry detected. Skipping Phase A. Starting Phase B patrol.")
-			# Fall through to Phase B below
+			# ─── RESOLVE THE BREACH WAYPOINT ──────────────────────────────
+			# Find the DoorBreachWaypoint (IndoorBreachWaypoint) that was
+			# set during the APPROACH_WINDOW Phase 2 sequence. This waypoint
+			# is the interior position past the doorway threshold.
+			var breach_wp: Node3D = null
+			var door_node = get_tree().get_first_node_in_group("Door")
+			if door_node:
+				var breach_wps = door_node.get_tree().get_nodes_in_group("DoorBreachWaypoint")
+				for wp in breach_wps:
+					if wp.get_parent() == door_node:
+						breach_wp = wp
+						break
+			
+			if breach_wp:
+				var waypoint_pos = breach_wp.global_position
+				waypoint_pos.y = entity.global_position.y  # Flatten Y
+				var dist_to_wp = entity.global_position.distance_to(waypoint_pos)
+				
+				# ─── SET NAV TARGET ───────────────────────────────────────
+				# Throttle path updates to every 300ms to avoid FPS drops.
+				_path_timer -= delta
+				if _path_timer <= 0.0:
+					_path_timer = PATH_UPDATE_INTERVAL
+					entity.get_nav_agent().target_position = waypoint_pos
+				
+				# ─── ARRIVAL CHECK ───────────────────────────────────────
+				# The Entity must be within door_phase_2_arrival_distance (0.3m)
+				# of the IndoorBreachWaypoint before Phase B can begin.
+				if dist_to_wp <= door_phase_2_arrival_distance:
+					print("[INDOOR_SEARCH] Door Phase A complete! Arrived at IndoorBreachWaypoint (dist=%.2f). Starting Phase B patrol." % dist_to_wp)
+					
+					# ─── RESTORE PHYSICS ─────────────────────────────────────
+					# Re-enable environment collision and resume gravity now that
+					# the Entity has safely passed through the doorway threshold.
+					# This mirrors the TRAVERSE_STAIRS Phase 2→3 transition where
+					# physics is restored after the ghost climb completes.
+					entity.set_collision_mask_value(1, true)
+					if entity.has_method("get_collision_shape"):
+						entity.get_collision_shape().disabled = false
+					entity.is_physics_suspended = false
+					entity.velocity = Vector3.ZERO
+					
+					entity.was_door_entry = false
+					_has_arrived_indoor = true
+					entity.is_breach_locked = false
+					entity.state_locked = false
+					# Reset the indoor search persistence timer
+					var director = _director
+					if director and director.has_method("reset_indoor_search_persistence"):
+						director.reset_indoor_search_persistence()
+					# Fall through to Phase B below
+				else:
+					# ─── MOVEMENT TOWARD WAYPOINT ─────────────────────────
+					# Lock the state so the Director doesn't override while
+					# the Entity is navigating to the breach waypoint.
+					entity.state_locked = true
+					entity.is_breach_locked = true
+					
+					if entity.get_nav_agent().is_navigation_finished():
+						# NavMesh can't reach the waypoint — use ghost motor
+						# to lerp through the doorway. Physics is suspended
+						# (collision disabled, gravity off) so the Entity can
+						# glide safely over the physical door threshold step
+						# without getting stuck on the Y=0.364 vs Y=0.621
+						# height difference. This mirrors the TRAVERSE_STAIRS
+						# Phase 2 ghost climb approach.
+						print("[INDOOR_SEARCH] Door Phase A GHOST MOTOR! Nav finished at dist=%.2f. Lerping to waypoint." % dist_to_wp)
+						entity.set_collision_mask_value(1, false)
+						if entity.has_method("get_collision_shape"):
+							entity.get_collision_shape().disabled = true
+						entity.is_physics_suspended = true
+						entity.velocity = Vector3.ZERO
+						var ghost_speed = entity.current_stalk_speed * 1.0
+						var new_pos = entity.global_position.move_toward(waypoint_pos, ghost_speed * delta)
+						entity.global_position = new_pos
+						_calculated_velocity = Vector3.ZERO
+					else:
+						# Follow the NavMesh path
+						var next_pos = entity.get_nav_agent().get_next_path_position()
+						var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
+						if dir_2d.length() > 0.01:
+							var move_dir_2d = dir_2d.normalized()
+							_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
+							_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
+					return
+			else:
+				# ─── NO BREACH WAYPOINT FOUND ─────────────────────────────
+				# Fallback: no waypoint found, skip Phase A and go to Phase B.
+				print("[INDOOR_SEARCH] No DoorBreachWaypoint found. Skipping Phase A. Starting Phase B patrol.")
+				entity.was_door_entry = false
+				_has_arrived_indoor = true
+				entity.is_breach_locked = false
+				entity.state_locked = false
+				var director = _director
+				if director and director.has_method("reset_indoor_search_persistence"):
+					director.reset_indoor_search_persistence()
+				# Fall through to Phase B below
 		
 		# ─── WINDOW BREACH ENTRY ─────────────────────────────────────
-		else:
+		if not entity.was_door_entry and not _has_arrived_indoor:
 			# Phase A: Vault animation + teleport to landing position
 			# The Entity plays the EnterWindow animation for 1.5 seconds,
 			# then teleports to the indoor landing position.

@@ -128,22 +128,28 @@ func _cache_scene_groups() -> void:
 	print("[Navigation] Pre-cached %d bottom-floor CabinWindow nodes." % _bottom_floor_windows.size())
 	
 	# ─── DOOR MARKER VERIFICATION ──────────────────────────────────────
-	# Verify that the door's IndoorBreachWaypoint marker is in the WindowMarkers
-	# group. If not, log a warning so the developer knows to add it in the scene.
+	# Verify that the door has a Marker3D in the "DoorBreachWaypoint" group.
+	# If not, log a warning so the developer knows to add it in the scene.
 	var door_marker_found = false
-	for w in _window_markers:
-		if w.name == "IndoorBreachWaypoint" and w.get_parent() and w.get_parent().is_in_group("Door"):
+	var door_breach_wps = entity.get_tree().get_nodes_in_group("DoorBreachWaypoint")
+	for wp in door_breach_wps:
+		if wp.get_parent() and wp.get_parent().is_in_group("Door"):
 			door_marker_found = true
 			break
 	if not door_marker_found:
 		# Try to find the door marker directly
 		var door = entity.get_tree().get_first_node_in_group("Door")
 		if door:
-			var marker = door.get_node_or_null("IndoorBreachWaypoint")
-			if marker:
-				print("[Navigation] WARNING: Door's IndoorBreachWaypoint found but NOT in WindowMarkers group! Add it to the WindowMarkers group in the scene editor.")
+			var markers = entity.get_tree().get_nodes_in_group("DoorBreachWaypoint")
+			var found = false
+			for m in markers:
+				if m.get_parent() == door:
+					found = true
+					break
+			if found:
+				print("[Navigation] WARNING: Door's DoorBreachWaypoint found but NOT in WindowMarkers group! Add it to the WindowMarkers group in the scene editor.")
 			else:
-				print("[Navigation] WARNING: Door node found but missing IndoorBreachWaypoint child Marker3D! Add a Marker3D named 'IndoorBreachWaypoint' as a child of the Door node.")
+				print("[Navigation] WARNING: Door node found but missing DoorBreachWaypoint child Marker3D! Add a Marker3D in the 'DoorBreachWaypoint' group as a child of the Door node.")
 		else:
 			print("[Navigation] No Door node found in 'Door' group. Door approach will be unavailable.")
 
@@ -552,6 +558,37 @@ func is_player_on_second_floor() -> bool:
 		return false
 	return player.global_position.y > 3.0
 
+
+## Returns true if the player is currently lit by a cabin light or porch light.
+## Checks the player's position against all cached static light sources
+## (cabin_light and porch_light types only — NOT flashlight or portable lamps).
+## If the player is within any static light's radius, they are considered "lit up"
+## and the Entity should stop STALKING and return to default behavior.
+##
+## This is used by entity_director.gd's Tier 3 STALK handling to force the Entity
+## to exit STALK when the player steps into a lit area (cabin interior light
+## leaking through windows, or the exterior porch floodlight).
+func is_player_lit_by_static_lights() -> bool:
+	var player = entity.get_player()
+	if not player:
+		return false
+	
+	var player_pos: Vector3 = player.global_position
+	
+	for source in _light_sources:
+		var src_type: String = source.get("type", "")
+		# Only check static environmental lights (cabin lights and porch lights)
+		if src_type != "cabin_light" and src_type != "porch_light":
+			continue
+		
+		var src_pos: Vector3 = source["position"] as Vector3
+		var radius: float = source["radius"] as float
+		
+		var dist: float = player_pos.distance_to(src_pos)
+		if dist < radius:
+			return true
+	
+	return false
 
 
 ## Finds the nearest exterior wall base position below a second-story window.

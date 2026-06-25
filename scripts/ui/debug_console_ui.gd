@@ -475,22 +475,80 @@ func _force_door_approach() -> void:
 	
 	if not door_wp:
 		print("[Debug Console] WARNING: EntityDoorWaypoint not found! Trying Door group fallback.")
-		# Fallback: try to find the door via the "Door" group and use its IndoorBreachWaypoint marker.
+		# Fallback: try to find the door via the "Door" group and use its DoorBreachWaypoint marker.
 		var door = get_tree().get_first_node_in_group("Door")
 		if door:
-			# First try to find the IndoorBreachWaypoint marker as a child of the door
-			var door_marker = door.get_node_or_null("IndoorBreachWaypoint")
+			# First try to find the DoorBreachWaypoint marker via the group
+			var breach_wps = get_tree().get_nodes_in_group("DoorBreachWaypoint")
+			var door_marker: Node3D = null
+			for wp in breach_wps:
+				if wp.get_parent() == door:
+					door_marker = wp
+					break
 			if door_marker:
 				door_wp = door_marker as Node3D
-				print("[Debug Console] Found door via 'Door' group with IndoorBreachWaypoint marker.")
+				print("[Debug Console] Found door via 'Door' group with DoorBreachWaypoint marker.")
 			else:
 				# Fallback: use the door node itself as the target
 				door_wp = door as Node3D
-				print("[Debug Console] Door found via 'Door' group (no IndoorBreachWaypoint marker). Using door node directly.")
+				print("[Debug Console] Door found via 'Door' group (no DoorBreachWaypoint marker). Using door node directly.")
 
 	
 	if not door_wp:
 		print("[Debug Console] ERROR: No door target found! Cannot force door approach.")
+		return
+	
+	# ─── FUSE BOX POWER CHECK ───────────────────────────────────────
+	# If the Fuse Box is powered (generator ON → porch light ON), the
+	# Entity must sabotage the Fuse Box FIRST before it can approach the
+	# door. Redirect to SABOTAGE_FUSE state instead of APPROACH_WINDOW.
+	var fuse_box = null
+	# Try the Entity's method first
+	if _entity.has_method("get_fuse_box_node"):
+		fuse_box = _entity.get_fuse_box_node()
+	# Fallback: iterate through all interactable nodes to find the FuseBox
+	if not fuse_box:
+		var interactables = get_tree().get_nodes_in_group("interactable")
+		for node in interactables:
+			if node is FuseBox:
+				fuse_box = node
+				break
+	if not fuse_box:
+		# Last resort: search the entire scene tree
+		if get_tree().current_scene:
+			fuse_box = get_tree().current_scene.find_child("FuseBox", true, false)
+	
+	if fuse_box and fuse_box.has_method("is_powered") and fuse_box.is_powered():
+		print("[Debug Console] Fuse Box is powered (porch light ON). Redirecting to SABOTAGE_FUSE instead of APPROACH_WINDOW.")
+		
+		# ─── RESET COMPLETION FLAGS ─────────────────────────────────
+		# Clear any stale completion flags that might interfere with the
+		# SABOTAGE_FUSE state.
+		if "is_fuse_sabotaged" in _entity:
+			_entity.is_fuse_sabotaged = false
+		if "state_locked" in _entity:
+			_entity.state_locked = false
+		if "is_approach_finished" in _entity:
+			_entity.is_approach_finished = false
+		if "is_observe_finished" in _entity:
+			_entity.is_observe_finished = false
+		if "is_flinch_finished" in _entity:
+			_entity.is_flinch_finished = false
+		if "is_retreat_arrived" in _entity:
+			_entity.is_retreat_arrived = false
+		if "is_window_unbarricaded" in _entity:
+			_entity.is_window_unbarricaded = false
+		if "is_climb_finished" in _entity:
+			_entity.is_climb_finished = false
+		if "is_indoor_retreat" in _entity:
+			_entity.is_indoor_retreat = false
+		
+		# ─── FORCE SABOTAGE_FUSE STATE ─────────────────────────────
+		if _entity.has_method("request_state"):
+			_entity.request_state(EntityAI.State.SABOTAGE_FUSE)
+			print("[Debug Console] Entity forced into SABOTAGE_FUSE state (fuse box sabotage).")
+		else:
+			print("[Debug Console] ERROR: Entity missing request_state method.")
 		return
 	
 	# ─── SET THE DOOR AS THE CURRENT WINDOW TARGET ──────────────────

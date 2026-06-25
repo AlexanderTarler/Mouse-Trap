@@ -619,24 +619,76 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# TIER 1: SABOTAGE OVERRIDE (Frustration-based Fuse Box Attack)
+# TIER 1: SABOTAGE OVERRIDE (Door-prerequisite + Frustration-based)
 # ═══════════════════════════════════════════════════════════════════════════════
-## Evaluates whether the Entity should abandon its current task and go straight
-## to sabotaging the Fuse Box. This is triggered when the Entity has been
-## frustrated by all windows being lit for too long (frustration >= 90.0).
+## Evaluates whether the Entity should sabotage the Fuse Box. Two triggers:
 ##
-## Unlike the old _tier_5_fuse_sabotage (which relied on a magic number 9999.0
-## hack on the fuse sabotage timer), this tier reads the frustration value
-## directly from the AI module via get_all_lit_frustration() and compares it
-## against the threshold via get_frustration_threshold().
+##   1. DOOR PREREQUISITE (SABOTAGE_FUSE): If the Entity is in APPROACH_WINDOW
+##      AND the current target is a door AND the Fuse Box is powered (generator
+##      ON → porch light ON), the Entity must sabotage the Fuse Box FIRST before
+##      it can approach the door. This prevents the Entity from approaching the
+##      front door while the porch light is on.
 ##
-## This tier is checked BEFORE the state_locked guard so that frustration-based
-## sabotage can interrupt locked states (approach, climb, indoor search, etc.).
+##   2. FRUSTRATION-BASED (FUSE_SABOTAGE): When the Entity has been frustrated
+##      by all windows being lit for too long (frustration >= 90.0), it abandons
+##      window approach and goes straight to sabotaging the Fuse Box.
+##
+## This tier is checked BEFORE the state_locked guard so that sabotage can
+## interrupt locked states (approach, climb, indoor search, etc.).
 ## When interrupting a locked state, we safely unlock the motor and reset
-## animation flags before transitioning to FUSE_SABOTAGE.
+## animation flags before transitioning.
 ##
 ## Returns: The target state, or -1 if no sabotage override applies.
 func _tier_1_sabotage(entity: CharacterBody3D, state: int) -> int:
+	# ─── DOOR PREREQUISITE: Porch Light Gate ──────────────────────────
+	# If the Entity is in APPROACH_WINDOW AND the current target is a door
+	# AND the Fuse Box is powered (generator ON → porch light ON), the
+	# Entity must sabotage the Fuse Box FIRST before it can approach the door.
+	#
+	# This prevents the Entity from approaching the front door while the
+	# porch light is on. The Entity must destroy the fuse box (killing the
+	# generator and all lights including the porch light) before it can
+	# safely approach the door.
+	#
+	# We check this BEFORE the frustration check so the door-prerequisite
+	# gate takes priority over frustration-based sabotage.
+	if state == EntityAI.State.APPROACH_WINDOW:
+		var window_target = entity.get_current_window_target()
+		if window_target:
+			# Check if the target is a door
+			var is_door_target: bool = false
+			if window_target.has_method("is_in_group") and window_target.is_in_group("Door"):
+				is_door_target = true
+			elif window_target.get_parent() and window_target.get_parent().has_method("is_in_group") and window_target.get_parent().is_in_group("Door"):
+				is_door_target = true
+			elif "is_open" in window_target:
+				is_door_target = true
+			elif "name" in window_target and window_target.name == "EntityDoorWaypoint":
+				is_door_target = true
+			
+			if is_door_target:
+				# Check if the Fuse Box is powered (generator ON → porch light ON)
+				var fuse_box = entity.get_fuse_box_node()
+				if fuse_box and fuse_box.has_method("is_powered") and fuse_box.is_powered():
+					print("[Director] TIER 1 SABOTAGE: Door target detected but Fuse Box is powered! Interrupting APPROACH_WINDOW to sabotage Fuse Box first.")
+					
+					# Reset all completion flags to prevent stale state
+					entity.state_locked = false
+					entity.is_approach_finished = false
+					entity.is_climb_finished = false
+					entity.is_flinch_finished = false
+					entity.is_retreat_arrived = false
+					entity.is_window_unbarricaded = false
+					entity.is_observe_finished = false
+					entity.is_indoor_retreat = false
+					
+					# Reset AI-specific state flags
+					var ai = entity.get_ai_module()
+					if ai and ai.has_method("reset_retreat_target"):
+						ai.reset_retreat_target()
+					
+					return EntityAI.State.SABOTAGE_FUSE
+	
 	# ─── UNIVERSAL FRUSTRATION CHECK ──────────────────────────────────
 	# Read frustration directly from the AI module. This works regardless
 	# of the current state — frustration accumulates in OBSERVE_FROM_TREELINE
@@ -922,7 +974,26 @@ func _tier_3_active_aggression(entity: CharacterBody3D, state: int) -> int:
 	# through to confidence escalation (Tier 4), which will naturally select
 	# the door or a window via pick_tactical_window(). The door is already a
 	# permanent option in the window selection system.
+	#
+	# Additionally, if the player is lit up by a cabin light or porch light
+	# (static environmental lights), the Entity should also exit STALK and
+	# return to default behavior. The Entity avoids lit areas, so chasing
+	# the player through a pool of light is counterproductive.
 	if state == EntityAI.State.STALK:
+		# ─── LIGHT CHECK: Player lit by cabin/porch light ─────────────
+		# If the player is standing in a lit area (cabin light leaking
+		# through windows, or the porch floodlight), the Entity should
+		# stop STALKING and return to default behavior. The Entity avoids
+		# lit areas, so chasing the player through light is pointless.
+		if nav and nav.has_method("is_player_lit_by_static_lights") and nav.is_player_lit_by_static_lights():
+			var confidence = entity.get_confidence_module().get_confidence()
+			var is_player_inside_belief = entity.get_thinks_player_is_inside() if entity.has_method("get_thinks_player_is_inside") else false
+			if confidence >= 65.0 and is_player_inside_belief:
+				return EntityAI.State.CLIMB_WALL_UP
+			if confidence >= 40.0:
+				return EntityAI.State.APPROACH_WINDOW
+			return EntityAI.State.OBSERVE_FROM_TREELINE
+		
 		if not is_player_actually_outside:
 			# Player entered the cabin. The Entity should stop STALKING
 			# and fall through to confidence escalation (Tier 4) which
@@ -1109,6 +1180,18 @@ func _tier_5_completion_flags(entity: CharacterBody3D, state: int) -> int:
 			entity.fade_and_relocate()
 			return EntityAI.State.OBSERVE_FROM_TREELINE
 		return EntityAI.State.OBSERVE_FROM_TREELINE
+	
+	# ─── SABOTAGE_FUSE COMPLETION ────────────────────────────────────
+	if state == EntityAI.State.SABOTAGE_FUSE:
+		if entity.is_fuse_sabotaged:
+			entity.is_fuse_sabotaged = false
+			# Fuse Box destroyed! All lights are off including the porch light.
+			# Transition to OBSERVE_FROM_TREELINE — the confidence system will
+			# escalate to APPROACH_WINDOW naturally since no windows are lit
+			# and the porch light is off, allowing the Entity to approach the door.
+			print("[Director] SABOTAGE_FUSE complete! Fuse Box broken. Returning to OBSERVE_FROM_TREELINE.")
+			return EntityAI.State.OBSERVE_FROM_TREELINE
+		return EntityAI.State.SABOTAGE_FUSE
 	
 	# ─── FUSE SABOTAGE COMPLETION ────────────────────────────────────
 	if state == EntityAI.State.FUSE_SABOTAGE:

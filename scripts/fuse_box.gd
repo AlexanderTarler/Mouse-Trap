@@ -25,6 +25,11 @@ enum BoxState { BROKEN, HAS_FUSE, POWER_ON }
 
 var current_state: BoxState = BoxState.POWER_ON
 
+## Internal health for the brute-force sabotage (frustration-based FUSE_SABOTAGE).
+## The Entity strikes the fuse box repeatedly until health reaches 0.
+## The door-prerequisite SABOTAGE_FUSE state calls break_fuse() directly.
+var _health: int = 3
+
 
 func _ready() -> void:
 	add_to_group("interactable")
@@ -139,6 +144,41 @@ func _find_fuse_in_inventory():
 			return item
 	print("[FuseBox] No item named '", required_item_name, "' found in inventory.")
 	return null
+
+
+## Returns whether the fuse box is currently powered (generator ON).
+## Used by the Entity Director to check if the porch light is active,
+## which prevents door approach until the fuse box is sabotaged.
+func is_powered() -> bool:
+	return current_state == BoxState.POWER_ON
+
+
+## Breaks the fuse box — sets state to BROKEN and shuts down the generator.
+## This kills ALL cabin lights including the porch light.
+## Called by the Entity's SABOTAGE_FUSE state (door-prerequisite sabotage).
+## Also called by take_damage() when internal health reaches 0.
+func break_fuse() -> void:
+	if current_state == BoxState.BROKEN:
+		return  # Already broken — no-op
+	
+	current_state = BoxState.BROKEN
+	_health = 0
+	_set_generator_state(false)
+	print("[FuseBox] BREAK! The fuse box is shattered. Generator is OFF. All lights die.")
+
+
+## Applies damage to the fuse box. When internal health reaches 0,
+## calls break_fuse() to shut down the generator.
+## Used by the frustration-based FUSE_SABOTAGE state (brute-force attack).
+func take_damage(amount: int) -> void:
+	if current_state == BoxState.BROKEN:
+		return  # Already broken — no-op
+	
+	_health -= amount
+	print("[FuseBox] Took %d damage. Health=%d/%d." % [amount, maxf(0, _health), 3])
+	
+	if _health <= 0:
+		break_fuse()
 
 
 ## Returns the context-sensitive interaction prompt shown in the HUD.

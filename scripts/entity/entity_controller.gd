@@ -1899,7 +1899,17 @@ func get_current_window_target() -> Node3D:
 ## the Marker3D child inside it. The Marker3D's parent is the FuseBox itself.
 ## Falls back to finding the FuseBox by class name in the scene tree.
 func get_fuse_box_node():
-	# First try: Find via EntityWaypoints group (FuseBoxWaypoint)
+	# First try: Find the FuseBox by class name in the scene tree
+	# The node is named "Fuse Box" (with a space) in the cottage_horror scene.
+	# We search by class (FuseBox) rather than by name to be robust.
+	if get_tree().current_scene:
+		# Search recursively for any node with the FuseBox script
+		var candidates = []
+		_find_fuse_box_recursive(get_tree().current_scene, candidates)
+		if not candidates.is_empty():
+			return candidates[0]
+	
+	# Second try: Find via EntityWaypoints group (FuseBoxWaypoint)
 	var waypoints = get_tree().get_nodes_in_group("EntityWaypoints")
 	for wp in waypoints:
 		if wp.name == "FuseBoxWaypoint":
@@ -1912,16 +1922,22 @@ func get_fuse_box_node():
 				if child is Marker3D:
 					return child
 	
-	# Second try: Find the FuseBox by class name in the scene tree
-	var fuse_box = get_tree().get_first_node_in_group("interactable")
-	if fuse_box and fuse_box is FuseBox:
-		return fuse_box
-	
-	# Third try: Search the entire scene tree for a FuseBox node
-	if get_tree().current_scene:
-		return get_tree().current_scene.find_child("FuseBox", true, false)
+	# Third try: Find the FuseBox by class name in the interactable group
+	var interactables = get_tree().get_nodes_in_group("interactable")
+	for node in interactables:
+		if node is FuseBox:
+			return node
 	
 	return null
+
+
+## Recursively searches the scene tree for a node that is a FuseBox.
+func _find_fuse_box_recursive(node: Node, results: Array) -> void:
+	if node is FuseBox:
+		results.append(node)
+		return
+	for child in node.get_children():
+		_find_fuse_box_recursive(child, results)
 
 ## Sets the current window target.
 func set_current_window_target(target: Node3D) -> void:
