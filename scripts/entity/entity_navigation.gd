@@ -154,6 +154,13 @@ func _cache_scene_groups() -> void:
 			print("[Navigation] No Door node found in 'Door' group. Door approach will be unavailable.")
 
 
+## Returns the cached array of window markers (Marker3D nodes in the
+## "WindowMarkers" group). Used by entity_controller.gd's proximity grace
+## period to check if the Entity is near a door or window without performing
+## expensive get_tree().get_nodes_in_group() calls in the physics loop.
+func get_window_markers() -> Array[Node3D]:
+	return _window_markers
+
 
 func _process(delta: float) -> void:
 	if not entity or not is_instance_valid(entity):

@@ -89,4 +89,3 @@ func contains_point(point: Vector3) -> bool:
 		if res.collider == self:
 			return true
 	return false
-

@@ -105,6 +105,22 @@ func interact() -> void:
 	is_open = not is_open
 	is_animating = true
 	
+	# ─── ENTITY DOOR OPEN DEBUG LOG ─────────────────────────────────
+	# Logs when the Entity opens the door (detected by checking if the
+	# caller is in the "entity" group). This helps debug whether the
+	# Entity is successfully opening the door during APPROACH_WINDOW
+	# or if it's getting stuck before reaching the door.
+	if is_open and get_tree():
+		var entity_nodes = get_tree().get_nodes_in_group("entity")
+		for entity in entity_nodes:
+			if entity and entity.global_position.distance_to(global_position) < 5.0:
+				print("[DOOR_DEBUG] Entity opened door! Entity pos=(%.2f, %.2f, %.2f), Door pos=(%.2f, %.2f, %.2f), Door is_locked=%s" % [
+					entity.global_position.x, entity.global_position.y, entity.global_position.z,
+					global_position.x, global_position.y, global_position.z,
+					is_locked
+				])
+				break
+	
 	# Play door audio with pitch randomization
 	# Priority 1: Use the exported open_sound / close_sound property if assigned.
 	# Priority 2: Fall back to the baseline stream cached from the DoorAudio node

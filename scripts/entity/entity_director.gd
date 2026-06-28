@@ -655,15 +655,17 @@ func _tier_1_sabotage(entity: CharacterBody3D, state: int) -> int:
 	if state == EntityAI.State.APPROACH_WINDOW:
 		var window_target = entity.get_current_window_target()
 		if window_target:
-			# Check if the target is a door
+			# ─── DOOR DETECTION: Use cached @export door_waypoint_marker ─────
+			# This replaces the expensive per-frame duck-typing checks
+			# (has_method("is_in_group"), "is_open" in window_target, etc.)
+			# that were called every frame during APPROACH_WINDOW.
+			# The cached reference is resolved once in entity_controller.gd's
+			# _initialize_entity() and stored as an @export variable.
 			var is_door_target: bool = false
-			if window_target.has_method("is_in_group") and window_target.is_in_group("Door"):
+			var cached_door_wp = entity.get_door_waypoint_marker()
+			if cached_door_wp and window_target == cached_door_wp:
 				is_door_target = true
-			elif window_target.get_parent() and window_target.get_parent().has_method("is_in_group") and window_target.get_parent().is_in_group("Door"):
-				is_door_target = true
-			elif "is_open" in window_target:
-				is_door_target = true
-			elif "name" in window_target and window_target.name == "EntityDoorWaypoint":
+			elif cached_door_wp and window_target.get_parent() == cached_door_wp.get_parent():
 				is_door_target = true
 			
 			if is_door_target:

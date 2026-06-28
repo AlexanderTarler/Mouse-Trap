@@ -17,8 +17,49 @@ extends CharacterBody3D
 @export var relocate_radius: float = 20.0
 @export var path_update_interval: float = 0.3
 @export var stuck_timeout: float = 1.5
+## Extended stuck timeout (in seconds) when the Entity is within proximity of
+## a door or window. This gives the Entity extra time to navigate through tight
+## doorframes and window openings without triggering a premature fade_and_relocate().
+## The standard stuck_timeout (1.5s) is too aggressive for doorway navigation,
+## where the Entity may briefly pause while the NavigationAgent3D recalculates
+## a path through the narrow NavMesh edge.
+@export var stuck_timeout_near_door: float = 4.0
 @export var fade_duration: float = 0.5
 @export var shadow_material: Material = null
+
+## Cached reference to the FuseBox node. Assign in the Inspector or it will
+## be resolved automatically in _initialize_entity() via a one-time lookup.
+## This replaces the expensive get_fuse_box_node() scene tree traversal that
+## was called every frame during SABOTAGE_FUSE / FUSE_SABOTAGE states.
+@export var fuse_box_node: Node = null
+
+## Cached reference to the Door node. Assign in the Inspector or it will
+## be resolved automatically in _initialize_entity() via a one-time lookup.
+## This replaces the expensive get_tree().get_first_node_in_group("Door")
+## calls that were made every frame during APPROACH_WINDOW / INDOOR_SEARCH.
+@export var door_node: Node = null
+
+## Cached reference to the DoorBreachWaypoint Marker3D (the interior waypoint
+## past the doorway threshold). Assign in the Inspector or it will be resolved
+## automatically in _initialize_entity() via a one-time lookup.
+## This replaces the expensive child-node search that was called every frame
+## during APPROACH_WINDOW Phase 2 and INDOOR_SEARCH Phase A door entry.
+@export var door_breach_waypoint: Node3D = null
+
+## Cached reference to the FuseBox waypoint Marker3D (the exterior waypoint
+## near the Fuse Box that the Entity pathfinds to). Assign in the Inspector or
+## it will be resolved automatically in _initialize_entity() via a one-time
+## lookup. This replaces the expensive per-frame child iteration that was
+## called every frame during SABOTAGE_FUSE to find the waypoint.
+@export var fuse_waypoint: Marker3D = null
+
+## Cached reference to the Door's exterior waypoint Marker3D (the
+## EntityDoorWaypoint that the Entity pathfinds to when approaching the door).
+## Assign in the Inspector or it will be resolved automatically in
+## _initialize_entity() via a one-time lookup. This replaces the expensive
+## per-frame duck-typing checks that were called every frame during
+## APPROACH_WINDOW to determine if the target is a door.
+@export var door_waypoint_marker: Node3D = null
 
 @onready var _nav_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var _collision_shape: CollisionShape3D = $CollisionShape3D
@@ -596,11 +637,19 @@ var _saved_collision_mask: int = 0
 var _ghost_mode: bool = false
 
 ## The target position for the Ghost Motor's manual position interpolation.
-## Captured ONCE when ghost mode is enabled (from _ai._landing_position) so
-## the Ghost Motor moves consistently toward the IndoorBreachWaypoint without
-## the AI overwriting it each frame. Prevents the "Entity gets stuck mid-door"
-## bug where the Ghost Motor and AI's Door Phase A fought over the target.
+## Captured ONCE when ghost mode is enabled (from _ai._landing_position or
+## from the DoorBreachWaypoint during APPROACH_WINDOW Phase 2) so the Ghost
+## Motor moves consistently toward the target without the AI overwriting it
+## each frame. Prevents the "Entity gets stuck mid-door" bug where the Ghost
+## Motor and AI's Door Phase A fought over the target.
 var _ghost_target: Vector3 = Vector3.ZERO
+
+## Flag indicating that the ghost motor is being used for APPROACH_WINDOW
+## Phase 2 (walking through the doorway). When true, the controller's
+## _physics_process() handles the lerp and arrival check, and signals
+## completion via is_approach_finished when the Entity reaches the
+## IndoorBreachWaypoint.
+var _ghost_door_phase_2: bool = false
 
 # ─── CONTEXT-STEERING RAYCAST ARRAY ──────────────────────────────────────────
 # Three RayCast3D nodes used for obstacle avoidance when the Entity is stalking
@@ -878,6 +927,239 @@ func _initialize_entity() -> void:
 
 	else:
 		call_deferred("_initialize_entity")
+		return
+	
+	# ─── ONE-TIME CACHED REFERENCE INITIALIZATION ──────────────────────
+	# Resolve the FuseBox and Door nodes ONCE here instead of every frame.
+	# If the exported variables are already assigned (via Inspector), skip
+	# the expensive scene tree traversal.
+	if not fuse_box_node:
+		fuse_box_node = _find_fuse_box_once()
+		if fuse_box_node:
+			print("[Entity] Cached FuseBox reference: %s" % fuse_box_node.name)
+		else:
+			print("[Entity] WARNING: Could not find FuseBox node in scene tree.")
+	
+	if not door_node:
+		door_node = _find_door_once()
+		if door_node:
+			print("[Entity] Cached Door reference: %s" % door_node.name)
+		else:
+			print("[Entity] WARNING: Could not find Door node in scene tree.")
+	
+	# Resolve the DoorBreachWaypoint once. If the exported variable is already
+	# assigned (via Inspector), skip the expensive child-node search.
+	if not door_breach_waypoint:
+		door_breach_waypoint = _find_door_breach_waypoint_once()
+		if door_breach_waypoint:
+			print("[Entity] Cached DoorBreachWaypoint reference: %s" % door_breach_waypoint.name)
+		else:
+			print("[Entity] WARNING: Could not find DoorBreachWaypoint in scene tree.")
+	
+	# Resolve the FuseBox waypoint (EntityFuseWaypoint) once.
+	# If the exported variable is already assigned (via Inspector), skip the
+	# expensive child-node search.
+	if not fuse_waypoint:
+		fuse_waypoint = _find_fuse_waypoint_once()
+		if fuse_waypoint:
+			print("[Entity] Cached FuseWaypoint reference: %s" % fuse_waypoint.name)
+		else:
+			print("[Entity] WARNING: Could not find FuseWaypoint in scene tree.")
+	
+	# Resolve the Door's exterior waypoint marker (EntityDoorWaypoint) once.
+	# If the exported variable is already assigned (via Inspector), skip the
+	# expensive group lookup.
+	if not door_waypoint_marker:
+		door_waypoint_marker = _find_door_waypoint_once()
+		if door_waypoint_marker:
+			print("[Entity] Cached DoorWaypointMarker reference: %s" % door_waypoint_marker.name)
+		else:
+			print("[Entity] WARNING: Could not find DoorWaypointMarker in scene tree.")
+
+
+## Performs a ONE-TIME search for the FuseBox node in the scene tree.
+## This replaces the per-frame get_fuse_box_node() scene tree traversal.
+## Uses the same logic as the old get_fuse_box_node() but only runs once.
+func _find_fuse_box_once() -> Node:
+	# First try: Find the FuseBox by class name in the scene tree
+	if get_tree().current_scene:
+		var candidates = []
+		_find_fuse_box_recursive(get_tree().current_scene, candidates)
+		if not candidates.is_empty():
+			return candidates[0]
+	
+	# Second try: Find via EntityWaypoints group (FuseBoxWaypoint)
+	var waypoints = get_tree().get_nodes_in_group("EntityWaypoints")
+	for wp in waypoints:
+		if wp.name == "FuseBoxWaypoint":
+			var parent = wp.get_parent()
+			if parent and parent is FuseBox:
+				return parent
+			for child in wp.get_children():
+				if child is Marker3D:
+					return child
+	
+	# Third try: Find the FuseBox by class name in the interactable group
+	var interactables = get_tree().get_nodes_in_group("interactable")
+	for node in interactables:
+		if node is FuseBox:
+			return node
+	
+	return null
+
+
+## ─── DOOR/WINDOW PROXIMITY GRACE PERIOD ──────────────────────────────────────
+## Returns true if the Entity is within `threshold` meters (2D XZ plane) of
+## any door or window marker. Used by the stuck detection logic to extend the
+## stuck timeout from 1.5s to 4.0s when the Entity is navigating through tight
+## doorframes or window openings.
+##
+## This prevents the stuck detector from triggering fade_and_relocate() while
+## the Entity is legitimately pathfinding through a bottleneck (e.g., walking
+## through a doorway, squeezing past a window frame, or turning around a corner
+## near a door).
+##
+## Uses 2D distance (XZ plane) to ignore vertical differences (e.g., the Entity
+## is on the ground and the door is on a porch step).
+const DOOR_WINDOW_PROXIMITY_THRESHOLD: float = 2.0
+
+func _is_near_door_or_window() -> bool:
+	# ─── CHECK DOOR ──────────────────────────────────────────────────────
+	# Use the cached door_node reference (resolved once in _initialize_entity()).
+	var door = get_door_node()
+	if door:
+		var my_pos_2d = Vector2(global_position.x, global_position.z)
+		var door_pos_2d = Vector2(door.global_position.x, door.global_position.z)
+		if my_pos_2d.distance_to(door_pos_2d) <= DOOR_WINDOW_PROXIMITY_THRESHOLD:
+			return true
+	
+	# ─── CHECK CURRENT WINDOW TARGET ─────────────────────────────────────
+	# If the Entity has a current window target (set during APPROACH_WINDOW
+	# or WINDOW_PEEK), check proximity to that target.
+	var window_target = get_current_window_target()
+	if window_target:
+		var my_pos_2d = Vector2(global_position.x, global_position.z)
+		var target_pos_2d = Vector2(window_target.global_position.x, window_target.global_position.z)
+		if my_pos_2d.distance_to(target_pos_2d) <= DOOR_WINDOW_PROXIMITY_THRESHOLD:
+			return true
+	
+	# ─── CHECK ALL WINDOW MARKERS ────────────────────────────────────────
+	# Use the navigation module's cached _window_markers array to avoid
+	# expensive get_tree().get_nodes_in_group() calls in the physics loop.
+	if _navigation and _navigation.has_method("get_window_markers"):
+		var window_markers = _navigation.get_window_markers()
+		if window_markers is Array and not window_markers.is_empty():
+			var my_pos_2d = Vector2(global_position.x, global_position.z)
+			for marker in window_markers:
+				if not marker or not is_instance_valid(marker):
+					continue
+				var marker_pos_2d = Vector2(marker.global_position.x, marker.global_position.z)
+				if my_pos_2d.distance_to(marker_pos_2d) <= DOOR_WINDOW_PROXIMITY_THRESHOLD:
+					return true
+	
+	return false
+
+
+## Performs a ONE-TIME search for the Door node in the scene tree.
+## This replaces the per-frame get_tree().get_first_node_in_group("Door") calls.
+func _find_door_once() -> Node:
+	var door = get_tree().get_first_node_in_group("Door")
+	if door:
+		return door
+	
+	# Fallback: search by class name
+	if get_tree().current_scene:
+		return _find_node_by_class_recursive(get_tree().current_scene, "Door")
+	
+	return null
+
+
+## Performs a ONE-TIME search for the DoorBreachWaypoint Marker3D child of the
+## Door node. This replaces the per-frame child-node search that was called
+## every frame during APPROACH_WINDOW / INDOOR_SEARCH.
+## Uses the same logic as get_door_breach_waypoint() but only runs once.
+func _find_door_breach_waypoint_once() -> Node3D:
+	var door = get_door_node()
+	if not door:
+		return null
+	
+	# Look for a Marker3D child named "DoorBreachWaypoint" directly on the door
+	for child in door.get_children():
+		if child is Marker3D and child.name == "DoorBreachWaypoint":
+			return child
+	
+	# Fallback: search recursively through children
+	for child in door.get_children():
+		for grandchild in child.get_children():
+			if grandchild is Marker3D and grandchild.name == "DoorBreachWaypoint":
+				return grandchild
+	
+	return null
+
+
+## Performs a ONE-TIME search for the FuseBox waypoint Marker3D (EntityFuseWaypoint).
+## This replaces the per-frame child iteration that was called every frame during
+## SABOTAGE_FUSE to find the waypoint.
+## Uses the same logic as the old per-frame search but only runs once.
+func _find_fuse_waypoint_once() -> Marker3D:
+	var fb = get_fuse_box_node()
+	if not fb:
+		return null
+	
+	# Look for a Marker3D child named "FuseBoxWaypoint" or any Marker3D child
+	for child in fb.get_children():
+		if child is Marker3D:
+			return child
+		if child.name == "FuseBoxWaypoint":
+			return child
+	
+	# Also check grandchildren
+	for child in fb.get_children():
+		for grandchild in child.get_children():
+			if grandchild is Marker3D:
+				return grandchild
+	
+	return null
+
+
+## Performs a ONE-TIME search for the Door's exterior waypoint Marker3D
+## (EntityDoorWaypoint). This replaces the per-frame group lookup that was
+## called every frame during APPROACH_WINDOW to find the door waypoint.
+func _find_door_waypoint_once() -> Node3D:
+	# First try: Find via EntityWaypoints group
+	var waypoints = get_tree().get_nodes_in_group("EntityWaypoints")
+	for wp in waypoints:
+		if wp.name == "EntityDoorWaypoint":
+			return wp
+	
+	# Second try: Find via DoorWaypoints group
+	var door_wps = get_tree().get_nodes_in_group("DoorWaypoints")
+	if not door_wps.is_empty():
+		return door_wps[0] as Node3D
+	
+	# Third try: Search the Door node's children for a Marker3D named "EntityDoorWaypoint"
+	var door = get_door_node()
+	if door:
+		for child in door.get_children():
+			if child is Marker3D and child.name == "EntityDoorWaypoint":
+				return child
+		for child in door.get_children():
+			for grandchild in child.get_children():
+				if grandchild is Marker3D and grandchild.name == "EntityDoorWaypoint":
+					return grandchild
+	
+	return null
+
+
+## Recursively searches the scene tree for a node with the given class name.
+func _find_node_by_class_recursive(node: Node, target_class: String) -> Node:
+	if node.get_class() == target_class:
+		return node
+	for child in node.get_children():
+		var result = _find_node_by_class_recursive(child, target_class)
+		if result:
+			return result
+	return null
 
 
 func _on_night_started(night: int) -> void:
@@ -1270,10 +1552,20 @@ func _physics_process(delta: float) -> void:
 		var is_door_phase_active = (_state == EntityAI.State.APPROACH_WINDOW and _door_phase > 0)
 		
 		if not is_door_phase_active:
+			# ─── PROXIMITY GRACE PERIOD ──────────────────────────────────────
+			# If the Entity is within 2.0m of a door or window, use the extended
+			# stuck timeout (stuck_timeout_near_door = 4.0s) instead of the
+			# standard 1.5s. This prevents the stuck detector from triggering
+			# fade_and_relocate() while the Entity is legitimately pathfinding
+			# through a doorway or window opening — the NavigationAgent3D may
+			# briefly pause to recalculate the path through the narrow NavMesh
+			# edge, or the Entity may be sliding along the doorframe while the
+			# Floating Sphere ground snapping adjusts its Y position.
+			var effective_timeout = stuck_timeout_near_door if _is_near_door_or_window() else stuck_timeout
 			_stuck_timer += delta
-			if _stuck_timer >= stuck_timeout:
+			if _stuck_timer >= effective_timeout:
 				var real_vel := get_real_velocity()
-				print("[Entity] STUCK DETECTED! No movement for %.1fs while nav is active. real_vel=(%.3f, %.3f, %.3f) len=%.3f. Relocating." % [stuck_timeout, real_vel.x, real_vel.y, real_vel.z, real_vel.length()])
+				print("[Entity] STUCK DETECTED! No movement for %.1fs while nav is active. real_vel=(%.3f, %.3f, %.3f) len=%.3f. Relocating." % [effective_timeout, real_vel.x, real_vel.y, real_vel.z, real_vel.length()])
 				fade_and_relocate()
 				_stuck_timer = 0.0
 		else:
@@ -1476,6 +1768,73 @@ func _physics_process(delta: float) -> void:
 	# ENRAGED is a modifier flag, not a blocking state — the Entity still
 	# uses its normal FSM states (CHASE, PATROL, etc.) but with boosted speed.
 	# The _is_enraged flag is checked by the AI speed calculations.
+	
+	# ─── GHOST MOTOR: APPROACH_WINDOW PHASE 2 ──────────────────────────────
+	# When _ghost_door_phase_2 is true, the Entity is walking through the
+	# doorway via manual position interpolation (ghost mode). The AI's
+	# _approach_window_state() sets up the ghost target and enables this flag.
+	# The controller handles the lerp and arrival check here, then signals
+	# completion via is_approach_finished.
+	#
+	# This MUST run BEFORE the AI state logic below, because the ghost motor
+	# directly manipulates global_position and should NOT be overridden by
+	# the AI's calculated velocity.
+	if _ghost_door_phase_2:
+		# ─── FAILSAFE TIMEOUT ─────────────────────────────────────────────
+		_door_phase_2_timer += delta
+		if _door_phase_2_timer >= 5.0:
+			print("[Entity] APPROACH_WINDOW Phase 2 GHOST MOTOR FAILSAFE! %ds elapsed. Teleporting to waypoint." % _door_phase_2_timer)
+			var breach_wp = get_door_breach_waypoint()
+			if breach_wp:
+				global_position = breach_wp.global_position
+			_ghost_door_phase_2 = false
+			_ghost_mode = false
+			is_breach_locked = false
+			was_door_entry = true
+			is_approach_finished = true
+			state_locked = false
+			_door_phase = 0
+			_door_phase_2_timer = 0.0
+			# Restore physics
+			set_collision_mask_value(1, true)
+			if has_method("get_collision_shape"):
+				get_collision_shape().disabled = false
+			is_physics_suspended = false
+			velocity = Vector3.ZERO
+			_update_animations(delta)
+			return
+		
+		# ─── LERP TOWARD GHOST TARGET ─────────────────────────────────────
+		var ghost_speed = current_stalk_speed * 1.0  # Normal walk speed
+		var new_pos = global_position.move_toward(_ghost_target, ghost_speed * delta)
+		global_position = new_pos
+		velocity = Vector3.ZERO
+		
+		# ─── ARRIVAL CHECK ────────────────────────────────────────────────
+		var ghost_dist = global_position.distance_to(_ghost_target)
+		if ghost_dist <= 0.02:
+			print("[Entity] APPROACH_WINDOW Phase 2 GHOST MOTOR: Arrived at IndoorBreachWaypoint (dist=%.2f). Signaling completion." % ghost_dist)
+			_ghost_door_phase_2 = false
+			_ghost_mode = false
+			is_breach_locked = false
+			was_door_entry = true
+			is_approach_finished = true
+			state_locked = false
+			_door_phase = 0
+			_door_phase_2_timer = 0.0
+			# Restore physics
+			set_collision_mask_value(1, true)
+			if has_method("get_collision_shape"):
+				get_collision_shape().disabled = false
+			is_physics_suspended = false
+			velocity = Vector3.ZERO
+		
+		# Play Stalk animation during ghost movement
+		if _anim_state_machine:
+			_anim_state_machine.travel("Stalk")
+		
+		_update_animations(delta)
+		return
 	
 	# --- TRANSITION LOCK: RETREAT / STANDOFF / STUNNED ---
 	# During RETREAT, the AI computes the escape velocity (pathfinding to the
@@ -1894,39 +2253,95 @@ func get_harass_audio() -> AudioStreamPlayer3D:
 func get_current_window_target() -> Node3D:
 	return _current_window_target
 
+## Returns the cached FuseBox waypoint Marker3D (EntityFuseWaypoint).
+## Uses the @export fuse_waypoint reference (set in Inspector or resolved
+## once in _initialize_entity()). This replaces the expensive per-frame
+## child iteration that was called every frame during SABOTAGE_FUSE.
+func get_fuse_waypoint() -> Marker3D:
+	return fuse_waypoint
+
+## Returns the cached Door's exterior waypoint Marker3D (EntityDoorWaypoint).
+## Uses the @export door_waypoint_marker reference (set in Inspector or
+## resolved once in _initialize_entity()). This replaces the expensive
+## per-frame duck-typing checks that were called every frame during
+## APPROACH_WINDOW to determine if the target is a door.
+func get_door_waypoint_marker() -> Node3D:
+	return door_waypoint_marker
+
 ## Returns the FuseBox node for the FUSE_SABOTAGE state.
-## Looks up the FuseBoxWaypoint from the "EntityWaypoints" group, then finds
-## the Marker3D child inside it. The Marker3D's parent is the FuseBox itself.
-## Falls back to finding the FuseBox by class name in the scene tree.
+## Uses the cached @export fuse_box_node reference (set in Inspector or
+## resolved once in _initialize_entity()). Falls back to the expensive
+## scene tree traversal only if the cached reference is null.
 func get_fuse_box_node():
-	# First try: Find the FuseBox by class name in the scene tree
-	# The node is named "Fuse Box" (with a space) in the cottage_horror scene.
-	# We search by class (FuseBox) rather than by name to be robust.
+	if fuse_box_node:
+		return fuse_box_node
+	
+	# Fallback: expensive scene tree traversal (should rarely happen)
+	print("[Entity] WARNING: get_fuse_box_node() called but fuse_box_node is null! Performing fallback search.")
 	if get_tree().current_scene:
-		# Search recursively for any node with the FuseBox script
 		var candidates = []
 		_find_fuse_box_recursive(get_tree().current_scene, candidates)
 		if not candidates.is_empty():
 			return candidates[0]
 	
-	# Second try: Find via EntityWaypoints group (FuseBoxWaypoint)
 	var waypoints = get_tree().get_nodes_in_group("EntityWaypoints")
 	for wp in waypoints:
 		if wp.name == "FuseBoxWaypoint":
-			# The waypoint's parent should be the FuseBox
 			var parent = wp.get_parent()
 			if parent and parent is FuseBox:
 				return parent
-			# Or the Marker3D child points to the FuseBox position
 			for child in wp.get_children():
 				if child is Marker3D:
 					return child
 	
-	# Third try: Find the FuseBox by class name in the interactable group
 	var interactables = get_tree().get_nodes_in_group("interactable")
 	for node in interactables:
 		if node is FuseBox:
 			return node
+	
+	return null
+
+
+## Returns the Door node for the APPROACH_WINDOW / INDOOR_SEARCH states.
+## Uses the cached @export door_node reference (set in Inspector or
+## resolved once in _initialize_entity()). Falls back to the expensive
+## group lookup only if the cached reference is null.
+func get_door_node():
+	if door_node:
+		return door_node
+	
+	# Fallback: expensive group lookup (should rarely happen)
+	print("[Entity] WARNING: get_door_node() called but door_node is null! Performing fallback search.")
+	return get_tree().get_first_node_in_group("Door")
+
+
+## Returns the DoorBreachWaypoint Marker3D child of the Door node.
+## Uses the cached @export door_breach_waypoint reference (set in Inspector or
+## resolved once in _initialize_entity()). Falls back to searching the Door's
+## children only if the cached reference is null.
+## This replaces expensive child-node searches that were called every frame
+## during APPROACH_WINDOW / INDOOR_SEARCH.
+## Returns null if no waypoint is found.
+func get_door_breach_waypoint() -> Node3D:
+	if door_breach_waypoint:
+		return door_breach_waypoint
+	
+	# Fallback: search through the Door node's children (should rarely happen)
+	print("[Entity] WARNING: get_door_breach_waypoint() called but door_breach_waypoint is null! Performing fallback search.")
+	var door = get_door_node()
+	if not door:
+		return null
+	
+	# Look for a Marker3D child named "DoorBreachWaypoint" directly on the door
+	for child in door.get_children():
+		if child is Marker3D and child.name == "DoorBreachWaypoint":
+			return child
+	
+	# Fallback: search recursively through children
+	for child in door.get_children():
+		for grandchild in child.get_children():
+			if grandchild is Marker3D and grandchild.name == "DoorBreachWaypoint":
+				return grandchild
 	
 	return null
 
@@ -1938,6 +2353,7 @@ func _find_fuse_box_recursive(node: Node, results: Array) -> void:
 		return
 	for child in node.get_children():
 		_find_fuse_box_recursive(child, results)
+
 
 ## Sets the current window target.
 func set_current_window_target(target: Node3D) -> void:
