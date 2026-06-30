@@ -204,17 +204,19 @@ func _on_scene_ready() -> void:
 func _set_initial_time() -> void:
 	var gt = get_node_or_null("/root/GameTime")
 	if gt:
-		# Use a daytime progress value (< 0.5) so game_time.gd's _process()
-		# correctly identifies this as day and does NOT emit night_started.
-		# cycle_progress = 0.35 corresponds to roughly 8:24 AM.
-		gt.cycle_progress = 0.35
+		# Non-dev mode: Day 1, 04:00 (progress = 4/24 ≈ 0.1667).
+		# Dev mode overrides this to 0.0 (00:00) in entity_controller.gd.
+		var start_progress: float = 0.1667  # 04:00
+		if is_dev_mode:
+			start_progress = 0.0  # 00:00 for dev mode
+		gt.cycle_progress = start_progress
 		gt._elapsed = gt.cycle_progress * gt.cycle_duration
 		gt.is_day = true
 		gt._was_day = true
-		gt.current_hour = gt.cycle_progress * 24.0
+		gt.current_hour = start_progress * 24.0
 		gt.is_time_paused = true
 		gt.time_changed.emit(gt.cycle_progress)
-		print("[NightManager] Initial time set to mid-afternoon (progress: %.3f). Time is PAUSED." % gt.cycle_progress)
+		print("[NightManager] Dev=%s: Initial time set to progress=%.4f (hour=%.1f). Time is PAUSED." % [is_dev_mode, gt.cycle_progress, gt.current_hour])
 	
 	# Also set our own is_time_paused flag
 	is_time_paused = true
@@ -287,12 +289,9 @@ func _apply_dev_mode_settings() -> void:
 		generator_state_changed.emit(true)
 		print("[NightManager] Dev Mode: Generator at 100% fuel.")
 		
-		# Unpause time for dev convenience
-		is_time_paused = false
-		var gt = get_node_or_null("/root/GameTime")
-		if gt:
-			gt.is_time_paused = false
-			gt.is_running = true
+		# NOTE: Time stays PAUSED in dev mode. Use debug console or
+		# F-keys to manually start a night when ready to test.
+		# NOT unpausing here prevents the 2.5-minute rush into Night.
 		
 	else:
 		# ─── NORMAL MODE: Locked down, player must work for everything ──
@@ -628,6 +627,13 @@ func _on_game_night_started() -> void:
 
 
 func _on_game_day_started() -> void:
+	# ─── SAFETY GUARD ──────────────────────────────────────────────
+	# Only end the night if one is actually active. Spurious day_started
+	# signals (e.g., from GameTime wrapping around due to stale state
+	# before the night-phase sync in start_night()) must be ignored.
+	if not is_night_active:
+		print("[NightManager] Ignoring spurious day_started — no night is active.")
+		return
 	end_current_night()
 
 
@@ -647,6 +653,23 @@ func start_night(night: int) -> void:
 	_peeker_spawned = false
 	is_day_active = false
 	is_night_active = true
+	
+	# ─── UNFREEZE NIGHT PROGRESSION ──────────────────────────────────
+	# Day 1 onboarding sets is_time_paused=true to freeze the clock.
+	# When a night starts (via natural transition, debug console, or game
+	# restart), we MUST unpause so that _process() can update night_progress.
+	# Without this, confidence gets stuck because night_progress never
+	# advances, and fuel drain/events never fire.
+	is_time_paused = false
+	
+	# ─── SYNCHRONIZE GAMETIME TO NIGHT PHASE ─────────────────────────
+	# When a night starts (via natural transition, debug console, or game
+	# restart), GameTime MUST be set to the night phase (cycle_progress=0.5).
+	# Without this sync, GameTime continues from its previous state and
+	# eventually emits day_started when it wraps around, triggering
+	# _on_game_day_started() → end_current_night() prematurely.
+	_force_game_time_to_night()
+	
 	night_started.emit(night)
 	
 	# Recalculate fuel drain to account for the Generator node's drain rates
@@ -831,6 +854,33 @@ func _check_time_events() -> void:
 				_trigger_event("poltergeist")
 			if progress > 0.8 and not "final_confrontation" in _triggered_events:
 				_trigger_event("final_confrontation")
+
+
+## Synchronizes GameTime to the start of the night phase (cycle_progress = 0.5).
+## Called by start_night() to ensure GameTime's internal cycle matches the
+## night state. Without this, GameTime continues from its previous day-phase
+## value and eventually wraps around, emitting day_started prematurely and
+## triggering end_current_night() — causing the "night survived" bug.
+func _force_game_time_to_night() -> void:
+	var gt = get_node_or_null("/root/GameTime")
+	if not gt:
+		return
+	
+	# Set to the exact start of the night phase
+	gt.cycle_progress = 0.5
+	gt._elapsed = gt.cycle_progress * gt.cycle_duration
+	gt.is_day = false
+	gt._was_day = false
+	gt.current_hour = 18.0  # 6:00 PM — start of night
+	
+	# Ensure time is running (unpause if paused)
+	if gt.is_time_paused:
+		gt.is_time_paused = false
+		gt.is_running = true
+	
+	# Emit so connected systems (HUD, EnvironmentController) update immediately
+	gt.time_changed.emit(gt.cycle_progress)
+	print("[NightManager] GameTime synced to night phase (progress=0.5, hour=18:00).")
 
 
 ## Triggers a horror event.

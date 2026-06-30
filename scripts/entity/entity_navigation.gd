@@ -556,16 +556,6 @@ func are_all_windows_lit() -> bool:
 	return true
 
 
-## Returns true if the player is on the second floor of the cabin.
-## Uses a Y-axis threshold (3.0 meters above ground level).
-## Ground floor Y ≈ 0.0, second floor Y ≈ 3.0+
-func is_player_on_second_floor() -> bool:
-	var player = entity.get_player()
-	if not player:
-		return false
-	return player.global_position.y > 3.0
-
-
 ## Returns true if the player is currently lit by a cabin light or porch light.
 ## Checks the player's position against all cached static light sources
 ## (cabin_light and porch_light types only — NOT flashlight or portable lamps).
@@ -596,27 +586,6 @@ func is_player_lit_by_static_lights() -> bool:
 			return true
 	
 	return false
-
-
-## Finds the nearest exterior wall base position below a second-story window.
-## Uses the cached _window_markers array to avoid tree traversal.
-## Scans WindowMarkers, finds ones with Y > 3.0 (second story), projects their
-## position down to ground level (Y = 0.0), and returns the closest one to the Entity.
-## Used by CLIMB_WALL state to determine where to begin the vertical ascent.
-func find_nearest_second_story_window_base() -> Vector3:
-	var best_pos = Vector3.ZERO
-	var shortest_sq = INF
-	var entity_pos = entity.global_position
-	for w in _window_markers:
-		if w.global_position.y < 3.0:
-			continue  # Skip ground-floor windows
-		# Project the window position down to ground level (flatten Y)
-		var base_pos = Vector3(w.global_position.x, entity_pos.y, w.global_position.z)
-		var d_sq = entity_pos.distance_squared_to(base_pos)
-		if d_sq < shortest_sq:
-			shortest_sq = d_sq
-			best_pos = base_pos
-	return best_pos
 
 
 ## Picks a tactical window using smart room-based deduction.
@@ -685,8 +654,15 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 			continue
 		
 		# ─── LIGHT SANCTUARY FILTER ──────────────────────────────────
-		if "room_light" in w and w.room_light and w.room_light.is_switched_on:
-			continue
+		# REMOVED: The Entity should be able to approach any window regardless
+		# of whether the room's light is on. Light sanctuary only matters once
+		# the Entity is INSIDE the cabin (INDOOR_SEARCH state). Blocking window
+		# approach based on light status prevented the Entity from ever breaching,
+		# creating a deadlock where the player could keep all lights on forever
+		# and the Entity would never enter the cabin.
+		# The original filter was:
+		#   if "room_light" in w and w.room_light and w.room_light.is_switched_on:
+		#       continue
 		
 		# ─── NIGHT 2 BOARDED WINDOW FILTER ──────────────────────────
 		if current_night == 2 and w.has_method("is_barricaded") and w.is_barricaded():
@@ -711,6 +687,15 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 		# through darkness without being seen.
 		var is_room_lit: bool = RoomLightDetector.is_position_in_lit_room(w.global_position)
 		
+		# ─── RESOLVE THE APPROACH POSITION ──────────────────────────
+		# The WindowMarker child is offset outside the window and is the
+		# actual position the Entity will pathfind to. Use it for all
+		# distance calculations, not the CabinWindow node (which is inside
+		# the wall and unreachable).
+		var approach_pos: Vector3 = w.global_position
+		if w.get_parent().has_node("WindowMarker"):
+			approach_pos = w.get_parent().get_node("WindowMarker").global_position
+		
 		# ─── CALCULATE DISTANCE FROM LAST HEARD POSITION ────────────
 		# If we have a last_heard_exact_position, calculate the distance
 		# from that position to this window using squared distance with
@@ -719,9 +704,22 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 		# (flanking behavior).
 		var dist_from_last_heard: float = INF
 		if last_heard_pos != Vector3.ZERO:
-			var w_pos = w.global_position
+			var w_pos = approach_pos
 			w_pos.y = last_heard_pos.y  # Flatten Y to ignore height differences
 			dist_from_last_heard = last_heard_pos.distance_squared_to(w_pos)
+		
+		# ─── CALCULATE DISTANCE FROM ENTITY ─────────────────────────
+		# The Entity must be able to physically REACH the window marker. A
+		# window on the opposite side of the cabin may score high on
+		# flanking, but if the Entity has to pathfind 25m around the cabin
+		# it will likely get stuck at the NavMesh edge. We store the
+		# distance from the Entity so the scorer can penalize unreachable
+		# windows.
+		var dist_from_entity: float = INF
+		if entity:
+			var w_pos_entity = approach_pos
+			w_pos_entity.y = entity.global_position.y
+			dist_from_entity = entity.global_position.distance_squared_to(w_pos_entity)
 		
 		# ─── STORE CANDIDATE ─────────────────────────────────────────
 		candidates.append({
@@ -729,6 +727,7 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 			"window_room": window_room,
 			"is_room_lit": is_room_lit,
 			"dist_from_last_heard": dist_from_last_heard,
+			"dist_from_entity": dist_from_entity,
 			"is_last_heard_room": (window_room == last_heard_room and last_heard_room != "")
 		})
 	
@@ -761,12 +760,18 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 					break
 			
 			if door_wp:
+				var door_dist_from_entity: float = INF
+				if entity:
+					var door_pos = door_wp.global_position
+					door_pos.y = entity.global_position.y
+					door_dist_from_entity = entity.global_position.distance_squared_to(door_pos)
 				candidates.append({
 					"marker": door_wp,
 					"is_door": true,
 					"window_room": "Outside",
 					"is_room_lit": false,
 					"dist_from_last_heard": INF,
+					"dist_from_entity": door_dist_from_entity,
 					"is_last_heard_room": false
 				})
 				print("[Navigation] Door added as approach candidate (unlocked, cooldown=%.1f)." % door_cooldown)
@@ -799,29 +804,55 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 		else:
 			lit_candidates.append(c)
 	
-	# ─── STEP 3: PICK THE FURTHEST FROM LAST HEARD POSITION ────────────
-	# From the preferred group (unlit rooms), pick the window furthest from
-	# the last_heard_exact_position. This creates a flanking behavior where
-	# the Entity approaches from the opposite side of the cabin.
-	# If no unlit candidates exist, fall back to lit candidates.
+	# ─── STEP 3: SCORE CANDIDATES ─────────────────────────────────────
+	# Combine two factors:
+	#   1. FLANKING BONUS: distance from last_heard_position (higher = better)
+	#      This makes the Entity approach from the opposite side of where
+	#      the player was last heard.
+	#   2. REACHABILITY PENALTY: distance from Entity (lower = better)
+	#      This prevents the Entity from picking a window on the far side
+	#      of the cabin that it cannot pathfind to from its current position.
+	#
+	# The final score is: dist_from_last_heard - (dist_from_entity * reachability_weight)
+	# The reachability_weight is tuned so that a window 25m away from the Entity
+	# is heavily penalized, but a nearby window still gets some flanking bonus.
+	const REACHABILITY_WEIGHT: float = 1.5
+	
 	var best_candidate: Dictionary = {}
-	var best_dist: float = -INF
+	var best_score: float = -INF
 	
 	var pool = unlit_candidates if not unlit_candidates.is_empty() else lit_candidates
 	
 	for c in pool:
-		var d = c["dist_from_last_heard"]
-		if d > best_dist:
-			best_dist = d
+		var d_heard: float = c["dist_from_last_heard"]
+		var d_entity: float = c["dist_from_entity"]
+		
+		# If we have no last_heard_pos, d_heard is INF. In that case, just
+		# use the negative distance from Entity (pick the closest reachable window).
+		var score: float
+		if d_heard == INF:
+			score = -d_entity
+		else:
+			score = d_heard - (d_entity * REACHABILITY_WEIGHT)
+		
+		if score > best_score:
+			best_score = score
 			best_candidate = c
 	
 	if best_candidate.is_empty():
 		# Absolute fallback: pick the first candidate
 		best_candidate = filtered[0]
 	
-	# CRITICAL: Return the PARENT node (CabinWindow), not the Marker3D itself.
+	# Debug print the selected candidate so we can verify the scoring
 	var selected_marker: Node3D = best_candidate["marker"] as Node3D
 	if selected_marker:
+		var selected_name: String = selected_marker.name
+		var parent = selected_marker.get_parent()
+		if parent:
+			selected_name = parent.name + "/" + selected_name
+		print("[Navigation] Tactical window selected: %s | score=%.1f | dist_from_entity=%.1f | dist_from_last_heard=%.1f" % [
+			selected_name, best_score, sqrt(best_candidate["dist_from_entity"]), sqrt(best_candidate["dist_from_last_heard"]) if best_candidate["dist_from_last_heard"] != INF else -1.0
+		])
 		return selected_marker.get_parent() as Node3D
 	
 	return null

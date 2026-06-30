@@ -19,7 +19,6 @@
 [ext_resource type="Script" uid="uid://tdjvmawnra6" path="res://scripts/environment_controller.gd" id="15_env_ctrl"]
 [ext_resource type="Script" uid="uid://cy2xdrbwuqogc" path="res://scripts/debug_computer.gd" id="16_debug_computer"]
 [ext_resource type="PackedScene" uid="uid://dudqc5j4ccimh" path="res://scenes/monster_entity.tscn" id="16_entity"]
-[ext_resource type="PackedScene" uid="uid://cnxnuobav02hu" path="res://assets/Fixed .fbx/SM_EC_KitchenChair_5.tscn" id="16_nbp5p"]
 [ext_resource type="PackedScene" uid="uid://b35tkexyh5e1r" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/pc_mp_1.glb" id="16_uaofw"]
 [ext_resource type="Texture2D" uid="uid://bw8vl22ys1m00" path="res://assets/Textures/Grass/Grass_01-512x512.png" id="16_ybmve"]
 [ext_resource type="Image" uid="uid://c3ypy8a4sbfe8" path="res://scenes/CottageHorror/Heightmap_0_0.res" id="17_4op5w"]
@@ -46,7 +45,6 @@
 [ext_resource type="PackedScene" uid="uid://d0pw3308ywwrd" path="res://assets/PSX Bunkers/Models/other-formats/GLB/trash_2.glb" id="24_nbp5p"]
 [ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0c8" path="res://scenes/hasselmus_nest.tscn" id="24_nest"]
 [ext_resource type="PackedScene" uid="uid://bu3d58c70beoj" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/book_mp_1.glb" id="24_yohq4"]
-[ext_resource type="PackedScene" uid="uid://dtsdykh3o5g85" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/painting_1.glb" id="25_4ma01"]
 [ext_resource type="Resource" uid="uid://d0uq0x2m2q0cb" path="res://resources/lore_fragment_hearth.tres" id="25_hearth_fragment"]
 [ext_resource type="PackedScene" uid="uid://cicq0ubrwge2p" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/tv_table_1.glb" id="25_llemf"]
 [ext_resource type="Resource" uid="uid://d0uq0x2m2q0ca" path="res://resources/research_map_note.tres" id="25_research_map"]
@@ -87,17 +85,22 @@
 [ext_resource type="PackedScene" uid="uid://dev1jyquh31tw" path="res://scenes/fuse_box.tscn" id="72_1qcio"]
 [ext_resource type="PackedScene" uid="uid://porchlight01" path="res://scenes/porch_light.tscn" id="73_porch_light"]
 [ext_resource type="PackedScene" uid="uid://b2lplqj6v4bkj" path="res://scenes/computer_ui.tscn" id="74_computer_ui"]
-[ext_resource type="PackedScene" uid="uid://b0r8xvj7451wy" path="res://assets/PSX Paintings/Meshes/GLB/painting_8.glb" id="76_h7pim"]
 [ext_resource type="PackedScene" uid="uid://bec7ckeg5nn2q" path="res://scenes/portable_light.tscn" id="77_0wr2x"]
 [ext_resource type="PackedScene" path="res://scenes/cable_spool.tscn" id="78_3o631"]
 [ext_resource type="PackedScene" uid="uid://bpymnhhh56yaj" path="res://scenes/light_switch_special.tscn" id="79_q46gv"]
 [ext_resource type="PackedScene" uid="uid://dr1ny12noe77" path="res://scenes/totem_anchor.tscn" id="80_totem"]
 [ext_resource type="PackedScene" uid="uid://bmhnjo7ywr0yn" path="res://assets/Fixed .fbx/SM_EC_TreeLine_1_002.tscn" id="95_e1coq"]
+[ext_resource type="PackedScene" uid="uid://bp0xbjb3u3dlk" path="res://assets/Fixed .fbx/SM_EC_Path_Mud_00.tscn" id="96_a2wau"]
 [ext_resource type="PackedScene" uid="uid://o2o2sxrn4i67" path="res://assets/PSX Nature/Models/GLB/stone_3.glb" id="96_npxpa"]
 [ext_resource type="PackedScene" uid="uid://bybfenavnbot8" path="res://assets/PSX Nature/Models/GLB/stone_2.glb" id="97_21nt7"]
+[ext_resource type="PackedScene" uid="uid://d4hdfe5278114" path="res://assets/Fixed .fbx/SM_EC_Path_Mud_07.tscn" id="97_npxpa"]
+[ext_resource type="PackedScene" uid="uid://cknhpchurb4d7" path="res://assets/Fixed .fbx/SM_EC_Barn_02.tscn" id="98_dwrs0"]
 [ext_resource type="PackedScene" uid="uid://dx3gvrbo8csp3" path="res://assets/PSX Nature/Models/GLB/stone_1.glb" id="98_yfgex"]
 [ext_resource type="PackedScene" uid="uid://d2q3b4f5c6e7g" path="res://scenes/wooden_plank.tscn" id="99_21nt7"]
+[ext_resource type="PackedScene" uid="uid://tdawh0142ike" path="res://assets/Fixed .fbx/SM_EC_Fence_00.tscn" id="99_k4tl1"]
 [ext_resource type="Script" uid="uid://dwjkqjp5uuaqn" path="res://scripts/cabin_approach_trigger.gd" id="100_cabin_approach"]
+[ext_resource type="PackedScene" uid="uid://btkot5ww6ydog" path="res://assets/Fixed .fbx/SM_EC_Fence_Gate_0.tscn" id="100_fgfdg"]
+[ext_resource type="PackedScene" uid="uid://cnxf5yvvltabk" path="res://assets/Fixed .fbx/SM_EC_LR90_Broken_Down_00.tscn" id="101_7ljx8"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_50dpl"]
 sky_top_color = Color(0.4, 0.6, 1, 1)
@@ -126,9 +129,6 @@ glow_levels/4 = 0.01
 glow_levels/5 = 0.01
 glow_levels/6 = 0.01
 glow_levels/7 = 0.01
-
-[sub_resource type="FogMaterial" id="Fog_basement"]
-density = 0.08
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_fl8v4"]
 vertices = PackedVector3Array(-249.8, 0.41874894, 7.399994, 2.199997, 0.61874896, 7.399994, 2.199997, 0.41874894, -249.8, -249.8, 0.41874894, -249.8, 2.4000092, 0.61874896, 7.399994, 7.8000183, 2.018749, 7.8000183, 9.399994, 0.41874894, 7.200012, 6.7200317, 1.018749, 7.720001, 8.600006, 0.61874896, 7.5, 9.800018, 0.41874894, -249.8, 9.600006, 0.81874895, 7.600006, 9.600006, 1.218749, 9.200012, 9.200012, 1.218749, 9.399994, 9.200012, 1.218749, 10, 9.600006, 1.218749, 10.200012, 15.600006, 0.41874894, 13.600006, 16.200012, 0.41874894, 14.200012, 249.80002, 0.41874894, 14.200012, 9.600006, 0.81874895, 13.800018, 10.600006, 0.41874894, 10.766663, 9.600006, 0.41874894, 11.100006, 9.600006, 0.41874894, 12.900024, 10.600006, 0.41874894, 13.766693, 12.171448, 0.41874894, 11.085724, 249.80002, 0.41874894, -249.8, 9.600006, 0.41874894, 8.400024, 10.386993, 0.41874894, 6.78421, 11.614807, 0.61874896, 9.202484, 3, 4.218749, 7.200012, 3.199997, 4.218749, 7.600006, 7, 5.0187488, 7.8000183, 8.800018, 4.218749, 7.399994, 6.049988, 4.218749, 7.75, 7.9000244, 4.218749, 7.600006, 2.199997, 7.218749, 17.399994, 4.600006, 9.41875, 17.399994, 5, 10.41875, 17, 5.800003, 10.61875, 7.399994, 2.199997, 7.218749, 7.600006, 5.0888824, 9.818749, 15.933319, 5.17778, 9.818749, 14.866669, 5.5333405, 10.218749, 10.600006, 5.622223, 10.61875, 9.533325, 2, 0.41874894, 7.8000183, 2, 0.41874894, 20.800018, 2.4000092, 1.018749, 20.200012, 2.4000092, 1.018749, 8.399994, -249.8, 0.41874894, 21.200012, 2.4000092, 0.81874895, 21.200012, 3.800003, 1.018749, 9.200012, 3.199997, 1.018749, 9.399994, 3.199997, 1.018749, 10, 3.800003, 1.218749, 10.200012, 4.800003, 1.018749, 10.200012, 4.600006, 1.018749, 9.399994, 7.8000183, 1.018749, 14.399994, 8, 1.018749, 13.800018, 8.600006, 1.018749, 10.200012, 7, 1.018749, 13.800018, 7.200012, 1.018749, 14.399994, 8.600006, 1.018749, 9.200012, 4.800003, 1.018749, 8.399994, 8.600006, 1.018749, 13.800018, 4.800003, 1.018749, 13.800018, 8.600006, 1.018749, 8.399994, 7, 4.218749, 13.800018, 7.200012, 4.218749, 14.399994, 7.8000183, 4.218749, 14.399994, 8, 4.218749, 13.800018, 8.600006, 4.218749, 8.399994, 4.800003, 4.218749, 8.399994, 4.800003, 4.218749, 13.800018, 8.600006, 4.218749, 13.800018, 3.800003, 1.018749, 8.399994, 3.199997, 1.018749, 8.399994, 8.399994, 7.0187488, 13, 8.399994, 7.0187488, 8.399994, 3.4000092, 7.0187488, 8.399994, 3.4000092, 7.0187488, 13.200012, 9.200012, 4.218749, 16.200012, 9.200012, 4.218749, 15.600006, 8.800018, 4.218749, 15.600006, 8.600006, 4.218749, 16.399994, 8, 4.218749, 14.800018, 7, 4.218749, 14.800018, 3.800003, 4.218749, 14.600006, 3.199997, 4.218749, 20.200012, 8.600006, 4.218749, 20.200012, 8.600006, 4.218749, 14.800018, 3.800003, 3.818749, 13.5, 3.199997, 3.818749, 13.399994, 3.199997, 4.218749, 14.533325, 3.4000092, 1.018749, 11.399994, 3.4000092, 1.4187489, 12, 3.800003, 1.4187489, 12, 3.800003, 1.018749, 11.399994, 3.199997, 1.018749, 12.600006, 3.199997, 1.018749, 13.800018, 3.800003, 1.018749, 13.800018, 3.800003, 1.018749, 12.600006, 10.399994, 7.0187488, 19.800018, 10.399994, 7.0187488, 15, 8.600006, 7.0187488, 14.800018, 3.4000092, 7.0187488, 20, 5.600006, 9.41875, 18.800018, 5.600006, 10.61875, 18.399994, 5, 10.41875, 18, 2.199997, 7.218749, 21.200012, 3.180008, 8.218749, 18.78003, 6.200012, 9.41875, 18.800018, 15.800018, 7.218749, 21.200012, 9.800018, 7.218749, 13.600006, 9.600006, 7.418749, 13.600006, 6, 10.61875, 18.399994, 15.800018, 7.218749, 13.800018, 8.160004, 8.61875, 15.519989, 6.720001, 10.61875, 17.440002, 15.800018, 9.818749, 18.028595, 15.800018, 10.018749, 16.971436, 7.992096, 10.61875, 17.61911, 14.012146, 10.61875, 17.583069, 10.400177, 9.218749, 18.79187, 10.408142, 10.61875, 17.59668, 14.004181, 9.218749, 18.818237, 15.800018, 1.018749, 14.800018, 15.800018, 1.018749, 20.200012, 16.200012, 0.41874894, 20.600006, 249.80002, 0.41874894, 20.200012, 9.200012, 1.018749, 16.200012, 9.200012, 1.018749, 15.600006, 8.800018, 1.018749, 15.600006, 8.600006, 1.018749, 16.399994, 8, 1.018749, 14.800018, 7, 1.018749, 14.800018, 8.600006, 1.018749, 20.200012, 3.199997, 1.018749, 14.800018, 3.199997, 1.018749, 20.200012, 8.600006, 1.018749, 14.800018, 16, 4.218749, 18.399994, 15.600006, 5.0187488, 18.800018, 16, 4.218749, 19.399994, 15.800018, 4.218749, 20.200012, 16.200012, 4.218749, 20.399994, 16.200012, 4.218749, 14.600006, 15.600006, 5.0187488, 15.600006, 16, 4.218749, 16.399994, 9.600006, 1.018749, 16.399994, 15, 1.018749, 14.800018, 9.600006, 1.018749, 15.399994, 9.600006, 1.018749, 20.200012, 15, 1.018749, 20.200012, 9.600006, 1.018749, 14.800018, 9.600006, 4.218749, 16.399994, 15, 4.218749, 14.800018, 9.600006, 4.218749, 15.399994, 9.600006, 4.218749, 20.200012, 15, 4.218749, 20.200012, 9.600006, 4.218749, 14.800018, 15, 7.0187488, 19.800018, 15.200012, 7.0187488, 15, 4.800003, 10.61875, 17.800018, 7.399994, 10.41875, 17, 5, 10.61875, 17.200012, 15.399994, 0.41874894, 21.399994, 15, 0.41874894, 249.80002, 249.80002, 0.41874894, 249.80002, 15, 1.018749, 21, 9.600006, 1.018749, 21, 9.399994, 0.41874894, 21.399994, 8.800018, 0.41874894, 21.399994, 8.600006, 1.018749, 21, 3.199997, 1.018749, 21, 2.800003, 0.41874894, 21.399994, 3.199997, 0.41874894, 249.80002, -249.8, 0.41874894, 249.80002, 1.9940338, 0.41874894, 22.417053)
@@ -1052,9 +1052,6 @@ func _ensure_collider(tree_node: Node3D) -> void:
 	nav_obstacle.position.y = 4.0
 "
 
-[sub_resource type="BoxShape3D" id="car_alarm_shape"]
-size = Vector3(4, 3, 4)
-
 [node name="CottageHorror" type="Node3D" unique_id=110475989]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=715701991]
@@ -1101,37 +1098,31 @@ fuse_waypoint = NodePath("../EntityWaypoints/EntityFuseWaypoint")
 door_waypoint_marker = NodePath("../NavigationRegion3D/Cabin/Door/EntityDoorWaypoint")
 
 [node name="GeneralSkeleton" parent="TheEntity/MonsterModel/Armature" parent_id_path=PackedInt32Array(133456140, 1066769687, 1936907856) index="0" unique_id=2043102841]
-bones/1/rotation = Quaternion(0.09684936, -0.1642156, -0.014873785, 0.9815459)
-bones/3/rotation = Quaternion(0.14807673, 0.35091504, 0.90945035, -0.16682962)
-bones/4/rotation = Quaternion(-0.03720116, 0.929904, -0.36133155, 0.057742555)
-bones/5/rotation = Quaternion(-0.112236984, 0.6556148, -0.73606855, 0.1255992)
-bones/7/rotation = Quaternion(5.852492e-08, 0.99998736, 0.005039845, 2.4090012e-09)
-bones/18/rotation = Quaternion(-0.13573514, 0.29606768, 0.939696, 0.10436156)
-bones/21/rotation = Quaternion(0.037115954, 0.9306176, -0.3561154, -0.07586397)
-bones/22/rotation = Quaternion(0.09420329, 0.6266076, -0.76608515, -0.107714)
-bones/23/rotation = Quaternion(-2.5004043e-08, 0.99999976, 0.0007005147, -4.6781665e-08)
-bones/33/rotation = Quaternion(0.020065615, -0.0062403027, 0.014023981, 0.9996809)
-bones/34/rotation = Quaternion(0.065349, -0.013581977, 0.012351214, 0.99769366)
-bones/35/rotation = Quaternion(0.06541679, -0.012468602, 0.013207992, 0.99769276)
-bones/36/rotation = Quaternion(-0.052407548, 0.027615385, -0.019448914, 0.9980544)
-bones/38/rotation = Quaternion(-0.19409712, 0.120563, -0.034631804, 0.97292936)
-bones/49/rotation = Quaternion(0.56716, 0.42638755, 0.52426064, -0.47082278)
-bones/50/rotation = Quaternion(0.18237504, 0.8756273, -0.4450146, -0.044476632)
-bones/51/rotation = Quaternion(0.47356588, -0.52510464, 0.47356683, 0.52510464)
-bones/55/rotation = Quaternion(-0.13092995, 0.8036155, 0.18876763, 0.5490229)
-bones/58/rotation = Quaternion(0.5188294, -0.45727962, -0.5719592, -0.44110554)
-bones/59/rotation = Quaternion(-0.21120337, 0.8388847, -0.50009197, -0.039669)
-bones/62/rotation = Quaternion(0.48455003, 0.51498646, -0.48455086, 0.5149861)
-bones/66/rotation = Quaternion(0.068832524, -0.8500593, -0.025966138, 0.52152383)
-
-[node name="BasementFog" type="FogVolume" parent="." unique_id=274711645]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.25, 0)
-size = Vector3(12, 2.5, 10)
-shape = 0
-material = SubResource("Fog_basement")
+bones/1/rotation = Quaternion(0.09891277, -0.17602594, -0.017300341, 0.97925067)
+bones/3/rotation = Quaternion(0.14821444, 0.3526335, 0.9090755, -0.16511771)
+bones/4/rotation = Quaternion(-0.03831865, 0.9210503, -0.38181695, 0.06643667)
+bones/5/rotation = Quaternion(-0.10707958, 0.64368564, -0.748244, 0.11972302)
+bones/7/rotation = Quaternion(7.196159e-08, 0.9999647, 0.008401742, -7.511788e-08)
+bones/18/rotation = Quaternion(-0.1367202, 0.294915, 0.9394704, 0.108296335)
+bones/21/rotation = Quaternion(0.038515497, 0.93428373, -0.34912395, -0.061180186)
+bones/22/rotation = Quaternion(0.09983888, 0.6363942, -0.7567545, -0.111163884)
+bones/23/rotation = Quaternion(-5.4974233e-08, 0.99999905, 0.0014015132, -7.2842695e-08)
+bones/33/rotation = Quaternion(0.021339307, -0.0044191224, 0.01587095, 0.99963665)
+bones/34/rotation = Quaternion(0.06626158, -0.00953174, 0.010400658, 0.9977026)
+bones/35/rotation = Quaternion(0.066341855, -0.008522056, 0.010775032, 0.99770236)
+bones/36/rotation = Quaternion(-0.052423842, 0.027701413, -0.01895569, 0.99806064)
+bones/38/rotation = Quaternion(-0.19773917, 0.12220763, -0.030607246, 0.9721254)
+bones/49/rotation = Quaternion(0.5622355, 0.4312328, 0.52476704, -0.4717511)
+bones/50/rotation = Quaternion(0.18038341, 0.8753711, -0.44736376, -0.032449443)
+bones/51/rotation = Quaternion(0.47565642, -0.5232119, 0.4756572, 0.5232118)
+bones/55/rotation = Quaternion(-0.14907253, 0.7998741, 0.18922292, 0.5497031)
+bones/58/rotation = Quaternion(0.5184751, -0.45597893, -0.5753984, -0.43838733)
+bones/59/rotation = Quaternion(-0.20351504, 0.840208, -0.50021267, -0.04918695)
+bones/62/rotation = Quaternion(0.4939885, 0.50593984, -0.49398923, 0.5059397)
+bones/66/rotation = Quaternion(0.06266593, -0.85099036, -0.021817556, 0.5209726)
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1000000002]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.04576969, 0.0054545403, -0.010467052)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.043207645, 0.0024170876, -0.01587534)
 navigation_mesh = SubResource("NavigationMesh_fl8v4")
 
 [node name="Ground" type="StaticBody3D" parent="NavigationRegion3D" unique_id=1321973830 groups=["grass", "navmesh_source"]]
@@ -1158,32 +1149,17 @@ room_light = NodePath("../../../Cabin Lights/CabinLightLivingRoom")
 [node name="CollisionShape3D" parent="NavigationRegion3D/Cabin/Livingroom" index="0" unique_id=1003113324]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.75734997, -0.68243027, -0.028808594)
 
-[node name="OfficeRoom" parent="NavigationRegion3D/Cabin" index="3" unique_id=1235840180 node_paths=PackedStringArray("room_light")]
-room_light = NodePath("../../../Cabin Lights/CabinLightOffice")
-
-[node name="UpperHallroom" parent="NavigationRegion3D/Cabin" index="4" unique_id=2093739751 node_paths=PackedStringArray("room_light")]
-room_light = NodePath("../../../Cabin Lights/CabinLightUpperHall")
-
-[node name="Hallroom" parent="NavigationRegion3D/Cabin" index="5" unique_id=1939368878 node_paths=PackedStringArray("room_light")]
+[node name="Hallroom" parent="NavigationRegion3D/Cabin" index="3" unique_id=1939368878 node_paths=PackedStringArray("room_light")]
 room_light = NodePath("../../../Cabin Lights/CabinLightHall")
 
 [node name="Marker3D" parent="NavigationRegion3D/Cabin/Hallroom" index="1" unique_id=1675463737]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4896092, -0.9567151, -1.1035547)
 
-[node name="Stairs" parent="NavigationRegion3D/Cabin" index="6" unique_id=772834624 node_paths=PackedStringArray("room_light")]
-room_light = NodePath("../../../Cabin Lights/CabinLightStairs")
-
-[node name="Bedroom" parent="NavigationRegion3D/Cabin" index="7" unique_id=323671917 node_paths=PackedStringArray("room_light")]
-room_light = NodePath("../../../Cabin Lights/CabinLightBedRoom")
-
-[node name="CollisionShape3D" parent="NavigationRegion3D/Cabin/NavigationRegion3D/Mouse Trap Cabin/StaticBody3D" parent_id_path=PackedInt32Array(1282417259, 95404993) index="0" unique_id=503182433]
-transform = Transform3D(1, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, 0.0006828308, 0.016216278, -0.01286602)
-
-[node name="CSGCombiner3D" parent="NavigationRegion3D/Cabin/NavigationRegion3D" parent_id_path=PackedInt32Array(1282417259, 1874479129) index="1" unique_id=16491717]
+[node name="CSGCombiner3D" parent="NavigationRegion3D/Cabin/NavigationRegion3D" parent_id_path=PackedInt32Array(1282417259, 1874479129) index="0" unique_id=16491717]
 visible = false
 use_collision = false
 
-[node name="CSGBox3D6" parent="NavigationRegion3D/Cabin/NavigationRegion3D/CSGCombiner3D" index="5" unique_id=260257140]
+[node name="CSGBox3D6" parent="NavigationRegion3D/Cabin/NavigationRegion3D/CSGCombiner3D" index="2" unique_id=260257140]
 transform = Transform3D(-0.009950909, -0.9748344, -0.22270867, -0.018065719, 0.2228589, -0.9746839, 0.99978715, -0.005675576, -0.019828713, 1.781517, 0.37421864, 9.267841)
 size = Vector3(1.5, 4, 0.3)
 
@@ -1196,12 +1172,6 @@ transform = Transform3D(1, 0, 7.1054274e-15, 0, 1, 0, -7.1054274e-15, 0, 1, 0.57
 
 [node name="EntityDoorWaypoint" type="Marker3D" parent="NavigationRegion3D/Cabin/Door" unique_id=1490195547 groups=["EntityWaypoints"]]
 transform = Transform3D(-3.6426165e-08, 0, 0.8333333, 0, 0.9090909, 0, -0.8333333, 0, -3.6426165e-08, 0.5089035, 0.4659316, -2.1354165)
-
-[node name="StaticBody3D" type="StaticBody3D" parent="NavigationRegion3D/Cabin" unique_id=1157593272]
-transform = Transform3D(1, 0, 0, 0, 4.235794, -0.7961394, 0, 5.572975, 0.6051134, -5.4342613, 1.2698505, 11.110972)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="NavigationRegion3D/Cabin/StaticBody3D" unique_id=1181757346]
-shape = SubResource("BoxShape3D_bcf24")
 
 [node name="CabinApproachTrigger" type="Area3D" parent="NavigationRegion3D" unique_id=1000000100]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.293419, 1, 9.329647)
@@ -1682,11 +1652,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.992285, 1.6431003, 16.2304
 [node name="book_mp_12" parent="Details/Inside Cabin" unique_id=1371649262 instance=ExtResource("24_yohq4")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.532306, 1.6431003, 16.652176)
 
-[node name="painting_12" parent="Details/Inside Cabin" unique_id=2123567333 instance=ExtResource("25_4ma01")]
-transform = Transform3D(-0.99987555, 0, 0.015777022, 0, 1, 0, -0.015777022, 0, -0.99987555, 5.2164383, 5.6632886, 20.430408)
-
 [node name="Bed" parent="Details/Inside Cabin" unique_id=501505394 instance=ExtResource("26_1cglp")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.834966, 3.7331, 15.221859)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.0867825, 1.0088974, 15.897089)
 
 [node name="Battery" parent="." unique_id=429245273 instance=ExtResource("19_battery")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.98, -1.5)
@@ -1774,14 +1741,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7735014, 1.7408384, -3.9116
 [node name="ComputerRoomPatrolWaypoint" type="Marker3D" parent="EntityWaypoints/CabinPatrolWaypoints" unique_id=848299270]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.0396547, 1.7408384, -2.9054337)
 
-[node name="CabinStairsWaypoints" type="Node3D" parent="EntityWaypoints" unique_id=1586695818]
-
-[node name="BottomStairs" type="Marker3D" parent="EntityWaypoints/CabinStairsWaypoints" unique_id=1876502551]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.8502798, 1.1322844, 9.576572)
-
-[node name="TopStairs" type="Marker3D" parent="EntityWaypoints/CabinStairsWaypoints" unique_id=1182725347]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.6084595, 4.7479005, 14.927436)
-
 [node name="EntityFuseWaypoint" type="Marker3D" parent="EntityWaypoints" unique_id=941398072 groups=["EntityFuseWaypoint"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.153573, 0.7791345, 16.596384)
 
@@ -1789,18 +1748,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.153573, 0.7791345, 16.59638
 
 [node name="CabinLightHall" parent="Cabin Lights" unique_id=638731004 groups=["CabinLights"] instance=ExtResource("49_f6rfm")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.460174, 3.5855672, 10.975902)
-
-[node name="CabinLightStairs" parent="Cabin Lights" unique_id=264441080 groups=["CabinLights"] instance=ExtResource("49_f6rfm")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4362552, 6.571229, 10.975902)
-
-[node name="CabinLightUpperHall" parent="Cabin Lights" unique_id=241820584 groups=["CabinLights"] instance=ExtResource("49_f6rfm")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.9865928, 6.571229, 16.554216)
-
-[node name="CabinLightBedRoom" parent="Cabin Lights" unique_id=186137973 groups=["CabinLights"] instance=ExtResource("49_f6rfm")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.312864, 6.571229, 16.554216)
-
-[node name="CabinLightOffice" parent="Cabin Lights" unique_id=737189413 groups=["CabinLights"] instance=ExtResource("49_f6rfm")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.54966, 6.571229, 11.30016)
 
 [node name="CabinLightLivingRoom" parent="Cabin Lights" unique_id=1843921584 groups=["CabinLights"] instance=ExtResource("49_f6rfm")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.460174, 3.5855672, 17.193771)
@@ -1812,36 +1759,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.939633, 3.5855672, 17.1937
 transform = Transform3D(0.009145446, -0.99995816, 0, 0.99995816, 0.009145446, 0, 0, 0, 1, 9.26464, 3.8265224, 9.650703)
 
 [node name="Lightswitches" type="Node" parent="." unique_id=125359164]
-
-[node name="LightSwitchStairBottom" parent="Lightswitches" unique_id=278821629 instance=ExtResource("50_63ebo")]
-transform = Transform3D(0.01893571, 0, 0.9998207, 0, 1, 0, -0.9998207, 0, 0.01893571, 4.46858, 2.1498153, 8.823446)
-
-[node name="InteractionArea" parent="Lightswitches/LightSwitchStairBottom" index="2" unique_id=1106359011 node_paths=PackedStringArray("target_light")]
-target_light = NodePath("../../../Cabin Lights/CabinLightStairs")
-
-[node name="LightSwitchOffice" parent="Lightswitches" unique_id=826205841 instance=ExtResource("50_63ebo")]
-transform = Transform3D(-0.99249494, 0, -0.12228511, 0, 1, 0, 0.12228511, 0, -0.99249494, 8.136824, 5.4998074, 14.177388)
-
-[node name="InteractionArea" parent="Lightswitches/LightSwitchOffice" index="2" unique_id=1106359011 node_paths=PackedStringArray("target_light")]
-target_light = NodePath("../../../Cabin Lights/CabinLightOffice")
-
-[node name="LightSwitchStairTop" parent="Lightswitches" unique_id=1899864067 instance=ExtResource("50_63ebo")]
-transform = Transform3D(0.9998933, 0, -0.014607929, 0, 1, 0, 0.014607929, 0, 0.9998933, 4.4708285, 5.4998074, 14.5023155)
-
-[node name="InteractionArea" parent="Lightswitches/LightSwitchStairTop" index="2" unique_id=1106359011 node_paths=PackedStringArray("target_light")]
-target_light = NodePath("../../../Cabin Lights/CabinLightStairs")
-
-[node name="LightSwitchUpperHall" parent="Lightswitches" unique_id=1930357981 instance=ExtResource("50_63ebo")]
-transform = Transform3D(0.07985115, 0, 0.99680686, 0, 1, 0, -0.99680686, 0, 0.07985115, 3.0285416, 5.4998074, 16.834484)
-
-[node name="InteractionArea" parent="Lightswitches/LightSwitchUpperHall" index="2" unique_id=1106359011 node_paths=PackedStringArray("target_light")]
-target_light = NodePath("../../../Cabin Lights/CabinLightUpperHall")
-
-[node name="LightSwitchBedRoom" parent="Lightswitches" unique_id=1713242034 instance=ExtResource("50_63ebo")]
-transform = Transform3D(0.07985115, 0, 0.99680686, 0, 1, 0, -0.99680686, 0, 0.07985115, 9.27861, 5.4998074, 16.834484)
-
-[node name="InteractionArea" parent="Lightswitches/LightSwitchBedRoom" index="2" unique_id=1106359011 node_paths=PackedStringArray("target_light")]
-target_light = NodePath("../../../Cabin Lights/CabinLightBedRoom")
 
 [node name="LightSwitchHall" parent="Lightswitches" unique_id=1967675267 instance=ExtResource("50_63ebo")]
 transform = Transform3D(0.010244848, 0, -0.9999475, 0, 1, 0, 0.9999475, 0, 0.010244848, 8.95238, 2.1498153, 8.823446)
@@ -1874,15 +1791,26 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17.474478, 0.18468976, 13.314
 
 [node name="BottomFloorWindows" type="Node3D" parent="Windows" unique_id=587445731]
 
-[node name="HallWindow" parent="Windows/BottomFloorWindows" unique_id=1290486114 node_paths=PackedStringArray("room_light") groups=["BottomFloorWindows"] instance=ExtResource("57_1m0e5")]
+[node name="HallWindowRight" parent="Windows/BottomFloorWindows" unique_id=1290486114 node_paths=PackedStringArray("room_light") groups=["BottomFloorWindows"] instance=ExtResource("57_1m0e5")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.424664, 2.5895047, 8.12694)
-window_id = "Hall_Window"
+window_id = "Hall_Window_Right"
 room_light = NodePath("../../../Cabin Lights/CabinLightHall")
 
-[node name="WindowMarker" parent="Windows/BottomFloorWindows/HallWindow" index="2" unique_id=1542265065]
+[node name="WindowMarker" parent="Windows/BottomFloorWindows/HallWindowRight" index="2" unique_id=1542265065]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.2213926, -1.4486232)
 
-[node name="IndoorBreachWaypoint" type="Marker3D" parent="Windows/BottomFloorWindows/HallWindow" unique_id=2011348091 groups=["DoorBreachWaypoint", "IndoorBreachWaypoints"]]
+[node name="IndoorBreachWaypoint2" type="Marker3D" parent="Windows/BottomFloorWindows/HallWindowRight" unique_id=2011348091 groups=["DoorBreachWaypoint", "IndoorBreachWaypoints"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.866895, 0.9909649)
+
+[node name="HallWindowLeft" parent="Windows/BottomFloorWindows" unique_id=1117544405 node_paths=PackedStringArray("room_light") groups=["BottomFloorWindows"] instance=ExtResource("57_1m0e5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5078125, 2.5895047, 8.12694)
+window_id = "Hall_Window_Left"
+room_light = NodePath("../../../Cabin Lights/CabinLightHall")
+
+[node name="WindowMarker" parent="Windows/BottomFloorWindows/HallWindowLeft" index="2" unique_id=1542265065]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.2213926, -1.4486232)
+
+[node name="IndoorBreachWaypoint2" type="Marker3D" parent="Windows/BottomFloorWindows/HallWindowLeft" unique_id=346229453 groups=["DoorBreachWaypoint", "IndoorBreachWaypoints"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.866895, 0.9909649)
 
 [node name="LivingRoomWindow" parent="Windows/BottomFloorWindows" unique_id=1043743832 node_paths=PackedStringArray("room_light") groups=["BottomFloorWindows"] instance=ExtResource("57_1m0e5")]
@@ -1893,7 +1821,7 @@ room_light = NodePath("../../../Cabin Lights/CabinLightLivingRoom")
 [node name="WindowMarker" parent="Windows/BottomFloorWindows/LivingRoomWindow" index="2" unique_id=1542265065]
 transform = Transform3D(0.99999994, 0, 0, 0, 1, 0, 0, 0, 0.99999994, 4.7683716e-07, -2.2213926, -1.4486237)
 
-[node name="IndoorBreachWaypoint" type="Marker3D" parent="Windows/BottomFloorWindows/LivingRoomWindow" unique_id=633896754 groups=["IndoorBreachWaypoints"]]
+[node name="IndoorBreachWaypoint2" type="Marker3D" parent="Windows/BottomFloorWindows/LivingRoomWindow" unique_id=633896754 groups=["IndoorBreachWaypoints"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.866895, 0.9909649)
 
 [node name="ComputerRoomWindowRight" parent="Windows/BottomFloorWindows" unique_id=1291972590 node_paths=PackedStringArray("room_light") groups=["BottomFloorWindows"] instance=ExtResource("57_1m0e5")]
@@ -1905,7 +1833,7 @@ start_broken = true
 [node name="WindowMarker" parent="Windows/BottomFloorWindows/ComputerRoomWindowRight" index="2" unique_id=1542265065]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.2213926, -1.4486227)
 
-[node name="IndoorBreachWaypoint" type="Marker3D" parent="Windows/BottomFloorWindows/ComputerRoomWindowRight" unique_id=1119922258 groups=["IndoorBreachWaypoints"]]
+[node name="IndoorBreachWaypoint2" type="Marker3D" parent="Windows/BottomFloorWindows/ComputerRoomWindowRight" unique_id=1119922258 groups=["IndoorBreachWaypoints"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.43977737, -1.866895, 0.9940882)
 
 [node name="ComputerRoomWindowLeft" parent="Windows/BottomFloorWindows" unique_id=885898012 node_paths=PackedStringArray("room_light") groups=["BottomFloorWindows"] instance=ExtResource("57_1m0e5")]
@@ -1916,61 +1844,20 @@ room_light = NodePath("../../../Cabin Lights/CabinLightKitchen")
 [node name="WindowMarker" parent="Windows/BottomFloorWindows/ComputerRoomWindowLeft" index="2" unique_id=1542265065]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.2213926, -1.4486227)
 
-[node name="IndoorBreachWaypoint" type="Marker3D" parent="Windows/BottomFloorWindows/ComputerRoomWindowLeft" unique_id=480889329 groups=["IndoorBreachWaypoints"]]
+[node name="IndoorBreachWaypoint2" type="Marker3D" parent="Windows/BottomFloorWindows/ComputerRoomWindowLeft" unique_id=480889329 groups=["IndoorBreachWaypoints"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.013884544, -1.866895, 2.9453506)
 
-[node name="UpperFloorWindows" type="Node3D" parent="Windows" unique_id=1468090603]
-
-[node name="UpperHallWindow" parent="Windows/UpperFloorWindows" unique_id=671212231 node_paths=PackedStringArray("room_light") groups=["UpperFloorWindows"] instance=ExtResource("57_1m0e5")]
-transform = Transform3D(-0.99825746, 0, 0.05901034, 0, 1, 0, -0.05901034, 0, -0.99825746, 7.6797185, 5.464286, 20.734604)
-window_id = "Bedroom_Right"
-room_light = NodePath("../../../Cabin Lights/CabinLightUpperHall")
-
-[node name="IndoorBreachWaypoint" type="Marker3D" parent="Windows/UpperFloorWindows/UpperHallWindow" unique_id=2010978790 groups=["IndoorBreachWaypoints"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.866895, 0.9909649)
-
-[node name="BedRoomWindowRight" parent="Windows/UpperFloorWindows" unique_id=674635353 node_paths=PackedStringArray("room_light") groups=["UpperFloorWindows"] instance=ExtResource("57_1m0e5")]
-transform = Transform3D(-0.07463078, 0, -0.9972113, 0, 1, 0, 0.9972113, 0, -0.07463078, 15.434792, 5.4245744, 18.996672)
-window_id = "Attic_Right"
-room_light = NodePath("../../../Cabin Lights/CabinLightBedRoom")
-
-[node name="IndoorBreachWaypoint" type="Marker3D" parent="Windows/UpperFloorWindows/BedRoomWindowRight" unique_id=1902915946 groups=["IndoorBreachWaypoints"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.866895, 0.9909649)
-
-[node name="BedRoomWindowLeft" parent="Windows/UpperFloorWindows" unique_id=1075751903 node_paths=PackedStringArray("room_light") groups=["UpperFloorWindows"] instance=ExtResource("57_1m0e5")]
-transform = Transform3D(-0.07463078, 0, -0.9972113, 0, 1, 0, 0.9972113, 0, -0.07463078, 15.434792, 5.4245744, 15.874119)
-window_id = "Attic_Left"
-room_light = NodePath("../../../Cabin Lights/CabinLightBedRoom")
-
-[node name="IndoorBreachWaypoint" type="Marker3D" parent="Windows/UpperFloorWindows/BedRoomWindowLeft" unique_id=1503159864 groups=["IndoorBreachWaypoints"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.84298134, -1.866895, 1.472414)
-
-[node name="OfficeWindow" parent="Windows/UpperFloorWindows" unique_id=806229272 node_paths=PackedStringArray("room_light") groups=["UpperFloorWindows"] instance=ExtResource("57_1m0e5")]
-transform = Transform3D(0.99996305, 0, 0.008604221, 0, 1, 0, -0.008604221, 0, 0.99996305, 7.4783688, 5.534245, 8.057828)
-window_id = "Bedroom_Front"
-room_light = NodePath("../../../Cabin Lights/CabinLightOffice")
-
-[node name="IndoorBreachWaypoint" type="Marker3D" parent="Windows/UpperFloorWindows/OfficeWindow" unique_id=1705917854 groups=["IndoorBreachWaypoints"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.866895, 0.9909649)
-
 [node name="EscapeVan" parent="." unique_id=433528797 instance=ExtResource("58_uhlf3")]
-transform = Transform3D(0.1322737, 0, -0.9912132, 0, 1, 0, 0.9912132, 0, 0.1322737, -18.020033, 0.12753245, -90.755745)
+transform = Transform3D(0.1322737, 0, -0.9912132, 0, 1, 0, 0.9912132, 0, 0.1322737, -9.001583, 0.12753245, -89.90559)
 
 [node name="EntityVanSpawn" type="Marker3D" parent="." unique_id=236005638]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8494307, 0.7856896, -83.41224)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.454199, 0.7856896, -89.65164)
 
 [node name="sit_marker" type="Marker3D" parent="." unique_id=86345790]
 transform = Transform3D(-0.049424924, 0, -0.99877787, 0, 1, 0, 0.99877787, 0, -0.049424924, 13.971638, 2.1092913, 15.563828)
 
 [node name="Key" parent="." unique_id=1309299402 instance=ExtResource("63_key")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.641135, 0.980777, 9.110605)
-
-[node name="CarAlarmTrigger" type="Area3D" parent="." unique_id=2092697617]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.8936, 3.6831, 15.223)
-collision_layer = 0
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="CarAlarmTrigger" unique_id=1436529089]
-shape = SubResource("car_alarm_shape")
 
 [node name="coffee_table_1_22" parent="." unique_id=909135444 instance=ExtResource("64_1cglp")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.6576257, 0.7331008, 18.50781)
@@ -2021,9 +1908,6 @@ item_data = ExtResource("25_window_fragment")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.0981007, 0.12499976, 1.7629606)
 item_data = ExtResource("25_hearth_fragment")
 
-[node name="painting_82" parent="." unique_id=385348132 instance=ExtResource("76_h7pim")]
-transform = Transform3D(-0.9999998, 0, 0.00062832236, 0, 1, 0, -0.00062832236, 0, -0.9999998, 3.9166112, 5.4883156, 20.41617)
-
 [node name="PortableLight" parent="." unique_id=279815332 instance=ExtResource("77_0wr2x")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.248568, 8.125, 2.4327326)
 
@@ -2035,9 +1919,6 @@ transform = Transform3D(-0.01305464, 0, -0.99991477, 0, 1, 0, 0.99991477, 0, -0.
 
 [node name="TotemAnchor" parent="." unique_id=764556543 instance=ExtResource("80_totem")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.142433, 0.45, 2.5)
-
-[node name="SM_EC_KitchenChair_5" parent="." unique_id=435670437 instance=ExtResource("16_nbp5p")]
-transform = Transform3D(-0.034149487, -0.9994167, -4.368589e-08, 0, -4.371139e-08, 1, -0.9994167, 0.034149487, 1.4927215e-09, 4.8635902, 0.72023284, 10.582945)
 
 [node name="Treeline" type="Node3D" parent="." unique_id=1257114039]
 
@@ -2260,7 +2141,7 @@ transform = Transform3D(2, 0, 0, 0, -8.742278e-08, 2, 0, -2, -8.742278e-08, 7.54
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.753334, 1.5806512, 15.999334)
 
 [node name="PlayerSpawn" type="Marker3D" parent="PlayerSpawnpoints" unique_id=671929833]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.291382, 0.78542304, -87.620735)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.932031, 0.78542304, -87.34196)
 
 [node name="WoodenPlank" parent="." unique_id=781322769 instance=ExtResource("99_21nt7")]
 transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 13.536745, 0.030454654, 23.16672)
@@ -2287,27 +2168,116 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.33839163, 0.13126248, -20.2
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.612565, 0, 0)
 
 [node name="shed_ax_32" parent="Shed" unique_id=1197565466 instance=ExtResource("51_0emg7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.330378)
+
+[node name="SM_EC_Path_Mud_00" parent="." unique_id=1192343918 instance=ExtResource("96_a2wau")]
+transform = Transform3D(-0.01047204, 1.4999634, 6.556549e-08, 0, -6.556708e-08, 1.5, 1.4999634, 0.01047204, 4.577474e-10, -12.744816, 0.027417421, -92.3531)
+
+[node name="SM_EC_Path_Mud_01" parent="." unique_id=476130533 instance=ExtResource("96_a2wau")]
+transform = Transform3D(-0.01047204, 1.4999634, 6.556549e-08, 0, -6.556708e-08, 1.5, 1.4999634, 0.01047204, 4.577474e-10, 14.227166, 0.027417421, -92.16692)
+
+[node name="SM_EC_Path_Mud_02" parent="." unique_id=1172824606 instance=ExtResource("96_a2wau")]
+transform = Transform3D(-0.01047204, 1.4999634, 6.556549e-08, 0, -6.556708e-08, 1.5, 1.4999634, 0.01047204, 4.577474e-10, 41.20078, 0.027417421, -91.92014)
+
+[node name="SM_EC_Path_Mud_03" parent="." unique_id=1202962289 instance=ExtResource("96_a2wau")]
+transform = Transform3D(-0.01047204, 1.4999634, 6.556549e-08, 0, -6.556708e-08, 1.5, 1.4999634, 0.01047204, 4.577474e-10, 68.17276, 0.027417421, -91.73396)
+
+[node name="SM_EC_Path_Mud_07" parent="." unique_id=1005964864 instance=ExtResource("97_npxpa")]
+transform = Transform3D(1.5, 0, 0, 0, -6.556708e-08, 1.5, 0, -1.5, -6.556708e-08, 94.95889, 0.031867024, -87.061844)
+
+[node name="Group of Trees" parent="." unique_id=335884299 instance=ExtResource("10_mdrot")]
+transform = Transform3D(-0.07043549, 0, 0.99751633, 0, 1, 0, -0.99751633, 0, -0.07043549, 87.74052, 0.8869068, -105.35615)
+
+[node name="Group of Trees2" parent="." unique_id=1410319415 instance=ExtResource("10_mdrot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 61.872887, 0.8869068, -102.09735)
+
+[node name="Group of Trees3" parent="." unique_id=823713872 instance=ExtResource("10_mdrot")]
+transform = Transform3D(0.8563482, 0, -0.51639885, 0, 1, 0, 0.51639885, 0, 0.8563482, 37.746593, 0.8869068, -102.09735)
+
+[node name="Group of Trees4" parent="." unique_id=756057280 instance=ExtResource("10_mdrot")]
+transform = Transform3D(-0.07043549, 0, 0.99751633, 0, 1, 0, -0.99751633, 0, -0.07043549, 19.393227, 0.8869068, -105.35615)
+
+[node name="Group of Trees5" parent="." unique_id=25622730 instance=ExtResource("10_mdrot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.4744034, 0.8869068, -102.09735)
+
+[node name="Group of Trees6" parent="." unique_id=1128800502 instance=ExtResource("10_mdrot")]
+transform = Transform3D(0.8563482, 0, -0.51639885, 0, 1, 0, 0.51639885, 0, 0.8563482, -30.600697, 0.8869068, -102.09735)
+
+[node name="Group of Trees7" parent="." unique_id=1440782282 instance=ExtResource("10_mdrot")]
+transform = Transform3D(-0.8105532, 0, 0.58566535, 0, 1, 0, -0.58566535, 0, -0.8105532, -50.218174, 0.8869068, -105.733444)
+
+[node name="Group of Trees8" parent="." unique_id=72510419 instance=ExtResource("10_mdrot")]
+transform = Transform3D(0.64130235, 0, 0.7672883, 0, 1, 0, -0.7672883, 0, 0.64130235, -64.30671, 0.8869068, -83.79564)
+
+[node name="Group of Trees9" parent="." unique_id=637184508 instance=ExtResource("10_mdrot")]
+transform = Transform3D(0.9454049, 0, 0.3258982, 0, 1, 0, -0.3258982, 0, 0.9454049, -79.77895, 0.8869068, -65.28381)
+
+[node name="Group of Trees10" parent="." unique_id=1384961077 instance=ExtResource("10_mdrot")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -41.679123, 0.8869068, -83.67206)
+
+[node name="Group of Trees11" parent="." unique_id=1677198408 instance=ExtResource("10_mdrot")]
+transform = Transform3D(0.8494325, 0, 0.52769727, 0, 1, 0, -0.52769727, 0, 0.8494325, -56.085625, 0.8869068, -69.68472)
+
+[node name="SM_EC_Barn_02" parent="." unique_id=1222772077 instance=ExtResource("98_dwrs0")]
+transform = Transform3D(-1, -8.742278e-08, 0, -3.821371e-15, 4.371139e-08, 1, -8.742278e-08, 1, -4.371139e-08, 36.552925, 0.0774163, -82.51746)
+
+[node name="SM_EC_Fence_00" parent="." unique_id=2144628386 instance=ExtResource("99_k4tl1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.201967, 0.027418809, -86.90293)
+
+[node name="SM_EC_Fence_01" parent="." unique_id=1101478515 instance=ExtResource("99_k4tl1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 17.999542, 0.027418809, -86.90293)
+
+[node name="SM_EC_Fence_06" parent="." unique_id=69307494 instance=ExtResource("99_k4tl1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.853737, 0.027418809, -86.90293)
+
+[node name="SM_EC_Fence_02" parent="." unique_id=1879611429 instance=ExtResource("99_k4tl1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35.04564, 0.027418809, -86.90293)
+
+[node name="SM_EC_Fence_03" parent="." unique_id=48626266 instance=ExtResource("99_k4tl1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 41.843212, 0.027418809, -86.90293)
+
+[node name="SM_EC_Fence_04" parent="." unique_id=1334890493 instance=ExtResource("99_k4tl1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 48.652008, 0.027418809, -86.90293)
+
+[node name="SM_EC_Fence_05" parent="." unique_id=1630104022 instance=ExtResource("99_k4tl1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 55.44958, 0.027418809, -86.90293)
+
+[node name="SM_EC_Fence_07" parent="." unique_id=1248824786 instance=ExtResource("99_k4tl1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 48.652008, 0.027418809, -86.90293)
+
+[node name="SM_EC_Fence_08" parent="." unique_id=1408965310 instance=ExtResource("99_k4tl1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 55.44958, 0.027418809, -86.90293)
+
+[node name="SM_EC_Fence_09" parent="." unique_id=468088850 instance=ExtResource("99_k4tl1")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 62.26271, 0.027418809, -86.90293)
+
+[node name="SM_EC_Fence_10" parent="." unique_id=1571115902 instance=ExtResource("99_k4tl1")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 62.26271, 0.027418809, -80.21443)
+
+[node name="SM_EC_Fence_11" parent="." unique_id=994393953 instance=ExtResource("99_k4tl1")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 62.26271, 0.027418809, -73.6125)
+
+[node name="SM_EC_Fence_12" parent="." unique_id=1085517934 instance=ExtResource("99_k4tl1")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 62.26271, 0.027418809, -66.91699)
+
+[node name="SM_EC_Fence_Gate_0" parent="." unique_id=1399556613 instance=ExtResource("100_fgfdg")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31.704865, 1.5693965, -86.84613)
+
+[node name="SM_EC_LR90_Broken_Down_00" parent="." unique_id=2078243485 instance=ExtResource("101_7ljx8")]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 32.540394, 0.12371564, -69.87468)
 
 [editable path="TheEntity"]
 [editable path="TheEntity/MonsterModel"]
 [editable path="NavigationRegion3D/Cabin"]
+[editable path="NavigationRegion3D/Cabin/NavigationRegion3D/Mouse Trap Cabin 2"]
 [editable path="NavigationRegion3D/Cabin/Door"]
 [editable path="Details/Inside Cabin/Computer"]
 [editable path="Details/Inside Cabin/Computer/pc_monitor_mp_12"]
-[editable path="Lightswitches/LightSwitchStairBottom"]
-[editable path="Lightswitches/LightSwitchOffice"]
-[editable path="Lightswitches/LightSwitchStairTop"]
-[editable path="Lightswitches/LightSwitchUpperHall"]
-[editable path="Lightswitches/LightSwitchBedRoom"]
 [editable path="Lightswitches/LightSwitchHall"]
 [editable path="Lightswitches/LightSwitchLivingRoom"]
 [editable path="Lightswitches/LightSwitchKitchen"]
-[editable path="Windows/BottomFloorWindows/HallWindow"]
+[editable path="Windows/BottomFloorWindows/HallWindowRight"]
+[editable path="Windows/BottomFloorWindows/HallWindowLeft"]
 [editable path="Windows/BottomFloorWindows/LivingRoomWindow"]
 [editable path="Windows/BottomFloorWindows/ComputerRoomWindowRight"]
 [editable path="Windows/BottomFloorWindows/ComputerRoomWindowLeft"]
-[editable path="Windows/UpperFloorWindows/UpperHallWindow"]
-[editable path="Windows/UpperFloorWindows/BedRoomWindowRight"]
-[editable path="Windows/UpperFloorWindows/BedRoomWindowLeft"]
-[editable path="Windows/UpperFloorWindows/OfficeWindow"]
-[editable path="SM_EC_KitchenChair_5"]

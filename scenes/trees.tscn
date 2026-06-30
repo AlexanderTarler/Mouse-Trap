@@ -12,6 +12,14 @@
 [ext_resource type="PackedScene" uid="uid://cqxiky5o3tcl6" path="res://assets/PSX Nature/Models/GLB/grass_3.glb" id="10_didbe"]
 [ext_resource type="PackedScene" uid="uid://du7tur3ilrj3f" path="res://assets/PSX Nature/Models/GLB/grass_4.glb" id="11_rc6y8"]
 [ext_resource type="PackedScene" uid="uid://clq01k102v26p" path="res://assets/PSX Nature/Models/GLB/tree_log_1.glb" id="12_3pvim"]
+[ext_resource type="PackedScene" uid="uid://djfjspwg7hcit" path="res://assets/Fixed .fbx/SM_EC_Rock_81.tscn" id="13_hvojr"]
+[ext_resource type="PackedScene" uid="uid://dir5bgkar2gf0" path="res://assets/Fixed .fbx/SM_EC_Rock_77.tscn" id="14_2elfe"]
+[ext_resource type="PackedScene" uid="uid://d2cq0cb1o1b0b" path="res://assets/Fixed .fbx/SM_EC_Rock_76.tscn" id="15_8t882"]
+[ext_resource type="PackedScene" uid="uid://dxgpkpj6ldxg4" path="res://assets/Fixed .fbx/SM_EC_Rock_82.tscn" id="16_e1r1i"]
+[ext_resource type="PackedScene" uid="uid://brfja4tpfoqec" path="res://assets/Fixed .fbx/SM_EC_Rock_69.tscn" id="17_6pyf6"]
+[ext_resource type="PackedScene" uid="uid://cvclxpbbbupvq" path="res://assets/Fixed .fbx/SM_EC_Rock_68.tscn" id="18_1jk25"]
+[ext_resource type="PackedScene" uid="uid://ciqmosp8vaq58" path="res://assets/Fixed .fbx/SM_EC_Rock_67.tscn" id="19_jouwm"]
+[ext_resource type="PackedScene" uid="uid://erd1prhmksye" path="res://assets/Fixed .fbx/SM_EC_Plant_Bush_00.tscn" id="20_pls4a"]
 
 [node name="Group of Trees" type="Node3D" unique_id=335884299]
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0)
@@ -368,3 +376,39 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.4747806, 0, 3.4700048)
 
 [node name="grass_19" parent="." unique_id=1436800989 instance=ExtResource("8_repfc")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.7416105, 0, 3.3000987)
+
+[node name="SM_EC_Rock_81" parent="." unique_id=2042048550 instance=ExtResource("13_hvojr")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 7.1088924, 0, -2.6765347)
+
+[node name="SM_EC_Rock_77" parent="." unique_id=707629691 instance=ExtResource("14_2elfe")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 8.035036, 0, -1.1701634)
+
+[node name="SM_EC_Rock_76" parent="." unique_id=931950874 instance=ExtResource("15_8t882")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 7.9061074, 0, -2.6903827)
+
+[node name="SM_EC_Rock_82" parent="." unique_id=961821430 instance=ExtResource("16_e1r1i")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 3.1232052, 0, 0.32110858)
+
+[node name="SM_EC_Rock_69" parent="." unique_id=1994510452 instance=ExtResource("17_6pyf6")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -6.340246, 0, -5.2135725)
+
+[node name="SM_EC_Rock_68" parent="." unique_id=1851099565 instance=ExtResource("18_1jk25")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -6.544048, 0, -5.7970066)
+
+[node name="SM_EC_Rock_67" parent="." unique_id=517845228 instance=ExtResource("19_jouwm")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, -7.2828355, 0, -5.3766413)
+
+[node name="SM_EC_Plant_Bush_00" parent="." unique_id=967677473 instance=ExtResource("20_pls4a")]
+transform = Transform3D(0.5, 0, 0, 0, -0.014082915, 0.49980164, 0, -0.49980164, -0.014082915, 7.204123, 0, 2.6257472)
+
+[node name="SM_EC_Plant_Bush_01" parent="." unique_id=1594070941 instance=ExtResource("20_pls4a")]
+transform = Transform3D(0.5, 0, 0, 0, -0.014082915, 0.49980164, 0, -0.49980164, -0.014082915, 7.204123, 0, -2.408177)
+
+[node name="SM_EC_Plant_Bush_02" parent="." unique_id=139703367 instance=ExtResource("20_pls4a")]
+transform = Transform3D(0.5, 0, 0, 0, -0.014082915, 0.49980164, 0, -0.49980164, -0.014082915, 0.9364991, 0, -2.408177)
+
+[node name="SM_EC_Plant_Bush_03" parent="." unique_id=1631096323 instance=ExtResource("20_pls4a")]
+transform = Transform3D(0.5, 0, 0, 0, -0.014082915, 0.49980164, 0, -0.49980164, -0.014082915, -2.928337, 0, -0.5070344)
+
+[node name="SM_EC_Plant_Bush_04" parent="." unique_id=733325858 instance=ExtResource("20_pls4a")]
+transform = Transform3D(0.5, 0, 0, 0, -0.014082915, 0.49980164, 0, -0.49980164, -0.014082915, -4.6447115, 0, 2.5067225)

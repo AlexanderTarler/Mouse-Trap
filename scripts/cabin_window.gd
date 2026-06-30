@@ -46,6 +46,14 @@ class_name CabinWindow
 ## Assign this in the scene editor to link the window to its room light.
 @export var room_light: CabinLight = null
 
+## If true, this window is on the second floor (upstairs).
+## Level designers should explicitly tag second-floor windows rather than
+## relying on Y-coordinate math, which can be unreliable with varying
+## terrain heights and foundation elevations.
+## When true, the Entity will pathfind to the wall base, climb vertically
+## (CLIMB_TO_WINDOW state), and then transition to WINDOW_PEEK to breach.
+@export var is_upstairs_window: bool = false
+
 ## ─── TUTORIAL: Broken Window ────────────────────────────────────────────────
 ## If true, this window starts the game with shattered glass and no planks.
 ## Used for the Day 1 tutorial where the player must fix a drafty window.

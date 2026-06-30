@@ -121,7 +121,7 @@ var _last_state: EntityAI.State = EntityAI.State.DORMANT
 
 ## ─── STATE PERSISTENCE TIMER ──────────────────────────────────────────────
 ## Counts down each frame while the Entity is in an active state (FLINCH,
-## CLIMB_WALL, CHARGE, etc.). When > 0.0, the Director's State Persistence
+## CHARGE, etc.). When > 0.0, the Director's State Persistence
 ## Guard returns the current state, preventing Tier 3–8 evaluations from
 ## overriding the state mid-execution.
 ##
@@ -224,9 +224,7 @@ var is_approach_finished: bool = false
 ## has elapsed. The Director checks this flag and transitions to INDOOR_SEARCH.
 var is_window_unbarricaded: bool = false
 
-## Set to true by _climb_wall_state() when the vertical ascent completes.
-## The Director checks this flag and transitions to WINDOW_PEEK.
-var is_climb_finished: bool = false
+var is_climb_finished: bool = false  # Deprecated — kept for API compatibility, no longer used
 
 ## Set to true by the Director when transitioning to INDOOR_SEARCH from a door
 ## approach (rather than a window breach). The _indoor_search_state() handler
@@ -924,7 +922,7 @@ func _initialize_entity() -> void:
 			else:
 				activate()
 				_relocate_behind_player()
-
+		
 	else:
 		call_deferred("_initialize_entity")
 		return
@@ -1168,9 +1166,7 @@ func _on_night_started(night: int) -> void:
 	
 	# Night 1 & 2 exception: Entity stays hidden for the car alarm narrative.
 	# The Entity only appears when the player interacts with the van via
-	# _on_first_chase_started(). This covers both:
-	#   - Night 1: The initial Day 1 → Day 2 transition (eco-survey complete)
-	#   - Night 2: The Day 2 → Night 2 transition (nests documented + uploaded)
+	# _on_first_chase_started(). Night 1 = eco-survey, Night 2 = car alarm.
 	if night <= 2:
 		print("[Entity] Night %d: Staying hidden for car alarm narrative. Entity will spawn when player investigates the van." % night)
 		return
@@ -1348,6 +1344,13 @@ func _physics_process(delta: float) -> void:
 			EntityAI.State.keys()[_state] if _state >= 0 and _state < EntityAI.State.keys().size() else "UNKNOWN",
 			hit_info
 		])
+		
+		# ─── TIME DIAGNOSTIC: NightManager vs GameTime ────────────────
+		var nm = _night_manager
+		var gt = get_node_or_null("/root/GameTime")
+		if nm and gt:
+			print("[TIME DIAGNOSTIC] NightManager: current_night=%d, is_night_active=%s, is_time_paused=%s" % [nm.current_night, nm.is_night_active, nm.is_time_paused])
+			print("[TIME DIAGNOSTIC] GameTime:     cycle_progress=%.4f, is_day=%s, is_night=%s, current_hour=%.1f, is_time_paused=%s" % [gt.cycle_progress, gt.is_day, gt.is_night if "is_night" in gt else "N/A", gt.current_hour, gt.is_time_paused])
 
 	
 	_game_time += delta
@@ -1415,8 +1418,6 @@ func _physics_process(delta: float) -> void:
 		_state == EntityAI.State.STALK or
 		_state == EntityAI.State.CHARGE or
 		_state == EntityAI.State.FLINCH or
-		_state == EntityAI.State.CLIMB_WALL_UP or
-		_state == EntityAI.State.CLIMB_WALL_DOWN or
 		_state == EntityAI.State.STUNNED
 	)
 	
@@ -1433,7 +1434,7 @@ func _physics_process(delta: float) -> void:
 	#   waypoint to kickstart the AI.
 	#
 	# ATTACK STATE GUARD:
-	#   Stuck detection is disabled during CHASE, CHARGE, FLINCH, CLIMB_WALL,
+	#   Stuck detection is disabled during CHASE, CHARGE, FLINCH,
 	#   and STUNNED — the Entity should never teleport away while actively
 	#   pursuing the player or performing a scripted action.
 	#
@@ -1599,7 +1600,7 @@ func _physics_process(delta: float) -> void:
 	#
 	# ATTACK STATE GUARD:
 	#   Position-based stuck detection is disabled during CHASE, CHARGE, FLINCH,
-	#   CLIMB_WALL, and STUNNED — same as the velocity-based detector.
+	#   and STUNNED — same as the velocity-based detector.
 	#
 	# INDOOR_SEARCH GUARD:
 	#   Position-based stuck detection is also disabled during INDOOR_SEARCH
@@ -1903,12 +1904,11 @@ func _physics_process(delta: float) -> void:
 		# standard physics to walk up the stairs. Without this, the lerp hovers
 		# the Entity above stair treads, preventing it from climbing to the
 		# interior waypoint.
-		var is_climbing = _state in [EntityAI.State.CLIMB_WALL_UP, EntityAI.State.CLIMB_WALL_DOWN]
 		var is_ghosting = false
 		if _state == EntityAI.State.INDOOR_SEARCH and _ai and _ai.has_method("has_arrived_indoor"):
 			is_ghosting = not _ai.has_arrived_indoor()
 		
-		if not is_climbing and not is_ghosting and not _floor_snap_disabled:
+		if not is_ghosting and not _floor_snap_disabled:
 			if _floor_ray.is_colliding():
 				var floor_y = _floor_ray.get_collision_point().y
 				
@@ -2099,7 +2099,7 @@ func get_state() -> EntityAI.State:
 
 ## Returns the state persistence timer value.
 ## Used by the Director's State Persistence Guard to check if the Entity
-## is mid-execution in an active state (FLINCH, CLIMB_WALL, CHARGE, etc.).
+## is mid-execution in an active state (FLINCH, CHARGE, etc.).
 ## When > 0.0, the Director skips Tier 3–8 evaluations.
 func get_state_timer() -> float:
 	return _state_timer
@@ -2196,23 +2196,6 @@ func get_navigation_module() -> Node:
 ## Returns the EntitySensory sub-module.
 func get_sensory_module() -> Node:
 	return _sensory
-
-## ─── FLOOR AWARENESS PASSTHROUGH ──────────────────────────────────────────────
-## Delegates to entity_sensory.gd's get_player_floor() method.
-## Returns which floor the player is currently on based on their room name.
-## One of: "LOWER", "UPPER", "STAIRS", or "UNKNOWN".
-func get_player_floor() -> String:
-	if _sensory and _sensory.has_method("get_player_floor"):
-		return _sensory.get_player_floor()
-	return "UNKNOWN"
-
-## Delegates to entity_sensory.gd's get_entity_floor() method.
-## Returns which floor the Entity is currently on based on its Y position.
-## One of: "LOWER", "UPPER", or "UNKNOWN".
-func get_entity_floor() -> String:
-	if _sensory and _sensory.has_method("get_entity_floor"):
-		return _sensory.get_entity_floor()
-	return "UNKNOWN"
 
 ## Returns the CollisionShape3D node for the Entity's physics body.
 ## Used by the TRAVERSE_STAIRS state to disable/re-enable the collision
@@ -3559,7 +3542,7 @@ func _update_collision_layers() -> void:
 			collision_mask |= (1 << (COLLISION_LAYER_PLAYER - 1)) # Layer 2: Player
 			# NOTE: Layers 3 (Tree) and 4 (Rock) are intentionally excluded.
 			
-		EntityAI.State.STALK, EntityAI.State.CHARGE, EntityAI.State.APPROACH_WINDOW, EntityAI.State.WINDOW_PEEK, EntityAI.State.INDOOR_SEARCH, EntityAI.State.CLIMB_WALL_UP, EntityAI.State.CLIMB_WALL_DOWN, EntityAI.State.FLINCH, EntityAI.State.ATTACK_LAMP, EntityAI.State.RETREAT:
+		EntityAI.State.STALK, EntityAI.State.CHARGE, EntityAI.State.APPROACH_WINDOW, EntityAI.State.WINDOW_PEEK, EntityAI.State.INDOOR_SEARCH, EntityAI.State.FLINCH, EntityAI.State.ATTACK_LAMP, EntityAI.State.RETREAT:
 			# Full collision mode: Re-enable ALL collision layers.
 			# The Entity must collide with everything during aggressive states
 			# to prevent phasing through doors, window frames, or cabin walls.
@@ -3654,20 +3637,10 @@ func _update_animations(_delta: float) -> void:
 	# Entity above terrain, which can create upward velocity (real_vel.y > 0.8)
 	# when moving over slopes or uneven ground. Without this guard, the Entity
 	# would play the ClimbUp animation every time it drifts upward over a hill.
-	var _is_climbing_anim = _state in [EntityAI.State.CLIMB_WALL_UP, EntityAI.State.CLIMB_WALL_DOWN]
-	if _is_climbing_anim and real_vel.y > 0.8:
-		_anim_state_machine.travel("ClimbUp")
-		return
-	elif _is_climbing_anim and real_vel.y < -0.8 and not is_on_floor():
-		_anim_state_machine.travel("ClimbDown")
-		return
-	
 	# Determine posture based on state
 	var crawling_states: Array = [
 		EntityAI.State.CHARGE,
 		EntityAI.State.FLINCH,
-		EntityAI.State.CLIMB_WALL_UP,
-		EntityAI.State.CLIMB_WALL_DOWN
 	]
 	var is_crawling: bool = _state in crawling_states
 	# INDOOR_SEARCH uses running_crawl only after Phase A (vault/door entry) completes

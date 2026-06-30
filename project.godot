@@ -27,11 +27,16 @@ EvidenceManager="*res://scripts/evidence_manager.gd"
 RoomLightDetector="*uid://lqer7d8tsn72"
 EndgameManager="*res://scripts/managers/endgame_manager.gd"
 PeekerManager="*res://scripts/peeker_manager.gd"
+MCPRuntime="*uid://d0d44kj7mgnoo"
 
 [display]
 
 window/size/viewport_width=1920
 window/size/viewport_height=1080
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/godot_mcp/plugin.cfg")
 
 [filesystem]
 
@@ -43,10 +48,11 @@ wood=""
 WindowMarkers=""
 navmesh_source=""
 BottomFloorWindows=""
-UpperFloorWindows=""
 EntityWaypoints=""
 ignore_navmesh=""
 IndoorBreachWaypoints=""
+SecondFloorWindows=""
+ClimbWallWaypoints=""
 
 [input]
 

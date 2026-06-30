@@ -107,3 +107,6 @@ stream = ExtResource("4_hammer")
 
 [node name="GlassCrunchSound" type="AudioStreamPlayer3D" parent="." unique_id=-1294967293]
 stream = ExtResource("3_break")
+
+[node name="IndoorBreachWaypoint" type="Marker3D" parent="." groups=["DoorBreachWaypoint"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.5)

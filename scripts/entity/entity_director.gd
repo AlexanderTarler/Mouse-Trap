@@ -76,18 +76,6 @@ var _indoor_search_persistence_timer: float = 0.0
 ## Duration (in seconds) the Entity must stay in INDOOR_SEARCH after breaching.
 const INDOOR_SEARCH_PERSISTENCE_DURATION: float = 30.0
 
-## ─── TRAVERSE STAIRS MINIMUM INDOOR TIME ─────────────────────────────────────
-## Timer that prevents the TRAVERSE_STAIRS floor check from firing immediately
-## when the Entity enters INDOOR_SEARCH. The Entity must be in INDOOR_SEARCH for
-## at least 1 second before the Director can transition to TRAVERSE_STAIRS.
-## This gives the Entity time to actually enter the cabin and start searching
-## before it decides to climb the stairs.
-var _traverse_stairs_minimum_indoor_timer: float = 0.0
-
-## Duration (in seconds) the Entity must stay in INDOOR_SEARCH before the
-## TRAVERSE_STAIRS floor check can trigger.
-const TRAVERSE_STAIRS_MINIMUM_INDOOR_TIME: float = 1.0
-
 ## ─── OUTSIDE CONFIRMATION TIMER ──────────────────────────────────────────────
 ## When the Entity deduces the player has escaped (thinks_player_is_inside=false),
 ## this timer counts DOWN from a random value between 5-10 seconds. The Entity
@@ -115,13 +103,10 @@ const OUTSIDE_CONFIRMATION_MIN: float = 5.0
 const OUTSIDE_CONFIRMATION_MAX: float = 10.0
 
 ## Resets the indoor search persistence timer to 30.0 seconds.
-## Also resets the TRAVERSE_STAIRS minimum indoor timer so the Entity must
-## spend at least 1 second in INDOOR_SEARCH before the floor check can fire.
 ## Called by entity_ai.gd when the Entity enters INDOOR_SEARCH state.
 func reset_indoor_search_persistence() -> void:
 	_indoor_search_persistence_timer = INDOOR_SEARCH_PERSISTENCE_DURATION
-	_traverse_stairs_minimum_indoor_timer = TRAVERSE_STAIRS_MINIMUM_INDOOR_TIME
-	print("[Director] Indoor search persistence timer set to %.1f seconds. TRAVERSE_STAIRS minimum indoor timer set to %.1f seconds." % [INDOOR_SEARCH_PERSISTENCE_DURATION, TRAVERSE_STAIRS_MINIMUM_INDOOR_TIME])
+	print("[Director] Indoor search persistence timer set to %.1f seconds." % INDOOR_SEARCH_PERSISTENCE_DURATION)
 
 
 ## Resets the outside confirmation timer so the Entity must wait another
@@ -188,16 +173,6 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	if state == EntityAI.State.INDOOR_SEARCH and _indoor_search_persistence_timer > 0.0:
 		_indoor_search_persistence_timer -= entity.get_physics_process_delta_time()
 	
-	# ─── TRAVERSE STAIRS MINIMUM INDOOR TIMER DECAY ─────────────────────
-	# Decrement the minimum indoor timer each frame while the Entity is in
-	# INDOOR_SEARCH. Once it reaches 0.0, the TRAVERSE_STAIRS floor check
-	# below is allowed to fire. This ensures the Entity spends at least 1
-	# second inside before attempting to climb the stairs.
-	if state == EntityAI.State.INDOOR_SEARCH and _traverse_stairs_minimum_indoor_timer > 0.0:
-		_traverse_stairs_minimum_indoor_timer -= entity.get_physics_process_delta_time()
-		if _traverse_stairs_minimum_indoor_timer < 0.0:
-			_traverse_stairs_minimum_indoor_timer = 0.0
-	
 	# ─── TIER 0: PENDING STATE OVERRIDE ──────────────────────────────
 	# Checked BEFORE state_locked so critical overrides (stun release,
 	# blackout enrage, debug) can interrupt locked states.
@@ -262,43 +237,6 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 			print("[TRACE_DIRECTOR] STATE LOCKED! Returning INDOOR_SEARCH (preserving lock).")
 		return state
 
-	
-	# ─── TRAVERSE STAIRS FLOOR CHECK (Before INDOOR_SEARCH Preservation) ──
-	# Checked BEFORE the INDOOR_SEARCH preservation guard so that the Entity
-	# can transition to TRAVERSE_STAIRS even while the persistence timer is
-	# still active. Without this, the preservation guard blocks ALL transitions
-	# for 30 seconds, preventing the Entity from following the player upstairs.
-	#
-	# RULES:
-	#   1. The Entity must have been in INDOOR_SEARCH for at least 1 second
-	#      (_traverse_stairs_minimum_indoor_timer must be 0.0) before the floor
-	#      check can fire. This prevents the Entity from immediately climbing
-	#      the stairs the moment it enters the cabin.
-	#   2. If player_floor == "STAIRS", do NOT transition. Let the Entity
-	#      stay in INDOOR_SEARCH, where it will naturally pathfind to the
-	#      bottom/top of the stairs and stare at the player.
-	#   3. If player_floor is definitively different from entity_floor
-	#      (e.g., "UPPER" vs "LOWER"), transition to TRAVERSE_STAIRS.
-	#   4. If either floor is "UNKNOWN", do nothing — fall through to the
-	#      preservation guard below.
-	if state == EntityAI.State.INDOOR_SEARCH and _traverse_stairs_minimum_indoor_timer <= 0.0:
-		var sensory = entity.get_sensory_module()
-		if sensory and sensory.has_method("get_player_floor") and sensory.has_method("get_entity_floor"):
-			var player_floor: String = sensory.get_player_floor()
-			var entity_floor: String = sensory.get_entity_floor()
-			
-			if player_floor == "STAIRS":
-				# Player is on the stairs — do NOT transition. The Entity
-				# stays in INDOOR_SEARCH and will naturally pathfind to the
-				# bottom/top of the stairs.
-				print("[Director] TRAVERSE_STAIRS: Player is on STAIRS. Staying in INDOOR_SEARCH.")
-				return EntityAI.State.INDOOR_SEARCH
-			
-			if player_floor != "UNKNOWN" and entity_floor != "UNKNOWN" and player_floor != entity_floor:
-				# Player and Entity are on different floors. Transition to
-				# TRAVERSE_STAIRS so the Entity can navigate between floors.
-				print("[Director] TRAVERSE_STAIRS: Player on %s, Entity on %s. Transitioning to TRAVERSE_STAIRS." % [player_floor, entity_floor])
-				return EntityAI.State.TRAVERSE_STAIRS
 	
 	# ─── INDOOR SEARCH PRESERVATION GUARD ──────────────────────────────
 	# If the Entity is currently in INDOOR_SEARCH, do NOT allow Tiers 2-8
@@ -557,11 +495,11 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 	
 	# ─── INDOOR AGGRESSION STATE → RETREAT (Player inside, Entity inside) ──
 
-	# If the Entity is inside the cabin (INDOOR_SEARCH, WINDOW_PEEK) and the
-	# player shines the flashlight, the Entity must RETREAT — run to the nearest
+	# If the Entity is inside the cabin (INDOOR_SEARCH) and the player shines
+	# the flashlight, the Entity must RETREAT — run to the nearest
 	# broken/unboarded window, leave through it, then FLINCH.
 	# CHASE is NOT included here — CHASE is outdoor pursuit, not indoor.
-	if state == EntityAI.State.WINDOW_PEEK or state == EntityAI.State.INDOOR_SEARCH:
+	if state == EntityAI.State.INDOOR_SEARCH:
 		# Set the indoor retreat flag so the RETREAT handler knows to
 		# pathfind to the breach window instead of the farthest treeline.
 		entity.is_indoor_retreat = true
@@ -572,6 +510,26 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 			confidence_module.set_confidence(20.0)
 		
 		return EntityAI.State.RETREAT
+
+	# ─── WINDOW PEEK → FLINCH (Player inside, Entity outside at window) ──
+	# The Entity is standing outside a window, peering in. When the player
+	# shines the flashlight at it through the window, the Entity should flinch
+	# (lateral sprint away from the window) rather than RETREAT (which makes
+	# no sense — the Entity is already outside). The Entity loses 20% confidence
+	# and sprints sideways for 3-5 seconds to evade the flashlight beam.
+	if state == EntityAI.State.WINDOW_PEEK:
+		entity.is_indoor_retreat = false  # Entity is outside, NOT retreating
+		entity.is_observe_finished = false  # Cancel any in-progress observation
+		
+		# Apply 20% confidence penalty only once per FLINCH transition
+		if _last_completed_state != EntityAI.State.FLINCH:
+			var confidence_module = entity.get_confidence_module()
+			if confidence_module:
+				var current_conf = confidence_module.get_confidence()
+				var new_conf = maxf(0.0, current_conf - 20.0)
+				confidence_module.set_confidence(new_conf)
+		
+		return EntityAI.State.FLINCH
 	
 	# ─── APPROACH WINDOW → FLINCH ───────────────────────────────────
 	# The Entity is approaching a window from outside. The flashlight
@@ -990,8 +948,6 @@ func _tier_3_active_aggression(entity: CharacterBody3D, state: int) -> int:
 		if nav and nav.has_method("is_player_lit_by_static_lights") and nav.is_player_lit_by_static_lights():
 			var confidence = entity.get_confidence_module().get_confidence()
 			var is_player_inside_belief = entity.get_thinks_player_is_inside() if entity.has_method("get_thinks_player_is_inside") else false
-			if confidence >= 65.0 and is_player_inside_belief:
-				return EntityAI.State.CLIMB_WALL_UP
 			if confidence >= 40.0:
 				return EntityAI.State.APPROACH_WINDOW
 			return EntityAI.State.OBSERVE_FROM_TREELINE
@@ -1004,8 +960,6 @@ func _tier_3_active_aggression(entity: CharacterBody3D, state: int) -> int:
 			# option in the window selection system.
 			var confidence = entity.get_confidence_module().get_confidence()
 			var is_player_inside_belief = entity.get_thinks_player_is_inside() if entity.has_method("get_thinks_player_is_inside") else false
-			if confidence >= 65.0 and is_player_inside_belief:
-				return EntityAI.State.CLIMB_WALL_UP
 			if confidence >= 40.0:
 				return EntityAI.State.APPROACH_WINDOW
 			return EntityAI.State.OBSERVE_FROM_TREELINE
@@ -1038,9 +992,6 @@ func _tier_4_confidence_escalation(entity: CharacterBody3D, state: int) -> int:
 	
 	# Safely check if player is inside (BELIEF SYSTEM) — default to false
 	var is_player_inside = entity.get_thinks_player_is_inside() if entity.has_method("get_thinks_player_is_inside") else false
-	
-	if confidence >= 65.0 and is_player_inside:
-		return EntityAI.State.CLIMB_WALL_UP
 	
 	if confidence >= 40.0:
 		return EntityAI.State.APPROACH_WINDOW
@@ -1128,12 +1079,6 @@ func _tier_5_completion_flags(entity: CharacterBody3D, state: int) -> int:
 			return EntityAI.State.INDOOR_SEARCH
 		return EntityAI.State.WINDOW_PEEK
 	
-	if state == EntityAI.State.CLIMB_WALL_UP:
-		if entity.is_climb_finished:
-			entity.is_climb_finished = false
-			return EntityAI.State.WINDOW_PEEK
-		return EntityAI.State.CLIMB_WALL_UP
-	
 	if state == EntityAI.State.RETREAT:
 		if entity.is_retreat_arrived:
 			entity.is_retreat_arrived = false
@@ -1155,13 +1100,6 @@ func _tier_5_completion_flags(entity: CharacterBody3D, state: int) -> int:
 			entity.is_flinch_finished = false
 			# ─── CLEAR WINDOW TARGET ──────────────────────────────────
 			entity.set_current_window_target(null)
-			
-			# ─── CONFIDENCE PENALTY ───────────────────────────────────
-			var confidence_module = entity.get_confidence_module()
-			if confidence_module:
-				var current_conf = confidence_module.get_confidence()
-				var new_conf = maxf(0.0, current_conf - 20.0)
-				confidence_module.set_confidence(new_conf)
 			
 			# ─── ANTI-FLAP: Set cooldown to prevent immediate re-entry ──
 			_anti_flap_cooldown = 0.5
@@ -1204,16 +1142,6 @@ func _tier_5_completion_flags(entity: CharacterBody3D, state: int) -> int:
 			# to APPROACH_WINDOW naturally since no windows are lit.
 			return EntityAI.State.OBSERVE_FROM_TREELINE
 		return EntityAI.State.FUSE_SABOTAGE
-	
-	# ─── TRAVERSE STAIRS COMPLETION ──────────────────────────────────
-	if state == EntityAI.State.TRAVERSE_STAIRS:
-		if entity._stairs_traversed:
-			entity._stairs_traversed = false
-			# The Entity has completed the ghost climb between floors.
-			# Transition back to INDOOR_SEARCH to resume hunting the player.
-			print("[Director] TRAVERSE_STAIRS complete! Returning to INDOOR_SEARCH.")
-			return EntityAI.State.INDOOR_SEARCH
-		return EntityAI.State.TRAVERSE_STAIRS
 	
 	# ─── PERSISTENT STATES (no completion flags) ─────────────────────
 	# These states have no completion flags — they persist until the
@@ -1284,9 +1212,6 @@ func _tier_7_fallback_confidence(entity: CharacterBody3D) -> int:
 	
 	# Safely check if player is inside (BELIEF SYSTEM) — default to false
 	var is_player_inside = entity.get_thinks_player_is_inside() if entity.has_method("get_thinks_player_is_inside") else false
-	
-	if confidence >= 65.0 and is_player_inside:
-		return EntityAI.State.CLIMB_WALL_UP
 	
 	if confidence >= 40.0:
 		return EntityAI.State.APPROACH_WINDOW

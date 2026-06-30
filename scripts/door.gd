@@ -304,6 +304,26 @@ func break_door() -> void:
 				door_audio.play()
 		
 		print("[Door] Door forced open by Entity!")
+		
+		# ─── FIX: Temporarily disable door collision for 5 seconds ──────────
+		# When the Entity forces the door open, its collision shape can block
+		# the Entity from walking through the doorway. By disabling collision
+		# on the door for 5 seconds, the Entity can pass through the threshold
+		# without getting stuck on the door's physics body.
+		# After 5 seconds, collision is re-enabled so the door behaves normally
+		# for the player (can be closed, blocks the Entity on subsequent passes).
+		print("[FIX] Door collision temporarily disabled for 5 seconds to allow Entity passage.")
+		set_collision_layer_value(1, false)
+		set_collision_mask_value(1, false)
+		
+		# Re-enable collision after 5 seconds using a one-shot timer
+		var collision_restore_tween = create_tween().set_loops(1)
+		collision_restore_tween.tween_interval(5.0)
+		collision_restore_tween.tween_callback(func():
+			set_collision_layer_value(1, true)
+			set_collision_mask_value(1, true)
+			print("[FIX] Door collision re-enabled after 5-second window.")
+		)
 	else:
 		print("[Door] Door was already open.")
 

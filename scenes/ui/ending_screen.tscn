@@ -1,64 +1,69 @@
-[gd_scene load_steps=2 format=3 uid="uid://b4h5p2m1f3k7g"]
+[gd_scene format=3 uid="uid://b4h5p2m1f3k7g"]
 
-[ext_resource type="Script" path="res://scripts/ui/ending_screen.gd" id="1_7q2r8"]
+[ext_resource type="Script" uid="uid://cj2v2nfpy3ynr" path="res://scripts/ui/ending_screen.gd" id="1_7q2r8"]
 
-[node name="EndingScreen" type="Control"]
+[node name="EndingScreen" type="Control" unique_id=1740370208]
+process_mode = 3
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-process_mode = 3
 script = ExtResource("1_7q2r8")
 
-[node name="Background" type="ColorRect" parent="."]
-anchors_preset = 15
+[node name="Background" type="ColorRect" parent="." unique_id=593912389]
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0, 0, 0, 0.8)
 mouse_filter = 1
+color = Color(0, 0, 0, 0.8)
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
-anchors_preset = 8
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=8252276]
+layout_mode = 0
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -300.0
-offset_right = 300.0
 offset_top = -200.0
+offset_right = 300.0
 offset_bottom = 200.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 30
 
-[node name="TitleLabel" type="Label" parent="VBoxContainer"]
+[node name="TitleLabel" type="Label" parent="VBoxContainer" unique_id=142190254]
 custom_minimum_size = Vector2(600, 80)
-theme_override_colors/font_color = Color(0.9, 0.2, 0.1, 1.0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.2, 0.1, 1)
 theme_override_font_sizes/font_size = 64
+text = "GAME OVER"
 horizontal_alignment = 1
 vertical_alignment = 1
-text = "GAME OVER"
 
-[node name="SubtitleLabel" type="Label" parent="VBoxContainer"]
+[node name="SubtitleLabel" type="Label" parent="VBoxContainer" unique_id=95865618]
 custom_minimum_size = Vector2(600, 80)
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 24
+text = "You became one with it."
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 1
-text = "The Entity caught you."
 
-[node name="RetryButton" type="Button" parent="VBoxContainer"]
+[node name="RetryButton" type="Button" parent="VBoxContainer" unique_id=412650890]
 custom_minimum_size = Vector2(300, 50)
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_colors/font_pressed_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_colors/font_hover_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_font_sizes/font_size = 28
-text = "Retry"
+text = "Restart from previous morning"
 
-[node name="MainMenuButton" type="Button" parent="VBoxContainer"]
+[node name="MainMenuButton" type="Button" parent="VBoxContainer" unique_id=3365681]
 custom_minimum_size = Vector2(300, 50)
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_hover_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_colors/font_pressed_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_colors/font_hover_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_font_sizes/font_size = 28
 text = "Main Menu"

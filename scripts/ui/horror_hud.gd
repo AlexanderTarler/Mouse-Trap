@@ -66,7 +66,14 @@ func _ready() -> void:
 	_fade_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_fade_overlay.z_index = 100  # Render above everything
 	add_child(_fade_overlay)
-	
+
+	# ─── IMMEDIATE DATA SYNC ───────────────────────────────────
+	# GameTime starts paused (no signals emitted), so we must
+	# manually pull the current state from all autoloads to
+	# overwrite the .tscn placeholder text immediately.
+	_sync_all_displays()
+
+	# ─── SIGNAL CONNECTIONS ────────────────────────────────────
 	var nm = get_node_or_null("/root/NightManager")
 	if nm:
 		nm.night_started.connect(_on_night_started)
@@ -75,33 +82,29 @@ func _ready() -> void:
 		nm.fuel_changed.connect(_on_generator_fuel_changed)
 		nm.generator_state_changed.connect(_on_generator_state_changed)
 		nm.first_chase_started.connect(_on_first_chase_started)
-		_update_night_label(nm.current_night)
-		# Initialize fuel bar with current fuel value
-		_on_generator_fuel_changed(nm.generator_fuel)
-	
-	# Connect to GameTime's time_changed signal for immediate HUD refresh
+
 	var gt = get_node_or_null("/root/GameTime")
 	if gt:
 		gt.time_changed.connect(_on_game_time_changed)
-	
+
 	# Find EnvironmentController if not assigned
 	if not environment_controller:
 		environment_controller = get_node_or_null("/root/Main/EnvironmentController")
 		if not environment_controller:
 			environment_controller = get_node_or_null("/root/CottageHorror/EnvironmentController")
-	
+
 	event_label.modulate = Color(1, 1, 1, 0)
-	
+
 	# Connect the event timer's timeout signal so messages fade properly
 	if event_timer:
 		event_timer.timeout.connect(_on_event_timer_timeout)
-	
+
 	# Find the flashlight and connect to its battery_changed signal
 	_find_and_connect_flashlight()
-	
+
 	# Connect to player stamina signal
 	_find_and_connect_stamina()
-	
+
 	# Connect to RoutineManager for Night 1 bedtime routine objective
 	_connect_routine_manager()
 
@@ -366,6 +369,35 @@ func _on_game_time_changed(_progress: float) -> void:
 		progress = gt.cycle_progress
 		p_is_day = gt.is_day
 	_update_display(progress, p_is_day)
+
+
+## Pulls the current state from GameTime and NightManager autoloads and
+## updates every HUD label in a single atomic pass. Called once in _ready()
+## to overwrite .tscn placeholder text before the scene becomes visible.
+## GameTime starts paused (no signals emitted), so this manual sync is
+## the only way to get correct values on the HUD at startup.
+func _sync_all_displays() -> void:
+	# ─── Night label ──────────────────────────────────────────────
+	var nm = get_node_or_null("/root/NightManager")
+	if nm:
+		if nm.current_night > 0:
+			night_label.text = "Night %d / 5" % nm.current_night
+		else:
+			night_label.text = "Day 1"
+		# Also sync fuel display immediately
+		_on_generator_fuel_changed(nm.generator_fuel)
+	else:
+		night_label.text = "Day 1"
+
+	# ─── Event label clear ─────────────────────────────────────────
+	if event_label:
+		event_label.text = ""
+		event_label.modulate = Color(1, 1, 1, 0)
+
+	# ─── Time display ──────────────────────────────────────────────
+	var gt = get_node_or_null("/root/GameTime")
+	if gt:
+		_update_display(gt.cycle_progress, gt.is_day)
 
 
 func _on_night_started(night: int) -> void:

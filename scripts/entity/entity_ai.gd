@@ -59,7 +59,9 @@ class_name EntityAI
 
 ## Breach delay (in seconds) before the Entity starts attempting to breach
 ## a window after arriving at it. Gives the player a brief window to react.
-@export var breach_delay: float = 10.0
+## Reduced from 10.0 to 3.0 — 10s made the Entity too passive and the
+## player could easily turn on lights to reset the siege.
+@export var breach_delay: float = 5.0
 
 ## Maximum number of entries in _recently_visited_windows.
 @export var max_recent_windows: int = 3
@@ -106,12 +108,6 @@ class_name EntityAI
 
 ## Charge speed multiplier — how fast the Entity charges at the player (3x default).
 @export var charge_speed_multiplier: float = 3.0
-
-## Wall climb speed multiplier — vertical ascent speed factor.
-@export var wall_climb_speed_multiplier: float = 0.5
-
-## Wall climb height (in meters) — how high the Entity climbs during CLIMB_WALL.
-@export var wall_climb_height: float = 4.0
 
 ## Lamp attack interval (in seconds) — how often the Entity strikes the portable lamp.
 @export var lamp_attack_interval: float = 3.0
@@ -168,9 +164,6 @@ class_name EntityAI
 ## Indoor retreat confidence drop — what confidence is set to when caught inside.
 @export var indoor_retreat_confidence: float = 20.0
 
-## Confidence threshold for CLIMB_WALL escalation.
-@export var confidence_climb_threshold: float = 65.0
-
 ## Confidence threshold for APPROACH_WINDOW escalation.
 @export var confidence_approach_threshold: float = 40.0
 
@@ -189,16 +182,6 @@ class_name EntityAI
 ## Room avoidance penalty for the utility scorer.
 @export var room_avoidance_penalty: float = 500.0
 
-## ─── TRAVERSE STAIRS TUNING ──────────────────────────────────────────────────
-## Speed at which the Entity "ghost climbs" between waypoints during TRAVERSE_STAIRS.
-@export var stairs_ghost_speed: float = 3.0
-
-## Distance threshold for arriving at the START waypoint (Phase 1 → Phase 2).
-@export var stairs_start_arrival_distance: float = 0.5
-
-## Distance threshold for arriving at the END waypoint (Phase 2 → Phase 3).
-@export var stairs_end_arrival_distance: float = 0.2
-
 enum State {
 	DORMANT,
 	OBSERVE_FROM_TREELINE,  # Night 1 & 2 (Passive Voyeurism) — DEFAULT BASELINE
@@ -211,8 +194,6 @@ enum State {
 	STALK,                  # Outdoor slow pursuit — both Entity and player outside
 	CHARGE,                 # Player stared too long — Entity sprints at 3x speed
 	INDOOR_SEARCH,          # Entity has breached a window and is hunting inside the cabin
-	CLIMB_WALL_UP,          # Entity is climbing the exterior wall UP to a second-story window
-	CLIMB_WALL_DOWN,        # Entity is climbing the exterior wall DOWN from a second-story window
 	STUNNED,                # Entity is paralyzed by the porch light overload trap
 	ENRAGED,                # Blackout release — permanent 1.5x speed boost for rest of night
 	ATTACK_LAMP,            # Entity is physically approaching and striking the portable high-voltage lamp
@@ -220,7 +201,6 @@ enum State {
 	FUSE_SABOTAGE,          # Entity is physically approaching and striking the Fuse Box to break it (frustration-based)
 	SABOTAGE_FUSE,          # Entity pathfinds to EntityFuseWaypoint and breaks the Fuse Box (door-prerequisite)
 	ENTER_THROUGH_DOOR,     # Entity walks to the front door, opens it, and enters the cabin
-	TRAVERSE_STAIRS,        # Entity uses off-mesh link waypoints to navigate the stairs between floors
 }
 
 ## ─── STATE CATEGORIES ──────────────────────────────────────────────────────
@@ -241,7 +221,6 @@ const UNINTERRUPTIBLE_STATES: Array = [
 	State.FUSE_SABOTAGE,
 	State.SABOTAGE_FUSE,
 	State.ATTACK_LAMP,
-	State.TRAVERSE_STAIRS
 ]
 
 var entity: CharacterBody3D = null
@@ -310,14 +289,13 @@ const ENTER_WINDOW_ANIM_DURATION: float = 1.5
 ## shortest room-to-room path during INDOOR_SEARCH Phase B.
 ## Each key is a room name, and the value is an array of directly connected
 ## neighbor room names.
+## ─── INDOOR ROOM GRAPH (single-story, flat layout) ───────────────────────
+## Adjacency graph of all cabin rooms. Used by BFS pathfinding to compute the
+## shortest room-to-room path during INDOOR_SEARCH Phase B.
 const INDOOR_ROOM_GRAPH: Dictionary = {
-	"HallRoom": ["LivingRoom", "Stairs"],
+	"HallRoom": ["LivingRoom"],
 	"LivingRoom": ["HallRoom", "ComputerRoom"],
 	"ComputerRoom": ["LivingRoom"],
-	"Stairs": ["HallRoom", "UpperHallRoom"],
-	"UpperHallRoom": ["Stairs", "OfficeRoom", "BedRoom"],
-	"OfficeRoom": ["UpperHallRoom"],
-	"BedRoom": ["UpperHallRoom"]
 }
 
 ## Animation lock timer for barricade hits.
@@ -384,12 +362,6 @@ var _indoor_search_debug_counter: int = 0
 ## the Entity transitions to CHARGE.
 ## Reset to 0.0 if the player breaks line of sight or turns off the flashlight.
 var _charge_countdown: float = 0.0
-
-## Whether the Entity is in Phase 2 of wall climbing (vertical ascent).
-var _wall_climb_phase_2: bool = false
-
-## The Y-coordinate the Entity is climbing toward during CLIMB_WALL.
-var _wall_climb_target_y: float = 0.0
 
 ## Siege duration timer — forces the Entity to stay in WINDOW_PEEK for a
 ## minimum duration (5 seconds) before it can exit via the stare timer.
@@ -509,22 +481,6 @@ var _sabotage_stuck_timer: float = 0.0
 ## Throttling to 300ms reduces pathfinding overhead by ~95% while maintaining
 ## responsive pursuit behavior.
 const PATH_UPDATE_INTERVAL: float = 0.3
-
-## ─── TRAVERSE STAIRS STATE ──────────────────────────────────────────────────
-## Phase tracking for the TRAVERSE_STAIRS state.
-## 0 = Approach (pathfind to START waypoint)
-## 1 = Ghost Climb (lerp toward END waypoint with collision disabled)
-var _stairs_phase: int = 0
-
-## The START waypoint (where the Entity begins its climb).
-var _stairs_start_waypoint: Vector3 = Vector3.ZERO
-
-## The END waypoint (where the Entity arrives after climbing).
-var _stairs_end_waypoint: Vector3 = Vector3.ZERO
-
-## Path to the CabinStairsWaypoints node in the scene tree.
-const STAIRS_WAYPOINTS_PATH: String = "/root/CottageHorror/EntityWaypoints/CabinStairsWaypoints"
-
 
 func setup(parent: CharacterBody3D) -> void:
 	entity = parent
@@ -729,10 +685,6 @@ func process_state_logic(delta: float) -> void:
 			_harass_state(delta)
 		State.INDOOR_SEARCH:
 			_indoor_search_state(delta)
-		State.CLIMB_WALL_UP:
-			_climb_wall_up_state(delta)
-		State.CLIMB_WALL_DOWN:
-			_climb_wall_down_state(delta)
 		State.STANDOFF:
 			# ─── FLASHLIGHT STANDOFF ─────────────────────────────────────────
 			# The Entity freezes in place while the player shines the flashlight
@@ -750,8 +702,6 @@ func process_state_logic(delta: float) -> void:
 			_fuse_sabotage_state(delta)
 		State.SABOTAGE_FUSE:
 			_sabotage_fuse_state(delta)
-		State.TRAVERSE_STAIRS:
-			_traverse_stairs_state(delta)
 		State.ENTER_THROUGH_DOOR:
 			_enter_through_door_state(delta)
 		_:
@@ -2310,14 +2260,22 @@ func _approach_window_state(delta: float) -> void:
 		
 		if best_window:
 			entity.set_current_window_target(best_window)
+			# ─── RESOLVE WINDOW MARKER ────────────────────────────────────────
+			# The CabinWindow node is at the window frame (inside the wall).
+			# The WindowMarker child is offset outside the window and is the
+			# actual position the Entity should pathfind to.
+			var approach_target = best_window
+			if best_window.has_node("WindowMarker"):
+				approach_target = best_window.get_node("WindowMarker") as Node3D
+			
 			# ─── FLATTEN Y-AXIS: Force ground-level pathfinding ──────────────
 			# Second-story windows have Y ≈ 3.0m. The NavMesh is at ground
-			# level (Y ≈ 0.0). Setting target_position to the window's raw
+			# level (Y ≈ 0.0). Setting target_position to the marker's raw
 			# 3D coordinate causes the NavigationAgent3D to fail — it can't
 			# find a path to a point 3m above the NavMesh surface.
 			# By flattening Y to the Entity's current Y, we force ground-
-			# level pathfinding to the window's XZ position.
-			var flat_target = best_window.global_position
+			# level pathfinding to the marker's XZ position.
+			var flat_target = approach_target.global_position
 			flat_target.y = entity.global_position.y
 			entity.get_nav_agent().target_position = flat_target
 			window_target = best_window
@@ -2328,7 +2286,7 @@ func _approach_window_state(delta: float) -> void:
 				selected_id = best_window.get_window_id()
 			elif "window_id" in best_window:
 				selected_id = best_window.window_id
-			print("[Entity AI] Tactical window selected: %s" % selected_id)
+			print("[Entity AI] Tactical window selected: %s (marker at %.2f, %.2f, %.2f)" % [selected_id, approach_target.global_position.x, approach_target.global_position.y, approach_target.global_position.z])
 		else:
 			# ─── NO WINDOWS AVAILABLE: Signal completion to break the loop ──
 			# When pick_tactical_window() returns null (no windows within 15m
@@ -2369,9 +2327,20 @@ func _approach_window_state(delta: float) -> void:
 				Vector2(entity_pos.x, entity_pos.z).distance_to(Vector2(nav_target.x, nav_target.z))
 			])
 		
-		# ─── SET NAV TARGET TO WINDOW POSITION ─────────────────────────────
+		# ─── RESOLVE THE ACTUAL APPROACH TARGET ────────────────────────────
+		# The window_target is the CabinWindow node, which is positioned AT
+		# the window frame (inside the cabin wall). The Entity cannot pathfind
+		# to that position because the wall collision blocks it. Instead, we
+		# must target the WindowMarker child, which is intentionally offset
+		# outside the window (e.g., Z=-1.45 relative to the CabinWindow).
+		# The WindowMarker is the "stand here and peek" position.
+		var approach_target: Node3D = window_target
+		if window_target.has_node("WindowMarker"):
+			approach_target = window_target.get_node("WindowMarker") as Node3D
+		
+		# ─── SET NAV TARGET TO WINDOW MARKER POSITION ──────────────────────
 		# CRITICAL: The NavigationAgent's target_position must be explicitly
-		# set to the window's position every frame (throttled to 300ms).
+		# set to the marker's position every frame (throttled to 300ms).
 		# Without this, the target_position retains the stale value from the
 		# previous state (e.g., a treeline vantage point from OBSERVE state).
 		# The Entity would pathfind to the old treeline marker, the 2D distance
@@ -2380,7 +2349,7 @@ func _approach_window_state(delta: float) -> void:
 		# 25 meters away in the forest.
 		#
 		# We flatten Y to the Entity's current Y so the NavMesh can find a
-		# ground-level path to the window's XZ position. Second-story windows
+		# ground-level path to the marker's XZ position. Second-story windows
 		# have Y ≈ 3.0m, but the NavMesh is at ground level (Y ≈ 0.0).
 		# Setting target_position to the raw 3D coordinate would cause the
 		# NavigationAgent3D to fail — it can't find a path to a point 3m
@@ -2388,7 +2357,7 @@ func _approach_window_state(delta: float) -> void:
 		_path_timer -= delta
 		if _path_timer <= 0.0:
 			_path_timer = PATH_UPDATE_INTERVAL
-			var flat_window_pos = window_target.global_position
+			var flat_window_pos = approach_target.global_position
 			flat_window_pos.y = entity.global_position.y
 			entity.get_nav_agent().target_position = flat_window_pos
 		
@@ -2399,12 +2368,11 @@ func _approach_window_state(delta: float) -> void:
 		# it actually is. We project both positions to 2D (XZ plane) for an
 		# accurate ground-level distance check.
 		#
-		# NOTE: We measure distance to the window_target's XZ position, NOT
-		# the NavigationAgent's target_position. The nav target may be slightly
-		# offset due to jitter or pathfinding quirks, but the window's actual
-		# position is the ground truth for arrival detection.
+		# NOTE: We measure distance to the approach_target's XZ position
+		# (the WindowMarker, not the CabinWindow). The WindowMarker is the
+		# ground truth for arrival detection.
 		var my_pos_2d = Vector2(entity.global_position.x, entity.global_position.z)
-		var window_pos_2d = Vector2(window_target.global_position.x, window_target.global_position.z)
+		var window_pos_2d = Vector2(approach_target.global_position.x, approach_target.global_position.z)
 		var dist_2d = my_pos_2d.distance_to(window_pos_2d)
 		
 		# ─── ARRIVAL CHECK: 2D distance threshold (generous 2.5m) ──────────
@@ -2422,6 +2390,27 @@ func _approach_window_state(delta: float) -> void:
 		# fires. But the Entity is still 3.6m away from the window — not close
 		# enough to peek inside. We rely solely on the 2D distance check.
 		var nav_finished = entity.get_nav_agent().is_navigation_finished()
+		
+		# ─── STANDARD PATH-FOLLOWING MOVEMENT (non-door) ─────────────────────
+		# Follow the navigation path toward the window marker. This is the
+		# default movement for standard window approaches (not the door).
+		# Door Phase 2 has its own movement handler below.
+		if entity._door_phase != 2:
+			if not nav_finished:
+				var next_pos = entity.get_nav_agent().get_next_path_position()
+				var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
+				if dir_2d.length() > 0.01:
+					var move_dir_2d = dir_2d.normalized()
+					_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
+					_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
+					return
+			else:
+				# ─── NAV FINISHED BUT NOT YET AT WINDOW ─────────────────────
+				# The NavMesh can't get us closer. Stop moving and wait for
+				# the failsafe timeout (15s) or distance threshold to be met.
+				_calculated_velocity.x = 0.0
+				_calculated_velocity.z = 0.0
+		
 		# ─── DOOR PHASE 2 LOOP: Runs every frame when _door_phase == 2 ─────
 		# This MUST be checked BEFORE the arrival check below, because once
 		# the Entity enters Phase 2 (walking through the doorway), the Phase 2
@@ -2748,7 +2737,10 @@ func _window_peek_state(delta: float) -> void:
 		elif "window_id" in window_target:
 			window_id_str = str(window_target.window_id)
 		var entity_pos = entity.global_position
-		var window_pos = window_target.global_position
+		var peek_target = window_target
+		if window_target.has_node("WindowMarker"):
+			peek_target = window_target.get_node("WindowMarker") as Node3D
+		var window_pos = peek_target.global_position
 		var nav_target = entity.get_nav_agent().target_position
 		var nav_finished = entity.get_nav_agent().is_navigation_finished()
 		print("[APPROACH DEBUG] Entity=(%.2f, %.2f, %.2f) | Window '%s'=(%.2f, %.2f, %.2f) | NavTarget=(%.2f, %.2f, %.2f) | NavFinished=%s | dist_2d=%.2f" % [
@@ -2756,7 +2748,7 @@ func _window_peek_state(delta: float) -> void:
 			window_id_str, window_pos.x, window_pos.y, window_pos.z,
 			nav_target.x, nav_target.y, nav_target.z,
 			nav_finished,
-			Vector2(entity_pos.x, entity_pos.z).distance_to(Vector2(nav_target.x, nav_target.z))
+			Vector2(entity_pos.x, entity_pos.z).distance_to(Vector2(window_pos.x, window_pos.z))
 		])
 	
 	# ─── BREACH TIMER: breach_delay seconds before attempting breach ────
@@ -2779,73 +2771,22 @@ func _window_peek_state(delta: float) -> void:
 			_siege_duration_timer, breach_delay, is_window_boarded, has_damage_method, current_night, entity.state_locked])
 	_window_peek_debug_counter += 1
 	
-	# ─── PEEK ASSESSMENT: Opportunistic Breach Logic ────────────────────
-	# During the peek, the Entity assesses the window's viability as a breach
-	# point. Two conditions determine the outcome:
+	# ─── PEEK ASSESSMENT ─────────────────────────────────────────────
+	# The Entity commits to a fixed-duration peek at the window. It will
+	# stand here for breach_delay seconds (5.0s by default) and then breach,
+	# regardless of whether the player is looking. This creates reliable
+	# tension — the player sees the Entity at the window and knows they have
+	# 5 seconds before it attacks.
 	#
-	#   CONDITION A: The room is UNLIT (dark) AND the player is NOT visible.
-	#     → OPPORTUNITY! The Entity sees a chance to breach undetected.
-	#       Accelerate the siege timer drastically so the breach happens fast.
+	# The previous "abort if player is visible" logic caused a rapid
+	# OBSERVE → CLIMB_WALL_UP → WINDOW_PEEK → OBSERVE oscillation loop,
+	# because the Entity would abort the peek, re-escalate, and abort again.
+	# Removing the abort fixes the loop.
 	#
-	#   CONDITION B: The room is LIT OR the player IS visible looking at it.
-	#     → BAD BREACH POINT! The Entity realizes it's a bad angle and aborts.
-	#       Set is_observe_finished to tell the Director to fall back to
-	#       OBSERVE_FROM_TREELINE and try a different angle later.
-	#
-	# This replaces the old static "siege timer" approach with a dynamic,
-	# context-aware assessment that rewards stealth (dark rooms) and punishes
-	# detection (lit rooms or direct line-of-sight).
-	#
-	# NOTE: We only perform this assessment once per peek session. The
-	# _peek_assessment_done flag prevents re-evaluation after the first
-	# decision, ensuring the Entity commits to its choice.
+	# NOTE: _peek_assessment_done is kept for compatibility but no longer
+	# branches on visibility. It just marks that the assessment has run.
 	if not _peek_assessment_done:
-		# ─── IDENTIFY THE ROOM ─────────────────────────────────────────────
-		# Use RoomLightDetector to determine which room this window belongs to.
-		# The window's global position is used to resolve the room name.
-		var window_pos: Vector3 = window_target.global_position
-		var room_detector = entity.get_node_or_null("/root/RoomLightDetector")
-		var window_room_lit: bool = false
-		var player_visible: bool = false
-		
-		if room_detector:
-			window_room_lit = room_detector.is_position_in_lit_room(window_pos)
-		
-		# ─── CHECK IF PLAYER IS VISIBLE ────────────────────────────────────
-		# Use the sensory module's can_entity_see_player() to determine if
-		# the player is currently visible to the Entity through this window.
-		var sensory = entity.get_sensory_module()
-		if sensory and sensory.has_method("can_entity_see_player"):
-			player_visible = sensory.can_entity_see_player()
-		
-		# ─── ASSESSMENT DECISION ───────────────────────────────────────────
-		if not window_room_lit and not player_visible:
-			# ─── OPPORTUNITY: Dark room, player not visible ─────────────────
-			# The Entity sees an opportunity to breach undetected.
-			# Accelerate the siege timer to breach_delay + 0.1 so the
-			# breach check (_siege_duration_timer >= breach_delay) passes
-			# on the very next frame. The +0.1 buffer ensures the timer
-			# is strictly greater than breach_delay, preventing any
-			# floating-point edge case where the timer equals but doesn't
-			# exceed the threshold.
-			print("[WINDOW_PEEK] OPPORTUNITY! Room is DARK and player NOT visible. Accelerating breach!")
-			_siege_duration_timer = breach_delay + 0.1  # Immediate breach on next frame
-			_peek_assessment_done = true
-		else:
-			# ─── BAD BREACH POINT: Room is lit OR player is visible ────────
-			# The Entity realizes this is a bad breach point. Abort!
-			# Set the completion flag so the Director falls back to
-			# OBSERVE_FROM_TREELINE and tries a different angle later.
-			var reason: String = "room is LIT" if window_room_lit else ""
-			if player_visible:
-				reason += " and " if reason != "" else ""
-				reason += "player IS visible"
-			print("[WINDOW_PEEK] ABORT! Bad breach point (%s). Falling back to treeline observation." % reason)
-			entity.is_observe_finished = true
-			entity.state_locked = false
-			_calculated_velocity = Vector3.ZERO
-			_peek_assessment_done = true
-			return
+		_peek_assessment_done = true
 	
 	# Check if the window is unbarricaded (glass-only) — if so, the Entity
 	# must play the AttackWindow animation and shatter the glass at the
@@ -2854,6 +2795,7 @@ func _window_peek_state(delta: float) -> void:
 	# If is_boarded is false, the window is glass-only and can be breached.
 	var is_window_boarded: bool = "is_boarded" in window_target and window_target.is_boarded
 	if not is_window_boarded:
+		# ─── UNBARRICADED WINDOW (glass-only) ──────────────────────────
 		if _siege_duration_timer >= breach_delay:
 			if not _glass_shatter_pending:
 				# ─── START THE ATTACK ANIMATION ─────────────────────────────
@@ -2933,8 +2875,7 @@ func _window_peek_state(delta: float) -> void:
 					else:
 						print("[WINDOW_PEEK] WARNING: Target has no breach method! window_target=%s (class=%s)" % [window_target.name, window_target.get_class()])
 					
-					
-										# ─── MARK WINDOW AS BREACHED ────────────────────────────
+					# ─── MARK WINDOW AS BREACHED ────────────────────────────
 					# Register this window on the breach cooldown system so
 					# the Entity will NOT select it for approach/breach again
 					# for the next 30 seconds.
@@ -2959,54 +2900,52 @@ func _window_peek_state(delta: float) -> void:
 					_window_peek_debug_counter = 0
 					_peek_assessment_done = false
 					return
-
-		
+	else:
 		# ─── BARRICADED WINDOW: Damage the barricade ─────────────────────
 		# The window is boarded up. The Entity must damage the barricade
 		# before it can breach. The barricade damage timer accumulates each
 		# frame while the Entity is within range of the window.
-		if is_window_boarded:
-			if _siege_duration_timer >= breach_delay:
-				# Accumulate barricade damage timer
-				_barricade_damage_timer += delta
+		if _siege_duration_timer >= breach_delay:
+			# Accumulate barricade damage timer
+			_barricade_damage_timer += delta
+			
+			# ─── BARRICADE HIT ─────────────────────────────────────────
+			# Every 2 seconds, the Entity strikes the barricade.
+			# This plays the AttackWindow animation and applies damage.
+			if _barricade_damage_timer >= barricade_damage_interval:
+				_barricade_damage_timer = 0.0
 				
-				# ─── BARRICADE HIT ─────────────────────────────────────────
-				# Every 2 seconds, the Entity strikes the barricade.
-				# This plays the AttackWindow animation and applies damage.
-				if _barricade_damage_timer >= barricade_damage_interval:
-					_barricade_damage_timer = 0.0
-					
-					# Apply damage to the barricade
-					if window_target.has_method("damage_barricade"):
-						window_target.damage_barricade()
-						print("[WINDOW_PEEK] Barricade hit! Damaging barricade.")
-					
-					# Force the AttackWindow animation
-					_barricade_anim_lock = barricade_anim_lock_duration
-					
-					# Set pending damage delay for impact frame sync
-					_has_pending_damage = true
-					_pending_damage_delay = pending_damage_delay
+				# Apply damage to the barricade
+				if window_target.has_method("damage_barricade"):
+					window_target.damage_barricade()
+					print("[WINDOW_PEEK] Barricade hit! Damaging barricade.")
 				
-				# ─── PENDING DAMAGE DELAY ──────────────────────────────────
-				# Count down the pending damage delay. When it reaches 0.0,
-				# the damage is applied to the barricade (synced with the
-				# AttackWindow animation impact frame).
-				if _has_pending_damage:
-					_pending_damage_delay -= delta
-					if _pending_damage_delay <= 0.0:
-						_has_pending_damage = false
-						_pending_damage_delay = 0.0
-						# Damage already applied above — this is just the
-						# animation sync marker.
+				# Force the AttackWindow animation
+				_barricade_anim_lock = barricade_anim_lock_duration
 				
-				# ─── BARRICADE ANIMATION LOCK ──────────────────────────────
-				# Decrement the animation lock timer. While > 0.0, the
-				# AttackWindow animation is forced to play.
-				if _barricade_anim_lock > 0.0:
-					_barricade_anim_lock -= delta
-					if _barricade_anim_lock < 0.0:
-						_barricade_anim_lock = 0.0
+				# Set pending damage delay for impact frame sync
+				_has_pending_damage = true
+				_pending_damage_delay = pending_damage_delay
+			
+			# ─── PENDING DAMAGE DELAY ──────────────────────────────────
+			# Count down the pending damage delay. When it reaches 0.0,
+			# the damage is applied to the barricade (synced with the
+			# AttackWindow animation impact frame).
+			if _has_pending_damage:
+				_pending_damage_delay -= delta
+				if _pending_damage_delay <= 0.0:
+					_has_pending_damage = false
+					_pending_damage_delay = 0.0
+					# Damage already applied above — this is just the
+					# animation sync marker.
+			
+			# ─── BARRICADE ANIMATION LOCK ──────────────────────────────
+			# Decrement the animation lock timer. While > 0.0, the
+			# AttackWindow animation is forced to play.
+			if _barricade_anim_lock > 0.0:
+				_barricade_anim_lock -= delta
+				if _barricade_anim_lock < 0.0:
+					_barricade_anim_lock = 0.0
 		
 		# ─── SIEGE TIMER DECAY ──────────────────────────────────────────
 		# The siege timer accumulates while the Entity is at the window.
@@ -3017,7 +2956,12 @@ func _window_peek_state(delta: float) -> void:
 		
 		# ─── FACE THE WINDOW ─────────────────────────────────────────────
 		# Rotate the monster model to face the window while peeking.
-		var window_pos = window_target.global_position
+		# Use the WindowMarker (outside the window) as the look target, not
+		# the CabinWindow node which is inside the wall.
+		var peek_target = window_target
+		if window_target.has_node("WindowMarker"):
+			peek_target = window_target.get_node("WindowMarker") as Node3D
+		var window_pos = peek_target.global_position
 		var dir_to_window = (window_pos - entity.global_position).normalized()
 		var target_angle = atan2(dir_to_window.x, dir_to_window.z)
 		var model = entity.get_monster_model()
@@ -3562,322 +3506,6 @@ func _compute_random_patrol_route() -> Array[String]:
 	return _compute_room_path(current_room, target_room)
 
 
-# ---------------------------------------------------------------------------
-# STATE: CLIMB_WALL_UP — Vertical ascent up the exterior wall
-# ---------------------------------------------------------------------------
-## The Entity climbs the exterior wall of the cabin to reach a second-story
-## window. This state has two phases:
-##
-##   Phase 1: Pathfind to the base of the wall (ground level)
-##   Phase 2: Vertical ascent (lerp Y upward) to the target window height
-##
-## The climb is driven by the Ghost Motor in entity_controller.gd, which
-## disables physics collisions and manually interpolates the Entity's
-## position toward the target.
-func _climb_wall_up_state(delta: float) -> void:
-	# Lock the state
-	entity.state_locked = true
-	
-	# ─── PHASE 1: Pathfind to wall base ──────────────────────────────
-	if not _wall_climb_phase_2:
-		# Pathfind to the base of the wall (ground level near the target window)
-		var window_target = entity.get_current_window_target()
-		if window_target:
-			var wall_base = window_target.global_position
-			wall_base.y = entity.global_position.y  # Flatten to ground level
-			
-			_path_timer -= delta
-			if _path_timer <= 0.0:
-				_path_timer = PATH_UPDATE_INTERVAL
-				entity.get_nav_agent().target_position = wall_base
-			
-			var dist_to_base = entity.global_position.distance_to(wall_base)
-			if dist_to_base <= 2.0:
-				# ─── ARRIVED AT WALL BASE: Start climbing ────────────────
-				_wall_climb_phase_2 = true
-				_wall_climb_target_y = window_target.global_position.y + 1.0  # Climb to window height + 1m
-				print("[CLIMB_WALL_UP] Phase 1 complete. Starting vertical ascent to Y=%.2f." % _wall_climb_target_y)
-				
-				# Enable ghost mode for the climb
-				entity.set_ghost_mode(true)
-			
-			# Movement toward wall base
-			if entity.get_nav_agent().is_navigation_finished():
-				_calculated_velocity.x = 0.0
-				_calculated_velocity.z = 0.0
-			else:
-				var next_pos = entity.get_nav_agent().get_next_path_position()
-				var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
-				if dir_2d.length() > 0.01:
-					var move_dir_2d = dir_2d.normalized()
-					_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
-					_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
-		else:
-			# No window target — signal completion
-			entity.is_climb_finished = true
-			entity.state_locked = false
-			_calculated_velocity = Vector3.ZERO
-			return
-	
-	# ─── PHASE 2: Vertical ascent ────────────────────────────────────
-	else:
-		# Lerp the Entity's Y position upward toward the target
-		var current_y = entity.global_position.y
-		var climb_speed = entity.current_stalk_speed * wall_climb_speed_multiplier
-		var new_y = move_toward(current_y, _wall_climb_target_y, climb_speed * delta)
-		
-		entity.global_position.y = new_y
-		_calculated_velocity = Vector3.ZERO
-		
-		# ─── COMPLETION CHECK ──────────────────────────────────────────
-		if absf(new_y - _wall_climb_target_y) < 0.1:
-			# Climb complete!
-			entity.set_ghost_mode(false)
-			_wall_climb_phase_2 = false
-			entity.is_climb_finished = true
-			entity.state_locked = false
-			_calculated_velocity = Vector3.ZERO
-			print("[CLIMB_WALL_UP] Phase 2 complete! Reached target Y=%.2f." % _wall_climb_target_y)
-			return
-
-
-# ---------------------------------------------------------------------------
-# STATE: CLIMB_WALL_DOWN — Vertical descent down the exterior wall
-# ---------------------------------------------------------------------------
-## The Entity climbs down the exterior wall from a second-story window to
-## ground level. This is the reverse of CLIMB_WALL_UP.
-func _climb_wall_down_state(delta: float) -> void:
-	# Lock the state
-	entity.state_locked = true
-	
-	# ─── PHASE 1: Pathfind to wall top ───────────────────────────────
-	if not _wall_climb_phase_2:
-		# Pathfind to the top of the wall (near the second-story window)
-		var window_target = entity.get_current_window_target()
-		if window_target:
-			var wall_top = window_target.global_position
-			wall_top.y = entity.global_position.y  # Keep current Y (Entity is at window height)
-			
-			_path_timer -= delta
-			if _path_timer <= 0.0:
-				_path_timer = PATH_UPDATE_INTERVAL
-				entity.get_nav_agent().target_position = wall_top
-			
-			var dist_to_top = entity.global_position.distance_to(wall_top)
-			if dist_to_top <= 2.0:
-				# ─── ARRIVED AT WALL TOP: Start descending ───────────────
-				_wall_climb_phase_2 = true
-				_wall_climb_target_y = 0.0  # Ground level
-				print("[CLIMB_WALL_DOWN] Phase 1 complete. Starting vertical descent to Y=0.0.")
-				
-				# Enable ghost mode for the climb
-				entity.set_ghost_mode(true)
-			
-			# Movement toward wall top
-			if entity.get_nav_agent().is_navigation_finished():
-				_calculated_velocity.x = 0.0
-				_calculated_velocity.z = 0.0
-			else:
-				var next_pos = entity.get_nav_agent().get_next_path_position()
-				var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
-				if dir_2d.length() > 0.01:
-					var move_dir_2d = dir_2d.normalized()
-					_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
-					_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
-		else:
-			# No window target — signal completion
-			entity.is_climb_finished = true
-			entity.state_locked = false
-			_calculated_velocity = Vector3.ZERO
-			return
-	
-	# ─── PHASE 2: Vertical descent ──────────────────────────────────
-	else:
-		# Lerp the Entity's Y position downward toward ground level
-		var current_y = entity.global_position.y
-		var climb_speed = entity.current_stalk_speed * wall_climb_speed_multiplier
-		var new_y = move_toward(current_y, _wall_climb_target_y, climb_speed * delta)
-		
-		entity.global_position.y = new_y
-		_calculated_velocity = Vector3.ZERO
-		
-		# ─── COMPLETION CHECK ──────────────────────────────────────────
-		if absf(new_y - _wall_climb_target_y) < 0.1:
-			# Descent complete!
-			entity.set_ghost_mode(false)
-			_wall_climb_phase_2 = false
-			entity.is_climb_finished = true
-			entity.state_locked = false
-			_calculated_velocity = Vector3.ZERO
-			print("[CLIMB_WALL_DOWN] Phase 2 complete! Reached ground level.")
-			return
-
-
-# ---------------------------------------------------------------------------
-# STATE: TRAVERSE_STAIRS — Off-mesh link navigation between cabin floors
-# ---------------------------------------------------------------------------
-## The Entity uses manual waypoints to navigate the stairs between the lower
-## and upper floors of the cabin. This is an "Off-Mesh Link" system that
-## bypasses the NavMesh (which cannot handle the trimesh stairs).
-##
-## PHASES:
-##   Phase 1 (Approach): Use standard NavigationAgent to pathfind to the
-##     START waypoint (BottomStairs if Entity is Lower, TopStairs if Upper).
-##
-##   Phase 2 (Ghost Climb): Once within 0.5m of the START waypoint, turn OFF
-##     environment collision (set_collision_mask_value(1, false)), kill physics
-##     velocity, and move_toward (lerp) the global_position to the END waypoint
-##     at a fixed speed (stairs_ghost_speed, default 3.0 m/s).
-##
-##   Phase 3 (Arrival): Once within 0.2m of the END waypoint, restore collision
-##     (set_collision_mask_value(1, true)), snap to the END waypoint, and set
-##     _stairs_traversed = true so the Director returns to INDOOR_SEARCH.
-func _traverse_stairs_state(delta: float) -> void:
-	# Lock the state — the Director must not override while we're mid-traverse
-	entity.state_locked = true
-	
-	# ─── PHASE 1: Approach the START waypoint ─────────────────────────
-	if _stairs_phase == 0:
-		# ─── INITIALIZE: Resolve waypoints on first frame ────────────────
-		if _stairs_start_waypoint == Vector3.ZERO:
-			var waypoints_node = entity.get_node_or_null(STAIRS_WAYPOINTS_PATH)
-			if waypoints_node:
-				# Determine direction based on Entity's current floor
-				var entity_floor = entity.get_entity_floor() if entity.has_method("get_entity_floor") else "LOWER"
-				if entity_floor == "LOWER":
-					# Going UP: BottomStairs → TopStairs
-					var bottom = waypoints_node.get_node_or_null("BottomStairs")
-					var top = waypoints_node.get_node_or_null("TopStairs")
-					if bottom and top:
-						_stairs_start_waypoint = bottom.global_position
-						_stairs_end_waypoint = top.global_position
-						print("[TRAVERSE_STAIRS] Lower → Upper: BottomStairs → TopStairs")
-					else:
-						print("[TRAVERSE_STAIRS] ERROR: Could not find BottomStairs/TopStairs waypoints!")
-						entity._stairs_traversed = true
-						entity.state_locked = false
-						return
-				else:
-					# Going DOWN: TopStairs → BottomStairs
-					var top = waypoints_node.get_node_or_null("TopStairs")
-					var bottom = waypoints_node.get_node_or_null("BottomStairs")
-					if top and bottom:
-						_stairs_start_waypoint = top.global_position
-						_stairs_end_waypoint = bottom.global_position
-						print("[TRAVERSE_STAIRS] Upper → Lower: TopStairs → BottomStairs")
-					else:
-						print("[TRAVERSE_STAIRS] ERROR: Could not find TopStairs/BottomStairs waypoints!")
-						entity._stairs_traversed = true
-						entity.state_locked = false
-						return
-			else:
-				print("[TRAVERSE_STAIRS] ERROR: Could not find CabinStairsWaypoints node at %s!" % STAIRS_WAYPOINTS_PATH)
-				entity._stairs_traversed = true
-				entity.state_locked = false
-				return
-			
-			# Set the NavigationAgent target to the START waypoint
-			entity.get_nav_agent().target_position = _stairs_start_waypoint
-		
-		# ─── PATHFIND TOWARD START WAYPOINT ──────────────────────────────
-		var dist_to_start = entity.global_position.distance_to(_stairs_start_waypoint)
-		
-		# ─── ARRIVAL CHECK: Within 1.0m of START waypoint OR nav finished ─
-		# The 1.0m threshold is more forgiving than the 0.5m export to prevent
-		# the Entity from getting stuck on the threshold when the NavMesh path
-		# ends slightly short of the exact waypoint position.
-		var nav_finished = entity.get_nav_agent().is_navigation_finished()
-		if dist_to_start <= 1.0 or nav_finished:
-			# ─── TRANSITION TO PHASE 2 ────────────────────────────────────
-			_stairs_phase = 1
-			print("[TRAVERSE_STAIRS] Phase 1 complete! Arrived at START waypoint (dist=%.2f, nav_finished=%s). Entering Ghost Climb." % [dist_to_start, nav_finished])
-			
-			# Disable environment collision
-			entity.set_collision_mask_value(1, false)
-			
-			# Disable the CollisionShape3D so the Entity phases through
-			# the stairs geometry entirely during the ghost climb.
-			if entity.has_method("get_collision_shape"):
-				entity.get_collision_shape().disabled = true
-			
-			# Suspend physics motor — the controller will skip gravity,
-			# ground snapping, and move_and_slide() while this is true.
-			entity.is_physics_suspended = true
-			
-			# Kill physics velocity
-			entity.velocity = Vector3.ZERO
-			_calculated_velocity = Vector3.ZERO
-			return
-		
-		# ─── MOVEMENT TOWARD START WAYPOINT ──────────────────────────────
-		if entity.get_nav_agent().is_navigation_finished():
-			_calculated_velocity.x = 0.0
-			_calculated_velocity.z = 0.0
-		else:
-			var next_pos = entity.get_nav_agent().get_next_path_position()
-			var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
-			if dir_2d.length() > 0.01:
-				var move_dir_2d = dir_2d.normalized()
-				_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
-				_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
-	
-	# ─── PHASE 2: Ghost Climb (lerp toward END waypoint) ──────────────
-	elif _stairs_phase == 1:
-		# Lerp the Entity's position toward the END waypoint
-		var current_pos = entity.global_position
-		var new_pos = current_pos.move_toward(_stairs_end_waypoint, stairs_ghost_speed * delta)
-		entity.global_position = new_pos
-		entity.velocity = Vector3.ZERO
-		_calculated_velocity = Vector3.ZERO
-		
-		# ─── MODEL ROTATION DURING GHOST CLIMB ────────────────────────────
-		# Rotate the monster model to face toward the END waypoint during
-		# the lerp, so the Entity faces "forward" (toward the stairs) instead
-		# of keeping its last rotation from Phase 1 (facing the START waypoint).
-		var monster_model = entity.get_monster_model()
-		if monster_model:
-			var dir_to_end = (_stairs_end_waypoint - entity.global_position).normalized()
-			var target_angle = atan2(dir_to_end.x, dir_to_end.z)
-			monster_model.rotation.y = lerp_angle(monster_model.rotation.y, target_angle, delta * 10.0)
-		
-		# ─── ARRIVAL CHECK: Within 0.2m of END waypoint ──────────────────
-		var dist_to_end = entity.global_position.distance_to(_stairs_end_waypoint)
-		if dist_to_end <= stairs_end_arrival_distance:
-			# ─── TRANSITION TO PHASE 3 ────────────────────────────────────
-			_stairs_phase = 2
-			print("[TRAVERSE_STAIRS] Phase 2 complete! Arrived at END waypoint (dist=%.2f). Restoring collision." % dist_to_end)
-			
-			# Restore environment collision
-			entity.set_collision_mask_value(1, true)
-			
-			# Re-enable the CollisionShape3D now that the ghost climb is done.
-			if entity.has_method("get_collision_shape"):
-				entity.get_collision_shape().disabled = false
-			
-			# Resume normal physics BEFORE signaling completion, so the
-			# Director's transition to INDOOR_SEARCH doesn't find the Entity
-			# still in physics suspension (which would prevent ground snapping
-			# and cause the Entity to float in place).
-			entity.is_physics_suspended = false
-			
-			# Snap to the exact END waypoint position
-			entity.global_position = _stairs_end_waypoint
-			entity.velocity = Vector3.ZERO
-			_calculated_velocity = Vector3.ZERO
-			
-			# Signal completion — the Director will transition back to INDOOR_SEARCH
-			entity._stairs_traversed = true
-			entity.state_locked = false
-			return
-	
-	# ─── PHASE 3: Complete (cleanup) ──────────────────────────────────
-	elif _stairs_phase == 2:
-		# Safety net: if we somehow re-enter Phase 3, just signal completion
-		entity._stairs_traversed = true
-		entity.state_locked = false
-		entity.is_physics_suspended = false
-		_calculated_velocity = Vector3.ZERO
-		return
 
 
 # ---------------------------------------------------------------------------

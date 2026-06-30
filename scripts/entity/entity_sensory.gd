@@ -31,60 +31,6 @@ var entity: CharacterBody3D = null
 ## room center instead of the player's exact coordinates.
 var last_heard_room: String = ""
 
-## ─── FLOOR AWARENESS ──────────────────────────────────────────────────────────
-## These methods determine which floor the player and Entity are on, used by the
-## Director's TRAVERSE_STAIRS logic to decide when the Entity needs to use the
-## off-mesh link waypoints to navigate between floors.
-
-## Lower floor rooms (ground level).
-const LOWER_FLOOR_ROOMS: Array[String] = ["hallroom", "livingroom", "computerroom"]
-
-## Upper floor rooms (second story).
-const UPPER_FLOOR_ROOMS: Array[String] = ["upperhallroom", "bedroom", "officeroom"]
-
-## Returns which floor the player is currently on based on their room name.
-## Uses the navigation module's get_player_room() which delegates to
-## player_controller.gd's overlaps_body() detection against Cabin_Interior
-## Area3D volumes.
-##
-## Returns one of: "LOWER", "UPPER", "STAIRS", or "UNKNOWN".
-func get_player_floor() -> String:
-	if not entity:
-		return "UNKNOWN"
-	
-	var nav = entity.get_navigation_module()
-	if not nav or not nav.has_method("get_player_room"):
-		return "UNKNOWN"
-	
-	var room: String = nav.get_player_room()
-	var room_lower: String = room.to_lower()
-	
-	if room_lower in LOWER_FLOOR_ROOMS:
-		return "LOWER"
-	if room_lower in UPPER_FLOOR_ROOMS:
-		return "UPPER"
-	if room_lower == "stairs":
-		return "STAIRS"
-	
-	return "UNKNOWN"
-
-
-## Returns which floor the Entity is currently on based on its Y position.
-## If global_position.y > 2.0, the Entity is on the upper floor.
-## Otherwise, it's on the lower floor.
-##
-## The Entity is never on the stairs via NavMesh (the whole point of the
-## off-mesh link system), so a simple Y-threshold is sufficient.
-func get_entity_floor() -> String:
-	if not entity:
-		return "UNKNOWN"
-	
-	if entity.global_position.y > 2.0:
-		return "UPPER"
-	
-	return "LOWER"
-
-
 # ─── VISION CONFIGURATION ───────────────────────────────────────────────────
 ## Maximum vision range when the player's flashlight is ON (full visibility).
 const VISION_RANGE_FLASHLIGHT_ON: float = 30.0

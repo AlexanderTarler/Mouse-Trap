@@ -745,6 +745,16 @@ func _is_flashlight_on_entity() -> bool:
 	query.collide_with_areas = true
 	query.collide_with_bodies = true
 	query.exclude = [self]
+	# ─── COLLISION MASK: Layer 2 (Player/Entity layer) ONLY ──────────
+	# The default mask scans ALL physics layers, which causes the
+	# flashlight beam to hit cabin wall/window colliders (Layer 1).
+	# This blocks detection of the Entity when the player is inside the
+	# cabin shining the flashlight through a window at the Entity outside.
+	#
+	# Restricting to Layer 2 means the ray passes through glass, cabin
+	# walls, trees, and rocks — only the Entity's capsule collider can
+	# register a hit. (Matches entity_sensory.gd is_player_spotting_entity())
+	query.collision_mask = 2  # Layer 2: Player/Entity
 	
 	var result = space_state.intersect_ray(query)
 	if result.is_empty():

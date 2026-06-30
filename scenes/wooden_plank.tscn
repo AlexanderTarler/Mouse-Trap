@@ -1,16 +1,17 @@
 [gd_scene format=3 uid="uid://d2q3b4f5c6e7g"]
 
-[ext_resource type="Script" uid="uid://c8f9g0h1i2j3k" path="res://scripts/items/plank_pickup.gd" id="1_plank_script"]
+[ext_resource type="Script" uid="uid://cul27vo455y20" path="res://scripts/items/plank_pickup.gd" id="1_plank_script"]
 [ext_resource type="PackedScene" uid="uid://b4xpfn536su3p" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/wooden_board_1.glb" id="2_model"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_plank"]
+size = Vector3(0.54, 0.1, 2)
 
-[node name="WoodenPlank" type="RigidBody3D"]
-transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0, 0)
+[node name="WoodenPlank" type="RigidBody3D" unique_id=498818271]
 script = ExtResource("1_plank_script")
 
-[node name="PlankModel" parent="." instance=ExtResource("2_model")]
+[node name="PlankModel" parent="." unique_id=1239519888 instance=ExtResource("2_model")]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=438528674]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.0029748082, -0.9561979)
 shape = SubResource("BoxShape3D_plank")
 debug_color = Color(0.5, 0.3, 0.1, 0.4)
