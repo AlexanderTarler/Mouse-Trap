@@ -114,6 +114,16 @@ var tutorial_window_fixed: bool = false
 ## unlocks the cabin door with the CabinKey.
 var is_time_paused: bool = true
 
+# ─── DEFERRED DOOR LOCK (Day 3+ Exhaustion) ──────────────────────────────
+## When true, the night ended and the dawn exhaustion mechanic is waiting
+## for the player to reach the HallRoom before closing + locking the door.
+## Set by _apply_dawn_exhaustion(). Cleared when the door locks.
+var _awaiting_door_lock: bool = false
+
+## Seconds the player has been continuously inside the HallRoom while
+## _awaiting_door_lock is active. Resets to 0 if the player leaves.
+var _door_lock_delay_timer: float = 0.0
+
 ## Whether the Day 1 cabin setup tasks (Fuse, Generator, Computer) have
 ## been completed. Set to true by RoutineManager when all tasks are done.
 ## The bed checks this flag before allowing the player to sleep.
@@ -558,7 +568,38 @@ func _process(delta: float) -> void:
 	if not is_night_active and not is_day_active:
 		return
 
-	
+	# ─── DEFERRED DOOR LOCK POLLING (Day 3+ Exhaustion) ────────────
+	# MUST run BEFORE the is_time_paused guard, because dawn exhaustion
+	# pauses time. The door needs to track the player's HallRoom entry
+	# and lock after 3 seconds even while the clock is frozen.
+	if _awaiting_door_lock:
+		var _poll_player = get_tree().get_first_node_in_group("player") as Node3D
+		if not _poll_player:
+			_poll_player = get_tree().get_first_node_in_group("Player") as Node3D
+		if _poll_player and _poll_player.has_method("get_player_room"):
+			var room = _poll_player.get_player_room()
+			# Print every 60 frames so we can see what room is being detected
+			if Engine.get_process_frames() % 60 == 0:
+				print("[NightManager] DoorLock poll: room='%s', timer=%.1fs" % [room, _door_lock_delay_timer])
+			if room == "HallRoom":
+				_door_lock_delay_timer += delta
+				if _door_lock_delay_timer >= 3.0:
+					var door = get_tree().get_first_node_in_group("Door")
+					if door and door.has_method("close_and_lock"):
+						print("[NightManager] Calling door.close_and_lock(). is_open=%s" % str(door.is_open))
+						door.close_and_lock()
+						print("[NightManager] Player entered HallRoom. Door closed and locked after 3s delay.")
+					elif door:
+						# Fallback: force close + lock via raw properties
+						print("[NightManager] Calling raw property close. is_open=%s" % str(door.is_open))
+						door.is_open = false
+						door.rotation_degrees.y = door.default_rotation_y
+						door.is_locked = true
+					_awaiting_door_lock = false
+					_door_lock_delay_timer = 0.0
+			else:
+				_door_lock_delay_timer = 0.0
+
 	# ─── DAY 1 ONBOARDING: TIME PAUSED ──────────────────────────────
 	# During the Day 1 onboarding sequence, time is paused until the
 	# player unlocks the cabin door with the CabinKey. While paused,
@@ -611,6 +652,7 @@ func _process(delta: float) -> void:
 			_trigger_night_1_peeker()
 
 
+
 func _on_game_night_started() -> void:
 	# ─── NIGHT 0 GUARD ──────────────────────────────────────────────
 	# During Day 1 onboarding, current_night is 0. When the day/night
@@ -635,6 +677,46 @@ func _on_game_day_started() -> void:
 		print("[NightManager] Ignoring spurious day_started — no night is active.")
 		return
 	end_current_night()
+
+	# ─── DAY 3+ EXHAUSTION MECHANIC ────────────────────────────────
+	# From Day 3 onwards, the player is physically broken at dawn.
+	# Freeze the clock, apply exhaustion to the player, lock the door
+	# if the player is inside, and set the objective to rest.
+	if current_night >= 3:
+		_apply_dawn_exhaustion()
+
+
+## ─── DAY 3+ DAWN EXHAUSTION ────────────────────────────────────────────────
+## Freezes GameTime, sets the player's is_exhausted flag, conditionally locks
+## the front door if the player is inside the cabin, and updates the HUD
+## objective text to direct the player to bed.
+func _apply_dawn_exhaustion() -> void:
+	# 1. Freeze the game clock
+	is_time_paused = true
+	var gt = get_node_or_null("/root/GameTime")
+	if gt:
+		gt.is_time_paused = true
+		gt.is_running = false
+
+	# 2. Set exhaustion flag on the player
+	var player = get_tree().get_first_node_in_group("player") as Node3D
+	if not player:
+		player = get_tree().get_first_node_in_group("Player") as Node3D
+	if player:
+		player.is_exhausted = true
+		print("[NightManager] Dawn exhaustion applied to player.")
+
+	# 3. Deferred door lock — if the player is already inside, start a
+	#    3-second countdown before locking. If the player is outside,
+	#    the door stays unlocked; the countdown begins when they enter
+	#    the HallRoom. This prevents locking the player out at dawn.
+	_awaiting_door_lock = true
+	_door_lock_delay_timer = 0.0
+	print("[NightManager] Dawn exhaustion: Deferred door lock armed. Waiting for player to reach HallRoom for 3 seconds.")
+
+	# 4. Set the HUD objective
+	_set_objective("I'm exhausted, I need to go to bed.")
+	print("[NightManager] Day %d dawn exhaustion applied. Time is frozen." % current_night)
 
 
 ## Starts a specific night.

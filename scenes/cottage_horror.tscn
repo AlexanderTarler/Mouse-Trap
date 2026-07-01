@@ -1098,28 +1098,28 @@ fuse_waypoint = NodePath("../EntityWaypoints/EntityFuseWaypoint")
 door_waypoint_marker = NodePath("../NavigationRegion3D/Cabin/Door/EntityDoorWaypoint")
 
 [node name="GeneralSkeleton" parent="TheEntity/MonsterModel/Armature" parent_id_path=PackedInt32Array(133456140, 1066769687, 1936907856) index="0" unique_id=2043102841]
-bones/1/rotation = Quaternion(0.09891277, -0.17602594, -0.017300341, 0.97925067)
-bones/3/rotation = Quaternion(0.14821444, 0.3526335, 0.9090755, -0.16511771)
-bones/4/rotation = Quaternion(-0.03831865, 0.9210503, -0.38181695, 0.06643667)
-bones/5/rotation = Quaternion(-0.10707958, 0.64368564, -0.748244, 0.11972302)
-bones/7/rotation = Quaternion(7.196159e-08, 0.9999647, 0.008401742, -7.511788e-08)
-bones/18/rotation = Quaternion(-0.1367202, 0.294915, 0.9394704, 0.108296335)
-bones/21/rotation = Quaternion(0.038515497, 0.93428373, -0.34912395, -0.061180186)
-bones/22/rotation = Quaternion(0.09983888, 0.6363942, -0.7567545, -0.111163884)
-bones/23/rotation = Quaternion(-5.4974233e-08, 0.99999905, 0.0014015132, -7.2842695e-08)
-bones/33/rotation = Quaternion(0.021339307, -0.0044191224, 0.01587095, 0.99963665)
-bones/34/rotation = Quaternion(0.06626158, -0.00953174, 0.010400658, 0.9977026)
-bones/35/rotation = Quaternion(0.066341855, -0.008522056, 0.010775032, 0.99770236)
-bones/36/rotation = Quaternion(-0.052423842, 0.027701413, -0.01895569, 0.99806064)
-bones/38/rotation = Quaternion(-0.19773917, 0.12220763, -0.030607246, 0.9721254)
-bones/49/rotation = Quaternion(0.5622355, 0.4312328, 0.52476704, -0.4717511)
-bones/50/rotation = Quaternion(0.18038341, 0.8753711, -0.44736376, -0.032449443)
-bones/51/rotation = Quaternion(0.47565642, -0.5232119, 0.4756572, 0.5232118)
-bones/55/rotation = Quaternion(-0.14907253, 0.7998741, 0.18922292, 0.5497031)
-bones/58/rotation = Quaternion(0.5184751, -0.45597893, -0.5753984, -0.43838733)
-bones/59/rotation = Quaternion(-0.20351504, 0.840208, -0.50021267, -0.04918695)
-bones/62/rotation = Quaternion(0.4939885, 0.50593984, -0.49398923, 0.5059397)
-bones/66/rotation = Quaternion(0.06266593, -0.85099036, -0.021817556, 0.5209726)
+bones/1/rotation = Quaternion(0.10144128, -0.17032628, -0.0204437, 0.9799392)
+bones/3/rotation = Quaternion(0.14541122, 0.36010483, 0.9061592, -0.1674981)
+bones/4/rotation = Quaternion(-0.040175144, 0.91864276, -0.38811314, 0.062045805)
+bones/5/rotation = Quaternion(-0.10668407, 0.6442977, -0.7478345, 0.11934243)
+bones/7/rotation = Quaternion(-4.875537e-08, 0.9999499, 0.010018528, -2.9992023e-08)
+bones/18/rotation = Quaternion(-0.14127804, 0.29527232, 0.93857247, 0.1092547)
+bones/21/rotation = Quaternion(0.034505002, 0.9323593, -0.35398358, -0.0648943)
+bones/22/rotation = Quaternion(0.10027873, 0.62995875, -0.76198995, -0.11165862)
+bones/23/rotation = Quaternion(-3.905852e-08, 0.9999995, 0.0010292468, -5.9002947e-08)
+bones/33/rotation = Quaternion(0.020946711, -0.0038321968, 0.016608234, 0.99963534)
+bones/34/rotation = Quaternion(0.06698743, -0.010321361, 0.009925499, 0.9976511)
+bones/35/rotation = Quaternion(0.06707175, -0.009222135, 0.010460989, 0.99765074)
+bones/36/rotation = Quaternion(-0.05354516, 0.027553272, -0.01842935, 0.99801517)
+bones/38/rotation = Quaternion(-0.18949367, 0.122380294, -0.03542753, 0.9735811)
+bones/49/rotation = Quaternion(0.5715105, 0.42194504, 0.52459913, -0.46918446)
+bones/50/rotation = Quaternion(0.19090852, 0.8803264, -0.43285275, -0.034901794)
+bones/51/rotation = Quaternion(0.47523448, -0.52359504, 0.4752353, 0.52359504)
+bones/55/rotation = Quaternion(-0.14741771, 0.8052983, 0.1829083, 0.54434115)
+bones/58/rotation = Quaternion(0.5206357, -0.45436025, -0.5740552, -0.43926752)
+bones/59/rotation = Quaternion(-0.21094182, 0.83803684, -0.50101066, -0.046757612)
+bones/62/rotation = Quaternion(0.48916602, 0.5106039, -0.48916674, 0.5106038)
+bones/66/rotation = Quaternion(0.065792434, -0.85013354, -0.022764245, 0.52194476)
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1000000002]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.043207645, 0.0024170876, -0.01587534)
@@ -1151,6 +1151,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.75734997, -0.68243027, -0.0
 
 [node name="Hallroom" parent="NavigationRegion3D/Cabin" index="3" unique_id=1939368878 node_paths=PackedStringArray("room_light")]
 room_light = NodePath("../../../Cabin Lights/CabinLightHall")
+
+[node name="CollisionShape3D" parent="NavigationRegion3D/Cabin/Hallroom" index="0" unique_id=1531999343]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.16621685, -0.55753684, 0.18945313)
 
 [node name="Marker3D" parent="NavigationRegion3D/Cabin/Hallroom" index="1" unique_id=1675463737]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4896092, -0.9567151, -1.1035547)
@@ -1578,19 +1581,19 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.7465, 0.68310046, 20.013292
 transform = Transform3D(-0.9989531, 0, -0.04574648, 0, 1, 0, 0.04574648, 0, -0.9989531, 4.8342595, 1.408984, 20.15416)
 
 [node name="Computer" parent="Details/Inside Cabin" unique_id=1857954428 instance=ExtResource("60_ot2p7")]
-transform = Transform3D(0.13462605, 0, -0.99089646, 0, 1, 0, 0.99089646, 0, 0.13462605, 14.596001, 1.7831002, 15.655659)
+transform = Transform3D(0.13462605, 0, -0.99089646, 0, 1, 0, 0.99089646, 0, 0.13462605, 11.8299885, 1.7831002, 15.396109)
 
 [node name="InteractionArea" parent="Details/Inside Cabin/Computer" index="2" unique_id=533672233 node_paths=PackedStringArray("sit_marker")]
 sit_marker = NodePath("../../../../sit_marker")
 
 [node name="pc_keyboard_mp_32" parent="Details/Inside Cabin" unique_id=1019657660 instance=ExtResource("47_h65d1")]
-transform = Transform3D(0.058156397, 0, -0.99830747, 0, 1, 0, 0.99830747, 0, 0.058156397, 14.438816, 1.6431001, 15.658791)
+transform = Transform3D(0.058156397, 0, -0.99830747, 0, 1, 0, 0.99830747, 0, 0.058156397, 11.672804, 1.6431001, 15.3992405)
 
 [node name="mouse_pad_mp_12" parent="Details/Inside Cabin" unique_id=1046799008 instance=ExtResource("48_yohq4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.485138, 1.6431003, 16.214607)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.719126, 1.6431003, 15.955057)
 
 [node name="pc_mouse_mp_12" parent="Details/Inside Cabin" unique_id=1379710681 instance=ExtResource("49_4ma01")]
-transform = Transform3D(0.25929102, 0, -0.9657992, 0, 1, 0, 0.9657992, 0, 0.25929102, 14.519256, 1.6431003, 16.175972)
+transform = Transform3D(0.25929102, 0, -0.9657992, 0, 1, 0, 0.9657992, 0, 0.25929102, 11.753243, 1.6431003, 15.916422)
 
 [node name="FlashlightPickup" parent="Details/Inside Cabin" unique_id=321211457 instance=ExtResource("54_flashlight")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.509456, 1.3350242, 8.612289)
@@ -1619,13 +1622,13 @@ light_node_path = NodePath("../OmniLight3D")
 transform = Transform3D(0.82609826, 0, 0.5635261, 0, 1, 0, -0.5635261, 0, 0.82609826, 5.4535775, 3.4951754, 8.155066)
 
 [node name="table_large_22" parent="Details/Inside Cabin" unique_id=120490383 instance=ExtResource("14_63ebo")]
-transform = Transform3D(0.0068590865, 0, -0.9999766, 0, 1, 0, 0.9999766, 0, 0.0068590865, 14.711533, 0.6831003, 16.001389)
+transform = Transform3D(0.0068590865, 0, -0.9999766, 0, 1, 0, 0.9999766, 0, 0.0068590865, 11.94552, 0.6831003, 15.741838)
 
 [node name="chair_mp_4_32" parent="Details/Inside Cabin" unique_id=635902003 instance=ExtResource("15_0emg7")]
-transform = Transform3D(0.12202527, 0, 0.992527, 0, 1, 0, -0.992527, 0, 0.12202527, 13.863236, 0.6831002, 15.569919)
+transform = Transform3D(0.12202527, 0, 0.992527, 0, 1, 0, -0.992527, 0, 0.12202527, 11.097224, 0.6831002, 15.3103695)
 
 [node name="DebugComputer" type="StaticBody3D" parent="Details/Inside Cabin" unique_id=374033477 groups=["debug_computer"]]
-transform = Transform3D(0.07483949, 0, -0.9971956, 0, 1, 0, 0.9971956, 0, 0.07483949, 14.804108, 0.6830999, 14.900693)
+transform = Transform3D(0.07483949, 0, -0.9971956, 0, 1, 0, 0.9971956, 0, 0.07483949, 12.038095, 0.6830999, 14.641142)
 script = ExtResource("16_debug_computer")
 
 [node name="pc_mp_12" parent="Details/Inside Cabin/DebugComputer" unique_id=374033478 instance=ExtResource("16_uaofw")]
@@ -1635,22 +1638,22 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
 shape = SubResource("Shape_computer")
 
 [node name="walkie_talkie_22" parent="Details/Inside Cabin" unique_id=386430228 instance=ExtResource("17_xarc6")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.985503, 1.6431003, 16.613337)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.219491, 1.6431003, 16.353786)
 
 [node name="sofa_1_32" parent="Details/Inside Cabin" unique_id=158399199 instance=ExtResource("18_0ioup")]
-transform = Transform3D(-0.9997398, 0, -0.022809586, 0, 1, 0, 0.022809586, 0, -0.9997398, 13.696034, 0.68310034, 20.297552)
+transform = Transform3D(-0.9997398, 0, -0.022809586, 0, 1, 0, 0.022809586, 0, -0.9997398, 11.896852, 0.68310034, 20.297552)
 
 [node name="cardboard_box_12" parent="Details/Inside Cabin" unique_id=1233261847 instance=ExtResource("19_ui7ij")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.622974, 0.6831003, 17.258347)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.856962, 0.6831003, 16.998796)
 
 [node name="carpet_mp_12" parent="Details/Inside Cabin" unique_id=1780931632 instance=ExtResource("20_q663k")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.276798, 0.6831006, 18.377388)
 
 [node name="ashtray_12" parent="Details/Inside Cabin" unique_id=1741046402 instance=ExtResource("21_1m0e5")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.992285, 1.6431003, 16.230412)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.226273, 1.6431003, 15.970861)
 
 [node name="book_mp_12" parent="Details/Inside Cabin" unique_id=1371649262 instance=ExtResource("24_yohq4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.532306, 1.6431003, 16.652176)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.766294, 1.6431003, 16.392626)
 
 [node name="Bed" parent="Details/Inside Cabin" unique_id=501505394 instance=ExtResource("26_1cglp")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.0867825, 1.0088974, 15.897089)
@@ -1799,9 +1802,6 @@ room_light = NodePath("../../../Cabin Lights/CabinLightHall")
 [node name="WindowMarker" parent="Windows/BottomFloorWindows/HallWindowRight" index="2" unique_id=1542265065]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.2213926, -1.4486232)
 
-[node name="IndoorBreachWaypoint2" type="Marker3D" parent="Windows/BottomFloorWindows/HallWindowRight" unique_id=2011348091 groups=["DoorBreachWaypoint", "IndoorBreachWaypoints"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.866895, 0.9909649)
-
 [node name="HallWindowLeft" parent="Windows/BottomFloorWindows" unique_id=1117544405 node_paths=PackedStringArray("room_light") groups=["BottomFloorWindows"] instance=ExtResource("57_1m0e5")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5078125, 2.5895047, 8.12694)
 window_id = "Hall_Window_Left"
@@ -1810,9 +1810,6 @@ room_light = NodePath("../../../Cabin Lights/CabinLightHall")
 [node name="WindowMarker" parent="Windows/BottomFloorWindows/HallWindowLeft" index="2" unique_id=1542265065]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.2213926, -1.4486232)
 
-[node name="IndoorBreachWaypoint2" type="Marker3D" parent="Windows/BottomFloorWindows/HallWindowLeft" unique_id=346229453 groups=["DoorBreachWaypoint", "IndoorBreachWaypoints"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.866895, 0.9909649)
-
 [node name="LivingRoomWindow" parent="Windows/BottomFloorWindows" unique_id=1043743832 node_paths=PackedStringArray("room_light") groups=["BottomFloorWindows"] instance=ExtResource("57_1m0e5")]
 transform = Transform3D(-0.99884087, 0, -0.048134953, 0, 1, 0, 0.048134953, 0, -0.99884087, 7.7040334, 2.5046122, 20.683336)
 window_id = "LivingRoom_Right"
@@ -1820,9 +1817,6 @@ room_light = NodePath("../../../Cabin Lights/CabinLightLivingRoom")
 
 [node name="WindowMarker" parent="Windows/BottomFloorWindows/LivingRoomWindow" index="2" unique_id=1542265065]
 transform = Transform3D(0.99999994, 0, 0, 0, 1, 0, 0, 0, 0.99999994, 4.7683716e-07, -2.2213926, -1.4486237)
-
-[node name="IndoorBreachWaypoint2" type="Marker3D" parent="Windows/BottomFloorWindows/LivingRoomWindow" unique_id=633896754 groups=["IndoorBreachWaypoints"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.866895, 0.9909649)
 
 [node name="ComputerRoomWindowRight" parent="Windows/BottomFloorWindows" unique_id=1291972590 node_paths=PackedStringArray("room_light") groups=["BottomFloorWindows"] instance=ExtResource("57_1m0e5")]
 transform = Transform3D(-0.0071035363, 0, -0.9999747, 0, 1, 0, 0.9999747, 0, -0.0071035363, 15.451465, 2.4673076, 18.984535)
@@ -1833,9 +1827,6 @@ start_broken = true
 [node name="WindowMarker" parent="Windows/BottomFloorWindows/ComputerRoomWindowRight" index="2" unique_id=1542265065]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.2213926, -1.4486227)
 
-[node name="IndoorBreachWaypoint2" type="Marker3D" parent="Windows/BottomFloorWindows/ComputerRoomWindowRight" unique_id=1119922258 groups=["IndoorBreachWaypoints"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.43977737, -1.866895, 0.9940882)
-
 [node name="ComputerRoomWindowLeft" parent="Windows/BottomFloorWindows" unique_id=885898012 node_paths=PackedStringArray("room_light") groups=["BottomFloorWindows"] instance=ExtResource("57_1m0e5")]
 transform = Transform3D(-0.0071035363, 0, -0.9999747, 0, 1, 0, 0.9999747, 0, -0.0071035363, 15.451465, 2.4673076, 15.946318)
 window_id = "Kitchen_Left"
@@ -1843,9 +1834,6 @@ room_light = NodePath("../../../Cabin Lights/CabinLightKitchen")
 
 [node name="WindowMarker" parent="Windows/BottomFloorWindows/ComputerRoomWindowLeft" index="2" unique_id=1542265065]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.2213926, -1.4486227)
-
-[node name="IndoorBreachWaypoint2" type="Marker3D" parent="Windows/BottomFloorWindows/ComputerRoomWindowLeft" unique_id=480889329 groups=["IndoorBreachWaypoints"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.013884544, -1.866895, 2.9453506)
 
 [node name="EscapeVan" parent="." unique_id=433528797 instance=ExtResource("58_uhlf3")]
 transform = Transform3D(0.1322737, 0, -0.9912132, 0, 1, 0, 0.9912132, 0, 0.1322737, -9.001583, 0.12753245, -89.90559)

@@ -89,6 +89,12 @@ func interact(player: Node3D = null) -> void:
 		print("[ScrapHeap] ERROR: No player found!")
 		return
 
+	# ─── EXHAUSTION GUARD (Day 3+) ────────────────────────────
+	# When exhausted, the player is too weak to tinker with scrap.
+	if player and "is_exhausted" in player and player.is_exhausted:
+		_show_hud_message("I'm too weak to tinker with this right now.")
+		return
+
 	# ─── NIGHT CHECK ───────────────────────────────────────
 	# Block scavenging during night hours. The player must wait
 	# until dawn to search through scrap piles.

@@ -630,10 +630,43 @@ var _cabin_entry_reported: bool = false
 ## starts inside the cabin (e.g. dev mode spawn, death respawn, or scene reload).
 var _previous_room: String = ""
 
+# ─── EXHAUSTION MECHANIC (Day 3+) ──────────────────────────────────────
+## When true, the player is physically broken after surviving a night of
+## terror. Set by NightManager at dawn (Day 3+). Cleared by the Bed.
+## While exhausted AND outside: 65% movement speed reduction + sprint lock.
+## While exhausted AND inside: normal movement (player reached safety).
+## All resource interactions are blocked while exhausted.
+var is_exhausted: bool = false
+
+## Cached original speeds — snapshotted on the first frame of exhaustion
+## so they can be restored when the player sleeps in the bed.
+var _exhausted_walk_speed: float = 0.0
+var _exhausted_run_speed: float = 0.0
+
 
 
 # --- STANDOFF / CHARGE: LOOK TIMER & CAMERA SHAKE ---
 func _process(delta: float) -> void:
+	# ─── EXHAUSTION SPEED PENALTY (Day 3+) ────────────────────────────
+	# When the player is exhausted AND outside the cabin, apply a 65%
+	# movement speed reduction and lock sprinting. This creates a heavy,
+	# sluggish struggle back to the cabin after surviving a night.
+	# Once inside, normal speeds are restored — the player reached safety.
+	if is_exhausted:
+		# Cache original speeds on the first frame of exhaustion
+		if _exhausted_walk_speed == 0.0:
+			_exhausted_walk_speed = walk_speed
+			_exhausted_run_speed = run_speed
+		
+		var room = get_player_room()
+		if room == "Outside":
+			walk_speed = _exhausted_walk_speed * 0.35
+			run_speed = _exhausted_run_speed * 0.35
+			sprint_unlocked = false
+		else:
+			walk_speed = _exhausted_walk_speed
+			run_speed = _exhausted_run_speed
+
 	# ─── CABIN ENTRY DETECTION ──────────────────────────────────────────
 	# Check if the player has entered the cabin (fallback detection).
 	# This is a safety net in case the door unlock trigger doesn't fire.

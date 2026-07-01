@@ -27,6 +27,13 @@ func interact(player: Node3D = null) -> void:
 			_show_hud_message("No player found!")
 			return
 
+	# ─── DAY 3+ EXHAUSTION SLEEP (checked BEFORE all other conditions) ──
+	# When the player is exhausted after surviving a night, the bed is the
+	# ONLY action available. This takes priority over all other logic.
+	if player and "is_exhausted" in player and player.is_exhausted:
+		_trigger_exhaustion_sleep(player)
+		return
+
 	var current_night: int = _night_manager.current_night
 	
 	# ─── CONDITION 1: DAY 1 ONBOARDING (current_night == 0) ──────────
@@ -209,6 +216,53 @@ func interact(player: Node3D = null) -> void:
 		# ─── CONDITION 3: MID-HORROR HOUR REJECTION ─────────────────
 		# Prevent the player from sleeping away their dread while the Entity is actively hunting.
 		_show_hud_message("I can't go to sleep now... It isn't safe.")
+
+
+## ─── DAY 3+ EXHAUSTION SLEEP ────────────────────────────────────────────────
+## Fades to black, sets time to 2 minutes past dawn (progress 0.20), clears
+## the player's exhaustion state, unlocks the front door, unpauses time so
+## the remaining 3 minutes of daytime tick normally, and fades back in.
+func _trigger_exhaustion_sleep(player: Node3D) -> void:
+	# 1. Fade to black
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("fade_to_black"):
+		hud.fade_to_black(1.5)
+		await get_tree().create_timer(1.5).timeout
+
+	# 2. Set time to 2 minutes past dawn (day phase, progress 0.20)
+	var gt = get_node_or_null("/root/GameTime")
+	if gt and gt.has_method("set_progress"):
+		gt.set_progress(0.20)
+
+	# 3. Clear exhaustion on player
+	if "is_exhausted" in player:
+		player.is_exhausted = false
+	if "_exhausted_walk_speed" in player and player._exhausted_walk_speed > 0:
+		player.walk_speed = player._exhausted_walk_speed
+	if "_exhausted_run_speed" in player and player._exhausted_run_speed > 0:
+		player.run_speed = player._exhausted_run_speed
+	if "sprint_unlocked" in player:
+		player.sprint_unlocked = true
+
+	# 4. Unlock the front door
+	var door = get_tree().get_first_node_in_group("Door")
+	if door:
+		door.is_locked = false
+
+	# 5. Unpause time so the remaining 3 minutes tick normally
+	if gt:
+		gt.unpause_time()
+
+	# 6. Clear NightManager's pause flag too
+	if _night_manager:
+		_night_manager.is_time_paused = false
+
+	# 7. Fade back in
+	if hud and hud.has_method("fade_from_black"):
+		hud.fade_from_black(2.0)
+		await get_tree().create_timer(2.0).timeout
+
+	print("[Bed Scene] Exhaustion sleep complete. Player restored. Door unlocked. Time unpaused.")
 
 
 ## Handles the scripted fade-out, clock warp, and car alarm event for the intro

@@ -2806,6 +2806,16 @@ func _window_peek_state(delta: float) -> void:
 				_glass_shatter_pending = true
 				_glass_shatter_impact_timer = glass_shatter_impact_delay
 				_barricade_anim_lock = barricade_anim_lock_duration  # Force AttackWindow animation
+
+				# ─── STOP TALKING VOICE ─────────────────────────────────
+				# The Entity starts attacking — stop the looping talking
+				# voice to avoid the incongruous sound of an Entity calmly
+				# muttering while violently smashing glass.
+				var voice_player = entity.get_voice_player()
+				if voice_player and voice_player.playing:
+					voice_player.stop()
+					voice_player.stream = null
+
 				print("[WINDOW_PEEK DEBUG] *** GLASS SHATTER INITIATED! Playing AttackWindow animation. Impact in %.1fs." % glass_shatter_impact_delay)
 			
 			# ─── COUNTDOWN TO IMPACT ───────────────────────────────────────
@@ -2882,24 +2892,36 @@ func _window_peek_state(delta: float) -> void:
 					if window_target.has_method("register_breach"):
 						window_target.register_breach()
 					
-					# ─── SET BREACH WINDOW ──────────────────────────────────
-					# Store the breached window so INDOOR_SEARCH knows which
-					# window to retreat through when repelled by light.
-					entity.last_breached_window = window_target
-					
-					# ─── SIGNAL COMPLETION ──────────────────────────────────
-					# The glass has shattered. Signal the Director to transition
-					# to INDOOR_SEARCH.
-					entity.is_window_unbarricaded = true
-					entity.state_locked = false
-					_calculated_velocity = Vector3.ZERO
-					_siege_duration_timer = 0.0
-					_glass_shatter_pending = false
-					_glass_shatter_impact_timer = 0.0
-					_barricade_anim_lock = 0.0
-					_window_peek_debug_counter = 0
-					_peek_assessment_done = false
-					return
+				# ─── SET BREACH WINDOW ──────────────────────────────────
+				# Store the breached window so INDOOR_SEARCH knows which
+				# window to retreat through when repelled by light.
+				entity.last_breached_window = window_target
+				
+				# ─── CAPTURE INDOOR LANDING POSITION ──────────────────
+				# Store the window's IndoorBreachWaypoint position so
+				# INDOOR_SEARCH Phase A can teleport the Entity inside
+				# after the vault animation plays. Without this, the
+				# Entity stays outside trying to pathfind through walls.
+				if window_target.has_method("get_indoor_landing_position"):
+					var landing = window_target.get_indoor_landing_position()
+					entity.set_indoor_landing_position(landing)
+					print("[WINDOW_PEEK] Breach: Landing position set to (%.2f, %.2f, %.2f)" % [landing.x, landing.y, landing.z])
+				else:
+					print("[WINDOW_PEEK] WARNING: Window target has no get_indoor_landing_position()! Teleport will fail.")
+				
+				# ─── SIGNAL COMPLETION ──────────────────────────────────
+				# The glass has shattered. Signal the Director to transition
+				# to INDOOR_SEARCH.
+				entity.is_window_unbarricaded = true
+				entity.state_locked = false
+				_calculated_velocity = Vector3.ZERO
+				_siege_duration_timer = 0.0
+				_glass_shatter_pending = false
+				_glass_shatter_impact_timer = 0.0
+				_barricade_anim_lock = 0.0
+				_window_peek_debug_counter = 0
+				_peek_assessment_done = false
+				return
 	else:
 		# ─── BARRICADED WINDOW: Damage the barricade ─────────────────────
 		# The window is boarded up. The Entity must damage the barricade

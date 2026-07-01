@@ -86,6 +86,14 @@ func _ready() -> void:
 func interact() -> void:
 	if is_animating:
 		return # Prevent input spam while the door is mid-swing
+
+	# ─── EXHAUSTION GUARD (Day 3+) ────────────────────────────────
+	# When the player is exhausted after surviving a night, the door
+	# is barred — they cannot open it or unlock it. The message is
+	# displayed as a centered event text that fades after 5 seconds.
+	if _is_player_exhausted():
+		_show_exhaustion_message("I'm not leaving the cabin until I've had some sleep.")
+		return
 	
 	# If locked, always rattle — no quick unlock
 	if required_key_name != "" and is_locked:
@@ -155,6 +163,11 @@ func interact() -> void:
 ## Locking keeps the door closed.
 func toggle_lock() -> void:
 	if is_animating:
+		return
+
+	# ─── EXHAUSTION GUARD (Day 3+) ────────────────────────────────
+	if _is_player_exhausted():
+		_show_exhaustion_message("I'm not leaving the cabin until I've had some sleep.")
 		return
 	
 	if required_key_name == "":
@@ -271,6 +284,70 @@ func _play_lock_unlock_sound(is_locking: bool) -> void:
 		door_audio.stream = target_stream
 		door_audio.pitch_scale = 1.0
 		door_audio.play()
+
+
+## Returns true if the player is currently in an exhausted state (Day 3+).
+func _is_player_exhausted() -> bool:
+	var player_node = get_tree().get_first_node_in_group("player") as Node3D
+	if not player_node:
+		player_node = get_tree().get_first_node_in_group("Player") as Node3D
+	return player_node and "is_exhausted" in player_node and player_node.is_exhausted
+
+
+## Shows a one-shot hint message on the HUD.
+func _show_hint(message: String) -> void:
+	print("[Door] ", message)
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("show_message"):
+		hud.show_message(message)
+
+
+## Shows the exhaustion message as a centered event text that fades
+## after 5 seconds. Bypasses the HUD's usual 3-second event timer by
+## targeting the event_label directly and using a Tween with a 5s delay.
+func _show_exhaustion_message(message: String) -> void:
+	print("[Door] ", message)
+	var hud = get_tree().get_first_node_in_group("hud")
+	if not hud:
+		return
+	
+	# Access the HUD's internal event_label and event_timer nodes
+	var event_label = hud.get_node_or_null("EventLabel") as Label
+	var event_timer_node = hud.get_node_or_null("EventTimer") as Timer
+
+	if event_label and event_timer_node:
+		# Display the message centered on screen
+		event_label.text = message
+		event_label.modulate = Color(1, 1, 1, 1)
+		# Set 5-second timer before fade
+		event_timer_node.wait_time = 5.0
+		event_timer_node.start()
+	else:
+		# Fallback: use the standard show_message
+		if hud.has_method("show_message"):
+			hud.show_message(message)
+
+
+## Closes and locks the door with a smooth animation (used by NightManager
+## during the Day 3+ dawn exhaustion deferred lock sequence).
+## Unlike the raw property assignments in NightManager._process(),
+## this properly plays the door-close animation and manages is_animating.
+func close_and_lock() -> void:
+	if is_open:
+		is_open = false
+		is_animating = true
+		var target_angle = default_rotation_y
+		var tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+		tween.tween_property(self, "rotation_degrees:y", target_angle, swing_speed)
+		tween.tween_callback(func(): is_animating = false)
+		# Play close sound
+		if door_audio:
+			var target_stream = close_sound if close_sound else _original_scene_stream
+			if target_stream:
+				door_audio.stream = target_stream
+				door_audio.pitch_scale = randf_range(0.9, 1.1)
+				door_audio.play()
+	is_locked = true
 
 
 ## Forces the door open (used by the Entity AI during WINDOW_PEEK breach).
