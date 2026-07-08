@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bryl0cxa51jpf"]
+
+[ext_resource type="Texture2D" uid="uid://d1wpi1quyvede" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Rose/Rose_0.png" id="1_yt5ng"]
+
+[resource]
+resource_name = "Rose"
+transparency = 4
+albedo_texture = ExtResource("1_yt5ng")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0

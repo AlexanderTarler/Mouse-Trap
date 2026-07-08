@@ -600,9 +600,17 @@ func process_state_logic(delta: float) -> void:
 		# Director's state transition entirely. The handler will unlock
 		# when it completes its work.
 		if entity.state_locked:
-			# Director still evaluates for logging/debugging, but does NOT
-			# apply the transition. The current state handler retains control.
+			# Director still evaluates for logging/debugging.
 			var _debug_intended = _director.evaluate_master_state(entity)
+			# ─── TIER 0 OVERRIDE GATE ──────────────────────────────────
+			# Even when locked, critical reactions (FLINCH, RETREAT,
+			# STANDOFF, CHARGE) must break the lock. The Entity cannot
+			# stay locked in WINDOW_PEEK while being blinded.
+			if _debug_intended == State.FLINCH or _debug_intended == State.RETREAT or _debug_intended == State.STANDOFF or _debug_intended == State.CHARGE:
+				entity.state_locked = false
+				if entity.get_state() != _debug_intended:
+					print("[TRACE_STATE] TIER 0 OVERRIDE: Breaking state lock! %s → %s" % [EntityAI.State.keys()[entity.get_state()], EntityAI.State.keys()[_debug_intended]])
+					entity.set_state(_debug_intended)
 		else:
 			var intended_state = _director.evaluate_master_state(entity)
 			
@@ -1527,6 +1535,33 @@ func _stalk_state(delta: float) -> void:
 	# ─── PORTABLE TRAP ATTRACTION ───────────────────────────────────────
 	# The Director handles the ATTACK_LAMP transition. This function only
 	# handles movement toward the trap once the state is set.
+	
+	# ─── TASK 7: HALLROOM / INDOOR EXIT GUARD ──────────────────────────
+	# If the player runs inside the cabin (HallRoom or any non-Outside room),
+	# immediately exit STALK. Setting completion flags alone is not enough —
+	# the Director's State Persistence Guard may still prevent re-evaluation.
+	# We must explicitly request_state() to force the transition out of STALK.
+	var nav = entity.get_navigation_module()
+	if nav and nav.has_method("get_player_room"):
+		var player_room = nav.get_player_room()
+		if player_room != "Outside" and player_room != "":
+			# ─── VAN SEQUENCE GUARD ──────────────────────────────────
+			# During Night 2.2's van chase, the Entity must STALK even
+			# if the player is recorded as being inside. The player starts
+			# in the cabin bed and walks outside — until they're actually
+			# outdoors, the Entity holds STALK. Without this guard, the
+			# Hallroom check and Director's Tier 2 fight at 60fps.
+			var nm_stalk = entity.get_node_or_null("/root/NightManager")
+			if nm_stalk and nm_stalk.is_van_sequence_active:
+				# Van sequence active — skip Hallroom exit, keep stalking
+				pass
+			else:
+				print("[Entity AI] STALK: Player entered '%s'. Force-exiting STALK." % player_room)
+				entity.is_observe_finished = true
+				entity.state_locked = false
+				entity.request_state(EntityAI.State.OBSERVE_FROM_TREELINE)
+				_calculated_velocity = Vector3.ZERO
+				return
 	
 	var player = entity.get_player()
 	if not player:
@@ -3276,6 +3311,14 @@ func _indoor_search_state(delta: float) -> void:
 				_has_arrived_indoor = true
 				entity.state_locked = false
 				_enter_window_anim_timer = 0.0
+				
+				# ─── CLEAR VAN SEQUENCE FLAG ──────────────────────────
+				# The Entity has successfully entered the cabin. The Night 2.2
+				# van chase is over — normal Entity behavior resumes.
+				var nm_van = entity.get_node_or_null("/root/NightManager")
+				if nm_van and nm_van.is_van_sequence_active:
+					nm_van.is_van_sequence_active = false
+					print("[INDOOR_SEARCH] Van sequence flag cleared! Normal behavior restored.")
 				
 				# Reset the indoor search persistence timer
 				var director = _director

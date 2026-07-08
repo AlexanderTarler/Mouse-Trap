@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://cm546xstimtsi"]
+
+[ext_resource type="Script" uid="uid://rh63ey68x7n1" path="res://scripts/interactables/wreck_salvage.gd" id="1_o8fdy"]
+
+[node name="CarWreck" type="StaticBody3D" unique_id=680615892]
+script = ExtResource("1_o8fdy")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=682278399]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=433247735]

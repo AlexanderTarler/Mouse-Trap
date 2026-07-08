@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://digr5qnpcuioh"]
+
+[ext_resource type="Texture2D" uid="uid://bmd1vucxfjvof" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Oak Tree/Oak Trees_0.png" id="1_y73c7"]
+
+[resource]
+resource_name = "PineBark"
+albedo_texture = ExtResource("1_y73c7")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0

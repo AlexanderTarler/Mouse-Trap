@@ -1,0 +1,204 @@
+extends Control
+class_name NotebookUI
+
+## Two-page open book notebook.
+## Spread 0: Index (Left) + To-Do (Right)
+## Spread 1: Documentation (Left) + Notes (Right)
+## Toggled with J, spread flipped with Q/E.
+
+# ============================================================
+# Spread state
+# ============================================================
+
+var _is_open: bool = false
+var current_spread: int = 0
+const MAX_SPREAD: int = 1
+
+# ============================================================
+# Node references
+# ============================================================
+
+@onready var _index_container: Control = %IndexContainer
+@onready var _doc_container: Control = %DocContainer
+@onready var _todo_container: Control = %ToDoContainer
+@onready var _notes_container: Control = %NotesContainer
+
+@onready var _index_label: RichTextLabel = %IndexLabel
+@onready var _todo_label: RichTextLabel = %ToDoLabel
+@onready var _doc_label: Label = %DocLabel
+@onready var _notes_label: Label = %NotesLabel
+@onready var _day_label: Label = %DayLabel
+
+@onready var _left_page: Panel = %LeftPage
+@onready var _right_page: Panel = %RightPage
+@onready var _book_bg: Panel = %BookBackground
+
+# ============================================================
+# State
+# ============================================================
+
+var _current_day: int = 0
+var _completed_objectives: Array[String] = []
+var _current_objective: String = ""
+
+# ============================================================
+# Lifecycle
+# ============================================================
+
+func _ready() -> void:
+	visible = false
+	process_mode = PROCESS_MODE_ALWAYS
+
+	# Enable BBCode
+	_index_label.bbcode_enabled = true
+	_todo_label.bbcode_enabled = true
+
+	# ─── INK COLOR ─────────────────────────────────────────────
+	var ink = Color("#1a1a1a")
+	_index_label.add_theme_color_override("default_color", ink)
+	_todo_label.add_theme_color_override("default_color", ink)
+	_doc_label.add_theme_color_override("font_color", ink)
+	_notes_label.add_theme_color_override("font_color", ink)
+
+	# ─── BOOK COVER (dark leather) ──────────────────────────────
+	var cover = StyleBoxFlat.new()
+	cover.bg_color = Color("#2a2520")
+	cover.shadow_size = 10
+	cover.shadow_offset = Vector2(5, 5)
+	cover.shadow_color = Color(0, 0, 0, 0.6)
+	cover.corner_radius_top_left = 6
+	cover.corner_radius_top_right = 6
+	cover.corner_radius_bottom_left = 6
+	cover.corner_radius_bottom_right = 6
+	_book_bg.add_theme_stylebox_override("panel", cover)
+
+	# ─── LEFT PAGE (paper + binding fold on right) ──────────────
+	var left_paper = StyleBoxFlat.new()
+	left_paper.bg_color = Color("#e8dcc7")
+	left_paper.border_width_right = 1
+	left_paper.border_color = Color("#b8a88a")
+	left_paper.shadow_size = 4
+	left_paper.shadow_offset = Vector2(2, 2)
+	left_paper.shadow_color = Color(0, 0, 0, 0.15)
+	_left_page.add_theme_stylebox_override("panel", left_paper)
+
+	# ─── RIGHT PAGE (paper + binding fold on left) ──────────────
+	var right_paper = StyleBoxFlat.new()
+	right_paper.bg_color = Color("#e8dcc7")
+	right_paper.border_width_left = 1
+	right_paper.border_color = Color("#b8a88a")
+	right_paper.shadow_size = 4
+	right_paper.shadow_offset = Vector2(-2, 2)
+	right_paper.shadow_color = Color(0, 0, 0, 0.15)
+	_right_page.add_theme_stylebox_override("panel", right_paper)
+
+	# ─── INDEX PAGE CONTENT ─────────────────────────────────────
+	_index_label.text = """[center][font_size=22][b]FIELD NOTEBOOK[/b][/font_size][/center]
+[center][i]Mouse Trap Ecological Survey[/i][/center]
+
+[font_size=16][b]INDEX[/b][/font_size]
+
+  [b]Spread 1[/b] ................. [i]Objectives & Tasks[/i]
+
+  [b]Spread 2[/b] ................. [i]Documentation & Notes[/i]
+
+[center]---
+Press [b][J][/b] to close[/center]"""
+
+	_update_spread()
+
+
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_notebook"):
+		_is_open = !_is_open
+		visible = _is_open
+		get_tree().paused = _is_open
+		if _is_open:
+			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+			current_spread = 0
+			_update_spread()
+		else:
+			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+		get_viewport().set_input_as_handled()
+		print("[Notebook] %s via notebook_ui._input()" % ("Opened" if _is_open else "Closed"))
+		return
+
+	if not _is_open:
+		return
+
+	if event.is_action_pressed("notebook_next_page"):
+		current_spread = mini(current_spread + 1, MAX_SPREAD)
+		_update_spread()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("notebook_prev_page"):
+		current_spread = maxi(current_spread - 1, 0)
+		_update_spread()
+		get_viewport().set_input_as_handled()
+
+
+# ============================================================
+# Spread update
+# ============================================================
+
+func _update_spread() -> void:
+	# Spread 0: Index (Left) & To-Do (Right)
+	_index_container.visible = (current_spread == 0)
+	_todo_container.visible = (current_spread == 0)
+
+	# Spread 1: Documentation (Left) & Notes (Right)
+	_doc_container.visible = (current_spread == 1)
+	_notes_container.visible = (current_spread == 1)
+
+	print("[Notebook] Showing spread %d" % current_spread)
+
+
+# ============================================================
+# Toggle (kept for external callers like player_controller)
+# ============================================================
+
+func _toggle() -> void:
+	_is_open = not _is_open
+	visible = _is_open
+	get_tree().paused = _is_open
+	if _is_open:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		current_spread = 0
+		_update_spread()
+	else:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+# ============================================================
+# Objective integration (called by RoutineManager)
+# ============================================================
+
+func update_objectives(day: int, completed_objectives: Array[String], current_objective: String) -> void:
+	if day != _current_day:
+		_current_day = day
+		_completed_objectives.clear()
+		_current_objective = ""
+		_day_label.text = "[center][b]DAY %d[/b][/center]" % day
+		_todo_label.clear()
+
+	var bbcode := ""
+	bbcode += _day_label.text + "\n\n"
+
+	for obj in completed_objectives:
+		bbcode += "[s]  [x] " + obj + "[/s]\n"
+
+	if not current_objective.is_empty():
+		bbcode += "\n[b]  [ ] " + current_objective + "[/b]\n"
+
+	_todo_label.text = bbcode
+	_doc_label.text = "Nest documentation data will appear here.\n\nUse the Photo Camera to document nests,\nthen validate at the computer terminal."
+
+
+func set_documentation(text: String) -> void:
+	_doc_label.text = text
+
+
+func add_note(text: String) -> void:
+	if _notes_label.text.is_empty():
+		_notes_label.text = text
+	else:
+		_notes_label.text += "\n\n" + text

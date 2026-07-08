@@ -16,3 +16,4 @@ libraries/locomotion = ExtResource("3_6iw7i")
 
 [node name="AnimationTree" type="AnimationTree" parent="." unique_id=564348231]
 root_node = NodePath("../AnimationPlayer")
+libraries/locomotion = ExtResource("3_6iw7i")

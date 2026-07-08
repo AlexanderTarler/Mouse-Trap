@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://cfogoitua1wdx"]
+
+[ext_resource type="Texture2D" uid="uid://7e2w36po6r0y" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Generic Tree/Generic Tree_1.png" id="1_rnkw1"]
+
+[resource]
+resource_name = "Branch"
+transparency = 4
+albedo_texture = ExtResource("1_rnkw1")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0

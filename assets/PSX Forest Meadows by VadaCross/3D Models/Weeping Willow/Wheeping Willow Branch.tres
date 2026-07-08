@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://cyfieg6tl3u7w"]
+
+[ext_resource type="Texture2D" uid="uid://1drula7uxbg4" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Weeping Willow/Weeping Willow_1.png" id="1_w1l73"]
+
+[resource]
+resource_name = "Wheeping Willow Branch"
+transparency = 4
+albedo_texture = ExtResource("1_w1l73")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0

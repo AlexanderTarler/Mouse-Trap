@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://cfnxhk8c0r56f"]
+
+[ext_resource type="Texture2D" uid="uid://brpw5tqlb3jfr" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Grass/Grass_0.png" id="1_skqmk"]
+
+[resource]
+resource_name = "Grass"
+transparency = 4
+albedo_texture = ExtResource("1_skqmk")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0

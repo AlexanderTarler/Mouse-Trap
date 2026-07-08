@@ -169,9 +169,7 @@ func _ready() -> void:
 			is_glass_shattered = true
 			is_boarded = false
 			planks_remaining = 0
-			print("[CabinWindow] Tutorial window '%s' initialized as BROKEN. Player must fix the draft." % window_id)
-		else:
-			print("[CabinWindow] Tutorial window '%s' already fixed (NightManager flag). Keeping boarded state." % window_id)
+			
 	
 	# Initialize plank visibility based on initial state
 	_update_plank_visuals()
@@ -188,30 +186,30 @@ func _ready() -> void:
 		# Only runs in debug builds to avoid console spam in production.
 		# NOTE: Each diagnostic variable is explicitly typed to avoid Godot 4.6
 		# static type warnings from ternary operators mixing Node3D and String.
-		print("[CabinWindow Init] window_id='", window_id, "' | Path: ", get_path())
+		
 		var diag_pristine: String = str(_pristine_visuals) if _pristine_visuals else "MISSING"
-		print("  PristineVisuals: ", diag_pristine)
+		
 		var diag_shattered: String = str(_shattered_visuals) if _shattered_visuals else "MISSING"
-		print("  ShatteredVisuals: ", diag_shattered)
+		
 		var diag_plank1: String = str(_plank_1) if _plank_1 else "MISSING"
-		print("  BarricadePlanks/Plank1: ", diag_plank1)
+		
 		var diag_plank2: String = str(_plank_2) if _plank_2 else "MISSING"
-		print("  BarricadePlanks/Plank2: ", diag_plank2)
+		
 		var diag_plank3: String = str(_plank_3) if _plank_3 else "MISSING"
-		print("  BarricadePlanks/Plank3: ", diag_plank3)
+		
 		var diag_nav: String = str(_nav_blocker) if _nav_blocker else "MISSING"
-		print("  NavBlocker: ", diag_nav)
+		
 		var diag_waypoint: String = str(_indoor_breach_waypoint) if _indoor_breach_waypoint else "MISSING"
-		print("  IndoorBreachWayPoint: ", diag_waypoint)
+		
 		var diag_break: String = str(_break_sound) if _break_sound else "MISSING"
-		print("  BreakSound: ", diag_break)
+		
 		var diag_hammer: String = str(_hammer_sound) if _hammer_sound else "MISSING"
-		print("  HammerSound: ", diag_hammer)
+		
 		var diag_crunch: String = str(_glass_crunch_sound) if _glass_crunch_sound else "MISSING"
-		print("  GlassCrunchSound: ", diag_crunch)
+		
 		var diag_shards: String = str(_glass_shards) if _glass_shards else "MISSING"
-		print("  GlassShards: ", diag_shards)
-		print("[CabinWindow Init] End of diagnostic log for '", window_id, "'.")
+		
+		
 
 
 func _process(delta: float) -> void:
@@ -231,7 +229,7 @@ func _process(delta: float) -> void:
 					_break_sound.play()
 				elif _hammer_sound:
 					_hammer_sound.play()
-				print("[CabinWindow] Deferred plank swap applied! Barricade shattered.")
+				
 
 
 ## Returns the global position of the IndoorBreachWayPoint marker.
@@ -406,7 +404,7 @@ func damage_barricade() -> bool:
 ## was boarded up, the planks remain at full health behind the shattered frame.
 ## The NavBlocker stays enabled because planks still block the path.
 func shatter_window() -> void:
-	print("[CabinWindow] shatter_window() executed on ", self.name)
+	
 	_shatter_glass()
 
 
@@ -468,7 +466,7 @@ func _shatter_barricade() -> void:
 	_deferred_plank_swap = true
 	_deferred_swap_timer = 0.3
 	
-	print("[CabinWindow] Barricade shattered! Deferred plank swap scheduled (0.3s).")
+	
 
 
 ## Player interaction: board up this window using a Wooden Plank from inventory.
@@ -481,13 +479,13 @@ func _shatter_barricade() -> void:
 func interact() -> void:
 	# If already boarded, show a different message
 	if is_boarded:
-		print("[CabinWindow] Window is already boarded up.")
+		
 		return
 	
 	# Check if the player has a Wooden Plank in their inventory
 	var inventory = get_node_or_null("/root/Inventory")
 	if not inventory:
-		print("[CabinWindow] Inventory not found!")
+		
 		return
 	
 	# Find a plank item in the inventory
@@ -498,7 +496,7 @@ func interact() -> void:
 			break
 	
 	if not plank_item:
-		print("[CabinWindow] No Wooden Plank in inventory!")
+		
 		return
 	
 	# Consume one plank
@@ -531,7 +529,7 @@ func interact() -> void:
 		var nm = get_node_or_null("/root/NightManager")
 		if nm:
 			nm.tutorial_window_fixed = true
-			print("[CabinWindow] Tutorial window '%s' fixed! NightManager flag set." % window_id)
+			
 		
 		# ─── DAY 1 ONBOARDING: PHASE 2B — WINDOW PATCHED ────────────────
 		# Notify RoutineManager that the player has patched the broken
@@ -541,7 +539,7 @@ func interact() -> void:
 		if rm and rm.has_method("on_window_patched"):
 			rm.on_window_patched()
 	
-	print("[CabinWindow] Window boarded up! Planks: %d (glass_shattered: %s)" % [planks_remaining, str(is_glass_shattered)])
+	
 
 
 ## Returns the interaction prompt text shown in the HUD.

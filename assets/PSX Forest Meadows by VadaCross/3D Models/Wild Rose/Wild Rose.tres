@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://14fdn1fdjxwx"]
+
+[ext_resource type="Texture2D" uid="uid://t58o1e5htl7j" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Wild Rose/Wild Rose_0.png" id="1_a1sgs"]
+
+[resource]
+resource_name = "Wild Rose"
+transparency = 4
+albedo_texture = ExtResource("1_a1sgs")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0

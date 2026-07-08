@@ -21,6 +21,10 @@ signal nest_documented(nest_id: String)
 ## Display name for this nest
 @export var nest_name: String = "Hasselmus Nest"
 
+## Notebook label used to look up lore in NotebookUI.NEST_LORE.
+## Must match one of: "Nest Alpha", "Nest Beta", "Nest Gamma"
+@export var nest_label: String = "Nest Alpha"
+
 ## Whether this nest has been photographed (the only valid documentation method)
 var is_photographed: bool = false
 
@@ -57,6 +61,9 @@ func photograph() -> bool:
 	if rm and rm.has_method("document_nest"):
 		rm.document_nest(nest_id)
 	
+	# Add documentation entry to the NotebookUI
+	_add_to_notebook()
+	
 	# Show a confirmation message
 	_show_documented_message()
 	
@@ -85,8 +92,26 @@ func interact() -> void:
 	if rm and rm.has_method("document_nest"):
 		rm.document_nest(nest_id)
 	
+	# Add documentation entry to the NotebookUI
+	_add_to_notebook()
+	
 	# Show a confirmation message
 	_show_documented_message()
+
+
+func _add_to_notebook() -> void:
+	# Find the NotebookUI in the scene tree
+	var notebook: Node = null
+	var player_node = get_node_or_null("/root/CottageHorror/Player/NotebookLayer/NotebookUI")
+	if not player_node:
+		player_node = get_node_or_null("/root/Main/Player/NotebookLayer/NotebookUI")
+	notebook = player_node
+	
+	if notebook and notebook.has_method("add_documentation"):
+		notebook.add_documentation(nest_label)
+		print("[HasselmusNest] Added '%s' to NotebookUI documentation." % nest_label)
+	else:
+		push_warning("[HasselmusNest] NotebookUI not found — documentation not recorded.")
 
 
 func _show_documented_message() -> void:

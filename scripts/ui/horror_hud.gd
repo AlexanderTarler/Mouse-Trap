@@ -338,13 +338,13 @@ func _update_display(progress: float, p_is_day: bool) -> void:
 	var phase_name = "☀️ DAY" if p_is_day else "🌙 NIGHT"
 	var next_phase = "night" if p_is_day else "day"
 	
-	# Time label: show elapsed time in current phase
+	# Time label: show elapsed / remaining in current phase (real-time MM:SS)
 	var elapsed = int(phase_duration * phase_progress)
 	var e_minutes = int(elapsed / 60.0)
 	var e_seconds = elapsed % 60
 	time_label.text = "%02d:%02d / %s" % [e_minutes, e_seconds, time_remaining]
 	
-	# Clock label: show countdown to next phase
+	# Clock label: show phase progress percentage + countdown to next phase
 	var percent = int(phase_progress * 100)
 	clock_label.text = "%s  %d%%  (%s until %s)" % [phase_name, percent, time_remaining, next_phase]
 	
@@ -378,16 +378,19 @@ func _on_game_time_changed(_progress: float) -> void:
 ## the only way to get correct values on the HUD at startup.
 func _sync_all_displays() -> void:
 	# ─── Night label ──────────────────────────────────────────────
+	# Use RoutineManager's get_current_day_string() which correctly
+	# maps night 0→"Day 1", night 1→"Day 1", night 2→"Day 2", etc.
+	var rm = get_node_or_null("/root/RoutineManager")
 	var nm = get_node_or_null("/root/NightManager")
-	if nm:
-		if nm.current_night > 0:
-			night_label.text = "Night %d / 5" % nm.current_night
-		else:
-			night_label.text = "Day 1"
-		# Also sync fuel display immediately
-		_on_generator_fuel_changed(nm.generator_fuel)
+	if rm and rm.has_method("get_current_day_string"):
+		night_label.text = rm.get_current_day_string()
+	elif nm:
+		night_label.text = "Day 1" if nm.current_night <= 0 else "Night %d / 5" % nm.current_night
 	else:
 		night_label.text = "Day 1"
+	# Also sync fuel display immediately
+	if nm:
+		_on_generator_fuel_changed(nm.generator_fuel)
 
 	# ─── Event label clear ─────────────────────────────────────────
 	if event_label:
@@ -398,6 +401,12 @@ func _sync_all_displays() -> void:
 	var gt = get_node_or_null("/root/GameTime")
 	if gt:
 		_update_display(gt.cycle_progress, gt.is_day)
+		# ─── DEBUG: Log the exact time the HUD shows on screen ──────────
+		print("[HorrorHUD] UI Clock: clock_label='%s' time_label='%s' | GameTime: progress=%.4f, is_day=%s)" % [
+			clock_label.text if clock_label else "N/A",
+			time_label.text if time_label else "N/A",
+			gt.cycle_progress, gt.is_day
+		])
 
 
 func _on_night_started(night: int) -> void:
@@ -407,6 +416,11 @@ func _on_night_started(night: int) -> void:
 
 func _on_night_ended(night: int) -> void:
 	_show_event("Night %d survived!" % night)
+	# Defer the display sync to the next frame so that NightManager's
+	# end_current_night() has fully finished incrementing current_night
+	# before RoutineManager reads it. Without this, get_current_day_string()
+	# can return "Day 2" because current_night hasn't been updated yet.
+	call_deferred("_sync_all_displays")
 
 
 func _on_horror_event(event_name: String) -> void:
@@ -454,14 +468,12 @@ func _on_generator_fuel_changed(current_fuel: float) -> void:
 ## Shows a blackout event message when the generator stops.
 func _on_generator_state_changed(is_running: bool) -> void:
 	if not is_running:
-		_show_event("⚠️ Generator offline! Lights out!")
 		# Gray out the fuel bar to indicate the generator is off
 		if fuel_bar:
 			fuel_bar.modulate = Color(0.4, 0.4, 0.4, 0.6)
 		if fuel_label:
 			fuel_label.text = "⛽ OFF"
 	else:
-		_show_event("⚡ Generator restarted!")
 		# Restore fuel bar color and label (will be updated by next fuel_changed signal)
 		if fuel_bar:
 			fuel_bar.modulate = Color(0.3, 0.8, 0.3, 1.0)
@@ -470,7 +482,14 @@ func _on_generator_state_changed(is_running: bool) -> void:
 
 
 func _update_night_label(night: int) -> void:
-	night_label.text = "Night %d / 5" % night
+	# Use RoutineManager's day mapping (Night 0→"Day 1", Night 1→"Day 1",
+	# Night 2→"Day 2", etc.) for the HUD label. Fall back to raw night
+	# number if RoutineManager is unavailable.
+	var rm = get_node_or_null("/root/RoutineManager")
+	if rm and rm.has_method("get_current_day_string"):
+		night_label.text = rm.get_current_day_string()
+	else:
+		night_label.text = "Night %d / 5" % night
 
 
 ## Shows an event message with a 3-second display time, then fades out.

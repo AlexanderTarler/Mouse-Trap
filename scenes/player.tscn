@@ -41,9 +41,16 @@
 [ext_resource type="AudioStream" uid="uid://0ahdqj47achp" path="res://assets/audio/Footsteps Grass/step9.wav" id="37_lxlsd"]
 [ext_resource type="AudioStream" uid="uid://dquhe1c8scvlf" path="res://assets/audio/Footsteps Grass/step10.wav" id="38_ha2mi"]
 [ext_resource type="Resource" uid="uid://d0q6l3m5p7k2" path="res://resources/fuel_can_resource.tres" id="38_mx1m4"]
+[ext_resource type="Script" uid="uid://dempbdhodhyre" path="res://addons/prism_collider_3d/prism_collider_3d.gd" id="39_4gjji"]
 [ext_resource type="AudioStream" uid="uid://dkln3f15c1nek" path="res://assets/audio/Footsteps Grass/step11.wav" id="39_apa73"]
 [ext_resource type="AudioStream" uid="uid://bftl2t04nrp61" path="res://assets/audio/Footsteps Grass/step12.wav" id="40_74r1k"]
+[ext_resource type="Script" uid="uid://bwr2j4tkrto77" path="res://scripts/entity/sanity_controller.gd" id="41_g5jhy"]
 [ext_resource type="Script" uid="uid://bb1v1iorkrest" path="res://scripts/photo_camera.gd" id="41_photo_camera"]
+[ext_resource type="AudioStream" uid="uid://c21q2dpxubikx" path="res://assets/audio/Entity/Entity_Seen.ogg" id="42_holxr"]
+[ext_resource type="PackedScene" uid="uid://dq8dml7wclf03" path="res://scenes/ui/notebook_ui.tscn" id="47_mx1m4"]
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_4gjji"]
+points = PackedVector3Array(0.3, 0.5, 0, 0.27716386, 0.5, 0.11480503, 0.21213204, 0.5, 0.21213204, 0.11480503, 0.5, 0.27716386, 1.8369096e-17, 0.5, 0.3, -0.11480503, 0.5, 0.27716386, -0.21213204, 0.5, 0.21213204, -0.27716386, 0.5, 0.11480503, -0.3, 0.5, 3.673819e-17, -0.27716386, 0.5, -0.11480503, -0.21213204, 0.5, -0.21213204, -0.11480503, 0.5, -0.27716386, -5.5107285e-17, 0.5, -0.3, 0.11480503, 0.5, -0.27716386, 0.21213204, 0.5, -0.21213204, 0.27716386, 0.5, -0.11480503, 0.3, -0.5, 0, 0.27716386, -0.5, 0.11480503, 0.21213204, -0.5, 0.21213204, 0.11480503, -0.5, 0.27716386, 1.8369096e-17, -0.5, 0.3, -0.11480503, -0.5, 0.27716386, -0.21213204, -0.5, 0.21213204, -0.27716386, -0.5, 0.11480503, -0.3, -0.5, 3.673819e-17, -0.27716386, -0.5, -0.11480503, -0.21213204, -0.5, -0.21213204, -0.11480503, -0.5, -0.27716386, -5.5107285e-17, -0.5, -0.3, 0.11480503, -0.5, -0.27716386, 0.21213204, -0.5, -0.21213204, 0.27716386, -0.5, -0.11480503, 0, 1, 0, 0, -1, 0)
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape_player"]
 radius = 0.35
@@ -53,16 +60,24 @@ height = 1.8
 floor_max_angle = 1.0472
 floor_snap_length = 1.2
 script = ExtResource("1_player")
+stair_step_assist = false
 standing_height = 2.0
-start_in_dev_mode = false
-
 wood_footsteps = Array[AudioStream]([ExtResource("6_tuyoq"), ExtResource("3_wnwbv"), ExtResource("4_gl8cc"), ExtResource("5_487ah"), ExtResource("6_md1ol"), ExtResource("7_bj30b"), ExtResource("8_jc3p3"), ExtResource("9_hax0n"), ExtResource("10_t4otl"), ExtResource("11_j2b1d"), ExtResource("12_cs1tg"), ExtResource("13_2dvfe"), ExtResource("14_giy8y"), ExtResource("15_fdfoy"), ExtResource("16_hhpqf"), ExtResource("17_g5jhy"), ExtResource("18_holxr"), ExtResource("19_mx1m4"), ExtResource("20_4gjji"), ExtResource("21_u2ulf")])
 grass_footsteps = Array[AudioStream]([ExtResource("28_hhpqf"), ExtResource("29_g5jhy"), ExtResource("30_holxr"), ExtResource("31_mx1m4"), ExtResource("32_4gjji"), ExtResource("33_u2ulf"), ExtResource("34_6e8lb"), ExtResource("35_2gdjj"), ExtResource("36_sc3ue"), ExtResource("37_lxlsd"), ExtResource("38_ha2mi"), ExtResource("39_apa73"), ExtResource("40_74r1k")])
 starting_items = Array[ExtResource("35_hhpqf")]([ExtResource("36_g5jhy"), ExtResource("36_g5jhy"), ExtResource("36_g5jhy"), ExtResource("37_holxr"), ExtResource("38_mx1m4"), ExtResource("36_g5jhy"), ExtResource("37_holxr"), ExtResource("38_mx1m4"), null, null])
 
+[node name="PrismCollider3D" type="CollisionShape3D" parent="." unique_id=2059181722]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
+shape = SubResource("ConvexPolygonShape3D_4gjji")
+script = ExtResource("39_4gjji")
+body_radius = 0.3
+body_radius = 0.3
+metadata/_custom_type_script = "uid://dempbdhodhyre"
+
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1320359234]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
 shape = SubResource("CapsuleShape_player")
+disabled = true
 
 [node name="CameraHolder" type="Node3D" parent="." unique_id=1797101837]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)
@@ -86,6 +101,30 @@ script = ExtResource("41_photo_camera")
 
 [node name="GeigerAudio" type="AudioStreamPlayer3D" parent="CameraHolder/Camera3D/PhotoCamera" unique_id=1304318824]
 
+[node name="SanityController" type="Node3D" parent="CameraHolder/Camera3D" unique_id=726345693]
+script = ExtResource("41_g5jhy")
+
+[node name="SanityRayCast" type="RayCast3D" parent="CameraHolder/Camera3D/SanityController" unique_id=726345694]
+target_position = Vector3(0, 0, -50)
+collision_mask = 16
+
+[node name="SanityAudio" type="AudioStreamPlayer" parent="CameraHolder/Camera3D/SanityController" unique_id=726345695]
+stream = ExtResource("42_holxr")
+volume_db = -24.0
+pitch_scale = 0.6
+
+[node name="OverlayLayer" type="CanvasLayer" parent="CameraHolder/Camera3D/SanityController" unique_id=726345696]
+layer = 220
+
+[node name="SanityOverlay" type="ColorRect" parent="CameraHolder/Camera3D/SanityController/OverlayLayer" unique_id=726345697]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)
+
 [node name="InteractionManager" type="Node3D" parent="CameraHolder" unique_id=1600805036]
 script = ExtResource("2_interaction")
 
@@ -108,3 +147,8 @@ pitch_scale = 0.82
 [node name="FloorRayCast" type="RayCast3D" parent="." unique_id=1911614750]
 target_position = Vector3(0, -10, 0)
 hit_from_inside = true
+
+[node name="NotebookLayer" type="CanvasLayer" parent="." unique_id=1028137597]
+layer = 300
+
+[node name="NotebookUI" parent="NotebookLayer" unique_id=1984805072 instance=ExtResource("47_mx1m4")]

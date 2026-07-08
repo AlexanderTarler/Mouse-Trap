@@ -1,0 +1,42 @@
+[gd_scene format=3] [node name="NotebookUI" type="Control"] process_mode = 3
+script = ExtResource("1_notebook_ui") [node name="Background" type="ColorRect"
+parent="."] anchors_preset = 15 anchor_right = 1.0 anchor_bottom = 1.0 color =
+Color(0.12, 0.10, 0.07, 0.95) [node name="PaperTexture" type="ColorRect"
+parent="Background"] anchors_preset = 15 anchor_right = 1.0 anchor_bottom = 1.0
+color = Color(0.28, 0.25, 0.18, 0.4) mouse_filter = 2 [node name="PageContainer"
+type="MarginContainer" parent="."] anchors_preset = 15 anchor_right = 1.0
+anchor_bottom = 1.0 grow_horizontal = 2 grow_vertical = 2
+theme_override_constants/margin_left = 60 theme_override_constants/margin_top =
+40 theme_override_constants/margin_right = 60
+theme_override_constants/margin_bottom = 60 [node name="TabContainer"
+type="TabContainer" parent="PageContainer"] anchors_preset = 15 anchor_right =
+1.0 anchor_bottom = 1.0 grow_horizontal = 2 grow_vertical = 2 tab_alignment = 1
+current_tab = 0 [node name="IndexPage" type="ScrollContainer"
+parent="PageContainer/TabContainer"] anchors_preset = 15 [node name="IndexLabel"
+type="RichTextLabel" parent="PageContainer/TabContainer/IndexPage"]
+anchors_preset = 15 anchor_right = 1.0 anchor_bottom = 1.0 grow_horizontal = 2
+grow_vertical = 2 bbcode_enabled = true fit_content = true scroll_following =
+true mouse_filter = 1 [node name="ToDoPage" type="ScrollContainer"
+parent="PageContainer/TabContainer"] anchors_preset = 15 [node name="ToDoLabel"
+type="RichTextLabel" parent="PageContainer/TabContainer/ToDoPage"]
+anchors_preset = 15 anchor_right = 1.0 anchor_bottom = 1.0 grow_horizontal = 2
+grow_vertical = 2 bbcode_enabled = true fit_content = true scroll_following =
+true mouse_filter = 1 [node name="DocPage" type="ScrollContainer"
+parent="PageContainer/TabContainer"] anchors_preset = 15 [node name="DocLabel"
+type="Label" parent="PageContainer/TabContainer/DocPage"] anchors_preset = 15
+anchor_right = 1.0 anchor_bottom = 1.0 grow_horizontal = 2 grow_vertical = 2
+text = "Nest documentation data will appear here." autowrap_mode = 3 [node
+name="NotesPage" type="ScrollContainer" parent="PageContainer/TabContainer"]
+anchors_preset = 15 [node name="NotesLabel" type="Label"
+parent="PageContainer/TabContainer/NotesPage"] anchors_preset = 15 anchor_right
+= 1.0 anchor_bottom = 1.0 grow_horizontal = 2 grow_vertical = 2 text = "Field
+observations will appear here." autowrap_mode = 3 [node name="DayLabel"
+type="Label" parent="."] anchors_preset = 15 text = "" [node name="PrevHint"
+type="Label" parent="."] anchors_preset = 0 anchor_left = 0.0 anchor_bottom =
+1.0 offset_left = 16.0 offset_bottom = -8.0 text = "[Q] Prev Page"
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1.0)
+theme_override_font_sizes/font_size = 13 [node name="NextHint" type="Label"
+parent="."] anchors_preset = 0 anchor_right = 1.0 anchor_bottom = 1.0
+offset_right = -16.0 offset_bottom = -8.0 text = "[E] Next Page"
+horizontal_alignment = 2 theme_override_colors/font_color = Color(0.6, 0.6, 0.6,
+1.0) theme_override_font_sizes/font_size = 13

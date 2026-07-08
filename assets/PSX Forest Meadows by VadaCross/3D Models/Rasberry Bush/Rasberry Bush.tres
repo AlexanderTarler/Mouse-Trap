@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://clgrvac2uto0"]
+
+[ext_resource type="Texture2D" uid="uid://7wqbhwwjmys5" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Rasberry Bush/Rasberry Bush_0.png" id="1_yo27y"]
+
+[resource]
+resource_name = "Rasberry Bush"
+transparency = 4
+albedo_texture = ExtResource("1_yo27y")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0

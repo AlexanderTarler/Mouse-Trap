@@ -1,0 +1,13 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://btaj0fyfsxf"]
+
+[ext_resource type="Texture2D" uid="uid://dcqtenbyuu4ri" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Pine Tree/Pine Tree_2.png" id="1_kx3un"]
+
+[resource]
+resource_name = "Pine Dead Branch"
+transparency = 2
+alpha_scissor_threshold = 0.5
+alpha_antialiasing_mode = 0
+albedo_texture = ExtResource("1_kx3un")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0

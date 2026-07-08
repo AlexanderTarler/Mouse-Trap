@@ -618,6 +618,10 @@ const COLLISION_LAYER_TREE: int = 3   # Layer 3: Trees / large foliage
 const COLLISION_LAYER_ROCK: int = 4   # Layer 4: Rocks / boulders / terrain obstacles
 const COLLISION_LAYER_CABIN: int = 1  # Layer 1: Cabin geometry (walls, doors, windows)
 const COLLISION_LAYER_PLAYER: int = 2 # Layer 2: Player body
+const COLLISION_LAYER_ENTITY: int = 5 # Layer 5: Dedicated entity body layer
+
+## Stores the original collision layer before "Creeping Ghost" modifications.
+var _saved_collision_layer: int = 5
 
 ## Stores the original collision mask before "Creeping Ghost" modifications.
 ## Restored when the Entity transitions to an aggressive state.
@@ -1227,24 +1231,11 @@ func _on_first_chase_started() -> void:
 	request_state(EntityAI.State.STALK)
 	print("[Entity] Cinematic arrival complete! Now stalking the player.")
 	
-	# ─── SYSTEMIC TIME CRUNCH ──────────────────────────────────────
-	# The moment the Entity spawns, the clock is forced to exactly
-	# 60 seconds before dawn (cycle_progress ≈ 0.9 for a 600s cycle).
-	# The night phase spans 0.5-1.0, and dawn is at cycle_progress 1.0.
-	# So 1.0 - (60/600) = 0.9 gives ~60 seconds before dawn.
-	# This gives the player exactly 60 seconds to survive.
-	# IMPORTANT: Use set_progress() instead of directly assigning cycle_progress
-	# so that the internal _elapsed timer stays in sync. Without this, _process()
-	# recalculates cycle_progress from the stale _elapsed value and snaps back
-	# to daytime.
-	var gt = get_node_or_null("/root/GameTime")
-	if gt:
-		var seconds_before_dawn = 60.0
-		var dawn_progress = 1.0 - (seconds_before_dawn / gt.cycle_duration)
-		gt.set_progress(dawn_progress)
-		gt.is_time_paused = false  # Unpause the clock!
-		print("[Entity] Time crunch activated! ", seconds_before_dawn, \
-			  " seconds until dawn at cycle_progress ", dawn_progress)
+	# ─── ISSUE 4 FIX: Remove Time Crunch override ──────────────────
+	# Time is now managed exclusively by escape_van.gd, which forces
+	# cycle_progress = 0.66 (04:00 AM) and unpauses when the player
+	# interacts with the van. The Entity should NOT override GameTime
+	# — its only job is to spawn and begin stalking.
 
 
 
@@ -1339,18 +1330,16 @@ func _physics_process(delta: float) -> void:
 				hit_info = "collider=%s hit_y=%.3f normal=%s" % [collider_name, hit_point.y, hit_normal]
 		else:
 			hit_info = "NO_HIT"
-		print("[Entity DEBUG] pos=(%.3f, %.3f, %.3f) state=%s floor_ray=%s" % [
-			global_position.x, global_position.y, global_position.z,
-			EntityAI.State.keys()[_state] if _state >= 0 and _state < EntityAI.State.keys().size() else "UNKNOWN",
-			hit_info
-		])
+		var _state_name = EntityAI.State.keys()[_state] if _state >= 0 and _state < EntityAI.State.keys().size() else "UNKNOWN"
+		var _shape_d = _collision_shape.disabled if _collision_shape else "N/A"
+		print("[Entity DEBUG] pos=(%.3f, %.3f, %.3f) state=%s layer=%d mask=%d shape_disabled=%s floor_ray=%s" % [global_position.x, global_position.y, global_position.z, _state_name, collision_layer, collision_mask, _shape_d, hit_info])
 		
 		# ─── TIME DIAGNOSTIC: NightManager vs GameTime ────────────────
 		var nm = _night_manager
 		var gt = get_node_or_null("/root/GameTime")
 		if nm and gt:
 			print("[TIME DIAGNOSTIC] NightManager: current_night=%d, is_night_active=%s, is_time_paused=%s" % [nm.current_night, nm.is_night_active, nm.is_time_paused])
-			print("[TIME DIAGNOSTIC] GameTime:     cycle_progress=%.4f, is_day=%s, is_night=%s, current_hour=%.1f, is_time_paused=%s" % [gt.cycle_progress, gt.is_day, gt.is_night if "is_night" in gt else "N/A", gt.current_hour, gt.is_time_paused])
+			print("[TIME DIAGNOSTIC] GameTime:     cycle_progress=%.4f, is_day=%s, is_time_paused=%s" % [gt.cycle_progress, gt.is_day, gt.is_time_paused])
 
 	
 	_game_time += delta
@@ -1538,6 +1527,16 @@ func _physics_process(delta: float) -> void:
 				print("[TRACE_STUCK] INDOOR_SEARCH: Unstuck! Resetting timer. is_stranded=%s, is_nav_active=%s, is_moving=%s" % [is_stranded, is_nav_active, is_moving])
 			_stuck_timer = 0.0
 	elif is_nav_active and not is_moving and not is_attack_state:
+		# ─── STUCK GRACE PERIOD (negative timer) ─────────────────────────
+		# When _stuck_timer is negative (set by escape_van.gd during Entity
+		# van spawn), it acts as a grace period. The NavigationAgent3D needs
+		# 2-3 seconds to generate a valid path around the van's collision
+		# mesh. During this grace period, we increment the timer toward 0
+		# but do NOT trigger the stuck failsafe.
+		if _stuck_timer < 0.0:
+			_stuck_timer += delta
+			return
+		
 		# ─── DOOR PHASE GUARD ──────────────────────────────────────────
 		# During APPROACH_WINDOW, the Entity intentionally pauses at the
 		# door for 2 seconds (Door Phase 1) while the AI checks if the door
@@ -3487,7 +3486,8 @@ func on_generator_blackout() -> void:
 func set_ghost_mode(enabled: bool) -> void:
 	_ghost_mode = enabled
 	if enabled:
-		# Save the current collision mask so we can restore it later
+		# Save the current collision layer and mask so we can restore them later
+		_saved_collision_layer = collision_layer
 		_saved_collision_mask = collision_mask
 		# Disable ALL collision layers and masks — the Entity phases through everything
 		collision_layer = 0
@@ -3508,8 +3508,8 @@ func set_ghost_mode(enabled: bool) -> void:
 	else:
 		# Restore the saved collision mask
 		collision_mask = _saved_collision_mask
-		# Restore the collision layer (default: layer 1)
-		collision_layer = 1
+		# Restore the collision layer to the dedicated entity layer
+		collision_layer = _saved_collision_layer
 		velocity = Vector3.ZERO
 		print("[Entity] GHOST MODE DISABLED — Collision restored.")
 

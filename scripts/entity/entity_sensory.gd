@@ -108,9 +108,9 @@ func setup(parent: CharacterBody3D) -> void:
 ## Caches the current active 3D camera.
 func _cache_camera() -> void:
 	var player = entity.get_player() if entity else null
-	if player and player.has_node("Camera3D"):
-		_cached_camera = player.get_node("Camera3D")
-	elif entity and entity.get_viewport():
+	if player:
+		_cached_camera = player.get_node_or_null("CameraHolder/Camera3D") as Camera3D
+	if not _cached_camera and entity and entity.get_viewport():
 		_cached_camera = entity.get_viewport().get_camera_3d()
 
 
@@ -392,8 +392,9 @@ func is_player_spotting_entity() -> bool:
 	# collider can register a hit.
 	#
 	# Layer bit calculation:
-	#   Layer 2 = 1 << (2-1) = 1 << 1 = 2
-	_ray_query.collision_mask = 2
+	#   Layer 2 (Player body) + Layer 5 (Entity body)
+	#   = (1 << 1) | (1 << 4) = 2 | 16 = 18
+	_ray_query.collision_mask = 18
 	
 	var hit = space.intersect_ray(_ray_query)
 	# If the ray hit something (tree, rock, etc.), line of sight is blocked.

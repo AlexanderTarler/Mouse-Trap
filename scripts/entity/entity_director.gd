@@ -227,6 +227,40 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 			print("[TRACE_DIRECTOR] BREACH LOCKED! is_breach_locked=true. Returning INDOOR_SEARCH (preserving breach lock).")
 		return state
 	
+	# ─── STALK LOCK GUARD (Night 2.2 Van Sequence) ────────────────────
+	# When the Entity is force-spawned at the van (escape_van.gd), a
+	# "stalk_lock_until_ms" meta is set for 5 seconds. During this window,
+	# the Director MUST NOT transition the Entity to OBSERVE_FROM_TREELINE,
+	# RETREAT, or any passive state. The Entity stays locked in STALK to
+	# ensure it immediately pursues the player.
+	if entity.has_meta("stalk_lock_until_ms"):
+		var lock_until = entity.get_meta("stalk_lock_until_ms") as int
+		if Time.get_ticks_msec() < lock_until:
+			if state == EntityAI.State.CHARGE or state == EntityAI.State.FLINCH:
+				return state
+			return EntityAI.State.STALK
+		else:
+			entity.remove_meta("stalk_lock_until_ms")
+			print("[TRACE_DIRECTOR] STALK LOCK EXPIRED. Meta removed.")
+	
+	# ─── VAN SEQUENCE PERSISTENT LOCK (Night 2.2) ──────────────────
+	# After the 5-second stalk_lock_until_ms meta expires, the Director's
+	# Tier 3 (Active Aggression) transitions STALK→OBSERVE via the outside
+	# confirmation timer. This lock runs BEFORE Tier 3 and forces STALK
+	# unconditionally while is_van_sequence_active is true, regardless of
+	# confidence, timers, or player location. Only CHARGE/FLINCH override it.
+	# The lock is released when the Entity breaches the cabin (INDOOR_SEARCH).
+	var night_mgr_for_lock = entity.get_node_or_null("/root/NightManager")
+	if night_mgr_for_lock and night_mgr_for_lock.is_van_sequence_active:
+		if state != EntityAI.State.STALK and state != EntityAI.State.CHARGE and state != EntityAI.State.FLINCH:
+			print("[TRACE_DIRECTOR] VAN SEQUENCE PERSISTENT LOCK: Forcing STALK (was %s)." % EntityAI.State.keys()[state])
+			return EntityAI.State.STALK
+		# State is already STALK, CHARGE, or FLINCH — preserve it.
+		# Returning the current state blocks ALL lower tiers (3-8) from
+		# evaluating and overriding, preventing the 1-frame STALK↔OBSERVE
+		# oscillation where Tier 3 demotes STALK→OBSERVE every frame.
+		return state
+	
 	# ─── STATE LOCK GUARD ─────────────────────────────────────────────
 	# After Tier 0 (flashlight reactions) and Tier 1 (sabotage override),
 	# check if the state handler is mid-execution. If locked, return the
@@ -699,6 +733,16 @@ func _tier_2_night_rules(entity: CharacterBody3D, state: int) -> int:
 	var night_manager = entity.get_node_or_null("/root/NightManager")
 	var current_night: int = night_manager.current_night if night_manager else 1
 	
+	# ─── VAN SEQUENCE NARRATIVE OVERRIDE ──────────────────────────
+	# During the Night 2.2 van sequence (car alarm → player investigates),
+	# the Entity MUST stay in STALK mode. It cannot observe, retreat, or
+	# enter any passive state. This is a hard narrative gate — the Entity
+	# is actively hunting the player at the van.
+	if night_manager and night_manager.is_van_sequence_active:
+		if state != EntityAI.State.STALK and state != EntityAI.State.CHARGE and state != EntityAI.State.FLINCH:
+			print("[TRACE_DIRECTOR] TIER 2 NIGHT RULES: Van sequence active. Forcing STALK (was %s)." % EntityAI.State.keys()[state])
+			return EntityAI.State.STALK
+	
 	if current_night == 1:
 		if state != EntityAI.State.DORMANT and state != EntityAI.State.OBSERVE_FROM_TREELINE and state != EntityAI.State.RETREAT:
 			return EntityAI.State.OBSERVE_FROM_TREELINE
@@ -910,6 +954,17 @@ func _tier_3_active_aggression(entity: CharacterBody3D, state: int) -> int:
 	# get_player_room()). This prevents the Entity from STALKing when the
 	# player has gone back inside but the belief system hasn't been updated.
 	if is_player_actually_outside:
+		# ─── VAN SEQUENCE BYPASS ──────────────────────────────────────
+		# During the Night 2.2 van sequence (car alarm → player investigates),
+		# skip the outside confirmation timer entirely. The Entity must
+		# STALK immediately — the narrative overrides all confirmation
+		# logic. This prevents the "Entity toggles between STALK and
+		# OBSERVE every frame" bug where the timer keeps re-initializing.
+		var night_manager = entity.get_node_or_null("/root/NightManager")
+		if night_manager and night_manager.is_van_sequence_active:
+			print("[TRACE_DIRECTOR] VAN SEQUENCE: Bypassing outside confirmation timer. Forcing STALK.")
+			return EntityAI.State.STALK
+		
 		# ─── REALITY CHECK: Is the player ACTUALLY outside? ─────────────
 		# The Entity's belief system may be stale (e.g., the Entity heard the
 		# player outside 10 seconds ago, but the player has since gone back
@@ -940,6 +995,16 @@ func _tier_3_active_aggression(entity: CharacterBody3D, state: int) -> int:
 	# return to default behavior. The Entity avoids lit areas, so chasing
 	# the player through a pool of light is counterproductive.
 	if state == EntityAI.State.STALK:
+		# ─── VAN SEQUENCE PRESERVATION ─────────────────────────────────
+		# During the Night 2.2 van sequence, the Entity must hold STALK
+		# regardless of lighting conditions, player location, or any
+		# other factor. This is a narrative override — the car alarm
+		# sequence demands the Entity aggressively pursue the player.
+		var night_manager = entity.get_node_or_null("/root/NightManager")
+		if night_manager and night_manager.is_van_sequence_active:
+			print("[TRACE_DIRECTOR] VAN SEQUENCE: Preserving STALK. Lighting and player location checks bypassed.")
+			return EntityAI.State.STALK
+		
 		# ─── LIGHT CHECK: Player lit by cabin/porch light ─────────────
 		# If the player is standing in a lit area (cabin light leaking
 		# through windows, or the porch floodlight), the Entity should

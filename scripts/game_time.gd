@@ -35,10 +35,6 @@ var is_running: bool = true
 ## Time is unpaused by the nest catalyst event (Inciting Incident).
 var is_time_paused: bool = true
 
-## Current hour in 24-hour format (0.0-24.0), derived from cycle_progress.
-## 0.0 = midnight, 6.0 = sunrise, 12.0 = noon, 18.0 = sunset, 24.0 = midnight
-var current_hour: float = 6.0
-
 ## Internal timer tracking elapsed time
 var _elapsed: float = 0.0
 
@@ -52,7 +48,6 @@ func _ready() -> void:
 	_elapsed = cycle_progress * cycle_duration
 	is_day = cycle_progress < 0.5
 	_was_day = is_day
-	current_hour = cycle_progress * 24.0
 	
 	# Time starts paused — the player explores in a frozen mid-afternoon state
 	is_time_paused = true
@@ -89,9 +84,6 @@ func _process(delta: float) -> void:
 		print("GameTime: Night started at progress ", cycle_progress)
 	
 	_was_day = is_day
-	
-	# Update current hour (0.0-24.0, mapped from cycle_progress 0.0-1.0)
-	current_hour = cycle_progress * 24.0
 	
 	# Emit time changed signal
 	time_changed.emit(cycle_progress)
@@ -133,9 +125,6 @@ func set_progress(value: float) -> void:
 	cycle_progress = clampf(value, 0.0, 1.0)
 	_elapsed = cycle_progress * cycle_duration
 	is_day = cycle_progress < 0.5
-	
-	# Update current hour
-	current_hour = cycle_progress * 24.0
 	
 	# Emit signals for the new state
 	time_changed.emit(cycle_progress)

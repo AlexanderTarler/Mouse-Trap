@@ -128,6 +128,54 @@ func _on_game_time_changed(progress: float) -> void:
 	_apply_cycle()
 
 
+## Forces a completely dark "true night" state regardless of the day/night cycle.
+## Called during the Night 2.2 van alarm sequence to disorient the player.
+## Sets background to solid black, kills ambient light, sun energy, and moon energy.
+## The player must rely entirely on their flashlight during this sequence.
+func force_true_night() -> void:
+	if not _environment:
+		print("[EnvironmentController] force_true_night() called but no environment set. Fetching from world_environment.")
+		if world_environment:
+			_environment = world_environment.environment
+	if not _environment:
+		push_warning("[EnvironmentController] force_true_night() cannot proceed — no Environment resource.")
+		return
+	
+	# Kill the sky — solid black background
+	_environment.background_mode = Environment.BG_COLOR
+	_environment.background_color = Color.BLACK
+	
+	# Zero out all ambient light
+	_environment.ambient_light_energy = 0.0
+	_environment.ambient_light_color = Color.BLACK
+	_environment.ambient_light_sky_contribution = 0.0
+	
+	# Kill sun and moon light entirely
+	if sun:
+		sun.light_energy = 0.0
+	if moon:
+		moon.light_energy = 0.0
+	
+	# Disable fog so it doesn't add any faint glow
+	_environment.fog_enabled = false
+	_environment.volumetric_fog_enabled = false
+	
+	print("[EnvironmentController] True night forced. Background=black, ambient=0, sun=0, moon=0.")
+
+
+## Restores the environment to normal day/night cycle lighting after a forced
+## true_night sequence. Re-triggers _apply_cycle() to recalculate all values.
+func restore_cycle() -> void:
+	# Restore background mode to sky so the procedural sky renders again
+	if _environment:
+		_environment.background_mode = Environment.BG_SKY
+	
+	# Force a full cycle refresh to recalculate all lighting values
+	_apply_cycle()
+	
+	print("[EnvironmentController] Cycle restored. Background mode set to BG_SKY.")
+
+
 func _apply_cycle() -> void:
 	# --- Calculate the continuous sun angle ---
 	# Map cycle_progress (0.0 to 1.0) to a full 360-degree rotation (0 to TAU).

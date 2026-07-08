@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://d0y7e1de5en1q"]
+
+[ext_resource type="Texture2D" uid="uid://byqh076e4rpk6" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Lify pad/Lify pad_1.png" id="1_tlhgj"]
+
+[resource]
+resource_name = "Lify pad 2"
+transparency = 4
+albedo_texture = ExtResource("1_tlhgj")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0

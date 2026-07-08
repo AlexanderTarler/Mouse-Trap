@@ -3,6 +3,18 @@
 [ext_resource type="Script" uid="uid://bteeabtnr50ik" path="res://scripts/computer_ui.gd" id="1_computer_ui"]
 [ext_resource type="Shader" uid="uid://c1s66g87uyhi5" path="res://shaders/crt_monitor.gdshader" id="2_a82rf"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_terminal"]
+content_margin_left = 8.0
+content_margin_top = 8.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+bg_color = Color(0.05, 0.05, 0.05, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.2, 0.5, 0.2, 1)
+
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_25mte"]
 shader = ExtResource("2_a82rf")
 shader_parameter/warp_amount = 0.0050000002375
@@ -46,7 +58,149 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(0.00784314, 0.5019608, 0.5019608, 1)
 
+[node name="LoginScreen" type="Panel" parent="." unique_id=600000001]
+offset_left = 400.0
+offset_top = 200.0
+offset_right = 1120.0
+offset_bottom = 520.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_terminal")
+
+[node name="LoginVBox" type="VBoxContainer" parent="LoginScreen" unique_id=600000002]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="LoginTitle" type="Label" parent="LoginScreen/LoginVBox" unique_id=600000003]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 1, 0.2, 1)
+theme_override_font_sizes/font_size = 16
+text = "SVENSKA SKOGSBRUKSARKIVET"
+horizontal_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="LoginScreen/LoginVBox" unique_id=600000004]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.8, 0.3, 1)
+theme_override_font_sizes/font_size = 12
+text = "Archival System v3.1 — Secure Login"
+horizontal_alignment = 1
+
+[node name="Spacer1" type="Control" parent="LoginScreen/LoginVBox" unique_id=600000005]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="UsernameLabel" type="Label" parent="LoginScreen/LoginVBox" unique_id=600000006]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 1, 0.2, 1)
+theme_override_font_sizes/font_size = 12
+text = "USERNAME:"
+
+[node name="UsernameInput" type="LineEdit" parent="LoginScreen/LoginVBox" unique_id=600000007]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 1, 0.2, 1)
+theme_override_colors/font_placeholder_color = Color(0.15, 0.4, 0.15, 1)
+theme_override_font_sizes/font_size = 14
+placeholder_text = "Enter username..."
+max_length = 32
+
+[node name="PasswordLabel" type="Label" parent="LoginScreen/LoginVBox" unique_id=600000008]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 1, 0.2, 1)
+theme_override_font_sizes/font_size = 12
+text = "PASSWORD:"
+
+[node name="PasswordInput" type="LineEdit" parent="LoginScreen/LoginVBox" unique_id=600000009]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 1, 0.2, 1)
+theme_override_colors/font_placeholder_color = Color(0.15, 0.4, 0.15, 1)
+theme_override_font_sizes/font_size = 14
+placeholder_text = "Enter password..."
+max_length = 32
+secret = true
+secret_character = "*"
+
+[node name="LoginButton" type="Button" parent="LoginScreen/LoginVBox" unique_id=600000010]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.05, 0.05, 0.05, 1)
+theme_override_font_sizes/font_size = 14
+text = "LOGIN"
+
+[node name="ErrorLabel" type="Label" parent="LoginScreen/LoginVBox" unique_id=600000011]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1
+
+[node name="PowerOffButton" type="Button" parent="LoginScreen" unique_id=600000012]
+layout_mode = 0
+offset_left = 655.0
+offset_top = 290.0
+offset_right = 720.0
+offset_bottom = 320.0
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 10
+text = "POWER OFF"
+
+[node name="DesktopView" type="Panel" parent="." unique_id=600000020]
+visible = false
+offset_left = 30.0
+offset_top = 30.0
+offset_right = 1890.0
+offset_bottom = 1050.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_terminal")
+
+[node name="DesktopTitle" type="Label" parent="DesktopView" unique_id=600000021]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 10.0
+offset_right = 600.0
+offset_bottom = 30.0
+theme_override_colors/font_color = Color(0.2, 1, 0.2, 1)
+theme_override_font_sizes/font_size = 14
+text = "ARCHIVAL SYSTEM v3.1"
+
+[node name="FieldLogIcon" type="Button" parent="DesktopView" unique_id=600000022]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 60.0
+offset_right = 140.0
+offset_bottom = 120.0
+theme_override_font_sizes/font_size = 11
+text = "FIELD_LOG.EXE"
+
+[node name="RecycleBinIcon" type="Button" parent="DesktopView" unique_id=600000023]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 140.0
+offset_right = 140.0
+offset_bottom = 200.0
+theme_override_font_sizes/font_size = 11
+text = "Recycle Bin"
+
+[node name="LogOffIcon" type="Button" parent="DesktopView" unique_id=600000024]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 220.0
+offset_right = 140.0
+offset_bottom = 280.0
+theme_override_font_sizes/font_size = 11
+text = "Log Off"
+
+[node name="ShutDownIcon" type="Button" parent="DesktopView" unique_id=600000025]
+layout_mode = 0
+offset_left = 40.0
+offset_top = 300.0
+offset_right = 140.0
+offset_bottom = 360.0
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 11
+text = "SHUT DOWN"
+
 [node name="MainWindow" type="Panel" parent="." unique_id=106868408]
+visible = false
 material = SubResource("ShaderMaterial_25mte")
 offset_left = 572.0
 offset_top = 122.0
@@ -86,21 +240,20 @@ text = "_"
 layout_mode = 0
 offset_left = 759.0
 offset_top = 1.0
-offset_right = 777.0
+offset_right = 778.0
 offset_bottom = 21.0
 theme_override_font_sizes/font_size = 8
 text = "□"
 
 [node name="CloseButton" type="Button" parent="MainWindow/TitleBar" unique_id=216579507]
 layout_mode = 0
-offset_left = 778.0
-offset_top = 1.0
-offset_right = 796.0
-offset_bottom = 21.0
+offset_left = 779.0
+offset_right = 800.0
+offset_bottom = 22.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_pressed_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 10
 text = "X"
 
 [node name="MenuBar" type="HBoxContainer" parent="MainWindow" unique_id=1864857099]
@@ -148,47 +301,6 @@ offset_top = 43.0
 offset_right = 798.0
 offset_bottom = 598.0
 
-[node name="NavButtons" type="VBoxContainer" parent="MainWindow/HBoxContainer" unique_id=1233563581]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-
-[node name="LogNestData" type="Button" parent="MainWindow/HBoxContainer/NavButtons" unique_id=1296164226]
-layout_mode = 2
-theme_override_font_sizes/font_size = 11
-text = "FIELD_LOG.EXE"
-
-[node name="ArchiveLogs" type="Button" parent="MainWindow/HBoxContainer/NavButtons" unique_id=1512127822]
-layout_mode = 2
-theme_override_font_sizes/font_size = 11
-text = "Archive Logs"
-
-[node name="Trash" type="Button" parent="MainWindow/HBoxContainer/NavButtons" unique_id=219472863]
-layout_mode = 2
-theme_override_font_sizes/font_size = 11
-text = "Trash (Deleted)"
-
-[node name="RecoverData" type="Button" parent="MainWindow/HBoxContainer/NavButtons" unique_id=877649799]
-layout_mode = 2
-theme_override_font_sizes/font_size = 11
-text = "RECOVER_DATA.EXE"
-
-[node name="TrapPowerButton" type="Button" parent="MainWindow/HBoxContainer/NavButtons" unique_id=914037680]
-layout_mode = 2
-tooltip_text = "Toggle the portable lamp's power ON/OFF remotely."
-theme_override_colors/font_color = Color(0.2, 0.8, 0.2, 1)
-theme_override_font_sizes/font_size = 11
-disabled = true
-text = "TOGGLE TRAP POWER"
-
-[node name="OverloadButton" type="Button" parent="MainWindow/HBoxContainer/NavButtons" unique_id=914037679]
-layout_mode = 2
-tooltip_text = "Unlock LOG_02_CRITICAL via RECOVER_DATA.EXE to enable this command."
-theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
-theme_override_font_sizes/font_size = 11
-disabled = true
-text = "EXECUTE OVERLOAD_PORCH_GRID"
-
 [node name="ContentPanel" type="Panel" parent="MainWindow/HBoxContainer" unique_id=1319873479]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -206,9 +318,10 @@ theme_override_colors/default_color = Color(0, 0, 0, 1)
 bbcode_enabled = true
 text = "Welcome to the Archival System v3.1
 
-Select a category from the left to view records."
+Select an application from the desktop."
 
 [node name="DataEntryPanel" type="Panel" parent="MainWindow/HBoxContainer" unique_id=499745863]
+visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -218,7 +331,7 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_content")
 layout_mode = 0
 offset_left = 8.0
 offset_top = 8.0
-offset_right = 264.0
+offset_right = 255.0
 offset_bottom = 392.0
 
 [node name="FormTitle" type="Label" parent="MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox" unique_id=150160350]

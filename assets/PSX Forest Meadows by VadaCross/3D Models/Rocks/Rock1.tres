@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://cle4bfpkaa55v"]
+
+[ext_resource type="Texture2D" uid="uid://dntig5f4mwblu" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Rocks/Rocks_0.png" id="1_sjve2"]
+
+[resource]
+resource_name = "Rock1"
+albedo_texture = ExtResource("1_sjve2")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0

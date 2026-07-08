@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://b0fuvlkcigflm"]
+
+[ext_resource type="Texture2D" uid="uid://u8rbjkwysjre" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Clover Patch/Clover Patch_0.png" id="1_8wrvy"]
+
+[resource]
+resource_name = "Clover Patch"
+transparency = 4
+albedo_texture = ExtResource("1_8wrvy")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0

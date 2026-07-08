@@ -100,13 +100,22 @@ func _trigger_ending(ending: Ending) -> void:
 ## Path to the ending screen scene.
 const ENDING_SCREEN_PATH: String = "res://scenes/ui/ending_screen.tscn"
 
+## Duration of the fade-to-black transition before the ending screen appears.
+const FADE_DURATION: float = 1.5
+
 ## Reference to the instantiated ending screen (if any).
 var _ending_screen_instance: Node = null
 
 
 ## Plays the ending sequence for the given ending type.
-## Instantiates the EndingScreen overlay, pauses the game, frees the mouse,
-## and waits for the player to choose Retry or Main Menu.
+##
+## Sequence:
+##   1. Disable the Entity visually/mechanically (escape endings only).
+##   2. Fade all audio buses to silence.
+##   3. Fade the screen to black via a dynamic ColorRect.
+##   4. Wait for the fade to complete.
+##   5. Instantiate the EndingScreen overlay.
+##   6. Pause the game and free the cursor.
 func _play_ending_sequence(ending: Ending) -> void:
 	if is_sequence_playing:
 		return
@@ -127,7 +136,26 @@ func _play_ending_sequence(ending: Ending) -> void:
 		Ending.ESCAPE_GOOD:
 			print("[EndgameManager] ESCAPE_GOOD: Player escaped in the van AND destroyed the Totem! The Entity is banished!")
 	
-	# ─── INSTANTIATE ENDING SCREEN ──────────────────────────────────
+	# ─── 1. DISABLE ENTITY FOR ESCAPE ENDINGS ───────────────────────
+	# The Entity shouldn't linger in the background while the player reads
+	# the ending screen. For death endings, the JumpscareManager already
+	# handles this; for escape endings we do it here.
+	if ending != Ending.DEATH:
+		_disable_entity_for_ending()
+	
+	# ─── 2. CINEMATIC PLAYBACK ──────────────────────────────────────
+	# Lock the player's movement/input, hide the HUD, play the 3D cinematic
+	# cutscene, then restore input before fading to black and showing UI.
+	await _play_cinematic_and_lock_player(ending)
+	
+	# ─── 3. FADE AUDIO TO SILENCE ───────────────────────────────────
+	_fade_audio_to_silence()
+	
+	# ─── 4. FADE SCREEN TO BLACK ────────────────────────────────────
+	# Create a full-screen ColorRect, fade it in, then show the ending UI.
+	await _fade_screen_to_black()
+	
+	# ─── 4. INSTANTIATE ENDING SCREEN ───────────────────────────────
 	# Load and instance the ending screen overlay.
 	var ending_scene = load(ENDING_SCREEN_PATH)
 	if not ending_scene:
@@ -149,7 +177,7 @@ func _play_ending_sequence(ending: Ending) -> void:
 	if _ending_screen_instance.has_method("setup_ending"):
 		_ending_screen_instance.setup_ending(ending)
 	
-	# ─── PAUSE & FREE CURSOR ────────────────────────────────────────
+	# ─── 5. PAUSE & FREE CURSOR ─────────────────────────────────────
 	# Pause the game so the player can't move while the ending screen is up.
 	# The EndingScreen has process_mode = PROCESS_MODE_ALWAYS so it still
 	# processes input and animations while paused.
@@ -162,6 +190,142 @@ func _play_ending_sequence(ending: Ending) -> void:
 	# so we don't need to wait here. The sequence is effectively complete once
 	# the screen is shown.
 	_complete_ending_sequence(ending)
+
+
+# ─── CINEMATIC TRANSITION HELPERS ──────────────────────────────────────
+
+## Disables the Entity for escape endings so it doesn't linger in the
+## background behind the EndingScreen overlay.
+func _disable_entity_for_ending() -> void:
+	var entity = get_tree().get_first_node_in_group("entity")
+	if not entity or not is_instance_valid(entity):
+		print("[EndgameManager] No Entity found to disable for ending.")
+		return
+	
+	print("[EndgameManager] Disabling Entity for escape ending...")
+	
+	# Hide the visual model
+	entity.hide()
+	
+	# Disable processing
+	entity.process_mode = Node.PROCESS_MODE_DISABLED
+	
+	# Disable collision
+	var collision_shape = entity.get_node_or_null("CollisionShape3D")
+	if collision_shape:
+		collision_shape.set_deferred("disabled", true)
+	
+	# Disable catch area
+	var catch_area = entity.get_node_or_null("CatchArea")
+	if catch_area:
+		catch_area.monitoring = false
+	
+	print("[EndgameManager] Entity disabled for ending sequence.")
+
+
+## Locks the player's movement and input, hides the HUD, plays the 3D cinematic
+## cutscene via the Cinematics node, then restores player control.
+##
+## The function finds the Cinematics node via the "cinematics" group,
+## the player via the "player" group, and the HUD via the "hud" group.
+## If any of these are missing, the function gracefully degrades
+## (no cinematic, no lock — just returns immediately).
+func _play_cinematic_and_lock_player(ending: Ending) -> void:
+	var cinematics = get_tree().get_first_node_in_group("cinematics")
+	if not cinematics or not is_instance_valid(cinematics):
+		print("[EndgameManager] No Cinematics node found in 'cinematics' group — skipping cinematic.")
+		return
+	if not cinematics.has_method("play_ending_cinematic"):
+		print("[EndgameManager] Cinematics node lacks play_ending_cinematic() — skipping cinematic.")
+		return
+	
+	# ─── LOCK PLAYER ──────────────────────────────────────────────
+	var player = get_tree().get_first_node_in_group("player")
+	if player and is_instance_valid(player):
+		print("[EndgameManager] Locking player input for cinematic...")
+		player.process_mode = Node.PROCESS_MODE_DISABLED
+		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
+	else:
+		print("[EndgameManager] WARNING: No player found in 'player' group.")
+	
+	# ─── HIDE HUD ─────────────────────────────────────────────────
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud and is_instance_valid(hud):
+		print("[EndgameManager] Hiding HUD for cinematic...")
+		hud.visible = false
+	
+	# ─── PLAY CINEMATIC & AWAIT ───────────────────────────────────
+	print("[EndgameManager] Starting cinematic for ending: ", ENDING_NAMES.get(ending, "UNKNOWN"))
+	await cinematics.play_ending_cinematic(ending)
+	print("[EndgameManager] Cinematic finished.")
+	
+	# ─── UNLOCK PLAYER ────────────────────────────────────────────
+	if player and is_instance_valid(player):
+		print("[EndgameManager] Restoring player input after cinematic...")
+		player.process_mode = Node.PROCESS_MODE_INHERIT
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	
+	# ─── SHOW HUD ─────────────────────────────────────────────────
+	if hud and is_instance_valid(hud):
+		hud.visible = true
+
+
+## Fades all audio buses to silence for cinematic impact.
+## Targets the Master bus directly, tweening its volume from current level
+## to -80 dB over FADE_DURATION seconds.
+func _fade_audio_to_silence() -> void:
+	var master_idx = AudioServer.get_bus_index("Master")
+	if master_idx < 0:
+		print("[EndgameManager] WARNING: Master audio bus not found — skipping audio fade.")
+		return
+	
+	# Capture current volume as the starting point for the tween.
+	# We use a dummy Node to drive the tween since AudioServer isn't a Node.
+	var current_vol = AudioServer.get_bus_volume_db(master_idx)
+	var tween_driver = Node.new()
+	tween_driver.name = "_EndgameAudioFadeDriver"
+	add_child(tween_driver)
+	
+	# Store the master bus index on the driver so the tween callback can find it
+	tween_driver.set_meta("_master_bus_idx", master_idx)
+	
+	var tween = tween_driver.create_tween()
+	tween.tween_method(_set_master_volume.bind(master_idx), current_vol, -80.0, FADE_DURATION)
+	tween.tween_callback(tween_driver.queue_free)
+	
+	print("[EndgameManager] Audio fade to silence started (%.1f dB → -80 dB over %.1fs)." % [current_vol, FADE_DURATION])
+
+
+## Tween callback: sets the Master bus volume to the interpolated value.
+func _set_master_volume(volume_db: float, bus_idx: int) -> void:
+	AudioServer.set_bus_volume_db(bus_idx, volume_db)
+
+
+## Creates a full-screen black ColorRect, fades it from transparent to opaque
+## over FADE_DURATION seconds, and waits for the fade to complete.
+## Returns when the fade-in (to black) is finished.
+func _fade_screen_to_black() -> void:
+	# Create a full-screen black overlay as a CanvasLayer child so it
+	# renders above the 3D world and the HUD.
+	var canvas_layer = CanvasLayer.new()
+	canvas_layer.name = "_EndgameFadeCanvas"
+	canvas_layer.layer = 128  # High layer index to be on top of everything
+	get_tree().current_scene.add_child(canvas_layer)
+	
+	var fade_rect = ColorRect.new()
+	fade_rect.name = "FadeRect"
+	fade_rect.color = Color(0.0, 0.0, 0.0, 0.0)  # Start transparent
+	fade_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	canvas_layer.add_child(fade_rect)
+	
+	# Tween the alpha from 0 to 1 (transparent → opaque black)
+	var tween = canvas_layer.create_tween()
+	tween.tween_property(fade_rect, "color:a", 1.0, FADE_DURATION)
+	
+	# Wait for the fade to finish
+	await tween.finished
+	
+	print("[EndgameManager] Fade to black complete.")
 
 
 ## Completes the ending sequence and cleans up.

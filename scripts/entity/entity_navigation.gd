@@ -123,9 +123,19 @@ func _cache_scene_groups() -> void:
 	for w in _window_markers:
 		var parent = w.get_parent()
 		if parent is CabinWindow and parent.is_in_group("BottomFloorWindows"):
+			# ─── TASK 8: Exclude porch windows from bottom-floor lit check ──
+			# The porch light is always on and never turns off. If a porch
+			# window is counted in the "all windows lit" calculation, it
+			# creates a false positive — the frustration system sees all
+			# windows as lit and triggers FUSE_SABOTAGE prematurely.
+			# Filter out any window whose name or parent name contains "porch".
+			var window_name = parent.name.to_lower()
+			if window_name.contains("porch"):
+				print("[Navigation] Skipping porch window: %s" % parent.name)
+				continue
 			_bottom_floor_windows.append(parent as CabinWindow)
 	
-	print("[Navigation] Pre-cached %d bottom-floor CabinWindow nodes." % _bottom_floor_windows.size())
+	print("[Navigation] Pre-cached %d bottom-floor CabinWindow nodes (excluding porch)." % _bottom_floor_windows.size())
 	
 	# ─── DOOR MARKER VERIFICATION ──────────────────────────────────────
 	# Verify that the door has a Marker3D in the "DoorBreachWaypoint" group.

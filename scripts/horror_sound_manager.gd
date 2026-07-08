@@ -271,11 +271,16 @@ func _on_night_started(night: int) -> void:
 	# Night 1 exception: The distant monster sound is suppressed so the car
 	# alarm narrative event plays without the Entity's audio telegraphing.
 	# The howl will play when trigger_first_chase() fires instead.
+	# Night 2 van sequence: Also suppressed — the car alarm is the dominant audio.
 	if night == 1:
 		print("HorrorSoundManager: Night 1 — suppressing distant monster sound for car alarm narrative.")
 	else:
-		# Play the distant monster sound when night starts
-		play_distant_monster()
+		var nm_check = get_node_or_null("/root/NightManager")
+		if nm_check and nm_check.get("is_van_sequence_active") == true:
+			print("HorrorSoundManager: Van sequence active — suppressing distant monster sound.")
+		else:
+			# Play the distant monster sound when night starts
+			play_distant_monster()
 
 func _on_night_ended(_night: int) -> void:
 	_stop_ambient()

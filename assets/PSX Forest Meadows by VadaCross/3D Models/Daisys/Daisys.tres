@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bxflt7jenuu4u"]
+
+[ext_resource type="Texture2D" uid="uid://cjnol7dgfbun6" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Daisys/Daisys_0.png" id="1_5pewn"]
+
+[resource]
+resource_name = "Daisys"
+transparency = 4
+albedo_texture = ExtResource("1_5pewn")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0

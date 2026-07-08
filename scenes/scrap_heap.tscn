@@ -1,6 +1,17 @@
 [gd_scene format=3 uid="uid://cwe54kc56vwjr"]
 
 [ext_resource type="Script" uid="uid://nmccgbcos1je" path="res://scripts/scrap_heap.gd" id="1_4n8q2"]
+[ext_resource type="PackedScene" uid="uid://b5xsgcqy0ld85" path="res://assets/PSX Bunkers/Models/other-formats/GLB/military_radio_1.glb" id="2_feo4i"]
+[ext_resource type="PackedScene" uid="uid://sjvs7pfwyc6n" path="res://assets/PSX Bunkers/Models/other-formats/GLB/pcb_1.glb" id="3_ykhyd"]
+[ext_resource type="PackedScene" uid="uid://drxgftys84red" path="res://assets/PSX Bunkers/Models/other-formats/GLB/pcb_2.glb" id="4_br7pj"]
+[ext_resource type="PackedScene" uid="uid://b3002ig1fpbff" path="res://assets/PSX Bunkers/Models/other-formats/GLB/pipe_1.glb" id="5_i3enk"]
+[ext_resource type="PackedScene" uid="uid://ua7803xx5rjl" path="res://assets/PSX Bunkers/Models/other-formats/GLB/pipe_1_ancle.glb" id="6_ptg4l"]
+[ext_resource type="PackedScene" uid="uid://cj5x7jg0go8m2" path="res://assets/PSX Bunkers/Models/other-formats/GLB/power_supply_1.glb" id="7_dxli2"]
+[ext_resource type="PackedScene" uid="uid://djbyfj6hls6uy" path="res://assets/PSX Bunkers/Models/other-formats/GLB/sign_1.glb" id="8_spohn"]
+[ext_resource type="PackedScene" uid="uid://bnm70axq76rvk" path="res://assets/PSX Bunkers/Models/other-formats/GLB/trash_1.glb" id="9_hjevf"]
+[ext_resource type="PackedScene" uid="uid://bf6jdcvy2ifl4" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/cell_phone_3.glb" id="10_48bmm"]
+[ext_resource type="PackedScene" uid="uid://ydetnll8n7xl" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/cell_phone_battery_1.glb" id="11_bc5r7"]
+[ext_resource type="PackedScene" uid="uid://bdm0ykvlam3fu" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/electrical_outlet_1.glb" id="12_t2deo"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_1"]
 size = Vector3(1, 0.6, 1)
@@ -12,9 +23,48 @@ size = Vector3(1, 0.6, 1)
 script = ExtResource("1_4n8q2")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1012590121]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.6436239, 0)
+visible = false
 mesh = SubResource("BoxMesh_1")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1675106885]
+visible = false
 shape = SubResource("BoxShape_1")
 
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="." unique_id=853711117 groups=["scrap_heaps"]]
+
+[node name="military_radio_12" parent="." unique_id=1674626797 instance=ExtResource("2_feo4i")]
+transform = Transform3D(0.91096467, 0, -0.41248447, 0, 1, 0, 0.41248447, 0, 0.91096467, 0, -0.35148722, 0.17879415)
+
+[node name="pcb_12" parent="." unique_id=1910326840 instance=ExtResource("3_ykhyd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.10112041, -0.16452034, 0)
+
+[node name="pcb_13" parent="." unique_id=1419319406 instance=ExtResource("3_ykhyd")]
+transform = Transform3D(-0.8367643, 0, -0.54756325, 0, 1, 0, 0.54756325, 0, -0.8367643, -0.37741494, -0.32961032, 0)
+
+[node name="pcb_22" parent="." unique_id=745114504 instance=ExtResource("4_br7pj")]
+transform = Transform3D(0.34667373, -0.6916994, -0.63353705, -0.46941814, 0.45681667, -0.7556223, 0.8120738, 0.5593482, -0.16632989, -0.15172309, -0.2879933, 0.35749418)
+
+[node name="pipe_12" parent="." unique_id=320162017 instance=ExtResource("5_i3enk")]
+transform = Transform3D(0.18, 0, 0, 0, 0.12603813, -0.12850833, 0, 0.12850833, 0.12603813, 0, -0.32651046, -0.22347811)
+
+[node name="pipe_1_ancle2" parent="." unique_id=1365073541 instance=ExtResource("6_ptg4l")]
+transform = Transform3D(0.08058329, 0.9967052, -0.009229898, -0.014840689, 0.0104587525, 0.99983513, 0.9966375, -0.08043304, 0.015634594, 0, -0.24120274, -0.31890237)
+
+[node name="power_supply_12" parent="." unique_id=1465180580 instance=ExtResource("7_dxli2")]
+transform = Transform3D(1, 0, 0, 0, 0.76981187, 0.63827085, 0, -0.63827085, 0.76981187, -0.20561112, -0.25264192, -0.17721936)
+
+[node name="sign_12" parent="." unique_id=289678302 instance=ExtResource("8_spohn")]
+transform = Transform3D(0.76617914, 0.16128106, 0.6220596, -0.64262724, 0.19228905, 0.7416572, 0, -0.96799463, 0.25097144, 0.28417376, -0.19518483, 0.221683)
+
+[node name="trash_12" parent="." unique_id=254447380 instance=ExtResource("9_hjevf")]
+transform = Transform3D(1.84, 0, 0, 0, 1.84, 0, 0, 0, 1.84, -0.04538153, -0.34798583, -0.12803066)
+
+[node name="cell_phone_32" parent="." unique_id=63771821 instance=ExtResource("10_48bmm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.18596575, 0.27969402)
+
+[node name="cell_phone_battery_12" parent="." unique_id=1201298318 instance=ExtResource("11_bc5r7")]
+transform = Transform3D(0.8914261, 0, -0.4531661, 0, 1, 0, 0.4531661, 0, 0.8914261, -0.27677372, -0.29163992, 0.087701455)
+
+[node name="electrical_outlet_12" parent="." unique_id=391247265 instance=ExtResource("12_t2deo")]
+transform = Transform3D(1, 0, 0, 0, 0.6622801, 0.7492564, 0, -0.7492564, 0.6622801, -0.30683476, -0.21947187, -0.040906955)

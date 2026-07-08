@@ -1,6 +1,7 @@
 extends CharacterBody3D
 
 ## Stair climbing settings
+@export var stair_step_assist: bool = true
 @export var max_step_height: float = 0.7
 @export var step_check_distance: float = 0.5
 
@@ -93,11 +94,20 @@ var sprint_unlocked: bool = true
 ## 0.0 = not looking, 1.5+ = Entity charges.
 var look_timer: float = 0.0
 
+## Throttle timer for periodic debug logging of flashlight/look state
+var _look_debug_timer: float = 0.0
+
 ## Reference to the StandoffEffect node on the HUD
 var _standoff_effect: Node = null
 
 ## Reference to the Entity node (found at runtime)
 var _entity_node: Node = null
+
+## Reference to the SanityController (cached once for performance)
+var _sanity_controller: Node = null
+
+## Reference to the Notebook UI (instantiated from notebook_ui.tscn)
+@onready var _notebook: Control = $NotebookLayer/NotebookUI
 
 # Stamina system
 var _stamina: float = 100.0
@@ -194,6 +204,18 @@ func _ready() -> void:
 		_physical_grab.set_camera(_camera)
 	elif _physical_grab:
 		_physical_grab.set("_camera", _camera)
+	
+	# ─── NOTEBOOK UI ───────────────────────────────────────────────
+	# Load and instance the notebook scene into the NotebookLayer CanvasLayer
+	var notebook_scene = load("res://scenes/ui/notebook_ui.tscn")
+	if notebook_scene:
+		var notebook_instance = notebook_scene.instantiate()
+		$NotebookLayer.add_child(notebook_instance)
+		_notebook = notebook_instance
+		notebook_instance.visible = false
+		print("[Player] Notebook UI loaded and attached to NotebookLayer.")
+	else:
+		print("[Player] WARNING: Could not load notebook_ui.tscn!")
 	
 	_create_crosshair()
 	get_viewport().size_changed.connect(_rebuild_crosshair)
@@ -296,6 +318,22 @@ func _input(event: InputEvent) -> void:
 	
 	if event is InputEventKey and event.keycode == KEY_F and event.pressed:
 		_toggle_flashlight()
+	
+	# ─── NOTEBOOK OPEN: Q/E flip pages, E is NOT interact ──────────
+	if _notebook and _notebook.visible:
+		if event.is_action_pressed("notebook_next_page"):
+			print("[Player Input] E pressed while notebook open — forwarding to notebook._input()")
+			_notebook._input(event)
+			get_viewport().set_input_as_handled()
+		elif event.is_action_pressed("notebook_prev_page"):
+			print("[Player Input] Q pressed while notebook open — forwarding to notebook._input()")
+			_notebook._input(event)
+			get_viewport().set_input_as_handled()
+		# Absorb ALL actions while notebook is open (except movement/escape)
+		if event.is_action_pressed("ui_interact"):
+			print("[Player Input] E pressed while notebook open — BLOCKED interact")
+			get_viewport().set_input_as_handled()
+		return  # Block all further input processing
 	
 	# ─── PHOTO CAMERA TOGGLE (R key) ──────────────────────────────────────
 	# Pressing R toggles the PhotoCamera viewfinder on/off (only if equipped).
@@ -411,6 +449,7 @@ func _toggle_flashlight() -> void:
 	else:
 		_flashlight_on = not _flashlight_on
 		_flashlight.visible = _flashlight_on
+	print("[Player Flashlight] Toggled! is_on=%s visible=%s battery=%.1f" % [_flashlight.is_on, _flashlight.visible, _flashlight.get_battery_percent()])
 
 func _toggle_inventory() -> void:
 	var inv_ui = get_node_or_null("/root/CottageHorror/InventoryUI")
@@ -505,7 +544,7 @@ func _physics_process(delta: float) -> void:
 		_head_bob_active = false
 		_noise_timer = 0.0
 
-	if _was_on_floor and direction.length() > 0 and is_on_floor():
+	if stair_step_assist and _was_on_floor and direction.length() > 0 and is_on_floor():
 		_try_step_up(direction)
 
 	var landed = not _was_on_floor and is_on_floor()
@@ -710,6 +749,24 @@ func _process(delta: float) -> void:
 	# Check if the flashlight is ON and we're looking at the Entity
 	var is_looking_at_entity = _is_flashlight_on_entity()
 	
+	# Throttled debug log every 2 seconds
+	_look_debug_timer += delta
+	if _look_debug_timer >= 2.0:
+		_look_debug_timer = 0.0
+		var ent_name = _entity_node.name if _entity_node else "null"
+		var has_fl = _has_flashlight and _flashlight
+		var fl_on = _flashlight.is_on if (has_fl and "is_on" in _flashlight) else false
+	
+	# ─── SANITY GAZE SHAKE ──────────────────────────────────────
+	# Fetch the sanity gaze level from SanityController if available.
+	if not _sanity_controller:
+		var cam = _camera
+		if cam and cam.has_node("SanityController"):
+			_sanity_controller = cam.get_node("SanityController")
+	var gaze_norm := 0.0
+	if _sanity_controller and _sanity_controller.has_method("get_gaze_normalized"):
+		gaze_norm = _sanity_controller.get_gaze_normalized()
+	
 	if is_looking_at_entity:
 		# Increase look_timer while staring at the Entity with flashlight
 		look_timer += delta
@@ -717,16 +774,6 @@ func _process(delta: float) -> void:
 		# Clamp to max meaningful value (1.5s triggers charge)
 		if look_timer > 2.0:
 			look_timer = 2.0
-		
-		# Dynamic camera shake — intensity scales with look_timer
-		var shake_intensity = look_timer / 1.5  # 0.0 to 1.0 at 1.5s
-		if shake_intensity > 0.1:
-			var shake = shake_intensity * 0.02  # Max 0.02 radians (~1 degree)
-			_camera.h_offset = randf_range(-shake, shake)
-			_camera.v_offset = randf_range(-shake, shake)
-		else:
-			_camera.h_offset = 0.0
-			_camera.v_offset = 0.0
 		
 		# Notify the Entity that it's being stared at (triggers STANDOFF state)
 		if _entity_node and _entity_node.has_method("on_player_stare"):
@@ -737,15 +784,24 @@ func _process(delta: float) -> void:
 			look_timer -= delta * 2.0  # Decay twice as fast as it builds
 			if look_timer < 0.0:
 				look_timer = 0.0
-				_camera.h_offset = 0.0
-				_camera.v_offset = 0.0
 			
 			# Notify the Entity that stare is ending
 			if _entity_node and _entity_node.has_method("on_player_stare"):
 				_entity_node.on_player_stare(look_timer)
-		else:
-			_camera.h_offset = 0.0
-			_camera.v_offset = 0.0
+	
+	# ─── COMBINED CAMERA SHAKE ───────────────────────────────────
+	# Takes the MAX of flashlight stare intensity and sanity gaze
+	# intensity, so both systems contribute independently.
+	var flashlight_intensity := look_timer / 1.5  # 0.0→1.0 at 1.5s
+	var shake_intensity := maxf(flashlight_intensity, gaze_norm)
+	
+	if shake_intensity > 0.05:
+		var shake = shake_intensity * 0.04  # Max 0.04 radians (~2.3°)
+		_camera.h_offset = randf_range(-shake, shake)
+		_camera.v_offset = randf_range(-shake, shake)
+	else:
+		_camera.h_offset = 0.0
+		_camera.v_offset = 0.0
 	
 	# Update the StandoffEffect with the current look_timer
 	if _standoff_effect and _standoff_effect.has_method("update_look_timer"):
@@ -764,47 +820,37 @@ func _is_flashlight_on_entity() -> bool:
 	if not _entity_node or not is_instance_valid(_entity_node):
 		return false
 	
-	# Raycast from camera center to check if we're looking at the Entity
 	var space_state = get_world_3d().direct_space_state
 	if not space_state:
 		return false
 	
-	var viewport_size = _camera.get_viewport().size
-	var center = viewport_size / 2.0
-	var from = _camera.project_ray_origin(center)
-	var to = from + _camera.project_ray_normal(center) * 30.0  # Max range
+	# ─── STEP 1: VISION CONE (dot product) ────────────────────────
+	# The player must be looking roughly at the Entity.
+	# dot > 0.95 = ~18° cone — matches the tight flashlight beam.
+	var cam_forward = -_camera.global_transform.basis.z.normalized()
+	var entity_target = _entity_node.global_position + Vector3(0, 1.0, 0)
+	var dir_to_entity = (entity_target - _camera.global_position).normalized()
 	
-	var query = PhysicsRayQueryParameters3D.create(from, to)
-	query.collide_with_areas = true
-	query.collide_with_bodies = true
+	if cam_forward.dot(dir_to_entity) < 0.95:
+		return false
+	
+	# ─── STEP 2: OCCLUSION RAYCAST ────────────────────────────────
+	# Cast from camera toward the Entity's chest.
+	# collision_mask = 17  → Layer 1 (world/cabin) | Layer 5 (entity)
+	# If the ray hits a wall before the Entity, is_player_spotting fails.
+	var query = PhysicsRayQueryParameters3D.create(
+		_camera.global_position,
+		entity_target
+	)
 	query.exclude = [self]
-	# ─── COLLISION MASK: Layer 2 (Player/Entity layer) ONLY ──────────
-	# The default mask scans ALL physics layers, which causes the
-	# flashlight beam to hit cabin wall/window colliders (Layer 1).
-	# This blocks detection of the Entity when the player is inside the
-	# cabin shining the flashlight through a window at the Entity outside.
-	#
-	# Restricting to Layer 2 means the ray passes through glass, cabin
-	# walls, trees, and rocks — only the Entity's capsule collider can
-	# register a hit. (Matches entity_sensory.gd is_player_spotting_entity())
-	query.collision_mask = 2  # Layer 2: Player/Entity
+	query.collision_mask = 17  # Layer 1 (world) | Layer 5 (entity) = 1 | 16
 	
 	var result = space_state.intersect_ray(query)
 	if result.is_empty():
 		return false
 	
 	var collider = result.collider
-	
-	# Walk up the parent chain to check if we hit the Entity
-	var current = collider
-	while current:
-		if current == _entity_node:
-			return true
-		if current.is_in_group("entity"):
-			return true
-		current = current.get_parent()
-	
-	return false
+	return collider != null and collider.is_in_group("entity")
 
 
 ## Public API: returns true if the player's flashlight is currently on.

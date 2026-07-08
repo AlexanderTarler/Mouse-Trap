@@ -65,6 +65,7 @@ const MAX_PURGE_DISTANCE: float = 8.0
 
 func _ready() -> void:
 	add_to_group("interactable")
+	add_to_group("totem_anchor")
 	
 	# Find the Entity in the scene tree
 	_entity = get_tree().get_first_node_in_group("entity")
@@ -220,7 +221,7 @@ func _complete_purge() -> void:
 	# Make the totem visually disappear (fade out)
 	var tween = create_tween()
 	tween.tween_property(self, "scale", Vector3.ZERO, 1.0)
-	tween.tween_callback(queue_free)
+	tween.tween_callback(hide) # Changed from queue_free
 
 
 ## Defeats the Entity: plays a death scream, hides it, and disables it

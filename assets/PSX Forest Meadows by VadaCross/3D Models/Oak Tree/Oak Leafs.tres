@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://b2mkcwxd56hqi"]
+
+[ext_resource type="Texture2D" uid="uid://c6l6fk041ij3x" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Oak Tree/Oak Trees_1.png" id="1_sm8bw"]
+
+[resource]
+resource_name = "Oak Leafs"
+transparency = 4
+albedo_texture = ExtResource("1_sm8bw")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0

@@ -129,6 +129,13 @@ var _door_lock_delay_timer: float = 0.0
 ## The bed checks this flag before allowing the player to sleep.
 var day1_onboarding_complete: bool = false
 
+## Whether the Night 2.2 van sequence (car alarm → chase) is currently active.
+## Set to true when the bed triggers the car alarm sequence (current_night 1→2).
+## Used by HorrorSoundManager to suppress the distant monster scream, and by
+## EnvironmentController to force unnaturally dark lighting.
+## Cleared when the player investigates the van (trigger_first_chase()).
+var is_van_sequence_active: bool = false
+
 
 # --- NIGHT 1 PEEKER ---
 ## Timer counting up to the peeker spawn delay (5 seconds into Night 1).
@@ -214,22 +221,30 @@ func _on_scene_ready() -> void:
 func _set_initial_time() -> void:
 	var gt = get_node_or_null("/root/GameTime")
 	if gt:
-		# Non-dev mode: Day 1, 04:00 (progress = 4/24 ≈ 0.1667).
-		# Dev mode overrides this to 0.0 (00:00) in entity_controller.gd.
-		var start_progress: float = 0.1667  # 04:00
+		# Non-dev mode: Day 1 starts 4 minutes into the 5-minute day phase.
+		# cycle_progress = 0.4 → 4:00 elapsed, 1:00 remaining until night.
+		# Dev mode overrides this to 0.0 (start of day) in entity_controller.gd.
+		var start_progress: float = 0.4
 		if is_dev_mode:
-			start_progress = 0.0  # 00:00 for dev mode
+			start_progress = 0.0
 		gt.cycle_progress = start_progress
 		gt._elapsed = gt.cycle_progress * gt.cycle_duration
 		gt.is_day = true
 		gt._was_day = true
-		gt.current_hour = start_progress * 24.0
-		gt.is_time_paused = true
+		gt.is_time_paused = false
+		gt.is_running = true
 		gt.time_changed.emit(gt.cycle_progress)
-		print("[NightManager] Dev=%s: Initial time set to progress=%.4f (hour=%.1f). Time is PAUSED." % [is_dev_mode, gt.cycle_progress, gt.current_hour])
+		print("[NightManager] Dev=%s: Initial time set to progress=%.4f. Time is RUNNING." % [is_dev_mode, gt.cycle_progress])
+		
+		# ─── DEBUG: Log the UI day display ─────────────────────────────
+		var rm = get_node_or_null("/root/RoutineManager")
+		if rm and rm.has_method("get_current_day_string"):
+			print("[NightManager] UI Day Label: '%s' (current_night=%d, cycle_progress=%.4f)" % [rm.get_current_day_string(), current_night, gt.cycle_progress])
+		else:
+			print("[NightManager] UI Day Label: RoutineManager not available (cycle_progress=%.4f)" % gt.cycle_progress)
 	
-	# Also set our own is_time_paused flag
-	is_time_paused = true
+	# Also set our own is_time_paused flag — time starts UNFROZEN
+	is_time_paused = false
 
 
 
@@ -269,8 +284,6 @@ func _apply_dev_mode_settings() -> void:
 			player.start_with_key = true
 		
 		# Unlock the front door
-		# The door is in the "Door" group (not "interactable"), so we search
-		# by group name. The door is an AnimatableBody3D with start_locked/is_locked.
 		var doors = get_tree().get_nodes_in_group("Door")
 		for d in doors:
 			if "start_locked" in d:
@@ -280,8 +293,6 @@ func _apply_dev_mode_settings() -> void:
 				print("[NightManager] Dev Mode: Door '%s' unlocked." % d.name)
 		
 		# Power on the fuse box
-		# The fuse box has no specific group, so we search the entire scene
-		# tree for any node with the FuseBox script.
 		var fuse_box = _find_fuse_box()
 		if fuse_box:
 			fuse_box.start_broken = false
@@ -299,15 +310,10 @@ func _apply_dev_mode_settings() -> void:
 		generator_state_changed.emit(true)
 		print("[NightManager] Dev Mode: Generator at 100% fuel.")
 		
-		# NOTE: Time stays PAUSED in dev mode. Use debug console or
-		# F-keys to manually start a night when ready to test.
-		# NOT unpausing here prevents the 2.5-minute rush into Night.
-		
 	else:
 		# ─── NORMAL MODE: Locked down, player must work for everything ──
 		print("[NightManager] NORMAL MODE: Applying locked-down settings.")
 		
-		# Player starts with NO sprint, NO flashlight, NO key, empty inventory
 		if "start_with_sprint" in player:
 			player.start_with_sprint = false
 		if "start_with_flashlight" in player:
@@ -315,22 +321,14 @@ func _apply_dev_mode_settings() -> void:
 		if "start_with_key" in player:
 			player.start_with_key = false
 		
-		# Clear starting items from the player's inventory
-		# Note: starting_items is an @export array, so we clear it by
-		# calling clear() on the array reference rather than reassigning.
 		if "starting_items" in player:
 			player.starting_items.clear()
-
 		
-		# Clear the inventory autoload
 		var inv = get_node_or_null("/root/Inventory")
 		if inv and inv.has_method("clear"):
 			inv.clear()
 			print("[NightManager] Normal Mode: Inventory cleared.")
 		
-		# Lock the front door
-		# The door is in the "Door" group (not "interactable"), so we search
-		# by group name.
 		var doors = get_tree().get_nodes_in_group("Door")
 		for d in doors:
 			if "start_locked" in d:
@@ -339,9 +337,6 @@ func _apply_dev_mode_settings() -> void:
 					d.is_locked = true
 				print("[NightManager] Normal Mode: Door '%s' locked." % d.name)
 		
-		# Break the fuse box
-		# The fuse box has no specific group, so we search the entire scene
-		# tree for any node with the FuseBox script.
 		var fuse_box = _find_fuse_box()
 		if fuse_box:
 			fuse_box.start_broken = true
@@ -352,30 +347,21 @@ func _apply_dev_mode_settings() -> void:
 		else:
 			print("[NightManager] Normal Mode: No FuseBox found in scene.")
 		
-		# Drain the generator
 		generator_fuel = 0.0
 		is_generator_on = false
 		fuel_changed.emit(generator_fuel)
 		generator_state_changed.emit(false)
 		print("[NightManager] Normal Mode: Generator at 0% fuel.")
 		
-		# Time stays paused (already set by _set_initial_time)
-		print("[NightManager] Normal Mode: Time remains PAUSED until door is unlocked.")
+		# Time is RUNNING (set by _set_initial_time).
+		# The clock ticks immediately on scene load — no door interaction required.
+		print("[NightManager] Normal Mode: Time is RUNNING. Clock ticks immediately on scene load.")
 
 
 ## ─── SPAWN SYSTEM ──────────────────────────────────────────────────────────
 
 ## Teleports the player to the appropriate spawn marker based on dev mode.
-##
-## If is_dev_mode is true, looks for a Marker3D named "PlayerSpawnDev".
-## Otherwise, looks for a Marker3D named "PlayerSpawn".
-##
-## The spawn marker is expected to be a child of a "PlayerSpawnpoints" Node3D
-## in the current scene. Uses recursive search to find it.
-##
-## Falls back to a hardcoded position if no marker is found.
 func setup_player_spawn() -> void:
-	# Find the player node
 	var player: Node3D = get_tree().get_first_node_in_group("player")
 	if not player:
 		player = get_tree().get_first_node_in_group("Player")
@@ -383,18 +369,12 @@ func setup_player_spawn() -> void:
 		print("[NightManager] Player not found! Cannot set spawn position.")
 		return
 	
-	# Determine which spawn marker to use
 	var marker_name: String = "PlayerSpawnDev" if is_dev_mode else "PlayerSpawn"
 	
-	# Search for the marker in the current scene.
-	# The marker is expected to be a child of a "PlayerSpawnpoints" Node3D.
 	var spawn_marker: Marker3D = null
 	var scene_root: Node = get_tree().current_scene
 	if scene_root:
-		# First try direct path
 		spawn_marker = scene_root.get_node_or_null("PlayerSpawnpoints/" + marker_name) as Marker3D
-		
-		# Fallback: search recursively for any Marker3D with the matching name
 		if not spawn_marker:
 			spawn_marker = _find_marker_recursive(scene_root, marker_name)
 	
@@ -419,19 +399,6 @@ func _find_marker_recursive(root: Node, name: String) -> Marker3D:
 
 
 ## ─── ONBOARDING SEQUENCE ───────────────────────────────────────────────────
-## Starts the Day 1 "Arrival" onboarding routine.
-##
-## If is_dev_mode is true, skips the entire onboarding sequence and logs
-## a message so the developer knows the Entity AI is unrestricted.
-##
-## If is_dev_mode is false (normal game):
-##   1. Hides horror UI elements (Entity confidence, sanity, etc.)
-##   2. Sets the initial objective to "Enter the cabin."
-##   3. Initializes RoutineManager with the Day 1 checklist:
-##      - Refill Generator
-##      - Fix Fuse
-##      - Log into the Computer
-##      (No enforced order — player can explore freely.)
 func start_onboarding_sequence() -> void:
 	if is_dev_mode:
 		print("[NightManager] Dev Mode: SKIPPING Onboarding. Entity AI is unrestricted.")
@@ -439,17 +406,12 @@ func start_onboarding_sequence() -> void:
 	
 	print("[NightManager] Starting Day 1 Onboarding Sequence...")
 	
-	# ─── 1. Hide horror UI elements ──────────────────────────────────────
-	# Hide Entity confidence/sanity indicators so the player isn't overwhelmed
-	# with horror UI during the tutorial phase.
 	var horror_hud = get_node_or_null("/root/CottageHorror/HorrorHUD")
 	if horror_hud:
 		_hide_horror_ui_elements(horror_hud)
 	
-	# ─── 2. Set initial objective ────────────────────────────────────────
 	_set_objective("Enter the cabin.")
 	
-	# ─── 3. Initialize RoutineManager phase state ────────────────────────
 	var routine_manager = get_node_or_null("/root/RoutineManager")
 	if routine_manager and routine_manager.has_method("reset_all_phases"):
 		routine_manager.reset_all_phases()
@@ -459,17 +421,12 @@ func start_onboarding_sequence() -> void:
 
 
 
-## Hides horror-specific UI elements on the HorrorHUD node.
-## Disables Entity confidence bars, sanity indicators, or any other
-## horror-themed UI that would confuse a new player during onboarding.
 func _hide_horror_ui_elements(horror_hud: Node) -> void:
-	# Hide confidence/sanity bars if they exist
 	if horror_hud.has_method("hide_confidence"):
 		horror_hud.hide_confidence()
 	if horror_hud.has_method("hide_sanity"):
 		horror_hud.hide_sanity()
 	
-	# Hide any horror-specific panels or overlays
 	if "confidence_bar" in horror_hud and horror_hud.confidence_bar:
 		horror_hud.confidence_bar.visible = false
 	if "sanity_bar" in horror_hud and horror_hud.sanity_bar:
@@ -478,11 +435,7 @@ func _hide_horror_ui_elements(horror_hud: Node) -> void:
 	print("[NightManager] Horror UI elements hidden for onboarding.")
 
 
-## Sets the player's current objective text, displayed in the HUD.
-## Finds the objective label via the "objective_label" group or by
-## searching the scene tree for a Label with "Objective" in its name.
 func _set_objective(text: String) -> void:
-	# Try group-based discovery first
 	var labels = get_tree().get_nodes_in_group("objective_label")
 	if not labels.is_empty():
 		for label in labels:
@@ -491,7 +444,6 @@ func _set_objective(text: String) -> void:
 				print("[NightManager] Objective set via group: '%s'" % text)
 				return
 	
-	# Fallback: search the scene tree for an objective label
 	var scene_root: Node = get_tree().current_scene
 	if scene_root:
 		var obj_label = scene_root.get_node_or_null("HUD/ObjectiveLabel")
@@ -503,9 +455,6 @@ func _set_objective(text: String) -> void:
 	print("[NightManager] Could not find objective label to set text: '%s'" % text)
 
 
-## Reads the starting_fuel_percent from the Generator node and applies it
-## to generator_fuel. Called during _ready() so the fuel level is set before
-## the first night starts.
 func _apply_starting_fuel() -> void:
 	var generators = get_tree().get_nodes_in_group("generator_controller")
 	if not generators.is_empty():
@@ -528,31 +477,21 @@ func _find_game_time() -> void:
 		print("NightManager: GameTime not found after %d attempts." % _MAX_FIND_GT_ATTEMPTS)
 		return
 	
-	# Find GameTime via the scene tree (autoloads are children of /root)
 	var gt = get_node_or_null("/root/GameTime")
 	if gt:
 		_game_time = gt
 		_game_time.night_started.connect(_on_game_night_started)
 		_game_time.day_started.connect(_on_game_day_started)
 		
-		# Only auto-start a night if current_night > 0.
-		# current_night starts at 0 (Day 1 pre-night), so we skip auto-start
-		# until the onboarding sequence naturally transitions to Night 1.
 		if current_night > 0 and not _game_time.is_day:
 			start_night(current_night)
 		print("NightManager: Connected to GameTime.")
 	else:
-		# Retry next frame — GameTime might not be ready yet
 		call_deferred("_find_game_time")
 
 
 
 func _process(delta: float) -> void:
-	# ─── PLAYER SPAWN & DEV MODE SETUP (polling) ─────────────────────
-	# Poll for the player node once per frame until it appears in the
-	# scene tree. This handles the case where NightManager is an autoload
-	# that exists during the main menu scene — the player only appears
-	# after the scene transitions to cottage_horror.tscn.
 	if not _spawn_setup_done:
 		var player = get_tree().get_first_node_in_group("player")
 		if player:
@@ -560,27 +499,17 @@ func _process(delta: float) -> void:
 			setup_player_spawn()
 			_apply_dev_mode_settings()
 			start_onboarding_sequence()
-		return  # Don't process anything else until spawn setup is done
+		return
 	
-	# Allow processing during both night and day phases.
-	# During day, we skip horror events and generator drain so the
-	# cabin grid sits in a passive, non-depleting safety state.
 	if not is_night_active and not is_day_active:
 		return
 
-	# ─── DEFERRED DOOR LOCK POLLING (Day 3+ Exhaustion) ────────────
-	# MUST run BEFORE the is_time_paused guard, because dawn exhaustion
-	# pauses time. The door needs to track the player's HallRoom entry
-	# and lock after 3 seconds even while the clock is frozen.
 	if _awaiting_door_lock:
 		var _poll_player = get_tree().get_first_node_in_group("player") as Node3D
 		if not _poll_player:
 			_poll_player = get_tree().get_first_node_in_group("Player") as Node3D
 		if _poll_player and _poll_player.has_method("get_player_room"):
 			var room = _poll_player.get_player_room()
-			# Print every 60 frames so we can see what room is being detected
-			if Engine.get_process_frames() % 60 == 0:
-				print("[NightManager] DoorLock poll: room='%s', timer=%.1fs" % [room, _door_lock_delay_timer])
 			if room == "HallRoom":
 				_door_lock_delay_timer += delta
 				if _door_lock_delay_timer >= 3.0:
@@ -590,7 +519,6 @@ func _process(delta: float) -> void:
 						door.close_and_lock()
 						print("[NightManager] Player entered HallRoom. Door closed and locked after 3s delay.")
 					elif door:
-						# Fallback: force close + lock via raw properties
 						print("[NightManager] Calling raw property close. is_open=%s" % str(door.is_open))
 						door.is_open = false
 						door.rotation_degrees.y = door.default_rotation_y
@@ -600,51 +528,35 @@ func _process(delta: float) -> void:
 			else:
 				_door_lock_delay_timer = 0.0
 
-	# ─── DAY 1 ONBOARDING: TIME PAUSED ──────────────────────────────
-	# During the Day 1 onboarding sequence, time is paused until the
-	# player unlocks the cabin door with the CabinKey. While paused,
-	# we skip all time-based progression (fuel drain, events, peeker).
 	if is_time_paused:
 		return
 	
-	# Update night progress from GameTime
 	if _game_time:
 		night_progress = _game_time.get_phase_progress()
 	
-	# --- POWER GRID: REAL-TIME FUEL DRAIN ---
-	# Only drain fuel during active nights. During the day, the generator
-	# sits in a passive state — no fuel consumed, lights stay on for free.
 	if is_night_active:
 		if is_generator_on:
 			generator_fuel -= current_drain_rate * delta
 			generator_fuel = clampf(generator_fuel, 0.0, max_fuel)
 			fuel_changed.emit(generator_fuel)
 			
-			# Blackout when fuel hits zero
 			if generator_fuel <= 0.0:
 				is_generator_on = false
 				generator_state_changed.emit(false)
 				fuel_changed.emit(0.0)
 				print("[Power Grid] Blackout! The generator has run completely out of fuel.")
 				
-				# Notify the Entity of the blackout — if it was stunned by the
-				# overload trap, it will be released into an ENRAGED state.
-				# If it wasn't stunned, this call is a no-op.
 				var entity = get_tree().get_first_node_in_group("entity")
 				if entity and entity.has_method("on_generator_blackout"):
 					entity.on_generator_blackout()
 
 	
-	# Check for time-based events (only during active nights)
 	if is_night_active:
 		_event_timer += delta
 		if _event_timer >= 5.0:
 			_event_timer = 0.0
 			_check_time_events()
 	
-	# --- NIGHT 1 PEEKER: 5-second timer ---
-	# After 5 seconds into Night 1, spawn a WindowPeeker at a random
-	# cabin window that the player is not currently looking at.
 	if is_night_active and current_night == 1 and not _peeker_spawned:
 		_peeker_timer += delta
 		if _peeker_timer >= PEEKER_SPAWN_DELAY:
@@ -654,51 +566,35 @@ func _process(delta: float) -> void:
 
 
 func _on_game_night_started() -> void:
-	# ─── NIGHT 0 GUARD ──────────────────────────────────────────────
-	# During Day 1 onboarding, current_night is 0. When the day/night
-	# cycle naturally reaches night (cycle_progress crosses 0.5),
-	# GameTime emits night_started. If we call start_night(0), it would
-	# start "Night 0" which is wrong — it should be Night 1.
-	#
-	# Fix: If current_night is 0 when night starts, bump it to 1 first.
-	if current_night == 0:
+	if current_night <= 0:
 		current_night = 1
-		print("[NightManager] Auto-bumped current_night from 0 to 1 for first night transition.")
+		print("[NightManager] Auto-bumped current_night from %d to 1 for first night transition. (Night 0 guard)" % current_night)
+	
+	if current_night <= 0:
+		push_warning("[NightManager] _on_game_night_started() received invalid night=%d. Ignoring." % current_night)
+		return
 	
 	start_night(current_night)
 
 
 func _on_game_day_started() -> void:
-	# ─── SAFETY GUARD ──────────────────────────────────────────────
-	# Only end the night if one is actually active. Spurious day_started
-	# signals (e.g., from GameTime wrapping around due to stale state
-	# before the night-phase sync in start_night()) must be ignored.
 	if not is_night_active:
 		print("[NightManager] Ignoring spurious day_started — no night is active.")
 		return
 	end_current_night()
 
-	# ─── DAY 3+ EXHAUSTION MECHANIC ────────────────────────────────
-	# From Day 3 onwards, the player is physically broken at dawn.
-	# Freeze the clock, apply exhaustion to the player, lock the door
-	# if the player is inside, and set the objective to rest.
 	if current_night >= 3:
 		_apply_dawn_exhaustion()
 
 
 ## ─── DAY 3+ DAWN EXHAUSTION ────────────────────────────────────────────────
-## Freezes GameTime, sets the player's is_exhausted flag, conditionally locks
-## the front door if the player is inside the cabin, and updates the HUD
-## objective text to direct the player to bed.
 func _apply_dawn_exhaustion() -> void:
-	# 1. Freeze the game clock
 	is_time_paused = true
 	var gt = get_node_or_null("/root/GameTime")
 	if gt:
 		gt.is_time_paused = true
 		gt.is_running = false
 
-	# 2. Set exhaustion flag on the player
 	var player = get_tree().get_first_node_in_group("player") as Node3D
 	if not player:
 		player = get_tree().get_first_node_in_group("Player") as Node3D
@@ -706,82 +602,58 @@ func _apply_dawn_exhaustion() -> void:
 		player.is_exhausted = true
 		print("[NightManager] Dawn exhaustion applied to player.")
 
-	# 3. Deferred door lock — if the player is already inside, start a
-	#    3-second countdown before locking. If the player is outside,
-	#    the door stays unlocked; the countdown begins when they enter
-	#    the HallRoom. This prevents locking the player out at dawn.
-	_awaiting_door_lock = true
-	_door_lock_delay_timer = 0.0
-	print("[NightManager] Dawn exhaustion: Deferred door lock armed. Waiting for player to reach HallRoom for 3 seconds.")
+	var player_is_outside = false
+	if player and player.has_method("get_player_room"):
+		var room = player.get_player_room()
+		print("[NightManager] Dawn exhaustion: player room = '%s'" % room)
+		if room == "Outside":
+			player_is_outside = true
+	
+	if player_is_outside:
+		print("[NightManager] Dawn exhaustion: Player is OUTSIDE at dawn. Deferred door lock NOT armed — player won't be locked out.")
+		_awaiting_door_lock = false
+	else:
+		_awaiting_door_lock = true
+		_door_lock_delay_timer = 0.0
+		print("[NightManager] Dawn exhaustion: Deferred door lock armed. Waiting for player to reach HallRoom for 3 seconds.")
 
-	# 4. Set the HUD objective
 	_set_objective("I'm exhausted, I need to go to bed.")
 	print("[NightManager] Day %d dawn exhaustion applied. Time is frozen." % current_night)
 
 
 ## Starts a specific night.
-## Flips is_day_active to false, sets is_night_active to true,
-## and awakens the monster controller.
-## On Night 1, the Entity is NOT activated — the car alarm narrative
-## event plays first, and the Entity only appears when the player
-## interacts with the car.
 func start_night(night: int) -> void:
+	if night <= 0:
+		push_warning("[NightManager] start_night() called with invalid night=%d. Ignoring. (Night 0 guard)" % night)
+		return
+	
 	current_night = night
 	night_progress = 0.0
 	_triggered_events.clear()
 	_event_timer = 0.0
-	# Reset Night 1 Peeker state so it can trigger again if the night restarts
 	_peeker_timer = 0.0
 	_peeker_spawned = false
 	is_day_active = false
 	is_night_active = true
 	
-	# ─── UNFREEZE NIGHT PROGRESSION ──────────────────────────────────
-	# Day 1 onboarding sets is_time_paused=true to freeze the clock.
-	# When a night starts (via natural transition, debug console, or game
-	# restart), we MUST unpause so that _process() can update night_progress.
-	# Without this, confidence gets stuck because night_progress never
-	# advances, and fuel drain/events never fire.
-	is_time_paused = false
-	
-	# ─── SYNCHRONIZE GAMETIME TO NIGHT PHASE ─────────────────────────
-	# When a night starts (via natural transition, debug console, or game
-	# restart), GameTime MUST be set to the night phase (cycle_progress=0.5).
-	# Without this sync, GameTime continues from its previous state and
-	# eventually emits day_started when it wraps around, triggering
-	# _on_game_day_started() → end_current_night() prematurely.
-	_force_game_time_to_night()
+	# ─── VAN SEQUENCE OVERRIDE GUARD ──────────────────────────────────
+	if not is_van_sequence_active:
+		is_time_paused = false
+		_force_game_time_to_night()
+	else:
+		print("[NightManager] VAN SEQUENCE ACTIVE: Skipping time unpause & GameTime sync. Bed script owns the clock.")
 	
 	night_started.emit(night)
 	
-	# Recalculate fuel drain to account for the Generator node's drain rates
 	recalculate_fuel_drain()
 	
-	# ─── TUTORIAL: Reset broken window flag on Night 1 ──────────────────
-	# When Night 1 starts (new game), reset the tutorial_window_fixed flag
-	# so the tutorial broken window starts in its broken state again.
-	# This flag is set to true when the player boards up the window, and
-	# persists across scene reloads (death → restart, save/load) so the
-	# window stays fixed once repaired.
 	if night == 1:
 		tutorial_window_fixed = false
 		print("[NightManager] Tutorial window flag reset for Night 1.")
 	
-	# Night 1 & 2 exception: Entity stays hidden for the car alarm narrative.
-	# The Entity only appears when the player interacts with the van via
-	# _on_first_chase_started(). This covers both:
-	#   - Night 1: The initial Day 1 → Day 2 transition (eco-survey complete)
-	#   - Night 2: The Day 2 → Night 2 transition (nests documented + uploaded)
-	# DEV MODE: Bypass this restriction — activate the Entity immediately
-	# so the developer can test navigation and behavior on any night.
 	if night <= 2 and not is_dev_mode:
 		print("Night %d: Entity remains hidden for the car alarm narrative event." % night)
-
 	else:
-		# Check if the Entity has been manually disabled via the debug console.
-		# The debug console sets a meta flag "debug_disabled" on the Entity node
-		# when the player toggles it off. If set, we skip auto-activation so the
-		# Entity stays dormant even when a new night starts.
 		var entity_nodes = get_tree().get_nodes_in_group("entity")
 		var should_activate = true
 		for e in entity_nodes:
@@ -791,19 +663,11 @@ func start_night(night: int) -> void:
 				break
 		
 		if should_activate:
-			# Awaken the entity for the night
 			get_tree().call_group("entity", "activate")
 	
 	print("Night %d has begun..." % night)
 
 
-## Ends the current night and transitions to the day phase.
-## During the dawn sequence:
-##   - Deactivates the monster (stores it away safely)
-##   - Clears uncollected pickups from the environment
-##   - Spawns fresh daylight survival items (batteries, fuel cans, etc.)
-##   - If more nights remain, increments the night counter
-##   - If all nights are survived, triggers the game-over sequence
 func end_current_night() -> void:
 	if not is_night_active:
 		return
@@ -811,12 +675,10 @@ func end_current_night() -> void:
 	is_day_active = true
 	night_ended.emit(current_night)
 	
-	# Deactivate the entity — safely store the monster away during the day
 	get_tree().call_group("entity", "deactivate")
 	
 	print("Night %d has ended! Dawn breaks." % current_night)
 	
-	# --- DAWN RESUPPLY: Clear old pickups and spawn fresh day items ---
 	_clear_environment_pickups()
 	_respawn_day_items()
 	
@@ -827,9 +689,6 @@ func end_current_night() -> void:
 		print("All nights survived! Game over.")
 
 
-## Removes all uncollected pickup items from the environment.
-## Iterates children of the ItemSpawner and frees any pickup nodes
-## that are still lying around (batteries, fuel cans, notes, etc.).
 func _clear_environment_pickups() -> void:
 	var spawner = get_node_or_null("/root/CottageHorror/ItemSpawner")
 	if not spawner:
@@ -837,19 +696,15 @@ func _clear_environment_pickups() -> void:
 	if not spawner:
 		return
 	
-	# Free all pickup children (batteries, notes, etc.) that weren't collected
 	for child in spawner.get_children():
 		if child is Marker3D:
-			continue  # Keep spawn point markers
+			continue
 		if child.has_method("queue_free"):
 			child.queue_free()
 	
 	print("[Dawn Resupply] Cleared uncollected pickups from the environment.")
 
 
-## Spawns fresh survival items for the upcoming day/night cycle.
-## Calls the ItemSpawner's deferred spawn method so items appear
-## after the old ones have been cleaned up.
 func _respawn_day_items() -> void:
 	var spawner = get_node_or_null("/root/CottageHorror/ItemSpawner")
 	if not spawner:
@@ -862,17 +717,7 @@ func _respawn_day_items() -> void:
 		print("[Dawn Resupply] Spawned fresh survival items for the new cycle.")
 
 
-## Recalculates the dynamic fuel drain rate based on active cabin lights.
-## If a Generator node (generator.gd) exists in the scene, delegates the
-## calculation to it — this allows the designer to control cabin light vs.
-## porch light drain rates separately via editor exports.
-##
-## Falls back to the legacy per-light energy_drain_rate summation if no
-## Generator node is found (backward compatibility).
-##
-## Returns the new total drain rate.
 func recalculate_fuel_drain() -> float:
-	# Try to delegate to the Generator node if it exists
 	var generators = get_tree().get_nodes_in_group("generator_controller")
 	if not generators.is_empty():
 		var gen = generators[0]
@@ -880,7 +725,6 @@ func recalculate_fuel_drain() -> float:
 			current_drain_rate = gen.calculate_total_drain()
 			return current_drain_rate
 	
-	# Legacy fallback: sum per-light energy_drain_rate
 	var active_drain = base_fuel_drain
 	var lights = get_tree().get_nodes_in_group("CabinLights")
 	
@@ -892,44 +736,32 @@ func recalculate_fuel_drain() -> float:
 	return current_drain_rate
 
 
-## Checks for time-based horror events.
 func _check_time_events() -> void:
 	var progress = night_progress
 	
 	match current_night:
 		1:
-			# Night 1: Car alarm is now driven exclusively by the bed interaction
-			# (bed_interactable.gd → _trigger_sleep_intro_sequence).
-			# No time-based auto-trigger — the player must choose to sleep.
 			pass
-		
 		2:
-			# Night 2: Entity appears briefly
 			if progress > 0.3 and not "entity_glimpse" in _triggered_events:
 				_trigger_event("entity_glimpse")
 			if progress > 0.7 and not "door_creak" in _triggered_events:
 				_trigger_event("door_creak")
-		
 		3:
-			# Night 3: Entity inside
 			if progress > 0.2 and not "entity_inside" in _triggered_events:
 				_trigger_event("entity_inside")
 			if progress > 0.5 and not "object_moved" in _triggered_events:
 				_trigger_event("object_moved")
 			if progress > 0.8 and not "footsteps" in _triggered_events:
 				_trigger_event("footsteps")
-		
 		4:
-			# Night 4: Aggressive
 			if progress > 0.1 and not "entity_appears" in _triggered_events:
 				_trigger_event("entity_appears")
 			if progress > 0.4 and not "lights_flicker" in _triggered_events:
 				_trigger_event("lights_flicker")
 			if progress > 0.7 and not "entity_charge" in _triggered_events:
 				_trigger_event("entity_charge")
-		
 		5:
-			# Night 5: Final night - constant activity
 			if progress > 0.1 and not "entity_constant" in _triggered_events:
 				_trigger_event("entity_constant")
 			if progress > 0.4 and not "poltergeist" in _triggered_events:
@@ -939,49 +771,34 @@ func _check_time_events() -> void:
 
 
 ## Synchronizes GameTime to the start of the night phase (cycle_progress = 0.5).
-## Called by start_night() to ensure GameTime's internal cycle matches the
-## night state. Without this, GameTime continues from its previous day-phase
-## value and eventually wraps around, emitting day_started prematurely and
-## triggering end_current_night() — causing the "night survived" bug.
 func _force_game_time_to_night() -> void:
 	var gt = get_node_or_null("/root/GameTime")
 	if not gt:
 		return
 	
-	# Set to the exact start of the night phase
 	gt.cycle_progress = 0.5
 	gt._elapsed = gt.cycle_progress * gt.cycle_duration
 	gt.is_day = false
 	gt._was_day = false
-	gt.current_hour = 18.0  # 6:00 PM — start of night
 	
-	# Ensure time is running (unpause if paused)
 	if gt.is_time_paused:
 		gt.is_time_paused = false
 		gt.is_running = true
 	
-	# Emit so connected systems (HUD, EnvironmentController) update immediately
 	gt.time_changed.emit(gt.cycle_progress)
-	print("[NightManager] GameTime synced to night phase (progress=0.5, hour=18:00).")
+	print("[NightManager] GameTime synced to night phase (progress=0.5).")
 
 
-## Triggers a horror event.
 func _trigger_event(event_name: String) -> void:
 	_triggered_events.append(event_name)
 	horror_event.emit(event_name)
 	
-	# Special logging for lights_flicker — this event triggers the cabin
-	# lights to physically flicker (via CabinLight's power-on flicker sequence
-	# or the HorrorSoundManager's lights_flicker sound effect).
 	if event_name == "lights_flicker":
 		print("[Horror Event] LIGHTS FLICKER! The cabin lights are flickering! Night %d at progress %.0f%%" % [current_night, night_progress * 100.0])
 	else:
 		print("Horror event: %s" % event_name)
 
 
-## Triggers the Night 1 Peeker event.
-## Calls PeekerManager.spawn_night_1_peeker() to spawn a WindowPeeker
-## at a random cabin window that the player is not currently looking at.
 func _trigger_night_1_peeker() -> void:
 	var pm = get_node_or_null("/root/PeekerManager")
 	if pm and pm.has_method("spawn_night_1_peeker"):
@@ -992,10 +809,6 @@ func _trigger_night_1_peeker() -> void:
 
 
 ## ─── DAY 1 ONBOARDING: UNPAUSE TIME ────────────────────────────────────────
-## Called by the CabinDoor script when the player unlocks the cabin door
-## with the CabinKey. Unpauses the game clock and sets the time to
-## 4 minutes into the day (1 minute until night).
-## The HUD objective is now managed by RoutineManager's phase system.
 func unpause_time() -> void:
 	if not is_time_paused:
 		print("[NightManager] Time is already unpaused. Ignoring duplicate call.")
@@ -1003,39 +816,19 @@ func unpause_time() -> void:
 	
 	is_time_paused = false
 	
-	# Set time to 4 minutes into the day (1 minute until night).
-	# The day phase spans cycle_progress 0.0-0.5.
-	# 4 minutes into a 5-minute day = 80% through the day phase.
-	# cycle_progress = 0.5 * 0.8 = 0.4
 	var gt: Node = get_node_or_null("/root/GameTime")
-	if gt and gt.has_method("set_progress"):
-		gt.set_progress(0.4)
-		print("[NightManager] Time set to 4 minutes into the day (progress: 0.4). ~1 minute until night.")
-	
-	# CRITICAL: Also unpause GameTime's internal clock so the day/night cycle
-	# actually starts ticking. GameTime has its own is_time_paused flag that
-	# controls time accumulation in _process(). Without this call, the clock
-	# stays frozen even though NightManager thinks it's unpaused.
 	if gt and gt.has_method("unpause_time"):
 		gt.unpause_time()
-		print("[NightManager] GameTime unpaused! The day/night cycle is now advancing.")
+		gt.is_running = true
+		print("[NightManager] GameTime unpaused. Clock continues from current time.")
 	
 	print("[NightManager] Time unpaused! The Day 1 onboarding clock is now running.")
 
 
 
-## Called by the EscapeVan when the player interacts with the car.
-## Emits first_chase_started so the Entity can make its cinematic arrival
-## and the player's sprint gets unlocked.
-## Also plays the distant monster howl (monster_distant_mx_1.ogg) to signal
-## the Entity's arrival — this is suppressed on Night 1's night_started event
-## so it plays here instead for maximum dramatic impact.
 func trigger_first_chase() -> void:
 	print("[NightManager] First chase triggered! Entity is arriving.")
 	
-	# Play the distant monster howl to signal the Entity's arrival.
-	# On Night 1, this sound is suppressed during night_started so it
-	# plays here instead — right when the Entity spawns.
 	var hsm = get_node_or_null("/root/HorrorSoundManager")
 	if hsm and hsm.has_method("play_distant_monster"):
 		hsm.play_distant_monster()
@@ -1043,77 +836,77 @@ func trigger_first_chase() -> void:
 	first_chase_started.emit()
 
 
-## Advances to the next day/night cycle.
-## Called by bed_interactable.gd when the player goes to sleep.
-## Ends the current night, increments the night counter, and sets time to morning.
 func advance_night() -> void:
 	print("[NightManager] advance_night() called. Advancing from Night %d..." % current_night)
 	
-	# ─── SPECIAL CASE: Day 1 → Day 2 transition (current_night == 0) ──
-	# During Day 1 onboarding, is_night_active is false because Night 1
-	# hasn't started yet. end_current_night() would bail out early due to
-	# its "if not is_night_active: return" guard. Handle this case directly.
+	var gt: Node = get_node_or_null("/root/GameTime")
+	if gt:
+		gt.cycle_progress = 0.0
+		gt._elapsed = 0.0
+		gt.is_day = true
+		gt._was_day = true
+		gt.is_time_paused = false
+		gt.is_running = true
+		gt.time_changed.emit(0.0)
+		print("[NightManager] GameTime forced to cycle_progress=0.0 for new day start.")
+	is_time_paused = false
+	
 	if current_night == 0:
 		current_night = 1
 		is_day_active = true
-		night_ended.emit(0)
-		print("[NightManager] Transitioned from Day 1 to Day 2 (current_night = 1).")
+		night_ended.emit(1)
+		print("[NightManager] Transitioned from Day 1 to Day 2 (current_night = 1). Night 1 survived!")
+		
+		gt = get_node_or_null("/root/GameTime")
+		if gt:
+			gt.cycle_progress = 0.0
+			gt._elapsed = 0.0
+			gt.is_day = true
+			gt._was_day = true
+			gt.is_time_paused = false
+			gt.is_running = true
+			gt.time_changed.emit(0.0)
+			print("[NightManager] Day 2 time forced to cycle_progress=0.0.")
 	else:
-		# Normal case: end the current night (increments current_night, deactivates entity, etc.)
 		end_current_night()
-	
-	# Set time to morning (cycle_progress ≈ 0.125 = 6:00 AM)
-	var gt: Node = get_node_or_null("/root/GameTime")
-	if gt and gt.has_method("set_progress"):
-		gt.set_progress(0.125)
-		print("[NightManager] Time set to morning (progress: 0.125).")
+		
+		gt = get_node_or_null("/root/GameTime")
+		if gt and gt.has_method("set_progress"):
+			gt.set_progress(0.125)
+			print("[NightManager] Time set to morning (progress: 0.125).")
 	
 	print("[NightManager] Advanced to Day %d. Preparing for Night %d..." % [current_night, current_night + 1])
 
 
-## Restarts the current night from scratch.
-## Called by the Game Over screen when the player clicks "Restart Night".
-## Resets the night state, refills the generator, and re-enters the night cycle.
 func restart_night() -> void:
 	print("[NightManager] Restarting Night %d..." % current_night)
 	
-	# Reset night state
 	is_night_active = false
 	is_day_active = false
 	night_progress = 0.0
 	_triggered_events.clear()
 	_event_timer = 0.0
 	
-	# Refill the generator so the player has a fair chance
 	is_generator_on = true
 	generator_fuel = max_fuel
 	fuel_changed.emit(generator_fuel)
 	generator_state_changed.emit(true)
 	
-	# Reset GameTime progress to the start of the night
 	var gt = get_node_or_null("/root/GameTime")
 	if gt and gt.has_method("reset_to_night_start"):
 		gt.reset_to_night_start()
 	
-	# Start the night fresh
 	start_night(current_night)
 
 
-## Restarts from the morning of the current day.
-## Called by the Death Screen when the player clicks "Restart from morning".
-## Fully resets the player, inventory, world state, and time to the morning
-## baseline, then waits for the natural day/night cycle to reach night again.
 func restart_from_morning() -> void:
 	print("[NightManager] restart_from_morning() — Resetting to morning baseline of Day %d." % current_night)
 	
-	# ─── TIME RESET ──────────────────────────────────────────────────
-	# Rewind the clock to morning (cycle_progress ≈ 0.125 = 6:00 AM).
 	var gt: Node = get_node_or_null("/root/GameTime")
 	if gt and gt.has_method("set_progress"):
 		gt.set_progress(0.125)
 		print("[NightManager] Time reset to morning (progress: 0.125).")
 	
-	# Force the EnvironmentController to update sky/lighting immediately.
 	var ec: Node = get_node_or_null("/root/CottageHorror/EnvironmentController")
 	if not ec:
 		ec = get_node_or_null("/root/Main/EnvironmentController")
@@ -1121,10 +914,8 @@ func restart_from_morning() -> void:
 		ec._apply_cycle()
 		print("[NightManager] EnvironmentController refreshed to daytime lighting.")
 	
-	# ─── PLAYER RESET ────────────────────────────────────────────────
 	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
 	if player:
-		# Teleport to bedroom spawn
 		var spawn_marker: Node3D = get_tree().get_first_node_in_group("BedroomSpawn") as Node3D
 		if not spawn_marker:
 			spawn_marker = get_tree().get_first_node_in_group("PlayerSpawn") as Node3D
@@ -1136,7 +927,6 @@ func restart_from_morning() -> void:
 		else:
 			player.global_position = Vector3(9.0, 1.0, 0.4)
 		
-		# Reset health/sanity
 		if player.has_method("reset_health"):
 			player.reset_health()
 		elif "health" in player:
@@ -1144,7 +934,6 @@ func restart_from_morning() -> void:
 		if "sanity" in player:
 			player.sanity = 100.0
 		
-		# Reset flashlight battery to full
 		var flashlight: Node = player.find_child("*Flashlight*", true, false)
 		if flashlight:
 			if flashlight.has_method("set_battery_level"):
@@ -1152,7 +941,6 @@ func restart_from_morning() -> void:
 			elif "battery_level" in flashlight:
 				flashlight.battery_level = 100.0
 	
-	# ─── INVENTORY RESET ─────────────────────────────────────────────
 	var inv: Node = get_node_or_null("/root/Inventory")
 	if inv:
 		inv.clear()
@@ -1176,8 +964,6 @@ func restart_from_morning() -> void:
 		
 		print("[NightManager] Inventory reset to baseline morning items.")
 	
-	# ─── WORLD STATE RESET ───────────────────────────────────────────
-	# Clear deployed traps and cables
 	var traps: Array[Node] = get_tree().get_nodes_in_group("portable_trap")
 	for trap in traps:
 		if trap and is_instance_valid(trap):
@@ -1188,14 +974,12 @@ func restart_from_morning() -> void:
 		if cable and is_instance_valid(cable):
 			cable.queue_free()
 	
-	# Reset fuse box to BROKEN and turn off generator
 	var fuse_box: Node = _find_fuse_box()
 	if fuse_box:
-		fuse_box.current_state = 0  # BoxState.BROKEN
+		fuse_box.current_state = 0
 		if fuse_box.has_method("_set_generator_state"):
 			fuse_box._set_generator_state(false)
 	
-	# Turn off all cabin lights
 	var cabin_lights: Array[Node] = get_tree().get_nodes_in_group("CabinLights")
 	for light in cabin_lights:
 		if "is_switched_on" in light:
@@ -1203,22 +987,19 @@ func restart_from_morning() -> void:
 		if "turn_off" in light:
 			light.turn_off()
 	
-	# Reset generator state
 	is_generator_on = false
 	generator_fuel = max_fuel
 	fuel_changed.emit(generator_fuel)
 	generator_state_changed.emit(false)
 	
-	# Deactivate the Entity
 	var entity_nodes: Array[Node] = get_tree().get_nodes_in_group("entity")
 	for entity_node in entity_nodes:
 		if entity_node and entity_node.has_method("deactivate"):
 			entity_node.deactivate()
 		elif "State" in entity_node:
-			entity_node._state = 0  # State.DORMANT
+			entity_node._state = 0
 			entity_node._is_active = false
 	
-	# ─── NIGHT STATE RESET ───────────────────────────────────────────
 	is_night_active = false
 	is_day_active = true
 	night_progress = 0.0
@@ -1228,38 +1009,17 @@ func restart_from_morning() -> void:
 	print("[NightManager] Morning restart complete. Player is safe in bed.")
 
 
-## Called by JumpscareManager after the jumpscare fade-out completes.
-## This is the player's "wake up in bed" reset — NOT a full night restart.
-##
-## The reset performs four phases:
-##   A. TIME & WEATHER RESET — Rewind the clock to morning/daytime.
-##   B. CHARACTER & INVENTORY RESET — Teleport player to bed, restore health,
-##      wipe inventory, and rebuild baseline morning items.
-##   C. WORLD MACHINE RESET — Clear deployed traps/cables, reset fuse box,
-##      turn off all lights, force Entity to DORMANT.
-##   D. FADE BACK IN — Tween the JumpscareManager's fade_rect from black
-##      to transparent over 2.0 seconds.
 func reset_to_daybreak() -> void:
 	print("[NightManager] reset_to_daybreak() — Resetting to morning baseline of Day %d." % current_night)
 	
-	# ─── PHASE A: TIME & WEATHER RESET ──────────────────────────────
-	# Rewind the clock to morning. On Night 1, force to 14:30 (2:30 PM).
-	# For subsequent days, roll back to the baseline morning hour.
 	var gt: Node = get_node_or_null("/root/GameTime")
 	if gt and gt.has_method("set_progress"):
 		if current_night == 1:
-			# Night 1: Force to 14:30 (cycle_progress ≈ 0.25 for a 24-hour cycle)
-			# cycle_progress = 14.5 / 24.0 ≈ 0.604
-			gt.set_progress(14.5 / 24.0)
+			gt.set_progress(0.25)
 		else:
-			# Subsequent days: Roll back to early morning (cycle_progress ≈ 0.125 = 6:00 AM)
 			gt.set_progress(0.125)
 		print("[NightManager] Time reset to morning (progress: %.3f)." % gt.cycle_progress)
 	
-	# Force the EnvironmentController to update sky/lighting immediately.
-	# The GameTime.set_progress() call above emits time_changed, which the
-	# EnvironmentController listens to, so this should happen automatically.
-	# If not, we manually trigger a refresh.
 	var ec: Node = get_node_or_null("/root/CottageHorror/EnvironmentController")
 	if not ec:
 		ec = get_node_or_null("/root/Main/EnvironmentController")
@@ -1267,28 +1027,21 @@ func reset_to_daybreak() -> void:
 		ec._apply_cycle()
 		print("[NightManager] EnvironmentController refreshed to daytime lighting.")
 	
-	# ─── PHASE B: CHARACTER & INVENTORY RESET ───────────────────────
-	# Teleport the player back to the bedroom spawn point.
 	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
 	if player:
-		# Find the bedroom spawn marker
 		var spawn_marker: Node3D = get_tree().get_first_node_in_group("BedroomSpawn") as Node3D
 		if not spawn_marker:
-			# Fallback: search for a Marker3D named "BedroomSpawn" or "PlayerSpawn"
 			spawn_marker = get_tree().get_first_node_in_group("PlayerSpawn") as Node3D
 		if not spawn_marker:
-			# Hardcoded fallback position (bedroom coordinates)
 			spawn_marker = get_tree().current_scene.get_node_or_null("BedroomSpawn") as Node3D
 		
 		if spawn_marker:
 			player.global_position = spawn_marker.global_position
 			print("[NightManager] Player teleported to spawn: ", spawn_marker.global_position)
 		else:
-			# Ultimate fallback: hardcoded bedroom position
 			player.global_position = Vector3(9.0, 1.0, 0.4)
 			print("[NightManager] No spawn marker found. Using fallback position.")
 		
-		# Reset player health/sanity to 100%
 		if player.has_method("reset_health"):
 			player.reset_health()
 		elif "health" in player:
@@ -1297,7 +1050,6 @@ func reset_to_daybreak() -> void:
 			player.sanity = 100.0
 		print("[NightManager] Player health/sanity reset to 100%.")
 		
-		# Reset flashlight battery to full
 		var flashlight: Node = player.find_child("*Flashlight*", true, false)
 		if flashlight:
 			if flashlight.has_method("set_battery_level"):
@@ -1305,43 +1057,58 @@ func reset_to_daybreak() -> void:
 			elif "battery_level" in flashlight:
 				flashlight.battery_level = 100.0
 			print("[NightManager] Flashlight battery restored to 100%.")
+		
+		# ─── CAMERA RESET: Fix jumpscare-tainted rotation ────────────
+		# After a jumpscare death, the camera holder may have residual
+		# roll or yaw from the entity's grab animation. Apply the same
+		# deep matrix alignment used by ComputerUI._restore_player_controls()
+		# to flatten the camera and transfer yaw to the body capsule.
+		var camera_holder = player.get_node_or_null("CameraHolder") as Node3D
+		if camera_holder:
+			var cam_euler = camera_holder.global_transform.basis.get_euler()
+			# Transfer yaw to body capsule, zero pitch/roll on body
+			player.global_rotation.y = cam_euler.y
+			player.global_rotation.x = 0.0
+			player.global_rotation.z = 0.0
+			# Camera child handles pitch only — zero yaw and roll
+			camera_holder.rotation = Vector3(cam_euler.x, 0.0, 0.0)
+			camera_holder.global_transform.basis = camera_holder.global_transform.basis.orthonormalized()
+			print("[NightManager] Camera reset: yaw transferred to body, camera pitch isolated.")
+		
+		# Re-enable player input and capture mouse
+		if player.has_method("set_process_input"):
+			player.set_process_input(true)
+		if player.has_method("set_physics_process"):
+			player.set_physics_process(true)
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	
-	# Wipe the inventory and rebuild baseline morning items.
-	# Baseline: 3 Batteries, 2 Planks, 2 Fuel Cans, 1 Fuse.
 	var inv: Node = get_node_or_null("/root/Inventory")
 	if inv:
 		inv.clear()
 		print("[NightManager] Inventory wiped.")
 		
-		# Load item resources and add them to the inventory
 		var battery_res: Resource = load("res://resources/battery_resource.tres")
 		var plank_res: Resource = load("res://resources/plank_resource.tres")
 		var fuel_can_res: Resource = load("res://resources/fuel_can_resource.tres")
 		var fuse_res: Resource = load("res://resources/fuse_resource.tres")
 		
-		# Add 3 Batteries
 		for i in range(3):
 			if battery_res and inv.has_method("add_item"):
 				inv.add_item(battery_res.duplicate())
 		
-		# Add 2 Planks
 		for i in range(2):
 			if plank_res and inv.has_method("add_item"):
 				inv.add_item(plank_res.duplicate())
 		
-		# Add 2 Fuel Cans
 		for i in range(2):
 			if fuel_can_res and inv.has_method("add_item"):
 				inv.add_item(fuel_can_res.duplicate())
 		
-		# Add 1 Fuse
 		if fuse_res and inv.has_method("add_item"):
 			inv.add_item(fuse_res.duplicate())
 		
 		print("[NightManager] Baseline morning items added: 3 Batteries, 2 Planks, 2 Fuel Cans, 1 Fuse.")
 	
-	# ─── PHASE C: WORLD MACHINE RESET ──────────────────────────────
-	# Clear deployed portable traps and power cables from the yard.
 	var traps: Array[Node] = get_tree().get_nodes_in_group("portable_trap")
 	for trap in traps:
 		if trap and is_instance_valid(trap):
@@ -1354,15 +1121,13 @@ func reset_to_daybreak() -> void:
 			cable.queue_free()
 			print("[NightManager] Cleared power cable: ", cable.name)
 	
-	# Reset the FuseBox to BROKEN state and turn off all room lights.
 	var fuse_box: Node = _find_fuse_box()
 	if fuse_box:
-		fuse_box.current_state = 0  # BoxState.BROKEN
+		fuse_box.current_state = 0
 		if fuse_box.has_method("_set_generator_state"):
 			fuse_box._set_generator_state(false)
 		print("[NightManager] FuseBox reset to BROKEN. Generator turned off.")
 	
-	# Turn off all cabin lights.
 	var cabin_lights: Array[Node] = get_tree().get_nodes_in_group("CabinLights")
 	for light in cabin_lights:
 		if "is_switched_on" in light:
@@ -1371,26 +1136,22 @@ func reset_to_daybreak() -> void:
 			light.turn_off()
 	print("[NightManager] All cabin lights turned off.")
 	
-	# Reset the generator fuel to full so the player has a fair chance.
 	is_generator_on = false
 	generator_fuel = max_fuel
 	fuel_changed.emit(generator_fuel)
 	generator_state_changed.emit(false)
 	print("[NightManager] Generator fuel reset to %.1f (off state)." % max_fuel)
 	
-	# Force the Entity back to DORMANT state, stopping all active pathfinding.
 	var entity_nodes: Array[Node] = get_tree().get_nodes_in_group("entity")
 	for entity_node in entity_nodes:
 		if entity_node and entity_node.has_method("deactivate"):
 			entity_node.deactivate()
 			print("[NightManager] Entity deactivated to DORMANT.")
 		elif "State" in entity_node:
-			# Direct state manipulation fallback
-			entity_node._state = 0  # State.DORMANT
+			entity_node._state = 0
 			entity_node._is_active = false
 			print("[NightManager] Entity state forced to DORMANT (fallback).")
 	
-	# Reset night state flags so the night cycle can restart cleanly.
 	is_night_active = false
 	is_day_active = true
 	night_progress = 0.0
@@ -1399,8 +1160,6 @@ func reset_to_daybreak() -> void:
 	
 	print("[NightManager] Daybreak reset complete. Player is safe in bed.")
 	
-	# ─── PHASE D: FADE BACK IN ─────────────────────────────────────
-	# Find the JumpscareManager's fade_rect and tween it from black to transparent.
 	var jm: Node = get_node_or_null("/root/JumpscareManager")
 	if jm and "fade_rect" in jm and jm.fade_rect:
 		var fade_rect: ColorRect = jm.fade_rect as ColorRect
@@ -1413,9 +1172,6 @@ func reset_to_daybreak() -> void:
 		print("[NightManager] JumpscareManager fade_rect not found. Skipping fade-in.")
 
 
-## Searches the entire scene tree for a FuseBox node.
-## The fuse box has no specific group, so we search by type (FuseBox).
-## Returns the first FuseBox found, or null if none exists.
 func _find_fuse_box():
 	var scene_root = get_tree().current_scene
 	if not scene_root:
@@ -1423,7 +1179,6 @@ func _find_fuse_box():
 	return _find_fuse_box_recursive(scene_root)
 
 
-## Recursively searches for a FuseBox node in the given root's subtree.
 func _find_fuse_box_recursive(root: Node):
 	for child in root.get_children():
 		if child is FuseBox:
@@ -1434,7 +1189,6 @@ func _find_fuse_box_recursive(root: Node):
 	return null
 
 
-## Returns the current night's intensity (0.0 to 1.0).
 func get_intensity() -> float:
 	var night_factor = float(current_night) / float(total_nights)
 	var time_factor = night_progress

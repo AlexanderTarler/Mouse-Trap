@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://b3cxsx74khnre"]
+
+[ext_resource type="Texture2D" uid="uid://ydkv2gc3syvo" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Mushrooms/Mushrooms_0.png" id="1_ixd1w"]
+
+[resource]
+resource_name = "Mushroom"
+albedo_texture = ExtResource("1_ixd1w")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0

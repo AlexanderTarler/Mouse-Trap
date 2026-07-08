@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://csdt13civi10i"]
+
+[ext_resource type="Texture2D" uid="uid://832mbjg0tplq" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Bush/Bush_1.png" id="1_7pdas"]
+
+[resource]
+resource_name = "Bark"
+albedo_texture = ExtResource("1_7pdas")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0

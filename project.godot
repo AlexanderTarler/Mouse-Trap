@@ -36,7 +36,7 @@ window/size/viewport_height=1080
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/godot_mcp/plugin.cfg")
+enabled=PackedStringArray("res://addons/godot_mcp/plugin.cfg", "res://addons/prism_collider_3d/plugin.cfg")
 
 [filesystem]
 
@@ -53,6 +53,9 @@ ignore_navmesh=""
 IndoorBreachWaypoints=""
 SecondFloorWindows=""
 ClimbWallWaypoints=""
+cinematics=""
+hud=""
+player=""
 
 [input]
 
@@ -126,6 +129,34 @@ ui_inventory={
 "keycode": "Tab",
 "type": "key"
 }]
+}
+toggle_notebook={
+"deadzone": 0.5,
+"events": [{
+"keycode": "J",
+"type": "key"
+}]
+}
+notebook_next_page={
+"deadzone": 0.5,
+"events": [{
+"keycode": "E",
+"type": "key"
+}, Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":69,"key_label":0,"unicode":101,"location":0,"echo":false,"script":null)
+]
+}
+notebook_prev_page={
+"deadzone": 0.5,
+"events": [{
+"keycode": "Q",
+"type": "key"
+}, Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":81,"key_label":0,"unicode":113,"location":0,"echo":false,"script":null)
+]
+}
+ui_notebook={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":74,"key_label":0,"unicode":106,"location":0,"echo":false,"script":null)
+]
 }
 
 [layer_names]

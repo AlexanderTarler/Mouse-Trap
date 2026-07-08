@@ -25,6 +25,8 @@ func _ready() -> void:
 		_raycast.collide_with_areas = false
 		_raycast.collide_with_bodies = true
 		_raycast.exclude_parent = true
+		# Scan for Entity body (Layer 5) — default mask only hits Layer 1
+		_raycast.collision_mask = 18  # Layer 2 (Player) | Layer 5 (Entity)
 	
 	_find_entity()
 

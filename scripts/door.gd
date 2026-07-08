@@ -96,16 +96,16 @@ func interact() -> void:
 		return
 	
 	# If locked, always rattle — no quick unlock
+	# TASK 3 FIX: The locked condition must ONLY play a rattle sound.
+	# Do NOT change game state or call RoutineManager — that was a
+	# copy-paste error that reset objectives to "Day 1 complete."
 	if required_key_name != "" and is_locked:
 		_play_locked_sound()
 		print("[Door] Door is locked! Hold E to unlock. Need: ", required_key_name)
-		
-		# ─── DAY 1 ONBOARDING: PHASE 1 — TRIED LOCKED DOOR ──────────────
-		# Notify RoutineManager that the player tried the locked door.
+		# ─── DAY 1 ONBOARDING: PHASE 1 — DOOR TRIED LOCKED ──────────
 		var rm = get_node_or_null("/root/RoutineManager")
 		if rm and rm.has_method("on_door_tried_locked"):
 			rm.on_door_tried_locked()
-		
 		return
 
 	
@@ -177,6 +177,10 @@ func toggle_lock() -> void:
 	if not has_key:
 		_play_locked_sound()
 		print("[Door] Need key to lock/unlock: ", required_key_name)
+		# ─── DAY 1 ONBOARDING: PHASE 1 — DOOR TRIED LOCKED ──────────
+		var rm2 = get_node_or_null("/root/RoutineManager")
+		if rm2 and rm2.has_method("on_door_tried_locked"):
+			rm2.on_door_tried_locked()
 		return
 	
 	if is_locked:

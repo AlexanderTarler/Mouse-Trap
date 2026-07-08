@@ -1,0 +1,171 @@
+[gd_scene format=3 uid="uid://dq8dml7wclf03"]
+
+[ext_resource type="Script" uid="uid://dspq7prj5vmtx" path="res://scripts/ui/notebook_ui.gd" id="1_notebook_ui"]
+
+[node name="NotebookUI" type="Control" unique_id=1984805072]
+process_mode = 3
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_notebook_ui")
+
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=1083556745]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BookBackground" type="Panel" parent="CenterContainer" unique_id=1799985320]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(1000, 650)
+layout_mode = 2
+
+[node name="CoverMargin" type="MarginContainer" parent="CenterContainer/BookBackground" unique_id=1156786291]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CenterContainer/BookBackground/CoverMargin" unique_id=1924307241]
+layout_mode = 2
+alignment = 1
+
+[node name="LeftPage" type="Panel" parent="CenterContainer/BookBackground/CoverMargin/HBoxContainer" unique_id=1367167866]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="LeftMargin" type="MarginContainer" parent="CenterContainer/BookBackground/CoverMargin/HBoxContainer/LeftPage" unique_id=413513322]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 30
+
+[node name="IndexContainer" type="ScrollContainer" parent="CenterContainer/BookBackground/CoverMargin/HBoxContainer/LeftPage/LeftMargin" unique_id=147084775]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="IndexLabel" type="RichTextLabel" parent="CenterContainer/BookBackground/CoverMargin/HBoxContainer/LeftPage/LeftMargin/IndexContainer" unique_id=1019272297]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 1
+theme_override_font_sizes/normal_font_size = 16
+bbcode_enabled = true
+fit_content = true
+
+[node name="DocContainer" type="ScrollContainer" parent="CenterContainer/BookBackground/CoverMargin/HBoxContainer/LeftPage/LeftMargin" unique_id=2056907289]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="DocLabel" type="RichTextLabel" parent="CenterContainer/BookBackground/CoverMargin/HBoxContainer/LeftPage/LeftMargin/DocContainer" unique_id=1746100383]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 1
+theme_override_font_sizes/normal_font_size = 16
+bbcode_enabled = true
+text = "Documentation"
+fit_content = true
+
+[node name="Spine" type="ColorRect" parent="CenterContainer/BookBackground/CoverMargin/HBoxContainer" unique_id=736509936]
+custom_minimum_size = Vector2(4, 0)
+layout_mode = 2
+color = Color(0.067, 0.067, 0.067, 1)
+
+[node name="RightPage" type="Panel" parent="CenterContainer/BookBackground/CoverMargin/HBoxContainer" unique_id=1108960627]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="RightMargin" type="MarginContainer" parent="CenterContainer/BookBackground/CoverMargin/HBoxContainer/RightPage" unique_id=331640277]
+unique_name_in_owner = true
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 30
+
+[node name="ToDoContainer" type="ScrollContainer" parent="CenterContainer/BookBackground/CoverMargin/HBoxContainer/RightPage/RightMargin" unique_id=699017209]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ToDoLabel" type="RichTextLabel" parent="CenterContainer/BookBackground/CoverMargin/HBoxContainer/RightPage/RightMargin/ToDoContainer" unique_id=2111608368]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 1
+theme_override_font_sizes/normal_font_size = 16
+bbcode_enabled = true
+fit_content = true
+
+[node name="NotesContainer" type="ScrollContainer" parent="CenterContainer/BookBackground/CoverMargin/HBoxContainer/RightPage/RightMargin" unique_id=889067863]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="NotesLabel" type="RichTextLabel" parent="CenterContainer/BookBackground/CoverMargin/HBoxContainer/RightPage/RightMargin/NotesContainer" unique_id=1788817145]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+mouse_filter = 1
+theme_override_font_sizes/normal_font_size = 16
+bbcode_enabled = true
+text = "Notes"
+fit_content = true
+
+[node name="DayLabel" type="Label" parent="." unique_id=1856332501]
+unique_name_in_owner = true
+layout_mode = 0
+
+[node name="PrevHint" type="Label" parent="." unique_id=923054948]
+layout_mode = 0
+anchor_bottom = 1.0
+offset_left = 220.0
+offset_bottom = -45.0
+theme_override_colors/font_color = Color(0.17, 0.17, 0.17, 1)
+theme_override_font_sizes/font_size = 13
+text = "[Q] Prev Page"
+
+[node name="NextHint" type="Label" parent="." unique_id=915168989]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = -220.0
+offset_bottom = -45.0
+theme_override_colors/font_color = Color(0.17, 0.17, 0.17, 1)
+theme_override_font_sizes/font_size = 13
+text = "[E] Next Page"
+horizontal_alignment = 2

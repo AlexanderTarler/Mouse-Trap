@@ -2,191 +2,264 @@ extends Node
 
 ## RoutineManager — Day 1 Onboarding Phase System.
 ## A global singleton that tracks the player's progress through the
-## Day 1 cabin setup using a 3-Phase boolean system.
+## Day 1 cabin setup using a **gated main-objective** architecture.
 ##
-## Phase 1: Entry — "Get inside the cabin."
-##   - Approach cabin → Try locked door → Find key → Unlock & enter
+## MAIN OBJECTIVES (fixed order):
+##   0  — Go to the cabin
+##   1  — Unlock the front door
+##   2  — Log into the computer (first try — fails, auto-advances)
+##   3  — Replace the broken fuse in the fuse box
+##   4  — Refuel the generator
+##   5  — Log into the computer (successfully)
+##   6  — Board up the broken window
+##   7  — Lock the front door
+##   8  — Go to bed
 ##
-## Phase 2: Power & Log — "Restore power and log into the terminal."
-##   - Fix fuse box + Refill generator (any order) → Use computer
+## MINOR OBJECTIVES (dynamic — only shown if not already completed):
+##   - Find the key to the cabin
+##   - Find a fuse in the cabin
+##   - Check the fuse box
+##   - Find a fuel can to refill the generator
+##   - Get some planks to patch the broken window
 ##
-## Phase 3: Lockdown — "Lock the front door and go to bed."
-##   - Lock door → Go to bed → Transition to Day 2
+## Mains 3 and 4 can be done in either order. Once BOTH are done,
+## the system advances to main 5.
 
 signal routine_step_changed(step: int, objective_text: String)
 
-# ─── PHASE 1: ENTRY ─────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════
+# MAIN OBJECTIVE TRACKING
+# ═══════════════════════════════════════════════════════════════════════
+
+## Current main objective index (0–8). See docstring above for mapping.
+## This is the single source of truth for where the player is in Day 1.
+var main_objective: int = 0
+
+# ═══════════════════════════════════════════════════════════════════════
+# PHASE 1: ENTRY FLAGS
+# ═══════════════════════════════════════════════════════════════════════
+
 var phase1_approached_cabin: bool = false   # Walked near the cabin
 var phase1_tried_door: bool = false          # Tried the locked door
 var phase1_found_key: bool = false           # Picked up the Cabin Key
 var phase1_entered_cabin: bool = false       # Stepped inside the cabin
-var phase1_complete: bool = false            # All Phase 1 done
 
-# ─── PHASE 2: POWER & LOG ───────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════
+# PHASE 2: POWER & LOG FLAGS
+# ═══════════════════════════════════════════════════════════════════════
+
 var phase2_computer_tried_no_power: bool = false  # Tried computer without power
 var phase2_fuse_box_interacted: bool = false      # First interaction with fuse box
 var phase2_fuse_picked_up: bool = false           # Picked up a fuse item
-var phase2_fuse_inserted: bool = false            # Fuse inserted into box (but switch not thrown yet)
+var phase2_fuse_inserted: bool = false            # Fuse inserted into box (switch not thrown yet)
 var phase2_fuse_fixed: bool = false               # Fuse inserted + switch thrown
 var phase2_fuel_can_picked_up: bool = false       # Picked up a fuel can
 var phase2_gen_refilled: bool = false             # Generator refueled
 var phase2_computer_used: bool = false            # Logged into computer
-var phase2_complete: bool = false                 # All Phase 2 done
 
-# ─── PHASE 2B: PLANK & WINDOW ───────────────────────────────────────────
-# After using the computer, the player must get planks and patch the
-# broken tutorial window before they can lock the door and go to bed.
+# ═══════════════════════════════════════════════════════════════════════
+# PHASE 2B: PLANK & WINDOW FLAGS
+# ═══════════════════════════════════════════════════════════════════════
+
 var phase2b_plank_picked_up: bool = false    # Picked up a Wooden Plank
 var phase2b_window_patched: bool = false     # Barricaded the broken window
-var phase2b_complete: bool = false           # All Phase 2B done
 
-# ─── PHASE 3: LOCKDOWN ──────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════
+# PHASE 3: LOCKDOWN FLAGS
+# ═══════════════════════════════════════════════════════════════════════
+
 var phase3_door_locked: bool = false         # Front door locked
 var phase3_bed_used: bool = false            # Went to bed
-var phase3_complete: bool = false            # All Phase 3 done (→ Day 2)
 
-# ─── NEST DOCUMENTATION (Day 2) ─────────────────────────────────────────
-## Number of nests the player has documented via photograph or direct interact.
-## Incremented by document_nest(). Used by hasselmus_nest.gd to display
-## progress (e.g., "Nest documented! (1/3)").
+# ═══════════════════════════════════════════════════════════════════════
+# NEST DOCUMENTATION (Day 2)
+# ═══════════════════════════════════════════════════════════════════════
+
 var nests_documented: int = 0
-
-## Whether the player has successfully uploaded the nest data via the
-## computer's FIELD_LOG.EXE correlation. Set by computer_ui.gd when the
-## Day 2 correlation succeeds. The bed checks this before allowing sleep.
 var nests_uploaded: bool = false
 
+# ═══════════════════════════════════════════════════════════════════════
+# INTERNAL
+# ═══════════════════════════════════════════════════════════════════════
 
-## Reference to NightManager for setting the completion flag.
 var _night_manager: Node = null
+var _notebook_ui: Node = null
 
 
 func _ready() -> void:
 	_night_manager = get_node_or_null("/root/NightManager")
-	print("[RoutineManager] Initialized. Waiting for Phase 1 triggers.")
+	print("[RoutineManager] Initialized. Main-objective gating active. Waiting for Phase 1 triggers.")
 
 
-## Returns the current objective text based on the Phase state.
-## Called by HorrorHUD to initialize the objective label on startup.
+## ─── INVENTORY HELPERS ──────────────────────────────────────────────
+
+## Checks whether the player has an item with the given name in their inventory.
+func _player_has_item(item_name: String) -> bool:
+	var inv = get_node_or_null("/root/Inventory")
+	if not inv:
+		return false
+	for item in inv.items:
+		if item and "item_name" in item and item.item_name == item_name:
+			return true
+	return false
+
+
+## ─── MAIN OBJECTIVE ADVANCEMENT ─────────────────────────────────────
+
+## Advances main_objective to the given value, but only if it's higher than
+## the current one (never moves backwards).
+func _advance_main_objective(target: int) -> void:
+	if target > main_objective:
+		main_objective = target
+		print("[RoutineManager] Main objective advanced to %d." % main_objective)
+
+## Called after fuse or generator completion to check if BOTH are done.
+## If so, advances from whichever was last (3 or 4) to main 5.
+func _check_power_restored() -> void:
+	if phase2_fuse_fixed and phase2_gen_refilled:
+		print("[RoutineManager] Power restored! Both fuse and generator are done.")
+		_advance_main_objective(5)
+		_update_hud()
+
+
+## ─── OBJECTIVE TEXT ─────────────────────────────────────────────────
+
+## Returns the current objective text based on main_objective + flags.
+## Called by HorrorHUD and on every state change.
 func get_current_objective() -> String:
-	# Day 2 — Nest documentation (after Day 1 onboarding is complete)
+	# ─── DAY 2+ NEST DOCUMENTATION ──────────────────────────────────
 	if nests_uploaded:
-		return "Go to bed."
+		return "Lock the door and go to bed."
 	if nests_documented >= 3:
 		return "Upload nest data on the computer."
 	if nests_documented > 0:
 		return "Document the nests."
-
 	
-	# Phase 3
-	if phase3_complete:
-		return "Day 1 complete. Rest well."
-
-	if phase3_door_locked:
-		return "Go to bed."
-	if phase3_bed_used:
-		return "Day 1 complete. Rest well."
+	# ─── DAY 1 ONBOARDING ──────────────────────────────────────────
+	match main_objective:
+		0:
+			return "Go to the cabin."
+		
+		1:
+			# Minor: find key, try door, unlock
+			if phase1_entered_cabin:
+				_advance_main_objective(2)
+				return get_current_objective()
+			if _player_has_item("Cabin Key"):
+				return "Unlock the front door."
+			if phase1_tried_door:
+				return "Find the key to the cabin."
+			if phase1_approached_cabin:
+				return "Go inside the cabin."
+			return "Go to the cabin."
+		
+		2:
+			# First try at the computer — just show the prompt
+			# Player tries computer → _on_computer_tried_no_power auto-advances
+			return "Log into the computer."
+		
+		3:
+			# Minor: find fuse, check fuse box, insert fuse, throw switch
+			if phase2_fuse_fixed:
+				_advance_main_objective(4)
+				_check_power_restored()
+				return get_current_objective()
+			if phase2_fuse_inserted:
+				return "Throw the switch to restore power."
+			if _player_has_item("Fuse"):
+				if phase2_fuse_box_interacted:
+					return "Replace the broken fuse with the new fuse."
+				else:
+					return "Check the fuse box. You have a new fuse."
+			if phase2_fuse_box_interacted:
+				return "Find a fuse in the cabin."
+			if phase2_computer_tried_no_power:
+				return "Check the fuse box. It's always the god damn fuse box."
+			return "Check the fuse box. It's always the god damn fuse box."
+		
+		4:
+			# Minor: find fuel can, refill generator
+			if phase2_gen_refilled:
+				_check_power_restored()
+				return get_current_objective()
+			if _player_has_item("Fuel Can"):
+				return "Refill the generator."
+			return "Find a fuel can to refill the generator."
+		
+		5:
+			# Second try at the computer — power is restored
+			if phase2_computer_used:
+				_advance_main_objective(6)
+				return get_current_objective()
+			return "Log into the computer."
+		
+		6:
+			# Minor: find planks, patch window
+			if phase2b_window_patched:
+				_advance_main_objective(7)
+				return get_current_objective()
+			if _player_has_item("Wooden Plank"):
+				return "Patch the window as well as you can."
+			if phase2b_plank_picked_up:
+				return "Patch the window as well as you can."
+			return "Get some planks to patch the broken window."
+		
+		7:
+			# Lock the door
+			if phase3_door_locked:
+				_advance_main_objective(8)
+				return get_current_objective()
+			return "Lock the front door."
+		
+		8:
+			# Go to bed
+			if phase3_bed_used:
+				return "Day 1 complete. Rest well."
+			return "Go to bed."
 	
-	# Phase 2B — Plank & Window (after computer used)
-	if phase2b_complete:
-		return "Lock the front door and go to bed."
-	if phase2b_window_patched:
-		return "Lock the front door and go to bed."
-	if phase2b_plank_picked_up:
-		return "Patch the window as well as you can."
-	
-	# Phase 2 — Granular steps
-	if phase2_complete:
-		return "Get some planks."
-	if phase2_computer_used:
-		return "Get some planks."
-	if phase2_fuse_fixed and phase2_gen_refilled:
-		return "Log into the computer, second try."
-	if phase2_gen_refilled:
-		return "Log into the computer, second try."
-	if phase2_fuse_fixed:
-		return "I need to refill the generator, I think."
-	if phase2_fuel_can_picked_up:
-		return "Refill the generator."
-	if phase2_fuse_inserted:
-		return "Find a fuel can."
-	if phase2_fuse_picked_up:
-		return "Replace the broken fuse in the fuse box."
-	if phase2_fuse_box_interacted:
-		return "Find a fuse inside the cabin."
-	if phase2_computer_tried_no_power:
-		return "Check the fuse box. It's always the god damn fuse box."
-	
-	# Phase 1
-	if phase1_complete:
-		return "Log into the computer."
-	if phase1_entered_cabin:
-		return "Log into the computer."
-	if phase1_found_key:
-		return "Unlock the front door."
-	if phase1_tried_door:
-		return "The door is locked. I need to find a key."
-	if phase1_approached_cabin:
-		return "Go inside the cabin."
-	
-	# Default start
 	return "Go to the cabin."
 
 
 ## Emits the current objective to the HUD.
 func _update_hud() -> void:
 	var text = get_current_objective()
-	# Determine step number for the signal
-	var step = 0
-	# Day 2 — Nest documentation steps
+	
+	# Compute a human-readable step number for the HUD signal.
+	# This is purely cosmetic — the HUD uses it for debug display.
+	var step: int = 0
+	
+	# Day 2 steps
 	if nests_uploaded:
 		step = 19
 	elif nests_documented >= 3:
 		step = 18
 	elif nests_documented > 0:
 		step = 17
-
-	elif phase3_complete:
-		step = 16
-
-	elif phase3_door_locked:
-		step = 15
-	elif phase2b_complete:
-		step = 14
-	elif phase2b_window_patched:
-		step = 14
-	elif phase2b_plank_picked_up:
-		step = 13
-	elif phase2_complete:
-		step = 12
-	elif phase2_computer_used:
-		step = 12
-	elif phase2_fuse_fixed and phase2_gen_refilled:
-		step = 11
-	elif phase2_gen_refilled:
-		step = 11
-	elif phase2_fuse_fixed:
-		step = 10
-	elif phase2_fuel_can_picked_up:
-		step = 9
-	elif phase2_fuse_inserted:
-		step = 8
-	elif phase2_fuse_picked_up:
-		step = 7
-	elif phase2_fuse_box_interacted:
-		step = 6
-	elif phase2_computer_tried_no_power:
-		step = 5
-	elif phase1_complete:
-		step = 4
-	elif phase1_entered_cabin:
-		step = 4
-	elif phase1_found_key:
-		step = 3
-	elif phase1_tried_door:
-		step = 2
-	elif phase1_approached_cabin:
-		step = 1
+	else:
+		# Day 1 steps mapped from main_objective + completion depth
+		match main_objective:
+			0: step = 0
+			1:
+				if _player_has_item("Cabin Key"): step = 3
+				elif phase1_tried_door: step = 2
+				else: step = 1
+			2: step = 4
+			3:
+				if phase2_fuse_fixed: step = 7
+				elif phase2_fuse_inserted: step = 7
+				elif _player_has_item("Fuse"): step = 7
+				elif phase2_fuse_box_interacted: step = 6
+				else: step = 5
+			4:
+				if phase2_gen_refilled: step = 10
+				elif _player_has_item("Fuel Can"): step = 9
+				else: step = 8
+			5: step = 11
+			6:
+				if _player_has_item("Wooden Plank") or phase2b_plank_picked_up: step = 13
+				else: step = 12
+			7: step = 14
+			8: step = 15
 	
 	routine_step_changed.emit(step, text)
 	print("[RoutineManager] HUD updated: Step %d — '%s'" % [step, text])
@@ -196,23 +269,17 @@ func _update_hud() -> void:
 # PHASE 1 TRIGGERS
 # ═══════════════════════════════════════════════════════════════════════
 
-## Called by CabinApproachTrigger when the player walks near the cabin.
-## Unpauses time — the clock starts running from 4 minutes into the day
-## (1 minute until night).
 func on_cabin_approached() -> void:
 	if phase1_approached_cabin:
 		return
 	phase1_approached_cabin = true
+	_advance_main_objective(1)
 	print("[RoutineManager] Phase 1: Player approached the cabin.")
-	
-	# Unpause time — the clock starts running from 4 minutes into the day
 	if _night_manager and _night_manager.has_method("unpause_time"):
 		_night_manager.unpause_time()
-	
 	_update_hud()
 
 
-## Called by door.gd when the player tries the locked front door.
 func on_door_tried_locked() -> void:
 	if phase1_tried_door:
 		return
@@ -221,7 +288,6 @@ func on_door_tried_locked() -> void:
 	_update_hud()
 
 
-## Called by Inventory when the player picks up the Cabin Key.
 func on_key_picked_up() -> void:
 	if phase1_found_key:
 		return
@@ -230,24 +296,20 @@ func on_key_picked_up() -> void:
 	_update_hud()
 
 
-## Called by door.gd when the player unlocks the front door with the key.
 func on_door_unlocked() -> void:
 	if phase1_entered_cabin:
 		return
-	# Mark both entered_cabin and complete Phase 1
 	phase1_entered_cabin = true
-	phase1_complete = true
+	_advance_main_objective(2)
 	print("[RoutineManager] Phase 1 COMPLETE! Player unlocked and entered the cabin.")
 	_update_hud()
 
 
-## Called by player_controller.gd when the player is detected inside the cabin.
-## This is a fallback in case the player enters through a different path.
 func on_player_entered_cabin() -> void:
 	if phase1_entered_cabin:
 		return
 	phase1_entered_cabin = true
-	phase1_complete = true
+	_advance_main_objective(2)
 	print("[RoutineManager] Phase 1 COMPLETE! Player entered the cabin (detected by room check).")
 	_update_hud()
 
@@ -256,8 +318,6 @@ func on_player_entered_cabin() -> void:
 # PHASE 2 TRIGGERS
 # ═══════════════════════════════════════════════════════════════════════
 
-## Called by FuseBox when the player first interacts with it (any state).
-## Sets the flag so the HUD shows "Find a fuse inside the cabin."
 func on_fuse_box_interacted() -> void:
 	if phase2_fuse_box_interacted:
 		return
@@ -266,7 +326,6 @@ func on_fuse_box_interacted() -> void:
 	_update_hud()
 
 
-## Called by Inventory when the player picks up a Fuse item.
 func on_fuse_picked_up() -> void:
 	if phase2_fuse_picked_up:
 		return
@@ -275,7 +334,6 @@ func on_fuse_picked_up() -> void:
 	_update_hud()
 
 
-## Called by FuseBox when the player inserts a fuse into the box (HAS_FUSE state).
 func on_fuse_inserted() -> void:
 	if phase2_fuse_inserted:
 		return
@@ -284,16 +342,15 @@ func on_fuse_inserted() -> void:
 	_update_hud()
 
 
-## Called by FuseBox when the player inserts a fuse and throws the switch.
 func on_fuse_fixed() -> void:
 	if phase2_fuse_fixed:
 		return
 	phase2_fuse_fixed = true
 	print("[RoutineManager] Phase 2: Fuse box fixed.")
-	_check_phase2_complete()
+	_update_hud()
+	_check_power_restored()
 
 
-## Called by Inventory when the player picks up a Fuel Can.
 func on_fuel_can_picked_up() -> void:
 	if phase2_fuel_can_picked_up:
 		return
@@ -302,38 +359,30 @@ func on_fuel_can_picked_up() -> void:
 	_update_hud()
 
 
-## Called by GeneratorInteraction when the player refills the generator.
 func on_generator_refilled() -> void:
 	if phase2_gen_refilled:
 		return
 	phase2_gen_refilled = true
 	print("[RoutineManager] Phase 2: Generator refilled.")
-	_check_phase2_complete()
+	_update_hud()
+	_check_power_restored()
 
 
-## Checks if both Phase 2 tasks are done, and if so, updates the HUD.
-func _check_phase2_complete() -> void:
-	if phase2_fuse_fixed and phase2_gen_refilled:
-		print("[RoutineManager] Phase 2: Both tasks done! Player can now use the computer.")
-		_update_hud()
-
-
-## Called by PCInteractable when the player tries the computer without power.
-## Sets the flag so the HUD shows "Check the fuse box. It's always the god damn fuse box."
 func on_computer_tried_no_power() -> void:
 	if phase2_computer_tried_no_power:
 		return
 	phase2_computer_tried_no_power = true
-	print("[RoutineManager] Phase 2: Player tried computer without power.")
+	# Auto-advance to main 3 (fuse objective) since the computer is dead
+	_advance_main_objective(3)
+	print("[RoutineManager] Phase 2: Player tried computer without power. Advancing to fuse objective.")
 	_update_hud()
 
 
-## Called by PCInteractable when the player successfully uses the computer.
 func on_computer_used() -> void:
 	if phase2_computer_used:
 		return
 	phase2_computer_used = true
-	phase2_complete = true
+	_advance_main_objective(6)
 	print("[RoutineManager] Phase 2 COMPLETE! Player logged into the computer.")
 	_update_hud()
 
@@ -342,8 +391,6 @@ func on_computer_used() -> void:
 # PHASE 2B TRIGGERS (Plank & Window)
 # ═══════════════════════════════════════════════════════════════════════
 
-## Called by Inventory when the player picks up a Wooden Plank.
-## Sets the flag so the HUD shows "Patch the window as well as you can."
 func on_plank_picked_up() -> void:
 	if phase2b_plank_picked_up:
 		return
@@ -352,13 +399,11 @@ func on_plank_picked_up() -> void:
 	_update_hud()
 
 
-## Called by CabinWindow when the player barricades the broken tutorial window.
-## Sets the flag so the HUD shows "Lock the front door and go to bed."
 func on_window_patched() -> void:
 	if phase2b_window_patched:
 		return
 	phase2b_window_patched = true
-	phase2b_complete = true
+	_advance_main_objective(7)
 	print("[RoutineManager] Phase 2B COMPLETE! Player patched the broken window.")
 	_update_hud()
 
@@ -367,48 +412,52 @@ func on_window_patched() -> void:
 # PHASE 3 TRIGGERS
 # ═══════════════════════════════════════════════════════════════════════
 
-## Called by door.gd when the player locks the front door.
 func on_door_locked() -> void:
 	if phase3_door_locked:
 		return
 	phase3_door_locked = true
+	_advance_main_objective(8)
 	print("[RoutineManager] Phase 3: Front door locked.")
 	_update_hud()
 
 
-## Called by bed_interactable.gd when the player interacts with the bed.
-## Returns true if the bed interaction should proceed (Phase 2 complete).
 func on_bed_interacted() -> bool:
-	# Can only go to bed if Phase 2 is complete (power restored, computer used)
-	if not phase2_complete:
-		print("[RoutineManager] Phase 3: Player tried bed but Phase 2 is not complete.")
+	# Can only go to bed if window is patched
+	if not phase2b_window_patched:
+		print("[RoutineManager] Phase 3: Player tried bed but window is not patched.")
 		return false
 	
+	# Door lock check — must be locked
+	if not phase3_door_locked:
+		var door_nodes = get_tree().get_nodes_in_group("Door")
+		var door_is_locked = false
+		for d in door_nodes:
+			if "is_locked" in d and d.is_locked:
+				door_is_locked = true
+				phase3_door_locked = true
+				break
+		if not door_is_locked:
+			print("[RoutineManager] Phase 3: Player tried bed but front door is NOT locked.")
+			return false
+	
 	phase3_bed_used = true
-	phase3_complete = true
 	print("[RoutineManager] Phase 3 COMPLETE! Player went to bed. Transitioning to Day 2.")
 	_update_hud()
 	return true
 
 
-## Called by hasselmus_nest.gd when the player documents a nest.
-## Increments the nests_documented counter so the HUD can display progress.
-## When all 3 nests are documented, updates the HUD objective to prompt
-## the player to upload the data on the computer.
+# ═══════════════════════════════════════════════════════════════════════
+# NEST DOCUMENTATION (Day 2)
+# ═══════════════════════════════════════════════════════════════════════
+
 func document_nest(nest_id: String) -> void:
 	nests_documented += 1
 	print("[RoutineManager] Nest '%s' documented! (%d/3)" % [nest_id, nests_documented])
-	
-	# When all 3 nests are documented, update the HUD objective
-	# so the player knows to go back to the computer and upload the data.
 	if nests_documented >= 3:
 		print("[RoutineManager] All 3 nests documented! Player should upload data on the computer.")
 		_update_hud()
 
 
-## Called by computer_ui.gd when the player successfully correlates the
-## nest data on the computer (FIELD_LOG.EXE). Sets nests_uploaded = true
-## and updates the HUD objective to prompt the player to go to bed.
 func on_nest_data_uploaded() -> void:
 	if nests_uploaded:
 		return
@@ -417,14 +466,36 @@ func on_nest_data_uploaded() -> void:
 	_update_hud()
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# UTILITY
+# ═══════════════════════════════════════════════════════════════════════
 
-## Resets all phase state (for new game / restart).
+func get_current_day_string() -> String:
+	var nm = get_node_or_null("/root/NightManager")
+	if not nm:
+		return "Day ?"
+	var night: int = nm.current_night
+	if night <= 1:
+		return "Day 1"
+	return "Day " + str(night)
+
+
+## Deprecated compatibility stub for door.gd and totem_anchor.gd.
+## These scripts call advance_step() but the new main-objective system
+## handles advancement through specific trigger methods (on_door_locked, etc.).
+## This stub prevents runtime errors without changing behavior.
+func advance_step() -> void:
+	print("[RoutineManager] advance_step() called (deprecated). Using main-objective system instead.")
+	_update_hud()
+
+
 func reset_all_phases() -> void:
+	main_objective = 0
+	
 	phase1_approached_cabin = false
 	phase1_tried_door = false
 	phase1_found_key = false
 	phase1_entered_cabin = false
-	phase1_complete = false
 	
 	phase2_computer_tried_no_power = false
 	phase2_fuse_box_interacted = false
@@ -434,15 +505,12 @@ func reset_all_phases() -> void:
 	phase2_fuel_can_picked_up = false
 	phase2_gen_refilled = false
 	phase2_computer_used = false
-	phase2_complete = false
 	
 	phase2b_plank_picked_up = false
 	phase2b_window_patched = false
-	phase2b_complete = false
 	
 	phase3_door_locked = false
 	phase3_bed_used = false
-	phase3_complete = false
 	
 	print("[RoutineManager] All phases reset.")
 	_update_hud()

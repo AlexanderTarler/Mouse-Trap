@@ -20,15 +20,15 @@ const MAX_ITEMS: int = 10
 ## Adds an item to the inventory.
 ## Returns true if the item was added, false if the inventory is full.
 func add_item(item) -> bool:
-	print("[Inventory] add_item called: ", item.item_name if item else "null")
+	
 	if not item:
-		print("[Inventory] ERROR: item is null!")
+		
 		return false
 	if items.size() >= MAX_ITEMS:
-		print("[Inventory] Inventory is full! Cannot add: ", item.item_name if item else "unknown")
+		
 		return false
 	items.append(item)
-	print("[Inventory] Item added. Total items: ", items.size())
+	
 	item_added.emit(item)
 	inventory_changed.emit()
 	

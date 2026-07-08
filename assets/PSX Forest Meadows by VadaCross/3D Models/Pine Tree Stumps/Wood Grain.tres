@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://bxkcelhow467y"]
+
+[ext_resource type="Texture2D" uid="uid://8ujlj6tw0j8k" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Pine Tree Stumps/Pine Tree Stumps_2.png" id="1_usdrs"]
+
+[resource]
+resource_name = "Wood Grain"
+albedo_texture = ExtResource("1_usdrs")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0

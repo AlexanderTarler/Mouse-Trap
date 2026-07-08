@@ -1,0 +1,13 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://np2qddn3m51l"]
+
+[ext_resource type="Texture2D" uid="uid://bj04wkyu7h1uh" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Wild Lavinder/Wild Lavinder_0.png" id="1_lf8xq"]
+
+[resource]
+resource_name = "Wild Lavinder"
+transparency = 2
+alpha_scissor_threshold = 0.5
+alpha_antialiasing_mode = 0
+albedo_texture = ExtResource("1_lf8xq")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0
