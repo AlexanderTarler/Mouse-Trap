@@ -19,6 +19,10 @@ signal computer_closed
 # MULTI-USER SYSTEM
 # ─────────────────────────────────────────────────────────────────────────────
 
+## Whether the computer is currently open. Used by external scripts (e.g.,
+## InventoryUI) to block input while the computer is in use.
+var is_open: bool = false
+
 ## Who is currently logged in. "" = logged out, "LUND" = player, "STENBERG" = Arvid.
 var current_user: String = ""
 
@@ -235,7 +239,29 @@ func open_computer() -> void:
 				if scene: scene.add_child(self)
 	
 	visible = true
+	is_open = true
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	
+	# ─── CLOSE INVENTORY ──────────────────────────────────────────
+	# Ensure the inventory is closed so the player cannot accidentally
+	# toggle it with TAB while using the computer.
+	var inv_ui = get_node_or_null("/root/CottageHorror/InventoryUI")
+	if not inv_ui:
+		inv_ui = get_node_or_null("/root/Main/InventoryUI")
+	if inv_ui and inv_ui.has_method("_close_inventory") and inv_ui.get("_is_open"):
+		inv_ui._close_inventory()
+	
+	# ─── HIDE HORROR HUD ─────────────────────────────────────────
+	# Hide the HUD while the player is using the computer so it
+	# doesn't show distracting day/night/battery/stamina info
+	# behind/over the computer interface.
+	# NOTE: HorrorHUD is NOT in the "hud" group, so we resolve
+	# the path directly instead of using a group lookup.
+	var hud = get_node_or_null("/root/CottageHorror/HorrorHUD")
+	if not hud:
+		hud = get_node_or_null("/root/Main/HorrorHUD")
+	if hud:
+		hud.visible = false
 	
 	if _player:
 		_player.set_process_input(false)
@@ -253,6 +279,7 @@ func open_computer() -> void:
 
 func close_computer() -> void:
 	visible = false
+	is_open = false
 	
 	if _camera_holder and _original_camera_transform != Transform3D():
 		var tween = create_tween()
@@ -360,6 +387,15 @@ func _on_stand_tween_completed() -> void:
 
 func _restore_player_controls() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	
+	# ─── RESTORE HORROR HUD ──────────────────────────────────────
+	# Show the HUD again now that the player is back in control.
+	var hud = get_node_or_null("/root/CottageHorror/HorrorHUD")
+	if not hud:
+		hud = get_node_or_null("/root/Main/HorrorHUD")
+	if hud:
+		hud.visible = true
+	
 	if _player:
 		_player.set_process_input(true)
 		_player.set_physics_process(true)

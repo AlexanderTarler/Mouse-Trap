@@ -1,0 +1,12 @@
+[gd_resource type="Resource" load_steps=2 format=3 uid="uid://d0x8yq7ft2q4"]
+
+[ext_resource type="Script" path="res://resources/tutorial/tutorial_data.gd" id="1_4e8k3"]
+
+[resource]
+script = ExtResource("1_4e8k3")
+mechanic_id = "interact"
+prompt_text = "Press [E] to interact with objects."
+trigger_moment = "first_interactable"
+prerequisite = ""
+one_shot = true
+day_one_only = true

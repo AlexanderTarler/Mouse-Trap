@@ -223,6 +223,11 @@ func _fire_interact() -> void:
 	var target = interaction_manager.get_current_target()
 	if target and target.has_method("interact"):
 		target.interact()
+		
+		# ─── TUTORIAL: Mark interact as learned ──────────────────────────
+		var tm := get_node_or_null("/root/TutorialManager")
+		if tm and tm.has_method("mark_learned"):
+			tm.mark_learned("interact")
 
 
 func _try_grab() -> void:

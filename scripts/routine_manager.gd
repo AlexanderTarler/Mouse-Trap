@@ -85,6 +85,11 @@ var nests_uploaded: bool = false
 var _night_manager: Node = null
 var _notebook_ui: Node = null
 
+# ─── TUTORIAL / LEARNED MECHANICS ──────────────────────────────────────
+## Tracks which mechanics the player has learned (e.g. "sprint", "interact").
+## TutorialManager calls these to check if prompts should still show.
+var _learned_mechanics: Dictionary = {}
+
 
 func _ready() -> void:
 	_night_manager = get_node_or_null("/root/NightManager")
@@ -278,6 +283,7 @@ func on_cabin_approached() -> void:
 	if _night_manager and _night_manager.has_method("unpause_time"):
 		_night_manager.unpause_time()
 	_update_hud()
+	_trigger_interact_tutorial()
 
 
 func on_door_tried_locked() -> void:
@@ -296,6 +302,18 @@ func on_key_picked_up() -> void:
 	_update_hud()
 
 
+func _trigger_notebook_tutorial() -> void:
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("trigger"):
+		tm.trigger("notebook")
+
+
+func _trigger_interact_tutorial() -> void:
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("trigger"):
+		tm.trigger("interact")
+
+
 func on_door_unlocked() -> void:
 	if phase1_entered_cabin:
 		return
@@ -303,6 +321,7 @@ func on_door_unlocked() -> void:
 	_advance_main_objective(2)
 	print("[RoutineManager] Phase 1 COMPLETE! Player unlocked and entered the cabin.")
 	_update_hud()
+	_trigger_notebook_tutorial()
 
 
 func on_player_entered_cabin() -> void:
@@ -312,6 +331,7 @@ func on_player_entered_cabin() -> void:
 	_advance_main_objective(2)
 	print("[RoutineManager] Phase 1 COMPLETE! Player entered the cabin (detected by room check).")
 	_update_hud()
+	_trigger_notebook_tutorial()
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -475,8 +495,10 @@ func get_current_day_string() -> String:
 	if not nm:
 		return "Day ?"
 	var night: int = nm.current_night
-	if night <= 1:
+	if night <= 0:
 		return "Day 1"
+	if nm.is_night_active:
+		return "Night " + str(night)
 	return "Day " + str(night)
 
 
@@ -487,6 +509,17 @@ func get_current_day_string() -> String:
 func advance_step() -> void:
 	print("[RoutineManager] advance_step() called (deprecated). Using main-objective system instead.")
 	_update_hud()
+
+
+## Marks a mechanic as learned. Once learned, the corresponding tutorial
+## prompt is permanently hidden for the rest of this session/save.
+func mark_mechanic_learned(mechanic_id: String) -> void:
+	_learned_mechanics[mechanic_id] = true
+
+
+## Returns true if the mechanic has already been learned.
+func is_mechanic_learned(mechanic_id: String) -> bool:
+	return _learned_mechanics.get(mechanic_id, false)
 
 
 func reset_all_phases() -> void:

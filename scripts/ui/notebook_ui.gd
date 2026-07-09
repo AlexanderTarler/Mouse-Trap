@@ -3,8 +3,13 @@ class_name NotebookUI
 
 ## Two-page open book notebook.
 ## Spread 0: Index (Left) + To-Do (Right)
-## Spread 1: Documentation (Left) + Notes (Right)
-## Toggled with J, spread flipped with Q/E.
+## Spread 1: Content (Left + Right)
+##
+## REAL-BOOK PAGINATION:
+##   Content flows sequentially across all pages in a single unified array.
+##   Page 0 → Left side of Spread 1, Page 1 → Right side of Spread 1,
+##   Page 2 → Left of next spread, Page 3 → Right, etc.
+##   A "page turn" advances by 2 pages (one full spread).
 
 # ============================================================
 # Spread state
@@ -13,6 +18,30 @@ class_name NotebookUI
 var _is_open: bool = false
 var current_spread: int = 0
 const MAX_SPREAD: int = 1
+
+# ─── UNIFIED PAGE STATE ────────────────────────────────────
+## All content pages in sequential order. Index 0 = first page (left),
+## index 1 = second page (right), index 2 = third page (left), etc.
+var _all_pages: Array[String] = []
+
+## Current page index (points to the left page of the current spread).
+## Always even. Right page is _current_page + 1.
+var _current_page: int = 0
+
+## Maximum characters that fit on one physical page.
+const CHARS_PER_PAGE: int = 1000
+
+## Whether the placeholder text for documentation is still showing.
+var _doc_placeholder_cleared: bool = false
+
+## Whether the placeholder text for notes is still showing.
+var _notes_placeholder_cleared: bool = false
+
+## Header text for Documentation entries (shown once per entry).
+const DOC_HEADER_FORMAT: String = "[b]%s[/b] — [i]Documented[/i]\n"
+
+## Header text for Notes entries (shown once per entry).
+const NOTE_HEADER_FORMAT: String = "[b]%s[/b]\n"
 
 # ============================================================
 # Node references
@@ -65,99 +94,60 @@ func _ready() -> void:
 
 
 func _connect_to_managers() -> void:
-	# Find RoutineManager (autoload)
 	var rm = get_node_or_null("/root/RoutineManager")
 	if rm:
-		# Connect to objective updates
 		if rm.has_signal("routine_step_changed"):
 			rm.routine_step_changed.connect(_on_routine_step_changed)
-		
-		# Register ourselves so other scripts can find us
 		rm._notebook_ui = self
-		
-		# Fetch initial state — the notebook may load after the first
-		# objectives were already set, so pull current values immediately
 		var current_obj: String = rm.get_current_objective() if rm.has_method("get_current_objective") else ""
 		if not current_obj.is_empty():
 			_on_routine_step_changed(0, current_obj)
-		
-		
-		
-		# ─── TASK 1: Seed initial completed objectives ──────────────
-		# The player starts on Day 1 having just arrived at the research
-		# site. The only completed objective is driving there. The current
-		# objective is to enter the cabin.
 		_call_deferred_todo_seed()
 	else:
-		# Retry next frame
 		call_deferred("_connect_to_managers")
 		return
 	
-	# Find EvidenceManager (autoload)
 	var em = get_node_or_null("/root/EvidenceManager")
 	if em:
 		if em.has_signal("evidence_collected"):
 			em.evidence_collected.connect(_on_evidence_collected)
-		
 	
-	# Find DocumentationManager if it exists
 	var dm = get_node_or_null("/root/DocumentationManager")
 	if dm and dm.has_signal("documentation_added"):
 		dm.documentation_added.connect(add_documentation)
-		
 
 
 func _on_routine_step_changed(_step: int, objective_text: String) -> void:
-	# If this is a genuinely new objective (not a duplicate), archive the
-	# current one as completed before replacing it.
 	if not objective_text.is_empty() and objective_text != _current_objective:
 		if not _current_objective.is_empty():
 			_completed_objectives.append(_current_objective)
 		_current_objective = objective_text
 	
-	# Rebuild the To-Do display: completed items with strikethrough,
-	# current active objective in bold with an unchecked box.
 	var bbcode := "[center][b]TO-DO[/b][/center]\n\n"
-	
 	for obj in _completed_objectives:
 		bbcode += "[s]  [x] %s[/s]\n" % obj
-	
 	if not _current_objective.is_empty():
 		bbcode += "\n[b]  [ ] %s[/b]" % _current_objective
-	
 	_todo_label.text = bbcode
 	
-	
-	# ─── ISSUE 2 FIX: Auto-update day label from NightManager ───
-	# The HUD day label ("DAY 1", "DAY 2", etc.) was never updated
-	# after the initial seed. Read NightManager.current_night and
-	# compute the game day: Night 0 = Day 1, Night 1 = Day 2, etc.
 	var nm = get_node_or_null("/root/NightManager")
 	if nm and "current_night" in nm:
 		var game_day = nm.current_night + 1
 		if game_day != _current_day:
 			_current_day = game_day
-			_day_label.text = "[center][b]DAY %d[/b][/center]" % game_day
+			_day_label.text = "DAY %d" % game_day
 
 
 func _on_evidence_collected(evidence_id: String) -> void:
-	if _notes_label.text.begins_with("[center][b]NOTES[/b]"):
-		_notes_label.text = ""
-	_notes_label.text += "[b]Evidence:[/b] %s\n" % evidence_id
-	
+	add_note("[b]Evidence:[/b] %s" % evidence_id)
 
 
-## Deferred call after the scene tree is fully ready.
-## Seeds the notebook's To-Do page with the initial Day 1 state:
-## one completed objective ("Drive to the research area.") and the
-## current objective ("Go to the cabin.").
 func _call_deferred_todo_seed() -> void:
 	await get_tree().process_frame
 	update_objectives(1, ["Drive to the research area."], "Go to the cabin.")
 
 
 func _initialize_pages() -> void:
-	# Index page content
 	_index_label.text = """[center][font_size=22][b]FIELD NOTEBOOK[/b][/font_size][/center]
 [center][i]Svea Naturinstitut Ecological Survey[/i][/center]
 
@@ -165,25 +155,24 @@ func _initialize_pages() -> void:
 
   [b]1.[/b]  To-do .................... [i]Current objectives[/i]
 
-  [b]2.[/b]  Documentation ........... [i]Nest data & evidence[/i]
-
-  [b]3.[/b]  Notes ................... [i]Field observations[/i]
+  [b]2.[/b]  Documentation & Notes .... [i]Nest data & observations[/i]
 
 [center]---
 Press [b][J][/b] to close[/center]"""
 
-	# To-Do page content
 	_todo_label.text = "[center][b]TO-DO[/b][/center]\n\nLoading objectives..."
 
-	# Documentation page content
-	_doc_label.text = "[center][b]DOCUMENTATION[/b][/center]\n\nField notes on the Hazel Mouse Nests.\nUse the Photo Camera to document nests,\nthen validate at the computer terminal."
-
-	# Notes page content
-	_notes_label.text = "[center][b]NOTES[/b][/center]\n\nPersonal observations."
+	# Unified page array: every entry is one physical page
+	# Page 0 = left side of Spread 1, Page 1 = right side, Page 2 = left, etc.
+	_all_pages = []
+	_all_pages.append("[center][b]DOCUMENTATION[/b][/center]\n\nField notes on the Hazel Mouse Nests.\nUse the Photo Camera to document nests,\nthen validate at the computer terminal.")
+	_all_pages.append("[center][b]NOTES[/b][/center]\n\nPersonal observations.")
+	_doc_placeholder_cleared = false
+	_notes_placeholder_cleared = false
+	_current_page = 0
 
 
 func _apply_styles() -> void:
-	# ─── INK COLOR ─────────────────────────────────────────────
 	var ink = Color("#1a1a1a")
 	_index_label.add_theme_color_override("font_color", ink)
 	_index_label.add_theme_color_override("default_color", ink)
@@ -194,7 +183,6 @@ func _apply_styles() -> void:
 	_notes_label.add_theme_color_override("font_color", ink)
 	_notes_label.add_theme_color_override("default_color", ink)
 
-	# ─── BOOK COVER (dark leather) ──────────────────────────────
 	var cover = StyleBoxFlat.new()
 	cover.bg_color = Color("#2a2520")
 	cover.shadow_size = 10
@@ -206,7 +194,6 @@ func _apply_styles() -> void:
 	cover.corner_radius_bottom_right = 6
 	_book_bg.add_theme_stylebox_override("panel", cover)
 
-	# ─── LEFT PAGE (paper + binding fold on right) ──────────────
 	var left_paper = StyleBoxFlat.new()
 	left_paper.bg_color = Color("#e8dcc7")
 	left_paper.border_width_right = 1
@@ -216,7 +203,6 @@ func _apply_styles() -> void:
 	left_paper.shadow_color = Color(0, 0, 0, 0.15)
 	_left_page.add_theme_stylebox_override("panel", left_paper)
 
-	# ─── RIGHT PAGE (paper + binding fold on left) ──────────────
 	var right_paper = StyleBoxFlat.new()
 	right_paper.bg_color = Color("#e8dcc7")
 	right_paper.border_width_left = 1
@@ -233,7 +219,11 @@ func _input(event: InputEvent) -> void:
 		visible = _is_open
 		if _is_open:
 			current_spread = 0
+			_current_page = 0
 			_update_spread()
+			var tm := get_node_or_null("/root/TutorialManager")
+			if tm and tm.has_method("mark_learned"):
+				tm.mark_learned("notebook")
 		get_viewport().set_input_as_handled()
 		return
 
@@ -241,12 +231,36 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if event.is_action_pressed("notebook_next_page"):
-		current_spread = mini(current_spread + 1, MAX_SPREAD)
-		_update_spread()
+		if current_spread == 1:
+			# Advance by 2 pages (one spread)
+			var max_page = max(0, _all_pages.size() - 1)
+			if _current_page + 2 <= max_page:
+				_current_page += 2
+				_refresh_spread_1()
+			else:
+				# No more pages — wrap to Spread 0
+				current_spread = 0
+				_current_page = 0
+				_update_spread()
+		else:
+			current_spread = mini(current_spread + 1, MAX_SPREAD)
+			_current_page = 0
+			_update_spread()
 		get_viewport().set_input_as_handled()
+		
 	elif event.is_action_pressed("notebook_prev_page"):
-		current_spread = maxi(current_spread - 1, 0)
-		_update_spread()
+		if current_spread == 1:
+			if _current_page >= 2:
+				_current_page -= 2
+				_refresh_spread_1()
+			else:
+				current_spread = maxi(current_spread - 1, 0)
+				_current_page = 0
+				_update_spread()
+		else:
+			current_spread = maxi(current_spread - 1, 0)
+			_current_page = 0
+			_update_spread()
 		get_viewport().set_input_as_handled()
 
 
@@ -255,37 +269,56 @@ func _input(event: InputEvent) -> void:
 # ============================================================
 
 func _update_spread() -> void:
-	# Ensure both margins are visible (parent chain must be visible for children to render)
 	if _left_margin:
 		_left_margin.visible = true
 	if _right_margin:
 		_right_margin.visible = true
 
-	# Spread 0: Index (Left) & To-Do (Right)
 	_index_container.visible = (current_spread == 0)
 	_todo_container.visible = (current_spread == 0)
-
-	# Spread 1: Documentation (Left) & Notes (Right)
 	_doc_container.visible = (current_spread == 1)
 	_notes_container.visible = (current_spread == 1)
 
+	if current_spread == 1:
+		_refresh_spread_1()
+
+
+## Shows the current spread: left page = _all_pages[_current_page],
+## right page = _all_pages[_current_page + 1] (or blank if missing).
+func _refresh_spread_1() -> void:
+	var left_idx = _current_page
+	var right_idx = _current_page + 1
 	
+	if left_idx < _all_pages.size():
+		_doc_label.text = _all_pages[left_idx]
+	else:
+		_doc_label.text = ""
+	
+	if right_idx < _all_pages.size():
+		_notes_label.text = _all_pages[right_idx]
+	else:
+		_notes_label.text = ""
 
 
 # ============================================================
-# Toggle (kept for external callers like player_controller)
+# Toggle (kept for external callers)
 # ============================================================
 
 func _toggle() -> void:
 	_is_open = not _is_open
+	if _is_open:
+		var tm := get_node_or_null("/root/TutorialManager")
+		if tm and tm.has_method("mark_learned"):
+			tm.mark_learned("notebook")
 	visible = _is_open
 	if _is_open:
 		current_spread = 0
+		_current_page = 0
 		_update_spread()
 
 
 # ============================================================
-# Objective integration (called by RoutineManager)
+# Objective integration
 # ============================================================
 
 func update_objectives(day: int, completed_objectives: Array[String], current_objective: String) -> void:
@@ -293,62 +326,112 @@ func update_objectives(day: int, completed_objectives: Array[String], current_ob
 		_current_day = day
 		_completed_objectives.clear()
 		_current_objective = ""
-		_day_label.text = "[center][b]DAY %d[/b][/center]" % day
+		_day_label.text = "DAY %d" % day
 		_todo_label.clear()
 
-	var bbcode := ""
-	bbcode += _day_label.text + "\n\n"
-
+	var bbcode := "[center][b]%s[/b][/center]\n\n" % _day_label.text
 	for obj in completed_objectives:
 		bbcode += "[s]  [x] " + obj + "[/s]\n"
-
 	if not current_objective.is_empty():
 		bbcode += "\n[b]  [ ] " + current_objective + "[/b]\n"
-
 	_todo_label.text = bbcode
-	# ─── Don't overwrite existing documentation with placeholder ──
-	# Only reset _doc_label if it still contains the default placeholder
-	# text. If real nest lore has been added, preserve it.
-	if _doc_label.text.begins_with("[center][b]DOCUMENTATION[/b]") or _doc_label.text.begins_with("Nest documentation data will"):
-		_doc_label.text = "Nest documentation data will appear here.\n\nUse the Photo Camera to document nests,\nthen validate at the computer terminal."
 
 
 func set_documentation(text: String) -> void:
-	_doc_label.text = text
+	_all_pages = [text]
+	_current_page = 0
+	_doc_placeholder_cleared = true
+	if current_spread == 1:
+		_refresh_spread_1()
 
 
-## Appends a documented nest entry to the Documentation page (Spread 1, Left).
-## Looks up the full field observation lore from NEST_LORE by nest_name.
-## Called by hasselmus_nest.gd when the player photographs/interacts with a nest.
-func add_documentation(nest_name: String) -> void:
-	var lore: String = NEST_LORE.get(nest_name, "")
-	if lore.is_empty():
-		push_warning("[NotebookUI] No lore found for nest: %s" % nest_name)
+## Appends a documented nest entry. The lore text flows sequentially into the
+## unified page array — it may span multiple pages like a real book.
+func add_documentation(nest_id: String) -> void:
+	if NEST_LORE.has(nest_id):
+		var lore_text = NEST_LORE[nest_id]
+		_append_text(lore_text)
+		_update_spread() # Force a UI refresh in case the notebook is open
+	else:
+		push_error("Notebook: Could not find nest data for ID: " + nest_id)
+
+
+## Appends a note entry. The text flows sequentially into the unified page
+## array — it may span multiple pages like a real book.
+func add_note(text: String) -> void:
+	if text.is_empty():
 		return
 	
-	# Clear placeholder text if this is the first entry
-	if _doc_label.text.begins_with("[center][b]DOCUMENTATION[/b]"):
-		_doc_label.text = ""
+	_append_text(text)
 	
-	_doc_label.text += "[b]%s[/b] — [i]Documented[/i]\n%s\n\n" % [nest_name, lore]
-	
+	_update_spread() # Force a UI refresh in case the notebook is open
 
 
-func add_note(text: String) -> void:
-	if _notes_label.text.is_empty():
-		_notes_label.text = text
-	else:
-		_notes_label.text += "\n\n" + text
+## Appends text to the unified page array, splitting across pages when
+## text exceeds CHARS_PER_PAGE. Maintains sequential book-like flow.
+func _append_text(new_text: String) -> void:
+	# Sanitize any double-escaped strings or literal quotes coming from resources/AI file writes
+	new_text = new_text.replace("\\n", "\n")
+	new_text = new_text.trim_prefix("\"").trim_suffix("\"")
+	new_text = new_text.trim_prefix("\"\"\"").trim_suffix("\"\"\"") # Catch triple quotes just in case
+	new_text = new_text.strip_edges()
+	
+	# Force a brand new page for every new entry if the current last page isn't entirely blank
+	if _all_pages.is_empty() or _all_pages[-1] != "":
+		_all_pages.append("")
+		
+	var last_idx = _all_pages.size() - 1
+	var page_text = _all_pages[last_idx]
+	var space_left = CHARS_PER_PAGE - page_text.length()
+
+	var current = new_text
+	if space_left > 0:
+		var chunk = current.substr(0, space_left)
+		var remainder = current.substr(space_left)
+		var nl_pos = chunk.rfind("\n")
+		if nl_pos > 0 and nl_pos > space_left / 2:
+			chunk = current.substr(0, nl_pos + 1)
+			remainder = current.substr(nl_pos + 1)
+		else:
+			var sp_pos = chunk.rfind(" ")
+			if sp_pos > 0 and sp_pos > space_left / 2:
+				chunk = current.substr(0, sp_pos + 1)
+				remainder = current.substr(sp_pos + 1)
+		_all_pages[last_idx] = page_text + chunk
+		current = remainder
+	
+	# Split remaining text into full pages of CHARS_PER_PAGE
+	while current.length() > 0:
+		if current.length() <= CHARS_PER_PAGE:
+			_all_pages.append(current)
+			break
+		else:
+			var split_at = CHARS_PER_PAGE
+			var nl_pos = current.rfind("\n", CHARS_PER_PAGE)
+			if nl_pos > CHARS_PER_PAGE / 2:
+				split_at = nl_pos + 1
+			else:
+				var sp_pos = current.rfind(" ", CHARS_PER_PAGE)
+				if sp_pos > CHARS_PER_PAGE / 2:
+					split_at = sp_pos + 1
+			_all_pages.append(current.substr(0, split_at))
+			current = current.substr(split_at)
 
 
 # ============================================================
-# Nest lore entries — revealed when the player documents each nest.
-# The key concepts (photophobia, observation, mimicry) are clues
-# for the computer terminal's FIELD_LOG.EXE puzzle on Day 2.
+# Nest lore entries
 # ============================================================
 
 const NEST_LORE: Dictionary = {
-	"Nest Alpha": "Subject: Nest Alpha | Species: Muscardinus avellanarius\nConstruction: Woven honeysuckle bark. Usually, these nests are built to avoid predators. However, this nest and the mice inside actively and impossibly reject light. They scramble violently away from the flashlight beam, burrowing deeper into the wood. The photophobia is extreme.",
-	"Nest Beta": "Subject: Nest Beta | Species: Muscardinus avellanarius\nObservation: The mice are not fleeing. They are positioned at the entrance of the nest, perfectly still, facing outward. When I move left, their heads track me. When I move right, they track me. It is a state of active observation. They are acting like scouts... it feels like something else is watching me through them.",
-	"Nest Gamma": "Subject: Nest Gamma | Species: Muscardinus avellanarius\nObservation: Dormice typically emit faint, high-pitched squeaks. This colony is producing a low, rhythmic clicking. The clicking pauses the exact moment I stop walking, and resumes precisely when I shift my weight. It is acoustic mimicry. They are studying the acoustic properties of my footsteps... or masking the sound of something much heavier walking nearby.",
+	"Nest Alpha": """[b]Subject: Nest Alpha[/b]
+Species: Muscardinus avellanarius
+Observation: The nest and the mice actively and impossibly reject light.""",
+
+	"Nest Beta": """[b]Subject: Nest Beta[/b]
+Species: Muscardinus avellanarius
+Observation: They are acting like scouts. It feels like something else is watching me through them.""",
+
+	"Nest Gamma": """[b]Subject: Nest Gamma[/b]
+Species: Muscardinus avellanarius
+Observation: The colony is producing a low, rhythmic clicking that vibrates through the cabin's exterior wood. It is mimicking the acoustic properties of my footsteps."""
 }

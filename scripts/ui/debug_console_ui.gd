@@ -159,9 +159,7 @@ func _input(event: InputEvent) -> void:
 		return
 	
 	# Close on Escape
-	if event.is_action_pressed("ui_cancel"):
-		_close_console()
-		get_viewport().set_input_as_handled()
+
 
 
 func _process(delta: float) -> void:

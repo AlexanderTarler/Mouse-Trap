@@ -253,20 +253,13 @@ var is_observe_finished: bool = false
 ## Reset to false by the RETREAT handler when the indoor retreat completes.
 var is_indoor_retreat: bool = false
 
-## ─── TRAVERSE STAIRS COMPLETION FLAG ──────────────────────────────────────────
-## Set to true by entity_ai.gd's _traverse_stairs_state() when the Entity
-## completes the ghost climb between waypoints (Phase 3 arrival).
-## The Director checks this flag in Tier 5 and transitions back to INDOOR_SEARCH.
-## Reset to false by the Director after consuming the flag.
-var _stairs_traversed: bool = false
-
 ## ─── PHYSICS SUSPENSION FLAG ──────────────────────────────────────────────────
 ## When true, the core physics calculations (gravity, ground snapping, and
 ## move_and_slide()) are bypassed in _physics_process(). Used by the
-## TRAVERSE_STAIRS state to manually lerp the Entity's global_position
-## without the physics motor fighting back.
-## Set to true by entity_ai.gd's _traverse_stairs_state() on Phase 2 entry.
-## Set to false on Phase 3 arrival (restoring normal physics).
+## Door Phase A ghost motor to manually lerp the Entity's global_position
+## through the doorway without the physics motor fighting back.
+## Set to true by entity_ai.gd's _indoor_search_state() on ghost entry.
+## Set to false on arrival (restoring normal physics).
 var is_physics_suspended: bool = false
 
 @export_group("Blackboard - Sensory Data")
@@ -1783,10 +1776,24 @@ func _physics_process(delta: float) -> void:
 		# ─── FAILSAFE TIMEOUT ─────────────────────────────────────────────
 		_door_phase_2_timer += delta
 		if _door_phase_2_timer >= 5.0:
-			print("[Entity] APPROACH_WINDOW Phase 2 GHOST MOTOR FAILSAFE! %ds elapsed. Teleporting to waypoint." % _door_phase_2_timer)
+			print("[Entity] APPROACH_WINDOW Phase 2 GHOST MOTOR FAILSAFE! %ds elapsed. Force-teleporting inside." % _door_phase_2_timer)
 			var breach_wp = get_door_breach_waypoint()
 			if breach_wp:
 				global_position = breach_wp.global_position
+				# ─── POST-TELEPORT VALIDATION ──────────────────────────────
+				# Verify the Entity is actually inside a valid cabin room after
+				# teleporting. If the IndoorBreachWaypoint is misconfigured or
+				# positioned outside the cabin, the Entity would go into
+				# INDOOR_SEARCH while still physically outside.
+				var room_name = RoomLightDetector.get_room_name_at(global_position)
+				print("[Entity] GHOST MOTOR FAILSAFE: Position after teleport = (%.2f, %.2f, %.2f) | Room = '%s'" % [global_position.x, global_position.y, global_position.z, room_name])
+				if _ai and _ai.has_method("_is_position_inside_cabin") and not _ai._is_position_inside_cabin(global_position):
+					# Still outside! Try the fallback interior position.
+					var fallback = _ai._get_fallback_indoor_position()
+					print("[Entity] GHOST MOTOR FAILSAFE: Entity STILL OUTSIDE (room='%s')! Teleporting to fallback position." % room_name)
+					global_position = fallback
+					room_name = RoomLightDetector.get_room_name_at(global_position)
+					print("[Entity] GHOST MOTOR FAILSAFE: Fallback position: (%.2f, %.2f, %.2f) | Room = '%s'" % [fallback.x, fallback.y, fallback.z, room_name])
 			_ghost_door_phase_2 = false
 			_ghost_mode = false
 			is_breach_locked = false
@@ -1862,7 +1869,7 @@ func _physics_process(delta: float) -> void:
 	
 	# ─── AI STATE LOGIC (runs regardless of physics suspension) ──────────
 	# The AI state machine must continue running even when physics is
-	# suspended (TRAVERSE_STAIRS Phase 2 Ghost Climb). The _traverse_stairs_state()
+	# suspended (Door Phase A Ghost Climb). The _indoor_search_state()
 	# manually lerps the Entity's global_position and does not need
 	# move_and_slide() — but it still needs to be called every frame to
 	# progress the lerp toward the END waypoint.
@@ -1874,9 +1881,9 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector3.ZERO
 	
 	# ─── PHYSICS SUSPENSION GUARD ─────────────────────────────────────────
-	# When is_physics_suspended is true (TRAVERSE_STAIRS Phase 2 Ghost Climb),
+	# When is_physics_suspended is true (Door Phase A Ghost Climb),
 	# the core physics calculations (gravity, ground snapping, and
-	# move_and_slide()) are bypassed. The AI's _traverse_stairs_state()
+	# move_and_slide()) are bypassed. The AI's _indoor_search_state()
 	# manually lerps the Entity's global_position instead.
 	#
 	# State updates, sensory pulses, and animation updates still run — only
@@ -2197,9 +2204,9 @@ func get_sensory_module() -> Node:
 	return _sensory
 
 ## Returns the CollisionShape3D node for the Entity's physics body.
-## Used by the TRAVERSE_STAIRS state to disable/re-enable the collision
+## Used by the Door Phase A ghost motor to disable/re-enable the collision
 ## shape during the ghost climb phase, preventing the Entity from
-## colliding with the stairs geometry while lerping between waypoints.
+## colliding with doorway geometry while lerping between waypoints.
 func get_collision_shape() -> CollisionShape3D:
 	return _collision_shape
 

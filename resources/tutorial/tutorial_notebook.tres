@@ -1,0 +1,12 @@
+[gd_resource type="Resource" load_steps=2 format=3 uid="uid://d1c2xmd6nd3cl"]
+
+[ext_resource type="Script" path="res://resources/tutorial/tutorial_data.gd" id="1_njk1e"]
+
+[resource]
+script = ExtResource("1_njk1e")
+mechanic_id = "notebook"
+prompt_text = "Press [J] to open your field notebook."
+trigger_moment = "enter_cabin"
+prerequisite = ""
+one_shot = true
+day_one_only = true

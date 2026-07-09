@@ -677,6 +677,14 @@ func end_current_night() -> void:
 	
 	get_tree().call_group("entity", "deactivate")
 	
+	# ─── CLEAN UP PEEKER ────────────────────────────────────────────
+	# If a Night 1 peeker is still active when the night ends (e.g. the
+	# player never looked at it), force-remove it so it doesn't persist
+	# into the day or subsequent nights.
+	var pm = get_node_or_null("/root/PeekerManager")
+	if pm and pm.has_method("remove_active_peeker"):
+		pm.remove_active_peeker()
+	
 	print("Night %d has ended! Dawn breaks." % current_night)
 	
 	_clear_environment_pickups()

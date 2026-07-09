@@ -1,0 +1,12 @@
+[gd_resource type="Resource" load_steps=2 format=3 uid="uid://bw5k7g9j1x4m6"]
+
+[ext_resource type="Script" path="res://resources/tutorial/tutorial_data.gd" id="1_f9h2k"]
+
+[resource]
+script = ExtResource("1_f9h2k")
+mechanic_id = "flashlight"
+prompt_text = "Press [F] to toggle your flashlight when it gets dark."
+trigger_moment = "first_night"
+prerequisite = "interact"
+one_shot = true
+day_one_only = false

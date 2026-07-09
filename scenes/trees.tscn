@@ -430,6 +430,10 @@ transform = Transform3D(0.5, 0, 0, 0, -0.014082915, 0.49980164, 0, -0.49980164, 
 
 [node name="GrassPatchGenerator" type="MultiMeshInstance3D" parent="." unique_id=222587609]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3721924, 0, -1.9028196)
+cast_shadow = 0
+visibility_range_end = 40.0
+visibility_range_end_margin = 5.0
+visibility_range_fade_mode = 1
 multimesh = SubResource("MultiMesh_8t882")
 script = ExtResource("22_8t882")
 min_bounds = Vector2(-10, -10)
@@ -437,6 +441,10 @@ max_bounds = Vector2(10, 10)
 
 [node name="MultiMeshInstance3D" type="MultiMeshInstance3D" parent="." unique_id=1009765926]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3721924, 0, -1.9028196)
+cast_shadow = 0
+visibility_range_end = 40.0
+visibility_range_end_margin = 5.0
+visibility_range_fade_mode = 1
 multimesh = SubResource("MultiMesh_6pyf6")
 script = ExtResource("22_8t882")
 min_bounds = Vector2(-5, -5)

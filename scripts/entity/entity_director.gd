@@ -247,19 +247,41 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	# After the 5-second stalk_lock_until_ms meta expires, the Director's
 	# Tier 3 (Active Aggression) transitions STALK→OBSERVE via the outside
 	# confirmation timer. This lock runs BEFORE Tier 3 and forces STALK
-	# unconditionally while is_van_sequence_active is true, regardless of
-	# confidence, timers, or player location. Only CHARGE/FLINCH override it.
-	# The lock is released when the Entity breaches the cabin (INDOOR_SEARCH).
+	# unconditionally while is_van_sequence_active is true.
+	#
+	# RELEASE CONDITION:
+	#   The lock is released when the player enters the cabin (player room
+	#   is NOT "Outside"). When released, the Director falls through to
+	#   Tier 3 (Active Aggression) which naturally transitions STALK →
+	#   APPROACH_WINDOW (if confidence >= 40) or OBSERVE (if < 40).
+	#   This allows the Entity to leave STALK and start approaching the
+	#   cabin via windows/doors instead of endlessly stalking outside.
+	#   Only CHARGE/FLINCH override it while the lock is active.
 	var night_mgr_for_lock = entity.get_node_or_null("/root/NightManager")
 	if night_mgr_for_lock and night_mgr_for_lock.is_van_sequence_active:
-		if state != EntityAI.State.STALK and state != EntityAI.State.CHARGE and state != EntityAI.State.FLINCH:
-			print("[TRACE_DIRECTOR] VAN SEQUENCE PERSISTENT LOCK: Forcing STALK (was %s)." % EntityAI.State.keys()[state])
-			return EntityAI.State.STALK
-		# State is already STALK, CHARGE, or FLINCH — preserve it.
-		# Returning the current state blocks ALL lower tiers (3-8) from
-		# evaluating and overriding, preventing the 1-frame STALK↔OBSERVE
-		# oscillation where Tier 3 demotes STALK→OBSERVE every frame.
-		return state
+		# ─── PLAYER ENTERED CABIN CHECK ──────────────────────────
+		# If the player has entered the cabin (room != "Outside"),
+		# release the van sequence lock so the Entity can transition
+		# out of STALK and start approaching the cabin.
+		var nav = entity.get_navigation_module()
+		var player_room: String = "Outside"
+		if nav and nav.has_method("get_player_room"):
+			player_room = nav.get_player_room()
+		if player_room != "Outside":
+			# Player is inside the cabin — release the van lock.
+			# Don't force STALK, fall through to Tier 3+ evaluations
+			# which will naturally transition to APPROACH_WINDOW or
+			# OBSERVE based on confidence.
+			pass  # fall through
+		else:
+			if state != EntityAI.State.STALK and state != EntityAI.State.CHARGE and state != EntityAI.State.FLINCH:
+				print("[TRACE_DIRECTOR] VAN SEQUENCE PERSISTENT LOCK: Forcing STALK (was %s)." % EntityAI.State.keys()[state])
+				return EntityAI.State.STALK
+			# State is already STALK, CHARGE, or FLINCH — preserve it.
+			# Returning the current state blocks ALL lower tiers (3-8) from
+			# evaluating and overriding, preventing the 1-frame STALK↔OBSERVE
+			# oscillation where Tier 3 demotes STALK→OBSERVE every frame.
+			return state
 	
 	# ─── STATE LOCK GUARD ─────────────────────────────────────────────
 	# After Tier 0 (flashlight reactions) and Tier 1 (sabotage override),
@@ -275,11 +297,11 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	# ─── INDOOR SEARCH PRESERVATION GUARD ──────────────────────────────
 	# If the Entity is currently in INDOOR_SEARCH, do NOT allow Tiers 2-8
 	# to override it with outdoor behaviors (OBSERVE_FROM_TREELINE,
-	# APPROACH_WINDOW, CLIMB_WALL_UP, etc.).
+	# APPROACH_WINDOW, etc.).
 	#
 	# This is a HARD LOCK — the Director will NOT transition away from
 	# INDOOR_SEARCH under any circumstances (except Tier 0/1 critical
-	# overrides checked above, and the TRAVERSE_STAIRS floor check above).
+	# overrides checked above, and the breach lock guard above).
 	# The Entity stays inside hunting until the _indoor_search_persistence_timer
 	# expires (30 seconds).
 	#
@@ -289,7 +311,7 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	# the Entity re-enters APPROACH_WINDOW → INDOOR_SEARCH → OBSERVE → ...
 	#
 	# Higher-priority overrides (Tier 0 pending, Tier 0 flashlight, Tier 1
-	# sabotage, TRAVERSE_STAIRS floor check) are checked ABOVE this guard
+	# sabotage, breach lock guard) are checked ABOVE this guard
 	# and can still interrupt.
 	if state == EntityAI.State.INDOOR_SEARCH:
 		# Only allow escape if the persistence timer has actually expired
@@ -299,7 +321,7 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 			return EntityAI.State.INDOOR_SEARCH  # Block all transitions! Keep hunting.
 	
 	# ─── STATE PERSISTENCE GUARD ──────────────────────────────────────
-	# If the Entity is in an active state (FLINCH, CLIMB_WALL, CHARGE, etc.)
+	# If the Entity is in an active state (FLINCH, CHARGE, etc.)
 	# and the state timer is still counting down, the Director MUST return
 	# the current state and skip Tier 3–8 evaluations. This prevents the
 	# Director from overriding a state mid-execution while the animation
@@ -921,7 +943,7 @@ func _tier_3_active_aggression(entity: CharacterBody3D, state: int) -> int:
 			# Player is inside the cabin. The Entity is outside (OBSERVE,
 			# APPROACH_WINDOW, etc.) and sees the player through a window.
 			# Do NOT STALK — STALK is outdoor pursuit. Fall through to
-			# confidence escalation (APPROACH_WINDOW/CLIMB_WALL) or
+			# confidence escalation (APPROACH_WINDOW) or
 			# state completion flags.
 			# Exception: If the Entity is already inside (INDOOR_SEARCH),
 			# CHARGE at 3x speed to attack the player.
@@ -1041,8 +1063,8 @@ func _tier_3_active_aggression(entity: CharacterBody3D, state: int) -> int:
 # TIER 4: CONFIDENCE ESCALATION (Interrupts passive states)
 # ═══════════════════════════════════════════════════════════════════════════════
 ## Checked BEFORE state completion flags so that high confidence can
-## interrupt OBSERVE_FROM_TREELINE and force APPROACH_WINDOW or
-## CLIMB_WALL even if the stare timer hasn't expired.
+## interrupt OBSERVE_FROM_TREELINE and force APPROACH_WINDOW even if the
+## stare timer hasn't expired.
 ##
 ## IMPORTANT: We only apply confidence escalation when the Entity is
 ## in a passive state (OBSERVE, STANDOFF, or idle). Active states

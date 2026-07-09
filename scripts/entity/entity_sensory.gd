@@ -83,6 +83,44 @@ var _vision_update_cooldown: float = 0.0
 ## last_known_position via sight during this window.
 const VISION_UPDATE_COOLDOWN_DURATION: float = 1.0
 
+# ─── RAYCAST THROTTLING ──────────────────────────────────────────────────
+## Frame counter for vision tick throttling. The Entity doesn't need to
+## re-evaluate whether it can see the player every single physics frame.
+## Running at ~20Hz (every 3rd frame) instead of 60Hz cuts vision raycast
+## cost by 66% without meaningfully affecting gameplay.
+var _vision_tick_counter: int = 0
+
+## How many physics frames between vision checks.
+const VISION_TICK_INTERVAL: int = 3
+
+## Cached result of the last can_entity_see_player() check.
+## Updated when the vision tick counter rolls over.
+var _cached_can_see_player: bool = false
+
+## Frame counter for player spotting check (is_player_spotting_entity).
+## This is checked even less frequently — 10Hz instead of 60Hz.
+var _spotting_tick_counter: int = 0
+
+## How many physics frames between spotting checks.
+const SPOTTING_TICK_INTERVAL: int = 6  # 10Hz at 60fps
+
+## Cached result of the last is_player_spotting_entity() check.
+var _cached_is_spotting: bool = false
+
+## Accumulator for RoomLightDetector cache (seconds).
+## Room lighting state doesn't change frame-to-frame — caching for 0.5s
+## eliminates redundant queries in _calculate_vision_range().
+var _room_light_cache_timer: float = 0.0
+
+## Cached result of the Entity's own room light status.
+var _cached_entity_in_lit_room: bool = false
+
+## Cached result of the player's room light status.
+var _cached_player_in_lit_room: bool = false
+
+## How long to cache RoomLightDetector results (seconds).
+const ROOM_LIGHT_CACHE_DURATION: float = 0.5
+
 
 func _ready() -> void:
 	# Cache the camera reference once the tree is fully loaded.
@@ -193,14 +231,22 @@ func _calculate_vision_range() -> float:
 	if is_observing:
 		return 35.0  # Extended range for treeline/window observation
 	
-	# Check if the Entity is in a lit environment using RoomLightDetector
-	# If the Entity is in a lit room, it can see moderately well
-	if RoomLightDetector.is_position_in_lit_room(entity.global_position):
+	# ─── ROOM LIGHT CACHE ───────────────────────────────────────────
+	# RoomLightDetector.is_position_in_lit_room() traverses cabin interior
+	# Area3D nodes. Room lighting doesn't change frame-to-frame, so we
+	# cache results for 0.5s to avoid redundant traversal every frame.
+	if _room_light_cache_timer <= 0.0:
+		_cached_entity_in_lit_room = RoomLightDetector.is_position_in_lit_room(entity.global_position)
+		_cached_player_in_lit_room = RoomLightDetector.is_position_in_lit_room(player.global_position)
+		_room_light_cache_timer = ROOM_LIGHT_CACHE_DURATION
+	
+	# Check if the Entity is in a lit environment using cached result
+	if _cached_entity_in_lit_room:
 		return VISION_RANGE_LIT_ENVIRONMENT
 	
 	# Also check if the player is in a lit room — if so, the Entity can see
 	# them from the darkness at moderate range (player silhouette against light)
-	if RoomLightDetector.is_position_in_lit_room(player.global_position):
+	if _cached_player_in_lit_room:
 		return VISION_RANGE_LIT_ENVIRONMENT
 	
 	# ─── CROUCH VISIBILITY MULTIPLIER ────────────────────────────────────
@@ -216,18 +262,32 @@ func _calculate_vision_range() -> float:
 	return VISION_RANGE_DARK
 
 
-## Checks if the Entity can see the player via vision cone + line-of-sight raycast.
-##
-## VISION SCALING:
-##   The effective vision range is calculated dynamically each frame based on
-##   lighting conditions (see _calculate_vision_range()). If the player is
-##   beyond this range, they are invisible to the Entity regardless of FOV.
-##
-## MEMORY UPDATE:
-##   When the player IS seen, the Entity updates its last_known_position to
-##   the player's current location. This is the ONLY place last_known_position
-##   is updated via sight — acoustic detection updates it separately.
+## ─── THROTTLED PUBLIC API ───────────────────────────────────────────────
+## This is the public entry point called by entity_controller.gd, entity_ai.gd,
+## entity_director.gd, and entity_confidence.gd — potentially multiple
+## times per frame. The internal raycast is only performed every
+## VISION_TICK_INTERVAL frames (~20Hz). Between ticks, the cached
+## result is returned. This cuts vision raycast cost by 66%.
 func can_entity_see_player() -> bool:
+	# ─── VISION TICK THROTTLE ──────────────────────────────────────
+	_vision_tick_counter += 1
+	if _vision_tick_counter >= VISION_TICK_INTERVAL:
+		_vision_tick_counter = 0
+		_cached_can_see_player = _can_entity_see_player_impl()
+	
+	# ─── DECREMENT ROOM LIGHT CACHE TIMER ───────────────────────────
+	# The cache is set by _calculate_vision_range() inside _impl().
+	# Decrement it here so it counts down every frame regardless of
+	# whether the vision check runs.
+	if _room_light_cache_timer > 0.0:
+		_room_light_cache_timer -= entity.get_physics_process_delta_time()
+	
+	return _cached_can_see_player
+
+
+## Internal implementation of the vision check — the actual heavy lifting.
+## Called only every VISION_TICK_INTERVAL frames by can_entity_see_player().
+func _can_entity_see_player_impl() -> bool:
 	var player = entity.get_player()
 	if not player or not is_instance_valid(player):
 		return false
@@ -331,11 +391,22 @@ func can_entity_see_player() -> bool:
 	return false
 
 
-
-
-
-## Checks if the player is currently shining their flashlight on the Entity.
+## ─── THROTTLED SPOTTING CHECK ───────────────────────────────────────────────
+## Public entry point for is_player_spotting_entity(). The internal raycast
+## is only performed every SPOTTING_TICK_INTERVAL frames (~10Hz).
+## Between ticks, the cached result is returned.
 func is_player_spotting_entity() -> bool:
+	# ─── SPOTTING TICK THROTTLE ────────────────────────────────────
+	_spotting_tick_counter += 1
+	if _spotting_tick_counter >= SPOTTING_TICK_INTERVAL:
+		_spotting_tick_counter = 0
+		_cached_is_spotting = _is_player_spotting_entity_impl()
+	return _cached_is_spotting
+
+
+## Internal implementation of the player spotting check.
+## Called only every SPOTTING_TICK_INTERVAL frames.
+func _is_player_spotting_entity_impl() -> bool:
 	var player = entity.get_player()
 	if not player or not is_instance_valid(player):
 		return false
@@ -403,7 +474,6 @@ func is_player_spotting_entity() -> bool:
 		return false
 	
 	return true
-
 
 
 ## Checks if the player's camera forward vector is looking within a 15-to-20

@@ -1,0 +1,172 @@
+extends Node
+
+## TutorialManager — Persistent autoload that manages Just-in-Time tutorial prompts.
+##
+## Holds an array of TutorialData resources configured in the Inspector.
+## Evaluates trigger conditions and prerequisites, then dispatches prompts
+## to the HorrorHUD. Tracks which mechanics the player has learned so
+## tutorials are never shown twice.
+##
+## Integration points:
+##   - HorrorHUD.show_hint(text) — displays the prompt
+##   - HorrorHUD.hide_hint() — dismisses the prompt
+##   - RoutineManager.mark_mechanic_learned(id) — persists learning status
+##   - RoutineManager.is_mechanic_learned(id) — checks prerequisite completion
+##   - player_controller.gd emits signals for trigger moments
+##   - NightManager emits night_started for flashlight tutorial
+
+## Paths to TutorialData .tres files. Loaded programmatically since autoloads
+## cannot rely on Inspector-based @export assignments.
+const TUTORIAL_PATHS: Array[String] = [
+	"res://resources/tutorial/tutorial_movement.tres",
+	"res://resources/tutorial/tutorial_interact.tres",
+	"res://resources/tutorial/tutorial_notebook.tres",
+	"res://resources/tutorial/tutorial_sprint.tres",
+	"res://resources/tutorial/tutorial_flashlight.tres",
+	"res://resources/tutorial/tutorial_inventory.tres",
+]
+
+## Loaded TutorialData resources.
+var tutorials: Array[TutorialData] = []
+
+## Optional fade-in delay for tutorial prompts (seconds).
+var fade_in_delay: float = 0.5
+
+## How long a prompt stays visible before auto-dismiss (seconds). 0 = no auto-dismiss.
+var auto_dismiss_after: float = 0.0
+
+## Cached reference to the HorrorHUD.
+var _hud: Node = null
+
+## Tracks which mechanics have been shown (one_shot guard).
+var _shown: Dictionary = {}
+
+
+
+func _ready() -> void:
+	process_mode = PROCESS_MODE_ALWAYS
+	
+	# Load all tutorial resources from disk
+	for path in TUTORIAL_PATHS:
+		var res := load(path) as TutorialData
+		if res:
+			tutorials.append(res)
+			print("[TutorialManager] Loaded tutorial: %s" % res.mechanic_id)
+		else:
+			push_warning("[TutorialManager] Could not load tutorial resource: %s" % path)
+	
+	# Wire up signal listeners for trigger moments.
+	# Assumes the autoloads exist; if not, we connect lazily.
+	var nm := get_node_or_null("/root/NightManager")
+	if nm and nm.has_signal("night_started"):
+		if not nm.is_connected("night_started", _on_night_started):
+			nm.night_started.connect(_on_night_started)
+
+
+func _find_hud() -> Node:
+	if _hud and is_instance_valid(_hud):
+		return _hud
+	
+	var hud_nodes := get_tree().get_nodes_in_group("hud")
+	for node in hud_nodes:
+		if node.has_method("show_hint"):
+			_hud = node
+			return _hud
+	
+	var hud := get_node_or_null("/root/CottageHorror/HUD")
+	if hud:
+		_hud = hud
+		return _hud
+	return null
+
+
+## Trigger a tutorial by its mechanic_id. Called by external scripts (player_controller,
+## inventory, NightManager) when a trigger moment occurs.
+func trigger(mechanic_id: String) -> void:
+	var tutorial := _find_tutorial(mechanic_id)
+	if not tutorial:
+		return
+	_show(tutorial)
+
+
+## Mark a mechanic as learned (player performed the action).
+## Dispatches to RoutineManager for persistence and dismisses the hint.
+func mark_learned(mechanic_id: String) -> void:
+	# If this mechanic's prompt is currently visible, dismiss it.
+	var tut := _find_tutorial(mechanic_id)
+	if tut and _shown.get(mechanic_id, false):
+		var hud := _find_hud()
+		if hud and hud.has_method("hide_hint"):
+			hud.hide_hint()
+	
+	var rm := get_node_or_null("/root/RoutineManager")
+	if rm and rm.has_method("mark_mechanic_learned"):
+		rm.mark_mechanic_learned(mechanic_id)
+
+
+## Checks if a mechanic has been learned (via RoutineManager persistence).
+func is_learned(mechanic_id: String) -> bool:
+	var rm := get_node_or_null("/root/RoutineManager")
+	if rm and rm.has_method("is_mechanic_learned"):
+		return rm.is_mechanic_learned(mechanic_id)
+	return true  # If RoutineManager not found, assume learned to avoid stuck prompts
+
+
+# ─── Internal ──────────────────────────────────────────────────────────
+
+func _find_tutorial(id: String) -> TutorialData:
+	for t in tutorials:
+		if t and t.mechanic_id == id:
+			return t
+	return null
+
+
+func _can_show(tutorial: TutorialData) -> bool:
+	# Already shown and one_shot?
+	if tutorial.one_shot and _shown.get(tutorial.mechanic_id, false):
+		return false
+	
+	# Already learned?
+	if is_learned(tutorial.mechanic_id):
+		return false
+	
+	# Day-one-only restriction?
+	if tutorial.day_one_only:
+		var nm := get_node_or_null("/root/NightManager")
+		if nm and "current_night" in nm and nm.current_night != 0:
+			return false
+	
+	# Prerequisite not yet learned?
+	if tutorial.prerequisite and not is_learned(tutorial.prerequisite):
+		return false
+	
+	return true
+
+
+func _show(tutorial: TutorialData) -> void:
+	if not _can_show(tutorial):
+		return
+	
+	var hud := _find_hud()
+	if not hud or not hud.has_method("show_hint"):
+		push_warning("[TutorialManager] Cannot show hint — no HUD with show_hint() found.")
+		return
+	
+	hud.show_hint(tutorial.prompt_text, fade_in_delay)
+	_shown[tutorial.mechanic_id] = true
+	
+	print("[TutorialManager] Showing prompt: '%s' (%s)" % [tutorial.prompt_text, tutorial.mechanic_id])
+	
+	# Auto-dismiss if configured
+	if auto_dismiss_after > 0.0 and hud.has_method("hide_hint"):
+		get_tree().create_timer(auto_dismiss_after).timeout.connect(func():
+			if hud and hud.has_method("hide_hint"):
+				hud.hide_hint()
+		)
+
+
+# ─── Signal Handlers ────────────────────────────────────────────────────
+
+func _on_night_started(_night: int) -> void:
+	# Flashlight tutorial triggers on the first night start.
+	trigger("flashlight")

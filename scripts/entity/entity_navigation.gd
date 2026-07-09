@@ -74,7 +74,7 @@ var _treeline_markers: Array[Node3D] = []
 ## Pre-cached array of actual CabinWindow nodes on the ground floor.
 ## Populated once in _cache_scene_groups() by iterating _window_markers.
 ## Eliminates repeated get_parent() and is_in_group() calls inside hot loops.
-var _bottom_floor_windows: Array[CabinWindow] = []
+var _cabin_windows: Array[CabinWindow] = []
 
 
 func setup(parent: CharacterBody3D) -> void:
@@ -116,8 +116,8 @@ func _cache_scene_groups() -> void:
 	
 	print("[Entity Navigation] Cached %d window markers and %d treeline markers." % [_window_markers.size(), _treeline_markers.size()])
 	
-	# ─── PRE-CACHE BOTTOM FLOOR WINDOWS ──────────────────────────────────
-	# Populate _bottom_floor_windows by iterating _window_markers once.
+	# ─── PRE-CACHE CABIN WINDOWS ────────────────────────────────────────
+	# Populate _cabin_windows by iterating _window_markers once.
 	# This eliminates repeated get_parent() and is_in_group() calls inside
 	# hot loops like find_nearest_broken_window() and are_all_windows_lit().
 	for w in _window_markers:
@@ -133,9 +133,9 @@ func _cache_scene_groups() -> void:
 			if window_name.contains("porch"):
 				print("[Navigation] Skipping porch window: %s" % parent.name)
 				continue
-			_bottom_floor_windows.append(parent as CabinWindow)
+			_cabin_windows.append(parent as CabinWindow)
 	
-	print("[Navigation] Pre-cached %d bottom-floor CabinWindow nodes (excluding porch)." % _bottom_floor_windows.size())
+	print("[Navigation] Pre-cached %d CabinWindow nodes (excluding porch)." % _cabin_windows.size())
 	
 	# ─── DOOR MARKER VERIFICATION ──────────────────────────────────────
 	# Verify that the door has a Marker3D in the "DoorBreachWaypoint" group.
@@ -547,10 +547,10 @@ func _get_light_detector() -> Node:
 ## Used by the ALL_WINDOWS_LIT loop guard in entity_ai.gd to prevent the
 ## Entity from continuously cycling frames when there are no valid windows.
 func are_all_windows_lit() -> bool:
-	if _bottom_floor_windows.is_empty():
+	if _cabin_windows.is_empty():
 		return false
 	
-	for cabin_window in _bottom_floor_windows:
+	for cabin_window in _cabin_windows:
 		# Check if this window is NOT secure due to light
 		# A window is "secure by light" when room_light.is_room_lit() returns true
 		var is_secure_by_light: bool = false
@@ -881,14 +881,14 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 ##
 ## Returns the CabinWindow node, or null if no suitable window is found.
 func find_nearest_broken_window() -> Node3D:
-	if _bottom_floor_windows.is_empty():
+	if _cabin_windows.is_empty():
 		return null
 	
 	var closest: Node3D = null
 	var closest_dist_sq: float = INF
 	var entity_pos = entity.global_position
 	
-	for cabin_window in _bottom_floor_windows:
+	for cabin_window in _cabin_windows:
 		# Must have shattered glass AND not be boarded
 		if not cabin_window.is_glass_shattered:
 			continue

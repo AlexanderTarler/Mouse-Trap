@@ -62,6 +62,8 @@ unique_name_in_owner = true
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
+scroll_horizontal_enabled = false
+scroll_vertical_enabled = false
 
 [node name="IndexLabel" type="RichTextLabel" parent="CenterContainer/BookBackground/CoverMargin/HBoxContainer/LeftPage/LeftMargin/IndexContainer" unique_id=1019272297]
 unique_name_in_owner = true
@@ -71,6 +73,7 @@ size_flags_vertical = 3
 mouse_filter = 1
 theme_override_font_sizes/normal_font_size = 16
 bbcode_enabled = true
+scroll_active = false
 fit_content = true
 
 [node name="DocContainer" type="ScrollContainer" parent="CenterContainer/BookBackground/CoverMargin/HBoxContainer/LeftPage/LeftMargin" unique_id=2056907289]
@@ -78,6 +81,8 @@ unique_name_in_owner = true
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
+scroll_horizontal_enabled = false
+scroll_vertical_enabled = false
 
 [node name="DocLabel" type="RichTextLabel" parent="CenterContainer/BookBackground/CoverMargin/HBoxContainer/LeftPage/LeftMargin/DocContainer" unique_id=1746100383]
 unique_name_in_owner = true
@@ -87,8 +92,8 @@ size_flags_vertical = 3
 mouse_filter = 1
 theme_override_font_sizes/normal_font_size = 16
 bbcode_enabled = true
+scroll_active = false
 text = "Documentation"
-fit_content = true
 
 [node name="Spine" type="ColorRect" parent="CenterContainer/BookBackground/CoverMargin/HBoxContainer" unique_id=736509936]
 custom_minimum_size = Vector2(4, 0)
@@ -118,6 +123,8 @@ unique_name_in_owner = true
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
+scroll_horizontal_enabled = false
+scroll_vertical_enabled = false
 
 [node name="ToDoLabel" type="RichTextLabel" parent="CenterContainer/BookBackground/CoverMargin/HBoxContainer/RightPage/RightMargin/ToDoContainer" unique_id=2111608368]
 unique_name_in_owner = true
@@ -127,6 +134,7 @@ size_flags_vertical = 3
 mouse_filter = 1
 theme_override_font_sizes/normal_font_size = 16
 bbcode_enabled = true
+scroll_active = false
 fit_content = true
 
 [node name="NotesContainer" type="ScrollContainer" parent="CenterContainer/BookBackground/CoverMargin/HBoxContainer/RightPage/RightMargin" unique_id=889067863]
@@ -134,6 +142,8 @@ unique_name_in_owner = true
 visible = false
 layout_mode = 2
 size_flags_vertical = 3
+scroll_horizontal_enabled = false
+scroll_vertical_enabled = false
 
 [node name="NotesLabel" type="RichTextLabel" parent="CenterContainer/BookBackground/CoverMargin/HBoxContainer/RightPage/RightMargin/NotesContainer" unique_id=1788817145]
 unique_name_in_owner = true
@@ -143,8 +153,8 @@ size_flags_vertical = 3
 mouse_filter = 1
 theme_override_font_sizes/normal_font_size = 16
 bbcode_enabled = true
+scroll_active = false
 text = "Notes"
-fit_content = true
 
 [node name="DayLabel" type="Label" parent="." unique_id=1856332501]
 unique_name_in_owner = true

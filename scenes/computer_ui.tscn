@@ -8,7 +8,7 @@ content_margin_left = 8.0
 content_margin_top = 8.0
 content_margin_right = 8.0
 content_margin_bottom = 8.0
-bg_color = Color(0.05, 0.05, 0.05, 1)
+bg_color = Color(0.7647059, 0.7647059, 0.7647059, 1)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -56,13 +56,15 @@ script = ExtResource("1_computer_ui")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 color = Color(0.00784314, 0.5019608, 0.5019608, 1)
 
 [node name="LoginScreen" type="Panel" parent="." unique_id=600000001]
-offset_left = 400.0
-offset_top = 200.0
-offset_right = 1120.0
-offset_bottom = 520.0
+offset_left = 358.0
+offset_top = 218.0
+offset_right = 1239.0
+offset_bottom = 628.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_terminal")
 
 [node name="LoginVBox" type="VBoxContainer" parent="LoginScreen" unique_id=600000002]
@@ -70,20 +72,22 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 1.0
+offset_right = -530.565
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 12
 
 [node name="LoginTitle" type="Label" parent="LoginScreen/LoginVBox" unique_id=600000003]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.2, 1, 0.2, 1)
+theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 16
 text = "SVENSKA SKOGSBRUKSARKIVET"
 horizontal_alignment = 1
 
 [node name="SubtitleLabel" type="Label" parent="LoginScreen/LoginVBox" unique_id=600000004]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.3, 0.8, 0.3, 1)
+theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 12
 text = "Archival System v3.1 — Secure Login"
 horizontal_alignment = 1
@@ -94,28 +98,29 @@ size_flags_vertical = 3
 
 [node name="UsernameLabel" type="Label" parent="LoginScreen/LoginVBox" unique_id=600000006]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.2, 1, 0.2, 1)
+size_flags_vertical = 1
+theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 12
 text = "USERNAME:"
 
 [node name="UsernameInput" type="LineEdit" parent="LoginScreen/LoginVBox" unique_id=600000007]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.2, 1, 0.2, 1)
-theme_override_colors/font_placeholder_color = Color(0.15, 0.4, 0.15, 1)
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_colors/font_placeholder_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 14
 placeholder_text = "Enter username..."
 max_length = 32
 
 [node name="PasswordLabel" type="Label" parent="LoginScreen/LoginVBox" unique_id=600000008]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.2, 1, 0.2, 1)
+theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 12
 text = "PASSWORD:"
 
 [node name="PasswordInput" type="LineEdit" parent="LoginScreen/LoginVBox" unique_id=600000009]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.2, 1, 0.2, 1)
-theme_override_colors/font_placeholder_color = Color(0.15, 0.4, 0.15, 1)
+theme_override_colors/font_placeholder_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 14
 placeholder_text = "Enter password..."
 max_length = 32
@@ -124,7 +129,7 @@ secret_character = "*"
 
 [node name="LoginButton" type="Button" parent="LoginScreen/LoginVBox" unique_id=600000010]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.05, 0.05, 0.05, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 14
 text = "LOGIN"
 
@@ -136,10 +141,10 @@ horizontal_alignment = 1
 
 [node name="PowerOffButton" type="Button" parent="LoginScreen" unique_id=600000012]
 layout_mode = 0
-offset_left = 655.0
-offset_top = 290.0
-offset_right = 720.0
-offset_bottom = 320.0
+offset_left = 801.0
+offset_top = 23.0
+offset_right = 866.0
+offset_bottom = 53.0
 theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
 theme_override_font_sizes/font_size = 10
 text = "POWER OFF"

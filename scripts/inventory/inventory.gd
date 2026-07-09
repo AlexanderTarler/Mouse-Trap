@@ -14,6 +14,11 @@ signal inventory_changed
 
 var items: Array = []
 
+## NightManager clears the inventory during normal-mode setup. The inventory
+## tutorial should only fire for items added AFTER that clear, not for the
+## starting items that get immediately removed.
+var _initialization_done: bool = false
+
 const MAX_ITEMS: int = 10
 
 
@@ -60,8 +65,26 @@ func add_item(item) -> bool:
 		if rm and rm.has_method("on_plank_picked_up"):
 			rm.on_plank_picked_up()
 	
+	# ─── TUTORIAL: Inventory prompt on first real pickup ──────────────────
+	# Skip during startup — NightManager clears the inventory right after
+	# player_controller adds the starting items. Only trigger for items that
+	# are picked up after that initialization clear. The guard is inside
+	# _trigger_inventory_tutorial so deferred calls scheduled before the
+	# clear still get silently dropped.
+	call_deferred("_trigger_inventory_tutorial")
+	
 	return true
 
+
+## Deferred inventory tutorial trigger — runs after TutorialManager is fully loaded.
+## Guards against startup: NightManager clears the inventory right after adding
+## starting items, so we only show the tutorial for player-picked-up items.
+func _trigger_inventory_tutorial() -> void:
+	if not _initialization_done:
+		return
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("trigger"):
+		tm.trigger("inventory")
 
 
 func remove_item(item) -> void:
@@ -103,6 +126,13 @@ func get_item_count() -> int:
 	return items.size()
 
 
+## Marks the inventory as fully initialized. Called by NightManager after
+## clearing the inventory in normal mode, so the inventory tutorial only
+## fires for items the player actually picks up in-game.
+func mark_initialized() -> void:
+	_initialization_done = true
+
 func clear() -> void:
 	items.clear()
+	_initialization_done = true
 	inventory_changed.emit()

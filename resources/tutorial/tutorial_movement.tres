@@ -1,0 +1,12 @@
+[gd_resource type="Resource" load_steps=2 format=3 uid="uid://d2kl3meda1crj"]
+
+[ext_resource type="Script" path="res://resources/tutorial/tutorial_data.gd" id="1_o8i3c"]
+
+[resource]
+script = ExtResource("1_o8i3c")
+mechanic_id = "movement"
+prompt_text = "Use [W][A][S][D] to move, [CTRL] to crouch. Crouching makes you silent."
+trigger_moment = "first_spawn"
+prerequisite = ""
+one_shot = true
+day_one_only = true

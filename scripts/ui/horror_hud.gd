@@ -10,6 +10,10 @@ extends CanvasLayer
 @onready var phase_bar: ProgressBar = $PhaseBar
 @onready var objective_label: Label = $ObjectiveLabel
 
+# Onboarding hint nodes
+@onready var hint_label: Label = $HintLabel
+@onready var hint_timer: Timer = $HintTimer
+
 # Battery meter nodes
 @onready var battery_bar: ProgressBar = $BatteryBar
 @onready var battery_label: Label = $BatteryBar/BatteryLabel
@@ -610,6 +614,84 @@ func _update_room_label() -> void:
 ## via the existing _show_event() message queue system.
 func show_message(msg: String) -> void:
 	_show_event(msg)
+
+
+var _hint_tween: Tween = null
+
+## Tracks whether any hint has been shown yet. Used to distinguish a
+## genuine visible hint from the HintLabel's default alpha=1.0 in the scene.
+var _hint_has_been_shown: bool = false
+
+# ─── ONBOARDING HINT SYSTEM ─────────────────────────────────────────────
+# Displays a short contextual hint that fades in after a small delay.
+# Designed for Day 1 onboarding triggers (e.g., HintArea near the cabin).
+
+## Shows a hint with the given text. The hint stays invisible for `delay`
+## seconds, then fades in over 0.5s. Call hide_hint() to dismiss it.
+##
+## If a previous hint is still fading in (timer running), the text is
+## replaced in-place without restarting the timer, preventing the "flash"
+## caused by competing fade animations.
+##
+## If a hint is already fully visible, it IGNORES the new request so the
+## current hint stays on screen until dismissed by mark_learned().
+func show_hint(text: String, delay: float = 0.5) -> void:
+	if not hint_label:
+		return
+	
+	# If a hint is already visible AND we've already shown one before, ignore.
+	# (The first call must pass through — HintLabel starts at alpha=1.0 in the
+	# scene file, so we'd skip every tutorial without this guard.)
+	if _hint_has_been_shown and hint_label.modulate.a > 0.0:
+		return
+	
+	# If hint timer is still running (fade-in hasn't started yet),
+	# just update the text — keep the existing timer/tween.
+	if hint_timer and not hint_timer.is_stopped():
+		hint_label.text = text
+		return
+	
+	# Kill any existing tween so we don't get competing fade animations
+	if is_instance_valid(_hint_tween):
+		_hint_tween.kill()
+	
+	_hint_has_been_shown = true
+	hint_label.text = text
+	hint_label.modulate = Color(0.9, 0.9, 0.8, 0.0)
+	
+	if hint_timer:
+		hint_timer.stop()
+		hint_timer.wait_time = delay
+		# Disconnect previous connection before adding a new one to prevent
+		# connection pile-up that causes competing fade tweens.
+		if hint_timer.timeout.is_connected(_on_hint_timer_timeout):
+			hint_timer.timeout.disconnect(_on_hint_timer_timeout)
+		hint_timer.timeout.connect(_on_hint_timer_timeout)
+		hint_timer.start()
+
+
+## Fades the hint label from alpha 1 to 0 over 0.5 seconds.
+func hide_hint() -> void:
+	if not hint_label:
+		return
+	
+	if is_instance_valid(_hint_tween):
+		_hint_tween.kill()
+	
+	_hint_tween = create_tween()
+	_hint_tween.tween_property(hint_label, "modulate:a", 0.0, 0.5)
+
+
+## Called once the hint delay timer expires. Fades the hint in naturally.
+func _on_hint_timer_timeout() -> void:
+	if not hint_label:
+		return
+	
+	if is_instance_valid(_hint_tween):
+		_hint_tween.kill()
+	
+	_hint_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	_hint_tween.tween_property(hint_label, "modulate:a", 1.0, 0.5)
 
 
 ## Creates the purge bar UI nodes programmatically on first use.

@@ -51,6 +51,15 @@ func _process(delta: float) -> void:
 	if _heartbeat_timer >= HEARTBEAT_INTERVAL:
 		_heartbeat_timer = 0.0
 		_heartbeat()
+	
+	# ─── CABIN-EXIT CHECK ─────────────────────────────────────────---
+	# If the peeker is active but the player has left the cabin,
+	# immediately remove it. This prevents the peeker from being visible
+	# while the player is outside (where it shouldn't appear).
+	if _active_peeker and is_instance_valid(_active_peeker):
+		if not _is_player_inside_cabin():
+			print("[PeekerManager] Player left cabin with active peeker. Removing peeker.")
+			remove_active_peeker()
 
 
 ## Returns true if Night 1 is currently active.
@@ -86,6 +95,21 @@ func spawn_night_1_peeker() -> void:
 		return
 	
 	_spawn_peeker()
+
+
+## Forces immediate removal of the currently active peeker, if any.
+## Used when transitioning out of Night 1 or when the player leaves the cabin.
+## The peeker is freed without playing the duck-down animation, since these
+## are hard transitions that should be instant.
+func remove_active_peeker() -> void:
+	if not _active_peeker or not is_instance_valid(_active_peeker):
+		return
+	
+	print("[PeekerManager] Force-removing active peeker.")
+	_active_peeker.peeker_vanish_finished.disconnect(_on_peeker_vanish_finished)
+	_active_peeker.queue_free()
+	_active_peeker = null
+	_heartbeat_timer = 0.0
 
 
 ## Internal spawn logic.

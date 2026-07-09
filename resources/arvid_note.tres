@@ -1,13 +1,12 @@
 [gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://d0uq0x2m2q0cd"]
 
-[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_item_data"]
+[ext_resource type="Script" uid="uid://baixx1fs8cosb" path="res://scripts/items/item_data.gd" id="1_item_data"]
 [ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0c6" path="res://scenes/note.tscn" id="2_note_scene"]
-
 
 [resource]
 script = ExtResource("1_item_data")
 item_name = "Arvid's Note"
-item_description = "A crumpled note, hastily written. The handwriting is jagged and frantic."
+item_description = "Another note from Arvid, which ends abruptly."
 item_type = 1
-note_text = "They aren't who they say they are. This 'preservation' company is studying it. If anyone finds this, check my terminal. The override key is STENBERG_1996. I've set up a trap using the porch light, I just need to find some wire to finish it..."
+note_text = "\"Log Note — 22:14\\n\\nLeft the computer terminal active.\\n\\nGoing down to the old tunnel (gamla tunneln) past the eastern thicket to pull a manual audio sample. There’s a persistent acoustic feedback looping out of the concrete structure. From the porch, it just sounds like standard low-frequency wind resonance, but the frequency shifts are perfectly matching the interval patterns I logged at Nest Gamma earlier today.\\n\\nIt's highly likely a structural fluke—the acoustics of the hollow corridor mimicking the local wildlife distribution—but I need to rule out equipment interference before finalizing the report for the regional office.\\n\\nIf anyone from administration calls before I get back, tell them the data migration is still on schedule. Taking the spare battery cells.\\n\\n— Arvid\""
 scene_to_spawn = ExtResource("2_note_scene")

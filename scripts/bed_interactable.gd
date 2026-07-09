@@ -68,8 +68,18 @@ func interact(player: Node3D = null) -> void:
 			else:
 				await get_tree().create_timer(1.5).timeout
 			
+			# ─── FREEZE CLOCK BEFORE ADVANCE ───────────────────────
+			# Must freeze BEFORE advance_night() so the clock can't tick
+			# during the night transition. advance_night() sets cycle_progress
+			# to 0.0 (start of day) and unpauses time. We freeze before
+			# so it lands at exactly 00:00 and stays there through the fade.
+			if _game_time:
+				_game_time.is_time_paused = true
 			if _night_manager.has_method("advance_night"):
 				_night_manager.advance_night()
+			# Re-freeze after advance_night() since it may have unpaused time
+			if _game_time:
+				_game_time.is_time_paused = true
 			
 			if hud and hud.has_method("show_message"):
 				hud.show_message(DAY2_OBJECTIVE)
@@ -87,6 +97,12 @@ func interact(player: Node3D = null) -> void:
 			if hud and hud.has_method("fade_from_black"):
 				hud.fade_from_black(2.0)
 				await get_tree().create_timer(2.0).timeout
+			
+			# ─── UNFREEZE CLOCK ────────────────────────────────────
+			# Time was frozen before and after advance_night() so the HUD
+			# would show exactly 00:00. Now unpause it so Day 2's clock runs.
+			if _game_time:
+				_game_time.is_time_paused = false
 			
 			if player.has_method("set_physics_process"):
 				player.set_physics_process(true)
@@ -118,8 +134,15 @@ func interact(player: Node3D = null) -> void:
 			await get_tree().create_timer(1.5).timeout
 		else:
 			await get_tree().create_timer(1.5).timeout
+		# ─── FREEZE CLOCK BEFORE ADVANCE ───────────────────────
+		if _game_time:
+			_game_time.is_time_paused = true
 		if _night_manager.has_method("advance_night"):
 			_night_manager.advance_night()
+		# Re-freeze after advance_night() since it may have unpaused time
+		if _game_time:
+			_game_time.is_time_paused = true
+		
 		if hud and hud.has_method("show_message"):
 			hud.show_message(DAY2_OBJECTIVE)
 		var labels = get_tree().get_nodes_in_group("objective_label")
@@ -135,6 +158,11 @@ func interact(player: Node3D = null) -> void:
 		if hud and hud.has_method("fade_from_black"):
 			hud.fade_from_black(2.0)
 			await get_tree().create_timer(2.0).timeout
+		
+		# ─── UNFREEZE CLOCK ────────────────────────────────────
+		if _game_time:
+			_game_time.is_time_paused = false
+		
 		if player.has_method("set_physics_process"):
 			player.set_physics_process(true)
 			player.set_process_input(true)

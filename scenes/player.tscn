@@ -52,11 +52,7 @@
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_4gjji"]
 points = PackedVector3Array(0.3, 0.5, 0, 0.27716386, 0.5, 0.11480503, 0.21213204, 0.5, 0.21213204, 0.11480503, 0.5, 0.27716386, 1.8369096e-17, 0.5, 0.3, -0.11480503, 0.5, 0.27716386, -0.21213204, 0.5, 0.21213204, -0.27716386, 0.5, 0.11480503, -0.3, 0.5, 3.673819e-17, -0.27716386, 0.5, -0.11480503, -0.21213204, 0.5, -0.21213204, -0.11480503, 0.5, -0.27716386, -5.5107285e-17, 0.5, -0.3, 0.11480503, 0.5, -0.27716386, 0.21213204, 0.5, -0.21213204, 0.27716386, 0.5, -0.11480503, 0.3, -0.5, 0, 0.27716386, -0.5, 0.11480503, 0.21213204, -0.5, 0.21213204, 0.11480503, -0.5, 0.27716386, 1.8369096e-17, -0.5, 0.3, -0.11480503, -0.5, 0.27716386, -0.21213204, -0.5, 0.21213204, -0.27716386, -0.5, 0.11480503, -0.3, -0.5, 3.673819e-17, -0.27716386, -0.5, -0.11480503, -0.21213204, -0.5, -0.21213204, -0.11480503, -0.5, -0.27716386, -5.5107285e-17, -0.5, -0.3, 0.11480503, -0.5, -0.27716386, 0.21213204, -0.5, -0.21213204, 0.27716386, -0.5, -0.11480503, 0, 1, 0, 0, -1, 0)
 
-[sub_resource type="CapsuleShape3D" id="CapsuleShape_player"]
-radius = 0.35
-height = 1.8
-
-[node name="Player" type="CharacterBody3D" unique_id=629523076]
+[node name="Player" type="CharacterBody3D" unique_id=629523076 groups=["player"]]
 floor_max_angle = 1.0472
 floor_snap_length = 1.2
 script = ExtResource("1_player")
@@ -73,11 +69,6 @@ script = ExtResource("39_4gjji")
 body_radius = 0.3
 body_radius = 0.3
 metadata/_custom_type_script = "uid://dempbdhodhyre"
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1320359234]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
-shape = SubResource("CapsuleShape_player")
-disabled = true
 
 [node name="CameraHolder" type="Node3D" parent="." unique_id=1797101837]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.7, 0)

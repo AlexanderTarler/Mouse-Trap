@@ -1,0 +1,16 @@
+[gd_scene format=3 uid="uid://cqrbkhg6og02d"]
+
+[ext_resource type="Script" uid="uid://cdpmfqgccveto" path="res://scripts/ui/hint_area.gd" id="1_xekc3"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_xekc3"]
+radius = 2.5
+
+[node name="HintArea" type="Area3D" unique_id=1417014]
+script = ExtResource("1_xekc3")
+hint_text = "Press [J] to open your field notebook."
+fade_in_delay = 0.5
+day_one_only = true
+one_shot = true
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1911741102]
+shape = SubResource("SphereShape3D_xekc3")

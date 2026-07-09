@@ -69,6 +69,18 @@ func _process(_delta: float) -> void:
 		if _is_open:
 			_close_inventory()
 		return
+	
+	# ─── COMPUTER UI GUARD ─────────────────────────────────
+	# Prevent TAB from toggling the inventory while the computer
+	# (computer_ui.gd) is open. The player should not be able to
+	# open the inventory while interacting with the computer.
+	var computer_ui = get_node_or_null("/root/CottageHorror/ComputerUI")
+	if not computer_ui:
+		computer_ui = get_tree().get_first_node_in_group("computer_ui")
+	if computer_ui and computer_ui.get("is_open"):
+		if _is_open:
+			_close_inventory()
+		return
 
 	# Hardware-poll TAB key directly — bypasses fragile _input() event consumption
 	var tab_down = Input.is_physical_key_pressed(KEY_TAB)

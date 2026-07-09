@@ -284,11 +284,6 @@ var _breach_in_progress: bool = false
 ## The const is kept as a fallback for the initial value.
 const ENTER_WINDOW_ANIM_DURATION: float = 1.5
 
-## ─── INDOOR ROOM GRAPH ──────────────────────────────────────────────────────
-## Adjacency graph of all cabin rooms. Used by BFS pathfinding to compute the
-## shortest room-to-room path during INDOOR_SEARCH Phase B.
-## Each key is a room name, and the value is an array of directly connected
-## neighbor room names.
 ## ─── INDOOR ROOM GRAPH (single-story, flat layout) ───────────────────────
 ## Adjacency graph of all cabin rooms. Used by BFS pathfinding to compute the
 ## shortest room-to-room path during INDOOR_SEARCH Phase B.
@@ -297,6 +292,31 @@ const INDOOR_ROOM_GRAPH: Dictionary = {
 	"LivingRoom": ["HallRoom", "ComputerRoom"],
 	"ComputerRoom": ["LivingRoom"],
 }
+
+## ─── VALID INDOOR CABIN ROOMS ──────────────────────────────────────────────
+## The set of room names that count as "inside the cabin" for breach validation.
+## The Entity is only considered to have successfully breached if it ends up
+## in one of these rooms after the door/window breach sequence completes.
+const VALID_INDOOR_ROOMS: Array[String] = ["HallRoom", "LivingRoom", "ComputerRoom"]
+
+## Returns true if the given world position is inside a valid cabin room
+## (HallRoom, LivingRoom, or ComputerRoom) as determined by the
+## RoomLightDetector's Cabin_Interior Area3D containment check.
+## Returns false if the position is outside or in an unrecognized room.
+func _is_position_inside_cabin(pos: Vector3) -> bool:
+	var room_name = RoomLightDetector.get_room_name_at(pos)
+	return room_name in VALID_INDOOR_ROOMS
+
+## Returns a known-safe interior fallback position for the Entity to teleport to
+## when a breach failsafe fires and the Entity is still outside. Returns the
+## IndoorBreachWaypoint position if available, otherwise a hardcoded cabin center.
+func _get_fallback_indoor_position() -> Vector3:
+	var breach_wp = entity.get_door_breach_waypoint()
+	if breach_wp:
+		return breach_wp.global_position
+	# Last resort: hardcoded cabin interior center
+	entity.push_error("CRITICAL: No IndoorBreachWaypoint found! Teleporting to hardcoded fallback.")
+	return Vector3(0.0, 0.0, 14.88)
 
 ## Animation lock timer for barricade hits.
 ## When > 0.0, the "AttackWindow" animation is forced to play.
@@ -2814,7 +2834,7 @@ func _window_peek_state(delta: float) -> void:
 	# 5 seconds before it attacks.
 	#
 	# The previous "abort if player is visible" logic caused a rapid
-	# OBSERVE → CLIMB_WALL_UP → WINDOW_PEEK → OBSERVE oscillation loop,
+	# OBSERVE → WINDOW_PEEK → OBSERVE oscillation loop,
 	# because the Entity would abort the peek, re-escalate, and abort again.
 	# Removing the abort fixes the loop.
 	#
@@ -3218,8 +3238,8 @@ func _indoor_search_state(delta: float) -> void:
 					# ─── RESTORE PHYSICS ─────────────────────────────────────
 					# Re-enable environment collision and resume gravity now that
 					# the Entity has safely passed through the doorway threshold.
-					# This mirrors the TRAVERSE_STAIRS Phase 2→3 transition where
-					# physics is restored after the ghost climb completes.
+					# This mirrors the ghost climb approach where physics is
+					# restored after the ghost movement completes.
 					entity.set_collision_mask_value(1, true)
 					if entity.has_method("get_collision_shape"):
 						entity.get_collision_shape().disabled = false
@@ -3248,8 +3268,8 @@ func _indoor_search_state(delta: float) -> void:
 						# (collision disabled, gravity off) so the Entity can
 						# glide safely over the physical door threshold step
 						# without getting stuck on the Y=0.364 vs Y=0.621
-						# height difference. This mirrors the TRAVERSE_STAIRS
-						# Phase 2 ghost climb approach.
+						# height difference. This mirrors the ghost climb
+						# approach used for the door threshold.
 						print("[INDOOR_SEARCH] Door Phase A GHOST MOTOR! Nav finished at dist=%.2f. Lerping to waypoint." % dist_to_wp)
 						entity.set_collision_mask_value(1, false)
 						if entity.has_method("get_collision_shape"):

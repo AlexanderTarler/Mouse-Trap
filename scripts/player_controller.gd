@@ -18,7 +18,7 @@ extends CharacterBody3D
 
 # Crouch settings
 @export var standing_height: float = 1.8
-@export var crouching_height: float = 0.8
+@export var crouching_height: float = 1.1
 @export var crouch_transition_speed: float = 10.0
 
 # References to scene nodes
@@ -31,6 +31,9 @@ extends CharacterBody3D
 @onready var _physical_grab: Node = $CameraHolder/PhysicalGrab
 @onready var footstep_audio: AudioStreamPlayer3D = $FootstepAudio if has_node("FootstepAudio") else null
 @onready var floor_raycast: RayCast3D = $FloorRayCast if has_node("FloorRayCast") else null
+
+# PrismCollider3D reference for crouch resizing.
+@onready var _prism_collider: Node = $PrismCollider3D if has_node("PrismCollider3D") else null
 
 @export var wood_footsteps: Array[AudioStream] = []
 @export var grass_footsteps: Array[AudioStream] = []
@@ -51,6 +54,34 @@ var _crosshair: Control
 
 # Stair climbing state
 var _was_on_floor: bool = false
+
+# ─── TUTORIAL: Movement key detection ─────────────────────────────────
+## Tracks which WASD/Ctrl keys the player has pressed so the tutorial
+## only dismisses once each key has been pressed at least once.
+## Uses edge-triggered detection via _input() rather than polling, so
+## stale key presses from the main menu don't instantly dismiss the hint.
+var _movement_keys_pressed: Dictionary = {}
+var _movement_tutorial_ready: bool = false
+
+# ─── RAYCAST THROTTLING ────────────────────────────────────────────────
+## Frame counter for stair-step detection. Stair geometry doesn't change
+## between frames, so we only need to check every 3rd physics frame (~20Hz
+## instead of 60Hz). Reduces raycast cost by 66%.
+var _stair_step_frame_counter: int = 0
+
+## How many physics frames between stair-step raycasts.
+const STAIR_STEP_CHECK_INTERVAL: int = 3
+
+## Accumulator for flashlight-on-entity throttle (seconds).
+## The flashlight beam detection uses an expensive intersect_ray from the
+## camera to the Entity. We only need to check this at ~10Hz, not 60Hz.
+var _flashlight_entity_check_timer: float = 0.0
+
+## Interval between flashlight-on-entity raycasts in seconds.
+const FLASHLIGHT_ENTITY_CHECK_INTERVAL: float = 0.1  # 10Hz
+
+## Cached result of the last flashlight-on-entity check.
+var _cached_flashlight_on_entity: bool = false
 
 ## Whether the player starts the game with the ability to sprint (SHIFT).
 ## When true (default), the player can sprint from the start.
@@ -195,6 +226,14 @@ func _ready() -> void:
 			print("[Player] WARNING: NightManager not found! Cannot propagate dev mode.")
 	
 
+	# ─── TUTORIAL: Movement prompt on first spawn (deferred) ──────────
+	# Must be deferred because the HUD is not yet in the scene tree during _ready().
+	call_deferred("_trigger_movement_tutorial")
+	
+	# Also defer the key detector startup to give the player time to see
+	# the prompt before stale main-menu keys accidentally dismiss it.
+	call_deferred("_enable_movement_tutorial")
+
 	if _interaction_manager and _interaction_manager.has_method("set_camera"):
 		_interaction_manager.set_camera(_camera)
 	elif _interaction_manager:
@@ -220,6 +259,26 @@ func _ready() -> void:
 	_create_crosshair()
 	get_viewport().size_changed.connect(_rebuild_crosshair)
 	_step_interval = 2.0 / walk_speed
+
+## Deferred tutorial trigger — runs after the HUD is in the scene tree.
+func _trigger_movement_tutorial() -> void:
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("trigger"):
+		tm.trigger("movement")
+
+
+## Initializes the movement key tracker. Called deferred so stale key
+## presses from the main menu don't instantly dismiss the prompt.
+func _enable_movement_tutorial() -> void:
+	_movement_keys_pressed = {
+		KEY_W: false,
+		KEY_A: false,
+		KEY_S: false,
+		KEY_D: false,
+		KEY_CTRL: false,
+	}
+	_movement_tutorial_ready = true
+
 
 func _create_crosshair() -> void:
 	var canvas = CanvasLayer.new()
@@ -306,15 +365,33 @@ func _input(event: InputEvent) -> void:
 		_camera_holder.rotation = rot
 		
 	
-	if event.is_action_pressed("ui_cancel"):
-		var inv_ui = get_node_or_null("/root/CottageHorror/InventoryUI")
-		if not inv_ui: inv_ui = get_node_or_null("/root/Main/InventoryUI")
-		if inv_ui and inv_ui.get("_is_open"): return
-		
+	# ─── DEBUG: Toggle mouse capture with AltGr (Right Alt) ──────────────
+	if event is InputEventKey and event.physical_keycode == KEY_ALT and event.pressed and not event.echo:
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		else:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	
+	# ─── TUTORIAL: Track WASD/Ctrl key presses (edge-triggered) ─────
+	if _movement_tutorial_ready and not _movement_keys_pressed.is_empty():
+		if event is InputEventKey and event.pressed:
+			var keycode = event.keycode
+			if keycode in _movement_keys_pressed and not _movement_keys_pressed[keycode]:
+				_movement_keys_pressed[keycode] = true
+				# Also accept C as alias for Ctrl
+				if keycode == KEY_C and KEY_CTRL in _movement_keys_pressed:
+					_movement_keys_pressed[KEY_CTRL] = true
+				# Check if all keys are now pressed
+				var all_pressed := true
+				for v in _movement_keys_pressed.values():
+					if not v:
+						all_pressed = false
+						break
+				if all_pressed:
+					var tm := get_node_or_null("/root/TutorialManager")
+					if tm and tm.has_method("mark_learned"):
+						tm.mark_learned("movement")
+					_movement_keys_pressed.clear()  # prevent re-check
 	
 	if event is InputEventKey and event.keycode == KEY_F and event.pressed:
 		_toggle_flashlight()
@@ -378,11 +455,20 @@ func enable_flashlight() -> void:
 ## during Night 1. This allows the sprint to be gated behind a narrative
 ## event when start_with_sprint is set to false in the inspector.
 func unlock_sprint() -> void:
+	var tm := get_node_or_null("/root/TutorialManager")
+	
 	if not sprint_unlocked:
 		sprint_unlocked = true
 		print("[Player] Sprint UNLOCKED! You can now hold SHIFT to run.")
+		# ─── TUTORIAL: Sprint prompt ─────────────────────────────────
+		if tm and tm.has_method("trigger"):
+			tm.trigger("sprint")
 	else:
 		print("[Player] Sprint is already unlocked.")
+	
+	# Always mark sprint as learned (even if already unlocked)
+	if tm and tm.has_method("mark_learned"):
+		tm.mark_learned("sprint")
 
 
 ## Called by camera_pickup.gd when the player picks up the Floppy Disk Camera.
@@ -444,6 +530,11 @@ func _toggle_flashlight() -> void:
 		print("[Player] You don't have a flashlight yet! Find one in the cabin.")
 		return
 	if not _flashlight: return
+	
+	# ─── TUTORIAL: Flashlight learned ──────────────────────────────────
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("mark_learned"):
+		tm.mark_learned("flashlight")
 	if _flashlight.has_method("toggle"):
 		_flashlight.toggle()
 	else:
@@ -452,6 +543,11 @@ func _toggle_flashlight() -> void:
 	print("[Player Flashlight] Toggled! is_on=%s visible=%s battery=%.1f" % [_flashlight.is_on, _flashlight.visible, _flashlight.get_battery_percent()])
 
 func _toggle_inventory() -> void:
+	# ─── TUTORIAL: Inventory learned ───────────────────────────────────
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("mark_learned"):
+		tm.mark_learned("inventory")
+	
 	var inv_ui = get_node_or_null("/root/CottageHorror/InventoryUI")
 	if not inv_ui: inv_ui = get_node_or_null("/root/Main/InventoryUI")
 	if inv_ui and inv_ui.has_method("_open_inventory") and inv_ui.has_method("_close_inventory"):
@@ -470,6 +566,7 @@ func _physics_process(delta: float) -> void:
 		if not _is_crouching: _is_crouching = true
 	else:
 		if _is_crouching: _is_crouching = false
+	
 
 	# ─── SPRINT & STAMINA ──────────────────────────────────────────────
 	# Sprint is only active when SHIFT is held AND the player is moving
@@ -545,7 +642,14 @@ func _physics_process(delta: float) -> void:
 		_noise_timer = 0.0
 
 	if stair_step_assist and _was_on_floor and direction.length() > 0 and is_on_floor():
-		_try_step_up(direction)
+		# ─── STAIR-STEP THROTTLING ───────────────────────────────
+		# Stair geometry doesn't change between frames, so we only
+		# fire the 3 raycasts every 3rd physics frame (~20Hz).
+		# This cuts the raycast cost for stair detection by 66%.
+		_stair_step_frame_counter += 1
+		if _stair_step_frame_counter >= STAIR_STEP_CHECK_INTERVAL:
+			_stair_step_frame_counter = 0
+			_try_step_up(direction)
 
 	var landed = not _was_on_floor and is_on_floor()
 	if landed: make_noise(15.0, 1.0) # Thud on landing
@@ -643,13 +747,19 @@ func _play_surface_footstep() -> void:
 
 func _update_crouch(delta: float) -> void:
 	var target_height = crouching_height if _is_crouching else standing_height
-	if not _collision_shape or not _collision_shape.shape: return
-	var shape: CapsuleShape3D = _collision_shape.shape as CapsuleShape3D
-	shape.height = lerp(shape.height, target_height, delta * crouch_transition_speed)
 	
-	var col_pos = _collision_shape.position
-	col_pos.y = shape.height / 2.0 + shape.radius
-	_collision_shape.position = col_pos
+	# ─── Resize CapsuleShape3D (if present) ──────────────────────────────
+	if _collision_shape and _collision_shape.shape:
+		var capsule: CapsuleShape3D = _collision_shape.shape as CapsuleShape3D
+		if capsule:
+			capsule.height = lerp(capsule.height, target_height, delta * crouch_transition_speed)
+			var col_pos = _collision_shape.position
+			col_pos.y = capsule.height / 2.0 + capsule.radius
+			_collision_shape.position = col_pos
+	
+	# ─── Resize PrismCollider3D (if present) ─────────────────────────────
+	if _prism_collider:
+		_prism_collider.total_height = lerp(_prism_collider.total_height, target_height, delta * crouch_transition_speed)
 	
 	var target_cam_height = target_height - 0.1
 	var cam_pos = _camera_holder.position
@@ -746,8 +856,18 @@ func _process(delta: float) -> void:
 	if not _entity_node:
 		_entity_node = get_tree().get_first_node_in_group("entity")
 	
+	# ─── FLASHLIGHT-ON-ENTITY THROTTLING ──────────────────────────
+	# The _is_flashlight_on_entity() function fires an expensive
+	# intersect_ray from the camera to the Entity every call.
+	# We only need to check this at ~10Hz (every 0.1s), not 60Hz.
+	# Between checks, we use the cached result.
+	_flashlight_entity_check_timer -= delta
+	if _flashlight_entity_check_timer <= 0.0:
+		_flashlight_entity_check_timer = FLASHLIGHT_ENTITY_CHECK_INTERVAL
+		_cached_flashlight_on_entity = _is_flashlight_on_entity()
+	
 	# Check if the flashlight is ON and we're looking at the Entity
-	var is_looking_at_entity = _is_flashlight_on_entity()
+	var is_looking_at_entity = _cached_flashlight_on_entity
 	
 	# Throttled debug log every 2 seconds
 	_look_debug_timer += delta

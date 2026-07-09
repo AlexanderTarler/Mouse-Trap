@@ -22,17 +22,20 @@ const GAME_SCENE_UID: String = "uid://bc5qrh4dx4yi1"
 ## Quit button reference.
 @onready var quit_button: Button = $VBoxContainer/QuitButton
 
+## Options menu scene path.
+const OPTIONS_MENU_SCENE: String = "res://scenes/ui/options_menu.tscn"
+
+## Lazily-instanced options menu.
+var _options_menu: OptionsMenu = null
+
 
 func _ready() -> void:
 	# Ensure the mouse is visible and the game is unpaused
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	get_tree().paused = false
 	
-	# Connect button signals programmatically
-	play_button.pressed.connect(_on_play_pressed)
-	settings_button.pressed.connect(_on_settings_pressed)
-	quit_button.pressed.connect(_on_quit_pressed)
-	
+	# Button signals are already connected in main_menu.tscn via the
+	# [connection] entries, so no programmatic connection is needed here.
 	print("[MainMenu] Main menu loaded.")
 
 
@@ -58,10 +61,22 @@ func _on_play_pressed() -> void:
 
 
 ## Called by the SettingsButton when pressed.
-## Placeholder — no settings screen implemented yet.
+## Instances and shows the options menu over the main menu.
 func _on_settings_pressed() -> void:
-	print("[MainMenu] Settings not yet implemented.")
-	# TODO: Open settings menu
+	if not _options_menu:
+		var scene = load(OPTIONS_MENU_SCENE) as PackedScene
+		if not scene:
+			printerr("[MainMenu] ERROR: Could not load options menu scene.")
+			return
+		_options_menu = scene.instantiate() as OptionsMenu
+		if not _options_menu:
+			printerr("[MainMenu] ERROR: Options menu scene did not instance correctly.")
+			return
+		add_child(_options_menu)
+		print("[MainMenu] Options menu instantiated.")
+	
+	_options_menu.show_menu()
+	print("[MainMenu] Options menu shown.")
 
 
 ## Called by the QuitButton when pressed.

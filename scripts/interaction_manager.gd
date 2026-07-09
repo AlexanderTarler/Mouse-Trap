@@ -85,6 +85,7 @@ func _process(delta: float) -> void:
 					_prompt_label.text = interactable.get_interact_text()
 				else:
 					_prompt_label.text = prompt_text
+				
 				return
 	
 	_current_target = null
