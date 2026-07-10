@@ -1334,7 +1334,8 @@ func _physics_process(delta: float) -> void:
 			hit_info = "NO_HIT"
 		var _state_name = STATE_KEYS[_state] if _state >= 0 and _state < STATE_KEYS.size() else "UNKNOWN"
 		var _shape_d = _collision_shape.disabled if _collision_shape else "N/A"
-		print("[Entity DEBUG] pos=(%.3f, %.3f, %.3f) state=%s layer=%d mask=%d shape_disabled=%s floor_ray=%s" % [global_position.x, global_position.y, global_position.z, _state_name, collision_layer, collision_mask, _shape_d, hit_info])
+		var _room_name = RoomLightDetector.get_room_name_at(global_position)
+		print("[Entity DEBUG] pos=(%.3f, %.3f, %.3f) room=%s state=%s layer=%d mask=%d shape_disabled=%s floor_ray=%s" % [global_position.x, global_position.y, global_position.z, _room_name, _state_name, collision_layer, collision_mask, _shape_d, hit_info])
 		
 		# ─── TIME DIAGNOSTIC: NightManager vs GameTime ────────────────
 		var nm = _night_manager
@@ -1811,6 +1812,17 @@ func _physics_process(delta: float) -> void:
 			state_locked = false
 			_door_phase = 0
 			_door_phase_2_timer = 0.0
+			# Notify AI that the Entity has physically arrived indoors
+			if _ai and _ai.has_method("set_has_arrived_indoor"):
+				_ai.set_has_arrived_indoor(true)
+			# Prime the indoor search persistence timer NOW (before the Director
+			# evaluates on the next frame). Without this, the persistence timer
+			# is 0.0 when the Director runs, causing it to fall through to
+			# OBSERVE_FROM_TREELINE and re-enter APPROACH_WINDOW.
+			if _ai and _ai.has_method("reset_indoor_search_persistence"):
+				_ai.reset_indoor_search_persistence()
+			# Record door breach timestamp for Director's Tier 8 persistence check
+			last_door_breach_time = Time.get_ticks_msec() / 1000.0
 			# Restore physics
 			set_collision_mask_value(1, true)
 			if has_method("get_collision_shape"):
@@ -1838,6 +1850,17 @@ func _physics_process(delta: float) -> void:
 			state_locked = false
 			_door_phase = 0
 			_door_phase_2_timer = 0.0
+			# Notify AI that the Entity has physically arrived indoors
+			if _ai and _ai.has_method("set_has_arrived_indoor"):
+				_ai.set_has_arrived_indoor(true)
+			# Prime the indoor search persistence timer NOW (before the Director
+			# evaluates on the next frame). Without this, the persistence timer
+			# is 0.0 when the Director runs, causing it to fall through to
+			# OBSERVE_FROM_TREELINE and re-enter APPROACH_WINDOW.
+			if _ai and _ai.has_method("reset_indoor_search_persistence"):
+				_ai.reset_indoor_search_persistence()
+			# Record door breach timestamp for Director's Tier 8 persistence check
+			last_door_breach_time = Time.get_ticks_msec() / 1000.0
 			# Restore physics
 			set_collision_mask_value(1, true)
 			if has_method("get_collision_shape"):
@@ -2583,6 +2606,19 @@ func set_last_known_position(pos: Vector3) -> void:
 ## noise coordinate instead of the room center.
 func get_last_heard_exact_position() -> Vector3:
 	return _last_heard_exact_position
+
+
+## Returns true if the Entity is physically inside the cabin's interior volume.
+## Uses RoomLightDetector.get_room_name_at() to resolve the Entity's position
+## to a room name. Returns true if the room is "HallRoom", "LivingRoom", or
+## "ComputerRoom" (the VALID_INDOOR_ROOMS in entity_ai.gd).
+##
+## This is the Director's single source of truth for location-awareness.
+## Unlike the Entity's belief system (thinks_player_is_inside), this is a
+## physical fact based on the Entity's actual global_position.
+func is_physically_inside() -> bool:
+	var room_name = RoomLightDetector.get_room_name_at(global_position)
+	return room_name in ["HallRoom", "LivingRoom", "ComputerRoom"]
 
 
 ## ─── BELIEF SYSTEM ACCESSORS ──────────────────────────────────────────────────

@@ -154,14 +154,6 @@ func _close_console() -> void:
 		close()
 
 
-func _input(event: InputEvent) -> void:
-	if not _is_open:
-		return
-	
-	# Close on Escape
-
-
-
 func _process(delta: float) -> void:
 	if not _is_open:
 		return
@@ -496,15 +488,50 @@ func _force_door_approach() -> void:
 		print("[Debug Console] ERROR: No door target found! Cannot force door approach.")
 		return
 	
+	# ─── SET THE DOOR AS THE CURRENT WINDOW TARGET (BEFORE FUSE BOX CHECK) ──
+	# CRITICAL: This must happen BEFORE the Fuse Box power check below.
+	# When the Fuse Box IS powered, the Entity goes through SABOTAGE_FUSE first.
+	# After sabotage completes, the Director transitions to OBSERVE, confidence
+	# triggers APPROACH_WINDOW, and _approach_window_state() checks
+	# get_current_window_target(). If it's the door waypoint and is_door_target
+	# is true, the Entity approaches the door instead of a random window.
+	if _entity.has_method("set_current_window_target"):
+		_entity.set_current_window_target(door_wp)
+		print("[Debug Console] Door set as current window target: %s (class=%s)" % [door_wp.name, door_wp.get_class()])
+		if door_wp.get_parent():
+			print("[Debug Console] Door target parent: %s (class=%s)" % [door_wp.get_parent().name, door_wp.get_parent().get_class()])
+	else:
+		print("[Debug Console] ERROR: Entity missing set_current_window_target method.")
+		return
+	
+	# ─── FORCE IS_DOOR_TARGET ON THE BLACKBOARD ─────────────────────
+	# Pre-set the is_door_target flag so the AI's _approach_window_state()
+	# knows this target is a door regardless of the reference comparison.
+	# This bypasses the fragil == comparison between the debug console's
+	# door_wp node and entity.get_door_waypoint_marker().
+	if "is_door_target" in _entity:
+		_entity.is_door_target = true
+		print("[Debug Console] Entity is_door_target set to true (door breach flagged).")
+	
+	# ─── DOOR UNLOCK OVERRIDE (Debug Tool) ──────────────────────────
+	# The "Force Door Approach" is a development tool. If the front door
+	# is locked, unlock it so the Entity can walk through. This bypasses
+	# the normal gameplay gate (player must unlock the door) for testing.
+	var door_node = get_tree().get_first_node_in_group("Door")
+	if door_node and "is_locked" in door_node:
+		if door_node.is_locked:
+			door_node.is_locked = false
+			print("[Debug Console] Door was locked! Unlocked for debug approach.")
+	
 	# ─── FUSE BOX POWER CHECK ───────────────────────────────────────
 	# If the Fuse Box is powered (generator ON → porch light ON), the
 	# Entity must sabotage the Fuse Box FIRST before it can approach the
 	# door. Redirect to SABOTAGE_FUSE state instead of APPROACH_WINDOW.
+	# The door target persists in _current_window_target through the
+	# sabotage → observe → APPROACH_WINDOW cycle.
 	var fuse_box = null
-	# Try the Entity's method first
 	if _entity.has_method("get_fuse_box_node"):
 		fuse_box = _entity.get_fuse_box_node()
-	# Fallback: iterate through all interactable nodes to find the FuseBox
 	if not fuse_box:
 		var interactables = get_tree().get_nodes_in_group("interactable")
 		for node in interactables:
@@ -512,16 +539,13 @@ func _force_door_approach() -> void:
 				fuse_box = node
 				break
 	if not fuse_box:
-		# Last resort: search the entire scene tree
 		if get_tree().current_scene:
 			fuse_box = get_tree().current_scene.find_child("FuseBox", true, false)
 	
 	if fuse_box and fuse_box.has_method("is_powered") and fuse_box.is_powered():
-		print("[Debug Console] Fuse Box is powered (porch light ON). Redirecting to SABOTAGE_FUSE instead of APPROACH_WINDOW.")
+		print("[Debug Console] Fuse Box is powered (porch light ON). Redirecting to SABOTAGE_FUSE (door target preserved).")
 		
-		# ─── RESET COMPLETION FLAGS ─────────────────────────────────
-		# Clear any stale completion flags that might interfere with the
-		# SABOTAGE_FUSE state.
+		# Reset stale completion flags
 		if "is_fuse_sabotaged" in _entity:
 			_entity.is_fuse_sabotaged = false
 		if "state_locked" in _entity:
@@ -541,31 +565,19 @@ func _force_door_approach() -> void:
 		if "is_indoor_retreat" in _entity:
 			_entity.is_indoor_retreat = false
 		
-		# ─── FORCE SABOTAGE_FUSE STATE ─────────────────────────────
 		if _entity.has_method("request_state"):
 			_entity.request_state(EntityAI.State.SABOTAGE_FUSE)
-			print("[Debug Console] Entity forced into SABOTAGE_FUSE state (fuse box sabotage).")
+			print("[Debug Console] Entity forced into SABOTAGE_FUSE state (door target preserved for after sabotage).")
 		else:
 			print("[Debug Console] ERROR: Entity missing request_state method.")
 		return
 	
-	# ─── SET THE DOOR AS THE CURRENT WINDOW TARGET ──────────────────
-	# The APPROACH_WINDOW handler uses get_current_window_target() to know
-	# where to pathfind. Setting it to the door waypoint makes the Entity
-	# walk toward the front door.
-	if _entity.has_method("set_current_window_target"):
-		_entity.set_current_window_target(door_wp)
-		print("[Debug Console] Door set as current window target: %s (class=%s)" % [door_wp.name, door_wp.get_class()])
-		# Debug: print the door_wp's parent info
-		if door_wp.get_parent():
-			print("[Debug Console] Door target parent: %s (class=%s)" % [door_wp.get_parent().name, door_wp.get_parent().get_class()])
-	else:
-		print("[Debug Console] ERROR: Entity missing set_current_window_target method.")
-		return
-	
-	# ─── RESET COMPLETION FLAGS ─────────────────────────────────────
-	# Clear any stale completion flags that might interfere with the
-	# APPROACH_WINDOW state.
+	# ─── NOT POWERED: Reset stale flags and let Director escalate ────
+	# The confidence is already 40 (set above), the door is set as the
+	# current window target, and is_door_target is true. The Director's
+	# Tier 4 (or Tier 7) will naturally transition to APPROACH_WINDOW
+	# on the next frame without needing a forced request_state().
+	# We just need to clear stale flags.
 	if "is_approach_finished" in _entity:
 		_entity.is_approach_finished = false
 	if "is_observe_finished" in _entity:
@@ -580,7 +592,7 @@ func _force_door_approach() -> void:
 		_entity.is_climb_finished = false
 	if "state_locked" in _entity:
 		_entity.state_locked = false
-	# Also reset door phase to ensure clean start
+	# Reset door phase to ensure clean start
 	if "_door_phase" in _entity:
 		_entity._door_phase = 0
 	if "_door_phase_timer" in _entity:
@@ -590,14 +602,7 @@ func _force_door_approach() -> void:
 	if "_door_approach_cooldown" in _entity:
 		_entity._door_approach_cooldown = 0.0
 	
-	# ─── FORCE APPROACH_WINDOW STATE ────────────────────────────────
-	# Use request_state() to set the pending state override. The Director
-	# will pick this up on the next frame and apply it.
-	if _entity.has_method("request_state"):
-		_entity.request_state(EntityAI.State.APPROACH_WINDOW)
-		print("[Debug Console] Entity forced into APPROACH_WINDOW state (door target).")
-	else:
-		print("[Debug Console] ERROR: Entity missing request_state method.")
+	print("[Debug Console] Fuse Box not powered. Door target set. Waiting for Director to escalate to APPROACH_WINDOW.")
 
 
 func _toggle_stalking() -> void:

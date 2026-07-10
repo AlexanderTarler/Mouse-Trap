@@ -74,7 +74,7 @@ var _debug_log_timer: float = 0.0
 var _indoor_search_persistence_timer: float = 0.0
 
 ## Duration (in seconds) the Entity must stay in INDOOR_SEARCH after breaching.
-const INDOOR_SEARCH_PERSISTENCE_DURATION: float = 30.0
+const INDOOR_SEARCH_PERSISTENCE_DURATION: float = 10.0
 
 ## ─── OUTSIDE CONFIRMATION TIMER ──────────────────────────────────────────────
 ## When the Entity deduces the player has escaped (thinks_player_is_inside=false),
@@ -314,11 +314,28 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	# sabotage, breach lock guard) are checked ABOVE this guard
 	# and can still interrupt.
 	if state == EntityAI.State.INDOOR_SEARCH:
-		# Only allow escape if the persistence timer has actually expired
-		if _indoor_search_persistence_timer <= 0.0:
-			pass  # Allow logic to continue down the tiers so it can leave the house
-		else:
-			return EntityAI.State.INDOOR_SEARCH  # Block all transitions! Keep hunting.
+		# PERMANENT INDOOR LOCK: Block all transitions away from INDOOR_SEARCH
+		# while the Entity is physically inside the cabin. The Entity can ONLY
+		# leave via Tier 0 (flashlight → RETREAT) or Tier 1 (frustration →
+		# SABOTAGE), which run ABOVE this guard.
+		#
+		# The persistence timer provides a MINIMUM stay guarantee (10s).
+		# is_physically_inside() provides a PERMANENT hold as long as the
+		# Entity remains indoors. was_door_entry provides a ONE-FRAME hold
+		# while the state handler initializes the persistence timer.
+		if _indoor_search_persistence_timer > 0.0:
+			return EntityAI.State.INDOOR_SEARCH  # Minimum stay not yet expired
+		if entity.has_method("is_physically_inside") and entity.is_physically_inside():
+			return EntityAI.State.INDOOR_SEARCH  # Still inside — hold indefinitely
+		if entity.was_door_entry:
+			# Entity just entered via door breach — hold INDOOR_SEARCH for one
+			# frame so the state handler can prime the persistence timer.
+			# was_door_entry is consumed by _indoor_search_state() this frame.
+			return EntityAI.State.INDOOR_SEARCH  # Door entry in progress
+		# Persistence expired AND Entity is outside AND no door entry pending
+		# — allow falling through to lower tiers so the Director can transition
+		# to an outdoor state (e.g., OBSERVE_FROM_TREELINE).
+		pass
 	
 	# ─── STATE PERSISTENCE GUARD ──────────────────────────────────────
 	# If the Entity is in an active state (FLINCH, CHARGE, etc.)
@@ -418,9 +435,12 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	if _time_since_door_breach < 30.0:
 		_door_breach_recently = true
 	
-	if state == EntityAI.State.INDOOR_SEARCH and (entity.last_breached_window != null or entity.was_door_entry or _door_breach_recently):
-		if _indoor_search_persistence_timer > 0.0:
-			print("[TRACE_DIRECTOR] TIER 8 BASELINE: INDOOR_SEARCH persistence timer=%.1f > 0. Keeping INDOOR_SEARCH." % _indoor_search_persistence_timer)
+	if state == EntityAI.State.INDOOR_SEARCH and (entity.last_breached_window != null or entity.was_door_entry or _door_breach_recently or (entity.has_method("is_physically_inside") and entity.is_physically_inside())):
+		# If any hold condition is met, ALWAYS return INDOOR_SEARCH — no timeout.
+		# The persistence timer is handled by the INDOOR_SEARCH preservation
+		# guard above, so this check is purely a safety net.
+		if (entity.has_method("is_physically_inside") and entity.is_physically_inside()) or _indoor_search_persistence_timer > 0.0 or entity.was_door_entry:
+			print("[TRACE_DIRECTOR] TIER 8 BASELINE: INDOOR_SEARCH (entity physically inside). Keeping INDOOR_SEARCH.")
 			return EntityAI.State.INDOOR_SEARCH
 	
 	print("[TRACE_DIRECTOR] TIER 8 BASELINE: Returning OBSERVE_FROM_TREELINE (state=%s, persistence=%.1f)" % [EntityAI.State.keys()[state], _indoor_search_persistence_timer])
@@ -1072,6 +1092,15 @@ func _tier_3_active_aggression(entity: CharacterBody3D, state: int) -> int:
 ##
 ## Returns: The target state, or -1 if no escalation applies.
 func _tier_4_confidence_escalation(entity: CharacterBody3D, state: int) -> int:
+	# ─── DEFENSE-IN-DEPTH: Physically inside guard ──────────────────────
+	# If the Entity is physically inside the cabin, do NOT escalate to
+	# exterior states like APPROACH_WINDOW. The Entity should remain in
+	# its indoor state. This prevents the Director from forcing an exterior
+	# approach when the persistence timer has expired but the Entity is
+	# still physically indoors (desync recovery).
+	if entity.has_method("is_physically_inside") and entity.is_physically_inside():
+		return -1
+	
 	if state != EntityAI.State.OBSERVE_FROM_TREELINE and state != EntityAI.State.STANDOFF:
 		return -1
 	
@@ -1273,6 +1302,12 @@ func _tier_6_trap_attraction(entity: CharacterBody3D) -> int:
 ##
 ## Returns: The target state, or -1 if no escalation applies.
 func _tier_7_fallback_confidence(entity: CharacterBody3D) -> int:
+	# ─── DEFENSE-IN-DEPTH: Physically inside guard ──────────────────────
+	# If the Entity is physically inside the cabin, do NOT escalate to
+	# exterior states like APPROACH_WINDOW. Same rationale as Tier 4 guard.
+	if entity.has_method("is_physically_inside") and entity.is_physically_inside():
+		return -1
+	
 	var state = entity.get_state()
 	
 	# ─── ACTIVE STATE GUARD ──────────────────────────────────────────────

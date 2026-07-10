@@ -27,6 +27,15 @@ func _ready() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause_menu"):
+		# ─── DEBUG CONSOLE PRIORITY ───────────────────────────────────────
+		# If the debug console is open, pressing Escape closes it instead of
+		# toggling the pause menu. This prevents the player from accidentally
+		# pausing the game while debugging.
+		if _close_debug_console():
+			if _options_menu and _options_menu.visible:
+				_options_menu.hide_menu()
+			get_viewport().set_input_as_handled()
+			return
 		if _options_menu and _options_menu.visible:
 			_options_menu.hide_menu()
 			get_viewport().set_input_as_handled()
@@ -36,6 +45,33 @@ func _unhandled_input(event: InputEvent) -> void:
 		else:
 			_open()
 		get_viewport().set_input_as_handled()
+
+
+## Checks whether the Debug Console UI is currently open in the scene tree.
+## Returns true if a DebugConsoleUI CanvasLayer is visible.
+func _is_debug_console_open() -> bool:
+	return _find_debug_console_recursive(get_tree().root) != null
+
+
+## Recursively searches a node and its children for the DebugConsoleUI script.
+## Returns the node if found and visible, null otherwise.
+func _find_debug_console_recursive(node: Node) -> Node:
+	if node.has_method("_close_console") and node.visible:
+		return node
+	for child in node.get_children():
+		var result = _find_debug_console_recursive(child)
+		if result:
+			return result
+	return null
+
+## Finds and closes the debug console if it's open and visible.
+## Returns true if a console was found and closed, false otherwise.
+func _close_debug_console() -> bool:
+	var console = _find_debug_console_recursive(get_tree().root)
+	if console and console.has_method("_close_console") and console.visible:
+		console._close_console()
+		return true
+	return false
 
 
 func _open() -> void:

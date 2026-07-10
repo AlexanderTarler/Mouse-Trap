@@ -553,6 +553,16 @@ func reset_barricade_timers() -> void:
 func reset_retreat_target() -> void:
 	_retreat_target_set = false
 
+
+## Public passthrough to the Director's reset_indoor_search_persistence().
+## Called by entity_controller.gd's ghost motor arrival to prime the
+## indoor search persistence timer BEFORE the next frame's Director
+## evaluation. Without this, the persistence timer is 0.0 when the
+## Director evaluates, causing it to fall through to OBSERVE_FROM_TREELINE.
+func reset_indoor_search_persistence() -> void:
+	if _director and _director.has_method("reset_indoor_search_persistence"):
+		_director.reset_indoor_search_persistence()
+
 ## Returns the velocity vector computed by the current state's logic.
 ## Called by entity_controller.gd after process_state_logic() completes
 ## to apply the velocity via move_and_slide().
@@ -3203,18 +3213,46 @@ func _indoor_search_state(delta: float) -> void:
 		return
 	
 	# ─── PHASE A: Vault/Door Entry ───────────────────────────────────
+	# ARCHITECTURAL NOTE:
+	#   APPROACH_WINDOW now handles the physical breach (ghost motor through
+	#   the doorway) AND sets _has_arrived_indoor = true on arrival.
+	#   INDOOR_SEARCH should immediately begin patrol without re-entering
+	#   breach logic. The legacy velocity-based "GHOST MOTOR" is removed
+	#   from this function — if the Entity reaches here with was_door_entry
+	#   but _has_arrived_indoor is false, it means the ghost motor failed to
+	#   set the flag. We teleport directly as a failsafe.
 	if not _has_arrived_indoor:
-		# ─── DOOR ENTRY (Phase A navigation) ─────────────────────────
-		# If the Entity entered through the door (was_door_entry is true),
-		# it must physically navigate to the IndoorBreachWaypoint past the
-		# threshold before Phase B (patrol) can begin. This ensures the
-		# Entity walks through the doorway and reaches the interior waypoint
-		# before it starts patrolling rooms.
+		# ─── SECONDARY ARRIVAL GUARD (Physics Reconciliation Fix) ─────
+		# Even if _has_arrived_indoor was not explicitly set, check if the
+		# Entity is already within arrival distance of the IndoorBreachWaypoint.
+		# This handles the case where the ghost motor lerped the position but
+		# the set_has_arrived_indoor call was somehow missed (e.g., the
+		# _physics_process returned before reaching the arrival block).
+		# Without this guard, the Entity re-enters the Door Phase A pathfinding/
+		# ghost-motor logic every frame, creating the "BREACH LOCKED" loop.
 		if entity.was_door_entry:
+			var guard_wp: Node3D = entity.get_door_breach_waypoint()
+			if guard_wp:
+				var guard_pos = guard_wp.global_position
+				guard_pos.y = entity.global_position.y
+				if entity.global_position.distance_to(guard_pos) <= door_phase_2_arrival_distance:
+					print("[INDOOR_SEARCH] Secondary arrival guard: Entity already at IndoorBreachWaypoint (dist <= %.2f). Skipping Phase A." % door_phase_2_arrival_distance)
+					entity.was_door_entry = false
+					_has_arrived_indoor = true
+					entity.is_breach_locked = false
+					entity._breach_lock_timer = 0.0
+					entity.state_locked = false
+					# Sync physics state to prevent rubber-banding
+					entity.velocity = Vector3.ZERO
+					entity._breach_lock_timer = 0.0
+					var director = _director
+					if director and director.has_method("reset_indoor_search_persistence"):
+						director.reset_indoor_search_persistence()
+					# Fall through to Phase B
+
+		# ─── DOOR ENTRY (Phase A navigation) ─────────────────────────
+		if not _has_arrived_indoor and entity.was_door_entry:
 			# ─── RESOLVE THE BREACH WAYPOINT ──────────────────────────────
-			# Find the DoorBreachWaypoint (IndoorBreachWaypoint) that was
-			# set during the APPROACH_WINDOW Phase 2 sequence. This waypoint
-			# is the interior position past the doorway threshold.
 			var breach_wp: Node3D = entity.get_door_breach_waypoint()
 			
 			if breach_wp:
@@ -3223,23 +3261,16 @@ func _indoor_search_state(delta: float) -> void:
 				var dist_to_wp = entity.global_position.distance_to(waypoint_pos)
 				
 				# ─── SET NAV TARGET ───────────────────────────────────────
-				# Throttle path updates to every 300ms to avoid FPS drops.
 				_path_timer -= delta
 				if _path_timer <= 0.0:
 					_path_timer = PATH_UPDATE_INTERVAL
 					entity.get_nav_agent().target_position = waypoint_pos
 				
 				# ─── ARRIVAL CHECK ───────────────────────────────────────
-				# The Entity must be within door_phase_2_arrival_distance (0.3m)
-				# of the IndoorBreachWaypoint before Phase B can begin.
 				if dist_to_wp <= door_phase_2_arrival_distance:
 					print("[INDOOR_SEARCH] Door Phase A complete! Arrived at IndoorBreachWaypoint (dist=%.2f). Starting Phase B patrol." % dist_to_wp)
 					
 					# ─── RESTORE PHYSICS ─────────────────────────────────────
-					# Re-enable environment collision and resume gravity now that
-					# the Entity has safely passed through the doorway threshold.
-					# This mirrors the ghost climb approach where physics is
-					# restored after the ghost movement completes.
 					entity.set_collision_mask_value(1, true)
 					if entity.has_method("get_collision_shape"):
 						entity.get_collision_shape().disabled = false
@@ -3250,6 +3281,8 @@ func _indoor_search_state(delta: float) -> void:
 					_has_arrived_indoor = true
 					entity.is_breach_locked = false
 					entity.state_locked = false
+					# Zero the controller's breach lock timer to prevent stale timeout
+					entity._breach_lock_timer = 0.0
 					# Reset the indoor search persistence timer
 					var director = _director
 					if director and director.has_method("reset_indoor_search_persistence"):
@@ -3257,37 +3290,26 @@ func _indoor_search_state(delta: float) -> void:
 					# Fall through to Phase B below
 				else:
 					# ─── MOVEMENT TOWARD WAYPOINT ─────────────────────────
-					# Lock the state so the Director doesn't override while
-					# the Entity is navigating to the breach waypoint.
 					entity.state_locked = true
 					entity.is_breach_locked = true
 					
-					if entity.get_nav_agent().is_navigation_finished():
-						# NavMesh can't reach the waypoint — use ghost motor
-						# to lerp through the doorway. Physics is suspended
-						# (collision disabled, gravity off) so the Entity can
-						# glide safely over the physical door threshold step
-						# without getting stuck on the Y=0.364 vs Y=0.621
-						# height difference. This mirrors the ghost climb
-						# approach used for the door threshold.
-						print("[INDOOR_SEARCH] Door Phase A GHOST MOTOR! Nav finished at dist=%.2f. Lerping to waypoint." % dist_to_wp)
-						entity.set_collision_mask_value(1, false)
-						if entity.has_method("get_collision_shape"):
-							entity.get_collision_shape().disabled = true
-						entity.is_physics_suspended = true
-						entity.velocity = Vector3.ZERO
-						var ghost_speed = entity.current_stalk_speed * 1.0
-						var new_pos = entity.global_position.move_toward(waypoint_pos, ghost_speed * delta)
-						entity.global_position = new_pos
-						_calculated_velocity = Vector3.ZERO
-					else:
-						# Follow the NavMesh path
-						var next_pos = entity.get_nav_agent().get_next_path_position()
-						var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
-						if dir_2d.length() > 0.01:
-							var move_dir_2d = dir_2d.normalized()
-							_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
-							_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
+				if entity.get_nav_agent().is_navigation_finished():
+					# ─── TELEPORT FAILSAFE (replaces legacy GHOST MOTOR) ──────
+					# APPROACH_WINDOW's ghost motor handles the actual breach.
+					# If we reach here, the ghost motor didn't set _has_arrived_indoor
+					# but the Entity's NavMesh path has ended. Teleport directly.
+					print("[INDOOR_SEARCH] Door Phase A teleport failsafe! Nav finished at dist=%.2f. Teleporting to waypoint." % dist_to_wp)
+					entity.global_position = waypoint_pos
+					entity.velocity = Vector3.ZERO
+					# Fall through — the arrival check above will fire on next iteration
+				else:
+					# Follow the NavMesh path
+					var next_pos = entity.get_nav_agent().get_next_path_position()
+					var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
+					if dir_2d.length() > 0.01:
+						var move_dir_2d = dir_2d.normalized()
+						_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
+						_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
 					return
 			else:
 				# ─── NO BREACH WAYPOINT FOUND ─────────────────────────────
