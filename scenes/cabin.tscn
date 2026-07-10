@@ -19,8 +19,8 @@ size = Vector3(6.333496, 2.75, 6.057617)
 size = Vector3(6.1220703, 3, 6.3789063)
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_ixm0y"]
-vertices = PackedVector3Array(3.6000004, 0.78892726, 9.74, 3.6000004, 0.78892726, 9.14, 0.3000002, 1.7889273, 9.14, 0, 1.7889273, 10.04, -5.7, 1.2889273, 7.6400003, -5.7, 1.2889273, 19.94, 0, 1.2889273, 13.940001, 0, 1.2889273, 7.6400003, 5.700001, 1.2889273, 19.94, 5.700001, 1.2889273, 14.24)
-polygons = [PackedInt32Array(1, 0, 2), PackedInt32Array(2, 0, 3), PackedInt32Array(3, 6, 4), PackedInt32Array(4, 6, 5), PackedInt32Array(2, 3, 7), PackedInt32Array(7, 3, 4), PackedInt32Array(9, 8, 6), PackedInt32Array(6, 8, 5)]
+vertices = PackedVector3Array(5.700001, 1.5782714, 19.94, 5.700001, 1.5782714, 14.24, 0, 1.5782714, 13.940001, -5.7, 1.5782714, 19.94, -5.7, 1.5782714, 7.6400003, 0, 1.5782714, 7.6400003)
+polygons = [PackedInt32Array(1, 0, 2), PackedInt32Array(2, 0, 3), PackedInt32Array(5, 2, 4), PackedInt32Array(4, 2, 3)]
 geometry_source_geometry_mode = 1
 geometry_source_group_name = &"navmesh_source"
 cell_size = 0.3
@@ -101,10 +101,6 @@ size = Vector3(12, 0.2, 6)
 [node name="CSGBox3D2" type="CSGBox3D" parent="NavigationRegion3D/CSGCombiner3D" unique_id=833904987 groups=["navmesh_source"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.9132462, 0.6782715, 12.84)
 size = Vector3(6, 0.2, 11)
-
-[node name="CSGBox3D6" type="CSGBox3D" parent="NavigationRegion3D/CSGCombiner3D" unique_id=260257140 groups=["navmesh_source"]]
-transform = Transform3D(-0.009950909, -0.9748344, -0.22270867, -0.018065719, 0.2228589, -0.9746839, 0.99978715, -0.005675576, -0.019828713, 1.7815174, 0.38988048, 9.378954)
-size = Vector3(1, 4, 0.3)
 
 [node name="Mouse Trap Cabin 2" parent="NavigationRegion3D" unique_id=10047741 groups=["ignore_navmesh"] instance=ExtResource("3_84mq0")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.12, -0.17, 29.678)

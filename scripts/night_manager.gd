@@ -89,6 +89,9 @@ var _triggered_events: Array[String] = []
 ## Timer for triggering events during the night
 var _event_timer: float = 0.0
 
+## Tick accumulator for throttling _process() to 5 Hz (0.2s intervals)
+var _night_tick_timer: float = 0.0
+
 ## Reference to GameTime autoload
 var _game_time: Node = null
 
@@ -492,6 +495,14 @@ func _find_game_time() -> void:
 
 
 func _process(delta: float) -> void:
+	# ─── THROTTLE OPTIMIZATION ──────────────────────────────────────────────
+	# Night progression runs on simulated time, not frame time.
+	# Updating at 5 Hz (0.2s intervals) is more than sufficient.
+	_night_tick_timer += delta
+	if _night_tick_timer < 0.2:
+		return
+	_night_tick_timer = 0.0
+
 	if not _spawn_setup_done:
 		var player = get_tree().get_first_node_in_group("player")
 		if player:

@@ -12,6 +12,12 @@ extends CharacterBody3D
 ## Reference states as EntityAI.State.X from this script.
 ## NO preload needed — class_name EntityAI registers it globally.
 
+# Pre-cached enum keys — avoids repeated .keys() heap allocations on each
+# state transition. EntityAI.State.keys() allocates a new Array every call
+# in Godot 4, and set_state() was calling it 3× per transition.
+# Initialized in _ready() since const can't call methods at compile-time.
+var STATE_KEYS: Array = []
+
 @export var speed: float = 4.0
 @export var catch_distance: float = 2.5
 @export var relocate_radius: float = 20.0
@@ -674,6 +680,9 @@ var _debug_pos_log_timer: float = 0.0
 
 
 func _ready() -> void:
+	# Initialize the cached state keys array (must be done at runtime since
+	# EntityAI.State.keys() cannot be called in a const context).
+	STATE_KEYS = EntityAI.State.keys()
 
 	add_to_group("entity")
 	_find_player()
@@ -1323,7 +1332,7 @@ func _physics_process(delta: float) -> void:
 				hit_info = "collider=%s hit_y=%.3f normal=%s" % [collider_name, hit_point.y, hit_normal]
 		else:
 			hit_info = "NO_HIT"
-		var _state_name = EntityAI.State.keys()[_state] if _state >= 0 and _state < EntityAI.State.keys().size() else "UNKNOWN"
+		var _state_name = STATE_KEYS[_state] if _state >= 0 and _state < STATE_KEYS.size() else "UNKNOWN"
 		var _shape_d = _collision_shape.disabled if _collision_shape else "N/A"
 		print("[Entity DEBUG] pos=(%.3f, %.3f, %.3f) state=%s layer=%d mask=%d shape_disabled=%s floor_ray=%s" % [global_position.x, global_position.y, global_position.z, _state_name, collision_layer, collision_mask, _shape_d, hit_info])
 		
@@ -1646,7 +1655,7 @@ func _physics_process(delta: float) -> void:
 				
 				var nav_target = _nav_agent.target_position
 				var real_vel = get_real_velocity()
-				var state_name = EntityAI.State.keys()[_state] if _state >= 0 and _state < EntityAI.State.keys().size() else "UNKNOWN"
+				var state_name = STATE_KEYS[_state] if _state >= 0 and _state < STATE_KEYS.size() else "UNKNOWN"
 				
 				print("[POS_STUCK] Entity stuck at same position for %.1fs!" % _pos_stuck_timer)
 				print("[POS_STUCK]   Position:      (%.3f, %.3f, %.3f)" % [current_pos.x, current_pos.y, current_pos.z])
@@ -2055,7 +2064,7 @@ func _debug_attack_window() -> void:
 	if _ai and _ai.has_method("reset_barricade_timers"):
 		_ai.reset_barricade_timers()
 	
-	print("[F2] Entity state override: ", EntityAI.State.keys()[original_state], " → WINDOW_PEEK")
+	print("[F2] Entity state override: ", STATE_KEYS[original_state], " → WINDOW_PEEK")
 	print("[F2] Entity teleported directly to window. Barricade damage sequence starting.")
 	print("[F2] Window state — glass_shattered: ", final_window_target.is_glass_shattered, ", boarded: ", final_window_target.is_boarded)
 	print("==========================================================\n")
@@ -2124,8 +2133,8 @@ func set_state(new_state: EntityAI.State) -> void:
 	# and the trigger context (what Blackboard conditions caused it).
 	# This helps debug unexpected state changes during gameplay.
 	if _state != new_state:
-		var old_name = EntityAI.State.keys()[_state] if _state >= 0 and _state < EntityAI.State.keys().size() else "UNKNOWN"
-		var new_name = EntityAI.State.keys()[new_state] if new_state >= 0 and new_state < EntityAI.State.keys().size() else "UNKNOWN"
+		var old_name = STATE_KEYS[_state] if _state >= 0 and _state < STATE_KEYS.size() else "UNKNOWN"
+		var new_name = STATE_KEYS[new_state] if new_state >= 0 and new_state < STATE_KEYS.size() else "UNKNOWN"
 		
 		# Build a trigger context string from Blackboard conditions
 		var triggers: Array[String] = []
@@ -3256,7 +3265,7 @@ func fade_and_relocate() -> void:
 		print("[Entity] fade_and_relocate() BLOCKED — ghost mode is active. Entity is mid-entry.")
 		return
 	
-	print("[Entity] fade_and_relocate() called! Current state: ", EntityAI.State.keys()[_state])
+	print("[Entity] fade_and_relocate() called! Current state: ", STATE_KEYS[_state])
 	_is_fading = true
 
 	

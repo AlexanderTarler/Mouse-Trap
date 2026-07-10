@@ -57,6 +57,9 @@ var _night_fog_base: float = 1.0
 ## Whether we've initialized fog for the current night
 var _fog_initialized: bool = false
 
+## Tick accumulator for throttling _process() to 10 Hz (0.1s intervals)
+var _env_tick_timer: float = 0.0
+
 
 func _ready() -> void:
 	# Get the Environment resource from the WorldEnvironment
@@ -104,6 +107,14 @@ func _find_game_time() -> void:
 
 
 func _process(delta: float) -> void:
+	# --- THROTTLE OPTIMIZATION ---
+	# Fog density, color, and volumetric parameters change gradually.
+	# Updating at 10 Hz (0.1s) saves CPU without visual degradation.
+	_env_tick_timer += delta
+	if _env_tick_timer < 0.1:
+		return
+	_env_tick_timer = 0.0
+
 	if not _environment or not _sky_material:
 		return
 	

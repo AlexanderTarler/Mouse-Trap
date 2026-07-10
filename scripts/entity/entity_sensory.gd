@@ -121,6 +121,11 @@ var _cached_player_in_lit_room: bool = false
 ## How long to cache RoomLightDetector results (seconds).
 const ROOM_LIGHT_CACHE_DURATION: float = 0.5
 
+# Frame-skip counter for staggering expensive RayCast3D LOS checks across frames.
+var _sense_tick_counter: int = 0
+## Cached result of the last full raycast LOS check, reused on skip frames.
+var _cached_player_in_sight: bool = false
+
 
 func _ready() -> void:
 	# Cache the camera reference once the tree is fully loaded.

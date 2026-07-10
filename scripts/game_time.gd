@@ -41,6 +41,9 @@ var _elapsed: float = 0.0
 ## Cached previous phase to detect transitions
 var _was_day: bool = true
 
+## Tick accumulator for throttling _process() to 5 Hz (0.2s intervals)
+var _tick_timer: float = 0.0
+
 
 func _ready() -> void:
 	# Initialize to mid-afternoon (progress 0.25 = ~3:00 PM)
@@ -61,6 +64,14 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	# --- THROTTLE OPTIMIZATION ---
+	# Time advances at 5 Hz (0.2s intervals). Frame-perfect precision is
+	# unnecessary for a 24-hour cycle that spans 24 real minutes.
+	_tick_timer += delta
+	if _tick_timer < 0.2:
+		return
+	_tick_timer = 0.0
+
 	if not is_running:
 		return
 	

@@ -1245,28 +1245,28 @@ fuse_waypoint = NodePath("../EntityWaypoints/EntityFuseWaypoint")
 door_waypoint_marker = NodePath("../NavigationRegion3D/Cabin/Door/EntityDoorWaypoint")
 
 [node name="GeneralSkeleton" parent="TheEntity/MonsterModel/Armature" parent_id_path=PackedInt32Array(133456140, 1066769687, 1560129316) index="0" unique_id=1361376924]
-bones/1/rotation = Quaternion(0.09585663, -0.17342106, -0.015717627, 0.9800458)
-bones/3/rotation = Quaternion(0.14828888, 0.3517046, 0.90939116, -0.16529392)
-bones/4/rotation = Quaternion(-0.038255148, 0.92311794, -0.37774047, 0.06084453)
-bones/5/rotation = Quaternion(-0.10972224, 0.64439756, -0.7467343, 0.122885436)
-bones/7/rotation = Quaternion(3.8114916e-08, 0.9999771, 0.006773023, -1.507831e-08)
-bones/18/rotation = Quaternion(-0.13585816, 0.29490748, 0.9396498, 0.107844226)
-bones/21/rotation = Quaternion(0.039411504, 0.931987, -0.3546408, -0.06385082)
-bones/22/rotation = Quaternion(0.09993307, 0.62998575, -0.7620778, -0.111215726)
-bones/23/rotation = Quaternion(-5.126113e-08, 0.9999992, 0.0013146644, -6.9613904e-08)
-bones/33/rotation = Quaternion(0.021287976, -0.0042273994, 0.015665686, 0.9996418)
-bones/34/rotation = Quaternion(0.06588571, -0.010177277, 0.011939674, 0.9977039)
-bones/35/rotation = Quaternion(0.06597052, -0.00914422, 0.012316875, 0.9977037)
-bones/36/rotation = Quaternion(-0.053064026, 0.027978554, -0.020734668, 0.99798375)
-bones/38/rotation = Quaternion(-0.19729447, 0.12202442, -0.029789817, 0.97226423)
-bones/49/rotation = Quaternion(0.5645351, 0.4289115, 0.5246815, -0.47121608)
-bones/50/rotation = Quaternion(0.18287939, 0.873694, -0.44946018, -0.03463561)
-bones/51/rotation = Quaternion(0.47541413, -0.523432, 0.47541484, 0.523432)
-bones/55/rotation = Quaternion(-0.15121347, 0.8021175, 0.1847634, 0.5473614)
-bones/58/rotation = Quaternion(0.51690507, -0.4581734, -0.5743115, -0.43937767)
-bones/59/rotation = Quaternion(-0.20142014, 0.8415578, -0.49910715, -0.04585378)
-bones/62/rotation = Quaternion(0.49355048, 0.5063669, -0.49355155, 0.5063669)
-bones/66/rotation = Quaternion(0.063425206, -0.85165066, -0.023812015, 0.51971287)
+bones/1/rotation = Quaternion(0.099831924, -0.17103167, -0.018571222, 0.98001885)
+bones/3/rotation = Quaternion(0.14711884, 0.35683018, 0.90731865, -0.16673693)
+bones/4/rotation = Quaternion(-0.038592875, 0.92067504, -0.38306737, 0.06424499)
+bones/5/rotation = Quaternion(-0.11071068, 0.6436029, -0.7471261, 0.1237785)
+bones/7/rotation = Quaternion(-5.7570254e-08, 0.9999704, 0.0077004377, -1.9666905e-08)
+bones/18/rotation = Quaternion(-0.14050058, 0.2947554, 0.93886644, 0.10912698)
+bones/21/rotation = Quaternion(0.034920342, 0.9327661, -0.35324937, -0.062792525)
+bones/22/rotation = Quaternion(0.10004532, 0.6310379, -0.7611645, -0.11140326)
+bones/23/rotation = Quaternion(-3.2867703e-08, 0.99999964, 0.0008844447, -5.361963e-08)
+bones/33/rotation = Quaternion(0.019882673, -0.0055441516, 0.01616956, 0.9996562)
+bones/34/rotation = Quaternion(0.065373555, -0.013711981, 0.011393192, 0.99770164)
+bones/35/rotation = Quaternion(0.065356, -0.012467249, 0.012358835, 0.9977076)
+bones/36/rotation = Quaternion(-0.05359223, 0.027046869, -0.017259605, 0.9980474)
+bones/38/rotation = Quaternion(-0.19403768, 0.12084779, -0.03330666, 0.97295225)
+bones/49/rotation = Quaternion(0.5637897, 0.42976412, 0.524402, -0.47164237)
+bones/50/rotation = Quaternion(0.17669332, 0.8771605, -0.4447651, -0.03940866)
+bones/51/rotation = Quaternion(0.47452042, -0.5242423, 0.47452143, 0.5242423)
+bones/55/rotation = Quaternion(-0.1444968, 0.8018064, 0.19334428, 0.54666734)
+bones/58/rotation = Quaternion(0.5203077, -0.4548028, -0.57376236, -0.4395805)
+bones/59/rotation = Quaternion(-0.21517637, 0.83659804, -0.5017675, -0.045078915)
+bones/62/rotation = Quaternion(0.4833785, 0.5160862, -0.48337945, 0.516086)
+bones/66/rotation = Quaternion(0.069822535, -0.8532867, -0.02318211, 0.5162261)
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1000000002]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.014, 0, -0.084)
@@ -1309,10 +1309,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4896092, -0.9567151, -1.103
 visible = false
 use_collision = false
 
-[node name="CSGBox3D6" parent="NavigationRegion3D/Cabin/NavigationRegion3D/CSGCombiner3D" index="2" unique_id=260257140]
-transform = Transform3D(-0.009950909, -0.9748344, -0.22270867, -0.018065719, 0.2228589, -0.9746839, 0.99978715, -0.005675576, -0.019828713, 1.781517, 0.37421864, 9.267841)
-size = Vector3(1.5, 4, 0.3)
-
 [node name="Door" parent="NavigationRegion3D/Cabin" unique_id=187910433 groups=["BottomFloorWindows", "Door"] instance=ExtResource("11_jjdw5")]
 transform = Transform3D(-5.2453668e-08, 0, -1.2, 0, 1.1, 0, 1.2, 0, -5.2453668e-08, 0.15686512, 0.7928264, 8.645942)
 required_key_name = "Cabin Key"
@@ -1352,7 +1348,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -33.800858, 0.025001287, -2.3
 
 [node name="NavigationLink3D" type="NavigationLink3D" parent="NavigationRegion3D" unique_id=127545457]
 start_position = Vector3(11.658171, 0, 9.531931)
-end_position = Vector3(7.8105116, 0.9706389, 9.531931)
+end_position = Vector3(7.267, 1.084, 9.734)
 
 [node name="Details" type="Node" parent="." unique_id=1144393623]
 
