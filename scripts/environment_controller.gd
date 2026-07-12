@@ -60,6 +60,33 @@ var _fog_initialized: bool = false
 ## Tick accumulator for throttling _process() to 10 Hz (0.1s intervals)
 var _env_tick_timer: float = 0.0
 
+# ─── DIRTY CHECK CACHE ───────────────────────────────────────────────────────
+## Cached values to avoid redundant shader uniform assignments.
+## Only updates that actually change the value will trigger a GPU pipeline flush.
+var _cached_sun_sky_mode: int = -1
+var _cached_moon_sky_mode: int = -1
+var _cached_sun_rotation_x: float = 0.0
+var _cached_moon_rotation_x: float = 0.0
+var _cached_sky_top_color: Color = Color()
+var _cached_sky_horizon_color: Color = Color()
+var _cached_ground_bottom_color: Color = Color()
+var _cached_sun_angle_max: float = 0.0
+var _cached_ambient_energy: float = 0.0
+var _cached_ambient_color: Color = Color()
+var _cached_ambient_sky_contrib: float = 0.0
+var _cached_tonemap_exposure: float = 0.0
+var _cached_sun_energy: float = 0.0
+var _cached_sun_color: Color = Color()
+var _cached_sun_shadow_enabled: bool = false
+var _cached_moon_energy: float = 0.0
+var _cached_moon_color: Color = Color()
+var _cached_moon_shadow_enabled: bool = false
+var _cached_fog_enabled: bool = false
+var _cached_fog_density: float = 0.0
+var _cached_fog_color: Color = Color()
+var _cached_vfog_enabled: bool = false
+var _cached_vfog_density: float = 0.0
+
 
 func _ready() -> void:
 	# Get the Environment resource from the WorldEnvironment
@@ -129,8 +156,6 @@ func _process(delta: float) -> void:
 		cycle_progress = fmod(_elapsed / cycle_duration, 1.0)
 		is_day = cycle_progress < 0.5
 		_apply_cycle()
-	# If GameTime IS available, the signal handler keeps us in sync.
-	# No need to poll every frame — _on_game_time_changed handles updates.
 
 
 func _on_game_time_changed(progress: float) -> void:
@@ -171,6 +196,11 @@ func force_true_night() -> void:
 	_environment.fog_enabled = false
 	_environment.volumetric_fog_enabled = false
 	
+	# Invalidate cache so restore_cycle() truly re-applies
+	_cached_sun_energy = -1.0
+	_cached_moon_energy = -1.0
+	_cached_fog_enabled = true  # true so the false assignment goes through
+	
 	print("[EnvironmentController] True night forced. Background=black, ambient=0, sun=0, moon=0.")
 
 
@@ -190,24 +220,13 @@ func restore_cycle() -> void:
 func _apply_cycle() -> void:
 	# --- Calculate the continuous sun angle ---
 	# Map cycle_progress (0.0 to 1.0) to a full 360-degree rotation (0 to TAU).
-	# At progress 0.0 (midnight), the sun is at its lowest (angle = 0).
-	# At progress 0.25 (mid-afternoon), the sun is high in the sky.
-	# At progress 0.5 (sunset), the sun is at the horizon.
-	# At progress 0.75 (midnight), the sun is at its lowest again.
 	var sun_angle: float = cycle_progress * TAU
 	
 	# The sun's height above the horizon: sin(sun_angle).
-	# Positive = above horizon (day), Negative = below horizon (night).
-	# At progress 0.25 (mid-afternoon), sin(0.25 * TAU) = sin(PI/2) = 1.0 (zenith).
-	# At progress 0.5 (sunset), sin(0.5 * TAU) = sin(PI) = 0.0 (horizon).
-	# At progress 0.75 (midnight), sin(0.75 * TAU) = sin(3*PI/2) = -1.0 (nadir).
 	var sun_height: float = sin(sun_angle)
 	
 	# Day factor: 1.0 = full day, 0.0 = full night.
-	# Smoothly transitions through the horizon (sun_height crosses 0).
-	# We use a smoothstep-like transition in the range -0.2 to 0.2 for a
-	# natural dusk/dawn glow that lasts a few minutes of game time.
-	var raw_day_factor: float = sun_height / 0.4  # -1 to 1 mapped to -5 to 5
+	var raw_day_factor: float = sun_height / 0.4
 	var day_factor: float = clampf((raw_day_factor + 1.0) / 2.0, 0.0, 1.0)
 	
 	# --- 1. Rotate the Sun and Moon ---
@@ -224,38 +243,37 @@ func _apply_cycle() -> void:
 
 
 func _update_light_rotations(p_sun_angle: float) -> void:
-	# The sun rotates through the full 360-degree range.
-	# DirectionalLight3D points along the negative Z axis of its local transform.
-	# Rotating around X tilts the light forward/backward.
-	#
-	# sun_angle 0.0   -> rotation.x = 0       (midnight, pointing horizontally)
-	# sun_angle PI/2  -> rotation.x = -PI/2   (noon, pointing straight down)
-	# sun_angle PI    -> rotation.x = -PI     (sunset, pointing horizontally opposite)
-	# sun_angle 3*PI/2 -> rotation.x = -3*PI/2 (midnight, pointing straight up)
-	
-	# The sun's rotation.x follows the angle directly.
-	# We offset by -PI/2 so that at sun_angle = 0, the sun is at the horizon
-	# (rotation.x = -PI/2), and at sun_angle = PI/2, it's at zenith (rotation.x = -PI).
-	var sun_rotation_x: float = -PI / 2.0 - p_sun_angle
+	var rotation_x: float = -PI / 2.0 - p_sun_angle
 	
 	if sun:
-		sun.rotation.x = sun_rotation_x
+		if not is_equal_approx(sun.rotation.x, rotation_x):
+			sun.rotation.x = rotation_x
+	
 	if moon:
-		# The moon is always on the opposite side of the sky
-		moon.rotation.x = sun_rotation_x + PI
+		var moon_rotation_x: float = rotation_x + PI
+		if not is_equal_approx(moon.rotation.x, moon_rotation_x):
+			moon.rotation.x = moon_rotation_x
 
 
 func _update_sky_modes(p_sun_height: float) -> void:
-	# Swap sky_mode at the moment the sun crosses the horizon.
-	# When sun_height > 0, the sun is above the horizon → day mode.
-	# When sun_height <= 0, the moon should show its disk.
-	if sun and moon:
-		if p_sun_height > 0.0:
-			sun.sky_mode = DirectionalLight3D.SKY_MODE_LIGHT_AND_SKY
-			moon.sky_mode = DirectionalLight3D.SKY_MODE_LIGHT_ONLY
-		else:
-			moon.sky_mode = DirectionalLight3D.SKY_MODE_LIGHT_AND_SKY
-			sun.sky_mode = DirectionalLight3D.SKY_MODE_LIGHT_ONLY
+	if not sun or not moon:
+		return
+	
+	var target_sun_mode: int
+	var target_moon_mode: int
+	if p_sun_height > 0.0:
+		target_sun_mode = DirectionalLight3D.SKY_MODE_LIGHT_AND_SKY
+		target_moon_mode = DirectionalLight3D.SKY_MODE_LIGHT_ONLY
+	else:
+		target_moon_mode = DirectionalLight3D.SKY_MODE_LIGHT_AND_SKY
+		target_sun_mode = DirectionalLight3D.SKY_MODE_LIGHT_ONLY
+	
+	if _cached_sun_sky_mode != target_sun_mode:
+		sun.sky_mode = target_sun_mode
+		_cached_sun_sky_mode = target_sun_mode
+	if _cached_moon_sky_mode != target_moon_mode:
+		moon.sky_mode = target_moon_mode
+		_cached_moon_sky_mode = target_moon_mode
 
 
 func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
@@ -271,96 +289,142 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 	var night_sky_horizon: Color = Color(0.05, 0.05, 0.08)
 	var night_ground_bottom: Color = Color(0.01, 0.01, 0.01)
 	
-	_sky_material.sky_top_color = day_sky_top.lerp(night_sky_top, 1.0 - p_day_factor)
-	_sky_material.sky_horizon_color = day_sky_horizon.lerp(night_sky_horizon, 1.0 - p_day_factor)
-	_sky_material.ground_bottom_color = day_ground_bottom.lerp(night_ground_bottom, 1.0 - p_day_factor)
+	var sky_top: Color = day_sky_top.lerp(night_sky_top, 1.0 - p_day_factor)
+	if not _cached_sky_top_color.is_equal_approx(sky_top):
+		_sky_material.sky_top_color = sky_top
+		_cached_sky_top_color = sky_top
+	
+	var sky_horizon: Color = day_sky_horizon.lerp(night_sky_horizon, 1.0 - p_day_factor)
+	if not _cached_sky_horizon_color.is_equal_approx(sky_horizon):
+		_sky_material.sky_horizon_color = sky_horizon
+		_cached_sky_horizon_color = sky_horizon
+	
+	var ground_bottom: Color = day_ground_bottom.lerp(night_ground_bottom, 1.0 - p_day_factor)
+	if not _cached_ground_bottom_color.is_equal_approx(ground_bottom):
+		_sky_material.ground_bottom_color = ground_bottom
+		_cached_ground_bottom_color = ground_bottom
 	
 	# Sun angle max: slightly wider during day for a softer glow
-	_sky_material.sun_angle_max = lerpf(8.0, 10.0, p_day_factor)
+	var sun_angle_max: float = lerpf(8.0, 10.0, p_day_factor)
+	if not is_equal_approx(sun_angle_max, _cached_sun_angle_max):
+		_sky_material.sun_angle_max = sun_angle_max
+		_cached_sun_angle_max = sun_angle_max
 	
 	# --- Ambient light: smoothly dim at night ---
-	# Night ambient is intentionally low to create a dark, tense atmosphere.
-	# The player relies on the flashlight, moonlight, and cabin lights to see.
-	_environment.ambient_light_energy = lerpf(0.175, 0.7, p_day_factor)
-	_environment.ambient_light_color = Color(0.04, 0.05, 0.12).lerp(
-		Color(0.7, 0.75, 1.0), p_day_factor
-	)
-	_environment.ambient_light_sky_contribution = lerpf(0.3, 0.5, p_day_factor)
+	var ambient_energy: float = lerpf(0.175, 0.7, p_day_factor)
+	if not is_equal_approx(ambient_energy, _cached_ambient_energy):
+		_environment.ambient_light_energy = ambient_energy
+		_cached_ambient_energy = ambient_energy
+	
+	var ambient_color: Color = Color(0.04, 0.05, 0.12).lerp(Color(0.7, 0.75, 1.0), p_day_factor)
+	if not _cached_ambient_color.is_equal_approx(ambient_color):
+		_environment.ambient_light_color = ambient_color
+		_cached_ambient_color = ambient_color
+	
+	var ambient_sky_contrib: float = lerpf(0.3, 0.5, p_day_factor)
+	if not is_equal_approx(ambient_sky_contrib, _cached_ambient_sky_contrib):
+		_environment.ambient_light_sky_contribution = ambient_sky_contrib
+		_cached_ambient_sky_contrib = ambient_sky_contrib
 	
 	# --- Tonemap exposure: slightly brighter at night to compensate ---
-	_environment.tonemap_exposure = lerpf(1.1, 1.2, p_day_factor)
+	var tonemap_exposure: float = lerpf(1.1, 1.2, p_day_factor)
+	if not is_equal_approx(tonemap_exposure, _cached_tonemap_exposure):
+		_environment.tonemap_exposure = tonemap_exposure
+		_cached_tonemap_exposure = tonemap_exposure
 	
 	# --- Volumetric fog: smoothly thickens through dusk, then fluctuates at night ---
-	# Fog only appears when the sun is near or below the horizon.
-	# We use a smooth transition centered on sun_height = 0.
-	# When sun_height > 0.1 (well above horizon), fog is disabled.
-	# When sun_height < -0.1 (well below horizon), fog is at full night density.
 	var fog_factor: float = clampf(1.0 - (p_sun_height + 0.1) / 0.2, 0.0, 1.0)
 	
 	# --- Night fog fluctuation ---
-	# Once we're fully into night (fog_factor >= 1.0), the fog density
-	# oscillates up and down using a combination of sine waves to create
-	# an organic ebb-and-flow effect. This makes the night feel alive
-	# and unpredictable — fog banks rolling in and out.
-	#
-	# The fluctuation uses two sine waves at different frequencies:
-	#   - A slow wave (period ~60s) for the main swell
-	#   - A faster wave (period ~20s) for subtle texture
-	# The result is a multiplier between 0.3 and 1.3 applied to the base fog.
 	var fog_fluctuation: float = 1.0
 	if fog_factor >= 0.99:
-		# Randomize the base fog density each night for variety
 		if not _fog_initialized:
 			_night_fog_base = randf_range(0.7, 1.3)
 			_fog_initialized = true
 		
-		# Two sine waves combined for organic fluctuation
 		var slow_wave: float = sin(_fog_noise_time * 0.1) * 0.35
 		var fast_wave: float = sin(_fog_noise_time * 0.3 + 1.2) * 0.15
 		fog_fluctuation = 1.0 + slow_wave + fast_wave
-		# Clamp so fog never fully disappears or gets absurdly thick
 		fog_fluctuation = clampf(fog_fluctuation, 0.3, 1.3)
 	elif _fog_initialized:
-		# Reset when we leave full night (e.g., dawn transition)
 		_fog_initialized = false
 	
 	if fog_factor > 0.01:
-		_environment.fog_enabled = true
-		_environment.fog_density = 0.0075 * fog_factor * fog_fluctuation * _night_fog_base
-		_environment.volumetric_fog_enabled = true
-		_environment.volumetric_fog_density = 0.003 * fog_factor * fog_fluctuation * _night_fog_base
+		var fog_enabled: bool = true
+		if _cached_fog_enabled != fog_enabled:
+			_environment.fog_enabled = fog_enabled
+			_cached_fog_enabled = fog_enabled
 		
-		# Fog color darkens as night deepens
+		var fog_density: float = 0.0075 * fog_factor * fog_fluctuation * _night_fog_base
+		if not is_equal_approx(fog_density, _cached_fog_density):
+			_environment.fog_density = fog_density
+			_cached_fog_density = fog_density
+		
+		var vfog_enabled: bool = true
+		if _cached_vfog_enabled != vfog_enabled:
+			_environment.volumetric_fog_enabled = vfog_enabled
+			_cached_vfog_enabled = vfog_enabled
+		
+		var vfog_density: float = 0.003 * fog_factor * fog_fluctuation * _night_fog_base
+		if not is_equal_approx(vfog_density, _cached_vfog_density):
+			_environment.volumetric_fog_density = vfog_density
+			_cached_vfog_density = vfog_density
+		
 		var day_fog_color: Color = Color(0.7, 0.75, 0.8)
 		var night_fog_color: Color = Color(0.02, 0.02, 0.04)
-		_environment.fog_light_color = day_fog_color.lerp(night_fog_color, fog_factor)
+		var fog_color: Color = day_fog_color.lerp(night_fog_color, fog_factor)
+		if not _cached_fog_color.is_equal_approx(fog_color):
+			_environment.fog_light_color = fog_color
+			_cached_fog_color = fog_color
 	else:
-		_environment.fog_enabled = false
-		_environment.fog_density = 0.0
-		_environment.volumetric_fog_enabled = false
+		if _cached_fog_enabled != false:
+			_environment.fog_enabled = false
+			_cached_fog_enabled = false
+		if not is_equal_approx(_cached_fog_density, 0.0):
+			_environment.fog_density = 0.0
+			_cached_fog_density = 0.0
+		if _cached_vfog_enabled != false:
+			_environment.volumetric_fog_enabled = false
+			_cached_vfog_enabled = false
 
 
 func _update_light_appearance(p_day_factor: float, p_sun_height: float) -> void:
 	# --- Sun light energy: smoothly scales with sun height ---
-	# When the sun is above the horizon, energy follows the sine of its angle.
-	# When below, energy is 0.
 	if sun:
-		var sun_energy: float = maxf(0.0, p_sun_height) * 2.0  # 0 to 2.0
-		sun.light_energy = sun_energy
-		sun.light_color = Color(1.0, 0.95, 0.85)
-		sun.shadow_enabled = sun_energy > 0.05
-		if sun.shadow_enabled:
-			sun.shadow_bias = 0.1
-			sun.shadow_normal_bias = 0.1
+		var sun_energy: float = maxf(0.0, p_sun_height) * 2.0
+		if not is_equal_approx(sun_energy, _cached_sun_energy):
+			sun.light_energy = sun_energy
+			_cached_sun_energy = sun_energy
+		
+		var sun_color: Color = Color(1.0, 0.95, 0.85)
+		if not _cached_sun_color.is_equal_approx(sun_color):
+			sun.light_color = sun_color
+			_cached_sun_color = sun_color
+		
+		var sun_shadow_enabled: bool = sun_energy > 0.05
+		if _cached_sun_shadow_enabled != sun_shadow_enabled:
+			sun.shadow_enabled = sun_shadow_enabled
+			_cached_sun_shadow_enabled = sun_shadow_enabled
+			if sun.shadow_enabled:
+				sun.shadow_bias = 0.1
+				sun.shadow_normal_bias = 0.1
 	
 	# --- Moon light energy: smoothly scales as sun goes down ---
 	if moon:
-		# Moon energy is high when the sun is below the horizon.
-		# We use the inverse of sun_height, clamped to 0-1, scaled to 0.3.
-		var moon_energy: float = maxf(0.0, -p_sun_height) * 0.3  # 0 to 0.3
-		moon.light_energy = moon_energy
-		moon.light_color = Color(0.5, 0.55, 0.8)
-		moon.shadow_enabled = moon_energy > 0.02
-		if moon.shadow_enabled:
-			moon.shadow_bias = 0.1
-			moon.shadow_normal_bias = 0.1
+		var moon_energy: float = maxf(0.0, -p_sun_height) * 0.3
+		if not is_equal_approx(moon_energy, _cached_moon_energy):
+			moon.light_energy = moon_energy
+			_cached_moon_energy = moon_energy
+		
+		var moon_color: Color = Color(0.5, 0.55, 0.8)
+		if not _cached_moon_color.is_equal_approx(moon_color):
+			moon.light_color = moon_color
+			_cached_moon_color = moon_color
+		
+		var moon_shadow_enabled: bool = moon_energy > 0.02
+		if _cached_moon_shadow_enabled != moon_shadow_enabled:
+			moon.shadow_enabled = moon_shadow_enabled
+			_cached_moon_shadow_enabled = moon_shadow_enabled
+			if moon.shadow_enabled:
+				moon.shadow_bias = 0.1
+				moon.shadow_normal_bias = 0.1

@@ -283,6 +283,41 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 			# oscillation where Tier 3 demotes STALK→OBSERVE every frame.
 			return state
 	
+	# ─── STALK CABIN-ENTRY INTERRUPT ─────────────────────────────────
+	# If the Entity is STALKing and the player enters the cabin (any room
+	# other than "Outside"), forcefully release the STALK lock so the
+	# Director can evaluate Tier 3 (Active Aggression) which naturally
+	# transitions STALK→APPROACH_WINDOW (if confidence >= 40) or
+	# STALK→OBSERVE_FROM_TREELINE (if < 40).
+	#
+	# This check runs BEFORE the State Lock Guard so it can break an
+	# active STALK even if the state handler has set state_locked = true.
+	#
+	# Uses get_player_room() from entity_navigation.gd which delegates to
+	# the player's RoomLightDetector physics overlap checks against
+	# Cabin_Interior Area3D volumes. Returns "Outside" or a room name
+	# (HallRoom, LivingRoom, ComputerRoom). This covers ALL indoor rooms
+	# without hardcoding any specific room name.
+	#
+	# The van sequence persistent lock (above) has already been checked —
+	# if is_van_sequence_active is true, the Director returns STALK
+	# unconditionally. By the time we reach this interrupt, the van
+	# sequence has either expired or the player has entered the cabin.
+	if state == EntityAI.State.STALK:
+		var nav_interrupt = entity.get_navigation_module()
+		if nav_interrupt and nav_interrupt.has_method("get_player_room"):
+			var player_room_interrupt: String = nav_interrupt.get_player_room()
+			if player_room_interrupt != "Outside" and not player_room_interrupt.is_empty():
+				# Player entered the cabin — release STALK locks and
+				# fall through to Tier 3+ evaluations. The Director's
+				# Tier 3 STALK handler (lines 1039-1075) will naturally
+				# transition to APPROACH_WINDOW or OBSERVE based on
+				# confidence.
+				entity.state_locked = false
+				entity.is_observe_finished = false
+				entity.is_flinch_finished = false
+				# Fall through — return -1 so Tier 3 evaluates next
+	
 	# ─── STATE LOCK GUARD ─────────────────────────────────────────────
 	# After Tier 0 (flashlight reactions) and Tier 1 (sabotage override),
 	# check if the state handler is mid-execution. If locked, return the

@@ -28,7 +28,7 @@ var current_user: String = ""
 
 ## Valid credentials. Key = username, value = password.
 const VALID_CREDENTIALS: Dictionary = {
-	"LUND": "PASSWORD",
+	"LUND": "PASSKEY1",
 	"STENBERG": "1996",
 }
 

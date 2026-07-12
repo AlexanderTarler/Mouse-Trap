@@ -158,7 +158,7 @@ func _process(delta: float) -> void:
 	if _e_is_held and not _is_grabbing:
 		_e_held_time += delta
 		
-		# Check for door lock hold (2s threshold)
+		# Check for door lock hold (1s threshold)
 		if not _has_passed_door_threshold and _e_held_time >= door_lock_threshold:
 			# Check if we're looking at a door with toggle_lock
 			var door_target = _find_door_target()
@@ -407,7 +407,6 @@ func _find_door_target() -> Node:
 		current = current.get_parent()
 	
 	return null
-
 
 func _update_prompt() -> void:
 	if not _prompt_label:

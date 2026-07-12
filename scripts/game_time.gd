@@ -79,7 +79,9 @@ func _process(delta: float) -> void:
 	# When is_time_paused is true, the clock stays frozen.
 	if not is_time_paused:
 		# Advance the cycle (apply speed multiplier)
-		_elapsed += delta * speed_multiplier
+		# Use _tick_timer's accumulated value (0.2s tick interval) instead of this frame's delta
+		# to keep time progressing at real-time speed despite the 5Hz throttle.
+		_elapsed += 0.2 * speed_multiplier
 		cycle_progress = fmod(_elapsed / cycle_duration, 1.0)
 	
 	# Determine current phase (always evaluated, even when paused,

@@ -10,6 +10,19 @@ class_name NotebookUI
 ##   Page 0 → Left side of Spread 1, Page 1 → Right side of Spread 1,
 ##   Page 2 → Left of next spread, Page 3 → Right, etc.
 ##   A "page turn" advances by 2 pages (one full spread).
+##
+## CHAPTER STRUCTURE:
+##   When the notebook is first populated, _all_pages contains:
+##     [0]: Chapter 2 — Personnel Credentials (login: LUND / PASSKEY1)
+##   The Index (Spread 0 Left) and To-Do (Spread 0 Right) are static UI containers,
+##   NOT part of _all_pages.
+##
+##   When documentation is added (add_documentation), it is inserted AFTER
+##   the credentials page but BEFORE any existing notes. This guarantees:
+##     Chapter 3: Nest Data always precedes Chapter 4: Picked-up Notes.
+##
+##   When notes are added (add_note), they always APPEND to _all_pages,
+##   ensuring they come after all documentation.
 
 # ============================================================
 # Spread state
@@ -22,6 +35,7 @@ const MAX_SPREAD: int = 1
 # ─── UNIFIED PAGE STATE ────────────────────────────────────
 ## All content pages in sequential order. Index 0 = first page (left),
 ## index 1 = second page (right), index 2 = third page (left), etc.
+## Layout: [0] = Credentials, [1..N] = Nest Data, [...M] = Notes
 var _all_pages: Array[String] = []
 
 ## Current page index (points to the left page of the current spread).
@@ -31,17 +45,15 @@ var _current_page: int = 0
 ## Maximum characters that fit on one physical page.
 const CHARS_PER_PAGE: int = 1000
 
-## Whether the placeholder text for documentation is still showing.
-var _doc_placeholder_cleared: bool = false
+## Index into _all_pages where Nest Data (Chapter 3) begins.
+## Always 1 (credentials occupy page 0, nest data starts on page 1).
+## Updated by add_documentation() when the first nest is added.
+var _nest_data_start_page: int = 1
 
-## Whether the placeholder text for notes is still showing.
-var _notes_placeholder_cleared: bool = false
-
-## Header text for Documentation entries (shown once per entry).
-const DOC_HEADER_FORMAT: String = "[b]%s[/b] — [i]Documented[/i]\n"
-
-## Header text for Notes entries (shown once per entry).
-const NOTE_HEADER_FORMAT: String = "[b]%s[/b]\n"
+## Index into _all_pages where Notes (Chapter 4) begin.
+## Updated by add_note() and add_documentation() as pages shift.
+## Initially set to INF so empty checks work before any notes exist.
+var _notes_start_page: int = 999999
 
 # ============================================================
 # Node references
@@ -123,7 +135,7 @@ func _on_routine_step_changed(_step: int, objective_text: String) -> void:
 			_completed_objectives.append(_current_objective)
 		_current_objective = objective_text
 	
-	var bbcode := "[center][b]TO-DO[/b][/center]\n\n"
+	var bbcode := "[center][b]%s[/b][/center]\n\n" % _day_label.text
 	for obj in _completed_objectives:
 		bbcode += "[s]  [x] %s[/s]\n" % obj
 	if not _current_objective.is_empty():
@@ -148,6 +160,38 @@ func _call_deferred_todo_seed() -> void:
 
 
 func _initialize_pages() -> void:
+	# ─── STATIC INDEX (Spread 0 Left) ─────────────────────────
+	# The Index is rebuilt dynamically each time content changes.
+	# Initial version shows only the credentials chapter.
+	_rebuild_index()
+	
+	_todo_label.text = "[center][b]TO-DO[/b][/center]\n\nLoading objectives..."
+
+	# ─── UNIFIED PAGE ARRAY (Spread 1) ─────────────────────────
+	# Every entry is one physical page.
+	# Page 0 = left side of Spread 1, Page 1 = right side, Page 2 = left, etc.
+	#
+	# Chapter 2: Personnel Credentials (always page 0)
+	_all_pages = []
+	_all_pages.append("[center][b]PERSONNEL CREDENTIALS[/b][/center]\n\n[font_size=14][b]Svea Naturinstitut[/b][/font_size]\n[font_size=11][i]Ekologisk Fältundersökning[/i][/font_size]\n\n[font_size=12][b]Researcher:[/b] Arvid Lindqvist\n[b]ID:[/b] SNI-7742-AL\n[b]Clearance:[/b] Level 3 (Ecological)\n[b]Vehicle:[/b] Unit 12 — '92 Volvo 240\n[b]Assignment:[/b] Hazel Mouse (Muscardinus avellanarius) Population Survey — Phase 2\n\n[b]─── COMPUTER LOGIN ───[/b]\n[b]Login:[/b] LUND\n[b]Password:[/b] PASSKEY1\n\n[font_size=11][i]This notebook is the property of Svea Naturinstitut.\nUnauthorised access or reproduction is a violation of the Swedish Environmental Code (Miljöbalken, 1998:808).\n\nReport lost or damaged equipment to your supervising officer immediately.[/i][/font_size]")
+	
+	# Chapter 3: Nest Data — starts at page 1 (no nests yet documented)
+	# Chapter 4: Notes — will be appended via add_note()
+	
+	_nest_data_start_page = 1
+	_notes_start_page = 999999
+	
+	_current_page = 0
+
+
+func _rebuild_index() -> void:
+	# Determine Notes page number (1-based for display)
+	var notes_page: int = _notes_start_page + 1  # Convert 0-based to 1-based
+	if _notes_start_page >= 999999:
+		notes_page = _all_pages.size() + 1  # Approximate: next available page
+	
+	var nest_page: int = _nest_data_start_page + 1  # 1-based
+	
 	_index_label.text = """[center][font_size=22][b]FIELD NOTEBOOK[/b][/font_size][/center]
 [center][i]Svea Naturinstitut Ecological Survey[/i][/center]
 
@@ -155,21 +199,14 @@ func _initialize_pages() -> void:
 
   [b]1.[/b]  To-do .................... [i]Current objectives[/i]
 
-  [b]2.[/b]  Documentation & Notes .... [i]Nest data & observations[/i]
+  [b]2.[/b]  Personnel Credentials ..... [i]Page 1[/i]
+
+  [b]3.[/b]  Nest Data ................ [i]Page %d[/i]
+
+  [b]4.[/b]  Field Notes .............. [i]Page %d[/i]
 
 [center]---
-Press [b][J][/b] to close[/center]"""
-
-	_todo_label.text = "[center][b]TO-DO[/b][/center]\n\nLoading objectives..."
-
-	# Unified page array: every entry is one physical page
-	# Page 0 = left side of Spread 1, Page 1 = right side, Page 2 = left, etc.
-	_all_pages = []
-	_all_pages.append("[center][b]DOCUMENTATION[/b][/center]\n\nField notes on the Hazel Mouse Nests.\nUse the Photo Camera to document nests,\nthen validate at the computer terminal.")
-	_all_pages.append("[center][b]NOTES[/b][/center]\n\nPersonal observations.")
-	_doc_placeholder_cleared = false
-	_notes_placeholder_cleared = false
-	_current_page = 0
+Press [b][J][/b] to close[/center]""" % [nest_page, notes_page]
 
 
 func _apply_styles() -> void:
@@ -327,7 +364,6 @@ func update_objectives(day: int, completed_objectives: Array[String], current_ob
 		_completed_objectives.clear()
 		_current_objective = ""
 		_day_label.text = "DAY %d" % day
-		_todo_label.clear()
 
 	var bbcode := "[center][b]%s[/b][/center]\n\n" % _day_label.text
 	for obj in completed_objectives:
@@ -338,36 +374,82 @@ func update_objectives(day: int, completed_objectives: Array[String], current_ob
 
 
 func set_documentation(text: String) -> void:
+	# Deprecated single-doc mode — clear and populate
 	_all_pages = [text]
 	_current_page = 0
-	_doc_placeholder_cleared = true
+	_nest_data_start_page = 0
+	_notes_start_page = 999999
 	if current_spread == 1:
 		_refresh_spread_1()
 
 
-## Appends a documented nest entry. The lore text flows sequentially into the
-## unified page array — it may span multiple pages like a real book.
+## Appends a documented nest entry. The lore text flows into the
+## unified page array, inserted AFTER credentials but BEFORE any notes.
 func add_documentation(nest_id: String) -> void:
 	if NEST_LORE.has(nest_id):
 		var lore_text = NEST_LORE[nest_id]
-		_append_text(lore_text)
-		_update_spread() # Force a UI refresh in case the notebook is open
+		_insert_text_before_notes(lore_text)
+		_rebuild_index()
+		_update_spread()
 	else:
 		push_error("Notebook: Could not find nest data for ID: " + nest_id)
 
 
-## Appends a note entry. The text flows sequentially into the unified page
-## array — it may span multiple pages like a real book.
+## Appends a note entry. Always placed at the end of _all_pages,
+## after all documentation entries.
 func add_note(text: String) -> void:
 	if text.is_empty():
 		return
 	
+	# Append to the end of _all_pages
 	_append_text(text)
 	
-	_update_spread() # Force a UI refresh in case the notebook is open
+	# Update _notes_start_page if no notes existed before
+	if _notes_start_page >= 999999:
+		_notes_start_page = _all_pages.size() - 1
+		# Walk backwards to find the actual start of notes (the first non-blank page
+		# after documentation ends). _append_text adds a blank page separator.
+		var probe = _notes_start_page
+		while probe > 0 and (_all_pages[probe].is_empty() or _all_pages[probe] == ""):
+			probe -= 1
+		_notes_start_page = probe + 1
+	
+	_rebuild_index()
+	_update_spread()
 
 
-## Appends text to the unified page array, splitting across pages when
+## Inserts text into _all_pages at the notes boundary — right BEFORE the
+## first notes page. Documentation always comes before notes.
+func _insert_text_before_notes(new_text: String) -> void:
+	# Sanitize
+	new_text = new_text.replace("\\n", "\n")
+	new_text = new_text.trim_prefix("\"").trim_suffix("\"")
+	new_text = new_text.trim_prefix("\"\"\"").trim_suffix("\"\"\"")
+	new_text = new_text.strip_edges()
+	
+	# Split the text into page-sized chunks
+	var chunks: Array[String] = _split_into_pages(new_text)
+	if chunks.is_empty():
+		return
+	
+	# If notes already exist, insert at _notes_start_page
+	if _notes_start_page < _all_pages.size():
+		# Add a blank separator page before the nest data chunk
+		_all_pages.insert(_notes_start_page, "")
+		_notes_start_page += 1
+		# Insert each chunk before the notes
+		for chunk in chunks:
+			_all_pages.insert(_notes_start_page, chunk)
+			_notes_start_page += 1
+	else:
+		# No notes exist yet — append normally
+		for chunk in chunks:
+			if _all_pages.is_empty() or _all_pages[-1] != "":
+				_all_pages.append("")
+			_all_pages[_all_pages.size() - 1] = chunk
+
+
+## Appends text to the end of _all_pages, splitting across pages when
 ## text exceeds CHARS_PER_PAGE. Maintains sequential book-like flow.
 func _append_text(new_text: String) -> void:
 	# Sanitize any double-escaped strings or literal quotes coming from resources/AI file writes
@@ -418,6 +500,31 @@ func _append_text(new_text: String) -> void:
 			current = current.substr(split_at)
 
 
+## Splits a string into an array of CHARS_PER_PAGE-sized chunks,
+## with word-wrap awareness. Does NOT modify _all_pages.
+func _split_into_pages(text: String) -> Array[String]:
+	var result: Array[String] = []
+	var remaining = text
+	
+	while remaining.length() > 0:
+		if remaining.length() <= CHARS_PER_PAGE:
+			result.append(remaining)
+			break
+		else:
+			var split_at = CHARS_PER_PAGE
+			var nl_pos = remaining.rfind("\n", CHARS_PER_PAGE)
+			if nl_pos > CHARS_PER_PAGE / 2:
+				split_at = nl_pos + 1
+			else:
+				var sp_pos = remaining.rfind(" ", CHARS_PER_PAGE)
+				if sp_pos > CHARS_PER_PAGE / 2:
+					split_at = sp_pos + 1
+			result.append(remaining.substr(0, split_at))
+			remaining = remaining.substr(split_at)
+	
+	return result
+
+
 # ============================================================
 # Nest lore entries
 # ============================================================
@@ -425,13 +532,16 @@ func _append_text(new_text: String) -> void:
 const NEST_LORE: Dictionary = {
 	"Nest Alpha": """[b]Subject: Nest Alpha[/b]
 Species: Muscardinus avellanarius
-Observation: The nest and the mice actively and impossibly reject light.""",
+Observation: The nest and the mice actively and impossibly reject light.
+[b]Conclusion: Extreme Photophobia — the colony exhibits an extreme, hostile aversion to all light sources.[/b]""",
 
 	"Nest Beta": """[b]Subject: Nest Beta[/b]
 Species: Muscardinus avellanarius
-Observation: They are acting like scouts. It feels like something else is watching me through them.""",
+Observation: They are acting like scouts. It feels like something else is watching me through them.
+[b]Conclusion: Active Observation — the mice appear to be gathering intelligence for a larger entity.[/b]""",
 
 	"Nest Gamma": """[b]Subject: Nest Gamma[/b]
 Species: Muscardinus avellanarius
-Observation: The colony is producing a low, rhythmic clicking that vibrates through the cabin's exterior wood. It is mimicking the acoustic properties of my footsteps."""
+Observation: The colony is producing a low, rhythmic clicking that vibrates through the cabin's exterior wood. It is mimicking the acoustic properties of my footsteps.
+[b]Conclusion: Acoustic Mimicry — the colony replicates and weaponises sound patterns for tracking purposes.[/b]"""
 }

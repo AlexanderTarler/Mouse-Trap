@@ -118,58 +118,14 @@ func interact(player: Node3D = null) -> void:
 	# to handle the case where the natural night cycle auto-increments
 	# current_night before the player completes their objectives.
 	
-	# ─── GUARD A: Day 1 sleep not yet completed ──────────────────
 	var phase2_done: bool = rm and rm.phase2_computer_used if rm else false
 	var phase3_done: bool = rm and rm.phase3_bed_used if rm else false
 	
-	if phase2_done and not phase3_done:
-		if rm and rm.has_method("on_bed_interacted"):
-			rm.on_bed_interacted()
-		if player.has_method("set_physics_process"):
-			player.set_physics_process(false)
-			player.set_process_input(false)
-		var hud = get_tree().get_first_node_in_group("hud")
-		if hud and hud.has_method("fade_to_black"):
-			hud.fade_to_black(1.5)
-			await get_tree().create_timer(1.5).timeout
-		else:
-			await get_tree().create_timer(1.5).timeout
-		# ─── FREEZE CLOCK BEFORE ADVANCE ───────────────────────
-		if _game_time:
-			_game_time.is_time_paused = true
-		if _night_manager.has_method("advance_night"):
-			_night_manager.advance_night()
-		# Re-freeze after advance_night() since it may have unpaused time
-		if _game_time:
-			_game_time.is_time_paused = true
-		
-		if hud and hud.has_method("show_message"):
-			hud.show_message(DAY2_OBJECTIVE)
-		var labels = get_tree().get_nodes_in_group("objective_label")
-		if not labels.is_empty():
-			for label in labels:
-				if label is Label:
-					label.text = DAY2_OBJECTIVE
-		var scene_root = get_tree().current_scene
-		if scene_root:
-			var obj_label = scene_root.get_node_or_null("HUD/ObjectiveLabel")
-			if obj_label and obj_label is Label:
-				obj_label.text = DAY2_OBJECTIVE
-		if hud and hud.has_method("fade_from_black"):
-			hud.fade_from_black(2.0)
-			await get_tree().create_timer(2.0).timeout
-		
-		# ─── UNFREEZE CLOCK ────────────────────────────────────
-		if _game_time:
-			_game_time.is_time_paused = false
-		
-		if player.has_method("set_physics_process"):
-			player.set_physics_process(true)
-			player.set_process_input(true)
-		print("[Bed Scene] Day 1 sleep redirect. Day 2 started!")
-		return
-	
-	# ─── GUARD B: Nest tasks not yet done on Day 2 ───────────────
+	# ─── GUARD B (checked FIRST): Nest tasks on Day 2+ ──────────
+	# Evaluated before Guard A so the Day 2 nest/van path takes
+	# priority over the Day 1→Day 2 sleep redirect. Without this,
+	# Guard A would fire again on Day 2 if phase3_bed_used is still
+	# false (e.g., window wasn't patched on Day 1).
 	if phase3_done and not _night_manager.is_van_sequence_active:
 		var nests_done: bool = rm and rm.nests_documented >= 3 if rm else false
 		var data_uploaded: bool = rm and rm.nests_uploaded if rm else false
@@ -241,6 +197,66 @@ func interact(player: Node3D = null) -> void:
 			player.set_process_input(true)
 		
 		print("[Bed Scene] Day 2 ended! Night 2 started with car alarm. Objective: Investigate the car alarm outside.")
+		return
+	
+	# ─── GUARD A (FALLBACK): Day 1 → Day 2 sleep transition ─────
+	# Only valid when the player hasn't yet completed Day 1 sleep
+	# AND current_night is still at Day 1 (current_night <= 1).
+	# The current_night gate prevents this guard from firing on Day 2+
+	# if phase3_bed_used was never set (e.g., window wasn't patched).
+	#
+	# Additionally, we honor the return value of rm.on_bed_interacted()
+	# which checks for prerequisites (window patched, door locked).
+	# If RM returns false, the bed interaction is cancelled.
+	if phase2_done and not phase3_done and current_night <= 1:
+		if rm and rm.has_method("on_bed_interacted"):
+			var can_sleep = rm.on_bed_interacted()
+			if not can_sleep:
+				# RM refused the sleep (window not patched or door unlocked).
+				# Do NOT proceed with advance_night().
+				return
+		if player.has_method("set_physics_process"):
+			player.set_physics_process(false)
+			player.set_process_input(false)
+		var hud = get_tree().get_first_node_in_group("hud")
+		if hud and hud.has_method("fade_to_black"):
+			hud.fade_to_black(1.5)
+			await get_tree().create_timer(1.5).timeout
+		else:
+			await get_tree().create_timer(1.5).timeout
+		# ─── FREEZE CLOCK BEFORE ADVANCE ───────────────────────
+		if _game_time:
+			_game_time.is_time_paused = true
+		if _night_manager.has_method("advance_night"):
+			_night_manager.advance_night()
+		# Re-freeze after advance_night() since it may have unpaused time
+		if _game_time:
+			_game_time.is_time_paused = true
+		
+		if hud and hud.has_method("show_message"):
+			hud.show_message(DAY2_OBJECTIVE)
+		var labels = get_tree().get_nodes_in_group("objective_label")
+		if not labels.is_empty():
+			for label in labels:
+				if label is Label:
+					label.text = DAY2_OBJECTIVE
+		var scene_root = get_tree().current_scene
+		if scene_root:
+			var obj_label = scene_root.get_node_or_null("HUD/ObjectiveLabel")
+			if obj_label and obj_label is Label:
+				obj_label.text = DAY2_OBJECTIVE
+		if hud and hud.has_method("fade_from_black"):
+			hud.fade_from_black(2.0)
+			await get_tree().create_timer(2.0).timeout
+		
+		# ─── UNFREEZE CLOCK ────────────────────────────────────
+		if _game_time:
+			_game_time.is_time_paused = false
+		
+		if player.has_method("set_physics_process"):
+			player.set_physics_process(true)
+			player.set_process_input(true)
+		print("[Bed Scene] Day 1 sleep redirect. Day 2 started!")
 		return
 	
 	# ─── CONDITION 3: CAR ALARM ACTIVE ───────────────────────────
