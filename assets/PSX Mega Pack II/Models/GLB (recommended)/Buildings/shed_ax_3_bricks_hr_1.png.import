@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cfmptegls5qxh"
 path.s3tc="res://.godot/imported/shed_ax_3_bricks_hr_1.png-397d9ccf596c2d576cc593e74b9101df.s3tc.ctex"
+path.etc2="res://.godot/imported/shed_ax_3_bricks_hr_1.png-397d9ccf596c2d576cc593e74b9101df.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Buildings/shed_ax_3_bricks_hr_1.png"
-dest_files=["res://.godot/imported/shed_ax_3_bricks_hr_1.png-397d9ccf596c2d576cc593e74b9101df.s3tc.ctex"]
+dest_files=["res://.godot/imported/shed_ax_3_bricks_hr_1.png-397d9ccf596c2d576cc593e74b9101df.s3tc.ctex", "res://.godot/imported/shed_ax_3_bricks_hr_1.png-397d9ccf596c2d576cc593e74b9101df.etc2.ctex"]
 
 [params]
 

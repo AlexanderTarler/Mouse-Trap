@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b0bj10i5b1o3h"
 path.s3tc="res://.godot/imported/poop_etx_1.png-3e9b5fc21c9c760313378cd56f6b46cf.s3tc.ctex"
+path.etc2="res://.godot/imported/poop_etx_1.png-3e9b5fc21c9c760313378cd56f6b46cf.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Tech/Textures/poop_etx_1.png"
-dest_files=["res://.godot/imported/poop_etx_1.png-3e9b5fc21c9c760313378cd56f6b46cf.s3tc.ctex"]
+dest_files=["res://.godot/imported/poop_etx_1.png-3e9b5fc21c9c760313378cd56f6b46cf.s3tc.ctex", "res://.godot/imported/poop_etx_1.png-3e9b5fc21c9c760313378cd56f6b46cf.etc2.ctex"]
 
 [params]
 

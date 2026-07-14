@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://ckws5el3mrh5s"
 path.s3tc="res://.godot/imported/clock_1.png-b824a1cb5264920192d4cdd0625bcd11.s3tc.ctex"
+path.etc2="res://.godot/imported/clock_1.png-b824a1cb5264920192d4cdd0625bcd11.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Small Props/clock_1.png"
-dest_files=["res://.godot/imported/clock_1.png-b824a1cb5264920192d4cdd0625bcd11.s3tc.ctex"]
+dest_files=["res://.godot/imported/clock_1.png-b824a1cb5264920192d4cdd0625bcd11.s3tc.ctex", "res://.godot/imported/clock_1.png-b824a1cb5264920192d4cdd0625bcd11.etc2.ctex"]
 
 [params]
 

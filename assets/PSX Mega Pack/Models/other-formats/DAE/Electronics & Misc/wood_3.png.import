@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://t3e1h5t4ot54"
 path.s3tc="res://.godot/imported/wood_3.png-4f4f2a9de7bb3b062792937417f60945.s3tc.ctex"
+path.etc2="res://.godot/imported/wood_3.png-4f4f2a9de7bb3b062792937417f60945.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Electronics & Misc/wood_3.png"
-dest_files=["res://.godot/imported/wood_3.png-4f4f2a9de7bb3b062792937417f60945.s3tc.ctex"]
+dest_files=["res://.godot/imported/wood_3.png-4f4f2a9de7bb3b062792937417f60945.s3tc.ctex", "res://.godot/imported/wood_3.png-4f4f2a9de7bb3b062792937417f60945.etc2.ctex"]
 
 [params]
 

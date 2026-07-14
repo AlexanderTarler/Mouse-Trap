@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://l14k2nw1s5nl"
 path.s3tc="res://.godot/imported/poster_cx_9_poster_cx_9.png-0d6919eea3783a8df2a24f0438f969b1.s3tc.ctex"
+path.etc2="res://.godot/imported/poster_cx_9_poster_cx_9.png-0d6919eea3783a8df2a24f0438f969b1.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Decals/poster_cx_9_poster_cx_9.png"
-dest_files=["res://.godot/imported/poster_cx_9_poster_cx_9.png-0d6919eea3783a8df2a24f0438f969b1.s3tc.ctex"]
+dest_files=["res://.godot/imported/poster_cx_9_poster_cx_9.png-0d6919eea3783a8df2a24f0438f969b1.s3tc.ctex", "res://.godot/imported/poster_cx_9_poster_cx_9.png-0d6919eea3783a8df2a24f0438f969b1.etc2.ctex"]
 
 [params]
 

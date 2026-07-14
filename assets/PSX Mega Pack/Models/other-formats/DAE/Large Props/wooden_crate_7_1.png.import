@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://ddelvfs3hsgb"
 path.s3tc="res://.godot/imported/wooden_crate_7_1.png-9e6bbd94f5c28d643ee70ab1d0fed298.s3tc.ctex"
+path.etc2="res://.godot/imported/wooden_crate_7_1.png-9e6bbd94f5c28d643ee70ab1d0fed298.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Large Props/wooden_crate_7_1.png"
-dest_files=["res://.godot/imported/wooden_crate_7_1.png-9e6bbd94f5c28d643ee70ab1d0fed298.s3tc.ctex"]
+dest_files=["res://.godot/imported/wooden_crate_7_1.png-9e6bbd94f5c28d643ee70ab1d0fed298.s3tc.ctex", "res://.godot/imported/wooden_crate_7_1.png-9e6bbd94f5c28d643ee70ab1d0fed298.etc2.ctex"]
 
 [params]
 

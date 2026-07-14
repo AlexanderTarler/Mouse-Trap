@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://baxh4kllvwl8"
 path.s3tc="res://.godot/imported/mushroom_n_1_0_0.png-0b2abd09e4eae6d4209638d95b8d1fb0.s3tc.ctex"
+path.etc2="res://.godot/imported/mushroom_n_1_0_0.png-0b2abd09e4eae6d4209638d95b8d1fb0.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Nature/Models/other-formats/FBX/mushroom_n_1_0_0.png"
-dest_files=["res://.godot/imported/mushroom_n_1_0_0.png-0b2abd09e4eae6d4209638d95b8d1fb0.s3tc.ctex"]
+dest_files=["res://.godot/imported/mushroom_n_1_0_0.png-0b2abd09e4eae6d4209638d95b8d1fb0.s3tc.ctex", "res://.godot/imported/mushroom_n_1_0_0.png-0b2abd09e4eae6d4209638d95b8d1fb0.etc2.ctex"]
 
 [params]
 

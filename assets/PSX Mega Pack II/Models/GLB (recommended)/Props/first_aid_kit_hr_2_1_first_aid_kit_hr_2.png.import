@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://ddhmhdmtuxe3x"
 path.s3tc="res://.godot/imported/first_aid_kit_hr_2_1_first_aid_kit_hr_2.png-ceb1cc3a82a09c18578bad6df090c1c8.s3tc.ctex"
+path.etc2="res://.godot/imported/first_aid_kit_hr_2_1_first_aid_kit_hr_2.png-ceb1cc3a82a09c18578bad6df090c1c8.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/first_aid_kit_hr_2_1_first_aid_kit_hr_2.png"
-dest_files=["res://.godot/imported/first_aid_kit_hr_2_1_first_aid_kit_hr_2.png-ceb1cc3a82a09c18578bad6df090c1c8.s3tc.ctex"]
+dest_files=["res://.godot/imported/first_aid_kit_hr_2_1_first_aid_kit_hr_2.png-ceb1cc3a82a09c18578bad6df090c1c8.s3tc.ctex", "res://.godot/imported/first_aid_kit_hr_2_1_first_aid_kit_hr_2.png-ceb1cc3a82a09c18578bad6df090c1c8.etc2.ctex"]
 
 [params]
 

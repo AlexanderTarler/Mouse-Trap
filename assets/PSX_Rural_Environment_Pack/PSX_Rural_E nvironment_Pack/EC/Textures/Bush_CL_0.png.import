@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cbirraqidrm2k"
 path.s3tc="res://.godot/imported/Bush_CL_0.png-c9719a7d54917bc22a978822f7f1215e.s3tc.ctex"
+path.etc2="res://.godot/imported/Bush_CL_0.png-c9719a7d54917bc22a978822f7f1215e.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Bush_CL_0.png"
-dest_files=["res://.godot/imported/Bush_CL_0.png-c9719a7d54917bc22a978822f7f1215e.s3tc.ctex"]
+dest_files=["res://.godot/imported/Bush_CL_0.png-c9719a7d54917bc22a978822f7f1215e.s3tc.ctex", "res://.godot/imported/Bush_CL_0.png-c9719a7d54917bc22a978822f7f1215e.etc2.ctex"]
 
 [params]
 

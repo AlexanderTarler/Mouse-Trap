@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://besl7h5g2cfep"
 path.s3tc="res://.godot/imported/metal_barrel_mp_3_metal_barrel_mp_3.png-18dc44c15b5d9b6d7e9810b3ec78d397.s3tc.ctex"
+path.etc2="res://.godot/imported/metal_barrel_mp_3_metal_barrel_mp_3.png-18dc44c15b5d9b6d7e9810b3ec78d397.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/metal_barrel_mp_3_metal_barrel_mp_3.png"
-dest_files=["res://.godot/imported/metal_barrel_mp_3_metal_barrel_mp_3.png-18dc44c15b5d9b6d7e9810b3ec78d397.s3tc.ctex"]
+dest_files=["res://.godot/imported/metal_barrel_mp_3_metal_barrel_mp_3.png-18dc44c15b5d9b6d7e9810b3ec78d397.s3tc.ctex", "res://.godot/imported/metal_barrel_mp_3_metal_barrel_mp_3.png-18dc44c15b5d9b6d7e9810b3ec78d397.etc2.ctex"]
 
 [params]
 

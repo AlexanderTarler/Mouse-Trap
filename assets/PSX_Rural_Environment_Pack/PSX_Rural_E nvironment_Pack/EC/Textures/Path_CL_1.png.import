@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c1vo8xsq6v2o2"
 path.s3tc="res://.godot/imported/Path_CL_1.png-85c7a710654a109608744e7b8f8ed50e.s3tc.ctex"
+path.etc2="res://.godot/imported/Path_CL_1.png-85c7a710654a109608744e7b8f8ed50e.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Path_CL_1.png"
-dest_files=["res://.godot/imported/Path_CL_1.png-85c7a710654a109608744e7b8f8ed50e.s3tc.ctex"]
+dest_files=["res://.godot/imported/Path_CL_1.png-85c7a710654a109608744e7b8f8ed50e.s3tc.ctex", "res://.godot/imported/Path_CL_1.png-85c7a710654a109608744e7b8f8ed50e.etc2.ctex"]
 
 [params]
 

@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dtxbspk1dmxwf"
 path.s3tc="res://.godot/imported/tunnel_junction_four_way_drain_cover_1.png-065a09f47f948939f9c1dbdd9622f525.s3tc.ctex"
+path.etc2="res://.godot/imported/tunnel_junction_four_way_drain_cover_1.png-065a09f47f948939f9c1dbdd9622f525.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/GLB/tunnel_junction_four_way_drain_cover_1.png"
-dest_files=["res://.godot/imported/tunnel_junction_four_way_drain_cover_1.png-065a09f47f948939f9c1dbdd9622f525.s3tc.ctex"]
+dest_files=["res://.godot/imported/tunnel_junction_four_way_drain_cover_1.png-065a09f47f948939f9c1dbdd9622f525.s3tc.ctex", "res://.godot/imported/tunnel_junction_four_way_drain_cover_1.png-065a09f47f948939f9c1dbdd9622f525.etc2.ctex"]
 
 [params]
 

@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b2rxpnymynjp7"
 path.s3tc="res://.godot/imported/stool_mx_1_planks_hr_2.png-f932a510c183c5ab97fc56151cc36fbd.s3tc.ctex"
+path.etc2="res://.godot/imported/stool_mx_1_planks_hr_2.png-f932a510c183c5ab97fc56151cc36fbd.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/stool_mx_1_planks_hr_2.png"
-dest_files=["res://.godot/imported/stool_mx_1_planks_hr_2.png-f932a510c183c5ab97fc56151cc36fbd.s3tc.ctex"]
+dest_files=["res://.godot/imported/stool_mx_1_planks_hr_2.png-f932a510c183c5ab97fc56151cc36fbd.s3tc.ctex", "res://.godot/imported/stool_mx_1_planks_hr_2.png-f932a510c183c5ab97fc56151cc36fbd.etc2.ctex"]
 
 [params]
 

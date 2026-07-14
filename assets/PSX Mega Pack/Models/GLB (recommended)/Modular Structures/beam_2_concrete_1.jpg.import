@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dkr3r72bhlcyg"
 path.s3tc="res://.godot/imported/beam_2_concrete_1.jpg-4df1208a946a2804d7e6f11328299a13.s3tc.ctex"
+path.etc2="res://.godot/imported/beam_2_concrete_1.jpg-4df1208a946a2804d7e6f11328299a13.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Modular Structures/beam_2_concrete_1.jpg"
-dest_files=["res://.godot/imported/beam_2_concrete_1.jpg-4df1208a946a2804d7e6f11328299a13.s3tc.ctex"]
+dest_files=["res://.godot/imported/beam_2_concrete_1.jpg-4df1208a946a2804d7e6f11328299a13.s3tc.ctex", "res://.godot/imported/beam_2_concrete_1.jpg-4df1208a946a2804d7e6f11328299a13.etc2.ctex"]
 
 [params]
 

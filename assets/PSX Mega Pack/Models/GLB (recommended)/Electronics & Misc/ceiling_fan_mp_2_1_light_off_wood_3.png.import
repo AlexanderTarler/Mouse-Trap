@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://it7bhm1kmd4i"
 path.s3tc="res://.godot/imported/ceiling_fan_mp_2_1_light_off_wood_3.png-968d78c5bce4b701c8661491b2da5ef9.s3tc.ctex"
+path.etc2="res://.godot/imported/ceiling_fan_mp_2_1_light_off_wood_3.png-968d78c5bce4b701c8661491b2da5ef9.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/ceiling_fan_mp_2_1_light_off_wood_3.png"
-dest_files=["res://.godot/imported/ceiling_fan_mp_2_1_light_off_wood_3.png-968d78c5bce4b701c8661491b2da5ef9.s3tc.ctex"]
+dest_files=["res://.godot/imported/ceiling_fan_mp_2_1_light_off_wood_3.png-968d78c5bce4b701c8661491b2da5ef9.s3tc.ctex", "res://.godot/imported/ceiling_fan_mp_2_1_light_off_wood_3.png-968d78c5bce4b701c8661491b2da5ef9.etc2.ctex"]
 
 [params]
 

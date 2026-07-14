@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dtupgcsx6w77i"
 path.s3tc="res://.godot/imported/gate_hr_1.png-638060b2b34369b12e7729ab15c67f9e.s3tc.ctex"
+path.etc2="res://.godot/imported/gate_hr_1.png-638060b2b34369b12e7729ab15c67f9e.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Textures/gate_hr_1.png"
-dest_files=["res://.godot/imported/gate_hr_1.png-638060b2b34369b12e7729ab15c67f9e.s3tc.ctex"]
+dest_files=["res://.godot/imported/gate_hr_1.png-638060b2b34369b12e7729ab15c67f9e.s3tc.ctex", "res://.godot/imported/gate_hr_1.png-638060b2b34369b12e7729ab15c67f9e.etc2.ctex"]
 
 [params]
 

@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cwx4gv25orfxb"
 path.s3tc="res://.godot/imported/tunnel_junction_three_way_drain_cover_1.png-a490e5fff183a15270996bf051a0b199.s3tc.ctex"
+path.etc2="res://.godot/imported/tunnel_junction_three_way_drain_cover_1.png-a490e5fff183a15270996bf051a0b199.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/GLB/tunnel_junction_three_way_drain_cover_1.png"
-dest_files=["res://.godot/imported/tunnel_junction_three_way_drain_cover_1.png-a490e5fff183a15270996bf051a0b199.s3tc.ctex"]
+dest_files=["res://.godot/imported/tunnel_junction_three_way_drain_cover_1.png-a490e5fff183a15270996bf051a0b199.s3tc.ctex", "res://.godot/imported/tunnel_junction_three_way_drain_cover_1.png-a490e5fff183a15270996bf051a0b199.etc2.ctex"]
 
 [params]
 

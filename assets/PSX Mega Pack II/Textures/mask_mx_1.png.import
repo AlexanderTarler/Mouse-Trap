@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://1exny78oo625"
 path.s3tc="res://.godot/imported/mask_mx_1.png-8acebc0b6c5a1311a73c6b9dbd71b9c3.s3tc.ctex"
+path.etc2="res://.godot/imported/mask_mx_1.png-8acebc0b6c5a1311a73c6b9dbd71b9c3.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Textures/mask_mx_1.png"
-dest_files=["res://.godot/imported/mask_mx_1.png-8acebc0b6c5a1311a73c6b9dbd71b9c3.s3tc.ctex"]
+dest_files=["res://.godot/imported/mask_mx_1.png-8acebc0b6c5a1311a73c6b9dbd71b9c3.s3tc.ctex", "res://.godot/imported/mask_mx_1.png-8acebc0b6c5a1311a73c6b9dbd71b9c3.etc2.ctex"]
 
 [params]
 

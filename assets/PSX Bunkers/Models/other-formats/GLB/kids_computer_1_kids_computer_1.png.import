@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cyupndjg28imr"
 path.s3tc="res://.godot/imported/kids_computer_1_kids_computer_1.png-08427641fbf626d3d2c30a609ca82d76.s3tc.ctex"
+path.etc2="res://.godot/imported/kids_computer_1_kids_computer_1.png-08427641fbf626d3d2c30a609ca82d76.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/GLB/kids_computer_1_kids_computer_1.png"
-dest_files=["res://.godot/imported/kids_computer_1_kids_computer_1.png-08427641fbf626d3d2c30a609ca82d76.s3tc.ctex"]
+dest_files=["res://.godot/imported/kids_computer_1_kids_computer_1.png-08427641fbf626d3d2c30a609ca82d76.s3tc.ctex", "res://.godot/imported/kids_computer_1_kids_computer_1.png-08427641fbf626d3d2c30a609ca82d76.etc2.ctex"]
 
 [params]
 

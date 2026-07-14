@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bb742i3pc764g"
 path.s3tc="res://.godot/imported/hole_hr_1.png-2599b8b04a1452ab88be122fedf5e052.s3tc.ctex"
+path.etc2="res://.godot/imported/hole_hr_1.png-2599b8b04a1452ab88be122fedf5e052.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Modular Structures/hole_hr_1.png"
-dest_files=["res://.godot/imported/hole_hr_1.png-2599b8b04a1452ab88be122fedf5e052.s3tc.ctex"]
+dest_files=["res://.godot/imported/hole_hr_1.png-2599b8b04a1452ab88be122fedf5e052.s3tc.ctex", "res://.godot/imported/hole_hr_1.png-2599b8b04a1452ab88be122fedf5e052.etc2.ctex"]
 
 [params]
 

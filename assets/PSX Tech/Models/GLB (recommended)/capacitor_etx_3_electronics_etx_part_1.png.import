@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://x8y6h5c4deuo"
 path.s3tc="res://.godot/imported/capacitor_etx_3_electronics_etx_part_1.png-d076282e61d66bbc1e382d16d1481780.s3tc.ctex"
+path.etc2="res://.godot/imported/capacitor_etx_3_electronics_etx_part_1.png-d076282e61d66bbc1e382d16d1481780.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Tech/Models/GLB (recommended)/capacitor_etx_3_electronics_etx_part_1.png"
-dest_files=["res://.godot/imported/capacitor_etx_3_electronics_etx_part_1.png-d076282e61d66bbc1e382d16d1481780.s3tc.ctex"]
+dest_files=["res://.godot/imported/capacitor_etx_3_electronics_etx_part_1.png-d076282e61d66bbc1e382d16d1481780.s3tc.ctex", "res://.godot/imported/capacitor_etx_3_electronics_etx_part_1.png-d076282e61d66bbc1e382d16d1481780.etc2.ctex"]
 
 [params]
 

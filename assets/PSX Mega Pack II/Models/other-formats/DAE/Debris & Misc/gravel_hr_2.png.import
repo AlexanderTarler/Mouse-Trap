@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://busrtm2to8pri"
 path.s3tc="res://.godot/imported/gravel_hr_2.png-030142fa0db037cc81c3440ad8f22b8d.s3tc.ctex"
+path.etc2="res://.godot/imported/gravel_hr_2.png-030142fa0db037cc81c3440ad8f22b8d.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Debris & Misc/gravel_hr_2.png"
-dest_files=["res://.godot/imported/gravel_hr_2.png-030142fa0db037cc81c3440ad8f22b8d.s3tc.ctex"]
+dest_files=["res://.godot/imported/gravel_hr_2.png-030142fa0db037cc81c3440ad8f22b8d.s3tc.ctex", "res://.godot/imported/gravel_hr_2.png-030142fa0db037cc81c3440ad8f22b8d.etc2.ctex"]
 
 [params]
 

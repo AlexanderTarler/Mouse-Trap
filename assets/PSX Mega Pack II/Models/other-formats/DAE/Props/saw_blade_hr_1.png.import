@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://baisk2yq6lgvx"
 path.s3tc="res://.godot/imported/saw_blade_hr_1.png-cc22b4c6e87da861768140772805d7e9.s3tc.ctex"
+path.etc2="res://.godot/imported/saw_blade_hr_1.png-cc22b4c6e87da861768140772805d7e9.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Props/saw_blade_hr_1.png"
-dest_files=["res://.godot/imported/saw_blade_hr_1.png-cc22b4c6e87da861768140772805d7e9.s3tc.ctex"]
+dest_files=["res://.godot/imported/saw_blade_hr_1.png-cc22b4c6e87da861768140772805d7e9.s3tc.ctex", "res://.godot/imported/saw_blade_hr_1.png-cc22b4c6e87da861768140772805d7e9.etc2.ctex"]
 
 [params]
 

@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b6v4esl55yttc"
 path.s3tc="res://.godot/imported/door_hr_7.png-317ae4e90a4c8acd3a27b995383af0a8.s3tc.ctex"
+path.etc2="res://.godot/imported/door_hr_7.png-317ae4e90a4c8acd3a27b995383af0a8.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Buildings/door_hr_7.png"
-dest_files=["res://.godot/imported/door_hr_7.png-317ae4e90a4c8acd3a27b995383af0a8.s3tc.ctex"]
+dest_files=["res://.godot/imported/door_hr_7.png-317ae4e90a4c8acd3a27b995383af0a8.s3tc.ctex", "res://.godot/imported/door_hr_7.png-317ae4e90a4c8acd3a27b995383af0a8.etc2.ctex"]
 
 [params]
 

@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://uth5tfebhrhe"
 path.s3tc="res://.godot/imported/platform_small_mx_1_concrete_hr_4.png-d817675c44667c1d39f79d1885a20cdf.s3tc.ctex"
+path.etc2="res://.godot/imported/platform_small_mx_1_concrete_hr_4.png-d817675c44667c1d39f79d1885a20cdf.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Modular Structures/platform_small_mx_1_concrete_hr_4.png"
-dest_files=["res://.godot/imported/platform_small_mx_1_concrete_hr_4.png-d817675c44667c1d39f79d1885a20cdf.s3tc.ctex"]
+dest_files=["res://.godot/imported/platform_small_mx_1_concrete_hr_4.png-d817675c44667c1d39f79d1885a20cdf.s3tc.ctex", "res://.godot/imported/platform_small_mx_1_concrete_hr_4.png-d817675c44667c1d39f79d1885a20cdf.etc2.ctex"]
 
 [params]
 

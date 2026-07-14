@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://ciec4crvpc7b"
 path.s3tc="res://.godot/imported/roof_hr_1.png-3d69e2173d01a6a7fef5dd6cb17498b7.s3tc.ctex"
+path.etc2="res://.godot/imported/roof_hr_1.png-3d69e2173d01a6a7fef5dd6cb17498b7.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Textures/roof_hr_1.png"
-dest_files=["res://.godot/imported/roof_hr_1.png-3d69e2173d01a6a7fef5dd6cb17498b7.s3tc.ctex"]
+dest_files=["res://.godot/imported/roof_hr_1.png-3d69e2173d01a6a7fef5dd6cb17498b7.s3tc.ctex", "res://.godot/imported/roof_hr_1.png-3d69e2173d01a6a7fef5dd6cb17498b7.etc2.ctex"]
 
 [params]
 

@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://fhio2tg4oijc"
 path.s3tc="res://.godot/imported/battery_mp_3_1_batteries_mp_1.png-f8ce6060950bafd18f2b363eac25baaa.s3tc.ctex"
+path.etc2="res://.godot/imported/battery_mp_3_1_batteries_mp_1.png-f8ce6060950bafd18f2b363eac25baaa.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/battery_mp_3_1_batteries_mp_1.png"
-dest_files=["res://.godot/imported/battery_mp_3_1_batteries_mp_1.png-f8ce6060950bafd18f2b363eac25baaa.s3tc.ctex"]
+dest_files=["res://.godot/imported/battery_mp_3_1_batteries_mp_1.png-f8ce6060950bafd18f2b363eac25baaa.s3tc.ctex", "res://.godot/imported/battery_mp_3_1_batteries_mp_1.png-f8ce6060950bafd18f2b363eac25baaa.etc2.ctex"]
 
 [params]
 

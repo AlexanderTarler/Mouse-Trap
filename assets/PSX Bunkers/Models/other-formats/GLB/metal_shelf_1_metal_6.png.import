@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://lquejfi8tw47"
 path.s3tc="res://.godot/imported/metal_shelf_1_metal_6.png-f1dc069c63946510fbf76fd97a59668b.s3tc.ctex"
+path.etc2="res://.godot/imported/metal_shelf_1_metal_6.png-f1dc069c63946510fbf76fd97a59668b.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/GLB/metal_shelf_1_metal_6.png"
-dest_files=["res://.godot/imported/metal_shelf_1_metal_6.png-f1dc069c63946510fbf76fd97a59668b.s3tc.ctex"]
+dest_files=["res://.godot/imported/metal_shelf_1_metal_6.png-f1dc069c63946510fbf76fd97a59668b.s3tc.ctex", "res://.godot/imported/metal_shelf_1_metal_6.png-f1dc069c63946510fbf76fd97a59668b.etc2.ctex"]
 
 [params]
 

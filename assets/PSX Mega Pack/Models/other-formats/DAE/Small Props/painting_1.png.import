@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bltdvgnup7tw7"
 path.s3tc="res://.godot/imported/painting_1.png-e481d00be0fb97708a60a32b339585fb.s3tc.ctex"
+path.etc2="res://.godot/imported/painting_1.png-e481d00be0fb97708a60a32b339585fb.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Small Props/painting_1.png"
-dest_files=["res://.godot/imported/painting_1.png-e481d00be0fb97708a60a32b339585fb.s3tc.ctex"]
+dest_files=["res://.godot/imported/painting_1.png-e481d00be0fb97708a60a32b339585fb.s3tc.ctex", "res://.godot/imported/painting_1.png-e481d00be0fb97708a60a32b339585fb.etc2.ctex"]
 
 [params]
 

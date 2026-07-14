@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c7trky1aq2bvy"
 path.s3tc="res://.godot/imported/dosimeter_3.png.001.png-f4a121a0c3c077ce7da6ff6eb7d27874.s3tc.ctex"
+path.etc2="res://.godot/imported/dosimeter_3.png.001.png-f4a121a0c3c077ce7da6ff6eb7d27874.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Items & Weapons/dosimeter_3.png.001.png"
-dest_files=["res://.godot/imported/dosimeter_3.png.001.png-f4a121a0c3c077ce7da6ff6eb7d27874.s3tc.ctex"]
+dest_files=["res://.godot/imported/dosimeter_3.png.001.png-f4a121a0c3c077ce7da6ff6eb7d27874.s3tc.ctex", "res://.godot/imported/dosimeter_3.png.001.png-f4a121a0c3c077ce7da6ff6eb7d27874.etc2.ctex"]
 
 [params]
 

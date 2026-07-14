@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b1fe66lfec1wv"
 path.s3tc="res://.godot/imported/metal_hr_5.png-8d07730fc6ac9b8250f9ef5aec29fa3d.s3tc.ctex"
+path.etc2="res://.godot/imported/metal_hr_5.png-8d07730fc6ac9b8250f9ef5aec29fa3d.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Modular Structures/metal_hr_5.png"
-dest_files=["res://.godot/imported/metal_hr_5.png-8d07730fc6ac9b8250f9ef5aec29fa3d.s3tc.ctex"]
+dest_files=["res://.godot/imported/metal_hr_5.png-8d07730fc6ac9b8250f9ef5aec29fa3d.s3tc.ctex", "res://.godot/imported/metal_hr_5.png-8d07730fc6ac9b8250f9ef5aec29fa3d.etc2.ctex"]
 
 [params]
 

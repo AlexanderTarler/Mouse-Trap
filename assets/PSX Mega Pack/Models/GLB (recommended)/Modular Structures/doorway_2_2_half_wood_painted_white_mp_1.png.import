@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://j0qa8l46kfxm"
 path.s3tc="res://.godot/imported/doorway_2_2_half_wood_painted_white_mp_1.png-08338d684e2932e08ec70cb50644decf.s3tc.ctex"
+path.etc2="res://.godot/imported/doorway_2_2_half_wood_painted_white_mp_1.png-08338d684e2932e08ec70cb50644decf.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Modular Structures/doorway_2_2_half_wood_painted_white_mp_1.png"
-dest_files=["res://.godot/imported/doorway_2_2_half_wood_painted_white_mp_1.png-08338d684e2932e08ec70cb50644decf.s3tc.ctex"]
+dest_files=["res://.godot/imported/doorway_2_2_half_wood_painted_white_mp_1.png-08338d684e2932e08ec70cb50644decf.s3tc.ctex", "res://.godot/imported/doorway_2_2_half_wood_painted_white_mp_1.png-08338d684e2932e08ec70cb50644decf.etc2.ctex"]
 
 [params]
 

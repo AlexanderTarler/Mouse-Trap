@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dndix633ncqr4"
 path.s3tc="res://.godot/imported/canned_food_mp_5_rusty_canned_foods_mp_1.png-2f4816b528bb608245fb81f1388539dc.s3tc.ctex"
+path.etc2="res://.godot/imported/canned_food_mp_5_rusty_canned_foods_mp_1.png-2f4816b528bb608245fb81f1388539dc.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/canned_food_mp_5_rusty_canned_foods_mp_1.png"
-dest_files=["res://.godot/imported/canned_food_mp_5_rusty_canned_foods_mp_1.png-2f4816b528bb608245fb81f1388539dc.s3tc.ctex"]
+dest_files=["res://.godot/imported/canned_food_mp_5_rusty_canned_foods_mp_1.png-2f4816b528bb608245fb81f1388539dc.s3tc.ctex", "res://.godot/imported/canned_food_mp_5_rusty_canned_foods_mp_1.png-2f4816b528bb608245fb81f1388539dc.etc2.ctex"]
 
 [params]
 

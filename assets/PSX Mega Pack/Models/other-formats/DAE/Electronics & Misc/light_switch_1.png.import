@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c0gq8h246se3q"
 path.s3tc="res://.godot/imported/light_switch_1.png-2c6cb0d0d6e6ac815b68d53ad3049587.s3tc.ctex"
+path.etc2="res://.godot/imported/light_switch_1.png-2c6cb0d0d6e6ac815b68d53ad3049587.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Electronics & Misc/light_switch_1.png"
-dest_files=["res://.godot/imported/light_switch_1.png-2c6cb0d0d6e6ac815b68d53ad3049587.s3tc.ctex"]
+dest_files=["res://.godot/imported/light_switch_1.png-2c6cb0d0d6e6ac815b68d53ad3049587.s3tc.ctex", "res://.godot/imported/light_switch_1.png-2c6cb0d0d6e6ac815b68d53ad3049587.etc2.ctex"]
 
 [params]
 

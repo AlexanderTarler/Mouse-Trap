@@ -100,6 +100,13 @@ func _ready() -> void:
 		push_error("EnvironmentController: WorldEnvironment not assigned!")
 		return
 	
+	# Editor performance: disable glow in editor viewport.
+	# Glow is a full-screen post-processing pass that wastes GPU cycles
+	# when viewing the scene in the editor. The game re-enables it at runtime.
+	if Engine.is_editor_hint():
+		if _environment:
+			_environment.glow_enabled = false
+	
 	# Initialize sky modes immediately
 	_update_sky_modes(true)
 	

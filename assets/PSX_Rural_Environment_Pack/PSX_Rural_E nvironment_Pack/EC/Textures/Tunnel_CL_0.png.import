@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://qxf7h235dou4"
 path.s3tc="res://.godot/imported/Tunnel_CL_0.png-ce7ecd3af09e6828cf106f314df456ae.s3tc.ctex"
+path.etc2="res://.godot/imported/Tunnel_CL_0.png-ce7ecd3af09e6828cf106f314df456ae.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Tunnel_CL_0.png"
-dest_files=["res://.godot/imported/Tunnel_CL_0.png-ce7ecd3af09e6828cf106f314df456ae.s3tc.ctex"]
+dest_files=["res://.godot/imported/Tunnel_CL_0.png-ce7ecd3af09e6828cf106f314df456ae.s3tc.ctex", "res://.godot/imported/Tunnel_CL_0.png-ce7ecd3af09e6828cf106f314df456ae.etc2.ctex"]
 
 [params]
 

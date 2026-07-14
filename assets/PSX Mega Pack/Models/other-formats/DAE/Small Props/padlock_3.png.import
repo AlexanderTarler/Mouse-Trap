@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b2ng0riuymh0h"
 path.s3tc="res://.godot/imported/padlock_3.png-c9ad1c349d7d34a52208f82a471e2494.s3tc.ctex"
+path.etc2="res://.godot/imported/padlock_3.png-c9ad1c349d7d34a52208f82a471e2494.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Small Props/padlock_3.png"
-dest_files=["res://.godot/imported/padlock_3.png-c9ad1c349d7d34a52208f82a471e2494.s3tc.ctex"]
+dest_files=["res://.godot/imported/padlock_3.png-c9ad1c349d7d34a52208f82a471e2494.s3tc.ctex", "res://.godot/imported/padlock_3.png-c9ad1c349d7d34a52208f82a471e2494.etc2.ctex"]
 
 [params]
 

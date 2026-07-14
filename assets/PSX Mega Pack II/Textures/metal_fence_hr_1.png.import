@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dbxuwbavaq22o"
 path.s3tc="res://.godot/imported/metal_fence_hr_1.png-e5bee1677b0ec2f2b767645ddb78e686.s3tc.ctex"
+path.etc2="res://.godot/imported/metal_fence_hr_1.png-e5bee1677b0ec2f2b767645ddb78e686.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Textures/metal_fence_hr_1.png"
-dest_files=["res://.godot/imported/metal_fence_hr_1.png-e5bee1677b0ec2f2b767645ddb78e686.s3tc.ctex"]
+dest_files=["res://.godot/imported/metal_fence_hr_1.png-e5bee1677b0ec2f2b767645ddb78e686.s3tc.ctex", "res://.godot/imported/metal_fence_hr_1.png-e5bee1677b0ec2f2b767645ddb78e686.etc2.ctex"]
 
 [params]
 

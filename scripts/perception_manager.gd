@@ -66,6 +66,11 @@ func _process(delta: float) -> void:
 	
 	if watched_intensity >= 1.0 and not is_blind:
 		_trigger_blindness()
+	elif watched_intensity < 1.0 and is_blind:
+		# Release blindness when the player looks away (intensity drops below 1.0)
+		is_blind = false
+		blindness_ended.emit()
+		print("PerceptionManager: Blindness released (player looked away).")
 
 
 func _check_occlusion(from: Vector3, to: Vector3) -> bool:
@@ -101,11 +106,8 @@ func _decrease_intensity(delta: float) -> void:
 
 func _trigger_blindness() -> void:
 	is_blind = true
-	watched_intensity = 0.0
 	blindness_started.emit()
 	print("PerceptionManager: Blindness triggered!")
-	
-	await get_tree().create_timer(blindness_duration).timeout
-	is_blind = false
-	blindness_ended.emit()
-	print("PerceptionManager: Blindness ended.")
+	# NOTE: watched_intensity is NOT reset to 0.0 here, so the shader
+	# distortion effects and whispers audio continue while the player
+	# stares. Blindness is continuous until the player looks away.

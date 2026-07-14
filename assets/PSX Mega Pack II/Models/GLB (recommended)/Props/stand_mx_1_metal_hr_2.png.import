@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://t4b1k0l58wkj"
 path.s3tc="res://.godot/imported/stand_mx_1_metal_hr_2.png-08708b33599966b4bc494352045940bc.s3tc.ctex"
+path.etc2="res://.godot/imported/stand_mx_1_metal_hr_2.png-08708b33599966b4bc494352045940bc.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/stand_mx_1_metal_hr_2.png"
-dest_files=["res://.godot/imported/stand_mx_1_metal_hr_2.png-08708b33599966b4bc494352045940bc.s3tc.ctex"]
+dest_files=["res://.godot/imported/stand_mx_1_metal_hr_2.png-08708b33599966b4bc494352045940bc.s3tc.ctex", "res://.godot/imported/stand_mx_1_metal_hr_2.png-08708b33599966b4bc494352045940bc.etc2.ctex"]
 
 [params]
 

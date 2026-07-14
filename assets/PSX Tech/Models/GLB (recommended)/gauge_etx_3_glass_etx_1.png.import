@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://j53ya0uaxy4i"
 path.s3tc="res://.godot/imported/gauge_etx_3_glass_etx_1.png-4055c82c78a3f5f12e22bf847f4f4aa1.s3tc.ctex"
+path.etc2="res://.godot/imported/gauge_etx_3_glass_etx_1.png-4055c82c78a3f5f12e22bf847f4f4aa1.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Tech/Models/GLB (recommended)/gauge_etx_3_glass_etx_1.png"
-dest_files=["res://.godot/imported/gauge_etx_3_glass_etx_1.png-4055c82c78a3f5f12e22bf847f4f4aa1.s3tc.ctex"]
+dest_files=["res://.godot/imported/gauge_etx_3_glass_etx_1.png-4055c82c78a3f5f12e22bf847f4f4aa1.s3tc.ctex", "res://.godot/imported/gauge_etx_3_glass_etx_1.png-4055c82c78a3f5f12e22bf847f4f4aa1.etc2.ctex"]
 
 [params]
 

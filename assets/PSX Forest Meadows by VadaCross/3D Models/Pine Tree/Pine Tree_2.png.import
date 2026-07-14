@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dcqtenbyuu4ri"
 path.s3tc="res://.godot/imported/Pine Tree_2.png-e7f610ad936fee1733c6397847f79b4b.s3tc.ctex"
+path.etc2="res://.godot/imported/Pine Tree_2.png-e7f610ad936fee1733c6397847f79b4b.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Forest Meadows by VadaCross/3D Models/Pine Tree/Pine Tree_2.png"
-dest_files=["res://.godot/imported/Pine Tree_2.png-e7f610ad936fee1733c6397847f79b4b.s3tc.ctex"]
+dest_files=["res://.godot/imported/Pine Tree_2.png-e7f610ad936fee1733c6397847f79b4b.s3tc.ctex", "res://.godot/imported/Pine Tree_2.png-e7f610ad936fee1733c6397847f79b4b.etc2.ctex"]
 
 [params]
 

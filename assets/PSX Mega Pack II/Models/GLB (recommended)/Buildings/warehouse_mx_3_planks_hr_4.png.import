@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c4rpe5xyl8yds"
 path.s3tc="res://.godot/imported/warehouse_mx_3_planks_hr_4.png-5096d49cd5ad788c1cae3afbb414178b.s3tc.ctex"
+path.etc2="res://.godot/imported/warehouse_mx_3_planks_hr_4.png-5096d49cd5ad788c1cae3afbb414178b.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Buildings/warehouse_mx_3_planks_hr_4.png"
-dest_files=["res://.godot/imported/warehouse_mx_3_planks_hr_4.png-5096d49cd5ad788c1cae3afbb414178b.s3tc.ctex"]
+dest_files=["res://.godot/imported/warehouse_mx_3_planks_hr_4.png-5096d49cd5ad788c1cae3afbb414178b.s3tc.ctex", "res://.godot/imported/warehouse_mx_3_planks_hr_4.png-5096d49cd5ad788c1cae3afbb414178b.etc2.ctex"]
 
 [params]
 

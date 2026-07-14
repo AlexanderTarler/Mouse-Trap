@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dg8udns051rs7"
 path.s3tc="res://.godot/imported/grate_etx_1.png-2d6ab683450c04f084dc81c118d254b6.s3tc.ctex"
+path.etc2="res://.godot/imported/grate_etx_1.png-2d6ab683450c04f084dc81c118d254b6.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Tech/Textures/grate_etx_1.png"
-dest_files=["res://.godot/imported/grate_etx_1.png-2d6ab683450c04f084dc81c118d254b6.s3tc.ctex"]
+dest_files=["res://.godot/imported/grate_etx_1.png-2d6ab683450c04f084dc81c118d254b6.s3tc.ctex", "res://.godot/imported/grate_etx_1.png-2d6ab683450c04f084dc81c118d254b6.etc2.ctex"]
 
 [params]
 

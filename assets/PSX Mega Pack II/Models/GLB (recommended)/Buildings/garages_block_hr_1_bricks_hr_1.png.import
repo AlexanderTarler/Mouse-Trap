@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bgkw63rdifjh8"
 path.s3tc="res://.godot/imported/garages_block_hr_1_bricks_hr_1.png-9c6693efcd0b3e5a603da5476cd56f91.s3tc.ctex"
+path.etc2="res://.godot/imported/garages_block_hr_1_bricks_hr_1.png-9c6693efcd0b3e5a603da5476cd56f91.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Buildings/garages_block_hr_1_bricks_hr_1.png"
-dest_files=["res://.godot/imported/garages_block_hr_1_bricks_hr_1.png-9c6693efcd0b3e5a603da5476cd56f91.s3tc.ctex"]
+dest_files=["res://.godot/imported/garages_block_hr_1_bricks_hr_1.png-9c6693efcd0b3e5a603da5476cd56f91.s3tc.ctex", "res://.godot/imported/garages_block_hr_1_bricks_hr_1.png-9c6693efcd0b3e5a603da5476cd56f91.etc2.ctex"]
 
 [params]
 

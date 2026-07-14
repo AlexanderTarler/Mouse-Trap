@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bdbs6q7pswwnt"
 path.s3tc="res://.godot/imported/metal_hr_1_dark_smooth.png-1d61dbadd80559b4f69cbb0269d4f27f.s3tc.ctex"
+path.etc2="res://.godot/imported/metal_hr_1_dark_smooth.png-1d61dbadd80559b4f69cbb0269d4f27f.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Textures/metal_hr_1_dark_smooth.png"
-dest_files=["res://.godot/imported/metal_hr_1_dark_smooth.png-1d61dbadd80559b4f69cbb0269d4f27f.s3tc.ctex"]
+dest_files=["res://.godot/imported/metal_hr_1_dark_smooth.png-1d61dbadd80559b4f69cbb0269d4f27f.s3tc.ctex", "res://.godot/imported/metal_hr_1_dark_smooth.png-1d61dbadd80559b4f69cbb0269d4f27f.etc2.ctex"]
 
 [params]
 

@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bihkt7s0aphyf"
 path.s3tc="res://.godot/imported/pipe_1.jpg-753ad7b04c834f1dfd1704e8097b4ddb.s3tc.ctex"
+path.etc2="res://.godot/imported/pipe_1.jpg-753ad7b04c834f1dfd1704e8097b4ddb.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/DAE/pipe_1.jpg"
-dest_files=["res://.godot/imported/pipe_1.jpg-753ad7b04c834f1dfd1704e8097b4ddb.s3tc.ctex"]
+dest_files=["res://.godot/imported/pipe_1.jpg-753ad7b04c834f1dfd1704e8097b4ddb.s3tc.ctex", "res://.godot/imported/pipe_1.jpg-753ad7b04c834f1dfd1704e8097b4ddb.etc2.ctex"]
 
 [params]
 

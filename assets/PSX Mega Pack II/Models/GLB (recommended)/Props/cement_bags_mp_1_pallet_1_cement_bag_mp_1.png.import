@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cncxl8mxyhypw"
 path.s3tc="res://.godot/imported/cement_bags_mp_1_pallet_1_cement_bag_mp_1.png-075669d7ba8ce33afae30dcb5a422f25.s3tc.ctex"
+path.etc2="res://.godot/imported/cement_bags_mp_1_pallet_1_cement_bag_mp_1.png-075669d7ba8ce33afae30dcb5a422f25.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/cement_bags_mp_1_pallet_1_cement_bag_mp_1.png"
-dest_files=["res://.godot/imported/cement_bags_mp_1_pallet_1_cement_bag_mp_1.png-075669d7ba8ce33afae30dcb5a422f25.s3tc.ctex"]
+dest_files=["res://.godot/imported/cement_bags_mp_1_pallet_1_cement_bag_mp_1.png-075669d7ba8ce33afae30dcb5a422f25.s3tc.ctex", "res://.godot/imported/cement_bags_mp_1_pallet_1_cement_bag_mp_1.png-075669d7ba8ce33afae30dcb5a422f25.etc2.ctex"]
 
 [params]
 

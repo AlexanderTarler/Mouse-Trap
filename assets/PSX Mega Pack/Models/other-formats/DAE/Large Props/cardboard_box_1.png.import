@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bpjnrf3txclab"
 path.s3tc="res://.godot/imported/cardboard_box_1.png-7db149166e18d23cea1e66383037fe39.s3tc.ctex"
+path.etc2="res://.godot/imported/cardboard_box_1.png-7db149166e18d23cea1e66383037fe39.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Large Props/cardboard_box_1.png"
-dest_files=["res://.godot/imported/cardboard_box_1.png-7db149166e18d23cea1e66383037fe39.s3tc.ctex"]
+dest_files=["res://.godot/imported/cardboard_box_1.png-7db149166e18d23cea1e66383037fe39.s3tc.ctex", "res://.godot/imported/cardboard_box_1.png-7db149166e18d23cea1e66383037fe39.etc2.ctex"]
 
 [params]
 

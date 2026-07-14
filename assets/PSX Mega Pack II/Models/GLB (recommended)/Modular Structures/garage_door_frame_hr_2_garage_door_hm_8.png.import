@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://5xsshfqj36al"
 path.s3tc="res://.godot/imported/garage_door_frame_hr_2_garage_door_hm_8.png-6efc8c6fad3c16ae025d7bc3bd6c1f37.s3tc.ctex"
+path.etc2="res://.godot/imported/garage_door_frame_hr_2_garage_door_hm_8.png-6efc8c6fad3c16ae025d7bc3bd6c1f37.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Modular Structures/garage_door_frame_hr_2_garage_door_hm_8.png"
-dest_files=["res://.godot/imported/garage_door_frame_hr_2_garage_door_hm_8.png-6efc8c6fad3c16ae025d7bc3bd6c1f37.s3tc.ctex"]
+dest_files=["res://.godot/imported/garage_door_frame_hr_2_garage_door_hm_8.png-6efc8c6fad3c16ae025d7bc3bd6c1f37.s3tc.ctex", "res://.godot/imported/garage_door_frame_hr_2_garage_door_hm_8.png-6efc8c6fad3c16ae025d7bc3bd6c1f37.etc2.ctex"]
 
 [params]
 

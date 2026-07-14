@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bnojhxcnqth0c"
 path.s3tc="res://.godot/imported/sign_3.png-f4b2329a8998eca622c0b315006de8bf.s3tc.ctex"
+path.etc2="res://.godot/imported/sign_3.png-f4b2329a8998eca622c0b315006de8bf.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/DAE/sign_3.png"
-dest_files=["res://.godot/imported/sign_3.png-f4b2329a8998eca622c0b315006de8bf.s3tc.ctex"]
+dest_files=["res://.godot/imported/sign_3.png-f4b2329a8998eca622c0b315006de8bf.s3tc.ctex", "res://.godot/imported/sign_3.png-f4b2329a8998eca622c0b315006de8bf.etc2.ctex"]
 
 [params]
 

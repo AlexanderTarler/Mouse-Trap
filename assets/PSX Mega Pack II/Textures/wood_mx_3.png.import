@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dfplk0cd0ag07"
 path.s3tc="res://.godot/imported/wood_mx_3.png-6e9c61bbd0fb194f40bef0aac2d8d886.s3tc.ctex"
+path.etc2="res://.godot/imported/wood_mx_3.png-6e9c61bbd0fb194f40bef0aac2d8d886.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Textures/wood_mx_3.png"
-dest_files=["res://.godot/imported/wood_mx_3.png-6e9c61bbd0fb194f40bef0aac2d8d886.s3tc.ctex"]
+dest_files=["res://.godot/imported/wood_mx_3.png-6e9c61bbd0fb194f40bef0aac2d8d886.s3tc.ctex", "res://.godot/imported/wood_mx_3.png-6e9c61bbd0fb194f40bef0aac2d8d886.etc2.ctex"]
 
 [params]
 

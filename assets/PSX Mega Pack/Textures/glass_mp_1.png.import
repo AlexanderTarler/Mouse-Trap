@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dryr5plcl78k2"
 path.s3tc="res://.godot/imported/glass_mp_1.png-d93a517820ecf077977ea3481eba8d49.s3tc.ctex"
+path.etc2="res://.godot/imported/glass_mp_1.png-d93a517820ecf077977ea3481eba8d49.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Textures/glass_mp_1.png"
-dest_files=["res://.godot/imported/glass_mp_1.png-d93a517820ecf077977ea3481eba8d49.s3tc.ctex"]
+dest_files=["res://.godot/imported/glass_mp_1.png-d93a517820ecf077977ea3481eba8d49.s3tc.ctex", "res://.godot/imported/glass_mp_1.png-d93a517820ecf077977ea3481eba8d49.etc2.ctex"]
 
 [params]
 

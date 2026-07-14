@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dc688scvb3aq5"
 path.s3tc="res://.godot/imported/cigs_packet_1_cigs_packet_1.png-c0d48afcae2e33037a3e9614a1709055.s3tc.ctex"
+path.etc2="res://.godot/imported/cigs_packet_1_cigs_packet_1.png-c0d48afcae2e33037a3e9614a1709055.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/cigs_packet_1_cigs_packet_1.png"
-dest_files=["res://.godot/imported/cigs_packet_1_cigs_packet_1.png-c0d48afcae2e33037a3e9614a1709055.s3tc.ctex"]
+dest_files=["res://.godot/imported/cigs_packet_1_cigs_packet_1.png-c0d48afcae2e33037a3e9614a1709055.s3tc.ctex", "res://.godot/imported/cigs_packet_1_cigs_packet_1.png-c0d48afcae2e33037a3e9614a1709055.etc2.ctex"]
 
 [params]
 

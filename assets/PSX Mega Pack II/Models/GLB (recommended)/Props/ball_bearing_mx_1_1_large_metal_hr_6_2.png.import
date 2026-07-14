@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dhk7iqpjcm38g"
 path.s3tc="res://.godot/imported/ball_bearing_mx_1_1_large_metal_hr_6_2.png-d610eb54df23c8570fcdd22c9d7b39ec.s3tc.ctex"
+path.etc2="res://.godot/imported/ball_bearing_mx_1_1_large_metal_hr_6_2.png-d610eb54df23c8570fcdd22c9d7b39ec.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/ball_bearing_mx_1_1_large_metal_hr_6_2.png"
-dest_files=["res://.godot/imported/ball_bearing_mx_1_1_large_metal_hr_6_2.png-d610eb54df23c8570fcdd22c9d7b39ec.s3tc.ctex"]
+dest_files=["res://.godot/imported/ball_bearing_mx_1_1_large_metal_hr_6_2.png-d610eb54df23c8570fcdd22c9d7b39ec.s3tc.ctex", "res://.godot/imported/ball_bearing_mx_1_1_large_metal_hr_6_2.png-d610eb54df23c8570fcdd22c9d7b39ec.etc2.ctex"]
 
 [params]
 

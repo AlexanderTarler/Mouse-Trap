@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://brmrvny583mn0"
 path.s3tc="res://.godot/imported/misc_etx_part_2.png-5799ac0bf461cab5531f8433b97cb1e7.s3tc.ctex"
+path.etc2="res://.godot/imported/misc_etx_part_2.png-5799ac0bf461cab5531f8433b97cb1e7.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Tech/Models/other-formats/DAE/misc_etx_part_2.png"
-dest_files=["res://.godot/imported/misc_etx_part_2.png-5799ac0bf461cab5531f8433b97cb1e7.s3tc.ctex"]
+dest_files=["res://.godot/imported/misc_etx_part_2.png-5799ac0bf461cab5531f8433b97cb1e7.s3tc.ctex", "res://.godot/imported/misc_etx_part_2.png-5799ac0bf461cab5531f8433b97cb1e7.etc2.ctex"]
 
 [params]
 

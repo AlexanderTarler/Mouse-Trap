@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cre0b578xqhdy"
 path.s3tc="res://.godot/imported/floor_3_metal_1.png-6c261d87cea545a62ffe772bc08cd404.s3tc.ctex"
+path.etc2="res://.godot/imported/floor_3_metal_1.png-6c261d87cea545a62ffe772bc08cd404.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Modular Structures/floor_3_metal_1.png"
-dest_files=["res://.godot/imported/floor_3_metal_1.png-6c261d87cea545a62ffe772bc08cd404.s3tc.ctex"]
+dest_files=["res://.godot/imported/floor_3_metal_1.png-6c261d87cea545a62ffe772bc08cd404.s3tc.ctex", "res://.godot/imported/floor_3_metal_1.png-6c261d87cea545a62ffe772bc08cd404.etc2.ctex"]
 
 [params]
 

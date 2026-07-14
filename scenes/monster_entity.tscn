@@ -5,14 +5,47 @@
 [ext_resource type="Script" uid="uid://bkmvrpq07bnob" path="res://scripts/entity/entity_navigation.gd" id="1_entity_navigation"]
 [ext_resource type="Script" uid="uid://ba65vds1sdc5a" path="res://scripts/entity/entity_sensory.gd" id="1_entity_sensory"]
 [ext_resource type="PackedScene" uid="uid://bcqrmxmkjwbhc" path="res://assets/character models/elkdemongodot.glb" id="2_krxyj"]
+[ext_resource type="AudioStream" uid="uid://yuiatatc3mdh" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_1.ogg" id="2_t0r4h"]
+[ext_resource type="AudioStream" uid="uid://dqc8ggn4wbd7u" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_2.ogg" id="3_ipbhg"]
 [ext_resource type="Animation" uid="uid://beyfn3q3f3tju" path="res://assets/animations/climb_down.anim" id="3_jxk6m"]
 [ext_resource type="Animation" uid="uid://cwwbacifkbbb4" path="res://assets/animations/climb_up.anim" id="4_dk27q"]
+[ext_resource type="AudioStream" uid="uid://b531nvjyedef3" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_3.ogg" id="4_t7mjj"]
+[ext_resource type="AudioStream" uid="uid://ckv0bkeyoueit" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_4.ogg" id="5_k5t6u"]
 [ext_resource type="Animation" uid="uid://dtl1w3b7tpikl" path="res://assets/animations/idle.anim" id="5_yani8"]
 [ext_resource type="Animation" uid="uid://braudxur0tnfw" path="res://assets/animations/attack_window.anim" id="6_0ftpn"]
 [ext_resource type="Animation" uid="uid://mfci6ht42c1g" path="res://assets/animations/walk.anim" id="6_8epmc"]
+[ext_resource type="AudioStream" uid="uid://6icg1chidov2" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_5.ogg" id="6_wa7gp"]
+[ext_resource type="AudioStream" uid="uid://6rpq7508xvaw" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_6.ogg" id="7_hplt3"]
+[ext_resource type="AudioStream" uid="uid://bv4qhhx1s7a2e" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_7.ogg" id="8_7515g"]
 [ext_resource type="Animation" uid="uid://c86v4whp2u1ws" path="res://assets/animations/running_crawl.anim" id="9_c7dvl"]
+[ext_resource type="AudioStream" uid="uid://c328jicut68f8" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_8.ogg" id="9_jg31c"]
 [ext_resource type="Animation" uid="uid://dh0k1xq1papke" path="res://assets/animations/entry.anim" id="9_uf1s8"]
+[ext_resource type="AudioStream" uid="uid://dsl0mtqjf6due" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_9.ogg" id="10_at8y2"]
+[ext_resource type="AudioStream" uid="uid://jcbb8gpggox5" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_10.ogg" id="11_27ttu"]
+[ext_resource type="AudioStream" uid="uid://bpuavdxo0ux8b" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_11.ogg" id="12_ywg1u"]
 [ext_resource type="AudioStream" uid="uid://drejcy2576dr8" path="res://assets/audio/Entity/Entity Angry.ogg" id="13_0ftpn"]
+[ext_resource type="AudioStream" uid="uid://jg28enm5rj7b" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_12.ogg" id="13_sje4p"]
+[ext_resource type="AudioStream" uid="uid://dckvuoh0peo64" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_13.ogg" id="14_1undc"]
+[ext_resource type="AudioStream" uid="uid://bdku81ye5lbdg" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_14.ogg" id="15_goj7v"]
+[ext_resource type="AudioStream" uid="uid://dpy3sbqy7ddn4" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_15.ogg" id="16_1lxf4"]
+[ext_resource type="AudioStream" uid="uid://clpiujo8w50kk" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_16.ogg" id="17_gkyj3"]
+[ext_resource type="AudioStream" uid="uid://bl62gxvnxqqyq" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_17.ogg" id="18_o1kjt"]
+[ext_resource type="AudioStream" uid="uid://klwus5qjifiv" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_18.ogg" id="19_wlltw"]
+[ext_resource type="AudioStream" uid="uid://c2ab3ld2stcc8" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_19.ogg" id="20_bv2do"]
+[ext_resource type="AudioStream" uid="uid://bhdk0hacbrpy0" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_20.ogg" id="21_g0dvk"]
+[ext_resource type="AudioStream" uid="uid://b2bpim632f8ms" path="res://assets/audio/Footsteps Grass/step0.wav" id="22_dy7dj"]
+[ext_resource type="AudioStream" uid="uid://bnqpirl3k0lkd" path="res://assets/audio/Footsteps Grass/step1.wav" id="23_2iid0"]
+[ext_resource type="AudioStream" uid="uid://bguv5fj7yac14" path="res://assets/audio/Footsteps Grass/step2.wav" id="24_insmk"]
+[ext_resource type="AudioStream" uid="uid://b2ls35p6utvps" path="res://assets/audio/Footsteps Grass/step3.wav" id="25_3xlfs"]
+[ext_resource type="AudioStream" uid="uid://itc3mf8i61c" path="res://assets/audio/Footsteps Grass/step4.wav" id="26_bidjq"]
+[ext_resource type="AudioStream" uid="uid://dx7ocgc6nr74i" path="res://assets/audio/Footsteps Grass/step5.wav" id="27_6f4kc"]
+[ext_resource type="AudioStream" uid="uid://dtd35vba1f1jo" path="res://assets/audio/Footsteps Grass/step6.wav" id="28_j1l70"]
+[ext_resource type="AudioStream" uid="uid://eo1je0ssd07l" path="res://assets/audio/Footsteps Grass/step7.wav" id="29_chtkg"]
+[ext_resource type="AudioStream" uid="uid://bn002isx4864n" path="res://assets/audio/Footsteps Grass/step8.wav" id="30_1sbhw"]
+[ext_resource type="AudioStream" uid="uid://0ahdqj47achp" path="res://assets/audio/Footsteps Grass/step9.wav" id="31_14cij"]
+[ext_resource type="AudioStream" uid="uid://dquhe1c8scvlf" path="res://assets/audio/Footsteps Grass/step10.wav" id="32_ykq56"]
+[ext_resource type="AudioStream" uid="uid://dkln3f15c1nek" path="res://assets/audio/Footsteps Grass/step11.wav" id="33_668lf"]
+[ext_resource type="AudioStream" uid="uid://bftl2t04nrp61" path="res://assets/audio/Footsteps Grass/step12.wav" id="34_c7lww"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_0ftpn"]
 radius = 0.2
@@ -131,10 +164,12 @@ collision_layer = 5
 collision_mask = 0
 floor_max_angle = 0.1308997
 floor_snap_length = 1.2
-platform_floor_layers = 4294967043
+platform_floor_layers = 2
 safe_margin = 0.08
 script = ExtResource("1_entity")
 relocate_radius = 40.0
+wood_footsteps = Array[AudioStream]([ExtResource("2_t0r4h"), ExtResource("3_ipbhg"), ExtResource("4_t7mjj"), ExtResource("5_k5t6u"), ExtResource("6_wa7gp"), ExtResource("7_hplt3"), ExtResource("8_7515g"), ExtResource("9_jg31c"), ExtResource("10_at8y2"), ExtResource("11_27ttu"), ExtResource("12_ywg1u"), ExtResource("13_sje4p"), ExtResource("14_1undc"), ExtResource("15_goj7v"), ExtResource("16_1lxf4"), ExtResource("17_gkyj3"), ExtResource("18_o1kjt"), ExtResource("19_wlltw"), ExtResource("20_bv2do"), ExtResource("21_g0dvk")])
+grass_footsteps = Array[AudioStream]([ExtResource("22_dy7dj"), ExtResource("23_2iid0"), ExtResource("24_insmk"), ExtResource("25_3xlfs"), ExtResource("26_bidjq"), ExtResource("27_6f4kc"), ExtResource("28_j1l70"), ExtResource("29_chtkg"), ExtResource("30_1sbhw"), ExtResource("31_14cij"), ExtResource("32_ykq56"), ExtResource("33_668lf"), ExtResource("34_c7lww")])
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2080789620]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.080051, 0)
@@ -166,28 +201,28 @@ script = ExtResource("1_entity_navigation")
 transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 0, -0.57255733, 0)
 
 [node name="GeneralSkeleton" parent="MonsterModel/Armature" parent_id_path=PackedInt32Array(1066769687, 1560129316) index="0" unique_id=1361376924]
-bones/1/rotation = Quaternion(0.10105679, -0.17563523, -0.01896627, 0.9790711)
-bones/3/rotation = Quaternion(0.14683285, 0.35577202, 0.9079467, -0.16582875)
-bones/4/rotation = Quaternion(-0.038818654, 0.92026603, -0.38395116, 0.064693466)
-bones/5/rotation = Quaternion(-0.10715849, 0.6424945, -0.74924034, 0.11982)
-bones/7/rotation = Quaternion(5.159982e-08, 0.9999675, 0.008061398, -5.9088407e-08)
-bones/18/rotation = Quaternion(-0.13576058, 0.29521945, 0.9396579, 0.10703965)
-bones/21/rotation = Quaternion(0.03922343, 0.9345662, -0.34801757, -0.06270023)
-bones/22/rotation = Quaternion(0.100808494, 0.63617533, -0.7566495, -0.1122507)
-bones/23/rotation = Quaternion(-6.042112e-08, 1, 0.00032024755, 9.604276e-08)
-bones/33/rotation = Quaternion(0.021289432, -0.0050529954, 0.016043626, 0.9996319)
-bones/34/rotation = Quaternion(0.06658004, -0.00975396, 0.008983655, 0.99769306)
-bones/35/rotation = Quaternion(0.066659905, -0.00874709, 0.009443948, 0.9976928)
-bones/36/rotation = Quaternion(-0.052987393, 0.027654147, -0.018414522, 0.99804235)
-bones/38/rotation = Quaternion(-0.19397615, 0.12216274, -0.0343012, 0.9727657)
-bones/49/rotation = Quaternion(0.56250906, 0.4309661, 0.5247127, -0.4717292)
-bones/50/rotation = Quaternion(0.18112299, 0.8770015, -0.44379264, -0.03333238)
-bones/51/rotation = Quaternion(0.47591814, -0.5229739, 0.47591892, 0.52297366)
-bones/55/rotation = Quaternion(-0.14704692, 0.800302, 0.18248591, 0.5518992)
-bones/58/rotation = Quaternion(0.51972365, -0.45462215, -0.57545584, -0.4382428)
-bones/59/rotation = Quaternion(-0.20393911, 0.83968186, -0.50092864, -0.049130667)
-bones/62/rotation = Quaternion(0.49374014, 0.50618213, -0.49374092, 0.50618213)
-bones/66/rotation = Quaternion(0.063169315, -0.8514552, -0.020636344, 0.5201997)
+bones/1/rotation = Quaternion(0.10126745, -0.17604823, -0.015306311, 0.9790392)
+bones/3/rotation = Quaternion(0.14815082, 0.3541781, 0.908472, -0.1651904)
+bones/4/rotation = Quaternion(-0.038159184, 0.9224191, -0.37782502, 0.0702512)
+bones/5/rotation = Quaternion(-0.1109351, 0.6458171, -0.74514735, 0.123973)
+bones/7/rotation = Quaternion(-1.760228e-10, 0.9999726, 0.0074176933, 2.1762768e-08)
+bones/18/rotation = Quaternion(-0.13360761, 0.2985469, 0.9389669, 0.10658345)
+bones/21/rotation = Quaternion(0.039910484, 0.9338841, -0.35010222, -0.06079565)
+bones/22/rotation = Quaternion(0.10397525, 0.63435537, -0.7572328, -0.11567636)
+bones/23/rotation = Quaternion(-1.4607203e-09, 1, 0.00014983957, -2.6309205e-08)
+bones/33/rotation = Quaternion(0.01940807, -0.0051627243, 0.015674295, 0.9996755)
+bones/34/rotation = Quaternion(0.062830046, -0.011865835, 0.012322525, 0.99787766)
+bones/35/rotation = Quaternion(0.06291385, -0.010861284, 0.012936704, 0.99787605)
+bones/36/rotation = Quaternion(-0.04993203, 0.02772752, -0.020825922, 0.99815047)
+bones/38/rotation = Quaternion(-0.1932725, 0.12125582, -0.035170015, 0.97298807)
+bones/49/rotation = Quaternion(0.56735635, 0.4260241, 0.5249533, -0.47014287)
+bones/50/rotation = Quaternion(0.18768215, 0.875692, -0.44306105, -0.0404477)
+bones/51/rotation = Quaternion(0.47365713, -0.52502257, 0.4736579, 0.5250223)
+bones/55/rotation = Quaternion(-0.15525763, 0.79771984, 0.18106772, 0.5538527)
+bones/58/rotation = Quaternion(0.5161717, -0.45974895, -0.57266766, -0.44073746)
+bones/59/rotation = Quaternion(-0.20639044, 0.8400244, -0.5002598, -0.038757786)
+bones/62/rotation = Quaternion(0.4886423, 0.5111051, -0.48864308, 0.511105)
+bones/66/rotation = Quaternion(0.065272994, -0.84801173, -0.024028474, 0.5253934)
 
 [node name="AnimationPlayer" parent="MonsterModel" index="1" unique_id=910492917]
 libraries/locomotion = SubResource("AnimationLibrary_dk27q")
@@ -204,5 +239,9 @@ max_distance = 40.0
 
 [node name="FaceTarget" type="Marker3D" parent="." unique_id=513146274]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.10611069, 1.9095509, 1.2408514)
+
+[node name="FootstepAudio" type="AudioStreamPlayer3D" parent="." unique_id=478172628]
+volume_db = 4.0
+max_distance = 40.0
 
 [editable path="MonsterModel"]

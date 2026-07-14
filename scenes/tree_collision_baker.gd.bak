@@ -1,0 +1,56 @@
+@tool
+
+## Editor-only tool: Pre-bake CylinderShape3D collision bodies into trees.tscn.
+## Run once, then remove this script.
+## This permanently adds StaticBody3D + CylinderShape3D for each pine_tree child.
+
+func _ready() -> void:
+	if not Engine.is_editor_hint():
+		return  # Only runs in editor
+	
+	print("[BAKER] Starting collision bake...")
+	
+	var added := 0
+	for child in get_children():
+		if child is Node3D and child.name.begins_with("pine_tree"):
+			var coll_name := child.name + "_collision"
+			
+			# Skip if collision body already exists
+			var exists := false
+			for c in get_children():
+				if c is StaticBody3D and c.name == coll_name:
+					exists = true
+					break
+			if exists:
+				continue
+			
+			# Create StaticBody3D
+			var body := StaticBody3D.new()
+			body.name = coll_name
+			body.transform = child.transform
+			
+			# Create CylinderShape3D
+			var shape := CylinderShape3D.new()
+			shape.radius = 0.5
+			shape.height = 8.0
+			
+			# Create CollisionShape3D
+			var col := CollisionShape3D.new()
+			col.name = "CollisionShape3D"
+			col.shape = shape
+			col.position = Vector3(0, 4.0, 0)
+			
+			body.add_child(col)
+			col.owner = get_tree().edited_scene_root
+			
+			add_child(body)
+			body.owner = get_tree().edited_scene_root
+			added += 1
+	
+	print("[BAKER] Added ", added, " collision bodies")
+	
+	if added > 0:
+		# Mark scene as modified
+		var scene_root := get_tree().edited_scene_root
+		if scene_root:
+			scene_root.editor_description = "collision_baked"

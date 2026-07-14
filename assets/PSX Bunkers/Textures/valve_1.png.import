@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bf12bm55d1dkc"
 path.s3tc="res://.godot/imported/valve_1.png-dd3a8f4c9beb2810fd837d63044b000b.s3tc.ctex"
+path.etc2="res://.godot/imported/valve_1.png-dd3a8f4c9beb2810fd837d63044b000b.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Bunkers/Textures/valve_1.png"
-dest_files=["res://.godot/imported/valve_1.png-dd3a8f4c9beb2810fd837d63044b000b.s3tc.ctex"]
+dest_files=["res://.godot/imported/valve_1.png-dd3a8f4c9beb2810fd837d63044b000b.s3tc.ctex", "res://.godot/imported/valve_1.png-dd3a8f4c9beb2810fd837d63044b000b.etc2.ctex"]
 
 [params]
 

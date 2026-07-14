@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://djgwvjm0iu46v"
 path.s3tc="res://.godot/imported/handheld_tablet_1.png-2fc371ac51dd66bbe57adef3c654a1e2.s3tc.ctex"
+path.etc2="res://.godot/imported/handheld_tablet_1.png-2fc371ac51dd66bbe57adef3c654a1e2.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Textures/handheld_tablet_1.png"
-dest_files=["res://.godot/imported/handheld_tablet_1.png-2fc371ac51dd66bbe57adef3c654a1e2.s3tc.ctex"]
+dest_files=["res://.godot/imported/handheld_tablet_1.png-2fc371ac51dd66bbe57adef3c654a1e2.s3tc.ctex", "res://.godot/imported/handheld_tablet_1.png-2fc371ac51dd66bbe57adef3c654a1e2.etc2.ctex"]
 
 [params]
 

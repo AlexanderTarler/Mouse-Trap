@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dy82spnpgua1k"
 path.s3tc="res://.godot/imported/tree_1_0.png-7e635026f3a2b12c874ada2d2f835c7d.s3tc.ctex"
+path.etc2="res://.godot/imported/tree_1_0.png-7e635026f3a2b12c874ada2d2f835c7d.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Nature/Models/other-formats/FBX/tree_1_0.png"
-dest_files=["res://.godot/imported/tree_1_0.png-7e635026f3a2b12c874ada2d2f835c7d.s3tc.ctex"]
+dest_files=["res://.godot/imported/tree_1_0.png-7e635026f3a2b12c874ada2d2f835c7d.s3tc.ctex", "res://.godot/imported/tree_1_0.png-7e635026f3a2b12c874ada2d2f835c7d.etc2.ctex"]
 
 [params]
 

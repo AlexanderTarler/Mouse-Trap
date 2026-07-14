@@ -181,3 +181,7 @@ pause_menu={
 [rendering]
 
 rendering_device/driver.windows="d3d12"
+textures/vram_compression/import_etc2_astc=true
+lights_and_shadows/directional_shadow/size=1024.0
+anti_aliasing/quality/msaa_3d=0.0
+environment/volumetric_fog_enabled=false

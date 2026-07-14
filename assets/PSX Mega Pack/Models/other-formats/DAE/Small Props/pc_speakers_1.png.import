@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://don5l2ve4ka5y"
 path.s3tc="res://.godot/imported/pc_speakers_1.png-ace74a35d7691879e4b7e658b0a95854.s3tc.ctex"
+path.etc2="res://.godot/imported/pc_speakers_1.png-ace74a35d7691879e4b7e658b0a95854.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Small Props/pc_speakers_1.png"
-dest_files=["res://.godot/imported/pc_speakers_1.png-ace74a35d7691879e4b7e658b0a95854.s3tc.ctex"]
+dest_files=["res://.godot/imported/pc_speakers_1.png-ace74a35d7691879e4b7e658b0a95854.s3tc.ctex", "res://.godot/imported/pc_speakers_1.png-ace74a35d7691879e4b7e658b0a95854.etc2.ctex"]
 
 [params]
 

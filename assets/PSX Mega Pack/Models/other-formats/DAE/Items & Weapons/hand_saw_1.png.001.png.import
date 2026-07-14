@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cxytg7fn754jv"
 path.s3tc="res://.godot/imported/hand_saw_1.png.001.png-209d1f1cffba21f36dc0cb82af9054e3.s3tc.ctex"
+path.etc2="res://.godot/imported/hand_saw_1.png.001.png-209d1f1cffba21f36dc0cb82af9054e3.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Items & Weapons/hand_saw_1.png.001.png"
-dest_files=["res://.godot/imported/hand_saw_1.png.001.png-209d1f1cffba21f36dc0cb82af9054e3.s3tc.ctex"]
+dest_files=["res://.godot/imported/hand_saw_1.png.001.png-209d1f1cffba21f36dc0cb82af9054e3.s3tc.ctex", "res://.godot/imported/hand_saw_1.png.001.png-209d1f1cffba21f36dc0cb82af9054e3.etc2.ctex"]
 
 [params]
 

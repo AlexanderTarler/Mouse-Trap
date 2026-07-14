@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://d2eh60boqnlqj"
 path.s3tc="res://.godot/imported/pcb_5.png-3268d2bb3bbd188dbf2aaad2dc695c04.s3tc.ctex"
+path.etc2="res://.godot/imported/pcb_5.png-3268d2bb3bbd188dbf2aaad2dc695c04.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Bunkers/Textures/pcb_5.png"
-dest_files=["res://.godot/imported/pcb_5.png-3268d2bb3bbd188dbf2aaad2dc695c04.s3tc.ctex"]
+dest_files=["res://.godot/imported/pcb_5.png-3268d2bb3bbd188dbf2aaad2dc695c04.s3tc.ctex", "res://.godot/imported/pcb_5.png-3268d2bb3bbd188dbf2aaad2dc695c04.etc2.ctex"]
 
 [params]
 

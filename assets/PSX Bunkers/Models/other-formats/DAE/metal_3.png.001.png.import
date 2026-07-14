@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bg5togvdwseem"
 path.s3tc="res://.godot/imported/metal_3.png.001.png-4bbf6effbc4324b9c3081d16bf689f9e.s3tc.ctex"
+path.etc2="res://.godot/imported/metal_3.png.001.png-4bbf6effbc4324b9c3081d16bf689f9e.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/DAE/metal_3.png.001.png"
-dest_files=["res://.godot/imported/metal_3.png.001.png-4bbf6effbc4324b9c3081d16bf689f9e.s3tc.ctex"]
+dest_files=["res://.godot/imported/metal_3.png.001.png-4bbf6effbc4324b9c3081d16bf689f9e.s3tc.ctex", "res://.godot/imported/metal_3.png.001.png-4bbf6effbc4324b9c3081d16bf689f9e.etc2.ctex"]
 
 [params]
 

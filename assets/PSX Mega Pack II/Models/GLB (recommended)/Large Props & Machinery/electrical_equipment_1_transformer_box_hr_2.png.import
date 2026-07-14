@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cvegvmuu8begw"
 path.s3tc="res://.godot/imported/electrical_equipment_1_transformer_box_hr_2.png-c46a7a7c5255be46c373d789753b2269.s3tc.ctex"
+path.etc2="res://.godot/imported/electrical_equipment_1_transformer_box_hr_2.png-c46a7a7c5255be46c373d789753b2269.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Large Props & Machinery/electrical_equipment_1_transformer_box_hr_2.png"
-dest_files=["res://.godot/imported/electrical_equipment_1_transformer_box_hr_2.png-c46a7a7c5255be46c373d789753b2269.s3tc.ctex"]
+dest_files=["res://.godot/imported/electrical_equipment_1_transformer_box_hr_2.png-c46a7a7c5255be46c373d789753b2269.s3tc.ctex", "res://.godot/imported/electrical_equipment_1_transformer_box_hr_2.png-c46a7a7c5255be46c373d789753b2269.etc2.ctex"]
 
 [params]
 

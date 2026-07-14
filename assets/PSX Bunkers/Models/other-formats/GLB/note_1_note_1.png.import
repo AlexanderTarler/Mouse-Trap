@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dg7wocsm6wd3i"
 path.s3tc="res://.godot/imported/note_1_note_1.png-5870b6337ca95898ac10a44017323f78.s3tc.ctex"
+path.etc2="res://.godot/imported/note_1_note_1.png-5870b6337ca95898ac10a44017323f78.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/GLB/note_1_note_1.png"
-dest_files=["res://.godot/imported/note_1_note_1.png-5870b6337ca95898ac10a44017323f78.s3tc.ctex"]
+dest_files=["res://.godot/imported/note_1_note_1.png-5870b6337ca95898ac10a44017323f78.s3tc.ctex", "res://.godot/imported/note_1_note_1.png-5870b6337ca95898ac10a44017323f78.etc2.ctex"]
 
 [params]
 

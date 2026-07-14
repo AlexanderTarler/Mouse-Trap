@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bbwdwan07ndvf"
 path.s3tc="res://.godot/imported/garage_hm_2_planks_hr_3.png-3bf40a07ba64e8961971568b09ce400f.s3tc.ctex"
+path.etc2="res://.godot/imported/garage_hm_2_planks_hr_3.png-3bf40a07ba64e8961971568b09ce400f.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Buildings/garage_hm_2_planks_hr_3.png"
-dest_files=["res://.godot/imported/garage_hm_2_planks_hr_3.png-3bf40a07ba64e8961971568b09ce400f.s3tc.ctex"]
+dest_files=["res://.godot/imported/garage_hm_2_planks_hr_3.png-3bf40a07ba64e8961971568b09ce400f.s3tc.ctex", "res://.godot/imported/garage_hm_2_planks_hr_3.png-3bf40a07ba64e8961971568b09ce400f.etc2.ctex"]
 
 [params]
 

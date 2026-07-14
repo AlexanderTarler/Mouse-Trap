@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://byi8kh4x611hg"
 path.s3tc="res://.godot/imported/scanner_1.png-22dd8f2f6a44609dd95a3316abe5b543.s3tc.ctex"
+path.etc2="res://.godot/imported/scanner_1.png-22dd8f2f6a44609dd95a3316abe5b543.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Bunkers/Textures/scanner_1.png"
-dest_files=["res://.godot/imported/scanner_1.png-22dd8f2f6a44609dd95a3316abe5b543.s3tc.ctex"]
+dest_files=["res://.godot/imported/scanner_1.png-22dd8f2f6a44609dd95a3316abe5b543.s3tc.ctex", "res://.godot/imported/scanner_1.png-22dd8f2f6a44609dd95a3316abe5b543.etc2.ctex"]
 
 [params]
 

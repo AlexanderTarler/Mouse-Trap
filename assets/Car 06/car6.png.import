@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://pwmud6evk10i"
 path.s3tc="res://.godot/imported/car6.png-b8a8d6be33d6178570c57965cbf0e737.s3tc.ctex"
+path.etc2="res://.godot/imported/car6.png-b8a8d6be33d6178570c57965cbf0e737.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/Car 06/car6.png"
-dest_files=["res://.godot/imported/car6.png-b8a8d6be33d6178570c57965cbf0e737.s3tc.ctex"]
+dest_files=["res://.godot/imported/car6.png-b8a8d6be33d6178570c57965cbf0e737.s3tc.ctex", "res://.godot/imported/car6.png-b8a8d6be33d6178570c57965cbf0e737.etc2.ctex"]
 
 [params]
 

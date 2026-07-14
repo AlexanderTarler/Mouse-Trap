@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b1daxqxpaee34"
 path.s3tc="res://.godot/imported/elevator_screen_1.png-e14dab6eab2b6cef78bd844730b1e291.s3tc.ctex"
+path.etc2="res://.godot/imported/elevator_screen_1.png-e14dab6eab2b6cef78bd844730b1e291.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Textures/elevator_screen_1.png"
-dest_files=["res://.godot/imported/elevator_screen_1.png-e14dab6eab2b6cef78bd844730b1e291.s3tc.ctex"]
+dest_files=["res://.godot/imported/elevator_screen_1.png-e14dab6eab2b6cef78bd844730b1e291.s3tc.ctex", "res://.godot/imported/elevator_screen_1.png-e14dab6eab2b6cef78bd844730b1e291.etc2.ctex"]
 
 [params]
 

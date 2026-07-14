@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cnabarqupvyv2"
 path.s3tc="res://.godot/imported/tunnel_1_plastic_3.png-c6bafcd694e619e29cf82f09790dbd72.s3tc.ctex"
+path.etc2="res://.godot/imported/tunnel_1_plastic_3.png-c6bafcd694e619e29cf82f09790dbd72.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Modular Structures/tunnel_1_plastic_3.png"
-dest_files=["res://.godot/imported/tunnel_1_plastic_3.png-c6bafcd694e619e29cf82f09790dbd72.s3tc.ctex"]
+dest_files=["res://.godot/imported/tunnel_1_plastic_3.png-c6bafcd694e619e29cf82f09790dbd72.s3tc.ctex", "res://.godot/imported/tunnel_1_plastic_3.png-c6bafcd694e619e29cf82f09790dbd72.etc2.ctex"]
 
 [params]
 

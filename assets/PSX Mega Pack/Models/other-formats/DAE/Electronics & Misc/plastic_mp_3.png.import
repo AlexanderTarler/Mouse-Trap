@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b8h1vpw0qn382"
 path.s3tc="res://.godot/imported/plastic_mp_3.png-269afcac065eb4b01b145276a7d43b93.s3tc.ctex"
+path.etc2="res://.godot/imported/plastic_mp_3.png-269afcac065eb4b01b145276a7d43b93.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Electronics & Misc/plastic_mp_3.png"
-dest_files=["res://.godot/imported/plastic_mp_3.png-269afcac065eb4b01b145276a7d43b93.s3tc.ctex"]
+dest_files=["res://.godot/imported/plastic_mp_3.png-269afcac065eb4b01b145276a7d43b93.s3tc.ctex", "res://.godot/imported/plastic_mp_3.png-269afcac065eb4b01b145276a7d43b93.etc2.ctex"]
 
 [params]
 

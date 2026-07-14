@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dq8ut1xtawin4"
 path.s3tc="res://.godot/imported/pipes_hr_1_horizontal_middle_1_steel_beams_hr_1.png-7e3803dff944be560384d42cae4e1d5b.s3tc.ctex"
+path.etc2="res://.godot/imported/pipes_hr_1_horizontal_middle_1_steel_beams_hr_1.png-7e3803dff944be560384d42cae4e1d5b.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Large Props & Machinery/pipes_hr_1_horizontal_middle_1_steel_beams_hr_1.png"
-dest_files=["res://.godot/imported/pipes_hr_1_horizontal_middle_1_steel_beams_hr_1.png-7e3803dff944be560384d42cae4e1d5b.s3tc.ctex"]
+dest_files=["res://.godot/imported/pipes_hr_1_horizontal_middle_1_steel_beams_hr_1.png-7e3803dff944be560384d42cae4e1d5b.s3tc.ctex", "res://.godot/imported/pipes_hr_1_horizontal_middle_1_steel_beams_hr_1.png-7e3803dff944be560384d42cae4e1d5b.etc2.ctex"]
 
 [params]
 

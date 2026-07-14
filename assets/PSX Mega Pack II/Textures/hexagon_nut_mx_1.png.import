@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bv38lrwrwvmis"
 path.s3tc="res://.godot/imported/hexagon_nut_mx_1.png-2a9beb669ed118c77f33ee1023046311.s3tc.ctex"
+path.etc2="res://.godot/imported/hexagon_nut_mx_1.png-2a9beb669ed118c77f33ee1023046311.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Textures/hexagon_nut_mx_1.png"
-dest_files=["res://.godot/imported/hexagon_nut_mx_1.png-2a9beb669ed118c77f33ee1023046311.s3tc.ctex"]
+dest_files=["res://.godot/imported/hexagon_nut_mx_1.png-2a9beb669ed118c77f33ee1023046311.s3tc.ctex", "res://.godot/imported/hexagon_nut_mx_1.png-2a9beb669ed118c77f33ee1023046311.etc2.ctex"]
 
 [params]
 

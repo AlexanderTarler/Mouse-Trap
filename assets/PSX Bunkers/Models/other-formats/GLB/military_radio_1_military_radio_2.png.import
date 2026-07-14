@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://ckp0be12idtqi"
 path.s3tc="res://.godot/imported/military_radio_1_military_radio_2.png-95b9eba3532fb62e70bdc3f05501fb52.s3tc.ctex"
+path.etc2="res://.godot/imported/military_radio_1_military_radio_2.png-95b9eba3532fb62e70bdc3f05501fb52.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/GLB/military_radio_1_military_radio_2.png"
-dest_files=["res://.godot/imported/military_radio_1_military_radio_2.png-95b9eba3532fb62e70bdc3f05501fb52.s3tc.ctex"]
+dest_files=["res://.godot/imported/military_radio_1_military_radio_2.png-95b9eba3532fb62e70bdc3f05501fb52.s3tc.ctex", "res://.godot/imported/military_radio_1_military_radio_2.png-95b9eba3532fb62e70bdc3f05501fb52.etc2.ctex"]
 
 [params]
 

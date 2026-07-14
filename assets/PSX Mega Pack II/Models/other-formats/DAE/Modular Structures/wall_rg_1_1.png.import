@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://byjmh67mgn63m"
 path.s3tc="res://.godot/imported/wall_rg_1_1.png-cf9a70cca9f5b660db3b31ac0c07be9a.s3tc.ctex"
+path.etc2="res://.godot/imported/wall_rg_1_1.png-cf9a70cca9f5b660db3b31ac0c07be9a.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Modular Structures/wall_rg_1_1.png"
-dest_files=["res://.godot/imported/wall_rg_1_1.png-cf9a70cca9f5b660db3b31ac0c07be9a.s3tc.ctex"]
+dest_files=["res://.godot/imported/wall_rg_1_1.png-cf9a70cca9f5b660db3b31ac0c07be9a.s3tc.ctex", "res://.godot/imported/wall_rg_1_1.png-cf9a70cca9f5b660db3b31ac0c07be9a.etc2.ctex"]
 
 [params]
 

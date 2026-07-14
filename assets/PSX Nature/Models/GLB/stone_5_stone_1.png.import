@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://calrtb33h7nh0"
 path.s3tc="res://.godot/imported/stone_5_stone_1.png-53cf9eafb9ed0b075252ae94b2049e8b.s3tc.ctex"
+path.etc2="res://.godot/imported/stone_5_stone_1.png-53cf9eafb9ed0b075252ae94b2049e8b.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Nature/Models/GLB/stone_5_stone_1.png"
-dest_files=["res://.godot/imported/stone_5_stone_1.png-53cf9eafb9ed0b075252ae94b2049e8b.s3tc.ctex"]
+dest_files=["res://.godot/imported/stone_5_stone_1.png-53cf9eafb9ed0b075252ae94b2049e8b.s3tc.ctex", "res://.godot/imported/stone_5_stone_1.png-53cf9eafb9ed0b075252ae94b2049e8b.etc2.ctex"]
 
 [params]
 

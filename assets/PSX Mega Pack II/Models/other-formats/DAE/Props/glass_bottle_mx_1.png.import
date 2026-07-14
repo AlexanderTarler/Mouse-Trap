@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c0c5cb1tmh7fx"
 path.s3tc="res://.godot/imported/glass_bottle_mx_1.png-675dd6ebe9335dfb97459e138977dc30.s3tc.ctex"
+path.etc2="res://.godot/imported/glass_bottle_mx_1.png-675dd6ebe9335dfb97459e138977dc30.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Props/glass_bottle_mx_1.png"
-dest_files=["res://.godot/imported/glass_bottle_mx_1.png-675dd6ebe9335dfb97459e138977dc30.s3tc.ctex"]
+dest_files=["res://.godot/imported/glass_bottle_mx_1.png-675dd6ebe9335dfb97459e138977dc30.s3tc.ctex", "res://.godot/imported/glass_bottle_mx_1.png-675dd6ebe9335dfb97459e138977dc30.etc2.ctex"]
 
 [params]
 

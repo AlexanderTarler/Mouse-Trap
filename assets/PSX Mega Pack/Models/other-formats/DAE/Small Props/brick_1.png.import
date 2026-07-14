@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://4k5mmky6s2uf"
 path.s3tc="res://.godot/imported/brick_1.png-71141cd11b3bbfc87a1e8535232f6256.s3tc.ctex"
+path.etc2="res://.godot/imported/brick_1.png-71141cd11b3bbfc87a1e8535232f6256.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Small Props/brick_1.png"
-dest_files=["res://.godot/imported/brick_1.png-71141cd11b3bbfc87a1e8535232f6256.s3tc.ctex"]
+dest_files=["res://.godot/imported/brick_1.png-71141cd11b3bbfc87a1e8535232f6256.s3tc.ctex", "res://.godot/imported/brick_1.png-71141cd11b3bbfc87a1e8535232f6256.etc2.ctex"]
 
 [params]
 

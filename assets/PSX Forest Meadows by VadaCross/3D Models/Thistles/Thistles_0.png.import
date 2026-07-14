@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c02pje7p58g0k"
 path.s3tc="res://.godot/imported/Thistles_0.png-d82dc284dffe4a538abd705bbf76e30e.s3tc.ctex"
+path.etc2="res://.godot/imported/Thistles_0.png-d82dc284dffe4a538abd705bbf76e30e.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Forest Meadows by VadaCross/3D Models/Thistles/Thistles_0.png"
-dest_files=["res://.godot/imported/Thistles_0.png-d82dc284dffe4a538abd705bbf76e30e.s3tc.ctex"]
+dest_files=["res://.godot/imported/Thistles_0.png-d82dc284dffe4a538abd705bbf76e30e.s3tc.ctex", "res://.godot/imported/Thistles_0.png-d82dc284dffe4a538abd705bbf76e30e.etc2.ctex"]
 
 [params]
 

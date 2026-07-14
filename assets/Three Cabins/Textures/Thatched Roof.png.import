@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://8dgixiriuqx"
 path.s3tc="res://.godot/imported/Thatched Roof.png-056d576f2c20db6178eed1c87c6b0b1c.s3tc.ctex"
+path.etc2="res://.godot/imported/Thatched Roof.png-056d576f2c20db6178eed1c87c6b0b1c.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/Three Cabins/Textures/Thatched Roof.png"
-dest_files=["res://.godot/imported/Thatched Roof.png-056d576f2c20db6178eed1c87c6b0b1c.s3tc.ctex"]
+dest_files=["res://.godot/imported/Thatched Roof.png-056d576f2c20db6178eed1c87c6b0b1c.s3tc.ctex", "res://.godot/imported/Thatched Roof.png-056d576f2c20db6178eed1c87c6b0b1c.etc2.ctex"]
 
 [params]
 

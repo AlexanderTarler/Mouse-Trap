@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://jq3srq806dqa"
 path.s3tc="res://.godot/imported/shelf_mx_8_1_grate_hm_1_1.png-1acf2eb799a0dc243455b885319f7fcb.s3tc.ctex"
+path.etc2="res://.godot/imported/shelf_mx_8_1_grate_hm_1_1.png-1acf2eb799a0dc243455b885319f7fcb.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/shelf_mx_8_1_grate_hm_1_1.png"
-dest_files=["res://.godot/imported/shelf_mx_8_1_grate_hm_1_1.png-1acf2eb799a0dc243455b885319f7fcb.s3tc.ctex"]
+dest_files=["res://.godot/imported/shelf_mx_8_1_grate_hm_1_1.png-1acf2eb799a0dc243455b885319f7fcb.s3tc.ctex", "res://.godot/imported/shelf_mx_8_1_grate_hm_1_1.png-1acf2eb799a0dc243455b885319f7fcb.etc2.ctex"]
 
 [params]
 

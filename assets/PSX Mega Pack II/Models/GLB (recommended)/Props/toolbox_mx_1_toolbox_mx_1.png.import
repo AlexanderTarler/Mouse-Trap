@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://rwbamvldtn5m"
 path.s3tc="res://.godot/imported/toolbox_mx_1_toolbox_mx_1.png-fc7d4f168e28c92c9e27e2782f7b2270.s3tc.ctex"
+path.etc2="res://.godot/imported/toolbox_mx_1_toolbox_mx_1.png-fc7d4f168e28c92c9e27e2782f7b2270.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/toolbox_mx_1_toolbox_mx_1.png"
-dest_files=["res://.godot/imported/toolbox_mx_1_toolbox_mx_1.png-fc7d4f168e28c92c9e27e2782f7b2270.s3tc.ctex"]
+dest_files=["res://.godot/imported/toolbox_mx_1_toolbox_mx_1.png-fc7d4f168e28c92c9e27e2782f7b2270.s3tc.ctex", "res://.godot/imported/toolbox_mx_1_toolbox_mx_1.png-fc7d4f168e28c92c9e27e2782f7b2270.etc2.ctex"]
 
 [params]
 

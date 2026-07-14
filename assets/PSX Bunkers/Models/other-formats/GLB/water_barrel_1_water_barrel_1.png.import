@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dfkcx2vf0xep3"
 path.s3tc="res://.godot/imported/water_barrel_1_water_barrel_1.png-894f31c2e3279759a733c42d7ffc1fcf.s3tc.ctex"
+path.etc2="res://.godot/imported/water_barrel_1_water_barrel_1.png-894f31c2e3279759a733c42d7ffc1fcf.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/GLB/water_barrel_1_water_barrel_1.png"
-dest_files=["res://.godot/imported/water_barrel_1_water_barrel_1.png-894f31c2e3279759a733c42d7ffc1fcf.s3tc.ctex"]
+dest_files=["res://.godot/imported/water_barrel_1_water_barrel_1.png-894f31c2e3279759a733c42d7ffc1fcf.s3tc.ctex", "res://.godot/imported/water_barrel_1_water_barrel_1.png-894f31c2e3279759a733c42d7ffc1fcf.etc2.ctex"]
 
 [params]
 

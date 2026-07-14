@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cywethax3br24"
 path.s3tc="res://.godot/imported/pine_tree_n_1_3_0.png-8143358d63b4a36b4812c536e3b6e5ac.s3tc.ctex"
+path.etc2="res://.godot/imported/pine_tree_n_1_3_0.png-8143358d63b4a36b4812c536e3b6e5ac.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Nature/Models/other-formats/FBX/pine_tree_n_1_3_0.png"
-dest_files=["res://.godot/imported/pine_tree_n_1_3_0.png-8143358d63b4a36b4812c536e3b6e5ac.s3tc.ctex"]
+dest_files=["res://.godot/imported/pine_tree_n_1_3_0.png-8143358d63b4a36b4812c536e3b6e5ac.s3tc.ctex", "res://.godot/imported/pine_tree_n_1_3_0.png-8143358d63b4a36b4812c536e3b6e5ac.etc2.ctex"]
 
 [params]
 

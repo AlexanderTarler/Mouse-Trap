@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://hkew0o6hq0pu"
 path.s3tc="res://.godot/imported/Blueberry Bush_0.png-11934571a9ec2b0721393d1f1c8eb3ed.s3tc.ctex"
+path.etc2="res://.godot/imported/Blueberry Bush_0.png-11934571a9ec2b0721393d1f1c8eb3ed.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Forest Meadows by VadaCross/3D Models/Blueberry Bush/Blueberry Bush_0.png"
-dest_files=["res://.godot/imported/Blueberry Bush_0.png-11934571a9ec2b0721393d1f1c8eb3ed.s3tc.ctex"]
+dest_files=["res://.godot/imported/Blueberry Bush_0.png-11934571a9ec2b0721393d1f1c8eb3ed.s3tc.ctex", "res://.godot/imported/Blueberry Bush_0.png-11934571a9ec2b0721393d1f1c8eb3ed.etc2.ctex"]
 
 [params]
 

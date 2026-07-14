@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bi7tb5064qtmv"
 path.s3tc="res://.godot/imported/electrical_tape_etx_1_1_misc_etx_part_1.png-6bcf7f0a8891264191f65c74830bbf49.s3tc.ctex"
+path.etc2="res://.godot/imported/electrical_tape_etx_1_1_misc_etx_part_1.png-6bcf7f0a8891264191f65c74830bbf49.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Tech/Models/GLB (recommended)/electrical_tape_etx_1_1_misc_etx_part_1.png"
-dest_files=["res://.godot/imported/electrical_tape_etx_1_1_misc_etx_part_1.png-6bcf7f0a8891264191f65c74830bbf49.s3tc.ctex"]
+dest_files=["res://.godot/imported/electrical_tape_etx_1_1_misc_etx_part_1.png-6bcf7f0a8891264191f65c74830bbf49.s3tc.ctex", "res://.godot/imported/electrical_tape_etx_1_1_misc_etx_part_1.png-6bcf7f0a8891264191f65c74830bbf49.etc2.ctex"]
 
 [params]
 

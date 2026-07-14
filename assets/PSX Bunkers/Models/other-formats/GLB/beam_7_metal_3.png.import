@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bndod3ospcv1j"
 path.s3tc="res://.godot/imported/beam_7_metal_3.png-75cec0a111e8c9da8a78c171c2be165c.s3tc.ctex"
+path.etc2="res://.godot/imported/beam_7_metal_3.png-75cec0a111e8c9da8a78c171c2be165c.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/GLB/beam_7_metal_3.png"
-dest_files=["res://.godot/imported/beam_7_metal_3.png-75cec0a111e8c9da8a78c171c2be165c.s3tc.ctex"]
+dest_files=["res://.godot/imported/beam_7_metal_3.png-75cec0a111e8c9da8a78c171c2be165c.s3tc.ctex", "res://.godot/imported/beam_7_metal_3.png-75cec0a111e8c9da8a78c171c2be165c.etc2.ctex"]
 
 [params]
 

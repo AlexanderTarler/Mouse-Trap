@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c6cfwle7yi2i7"
 path.s3tc="res://.godot/imported/sickle_mx_1_sickle_mx_1.png-9de1acef6e4cf4c0f0cc7e3b8fad8071.s3tc.ctex"
+path.etc2="res://.godot/imported/sickle_mx_1_sickle_mx_1.png-9de1acef6e4cf4c0f0cc7e3b8fad8071.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Weapons & Tools/sickle_mx_1_sickle_mx_1.png"
-dest_files=["res://.godot/imported/sickle_mx_1_sickle_mx_1.png-9de1acef6e4cf4c0f0cc7e3b8fad8071.s3tc.ctex"]
+dest_files=["res://.godot/imported/sickle_mx_1_sickle_mx_1.png-9de1acef6e4cf4c0f0cc7e3b8fad8071.s3tc.ctex", "res://.godot/imported/sickle_mx_1_sickle_mx_1.png-9de1acef6e4cf4c0f0cc7e3b8fad8071.etc2.ctex"]
 
 [params]
 

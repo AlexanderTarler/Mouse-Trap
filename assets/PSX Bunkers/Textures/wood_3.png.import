@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://16b544j7qk6n"
 path.s3tc="res://.godot/imported/wood_3.png-14d2a38080d6ceac8cfa75eb0c3a3b15.s3tc.ctex"
+path.etc2="res://.godot/imported/wood_3.png-14d2a38080d6ceac8cfa75eb0c3a3b15.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Bunkers/Textures/wood_3.png"
-dest_files=["res://.godot/imported/wood_3.png-14d2a38080d6ceac8cfa75eb0c3a3b15.s3tc.ctex"]
+dest_files=["res://.godot/imported/wood_3.png-14d2a38080d6ceac8cfa75eb0c3a3b15.s3tc.ctex", "res://.godot/imported/wood_3.png-14d2a38080d6ceac8cfa75eb0c3a3b15.etc2.ctex"]
 
 [params]
 

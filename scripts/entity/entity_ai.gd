@@ -203,6 +203,13 @@ enum State {
 	ENTER_THROUGH_DOOR,     # Entity walks to the front door, opens it, and enters the cabin
 }
 
+# PERFORMANCE: Cached State names array — avoids per-frame heap allocations from State.keys()
+var _state_names_cache: Array = []
+func _get_state_name(state: int) -> String:
+	if _state_names_cache.is_empty():
+		_state_names_cache = State.keys()
+	return _state_names_cache[state] if state < _state_names_cache.size() else "UNKNOWN"
+
 ## ─── STATE CATEGORIES ──────────────────────────────────────────────────────
 ## These constant arrays group states by behavior category for use by the
 ## Director (entity_director.gd) and Controller (entity_controller.gd).
@@ -229,6 +236,33 @@ var entity: CharacterBody3D = null
 ## NO script is allowed to call set_state() except this Director.
 ## External scripts may ONLY write data to the Entity's Blackboard.
 var _director = null  # EntityDirector — typed via setup() to avoid cyclic preload
+
+# PERFORMANCE: Cached autoload references (avoid per-frame get_node_or_null traversal)
+@onready var night_manager: Node = get_node_or_null("/root/NightManager")
+
+# ─── PERFORMANCE: has_method() capability cache ─────────────────────────────
+# Pre-computed booleans for duck-typing checks that would otherwise call
+# has_method() dozens of times per frame. Initialized once in _ready().
+# This eliminates ~48 per-frame method name hash lookups.
+var _director_can_reset_indoor: bool = false
+var _cap_nav_pick_vantage: bool = false
+var _cap_nav_get_player_room: bool = false
+var _cap_nav_is_lit_room: bool = false
+var _cap_nav_pick_tactical: bool = false
+var _cap_nav_get_window_markers: bool = false
+var _cap_sensory_can_see: bool = false
+var _cap_sensory_get_heard_room: bool = false
+var _cap_sensory_is_looking_window: bool = false
+var _cap_fuse_take_damage: bool = false
+var _cap_door_interact: bool = false
+var _cap_window_shatter: bool = false
+var _cap_window_get_id: bool = false
+var _cap_window_damage_barricade: bool = false
+var _cap_window_breach: bool = false
+var _cap_window_landing: bool = false
+var _cap_entity_collision_shape: bool = false
+var _cap_hall_light_toggle: bool = false
+var _cap_hall_light_generator: bool = false
 
 ## The velocity vector computed by the current state's logic.
 ## Read by entity_controller.gd after process_state_logic() completes.
@@ -370,6 +404,9 @@ var _current_patrol_waypoint: Vector3 = Vector3.ZERO
 ## Whether a retreat target has been set for physical RETREAT pathfinding.
 ## Reset after the Entity reaches the exit point and fades out.
 var _retreat_target_set: bool = false
+
+## Guard flag for the STALK state's target_desired_distance = 0.3 assignment.
+var _stalk_target_distance_set: bool = false
 
 ## Debug frame counter for INDOOR_SEARCH Phase B logging.
 ## Incremented each frame in _indoor_search_state(). Used to throttle debug
@@ -513,6 +550,48 @@ func setup(parent: CharacterBody3D) -> void:
 		_director = DirectorClass.new()
 		if _director:
 			print("[Entity AI] Master Behavior Director initialized.")
+	
+	# ─── PERFORMANCE: Pre-compute has_method() capability cache ────────
+	# Cache whether specific methods exist on key modules, so the ~48
+	# per-frame duck-typing checks become simple boolean reads instead
+	# of method-name hash lookups and virtual dispatch.
+	if _director:
+		_director_can_reset_indoor = _director.has_method("reset_indoor_search_persistence")
+	if entity:
+		_cap_entity_collision_shape = entity.has_method("get_collision_shape")
+	var nav = entity.get_node_or_null("EntityNavigation") if entity else null
+	if nav:
+		_cap_nav_pick_vantage = nav.has_method("pick_next_vantage_point")
+		_cap_nav_get_player_room = nav.has_method("get_player_room")
+		_cap_nav_is_lit_room = nav.has_method("is_player_in_lit_room")
+		_cap_nav_pick_tactical = nav.has_method("pick_tactical_window")
+		_cap_nav_get_window_markers = nav.has_method("get_window_markers")
+	var sensory = entity.get_node_or_null("EntitySensory") if entity else null
+	if sensory:
+		_cap_sensory_can_see = sensory.has_method("can_entity_see_player")
+		_cap_sensory_get_heard_room = sensory.has_method("get_last_heard_room")
+		_cap_sensory_is_looking_window = sensory.has_method("is_player_looking_at_window")
+	# Cache common window methods on a representative CabinWindow
+	var window_markers = entity.get_tree().get_nodes_in_group("WindowMarkers") if entity else []
+	if not window_markers.is_empty():
+		var sample_window = window_markers[0]
+		_cap_window_get_id = sample_window.has_method("get_window_id")
+		_cap_window_shatter = sample_window.has_method("shatter_window")
+		_cap_window_damage_barricade = sample_window.has_method("damage_barricade")
+		_cap_window_landing = sample_window.has_method("get_indoor_landing_position")
+		_cap_window_breach = sample_window.has_method("register_breach")
+	# Cache door/fuse methods
+	var door_node = entity.get_node_or_null("../NavigationRegion3D/Cabin/Door") if entity else null
+	if door_node:
+		_cap_door_interact = door_node.has_method("interact")
+	# Cache hall light methods
+	_cap_hall_light_toggle = false
+	_cap_hall_light_generator = false
+	# Cache fuse box methods
+	if _director and _director.has_method("get_fuse_box"):
+		var fuse_box = _director.get_fuse_box()
+		if fuse_box:
+			_cap_fuse_take_damage = fuse_box.has_method("take_damage")
 
 
 # ─── TYPED ACCESSORS (for entity_controller.gd cross-module reads) ──────────
@@ -639,7 +718,7 @@ func process_state_logic(delta: float) -> void:
 			if _debug_intended == State.FLINCH or _debug_intended == State.RETREAT or _debug_intended == State.STANDOFF or _debug_intended == State.CHARGE:
 				entity.state_locked = false
 				if entity.get_state() != _debug_intended:
-					print("[TRACE_STATE] TIER 0 OVERRIDE: Breaking state lock! %s → %s" % [EntityAI.State.keys()[entity.get_state()], EntityAI.State.keys()[_debug_intended]])
+					print("[TRACE_STATE] TIER 0 OVERRIDE: Breaking state lock! %s → %s" % [_get_state_name(entity.get_state()), _get_state_name(_debug_intended)])
 					entity.set_state(_debug_intended)
 		else:
 			var intended_state = _director.evaluate_master_state(entity)
@@ -649,7 +728,7 @@ func process_state_logic(delta: float) -> void:
 				# [TRACE] Log state transitions during INDOOR_SEARCH
 				var current_state = entity.get_state()
 				if current_state == EntityAI.State.INDOOR_SEARCH or intended_state == EntityAI.State.INDOOR_SEARCH:
-					print("[TRACE_STATE] Director transition: %s → %s" % [EntityAI.State.keys()[current_state], EntityAI.State.keys()[intended_state]])
+					print("[TRACE_STATE] Director transition: %s → %s" % [_get_state_name(current_state), _get_state_name(intended_state)])
 				entity.set_state(intended_state)
 
 	
@@ -764,6 +843,15 @@ func process_state_logic(delta: float) -> void:
 	#   - If _stare_timer reaches 1.5 seconds, the Entity becomes enraged
 	#     (entity.is_enraged = true), triggering a permanent speed boost.
 	var current_state = entity.get_state()
+	# ─── STALK STATE ENTRY FLAGS RESET ─────────────────────────
+	# When leaving STALK, reset the _stalk_target_distance_set flag so the
+	# next STALK entry re-applies the tight target_desired_distance = 0.3.
+	# Also restore the default target_desired_distance (1.5) for other states.
+	if current_state != State.STALK and _stalk_target_distance_set:
+		_stalk_target_distance_set = false
+		entity.get_nav_agent().target_desired_distance = 1.5
+		entity.get_nav_agent().path_desired_distance = 1.0
+	
 	if _is_being_stared_at and current_state != State.CHARGE and current_state != State.RETREAT:
 		# ─── FREEZE VELOCITY ────────────────────────────────────────────────
 		# Override the calculated velocity to zero, preventing the Entity
@@ -1557,6 +1645,23 @@ func _relocate_to_treeline_after_sabotage() -> void:
 # ---------------------------------------------------------------------------
 
 func _stalk_state(delta: float) -> void:
+	# ─── TIGHTEN NAV TARGET DISTANCE (ONCE ON ENTRY) ─────────────────
+	# Reduce the navigation agent's target_desired_distance so the Entity
+	# physically closes within ~0.3m of the player (instead of stopping
+	# 1.5m away). Also reduce path_desired_distance (default 1.0) so the
+	# agent doesn't stop short at intermediate waypoints. Without this,
+	# chasing a moving target leaves the Entity ~1.5-2m away because each
+	# path-point is considered "arrived" too early.
+	# IMPORTANT: This is set ONCE on state entry, NOT every frame, because
+	# setting target_desired_distance triggers a full NavigationAgent3D
+	# path recalculation (an expensive A* search over the NavMesh). Doing
+	# this 60 times per second caused the 2-3 FPS drop.
+	var nav_agent = entity.get_nav_agent()
+	if not _stalk_target_distance_set:
+		_stalk_target_distance_set = true
+		nav_agent.target_desired_distance = 0.3
+		nav_agent.path_desired_distance = 0.3
+	
 	# ─── CHASE BREAKER: Player Reached Safety ───────────────────────────
 	# The Director handles the state transition when the player reaches
 	# safety (Tier 2: CHASE → OBSERVE_FROM_TREELINE if player is inside).
@@ -1581,7 +1686,7 @@ func _stalk_state(delta: float) -> void:
 			# in the cabin bed and walks outside — until they're actually
 			# outdoors, the Entity holds STALK. Without this guard, the
 			# Hallroom check and Director's Tier 2 fight at 60fps.
-			var nm_stalk = entity.get_node_or_null("/root/NightManager")
+			var nm_stalk = night_manager
 			if nm_stalk and nm_stalk.is_van_sequence_active:
 				# Van sequence active — skip Hallroom exit, keep stalking
 				pass
@@ -1619,22 +1724,24 @@ func _stalk_state(delta: float) -> void:
 	if _path_timer <= 0.0:
 		_path_timer = PATH_UPDATE_INTERVAL
 		
-		# ─── NAV TARGET JITTER ─────────────────────────────────────────────
-		# Add a small random offset (±0.5m) to the nav target so the Entity
+		# ─── NAV TARGET JITTER (REDUCED FOR STALK) ──────────────────────────
+		# Add a tiny random offset (±0.1m) to the nav target so the Entity
 		# doesn't converge on the player's exact pixel coordinate. This creates
-		# more organic-looking pursuit and prevents the Entity from micro-stuttering
-		# as the NavigationAgent3D tries to reach an exact point that the player
-		# has already moved away from.
+		# more organic-looking pursuit and prevents micro-stuttering.
+		# NOTE: Jitter is reduced to 0.1m in STALK (from 0.5m in OBSERVE) to
+		# allow the Entity to close within ~0.3m of the player. The old ±0.5m
+		# + path_desired_distance=1.0 effectively kept the Entity ~1.5m away.
 		var jitter_offset = Vector3(
-			randf_range(-0.5, 0.5),
+			randf_range(-0.1, 0.1),
 			0.0,
-			randf_range(-0.5, 0.5)
+			randf_range(-0.1, 0.1)
 		)
 		entity.get_nav_agent().target_position = player.global_position + jitter_offset
 	
 	# ─── CATCH CHECK ────────────────────────────────────────────────────
 	# If the Entity is close enough to the player, catch them.
-	if entity.global_position.distance_to(player.global_position) <= entity.catch_distance:
+	var dist_to_player := entity.global_position.distance_to(player.global_position)
+	if dist_to_player <= entity.catch_distance:
 		entity._on_caught_player()
 		return
 	
@@ -1876,7 +1983,7 @@ func _evaluate_night_rules(delta: float) -> void:
 	# night the player is on (1-5). The debug console sets the night via
 	# NightManager.start_night(night), so reading from NightManager ensures
 	# the debug override is respected.
-	var night_manager = entity.get_node_or_null("/root/NightManager")
+	var night_manager = night_manager
 	if not night_manager:
 		return
 	
@@ -2772,7 +2879,7 @@ func _window_peek_state(delta: float) -> void:
 	# sets the night via NightManager.start_night(night), so reading from
 	# NightManager ensures the debug override is respected.
 	var current_night: int = 1
-	var night_manager = entity.get_node_or_null("/root/NightManager")
+	# PERFORMANCE: Use cached @onready reference instead of per-frame get_node_or_null
 	if night_manager and "current_night" in night_manager:
 		current_night = night_manager.current_night
 	
@@ -3357,7 +3464,7 @@ func _indoor_search_state(delta: float) -> void:
 				# ─── CLEAR VAN SEQUENCE FLAG ──────────────────────────
 				# The Entity has successfully entered the cabin. The Night 2.2
 				# van chase is over — normal Entity behavior resumes.
-				var nm_van = entity.get_node_or_null("/root/NightManager")
+				var nm_van = night_manager
 				if nm_van and nm_van.is_van_sequence_active:
 					nm_van.is_van_sequence_active = false
 					print("[INDOOR_SEARCH] Van sequence flag cleared! Normal behavior restored.")

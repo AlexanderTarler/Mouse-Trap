@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cf07ovbocog14"
 path.s3tc="res://.godot/imported/painting_8_painting_8.png-2136890e5a884fdf959a5678a93d8260.s3tc.ctex"
+path.etc2="res://.godot/imported/painting_8_painting_8.png-2136890e5a884fdf959a5678a93d8260.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Paintings/Meshes/GLB/painting_8_painting_8.png"
-dest_files=["res://.godot/imported/painting_8_painting_8.png-2136890e5a884fdf959a5678a93d8260.s3tc.ctex"]
+dest_files=["res://.godot/imported/painting_8_painting_8.png-2136890e5a884fdf959a5678a93d8260.s3tc.ctex", "res://.godot/imported/painting_8_painting_8.png-2136890e5a884fdf959a5678a93d8260.etc2.ctex"]
 
 [params]
 

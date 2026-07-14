@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bkapwdyvtlfk5"
 path.s3tc="res://.godot/imported/cobweb_1.png-007bebe1a6a98fe8d2d822cb56d9fd9d.s3tc.ctex"
+path.etc2="res://.godot/imported/cobweb_1.png-007bebe1a6a98fe8d2d822cb56d9fd9d.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Decals/cobweb_1.png"
-dest_files=["res://.godot/imported/cobweb_1.png-007bebe1a6a98fe8d2d822cb56d9fd9d.s3tc.ctex"]
+dest_files=["res://.godot/imported/cobweb_1.png-007bebe1a6a98fe8d2d822cb56d9fd9d.s3tc.ctex", "res://.godot/imported/cobweb_1.png-007bebe1a6a98fe8d2d822cb56d9fd9d.etc2.ctex"]
 
 [params]
 

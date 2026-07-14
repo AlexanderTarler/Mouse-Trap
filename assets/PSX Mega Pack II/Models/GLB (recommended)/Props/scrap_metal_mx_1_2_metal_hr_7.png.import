@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dnjwfq5sfie56"
 path.s3tc="res://.godot/imported/scrap_metal_mx_1_2_metal_hr_7.png-47d6d1378206b43943aa90de62463bbc.s3tc.ctex"
+path.etc2="res://.godot/imported/scrap_metal_mx_1_2_metal_hr_7.png-47d6d1378206b43943aa90de62463bbc.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/scrap_metal_mx_1_2_metal_hr_7.png"
-dest_files=["res://.godot/imported/scrap_metal_mx_1_2_metal_hr_7.png-47d6d1378206b43943aa90de62463bbc.s3tc.ctex"]
+dest_files=["res://.godot/imported/scrap_metal_mx_1_2_metal_hr_7.png-47d6d1378206b43943aa90de62463bbc.s3tc.ctex", "res://.godot/imported/scrap_metal_mx_1_2_metal_hr_7.png-47d6d1378206b43943aa90de62463bbc.etc2.ctex"]
 
 [params]
 

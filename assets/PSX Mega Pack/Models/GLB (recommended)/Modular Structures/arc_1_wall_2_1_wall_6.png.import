@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bqoctgiv56n40"
 path.s3tc="res://.godot/imported/arc_1_wall_2_1_wall_6.png-b6d3d8d57824f289717ec793369506cc.s3tc.ctex"
+path.etc2="res://.godot/imported/arc_1_wall_2_1_wall_6.png-b6d3d8d57824f289717ec793369506cc.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Modular Structures/arc_1_wall_2_1_wall_6.png"
-dest_files=["res://.godot/imported/arc_1_wall_2_1_wall_6.png-b6d3d8d57824f289717ec793369506cc.s3tc.ctex"]
+dest_files=["res://.godot/imported/arc_1_wall_2_1_wall_6.png-b6d3d8d57824f289717ec793369506cc.s3tc.ctex", "res://.godot/imported/arc_1_wall_2_1_wall_6.png-b6d3d8d57824f289717ec793369506cc.etc2.ctex"]
 
 [params]
 

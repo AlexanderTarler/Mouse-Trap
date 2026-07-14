@@ -293,7 +293,7 @@ func _scan_light_sources() -> void:
 
 	
 	# 5. Generator Exhaust Flame (small light near the generator when running)
-	var nm: Node = entity.get_node_or_null("/root/NightManager")
+	var nm: Node = _get_night_manager_nav()
 	if nm and "is_generator_on" in nm and nm.is_generator_on:
 		var gen: Node = entity.get_tree().get_first_node_in_group("Generator")
 		if gen:
@@ -311,35 +311,97 @@ func _scan_light_sources() -> void:
 ## Rebuilds the entire light cost grid by sampling each cell against all
 ## active light sources. Runs every REBUILD_INTERVAL seconds.
 func _rebuild_light_cost_grid() -> void:
-	_light_cost_grid.clear()
-	
 	var center_x: float = _grid_center.x
 	var center_z: float = _grid_center.z
 	
-	# Iterate over all cells in the bounding box
-	for cell_x in range(-GRID_HALF_EXTENT, GRID_HALF_EXTENT + 1):
-		for cell_z in range(-GRID_HALF_EXTENT, GRID_HALF_EXTENT + 1):
+	# PERFORMANCE: Short-circuit — if no light sources changed, skip the rebuild.
+	# The only time lights change is during power-out or switch toggles, which
+	# already set _grid_dirty = true.
+	if _light_sources.is_empty() and _light_cost_grid.size() > 0:
+		return  # No lights = all cells stay dark. Don't waste CPU.
+	
+	# PERFORMANCE: Incremental rebuild — only recompute cells that are within
+	# range of active light sources. Cells farther than the max light radius
+	# from ALL sources stay at their default (0.0 = dark) and don't need computing.
+	var max_light_radius: float = 0.0
+	for source in _light_sources:
+		var r: float = source["radius"] as float
+		if r > max_light_radius:
+			max_light_radius = r
+	
+	# Build a set of cell_keys that need recomputing.
+	# For each light source, only mark cells within its radius.
+	var dirty_cells: Array[Vector3i] = []
+	var seen: Dictionary = {}  # deduplication set
+	
+	for source in _light_sources:
+		var src_pos: Vector3 = source["position"] as Vector3
+		var radius: float = source["radius"] as float
+		var cell_radius: int = ceili(radius / GRID_CELL_SIZE)
+		var src_cell_x: int = int(round((src_pos.x - center_x) / GRID_CELL_SIZE))
+		var src_cell_z: int = int(round((src_pos.z - center_z) / GRID_CELL_SIZE))
+		
+		for dx in range(-cell_radius, cell_radius + 1):
+			for dz in range(-cell_radius, cell_radius + 1):
+				var cx: int = src_cell_x + dx
+				var cz: int = src_cell_z + dz
+				# Clamp to grid bounds
+				if cx < -GRID_HALF_EXTENT or cx > GRID_HALF_EXTENT: continue
+				if cz < -GRID_HALF_EXTENT or cz > GRID_HALF_EXTENT: continue
+				var key := Vector3i(cx, 0, cz)
+				if not seen.has(key):
+					seen[key] = true
+					dirty_cells.append(key)
+	
+	# If the number of dirty cells is close to the full grid, fall through to the
+	# full rebuild (the clear() + full iteration is faster than indirection overhead).
+	var total_cells: int = (2 * GRID_HALF_EXTENT + 1) * (2 * GRID_HALF_EXTENT + 1)
+	
+	if dirty_cells.size() > total_cells * 0.75:
+		# Full rebuild — clear everything and recompute all cells.
+		_light_cost_grid.clear()
+		for cell_x in range(-GRID_HALF_EXTENT, GRID_HALF_EXTENT + 1):
+			for cell_z in range(-GRID_HALF_EXTENT, GRID_HALF_EXTENT + 1):
+				var world_x: float = center_x + cell_x * GRID_CELL_SIZE
+				var world_z: float = center_z + cell_z * GRID_CELL_SIZE
+				var cell_pos: Vector3 = Vector3(world_x, 0.0, world_z)
+				
+				var total_cost: float = 0.0
+				for source in _light_sources:
+					var src_pos: Vector3 = source["position"] as Vector3
+					var src_radius: float = source["radius"] as float
+					var intensity: float = source["intensity"] as float
+					
+					var dist: float = cell_pos.distance_to(src_pos)
+					if dist < src_radius:
+						var contribution: float = intensity * (1.0 - dist / src_radius)
+						total_cost += contribution
+				
+				total_cost = clampf(total_cost, 0.0, 1.0)
+				var cell_key: Vector3i = Vector3i(cell_x, 0, cell_z)
+				_light_cost_grid[cell_key] = total_cost
+	else:
+		# Incremental rebuild — only recompute the dirty cells.
+		# Cells outside the dirty set keep their previous values.
+		for cell_idx in dirty_cells:
+			var cell_x: int = cell_idx.x
+			var cell_z: int = cell_idx.z
 			var world_x: float = center_x + cell_x * GRID_CELL_SIZE
 			var world_z: float = center_z + cell_z * GRID_CELL_SIZE
 			var cell_pos: Vector3 = Vector3(world_x, 0.0, world_z)
 			
-			# Calculate total light cost at this cell
 			var total_cost: float = 0.0
 			for source in _light_sources:
 				var src_pos: Vector3 = source["position"] as Vector3
-				var radius: float = source["radius"] as float
+				var src_radius: float = source["radius"] as float
 				var intensity: float = source["intensity"] as float
 				
 				var dist: float = cell_pos.distance_to(src_pos)
-				if dist < radius:
-					# Linear falloff: cost = intensity * (1 - dist/radius)
-					var contribution: float = intensity * (1.0 - dist / radius)
+				if dist < src_radius:
+					var contribution: float = intensity * (1.0 - dist / src_radius)
 					total_cost += contribution
 			
-			# Clamp to 0.0–1.0
 			total_cost = clampf(total_cost, 0.0, 1.0)
-			
-			# Store in grid
 			var cell_key: Vector3i = Vector3i(cell_x, 0, cell_z)
 			_light_cost_grid[cell_key] = total_cost
 
@@ -532,10 +594,19 @@ func get_room_name_at(position: Vector3) -> String:
 
 ## Internal helper to get the RoomLightDetector autoload.
 var _light_detector: Node = null
+var _night_manager_nav: Node = null
+
 func _get_light_detector() -> Node:
 	if not _light_detector or not is_instance_valid(_light_detector):
 		_light_detector = entity.get_node_or_null("/root/RoomLightDetector")
 	return _light_detector
+
+
+## Returns cached NightManager reference.
+func _get_night_manager_nav() -> Node:
+	if not _night_manager_nav or not is_instance_valid(_night_manager_nav):
+		_night_manager_nav = entity.get_node_or_null("/root/NightManager")
+	return _night_manager_nav
 
 
 

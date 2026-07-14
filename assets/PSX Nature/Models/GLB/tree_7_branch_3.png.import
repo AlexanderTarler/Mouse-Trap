@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bjnu5t6rn26p0"
 path.s3tc="res://.godot/imported/tree_7_branch_3.png-cb22608a2ea9c39f5241fc36bce4f925.s3tc.ctex"
+path.etc2="res://.godot/imported/tree_7_branch_3.png-cb22608a2ea9c39f5241fc36bce4f925.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Nature/Models/GLB/tree_7_branch_3.png"
-dest_files=["res://.godot/imported/tree_7_branch_3.png-cb22608a2ea9c39f5241fc36bce4f925.s3tc.ctex"]
+dest_files=["res://.godot/imported/tree_7_branch_3.png-cb22608a2ea9c39f5241fc36bce4f925.s3tc.ctex", "res://.godot/imported/tree_7_branch_3.png-cb22608a2ea9c39f5241fc36bce4f925.etc2.ctex"]
 
 [params]
 

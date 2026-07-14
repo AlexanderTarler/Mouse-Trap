@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c3mhgtnmcj72t"
 path.s3tc="res://.godot/imported/graffiti_mx_4_graffiti_mx_4.png-b6473fcf4653cfae7a964fbd5a7ced57.s3tc.ctex"
+path.etc2="res://.godot/imported/graffiti_mx_4_graffiti_mx_4.png-b6473fcf4653cfae7a964fbd5a7ced57.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Decals/graffiti_mx_4_graffiti_mx_4.png"
-dest_files=["res://.godot/imported/graffiti_mx_4_graffiti_mx_4.png-b6473fcf4653cfae7a964fbd5a7ced57.s3tc.ctex"]
+dest_files=["res://.godot/imported/graffiti_mx_4_graffiti_mx_4.png-b6473fcf4653cfae7a964fbd5a7ced57.s3tc.ctex", "res://.godot/imported/graffiti_mx_4_graffiti_mx_4.png-b6473fcf4653cfae7a964fbd5a7ced57.etc2.ctex"]
 
 [params]
 

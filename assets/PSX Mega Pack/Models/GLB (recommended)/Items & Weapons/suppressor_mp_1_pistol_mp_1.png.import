@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dgoj3vf63x4by"
 path.s3tc="res://.godot/imported/suppressor_mp_1_pistol_mp_1.png-e1ecbde67a2557ddd05242ad967d14fa.s3tc.ctex"
+path.etc2="res://.godot/imported/suppressor_mp_1_pistol_mp_1.png-e1ecbde67a2557ddd05242ad967d14fa.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/suppressor_mp_1_pistol_mp_1.png"
-dest_files=["res://.godot/imported/suppressor_mp_1_pistol_mp_1.png-e1ecbde67a2557ddd05242ad967d14fa.s3tc.ctex"]
+dest_files=["res://.godot/imported/suppressor_mp_1_pistol_mp_1.png-e1ecbde67a2557ddd05242ad967d14fa.s3tc.ctex", "res://.godot/imported/suppressor_mp_1_pistol_mp_1.png-e1ecbde67a2557ddd05242ad967d14fa.etc2.ctex"]
 
 [params]
 

@@ -9,6 +9,12 @@ extends MultiMeshInstance3D
 @export var max_scale: float = 1.35
 
 func _ready() -> void:
+	# PSX Optimization: Foliage does NOT cast real-time shadows (decimates framerate)
+	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# PSX Optimization: Distance culling for grass — invisible beyond 35 meters
+	visibility_range_end = 35.0
+	visibility_range_end_margin = 5.0
+	
 	# Fallback check to prevent engine exceptions if the resource isn't set up
 	if not multimesh:
 		push_error("MultiMesh resource is missing from this node!")

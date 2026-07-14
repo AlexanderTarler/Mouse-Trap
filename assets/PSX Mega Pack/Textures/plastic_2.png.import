@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c8o2sl5ht5w68"
 path.s3tc="res://.godot/imported/plastic_2.png-60110145c24282a788f97239693c65a6.s3tc.ctex"
+path.etc2="res://.godot/imported/plastic_2.png-60110145c24282a788f97239693c65a6.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Textures/plastic_2.png"
-dest_files=["res://.godot/imported/plastic_2.png-60110145c24282a788f97239693c65a6.s3tc.ctex"]
+dest_files=["res://.godot/imported/plastic_2.png-60110145c24282a788f97239693c65a6.s3tc.ctex", "res://.godot/imported/plastic_2.png-60110145c24282a788f97239693c65a6.etc2.ctex"]
 
 [params]
 

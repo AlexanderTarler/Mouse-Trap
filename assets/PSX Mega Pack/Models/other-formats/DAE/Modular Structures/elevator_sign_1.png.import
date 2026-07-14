@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cqv0iyl3mjmp0"
 path.s3tc="res://.godot/imported/elevator_sign_1.png-5410040a4200d81e17fb3cf24dc79015.s3tc.ctex"
+path.etc2="res://.godot/imported/elevator_sign_1.png-5410040a4200d81e17fb3cf24dc79015.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Modular Structures/elevator_sign_1.png"
-dest_files=["res://.godot/imported/elevator_sign_1.png-5410040a4200d81e17fb3cf24dc79015.s3tc.ctex"]
+dest_files=["res://.godot/imported/elevator_sign_1.png-5410040a4200d81e17fb3cf24dc79015.s3tc.ctex", "res://.godot/imported/elevator_sign_1.png-5410040a4200d81e17fb3cf24dc79015.etc2.ctex"]
 
 [params]
 

@@ -19,7 +19,16 @@ extends CharacterBody3D
 var STATE_KEYS: Array = []
 
 @export var speed: float = 4.0
-@export var catch_distance: float = 2.5
+## Distance (in meters) the Entity must be from the player to catch them.
+## Reduced from 2.5 to 0.5 so the Entity physically closes to melee range
+## before attacking. The STALK state now has a direct approach override
+## that bypasses the NavigationAgent3D within 2.0m to reach this distance.
+## Distance (in meters) the Entity must be from the player to catch them.
+## Set to 1.5m — physically achievable given collision body radii (~0.9-1.0m
+## center-to-center minimum) while close enough to feel like melee range.
+## The tightened nav distances (path_desired_distance=0.3, reduced jitter)
+## ensure the Entity visually closes to this range.
+@export var catch_distance: float = 1.5
 @export var relocate_radius: float = 20.0
 @export var path_update_interval: float = 0.3
 @export var stuck_timeout: float = 1.5
@@ -67,12 +76,23 @@ var STATE_KEYS: Array = []
 ## APPROACH_WINDOW to determine if the target is a door.
 @export var door_waypoint_marker: Node3D = null
 
+# PERFORMANCE: Cached autoload references (avoid per-frame get_node_or_null traversal)
+var _room_light_detector: Node = null
+
 @onready var _nav_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var _collision_shape: CollisionShape3D = $CollisionShape3D
 @onready var _monster_model: Node3D = $MonsterModel if has_node("MonsterModel") else null
 @onready var _anim_tree: AnimationTree = $AnimationTree if has_node("AnimationTree") else null
 @onready var _growl_audio: AudioStreamPlayer3D = $GrowlAudio if has_node("GrowlAudio") else null
 @onready var _footstep_audio: AudioStreamPlayer3D = $FootstepAudio if has_node("FootstepAudio") else null
+
+# Footstep audio exports — surface sounds and timing
+@export var wood_footsteps: Array[AudioStream] = []
+@export var grass_footsteps: Array[AudioStream] = []
+@export var footstep_interval_normal: float = 0.5
+@export var footstep_interval_charge: float = 0.25
+@export var footstep_pitch_min: float = 0.7
+@export var footstep_pitch_max: float = 0.95
 
 # Catch Area — a wide overlap zone that detects the player before physics
 # collision pushback prevents the distance check from triggering.
@@ -915,6 +935,7 @@ func _set_visuals_visible(v: bool) -> void:
 
 func _initialize_entity() -> void:
 	_night_manager = get_node_or_null("/root/NightManager")
+	_room_light_detector = get_node_or_null("/root/RoomLightDetector")
 	if _night_manager:
 		_night_manager.night_started.connect(_on_night_started)
 		_night_manager.night_ended.connect(_on_night_ended)
@@ -1967,6 +1988,23 @@ func _physics_process(delta: float) -> void:
 		if flat_vel.length_squared() > 0.05 and _monster_model:
 			var target_angle = atan2(flat_vel.x, flat_vel.y)
 			_monster_model.rotation.y = lerp_angle(_monster_model.rotation.y, target_angle, delta * 10.0)
+		
+		# ─── ENTITY FOOTSTEP AUDIO ──────────────────────────────────────
+		# Plays surface-appropriate footstep sounds while the Entity is moving.
+		# Uses get_real_velocity() instead of velocity (post-move_and_slide remaining)
+		# to get the actual movement speed. Uses _floor_ray.is_colliding() instead of
+		# is_on_floor() because the Floating Sphere ground snapping system adjusts Y
+		# after move_and_slide(), so the physics engine may not register floor contact.
+		# During CHARGE state, footsteps play at 2x speed (footstep_interval_charge).
+		var real_horz_vel := Vector2(get_real_velocity().x, get_real_velocity().z).length()
+		if _floor_ray.is_colliding() and real_horz_vel > 0.5:
+			var interval = footstep_interval_charge if _state == EntityAI.State.CHARGE else footstep_interval_normal
+			_entity_step_timer -= delta
+			if _entity_step_timer <= 0.0:
+				_play_entity_footstep()
+				_entity_step_timer = interval
+		else:
+			_entity_step_timer = 0.0
 	
 	_update_animations(delta)
 
@@ -2695,9 +2733,8 @@ func hear_noise(noise_position: Vector3, radius: float, intensity: float = 1.0) 
 		# When inside the cabin, resolve the noise position to a room name.
 		# This gives the Entity room-level awareness without exact position.
 		if _state == EntityAI.State.INDOOR_SEARCH:
-			var detector = get_node_or_null("/root/RoomLightDetector")
-			if detector and detector.has_method("get_room_name_at"):
-				last_known_room_name = detector.get_room_name_at(noise_position)
+			if _room_light_detector and _room_light_detector.has_method("get_room_name_at"):
+				last_known_room_name = _room_light_detector.get_room_name_at(noise_position)
 				print("[Entity Hears] Indoor noise tracked to room: %s" % last_known_room_name)
 		
 		# ─── INDOOR/OUTDOOR NOISE DETECTION ──────────────────────────
@@ -2715,9 +2752,8 @@ func hear_noise(noise_position: Vector3, radius: float, intensity: float = 1.0) 
 		#   Immediately update the belief system — the Entity now KNOWS
 		#   the player is outside. This is the ONLY way the Entity can
 		#   conclude the player escaped via hearing alone.
-		var detector = get_node_or_null("/root/RoomLightDetector")
-		if detector and detector.has_method("get_room_name_at"):
-			var room_name = detector.get_room_name_at(noise_position)
+		if _room_light_detector and _room_light_detector.has_method("get_room_name_at"):
+			var room_name = _room_light_detector.get_room_name_at(noise_position)
 			if room_name != "Outside":
 				# ─── INDOOR NOISE: Player is still inside! ──────────────
 				# The Entity hears the player inside the cabin. This is
@@ -3625,6 +3661,28 @@ func _fade_audio_player(player: AudioStreamPlayer, active: bool, target_vol: flo
 	player.volume_db = move_toward(player.volume_db, vol_target, (80.0 / fade_speed) * delta)
 	if not active and player.volume_db <= -79.0 and player.playing:
 		player.stop()
+
+
+## Plays a surface-appropriate footstep sound based on the Entity's current room.
+## Uses RoomLightDetector to determine if the Entity is inside (wood footsteps)
+## or outside (grass footsteps). The pitch range is lowered (0.7–0.95) compared
+## to the player's (0.85–1.15) to make the Entity's footsteps sound heavier.
+func _play_entity_footstep() -> void:
+	if not _footstep_audio:
+		return
+	
+	var room := RoomLightDetector.get_room_name_at(global_position)
+	var array: Array[AudioStream]
+	
+	if room == "Outside":
+		array = grass_footsteps
+	else:
+		array = wood_footsteps
+	
+	if array.size() > 0:
+		_footstep_audio.stream = array.pick_random()
+		_footstep_audio.pitch_scale = randf_range(footstep_pitch_min, footstep_pitch_max)
+		_footstep_audio.play()
 
 
 func _update_animations(_delta: float) -> void:

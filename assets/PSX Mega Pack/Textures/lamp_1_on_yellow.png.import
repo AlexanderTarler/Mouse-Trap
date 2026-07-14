@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://csqmre7bii55s"
 path.s3tc="res://.godot/imported/lamp_1_on_yellow.png-0ac70f785cf8439641dac9c9c83db208.s3tc.ctex"
+path.etc2="res://.godot/imported/lamp_1_on_yellow.png-0ac70f785cf8439641dac9c9c83db208.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Textures/lamp_1_on_yellow.png"
-dest_files=["res://.godot/imported/lamp_1_on_yellow.png-0ac70f785cf8439641dac9c9c83db208.s3tc.ctex"]
+dest_files=["res://.godot/imported/lamp_1_on_yellow.png-0ac70f785cf8439641dac9c9c83db208.s3tc.ctex", "res://.godot/imported/lamp_1_on_yellow.png-0ac70f785cf8439641dac9c9c83db208.etc2.ctex"]
 
 [params]
 

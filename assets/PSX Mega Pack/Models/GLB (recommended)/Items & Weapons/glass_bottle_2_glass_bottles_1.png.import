@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cps14j37ec4do"
 path.s3tc="res://.godot/imported/glass_bottle_2_glass_bottles_1.png-92c6df973eb74ae25c4640de1a8a7fcb.s3tc.ctex"
+path.etc2="res://.godot/imported/glass_bottle_2_glass_bottles_1.png-92c6df973eb74ae25c4640de1a8a7fcb.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/glass_bottle_2_glass_bottles_1.png"
-dest_files=["res://.godot/imported/glass_bottle_2_glass_bottles_1.png-92c6df973eb74ae25c4640de1a8a7fcb.s3tc.ctex"]
+dest_files=["res://.godot/imported/glass_bottle_2_glass_bottles_1.png-92c6df973eb74ae25c4640de1a8a7fcb.s3tc.ctex", "res://.godot/imported/glass_bottle_2_glass_bottles_1.png-92c6df973eb74ae25c4640de1a8a7fcb.etc2.ctex"]
 
 [params]
 

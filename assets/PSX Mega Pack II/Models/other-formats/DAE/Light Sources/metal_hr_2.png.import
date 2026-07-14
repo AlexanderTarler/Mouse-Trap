@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cul2lvgwn4q3b"
 path.s3tc="res://.godot/imported/metal_hr_2.png-84220305e0f17ea5fa68ae371c8d3195.s3tc.ctex"
+path.etc2="res://.godot/imported/metal_hr_2.png-84220305e0f17ea5fa68ae371c8d3195.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Light Sources/metal_hr_2.png"
-dest_files=["res://.godot/imported/metal_hr_2.png-84220305e0f17ea5fa68ae371c8d3195.s3tc.ctex"]
+dest_files=["res://.godot/imported/metal_hr_2.png-84220305e0f17ea5fa68ae371c8d3195.s3tc.ctex", "res://.godot/imported/metal_hr_2.png-84220305e0f17ea5fa68ae371c8d3195.etc2.ctex"]
 
 [params]
 

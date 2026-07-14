@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c2gtcajffvg1l"
 path.s3tc="res://.godot/imported/Mouse Trap Cabin 2_Window Hatch.jpg-e76f488c6d986b5e844a91666ab126ad.s3tc.ctex"
+path.etc2="res://.godot/imported/Mouse Trap Cabin 2_Window Hatch.jpg-e76f488c6d986b5e844a91666ab126ad.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/Three Cabins/Mouse Trap Cabin 2_Window Hatch.jpg"
-dest_files=["res://.godot/imported/Mouse Trap Cabin 2_Window Hatch.jpg-e76f488c6d986b5e844a91666ab126ad.s3tc.ctex"]
+dest_files=["res://.godot/imported/Mouse Trap Cabin 2_Window Hatch.jpg-e76f488c6d986b5e844a91666ab126ad.s3tc.ctex", "res://.godot/imported/Mouse Trap Cabin 2_Window Hatch.jpg-e76f488c6d986b5e844a91666ab126ad.etc2.ctex"]
 
 [params]
 

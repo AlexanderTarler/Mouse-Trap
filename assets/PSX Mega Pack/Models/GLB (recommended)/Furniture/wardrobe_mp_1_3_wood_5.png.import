@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://d4fdknda2rudm"
 path.s3tc="res://.godot/imported/wardrobe_mp_1_3_wood_5.png-73e1c72236ecaef7627338891a150b91.s3tc.ctex"
+path.etc2="res://.godot/imported/wardrobe_mp_1_3_wood_5.png-73e1c72236ecaef7627338891a150b91.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/wardrobe_mp_1_3_wood_5.png"
-dest_files=["res://.godot/imported/wardrobe_mp_1_3_wood_5.png-73e1c72236ecaef7627338891a150b91.s3tc.ctex"]
+dest_files=["res://.godot/imported/wardrobe_mp_1_3_wood_5.png-73e1c72236ecaef7627338891a150b91.s3tc.ctex", "res://.godot/imported/wardrobe_mp_1_3_wood_5.png-73e1c72236ecaef7627338891a150b91.etc2.ctex"]
 
 [params]
 

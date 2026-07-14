@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://db0la4b3g3tg8"
 path.s3tc="res://.godot/imported/machinery_3_scifi_texture_1.png-e7d4b40a71284afe9e52b6f2b2661784.s3tc.ctex"
+path.etc2="res://.godot/imported/machinery_3_scifi_texture_1.png-e7d4b40a71284afe9e52b6f2b2661784.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/GLB/machinery_3_scifi_texture_1.png"
-dest_files=["res://.godot/imported/machinery_3_scifi_texture_1.png-e7d4b40a71284afe9e52b6f2b2661784.s3tc.ctex"]
+dest_files=["res://.godot/imported/machinery_3_scifi_texture_1.png-e7d4b40a71284afe9e52b6f2b2661784.s3tc.ctex", "res://.godot/imported/machinery_3_scifi_texture_1.png-e7d4b40a71284afe9e52b6f2b2661784.etc2.ctex"]
 
 [params]
 

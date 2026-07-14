@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cakebksul7mso"
 path.s3tc="res://.godot/imported/plastic_mx_2.png.001.png-2f8202ef8317be26c40a1eb793345f73.s3tc.ctex"
+path.etc2="res://.godot/imported/plastic_mx_2.png.001.png-2f8202ef8317be26c40a1eb793345f73.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Doors & Gates/plastic_mx_2.png.001.png"
-dest_files=["res://.godot/imported/plastic_mx_2.png.001.png-2f8202ef8317be26c40a1eb793345f73.s3tc.ctex"]
+dest_files=["res://.godot/imported/plastic_mx_2.png.001.png-2f8202ef8317be26c40a1eb793345f73.s3tc.ctex", "res://.godot/imported/plastic_mx_2.png.001.png-2f8202ef8317be26c40a1eb793345f73.etc2.ctex"]
 
 [params]
 

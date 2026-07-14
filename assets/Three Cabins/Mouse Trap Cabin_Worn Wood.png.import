@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bbiqktog3gqpx"
 path.s3tc="res://.godot/imported/Mouse Trap Cabin_Worn Wood.png-360141d289d40ee0f72750ebcd390c96.s3tc.ctex"
+path.etc2="res://.godot/imported/Mouse Trap Cabin_Worn Wood.png-360141d289d40ee0f72750ebcd390c96.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/Three Cabins/Mouse Trap Cabin_Worn Wood.png"
-dest_files=["res://.godot/imported/Mouse Trap Cabin_Worn Wood.png-360141d289d40ee0f72750ebcd390c96.s3tc.ctex"]
+dest_files=["res://.godot/imported/Mouse Trap Cabin_Worn Wood.png-360141d289d40ee0f72750ebcd390c96.s3tc.ctex", "res://.godot/imported/Mouse Trap Cabin_Worn Wood.png-360141d289d40ee0f72750ebcd390c96.etc2.ctex"]
 
 [params]
 

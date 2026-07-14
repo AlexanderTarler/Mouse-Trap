@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bpr8ujlfljgrw"
 path.s3tc="res://.godot/imported/package_hr_1_package_hr_1.png-0ca0cb04ed7848927943e26bc3bdc266.s3tc.ctex"
+path.etc2="res://.godot/imported/package_hr_1_package_hr_1.png-0ca0cb04ed7848927943e26bc3bdc266.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/package_hr_1_package_hr_1.png"
-dest_files=["res://.godot/imported/package_hr_1_package_hr_1.png-0ca0cb04ed7848927943e26bc3bdc266.s3tc.ctex"]
+dest_files=["res://.godot/imported/package_hr_1_package_hr_1.png-0ca0cb04ed7848927943e26bc3bdc266.s3tc.ctex", "res://.godot/imported/package_hr_1_package_hr_1.png-0ca0cb04ed7848927943e26bc3bdc266.etc2.ctex"]
 
 [params]
 

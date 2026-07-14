@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://67idu4tsvnq"
 path.s3tc="res://.godot/imported/cassette_tape_mp_2_cassette_tape_2.png-de88700673fa35326fc6050aea2f2031.s3tc.ctex"
+path.etc2="res://.godot/imported/cassette_tape_mp_2_cassette_tape_2.png-de88700673fa35326fc6050aea2f2031.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/cassette_tape_mp_2_cassette_tape_2.png"
-dest_files=["res://.godot/imported/cassette_tape_mp_2_cassette_tape_2.png-de88700673fa35326fc6050aea2f2031.s3tc.ctex"]
+dest_files=["res://.godot/imported/cassette_tape_mp_2_cassette_tape_2.png-de88700673fa35326fc6050aea2f2031.s3tc.ctex", "res://.godot/imported/cassette_tape_mp_2_cassette_tape_2.png-de88700673fa35326fc6050aea2f2031.etc2.ctex"]
 
 [params]
 

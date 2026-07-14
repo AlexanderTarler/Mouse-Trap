@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cix3hktt222o5"
 path.s3tc="res://.godot/imported/keycard_1_3_keys_mp_1.png-17ebc8aa91ace030343436a6218b1bbb.s3tc.ctex"
+path.etc2="res://.godot/imported/keycard_1_3_keys_mp_1.png-17ebc8aa91ace030343436a6218b1bbb.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/keycard_1_3_keys_mp_1.png"
-dest_files=["res://.godot/imported/keycard_1_3_keys_mp_1.png-17ebc8aa91ace030343436a6218b1bbb.s3tc.ctex"]
+dest_files=["res://.godot/imported/keycard_1_3_keys_mp_1.png-17ebc8aa91ace030343436a6218b1bbb.s3tc.ctex", "res://.godot/imported/keycard_1_3_keys_mp_1.png-17ebc8aa91ace030343436a6218b1bbb.etc2.ctex"]
 
 [params]
 

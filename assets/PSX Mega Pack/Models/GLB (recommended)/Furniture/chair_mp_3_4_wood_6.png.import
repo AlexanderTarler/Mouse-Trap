@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b5utdsfmxtlkh"
 path.s3tc="res://.godot/imported/chair_mp_3_4_wood_6.png-8ae970e744b1084dd0bfd220f22cea82.s3tc.ctex"
+path.etc2="res://.godot/imported/chair_mp_3_4_wood_6.png-8ae970e744b1084dd0bfd220f22cea82.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/chair_mp_3_4_wood_6.png"
-dest_files=["res://.godot/imported/chair_mp_3_4_wood_6.png-8ae970e744b1084dd0bfd220f22cea82.s3tc.ctex"]
+dest_files=["res://.godot/imported/chair_mp_3_4_wood_6.png-8ae970e744b1084dd0bfd220f22cea82.s3tc.ctex", "res://.godot/imported/chair_mp_3_4_wood_6.png-8ae970e744b1084dd0bfd220f22cea82.etc2.ctex"]
 
 [params]
 

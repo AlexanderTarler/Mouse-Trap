@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://l0v4vw3a8tn8"
 path.s3tc="res://.godot/imported/side_doorway_2_door_frame_wood_1.png-066db9d483909e278f2fee2b1020acce.s3tc.ctex"
+path.etc2="res://.godot/imported/side_doorway_2_door_frame_wood_1.png-066db9d483909e278f2fee2b1020acce.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Modular Structures/side_doorway_2_door_frame_wood_1.png"
-dest_files=["res://.godot/imported/side_doorway_2_door_frame_wood_1.png-066db9d483909e278f2fee2b1020acce.s3tc.ctex"]
+dest_files=["res://.godot/imported/side_doorway_2_door_frame_wood_1.png-066db9d483909e278f2fee2b1020acce.s3tc.ctex", "res://.godot/imported/side_doorway_2_door_frame_wood_1.png-066db9d483909e278f2fee2b1020acce.etc2.ctex"]
 
 [params]
 

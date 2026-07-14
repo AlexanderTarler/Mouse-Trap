@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://l5xhmhrfd4yj"
 path.s3tc="res://.godot/imported/keypad_2_emission.png-ce8ac510e946e7b987b4526fd761d0cc.s3tc.ctex"
+path.etc2="res://.godot/imported/keypad_2_emission.png-ce8ac510e946e7b987b4526fd761d0cc.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Textures/keypad_2_emission.png"
-dest_files=["res://.godot/imported/keypad_2_emission.png-ce8ac510e946e7b987b4526fd761d0cc.s3tc.ctex"]
+dest_files=["res://.godot/imported/keypad_2_emission.png-ce8ac510e946e7b987b4526fd761d0cc.s3tc.ctex", "res://.godot/imported/keypad_2_emission.png-ce8ac510e946e7b987b4526fd761d0cc.etc2.ctex"]
 
 [params]
 

@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://wuk8xwejjue"
 path.s3tc="res://.godot/imported/van_2_van_1.png-ec6765d5be7809711253f0be4dee9094.s3tc.ctex"
+path.etc2="res://.godot/imported/van_2_van_1.png-ec6765d5be7809711253f0be4dee9094.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Kidnapper's Van/Meshes/other-formats/GLB/van_2_van_1.png"
-dest_files=["res://.godot/imported/van_2_van_1.png-ec6765d5be7809711253f0be4dee9094.s3tc.ctex"]
+dest_files=["res://.godot/imported/van_2_van_1.png-ec6765d5be7809711253f0be4dee9094.s3tc.ctex", "res://.godot/imported/van_2_van_1.png-ec6765d5be7809711253f0be4dee9094.etc2.ctex"]
 
 [params]
 

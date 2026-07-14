@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://p135yaou0nb8"
 path.s3tc="res://.godot/imported/cell_phone_hammer_mx_1.png-ae1164b0100960f06c49152b8f3381ce.s3tc.ctex"
+path.etc2="res://.godot/imported/cell_phone_hammer_mx_1.png-ae1164b0100960f06c49152b8f3381ce.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Weapons & Tools/cell_phone_hammer_mx_1.png"
-dest_files=["res://.godot/imported/cell_phone_hammer_mx_1.png-ae1164b0100960f06c49152b8f3381ce.s3tc.ctex"]
+dest_files=["res://.godot/imported/cell_phone_hammer_mx_1.png-ae1164b0100960f06c49152b8f3381ce.s3tc.ctex", "res://.godot/imported/cell_phone_hammer_mx_1.png-ae1164b0100960f06c49152b8f3381ce.etc2.ctex"]
 
 [params]
 

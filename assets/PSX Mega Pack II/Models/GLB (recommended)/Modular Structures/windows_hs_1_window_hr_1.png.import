@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b1781fv5vk7b0"
 path.s3tc="res://.godot/imported/windows_hs_1_window_hr_1.png-ca5fd69b739c1e30aa1c8fedcd31c431.s3tc.ctex"
+path.etc2="res://.godot/imported/windows_hs_1_window_hr_1.png-ca5fd69b739c1e30aa1c8fedcd31c431.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Modular Structures/windows_hs_1_window_hr_1.png"
-dest_files=["res://.godot/imported/windows_hs_1_window_hr_1.png-ca5fd69b739c1e30aa1c8fedcd31c431.s3tc.ctex"]
+dest_files=["res://.godot/imported/windows_hs_1_window_hr_1.png-ca5fd69b739c1e30aa1c8fedcd31c431.s3tc.ctex", "res://.godot/imported/windows_hs_1_window_hr_1.png-ca5fd69b739c1e30aa1c8fedcd31c431.etc2.ctex"]
 
 [params]
 

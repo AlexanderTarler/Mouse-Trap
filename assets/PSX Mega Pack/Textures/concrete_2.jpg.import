@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://d2qgeqaj1qfqk"
 path.s3tc="res://.godot/imported/concrete_2.jpg-113ccd7b7d9d2cdc671c56e8ade8547e.s3tc.ctex"
+path.etc2="res://.godot/imported/concrete_2.jpg-113ccd7b7d9d2cdc671c56e8ade8547e.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Textures/concrete_2.jpg"
-dest_files=["res://.godot/imported/concrete_2.jpg-113ccd7b7d9d2cdc671c56e8ade8547e.s3tc.ctex"]
+dest_files=["res://.godot/imported/concrete_2.jpg-113ccd7b7d9d2cdc671c56e8ade8547e.s3tc.ctex", "res://.godot/imported/concrete_2.jpg-113ccd7b7d9d2cdc671c56e8ade8547e.etc2.ctex"]
 
 [params]
 

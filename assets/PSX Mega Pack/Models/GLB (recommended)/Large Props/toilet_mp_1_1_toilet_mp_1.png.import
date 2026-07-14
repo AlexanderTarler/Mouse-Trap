@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dlfracxx8fuc8"
 path.s3tc="res://.godot/imported/toilet_mp_1_1_toilet_mp_1.png-1c14e8c679acd02fd6f0be0361ad736c.s3tc.ctex"
+path.etc2="res://.godot/imported/toilet_mp_1_1_toilet_mp_1.png-1c14e8c679acd02fd6f0be0361ad736c.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/toilet_mp_1_1_toilet_mp_1.png"
-dest_files=["res://.godot/imported/toilet_mp_1_1_toilet_mp_1.png-1c14e8c679acd02fd6f0be0361ad736c.s3tc.ctex"]
+dest_files=["res://.godot/imported/toilet_mp_1_1_toilet_mp_1.png-1c14e8c679acd02fd6f0be0361ad736c.s3tc.ctex", "res://.godot/imported/toilet_mp_1_1_toilet_mp_1.png-1c14e8c679acd02fd6f0be0361ad736c.etc2.ctex"]
 
 [params]
 

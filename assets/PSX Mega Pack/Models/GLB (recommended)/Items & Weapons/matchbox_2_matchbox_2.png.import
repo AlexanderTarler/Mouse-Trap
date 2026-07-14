@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bw6oyf7w8cjld"
 path.s3tc="res://.godot/imported/matchbox_2_matchbox_2.png-403bd1fe3de874dceed3c0d51884ae92.s3tc.ctex"
+path.etc2="res://.godot/imported/matchbox_2_matchbox_2.png-403bd1fe3de874dceed3c0d51884ae92.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/matchbox_2_matchbox_2.png"
-dest_files=["res://.godot/imported/matchbox_2_matchbox_2.png-403bd1fe3de874dceed3c0d51884ae92.s3tc.ctex"]
+dest_files=["res://.godot/imported/matchbox_2_matchbox_2.png-403bd1fe3de874dceed3c0d51884ae92.s3tc.ctex", "res://.godot/imported/matchbox_2_matchbox_2.png-403bd1fe3de874dceed3c0d51884ae92.etc2.ctex"]
 
 [params]
 

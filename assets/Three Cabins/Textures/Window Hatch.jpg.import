@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b74c638keiibj"
 path.s3tc="res://.godot/imported/Window Hatch.jpg-b569b3a860d709431e10d6ba5a4f9df2.s3tc.ctex"
+path.etc2="res://.godot/imported/Window Hatch.jpg-b569b3a860d709431e10d6ba5a4f9df2.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/Three Cabins/Textures/Window Hatch.jpg"
-dest_files=["res://.godot/imported/Window Hatch.jpg-b569b3a860d709431e10d6ba5a4f9df2.s3tc.ctex"]
+dest_files=["res://.godot/imported/Window Hatch.jpg-b569b3a860d709431e10d6ba5a4f9df2.s3tc.ctex", "res://.godot/imported/Window Hatch.jpg-b569b3a860d709431e10d6ba5a4f9df2.etc2.ctex"]
 
 [params]
 

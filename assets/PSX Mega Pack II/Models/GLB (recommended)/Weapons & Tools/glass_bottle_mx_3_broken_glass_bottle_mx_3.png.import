@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bumtpso27uy6v"
 path.s3tc="res://.godot/imported/glass_bottle_mx_3_broken_glass_bottle_mx_3.png-595f9bb7ae32379119a00ee8a3bc7027.s3tc.ctex"
+path.etc2="res://.godot/imported/glass_bottle_mx_3_broken_glass_bottle_mx_3.png-595f9bb7ae32379119a00ee8a3bc7027.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Weapons & Tools/glass_bottle_mx_3_broken_glass_bottle_mx_3.png"
-dest_files=["res://.godot/imported/glass_bottle_mx_3_broken_glass_bottle_mx_3.png-595f9bb7ae32379119a00ee8a3bc7027.s3tc.ctex"]
+dest_files=["res://.godot/imported/glass_bottle_mx_3_broken_glass_bottle_mx_3.png-595f9bb7ae32379119a00ee8a3bc7027.s3tc.ctex", "res://.godot/imported/glass_bottle_mx_3_broken_glass_bottle_mx_3.png-595f9bb7ae32379119a00ee8a3bc7027.etc2.ctex"]
 
 [params]
 

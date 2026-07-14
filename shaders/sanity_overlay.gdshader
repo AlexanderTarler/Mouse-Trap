@@ -73,16 +73,25 @@ void fragment() {
 	// Combine noise with edge distance
 	// corruption_intensity controls how far from edges the tendrils reach
 	// At 0: tendrils stay at the very edges (invisible)
-	// At 1: tendrils reach well past center
+	// At 1: tendrils reach well past center — full coverage
 	float core_influence = 1.0 - corruption_intensity;
-	float tendril = edge_dist - (n1 * 0.45 + n2 * 0.2) + core_influence * 1.1;
+	float tendril = edge_dist - (n1 * 0.45 + n2 * 0.2) + core_influence * 0.6;
 
 	// Smooth the tendril threshold with adjustable edge
 	float alpha = smoothstep(edge_threshold - 0.15, edge_threshold + 0.25, tendril);
 
-	// Cap maximum opacity so player can ALWAYS see slivers
-	float max_opacity = 0.85 * corruption_intensity;
+	// FIX 1: At corruption_intensity = 1.0, allow full black (100% opacity).
+	// Removed the 0.85 cap that prevented full-screen coverage.
+	float max_opacity = corruption_intensity;
 	alpha = min(alpha, max_opacity);
+
+	// FIX 2: Center-fill component — at high corruption intensity,
+	// the tendrils converge on screen center. The tendril equation
+	// naturally leaves the center visible because edge_dist = 0 there.
+	// This fill term pushes opacity up at center when intensity is high.
+	float center_fill = corruption_intensity * 1.2 - edge_dist;
+	center_fill = clamp(center_fill * corruption_intensity, 0.0, 1.0);
+	alpha = max(alpha, center_fill);
 
 	// High-frequency micro-gaps — thin slivers of visibility
 	// even at full corruption_intensity

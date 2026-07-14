@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bv6nfhtjlsk8p"
 path.s3tc="res://.godot/imported/baking_soda_1.png-39afb5e7ea04072ebe61eeb0f04fe775.s3tc.ctex"
+path.etc2="res://.godot/imported/baking_soda_1.png-39afb5e7ea04072ebe61eeb0f04fe775.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Textures/baking_soda_1.png"
-dest_files=["res://.godot/imported/baking_soda_1.png-39afb5e7ea04072ebe61eeb0f04fe775.s3tc.ctex"]
+dest_files=["res://.godot/imported/baking_soda_1.png-39afb5e7ea04072ebe61eeb0f04fe775.s3tc.ctex", "res://.godot/imported/baking_soda_1.png-39afb5e7ea04072ebe61eeb0f04fe775.etc2.ctex"]
 
 [params]
 

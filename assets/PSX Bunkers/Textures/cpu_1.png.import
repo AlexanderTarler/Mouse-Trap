@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://wayr7i68r14s"
 path.s3tc="res://.godot/imported/cpu_1.png-626c8f8d8295a07562e835ba209e7bd5.s3tc.ctex"
+path.etc2="res://.godot/imported/cpu_1.png-626c8f8d8295a07562e835ba209e7bd5.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Bunkers/Textures/cpu_1.png"
-dest_files=["res://.godot/imported/cpu_1.png-626c8f8d8295a07562e835ba209e7bd5.s3tc.ctex"]
+dest_files=["res://.godot/imported/cpu_1.png-626c8f8d8295a07562e835ba209e7bd5.s3tc.ctex", "res://.godot/imported/cpu_1.png-626c8f8d8295a07562e835ba209e7bd5.etc2.ctex"]
 
 [params]
 

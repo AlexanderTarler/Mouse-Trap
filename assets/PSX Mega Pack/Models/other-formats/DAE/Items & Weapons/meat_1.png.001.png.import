@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://byt2toaf11b0k"
 path.s3tc="res://.godot/imported/meat_1.png.001.png-155921dd99d4d92f296577e1ebb741f3.s3tc.ctex"
+path.etc2="res://.godot/imported/meat_1.png.001.png-155921dd99d4d92f296577e1ebb741f3.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Items & Weapons/meat_1.png.001.png"
-dest_files=["res://.godot/imported/meat_1.png.001.png-155921dd99d4d92f296577e1ebb741f3.s3tc.ctex"]
+dest_files=["res://.godot/imported/meat_1.png.001.png-155921dd99d4d92f296577e1ebb741f3.s3tc.ctex", "res://.godot/imported/meat_1.png.001.png-155921dd99d4d92f296577e1ebb741f3.etc2.ctex"]
 
 [params]
 

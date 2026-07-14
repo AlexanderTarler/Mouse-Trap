@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b0ni3sh23qs0m"
 path.s3tc="res://.godot/imported/elevator_2_elevator_buttons_1.png-168995410d274abd46d680db371131c3.s3tc.ctex"
+path.etc2="res://.godot/imported/elevator_2_elevator_buttons_1.png-168995410d274abd46d680db371131c3.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Modular Structures/elevator_2_elevator_buttons_1.png"
-dest_files=["res://.godot/imported/elevator_2_elevator_buttons_1.png-168995410d274abd46d680db371131c3.s3tc.ctex"]
+dest_files=["res://.godot/imported/elevator_2_elevator_buttons_1.png-168995410d274abd46d680db371131c3.s3tc.ctex", "res://.godot/imported/elevator_2_elevator_buttons_1.png-168995410d274abd46d680db371131c3.etc2.ctex"]
 
 [params]
 

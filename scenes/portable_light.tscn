@@ -9,12 +9,11 @@ radius = 15.0
 [sub_resource type="BoxShape3D" id="BoxShape3D_oeyy3"]
 size = Vector3(0.6, 0.4, 0.6)
 
-[node name="PortableLight" type="RigidBody3D" unique_id=279815332 node_paths=PackedStringArray("generator_outlet")]
-script = ExtResource("1_oeyy3")
-generator_outlet = NodePath("Marker3D")
+[node name="PortableLight" type="RigidBody3D" unique_id=279815332]
 continuous_cd = true
 contact_monitor = true
 max_contacts_reported = 4
+script = ExtResource("1_oeyy3")
 
 [node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=752760476]
 light_energy = 5.0

@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://syd5p4u4gudy"
 path.s3tc="res://.godot/imported/pipes_hr_5_middle_steel_beams_hr_1.png-0f9d9a23f443bc685d04c1ed0b2041f9.s3tc.ctex"
+path.etc2="res://.godot/imported/pipes_hr_5_middle_steel_beams_hr_1.png-0f9d9a23f443bc685d04c1ed0b2041f9.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Modular Structures/pipes_hr_5_middle_steel_beams_hr_1.png"
-dest_files=["res://.godot/imported/pipes_hr_5_middle_steel_beams_hr_1.png-0f9d9a23f443bc685d04c1ed0b2041f9.s3tc.ctex"]
+dest_files=["res://.godot/imported/pipes_hr_5_middle_steel_beams_hr_1.png-0f9d9a23f443bc685d04c1ed0b2041f9.s3tc.ctex", "res://.godot/imported/pipes_hr_5_middle_steel_beams_hr_1.png-0f9d9a23f443bc685d04c1ed0b2041f9.etc2.ctex"]
 
 [params]
 

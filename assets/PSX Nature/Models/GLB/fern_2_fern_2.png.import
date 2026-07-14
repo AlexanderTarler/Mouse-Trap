@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bx5iwp8sp43om"
 path.s3tc="res://.godot/imported/fern_2_fern_2.png-2c60055986d18e8c42d7937b4ae63e9b.s3tc.ctex"
+path.etc2="res://.godot/imported/fern_2_fern_2.png-2c60055986d18e8c42d7937b4ae63e9b.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Nature/Models/GLB/fern_2_fern_2.png"
-dest_files=["res://.godot/imported/fern_2_fern_2.png-2c60055986d18e8c42d7937b4ae63e9b.s3tc.ctex"]
+dest_files=["res://.godot/imported/fern_2_fern_2.png-2c60055986d18e8c42d7937b4ae63e9b.s3tc.ctex", "res://.godot/imported/fern_2_fern_2.png-2c60055986d18e8c42d7937b4ae63e9b.etc2.ctex"]
 
 [params]
 

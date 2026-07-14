@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bymu358hb8xkl"
 path.s3tc="res://.godot/imported/bars_metal_4_metal_6.png-7e4a4696911e586709dc7dd23a3521fd.s3tc.ctex"
+path.etc2="res://.godot/imported/bars_metal_4_metal_6.png-7e4a4696911e586709dc7dd23a3521fd.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/GLB/bars_metal_4_metal_6.png"
-dest_files=["res://.godot/imported/bars_metal_4_metal_6.png-7e4a4696911e586709dc7dd23a3521fd.s3tc.ctex"]
+dest_files=["res://.godot/imported/bars_metal_4_metal_6.png-7e4a4696911e586709dc7dd23a3521fd.s3tc.ctex", "res://.godot/imported/bars_metal_4_metal_6.png-7e4a4696911e586709dc7dd23a3521fd.etc2.ctex"]
 
 [params]
 

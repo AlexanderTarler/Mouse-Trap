@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bx0o1bcl2bntq"
 path.s3tc="res://.godot/imported/bunker_entrance_1_concrete_wall_bnk_1.png-3298022e6cfab21dfd9548bc58d7c724.s3tc.ctex"
+path.etc2="res://.godot/imported/bunker_entrance_1_concrete_wall_bnk_1.png-3298022e6cfab21dfd9548bc58d7c724.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/GLB/bunker_entrance_1_concrete_wall_bnk_1.png"
-dest_files=["res://.godot/imported/bunker_entrance_1_concrete_wall_bnk_1.png-3298022e6cfab21dfd9548bc58d7c724.s3tc.ctex"]
+dest_files=["res://.godot/imported/bunker_entrance_1_concrete_wall_bnk_1.png-3298022e6cfab21dfd9548bc58d7c724.s3tc.ctex", "res://.godot/imported/bunker_entrance_1_concrete_wall_bnk_1.png-3298022e6cfab21dfd9548bc58d7c724.etc2.ctex"]
 
 [params]
 

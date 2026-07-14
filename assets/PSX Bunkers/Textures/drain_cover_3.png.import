@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bgocog20gk6qn"
 path.s3tc="res://.godot/imported/drain_cover_3.png-0541c299cd32c102215bef1f1c28d058.s3tc.ctex"
+path.etc2="res://.godot/imported/drain_cover_3.png-0541c299cd32c102215bef1f1c28d058.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Bunkers/Textures/drain_cover_3.png"
-dest_files=["res://.godot/imported/drain_cover_3.png-0541c299cd32c102215bef1f1c28d058.s3tc.ctex"]
+dest_files=["res://.godot/imported/drain_cover_3.png-0541c299cd32c102215bef1f1c28d058.s3tc.ctex", "res://.godot/imported/drain_cover_3.png-0541c299cd32c102215bef1f1c28d058.etc2.ctex"]
 
 [params]
 

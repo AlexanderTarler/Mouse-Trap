@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://h4dlyogvm5yv"
 path.s3tc="res://.godot/imported/machinery_3.png-a9ca4dbdc05e2074420d1d61d7c28a4f.s3tc.ctex"
+path.etc2="res://.godot/imported/machinery_3.png-a9ca4dbdc05e2074420d1d61d7c28a4f.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Bunkers/Textures/machinery_3.png"
-dest_files=["res://.godot/imported/machinery_3.png-a9ca4dbdc05e2074420d1d61d7c28a4f.s3tc.ctex"]
+dest_files=["res://.godot/imported/machinery_3.png-a9ca4dbdc05e2074420d1d61d7c28a4f.s3tc.ctex", "res://.godot/imported/machinery_3.png-a9ca4dbdc05e2074420d1d61d7c28a4f.etc2.ctex"]
 
 [params]
 

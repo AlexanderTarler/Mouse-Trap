@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://d2c7p1titmigv"
 path.s3tc="res://.godot/imported/bed_2_old_mattress_mp_2.png-593bcdef11d3d2b1772dba35ef37125d.s3tc.ctex"
+path.etc2="res://.godot/imported/bed_2_old_mattress_mp_2.png-593bcdef11d3d2b1772dba35ef37125d.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/bed_2_old_mattress_mp_2.png"
-dest_files=["res://.godot/imported/bed_2_old_mattress_mp_2.png-593bcdef11d3d2b1772dba35ef37125d.s3tc.ctex"]
+dest_files=["res://.godot/imported/bed_2_old_mattress_mp_2.png-593bcdef11d3d2b1772dba35ef37125d.s3tc.ctex", "res://.godot/imported/bed_2_old_mattress_mp_2.png-593bcdef11d3d2b1772dba35ef37125d.etc2.ctex"]
 
 [params]
 

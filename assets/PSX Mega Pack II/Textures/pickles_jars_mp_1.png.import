@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dv5j6o2lbbv4f"
 path.s3tc="res://.godot/imported/pickles_jars_mp_1.png-f04e05efa1835c3f76fba46806885fe8.s3tc.ctex"
+path.etc2="res://.godot/imported/pickles_jars_mp_1.png-f04e05efa1835c3f76fba46806885fe8.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Textures/pickles_jars_mp_1.png"
-dest_files=["res://.godot/imported/pickles_jars_mp_1.png-f04e05efa1835c3f76fba46806885fe8.s3tc.ctex"]
+dest_files=["res://.godot/imported/pickles_jars_mp_1.png-f04e05efa1835c3f76fba46806885fe8.s3tc.ctex", "res://.godot/imported/pickles_jars_mp_1.png-f04e05efa1835c3f76fba46806885fe8.etc2.ctex"]
 
 [params]
 

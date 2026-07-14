@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://7e2w36po6r0y"
 path.s3tc="res://.godot/imported/Generic Tree_1.png-b5fb1f1a9f0b5711f26e50c145ee9bac.s3tc.ctex"
+path.etc2="res://.godot/imported/Generic Tree_1.png-b5fb1f1a9f0b5711f26e50c145ee9bac.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Forest Meadows by VadaCross/3D Models/Generic Tree/Generic Tree_1.png"
-dest_files=["res://.godot/imported/Generic Tree_1.png-b5fb1f1a9f0b5711f26e50c145ee9bac.s3tc.ctex"]
+dest_files=["res://.godot/imported/Generic Tree_1.png-b5fb1f1a9f0b5711f26e50c145ee9bac.s3tc.ctex", "res://.godot/imported/Generic Tree_1.png-b5fb1f1a9f0b5711f26e50c145ee9bac.etc2.ctex"]
 
 [params]
 

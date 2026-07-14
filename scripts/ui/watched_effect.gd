@@ -55,6 +55,10 @@ func _ready() -> void:
 	_watched_audio_player.volume_db = WATCHED_AUDIO_VOLUME_DB
 	var watched_stream = load(WATCHED_AUDIO_PATH) as AudioStream
 	if watched_stream:
+		# Enable looping so the whispers play continuously while the player
+		# is looking at the Entity, rather than cutting out after one play.
+		if watched_stream is AudioStreamOggVorbis:
+			watched_stream.loop = true
 		_watched_audio_player.stream = watched_stream
 	add_child(_watched_audio_player)
 	
@@ -84,12 +88,17 @@ func _on_watched_intensity_changed(intensity: float) -> void:
 	if _shader_material:
 		_shader_material.set_shader_parameter("watched_intensity", intensity)
 	
-	# Play "sfx cinematic 53" when the player starts looking at the Entity
+	# Play "sfx cinematic 53" when the player starts looking at the Entity.
+	# Once playing, the audio loops continuously until the player looks away
+	# (intensity drops to 0.0). At peak intensity (1.0), the volume reaches
+	# its maximum audible level and stays there.
 	if intensity > 0.0 and not _watched_audio_was_playing:
 		if _watched_audio_player and _watched_audio_player.stream:
 			_watched_audio_player.play()
 		_watched_audio_was_playing = true
 	elif intensity <= 0.0 and _watched_audio_was_playing:
+		if _watched_audio_player and _watched_audio_player.playing:
+			_watched_audio_player.stop()
 		_watched_audio_was_playing = false
 
 

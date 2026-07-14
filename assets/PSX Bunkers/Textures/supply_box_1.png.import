@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dbb1w0pmg3t2w"
 path.s3tc="res://.godot/imported/supply_box_1.png-e7a2e3d033fbedb6f5270601aa4fcb56.s3tc.ctex"
+path.etc2="res://.godot/imported/supply_box_1.png-e7a2e3d033fbedb6f5270601aa4fcb56.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Bunkers/Textures/supply_box_1.png"
-dest_files=["res://.godot/imported/supply_box_1.png-e7a2e3d033fbedb6f5270601aa4fcb56.s3tc.ctex"]
+dest_files=["res://.godot/imported/supply_box_1.png-e7a2e3d033fbedb6f5270601aa4fcb56.s3tc.ctex", "res://.godot/imported/supply_box_1.png-e7a2e3d033fbedb6f5270601aa4fcb56.etc2.ctex"]
 
 [params]
 

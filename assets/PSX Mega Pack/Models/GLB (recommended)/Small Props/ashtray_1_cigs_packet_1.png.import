@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://wgct30e6v53o"
 path.s3tc="res://.godot/imported/ashtray_1_cigs_packet_1.png-333321738b017192f6cd26b7b5a8fc25.s3tc.ctex"
+path.etc2="res://.godot/imported/ashtray_1_cigs_packet_1.png-333321738b017192f6cd26b7b5a8fc25.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/ashtray_1_cigs_packet_1.png"
-dest_files=["res://.godot/imported/ashtray_1_cigs_packet_1.png-333321738b017192f6cd26b7b5a8fc25.s3tc.ctex"]
+dest_files=["res://.godot/imported/ashtray_1_cigs_packet_1.png-333321738b017192f6cd26b7b5a8fc25.s3tc.ctex", "res://.godot/imported/ashtray_1_cigs_packet_1.png-333321738b017192f6cd26b7b5a8fc25.etc2.ctex"]
 
 [params]
 

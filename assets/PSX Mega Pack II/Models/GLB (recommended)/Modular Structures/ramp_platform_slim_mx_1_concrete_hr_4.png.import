@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://btuk2hhdvofq0"
 path.s3tc="res://.godot/imported/ramp_platform_slim_mx_1_concrete_hr_4.png-6f417f1b5fe0a72e9184c5b39456627b.s3tc.ctex"
+path.etc2="res://.godot/imported/ramp_platform_slim_mx_1_concrete_hr_4.png-6f417f1b5fe0a72e9184c5b39456627b.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Modular Structures/ramp_platform_slim_mx_1_concrete_hr_4.png"
-dest_files=["res://.godot/imported/ramp_platform_slim_mx_1_concrete_hr_4.png-6f417f1b5fe0a72e9184c5b39456627b.s3tc.ctex"]
+dest_files=["res://.godot/imported/ramp_platform_slim_mx_1_concrete_hr_4.png-6f417f1b5fe0a72e9184c5b39456627b.s3tc.ctex", "res://.godot/imported/ramp_platform_slim_mx_1_concrete_hr_4.png-6f417f1b5fe0a72e9184c5b39456627b.etc2.ctex"]
 
 [params]
 

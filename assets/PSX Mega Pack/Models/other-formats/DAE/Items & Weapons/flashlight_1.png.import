@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cqtjxoeuue0mr"
 path.s3tc="res://.godot/imported/flashlight_1.png-e57eab7210175c7e395eec036bc84144.s3tc.ctex"
+path.etc2="res://.godot/imported/flashlight_1.png-e57eab7210175c7e395eec036bc84144.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Items & Weapons/flashlight_1.png"
-dest_files=["res://.godot/imported/flashlight_1.png-e57eab7210175c7e395eec036bc84144.s3tc.ctex"]
+dest_files=["res://.godot/imported/flashlight_1.png-e57eab7210175c7e395eec036bc84144.s3tc.ctex", "res://.godot/imported/flashlight_1.png-e57eab7210175c7e395eec036bc84144.etc2.ctex"]
 
 [params]
 

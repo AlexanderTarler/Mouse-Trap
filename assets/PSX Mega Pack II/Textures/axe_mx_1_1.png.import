@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://clg488ovdcon7"
 path.s3tc="res://.godot/imported/axe_mx_1_1.png-5a0e8100626950eea18eb507c35f7db5.s3tc.ctex"
+path.etc2="res://.godot/imported/axe_mx_1_1.png-5a0e8100626950eea18eb507c35f7db5.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Textures/axe_mx_1_1.png"
-dest_files=["res://.godot/imported/axe_mx_1_1.png-5a0e8100626950eea18eb507c35f7db5.s3tc.ctex"]
+dest_files=["res://.godot/imported/axe_mx_1_1.png-5a0e8100626950eea18eb507c35f7db5.s3tc.ctex", "res://.godot/imported/axe_mx_1_1.png-5a0e8100626950eea18eb507c35f7db5.etc2.ctex"]
 
 [params]
 

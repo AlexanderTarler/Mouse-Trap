@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dp3x7g6ammchp"
 path.s3tc="res://.godot/imported/lighters_mp_1.png-687d7e4c9311167e0223e7d8c254fd8f.s3tc.ctex"
+path.etc2="res://.godot/imported/lighters_mp_1.png-687d7e4c9311167e0223e7d8c254fd8f.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Items & Weapons/lighters_mp_1.png"
-dest_files=["res://.godot/imported/lighters_mp_1.png-687d7e4c9311167e0223e7d8c254fd8f.s3tc.ctex"]
+dest_files=["res://.godot/imported/lighters_mp_1.png-687d7e4c9311167e0223e7d8c254fd8f.s3tc.ctex", "res://.godot/imported/lighters_mp_1.png-687d7e4c9311167e0223e7d8c254fd8f.etc2.ctex"]
 
 [params]
 

@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bljatwwr7hqgu"
 path.s3tc="res://.godot/imported/metal_hr_1_dark_smooth.png-7f41734fe7a9eb2e9faae4f29efa3ffa.s3tc.ctex"
+path.etc2="res://.godot/imported/metal_hr_1_dark_smooth.png-7f41734fe7a9eb2e9faae4f29efa3ffa.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Weapons & Tools/metal_hr_1_dark_smooth.png"
-dest_files=["res://.godot/imported/metal_hr_1_dark_smooth.png-7f41734fe7a9eb2e9faae4f29efa3ffa.s3tc.ctex"]
+dest_files=["res://.godot/imported/metal_hr_1_dark_smooth.png-7f41734fe7a9eb2e9faae4f29efa3ffa.s3tc.ctex", "res://.godot/imported/metal_hr_1_dark_smooth.png-7f41734fe7a9eb2e9faae4f29efa3ffa.etc2.ctex"]
 
 [params]
 

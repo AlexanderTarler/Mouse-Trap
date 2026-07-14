@@ -45,14 +45,14 @@
 [ext_resource type="AudioStream" uid="uid://dkln3f15c1nek" path="res://assets/audio/Footsteps Grass/step11.wav" id="39_apa73"]
 [ext_resource type="AudioStream" uid="uid://bftl2t04nrp61" path="res://assets/audio/Footsteps Grass/step12.wav" id="40_74r1k"]
 [ext_resource type="Script" uid="uid://bwr2j4tkrto77" path="res://scripts/entity/sanity_controller.gd" id="41_g5jhy"]
-[ext_resource type="Script" uid="uid://bb1v1iorkrest" path="res://scripts/photo_camera.gd" id="41_photo_camera"]
 [ext_resource type="AudioStream" uid="uid://c21q2dpxubikx" path="res://assets/audio/Entity/Entity_Seen.ogg" id="42_holxr"]
 [ext_resource type="PackedScene" uid="uid://dq8dml7wclf03" path="res://scenes/ui/notebook_ui.tscn" id="47_mx1m4"]
 
-[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_4gjji"]
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_mx1m4"]
 points = PackedVector3Array(0.3, 0.5, 0, 0.27716386, 0.5, 0.11480503, 0.21213204, 0.5, 0.21213204, 0.11480503, 0.5, 0.27716386, 1.8369096e-17, 0.5, 0.3, -0.11480503, 0.5, 0.27716386, -0.21213204, 0.5, 0.21213204, -0.27716386, 0.5, 0.11480503, -0.3, 0.5, 3.673819e-17, -0.27716386, 0.5, -0.11480503, -0.21213204, 0.5, -0.21213204, -0.11480503, 0.5, -0.27716386, -5.5107285e-17, 0.5, -0.3, 0.11480503, 0.5, -0.27716386, 0.21213204, 0.5, -0.21213204, 0.27716386, 0.5, -0.11480503, 0.3, -0.5, 0, 0.27716386, -0.5, 0.11480503, 0.21213204, -0.5, 0.21213204, 0.11480503, -0.5, 0.27716386, 1.8369096e-17, -0.5, 0.3, -0.11480503, -0.5, 0.27716386, -0.21213204, -0.5, 0.21213204, -0.27716386, -0.5, 0.11480503, -0.3, -0.5, 3.673819e-17, -0.27716386, -0.5, -0.11480503, -0.21213204, -0.5, -0.21213204, -0.11480503, -0.5, -0.27716386, -5.5107285e-17, -0.5, -0.3, 0.11480503, -0.5, -0.27716386, 0.21213204, -0.5, -0.21213204, 0.27716386, -0.5, -0.11480503, 0, 1, 0, 0, -1, 0)
 
 [node name="Player" type="CharacterBody3D" unique_id=629523076 groups=["player"]]
+collision_mask = 5
 floor_max_angle = 1.0472
 floor_snap_length = 1.2
 script = ExtResource("1_player")
@@ -64,7 +64,7 @@ starting_items = Array[ExtResource("35_hhpqf")]([ExtResource("36_g5jhy"), ExtRes
 
 [node name="PrismCollider3D" type="CollisionShape3D" parent="." unique_id=2059181722]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
-shape = SubResource("ConvexPolygonShape3D_4gjji")
+shape = SubResource("ConvexPolygonShape3D_mx1m4")
 script = ExtResource("39_4gjji")
 body_radius = 0.3
 body_radius = 0.3
@@ -86,11 +86,6 @@ spot_range = 10.0
 spot_angle = 30.0
 spot_angle_attenuation = 2.0
 script = ExtResource("4_flashlight")
-
-[node name="PhotoCamera" type="Node3D" parent="CameraHolder/Camera3D" unique_id=1304318823]
-script = ExtResource("41_photo_camera")
-
-[node name="GeigerAudio" type="AudioStreamPlayer3D" parent="CameraHolder/Camera3D/PhotoCamera" unique_id=1304318824]
 
 [node name="SanityController" type="Node3D" parent="CameraHolder/Camera3D" unique_id=726345693]
 script = ExtResource("41_g5jhy")
@@ -134,10 +129,6 @@ stream = ExtResource("26_ha2mi")
 volume_db = -22.735
 max_db = 0.73
 pitch_scale = 0.82
-
-[node name="FloorRayCast" type="RayCast3D" parent="." unique_id=1911614750]
-target_position = Vector3(0, -10, 0)
-hit_from_inside = true
 
 [node name="NotebookLayer" type="CanvasLayer" parent="." unique_id=1028137597]
 layer = 300

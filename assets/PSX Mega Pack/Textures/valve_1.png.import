@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://da0jrqll1f7cg"
 path.s3tc="res://.godot/imported/valve_1.png-fe42f57d36313dd78f7c3b48cfaf1531.s3tc.ctex"
+path.etc2="res://.godot/imported/valve_1.png-fe42f57d36313dd78f7c3b48cfaf1531.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Textures/valve_1.png"
-dest_files=["res://.godot/imported/valve_1.png-fe42f57d36313dd78f7c3b48cfaf1531.s3tc.ctex"]
+dest_files=["res://.godot/imported/valve_1.png-fe42f57d36313dd78f7c3b48cfaf1531.s3tc.ctex", "res://.godot/imported/valve_1.png-fe42f57d36313dd78f7c3b48cfaf1531.etc2.ctex"]
 
 [params]
 

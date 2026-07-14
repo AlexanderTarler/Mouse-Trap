@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bye1gaqqbgvi0"
 path.s3tc="res://.godot/imported/cable_2.png-e0434ee28a6ab064634c86aed69bf17a.s3tc.ctex"
+path.etc2="res://.godot/imported/cable_2.png-e0434ee28a6ab064634c86aed69bf17a.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Textures/cable_2.png"
-dest_files=["res://.godot/imported/cable_2.png-e0434ee28a6ab064634c86aed69bf17a.s3tc.ctex"]
+dest_files=["res://.godot/imported/cable_2.png-e0434ee28a6ab064634c86aed69bf17a.s3tc.ctex", "res://.godot/imported/cable_2.png-e0434ee28a6ab064634c86aed69bf17a.etc2.ctex"]
 
 [params]
 

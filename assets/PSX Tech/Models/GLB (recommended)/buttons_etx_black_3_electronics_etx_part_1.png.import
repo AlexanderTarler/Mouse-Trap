@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cybtdb1d6ia5r"
 path.s3tc="res://.godot/imported/buttons_etx_black_3_electronics_etx_part_1.png-ca7040d34c0e274f5cf178ca4377dc13.s3tc.ctex"
+path.etc2="res://.godot/imported/buttons_etx_black_3_electronics_etx_part_1.png-ca7040d34c0e274f5cf178ca4377dc13.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Tech/Models/GLB (recommended)/buttons_etx_black_3_electronics_etx_part_1.png"
-dest_files=["res://.godot/imported/buttons_etx_black_3_electronics_etx_part_1.png-ca7040d34c0e274f5cf178ca4377dc13.s3tc.ctex"]
+dest_files=["res://.godot/imported/buttons_etx_black_3_electronics_etx_part_1.png-ca7040d34c0e274f5cf178ca4377dc13.s3tc.ctex", "res://.godot/imported/buttons_etx_black_3_electronics_etx_part_1.png-ca7040d34c0e274f5cf178ca4377dc13.etc2.ctex"]
 
 [params]
 

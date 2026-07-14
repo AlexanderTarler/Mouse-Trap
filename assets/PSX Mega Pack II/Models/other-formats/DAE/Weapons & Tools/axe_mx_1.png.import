@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://fh4txmhtqu4y"
 path.s3tc="res://.godot/imported/axe_mx_1.png-d21a77c403f38116948a2df2018da8c7.s3tc.ctex"
+path.etc2="res://.godot/imported/axe_mx_1.png-d21a77c403f38116948a2df2018da8c7.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Weapons & Tools/axe_mx_1.png"
-dest_files=["res://.godot/imported/axe_mx_1.png-d21a77c403f38116948a2df2018da8c7.s3tc.ctex"]
+dest_files=["res://.godot/imported/axe_mx_1.png-d21a77c403f38116948a2df2018da8c7.s3tc.ctex", "res://.godot/imported/axe_mx_1.png-d21a77c403f38116948a2df2018da8c7.etc2.ctex"]
 
 [params]
 

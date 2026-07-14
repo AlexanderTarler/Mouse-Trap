@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cecyme8pwng13"
 path.s3tc="res://.godot/imported/tunnel_junction_four_way_metal_floor_2.png-12a5588ff600dca0ada4a1bf76c4d335.s3tc.ctex"
+path.etc2="res://.godot/imported/tunnel_junction_four_way_metal_floor_2.png-12a5588ff600dca0ada4a1bf76c4d335.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/GLB/tunnel_junction_four_way_metal_floor_2.png"
-dest_files=["res://.godot/imported/tunnel_junction_four_way_metal_floor_2.png-12a5588ff600dca0ada4a1bf76c4d335.s3tc.ctex"]
+dest_files=["res://.godot/imported/tunnel_junction_four_way_metal_floor_2.png-12a5588ff600dca0ada4a1bf76c4d335.s3tc.ctex", "res://.godot/imported/tunnel_junction_four_way_metal_floor_2.png-12a5588ff600dca0ada4a1bf76c4d335.etc2.ctex"]
 
 [params]
 

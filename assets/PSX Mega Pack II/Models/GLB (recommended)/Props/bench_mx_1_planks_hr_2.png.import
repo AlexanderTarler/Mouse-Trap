@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b6fb61uecwy6o"
 path.s3tc="res://.godot/imported/bench_mx_1_planks_hr_2.png-21e6c1a98408ddc23d9f5d2a6184c983.s3tc.ctex"
+path.etc2="res://.godot/imported/bench_mx_1_planks_hr_2.png-21e6c1a98408ddc23d9f5d2a6184c983.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/bench_mx_1_planks_hr_2.png"
-dest_files=["res://.godot/imported/bench_mx_1_planks_hr_2.png-21e6c1a98408ddc23d9f5d2a6184c983.s3tc.ctex"]
+dest_files=["res://.godot/imported/bench_mx_1_planks_hr_2.png-21e6c1a98408ddc23d9f5d2a6184c983.s3tc.ctex", "res://.godot/imported/bench_mx_1_planks_hr_2.png-21e6c1a98408ddc23d9f5d2a6184c983.etc2.ctex"]
 
 [params]
 

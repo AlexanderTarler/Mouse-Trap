@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dibcccmhwteap"
 path.s3tc="res://.godot/imported/lamp_1_off_lamp_1_off.png-d22f2d02d8784dc72a74b37ef9fc1a74.s3tc.ctex"
+path.etc2="res://.godot/imported/lamp_1_off_lamp_1_off.png-d22f2d02d8784dc72a74b37ef9fc1a74.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Lighting/lamp_1_off_lamp_1_off.png"
-dest_files=["res://.godot/imported/lamp_1_off_lamp_1_off.png-d22f2d02d8784dc72a74b37ef9fc1a74.s3tc.ctex"]
+dest_files=["res://.godot/imported/lamp_1_off_lamp_1_off.png-d22f2d02d8784dc72a74b37ef9fc1a74.s3tc.ctex", "res://.godot/imported/lamp_1_off_lamp_1_off.png-d22f2d02d8784dc72a74b37ef9fc1a74.etc2.ctex"]
 
 [params]
 

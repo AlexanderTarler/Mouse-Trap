@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cea4j5c6sn2n6"
 path.s3tc="res://.godot/imported/hammer_mx_1.png-8ff25810e53ca0940a73009460ac42b4.s3tc.ctex"
+path.etc2="res://.godot/imported/hammer_mx_1.png-8ff25810e53ca0940a73009460ac42b4.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Weapons & Tools/hammer_mx_1.png"
-dest_files=["res://.godot/imported/hammer_mx_1.png-8ff25810e53ca0940a73009460ac42b4.s3tc.ctex"]
+dest_files=["res://.godot/imported/hammer_mx_1.png-8ff25810e53ca0940a73009460ac42b4.s3tc.ctex", "res://.godot/imported/hammer_mx_1.png-8ff25810e53ca0940a73009460ac42b4.etc2.ctex"]
 
 [params]
 

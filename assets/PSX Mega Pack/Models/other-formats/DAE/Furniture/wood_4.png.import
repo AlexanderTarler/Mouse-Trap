@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bt2acigd1u32p"
 path.s3tc="res://.godot/imported/wood_4.png-cb8e9ec66ca5be532bdf4bf3dfdd84ae.s3tc.ctex"
+path.etc2="res://.godot/imported/wood_4.png-cb8e9ec66ca5be532bdf4bf3dfdd84ae.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Furniture/wood_4.png"
-dest_files=["res://.godot/imported/wood_4.png-cb8e9ec66ca5be532bdf4bf3dfdd84ae.s3tc.ctex"]
+dest_files=["res://.godot/imported/wood_4.png-cb8e9ec66ca5be532bdf4bf3dfdd84ae.s3tc.ctex", "res://.godot/imported/wood_4.png-cb8e9ec66ca5be532bdf4bf3dfdd84ae.etc2.ctex"]
 
 [params]
 

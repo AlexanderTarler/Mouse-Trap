@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cb3ilqwkdj4ax"
 path.s3tc="res://.godot/imported/fence_e_pillar_1_grate_hm_1.png-79e7037720c3ed1a00872d9da5af85ca.s3tc.ctex"
+path.etc2="res://.godot/imported/fence_e_pillar_1_grate_hm_1.png-79e7037720c3ed1a00872d9da5af85ca.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Modular Props/fence_e_pillar_1_grate_hm_1.png"
-dest_files=["res://.godot/imported/fence_e_pillar_1_grate_hm_1.png-79e7037720c3ed1a00872d9da5af85ca.s3tc.ctex"]
+dest_files=["res://.godot/imported/fence_e_pillar_1_grate_hm_1.png-79e7037720c3ed1a00872d9da5af85ca.s3tc.ctex", "res://.godot/imported/fence_e_pillar_1_grate_hm_1.png-79e7037720c3ed1a00872d9da5af85ca.etc2.ctex"]
 
 [params]
 

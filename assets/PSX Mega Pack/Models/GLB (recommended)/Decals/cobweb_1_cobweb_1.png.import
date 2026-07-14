@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cf83rbeo8tex3"
 path.s3tc="res://.godot/imported/cobweb_1_cobweb_1.png-03141347e951d1f775c9261b9e900c6e.s3tc.ctex"
+path.etc2="res://.godot/imported/cobweb_1_cobweb_1.png-03141347e951d1f775c9261b9e900c6e.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Decals/cobweb_1_cobweb_1.png"
-dest_files=["res://.godot/imported/cobweb_1_cobweb_1.png-03141347e951d1f775c9261b9e900c6e.s3tc.ctex"]
+dest_files=["res://.godot/imported/cobweb_1_cobweb_1.png-03141347e951d1f775c9261b9e900c6e.s3tc.ctex", "res://.godot/imported/cobweb_1_cobweb_1.png-03141347e951d1f775c9261b9e900c6e.etc2.ctex"]
 
 [params]
 

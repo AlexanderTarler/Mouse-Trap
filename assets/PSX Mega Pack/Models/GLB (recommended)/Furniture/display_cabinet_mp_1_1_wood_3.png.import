@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://hjoh6wncea4g"
 path.s3tc="res://.godot/imported/display_cabinet_mp_1_1_wood_3.png-a5043f5233c6d9527a59dfefdd952a74.s3tc.ctex"
+path.etc2="res://.godot/imported/display_cabinet_mp_1_1_wood_3.png-a5043f5233c6d9527a59dfefdd952a74.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/display_cabinet_mp_1_1_wood_3.png"
-dest_files=["res://.godot/imported/display_cabinet_mp_1_1_wood_3.png-a5043f5233c6d9527a59dfefdd952a74.s3tc.ctex"]
+dest_files=["res://.godot/imported/display_cabinet_mp_1_1_wood_3.png-a5043f5233c6d9527a59dfefdd952a74.s3tc.ctex", "res://.godot/imported/display_cabinet_mp_1_1_wood_3.png-a5043f5233c6d9527a59dfefdd952a74.etc2.ctex"]
 
 [params]
 

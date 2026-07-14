@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://buroy2x61xu0r"
 path.s3tc="res://.godot/imported/metal_mp_4.png-4756e9a4325a8e94a3abd11fb9a5d9ef.s3tc.ctex"
+path.etc2="res://.godot/imported/metal_mp_4.png-4756e9a4325a8e94a3abd11fb9a5d9ef.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Small Props/metal_mp_4.png"
-dest_files=["res://.godot/imported/metal_mp_4.png-4756e9a4325a8e94a3abd11fb9a5d9ef.s3tc.ctex"]
+dest_files=["res://.godot/imported/metal_mp_4.png-4756e9a4325a8e94a3abd11fb9a5d9ef.s3tc.ctex", "res://.godot/imported/metal_mp_4.png-4756e9a4325a8e94a3abd11fb9a5d9ef.etc2.ctex"]
 
 [params]
 

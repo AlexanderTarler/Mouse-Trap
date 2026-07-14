@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cmvnir0b2y6pp"
 path.s3tc="res://.godot/imported/poster_cx_15.png-f05ed9af1aa5e3b53e8d221cf2e445f7.s3tc.ctex"
+path.etc2="res://.godot/imported/poster_cx_15.png-f05ed9af1aa5e3b53e8d221cf2e445f7.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Decals/poster_cx_15.png"
-dest_files=["res://.godot/imported/poster_cx_15.png-f05ed9af1aa5e3b53e8d221cf2e445f7.s3tc.ctex"]
+dest_files=["res://.godot/imported/poster_cx_15.png-f05ed9af1aa5e3b53e8d221cf2e445f7.s3tc.ctex", "res://.godot/imported/poster_cx_15.png-f05ed9af1aa5e3b53e8d221cf2e445f7.etc2.ctex"]
 
 [params]
 

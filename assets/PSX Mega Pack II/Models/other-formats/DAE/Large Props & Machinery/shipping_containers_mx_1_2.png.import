@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b8syemtjpe1gj"
 path.s3tc="res://.godot/imported/shipping_containers_mx_1_2.png-0bae9689164c9aab832e0cafe77b8a46.s3tc.ctex"
+path.etc2="res://.godot/imported/shipping_containers_mx_1_2.png-0bae9689164c9aab832e0cafe77b8a46.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Large Props & Machinery/shipping_containers_mx_1_2.png"
-dest_files=["res://.godot/imported/shipping_containers_mx_1_2.png-0bae9689164c9aab832e0cafe77b8a46.s3tc.ctex"]
+dest_files=["res://.godot/imported/shipping_containers_mx_1_2.png-0bae9689164c9aab832e0cafe77b8a46.s3tc.ctex", "res://.godot/imported/shipping_containers_mx_1_2.png-0bae9689164c9aab832e0cafe77b8a46.etc2.ctex"]
 
 [params]
 

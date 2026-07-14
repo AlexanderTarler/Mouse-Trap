@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://btplrb1qpvyq2"
 path.s3tc="res://.godot/imported/planks_hr_3.png-dab428af9d6154b40fc099f7be4b007a.s3tc.ctex"
+path.etc2="res://.godot/imported/planks_hr_3.png-dab428af9d6154b40fc099f7be4b007a.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Modular Structures/planks_hr_3.png"
-dest_files=["res://.godot/imported/planks_hr_3.png-dab428af9d6154b40fc099f7be4b007a.s3tc.ctex"]
+dest_files=["res://.godot/imported/planks_hr_3.png-dab428af9d6154b40fc099f7be4b007a.s3tc.ctex", "res://.godot/imported/planks_hr_3.png-dab428af9d6154b40fc099f7be4b007a.etc2.ctex"]
 
 [params]
 

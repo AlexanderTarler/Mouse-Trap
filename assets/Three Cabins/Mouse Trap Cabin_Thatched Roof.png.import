@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cdamrumvkcf3i"
 path.s3tc="res://.godot/imported/Mouse Trap Cabin_Thatched Roof.png-d9d5da2c8b46030d4457745d75237254.s3tc.ctex"
+path.etc2="res://.godot/imported/Mouse Trap Cabin_Thatched Roof.png-d9d5da2c8b46030d4457745d75237254.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/Three Cabins/Mouse Trap Cabin_Thatched Roof.png"
-dest_files=["res://.godot/imported/Mouse Trap Cabin_Thatched Roof.png-d9d5da2c8b46030d4457745d75237254.s3tc.ctex"]
+dest_files=["res://.godot/imported/Mouse Trap Cabin_Thatched Roof.png-d9d5da2c8b46030d4457745d75237254.s3tc.ctex", "res://.godot/imported/Mouse Trap Cabin_Thatched Roof.png-d9d5da2c8b46030d4457745d75237254.etc2.ctex"]
 
 [params]
 

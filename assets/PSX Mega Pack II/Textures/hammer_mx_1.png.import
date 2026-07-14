@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b283ym3otr8o5"
 path.s3tc="res://.godot/imported/hammer_mx_1.png-b20b6e1532389a75ee8f290d91b3ac69.s3tc.ctex"
+path.etc2="res://.godot/imported/hammer_mx_1.png-b20b6e1532389a75ee8f290d91b3ac69.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Textures/hammer_mx_1.png"
-dest_files=["res://.godot/imported/hammer_mx_1.png-b20b6e1532389a75ee8f290d91b3ac69.s3tc.ctex"]
+dest_files=["res://.godot/imported/hammer_mx_1.png-b20b6e1532389a75ee8f290d91b3ac69.s3tc.ctex", "res://.godot/imported/hammer_mx_1.png-b20b6e1532389a75ee8f290d91b3ac69.etc2.ctex"]
 
 [params]
 

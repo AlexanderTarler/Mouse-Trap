@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cv6nrv45o532h"
 path.s3tc="res://.godot/imported/curtain_rod_mp_1_plastic_mp_2.png-9fd5466aa98e71f7089f1e774d78c71a.s3tc.ctex"
+path.etc2="res://.godot/imported/curtain_rod_mp_1_plastic_mp_2.png-9fd5466aa98e71f7089f1e774d78c71a.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/curtain_rod_mp_1_plastic_mp_2.png"
-dest_files=["res://.godot/imported/curtain_rod_mp_1_plastic_mp_2.png-9fd5466aa98e71f7089f1e774d78c71a.s3tc.ctex"]
+dest_files=["res://.godot/imported/curtain_rod_mp_1_plastic_mp_2.png-9fd5466aa98e71f7089f1e774d78c71a.s3tc.ctex", "res://.godot/imported/curtain_rod_mp_1_plastic_mp_2.png-9fd5466aa98e71f7089f1e774d78c71a.etc2.ctex"]
 
 [params]
 

@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://ckl5ripg7gnrb"
 path.s3tc="res://.godot/imported/cassette_tape_2.png-7e1a514c8df1cc335a086eb743a18616.s3tc.ctex"
+path.etc2="res://.godot/imported/cassette_tape_2.png-7e1a514c8df1cc335a086eb743a18616.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Items & Weapons/cassette_tape_2.png"
-dest_files=["res://.godot/imported/cassette_tape_2.png-7e1a514c8df1cc335a086eb743a18616.s3tc.ctex"]
+dest_files=["res://.godot/imported/cassette_tape_2.png-7e1a514c8df1cc335a086eb743a18616.s3tc.ctex", "res://.godot/imported/cassette_tape_2.png-7e1a514c8df1cc335a086eb743a18616.etc2.ctex"]
 
 [params]
 

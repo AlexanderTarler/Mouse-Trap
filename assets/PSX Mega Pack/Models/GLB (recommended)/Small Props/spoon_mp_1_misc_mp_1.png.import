@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c7qus2fv2h8f3"
 path.s3tc="res://.godot/imported/spoon_mp_1_misc_mp_1.png-9e85ac8cde4f00736271a792e4caf02a.s3tc.ctex"
+path.etc2="res://.godot/imported/spoon_mp_1_misc_mp_1.png-9e85ac8cde4f00736271a792e4caf02a.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/spoon_mp_1_misc_mp_1.png"
-dest_files=["res://.godot/imported/spoon_mp_1_misc_mp_1.png-9e85ac8cde4f00736271a792e4caf02a.s3tc.ctex"]
+dest_files=["res://.godot/imported/spoon_mp_1_misc_mp_1.png-9e85ac8cde4f00736271a792e4caf02a.s3tc.ctex", "res://.godot/imported/spoon_mp_1_misc_mp_1.png-9e85ac8cde4f00736271a792e4caf02a.etc2.ctex"]
 
 [params]
 

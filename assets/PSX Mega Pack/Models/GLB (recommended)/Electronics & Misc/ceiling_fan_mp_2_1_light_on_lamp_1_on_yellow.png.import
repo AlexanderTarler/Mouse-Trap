@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c848y5cx5ynow"
 path.s3tc="res://.godot/imported/ceiling_fan_mp_2_1_light_on_lamp_1_on_yellow.png-53cd29f58562d5dba49b2f3ab6c322c7.s3tc.ctex"
+path.etc2="res://.godot/imported/ceiling_fan_mp_2_1_light_on_lamp_1_on_yellow.png-53cd29f58562d5dba49b2f3ab6c322c7.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/ceiling_fan_mp_2_1_light_on_lamp_1_on_yellow.png"
-dest_files=["res://.godot/imported/ceiling_fan_mp_2_1_light_on_lamp_1_on_yellow.png-53cd29f58562d5dba49b2f3ab6c322c7.s3tc.ctex"]
+dest_files=["res://.godot/imported/ceiling_fan_mp_2_1_light_on_lamp_1_on_yellow.png-53cd29f58562d5dba49b2f3ab6c322c7.s3tc.ctex", "res://.godot/imported/ceiling_fan_mp_2_1_light_on_lamp_1_on_yellow.png-53cd29f58562d5dba49b2f3ab6c322c7.etc2.ctex"]
 
 [params]
 

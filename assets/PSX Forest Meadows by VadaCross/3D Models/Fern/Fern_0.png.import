@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://8edxybojkol2"
 path.s3tc="res://.godot/imported/Fern_0.png-309366da13c568c3bdaf0d2fd6224466.s3tc.ctex"
+path.etc2="res://.godot/imported/Fern_0.png-309366da13c568c3bdaf0d2fd6224466.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Forest Meadows by VadaCross/3D Models/Fern/Fern_0.png"
-dest_files=["res://.godot/imported/Fern_0.png-309366da13c568c3bdaf0d2fd6224466.s3tc.ctex"]
+dest_files=["res://.godot/imported/Fern_0.png-309366da13c568c3bdaf0d2fd6224466.s3tc.ctex", "res://.godot/imported/Fern_0.png-309366da13c568c3bdaf0d2fd6224466.etc2.ctex"]
 
 [params]
 

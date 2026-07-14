@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cwho41u5f6wx5"
 path.s3tc="res://.godot/imported/gas_cylinder_mx_1.png.001.png-432b27d1d3702cde806ce8fc70dc2241.s3tc.ctex"
+path.etc2="res://.godot/imported/gas_cylinder_mx_1.png.001.png-432b27d1d3702cde806ce8fc70dc2241.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Props/gas_cylinder_mx_1.png.001.png"
-dest_files=["res://.godot/imported/gas_cylinder_mx_1.png.001.png-432b27d1d3702cde806ce8fc70dc2241.s3tc.ctex"]
+dest_files=["res://.godot/imported/gas_cylinder_mx_1.png.001.png-432b27d1d3702cde806ce8fc70dc2241.s3tc.ctex", "res://.godot/imported/gas_cylinder_mx_1.png.001.png-432b27d1d3702cde806ce8fc70dc2241.etc2.ctex"]
 
 [params]
 

@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dfwp7envmiftw"
 path.s3tc="res://.godot/imported/plastic_bottle_mx_1_dirty_plastic_bottle_mp_1.png-adf4ceeda8b5a33ee8cc9926b95d5f78.s3tc.ctex"
+path.etc2="res://.godot/imported/plastic_bottle_mx_1_dirty_plastic_bottle_mp_1.png-adf4ceeda8b5a33ee8cc9926b95d5f78.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/plastic_bottle_mx_1_dirty_plastic_bottle_mp_1.png"
-dest_files=["res://.godot/imported/plastic_bottle_mx_1_dirty_plastic_bottle_mp_1.png-adf4ceeda8b5a33ee8cc9926b95d5f78.s3tc.ctex"]
+dest_files=["res://.godot/imported/plastic_bottle_mx_1_dirty_plastic_bottle_mp_1.png-adf4ceeda8b5a33ee8cc9926b95d5f78.s3tc.ctex", "res://.godot/imported/plastic_bottle_mx_1_dirty_plastic_bottle_mp_1.png-adf4ceeda8b5a33ee8cc9926b95d5f78.etc2.ctex"]
 
 [params]
 

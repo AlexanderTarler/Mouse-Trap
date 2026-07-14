@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dt3ivcxewgcjm"
 path.s3tc="res://.godot/imported/garage_door_hm_3.png-b86d82822bb437691c97b1c9dc10550a.s3tc.ctex"
+path.etc2="res://.godot/imported/garage_door_hm_3.png-b86d82822bb437691c97b1c9dc10550a.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Modular Structures/garage_door_hm_3.png"
-dest_files=["res://.godot/imported/garage_door_hm_3.png-b86d82822bb437691c97b1c9dc10550a.s3tc.ctex"]
+dest_files=["res://.godot/imported/garage_door_hm_3.png-b86d82822bb437691c97b1c9dc10550a.s3tc.ctex", "res://.godot/imported/garage_door_hm_3.png-b86d82822bb437691c97b1c9dc10550a.etc2.ctex"]
 
 [params]
 

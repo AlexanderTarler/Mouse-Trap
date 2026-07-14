@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bjgsm70yqd61m"
 path.s3tc="res://.godot/imported/OakLeaves_CL_0.png-edd3d776328e911533a03612cb3356ca.s3tc.ctex"
+path.etc2="res://.godot/imported/OakLeaves_CL_0.png-edd3d776328e911533a03612cb3356ca.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/OakLeaves_CL_0.png"
-dest_files=["res://.godot/imported/OakLeaves_CL_0.png-edd3d776328e911533a03612cb3356ca.s3tc.ctex"]
+dest_files=["res://.godot/imported/OakLeaves_CL_0.png-edd3d776328e911533a03612cb3356ca.s3tc.ctex", "res://.godot/imported/OakLeaves_CL_0.png-edd3d776328e911533a03612cb3356ca.etc2.ctex"]
 
 [params]
 

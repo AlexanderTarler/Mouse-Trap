@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://qc3wssfjd8wr"
 path.s3tc="res://.godot/imported/shelf_mx_8_2_plastic_mx_2.png-f15a1a68948a36a9da48992bffda3368.s3tc.ctex"
+path.etc2="res://.godot/imported/shelf_mx_8_2_plastic_mx_2.png-f15a1a68948a36a9da48992bffda3368.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/shelf_mx_8_2_plastic_mx_2.png"
-dest_files=["res://.godot/imported/shelf_mx_8_2_plastic_mx_2.png-f15a1a68948a36a9da48992bffda3368.s3tc.ctex"]
+dest_files=["res://.godot/imported/shelf_mx_8_2_plastic_mx_2.png-f15a1a68948a36a9da48992bffda3368.s3tc.ctex", "res://.godot/imported/shelf_mx_8_2_plastic_mx_2.png-f15a1a68948a36a9da48992bffda3368.etc2.ctex"]
 
 [params]
 

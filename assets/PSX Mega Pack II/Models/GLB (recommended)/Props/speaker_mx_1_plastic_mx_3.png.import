@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cbbw4jgnkx1rk"
 path.s3tc="res://.godot/imported/speaker_mx_1_plastic_mx_3.png-af584c5a2a17fe6c691b608872223a13.s3tc.ctex"
+path.etc2="res://.godot/imported/speaker_mx_1_plastic_mx_3.png-af584c5a2a17fe6c691b608872223a13.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/speaker_mx_1_plastic_mx_3.png"
-dest_files=["res://.godot/imported/speaker_mx_1_plastic_mx_3.png-af584c5a2a17fe6c691b608872223a13.s3tc.ctex"]
+dest_files=["res://.godot/imported/speaker_mx_1_plastic_mx_3.png-af584c5a2a17fe6c691b608872223a13.s3tc.ctex", "res://.godot/imported/speaker_mx_1_plastic_mx_3.png-af584c5a2a17fe6c691b608872223a13.etc2.ctex"]
 
 [params]
 

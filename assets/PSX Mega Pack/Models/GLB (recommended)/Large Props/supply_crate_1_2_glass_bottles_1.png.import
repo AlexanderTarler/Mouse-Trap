@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dcntiu8nbcxm4"
 path.s3tc="res://.godot/imported/supply_crate_1_2_glass_bottles_1.png-ad9965966d0bce39a1fd6519dfa087ad.s3tc.ctex"
+path.etc2="res://.godot/imported/supply_crate_1_2_glass_bottles_1.png-ad9965966d0bce39a1fd6519dfa087ad.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/supply_crate_1_2_glass_bottles_1.png"
-dest_files=["res://.godot/imported/supply_crate_1_2_glass_bottles_1.png-ad9965966d0bce39a1fd6519dfa087ad.s3tc.ctex"]
+dest_files=["res://.godot/imported/supply_crate_1_2_glass_bottles_1.png-ad9965966d0bce39a1fd6519dfa087ad.s3tc.ctex", "res://.godot/imported/supply_crate_1_2_glass_bottles_1.png-ad9965966d0bce39a1fd6519dfa087ad.etc2.ctex"]
 
 [params]
 

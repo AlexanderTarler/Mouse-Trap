@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c0co8l7s2c1ob"
 path.s3tc="res://.godot/imported/pipe_dx_1_pipe_hr_3.png-87c9b66d02f0a3d1d86ceb1cba8c86fc.s3tc.ctex"
+path.etc2="res://.godot/imported/pipe_dx_1_pipe_hr_3.png-87c9b66d02f0a3d1d86ceb1cba8c86fc.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Modular Structures/pipe_dx_1_pipe_hr_3.png"
-dest_files=["res://.godot/imported/pipe_dx_1_pipe_hr_3.png-87c9b66d02f0a3d1d86ceb1cba8c86fc.s3tc.ctex"]
+dest_files=["res://.godot/imported/pipe_dx_1_pipe_hr_3.png-87c9b66d02f0a3d1d86ceb1cba8c86fc.s3tc.ctex", "res://.godot/imported/pipe_dx_1_pipe_hr_3.png-87c9b66d02f0a3d1d86ceb1cba8c86fc.etc2.ctex"]
 
 [params]
 

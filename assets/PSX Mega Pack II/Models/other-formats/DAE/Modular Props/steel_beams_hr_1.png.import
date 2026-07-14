@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://crchmulqyt1gq"
 path.s3tc="res://.godot/imported/steel_beams_hr_1.png-d49ab55c85f36034d152d1510cf9f3d7.s3tc.ctex"
+path.etc2="res://.godot/imported/steel_beams_hr_1.png-d49ab55c85f36034d152d1510cf9f3d7.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Modular Props/steel_beams_hr_1.png"
-dest_files=["res://.godot/imported/steel_beams_hr_1.png-d49ab55c85f36034d152d1510cf9f3d7.s3tc.ctex"]
+dest_files=["res://.godot/imported/steel_beams_hr_1.png-d49ab55c85f36034d152d1510cf9f3d7.s3tc.ctex", "res://.godot/imported/steel_beams_hr_1.png-d49ab55c85f36034d152d1510cf9f3d7.etc2.ctex"]
 
 [params]
 

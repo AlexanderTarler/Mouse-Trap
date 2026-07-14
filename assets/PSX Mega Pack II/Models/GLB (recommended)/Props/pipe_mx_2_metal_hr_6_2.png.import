@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://d10h2eg2owlh2"
 path.s3tc="res://.godot/imported/pipe_mx_2_metal_hr_6_2.png-7cbab34f0bbeebd2019168b0ecc6db2b.s3tc.ctex"
+path.etc2="res://.godot/imported/pipe_mx_2_metal_hr_6_2.png-7cbab34f0bbeebd2019168b0ecc6db2b.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/pipe_mx_2_metal_hr_6_2.png"
-dest_files=["res://.godot/imported/pipe_mx_2_metal_hr_6_2.png-7cbab34f0bbeebd2019168b0ecc6db2b.s3tc.ctex"]
+dest_files=["res://.godot/imported/pipe_mx_2_metal_hr_6_2.png-7cbab34f0bbeebd2019168b0ecc6db2b.s3tc.ctex", "res://.godot/imported/pipe_mx_2_metal_hr_6_2.png-7cbab34f0bbeebd2019168b0ecc6db2b.etc2.ctex"]
 
 [params]
 

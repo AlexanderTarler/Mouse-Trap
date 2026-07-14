@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cnyi8evw4b0kv"
 path.s3tc="res://.godot/imported/keys_mp_1.png-6ab5e0da7da7508bcc2e07f34c6bbe90.s3tc.ctex"
+path.etc2="res://.godot/imported/keys_mp_1.png-6ab5e0da7da7508bcc2e07f34c6bbe90.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Items & Weapons/keys_mp_1.png"
-dest_files=["res://.godot/imported/keys_mp_1.png-6ab5e0da7da7508bcc2e07f34c6bbe90.s3tc.ctex"]
+dest_files=["res://.godot/imported/keys_mp_1.png-6ab5e0da7da7508bcc2e07f34c6bbe90.s3tc.ctex", "res://.godot/imported/keys_mp_1.png-6ab5e0da7da7508bcc2e07f34c6bbe90.etc2.ctex"]
 
 [params]
 

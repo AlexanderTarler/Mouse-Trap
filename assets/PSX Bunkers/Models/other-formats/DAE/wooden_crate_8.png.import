@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cs3s6w5tx6drq"
 path.s3tc="res://.godot/imported/wooden_crate_8.png-a7b1f44089693fc29c21b3be9b57ebc0.s3tc.ctex"
+path.etc2="res://.godot/imported/wooden_crate_8.png-a7b1f44089693fc29c21b3be9b57ebc0.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/DAE/wooden_crate_8.png"
-dest_files=["res://.godot/imported/wooden_crate_8.png-a7b1f44089693fc29c21b3be9b57ebc0.s3tc.ctex"]
+dest_files=["res://.godot/imported/wooden_crate_8.png-a7b1f44089693fc29c21b3be9b57ebc0.s3tc.ctex", "res://.godot/imported/wooden_crate_8.png-a7b1f44089693fc29c21b3be9b57ebc0.etc2.ctex"]
 
 [params]
 

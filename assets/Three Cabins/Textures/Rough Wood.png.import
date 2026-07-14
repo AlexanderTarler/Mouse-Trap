@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://57bkaakmfwis"
 path.s3tc="res://.godot/imported/Rough Wood.png-5f361ac795fcac8b91799deddc946a81.s3tc.ctex"
+path.etc2="res://.godot/imported/Rough Wood.png-5f361ac795fcac8b91799deddc946a81.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/Three Cabins/Textures/Rough Wood.png"
-dest_files=["res://.godot/imported/Rough Wood.png-5f361ac795fcac8b91799deddc946a81.s3tc.ctex"]
+dest_files=["res://.godot/imported/Rough Wood.png-5f361ac795fcac8b91799deddc946a81.s3tc.ctex", "res://.godot/imported/Rough Wood.png-5f361ac795fcac8b91799deddc946a81.etc2.ctex"]
 
 [params]
 

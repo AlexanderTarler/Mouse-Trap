@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b7omtou0fcm0y"
 path.s3tc="res://.godot/imported/boiler_hx_4_steel_beams_hr_1.png-3301f6ad21310288a62e5cb6f146ee11.s3tc.ctex"
+path.etc2="res://.godot/imported/boiler_hx_4_steel_beams_hr_1.png-3301f6ad21310288a62e5cb6f146ee11.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Structures/boiler_hx_4_steel_beams_hr_1.png"
-dest_files=["res://.godot/imported/boiler_hx_4_steel_beams_hr_1.png-3301f6ad21310288a62e5cb6f146ee11.s3tc.ctex"]
+dest_files=["res://.godot/imported/boiler_hx_4_steel_beams_hr_1.png-3301f6ad21310288a62e5cb6f146ee11.s3tc.ctex", "res://.godot/imported/boiler_hx_4_steel_beams_hr_1.png-3301f6ad21310288a62e5cb6f146ee11.etc2.ctex"]
 
 [params]
 

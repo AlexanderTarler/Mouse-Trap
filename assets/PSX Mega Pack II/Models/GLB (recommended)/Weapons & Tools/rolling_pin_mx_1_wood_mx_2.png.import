@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://csqgwi6yrbjtk"
 path.s3tc="res://.godot/imported/rolling_pin_mx_1_wood_mx_2.png-fb0377a7602d6d70bd2aa9aea565d158.s3tc.ctex"
+path.etc2="res://.godot/imported/rolling_pin_mx_1_wood_mx_2.png-fb0377a7602d6d70bd2aa9aea565d158.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Weapons & Tools/rolling_pin_mx_1_wood_mx_2.png"
-dest_files=["res://.godot/imported/rolling_pin_mx_1_wood_mx_2.png-fb0377a7602d6d70bd2aa9aea565d158.s3tc.ctex"]
+dest_files=["res://.godot/imported/rolling_pin_mx_1_wood_mx_2.png-fb0377a7602d6d70bd2aa9aea565d158.s3tc.ctex", "res://.godot/imported/rolling_pin_mx_1_wood_mx_2.png-fb0377a7602d6d70bd2aa9aea565d158.etc2.ctex"]
 
 [params]
 

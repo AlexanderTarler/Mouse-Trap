@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dh8a06sl5ntjg"
 path.s3tc="res://.godot/imported/glass_etx_1.png-7f96f7ac88e7e505267753d6477cc82c.s3tc.ctex"
+path.etc2="res://.godot/imported/glass_etx_1.png-7f96f7ac88e7e505267753d6477cc82c.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Tech/Models/other-formats/DAE/glass_etx_1.png"
-dest_files=["res://.godot/imported/glass_etx_1.png-7f96f7ac88e7e505267753d6477cc82c.s3tc.ctex"]
+dest_files=["res://.godot/imported/glass_etx_1.png-7f96f7ac88e7e505267753d6477cc82c.s3tc.ctex", "res://.godot/imported/glass_etx_1.png-7f96f7ac88e7e505267753d6477cc82c.etc2.ctex"]
 
 [params]
 

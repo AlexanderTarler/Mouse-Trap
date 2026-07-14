@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cjfw0iqrgq1xr"
 path.s3tc="res://.godot/imported/rebar_hr_1.png-4e6d98cd265fab48e6a6b9347398aaaf.s3tc.ctex"
+path.etc2="res://.godot/imported/rebar_hr_1.png-4e6d98cd265fab48e6a6b9347398aaaf.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Modular Structures/rebar_hr_1.png"
-dest_files=["res://.godot/imported/rebar_hr_1.png-4e6d98cd265fab48e6a6b9347398aaaf.s3tc.ctex"]
+dest_files=["res://.godot/imported/rebar_hr_1.png-4e6d98cd265fab48e6a6b9347398aaaf.s3tc.ctex", "res://.godot/imported/rebar_hr_1.png-4e6d98cd265fab48e6a6b9347398aaaf.etc2.ctex"]
 
 [params]
 

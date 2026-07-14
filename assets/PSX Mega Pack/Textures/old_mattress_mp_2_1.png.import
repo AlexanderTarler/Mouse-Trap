@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://x37edel7lb2i"
 path.s3tc="res://.godot/imported/old_mattress_mp_2_1.png-05d26295359075653d84a7df9b98899c.s3tc.ctex"
+path.etc2="res://.godot/imported/old_mattress_mp_2_1.png-05d26295359075653d84a7df9b98899c.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Textures/old_mattress_mp_2_1.png"
-dest_files=["res://.godot/imported/old_mattress_mp_2_1.png-05d26295359075653d84a7df9b98899c.s3tc.ctex"]
+dest_files=["res://.godot/imported/old_mattress_mp_2_1.png-05d26295359075653d84a7df9b98899c.s3tc.ctex", "res://.godot/imported/old_mattress_mp_2_1.png-05d26295359075653d84a7df9b98899c.etc2.ctex"]
 
 [params]
 

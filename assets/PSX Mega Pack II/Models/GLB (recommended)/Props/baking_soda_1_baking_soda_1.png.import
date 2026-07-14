@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cajs2i06st154"
 path.s3tc="res://.godot/imported/baking_soda_1_baking_soda_1.png-46b32aa746269a3f0c63e9a864389917.s3tc.ctex"
+path.etc2="res://.godot/imported/baking_soda_1_baking_soda_1.png-46b32aa746269a3f0c63e9a864389917.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/baking_soda_1_baking_soda_1.png"
-dest_files=["res://.godot/imported/baking_soda_1_baking_soda_1.png-46b32aa746269a3f0c63e9a864389917.s3tc.ctex"]
+dest_files=["res://.godot/imported/baking_soda_1_baking_soda_1.png-46b32aa746269a3f0c63e9a864389917.s3tc.ctex", "res://.godot/imported/baking_soda_1_baking_soda_1.png-46b32aa746269a3f0c63e9a864389917.etc2.ctex"]
 
 [params]
 

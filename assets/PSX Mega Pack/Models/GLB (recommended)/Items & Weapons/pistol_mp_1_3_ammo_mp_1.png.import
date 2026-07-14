@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bg4k3oahtfth0"
 path.s3tc="res://.godot/imported/pistol_mp_1_3_ammo_mp_1.png-0a0f7cb8268cf482675a08836f1b8085.s3tc.ctex"
+path.etc2="res://.godot/imported/pistol_mp_1_3_ammo_mp_1.png-0a0f7cb8268cf482675a08836f1b8085.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/pistol_mp_1_3_ammo_mp_1.png"
-dest_files=["res://.godot/imported/pistol_mp_1_3_ammo_mp_1.png-0a0f7cb8268cf482675a08836f1b8085.s3tc.ctex"]
+dest_files=["res://.godot/imported/pistol_mp_1_3_ammo_mp_1.png-0a0f7cb8268cf482675a08836f1b8085.s3tc.ctex", "res://.godot/imported/pistol_mp_1_3_ammo_mp_1.png-0a0f7cb8268cf482675a08836f1b8085.etc2.ctex"]
 
 [params]
 

@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bs7gnfn8xedu4"
 path.s3tc="res://.godot/imported/window_mx_1.png-ff4f3be3da82c06c01e432688967f7b9.s3tc.ctex"
+path.etc2="res://.godot/imported/window_mx_1.png-ff4f3be3da82c06c01e432688967f7b9.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Buildings/window_mx_1.png"
-dest_files=["res://.godot/imported/window_mx_1.png-ff4f3be3da82c06c01e432688967f7b9.s3tc.ctex"]
+dest_files=["res://.godot/imported/window_mx_1.png-ff4f3be3da82c06c01e432688967f7b9.s3tc.ctex", "res://.godot/imported/window_mx_1.png-ff4f3be3da82c06c01e432688967f7b9.etc2.ctex"]
 
 [params]
 

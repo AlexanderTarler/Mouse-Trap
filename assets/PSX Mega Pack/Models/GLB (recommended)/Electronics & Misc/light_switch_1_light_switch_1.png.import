@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cqbvstv1twrhl"
 path.s3tc="res://.godot/imported/light_switch_1_light_switch_1.png-96802e4c1d304a05e65fee52e737e4bc.s3tc.ctex"
+path.etc2="res://.godot/imported/light_switch_1_light_switch_1.png-96802e4c1d304a05e65fee52e737e4bc.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/light_switch_1_light_switch_1.png"
-dest_files=["res://.godot/imported/light_switch_1_light_switch_1.png-96802e4c1d304a05e65fee52e737e4bc.s3tc.ctex"]
+dest_files=["res://.godot/imported/light_switch_1_light_switch_1.png-96802e4c1d304a05e65fee52e737e4bc.s3tc.ctex", "res://.godot/imported/light_switch_1_light_switch_1.png-96802e4c1d304a05e65fee52e737e4bc.etc2.ctex"]
 
 [params]
 

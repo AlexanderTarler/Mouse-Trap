@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dw04fmco2uhqv"
 path.s3tc="res://.godot/imported/lamp_3_1_off.png-e4e0e7aea9d3e2f275096211f76d2766.s3tc.ctex"
+path.etc2="res://.godot/imported/lamp_3_1_off.png-e4e0e7aea9d3e2f275096211f76d2766.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Lighting/lamp_3_1_off.png"
-dest_files=["res://.godot/imported/lamp_3_1_off.png-e4e0e7aea9d3e2f275096211f76d2766.s3tc.ctex"]
+dest_files=["res://.godot/imported/lamp_3_1_off.png-e4e0e7aea9d3e2f275096211f76d2766.s3tc.ctex", "res://.godot/imported/lamp_3_1_off.png-e4e0e7aea9d3e2f275096211f76d2766.etc2.ctex"]
 
 [params]
 

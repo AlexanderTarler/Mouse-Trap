@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://7l0ng8ouh0s8"
 path.s3tc="res://.godot/imported/canned_food_4_metal_3.png-193fdcdce2138b5054056d8fbbc6b177.s3tc.ctex"
+path.etc2="res://.godot/imported/canned_food_4_metal_3.png-193fdcdce2138b5054056d8fbbc6b177.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/GLB/canned_food_4_metal_3.png"
-dest_files=["res://.godot/imported/canned_food_4_metal_3.png-193fdcdce2138b5054056d8fbbc6b177.s3tc.ctex"]
+dest_files=["res://.godot/imported/canned_food_4_metal_3.png-193fdcdce2138b5054056d8fbbc6b177.s3tc.ctex", "res://.godot/imported/canned_food_4_metal_3.png-193fdcdce2138b5054056d8fbbc6b177.etc2.ctex"]
 
 [params]
 

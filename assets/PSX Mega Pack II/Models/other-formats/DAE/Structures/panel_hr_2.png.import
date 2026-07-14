@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dl6hw3iyt6och"
 path.s3tc="res://.godot/imported/panel_hr_2.png-f6709715812ee04f1e3026e59cf65921.s3tc.ctex"
+path.etc2="res://.godot/imported/panel_hr_2.png-f6709715812ee04f1e3026e59cf65921.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Structures/panel_hr_2.png"
-dest_files=["res://.godot/imported/panel_hr_2.png-f6709715812ee04f1e3026e59cf65921.s3tc.ctex"]
+dest_files=["res://.godot/imported/panel_hr_2.png-f6709715812ee04f1e3026e59cf65921.s3tc.ctex", "res://.godot/imported/panel_hr_2.png-f6709715812ee04f1e3026e59cf65921.etc2.ctex"]
 
 [params]
 

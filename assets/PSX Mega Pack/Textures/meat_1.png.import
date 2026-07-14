@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cafgdkoxnrcx2"
 path.s3tc="res://.godot/imported/meat_1.png-356c997a8c1ac05c537cfe79af7c2338.s3tc.ctex"
+path.etc2="res://.godot/imported/meat_1.png-356c997a8c1ac05c537cfe79af7c2338.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Textures/meat_1.png"
-dest_files=["res://.godot/imported/meat_1.png-356c997a8c1ac05c537cfe79af7c2338.s3tc.ctex"]
+dest_files=["res://.godot/imported/meat_1.png-356c997a8c1ac05c537cfe79af7c2338.s3tc.ctex", "res://.godot/imported/meat_1.png-356c997a8c1ac05c537cfe79af7c2338.etc2.ctex"]
 
 [params]
 

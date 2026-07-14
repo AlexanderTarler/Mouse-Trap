@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b614dtk3av1b"
 path.s3tc="res://.godot/imported/wood_4.png-ebc30d81a23d74e0c5d1685a7909a3b1.s3tc.ctex"
+path.etc2="res://.godot/imported/wood_4.png-ebc30d81a23d74e0c5d1685a7909a3b1.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Modular Structures/wood_4.png"
-dest_files=["res://.godot/imported/wood_4.png-ebc30d81a23d74e0c5d1685a7909a3b1.s3tc.ctex"]
+dest_files=["res://.godot/imported/wood_4.png-ebc30d81a23d74e0c5d1685a7909a3b1.s3tc.ctex", "res://.godot/imported/wood_4.png-ebc30d81a23d74e0c5d1685a7909a3b1.etc2.ctex"]
 
 [params]
 

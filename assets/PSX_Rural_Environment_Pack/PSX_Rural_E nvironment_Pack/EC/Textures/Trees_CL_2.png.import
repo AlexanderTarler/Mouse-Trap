@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://8gbr4qdq6irj"
 path.s3tc="res://.godot/imported/Trees_CL_2.png-306c3eb463971d8ad51b5494326c3620.s3tc.ctex"
+path.etc2="res://.godot/imported/Trees_CL_2.png-306c3eb463971d8ad51b5494326c3620.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX_Rural_Environment_Pack/PSX_Rural_E nvironment_Pack/EC/Textures/Trees_CL_2.png"
-dest_files=["res://.godot/imported/Trees_CL_2.png-306c3eb463971d8ad51b5494326c3620.s3tc.ctex"]
+dest_files=["res://.godot/imported/Trees_CL_2.png-306c3eb463971d8ad51b5494326c3620.s3tc.ctex", "res://.godot/imported/Trees_CL_2.png-306c3eb463971d8ad51b5494326c3620.etc2.ctex"]
 
 [params]
 

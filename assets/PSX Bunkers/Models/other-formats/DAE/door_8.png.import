@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://ductwkv55pku4"
 path.s3tc="res://.godot/imported/door_8.png-23689d5fb815fa98ae652b47f7eae7aa.s3tc.ctex"
+path.etc2="res://.godot/imported/door_8.png-23689d5fb815fa98ae652b47f7eae7aa.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/DAE/door_8.png"
-dest_files=["res://.godot/imported/door_8.png-23689d5fb815fa98ae652b47f7eae7aa.s3tc.ctex"]
+dest_files=["res://.godot/imported/door_8.png-23689d5fb815fa98ae652b47f7eae7aa.s3tc.ctex", "res://.godot/imported/door_8.png-23689d5fb815fa98ae652b47f7eae7aa.etc2.ctex"]
 
 [params]
 

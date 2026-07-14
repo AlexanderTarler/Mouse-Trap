@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://jl0yth6xqhle"
 path.s3tc="res://.godot/imported/pills_bottle_1.png.001.png-9710d06b377a3db32e8a358951f2a540.s3tc.ctex"
+path.etc2="res://.godot/imported/pills_bottle_1.png.001.png-9710d06b377a3db32e8a358951f2a540.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Items & Weapons/pills_bottle_1.png.001.png"
-dest_files=["res://.godot/imported/pills_bottle_1.png.001.png-9710d06b377a3db32e8a358951f2a540.s3tc.ctex"]
+dest_files=["res://.godot/imported/pills_bottle_1.png.001.png-9710d06b377a3db32e8a358951f2a540.s3tc.ctex", "res://.godot/imported/pills_bottle_1.png.001.png-9710d06b377a3db32e8a358951f2a540.etc2.ctex"]
 
 [params]
 

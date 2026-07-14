@@ -24,12 +24,11 @@ extends CharacterBody3D
 # References to scene nodes
 @onready var _camera: Camera3D = $CameraHolder/Camera3D
 @onready var _camera_holder: Node3D = $CameraHolder
-@onready var _collision_shape: CollisionShape3D = $CollisionShape3D
+@onready var _collision_shape: PrismCollider3D = $PrismCollider3D
 @onready var _flashlight: SpotLight3D = $CameraHolder/Camera3D/Flashlight
 @onready var _interaction_manager: Node = $CameraHolder/InteractionManager
 @onready var _physical_grab: Node = $CameraHolder/PhysicalGrab
 @onready var footstep_audio: AudioStreamPlayer3D = $FootstepAudio if has_node("FootstepAudio") else null
-@onready var floor_raycast: RayCast3D = $FloorRayCast if has_node("FloorRayCast") else null
 
 # PrismCollider3D reference for crouch resizing.
 @onready var _prism_collider: Node = $PrismCollider3D if has_node("PrismCollider3D") else null
@@ -653,27 +652,19 @@ func _try_step_up(direction: Vector3) -> void:
 	global_position += direction * 0.02
 
 func _play_surface_footstep() -> void:
-	if not footstep_audio: return
-	var chosen_stream: AudioStream = null
+	if not footstep_audio:
+		return
 	
-	if floor_raycast and floor_raycast.is_colliding():
-		var surface_node: Node = floor_raycast.get_collider()
-		var found_group := false
-		while surface_node and not found_group:
-			if surface_node.is_in_group("wood") and wood_footsteps.size() > 0:
-				chosen_stream = wood_footsteps.pick_random()
-				found_group = true
-			elif surface_node.is_in_group("grass") and grass_footsteps.size() > 0:
-				chosen_stream = grass_footsteps.pick_random()
-				found_group = true
-			else:
-				surface_node = surface_node.get_parent()
+	var room := get_player_room()
+	var array: Array[AudioStream]
 	
-	if not chosen_stream and grass_footsteps.size() > 0:
-		chosen_stream = grass_footsteps.pick_random()
+	if room == "Outside":
+		array = grass_footsteps
+	else:
+		array = wood_footsteps
 	
-	if chosen_stream:
-		footstep_audio.stream = chosen_stream
+	if array.size() > 0:
+		footstep_audio.stream = array.pick_random()
 		footstep_audio.pitch_scale = randf_range(0.85, 1.15)
 		footstep_audio.play()
 
@@ -724,6 +715,12 @@ var is_exhausted: bool = false
 var _exhausted_walk_speed: float = 0.0
 var _exhausted_run_speed: float = 0.0
 
+# Timer for throttling get_player_room() calls in _process (10Hz).
+var _room_check_timer: float = 0.0
+
+# Cached RoutineManager reference (avoids per-frame get_node_or_null).
+var _routine_manager: Node = null
+
 
 
 # --- STANDOFF / CHARGE: LOOK TIMER & CAMERA SHAKE ---
@@ -739,14 +736,20 @@ func _process(delta: float) -> void:
 			_exhausted_walk_speed = walk_speed
 			_exhausted_run_speed = run_speed
 		
-		var room = get_player_room()
-		if room == "Outside":
-			walk_speed = _exhausted_walk_speed * 0.35
-			run_speed = _exhausted_run_speed * 0.35
-			sprint_unlocked = false
-		else:
-			walk_speed = _exhausted_walk_speed
-			run_speed = _exhausted_run_speed
+		# PERFORMANCE: Throttle room checks to 5Hz (every 6 frames at 60fps)
+		# This avoids calling get_player_room() which iterates all Cabin_Interior
+		# areas + performs overlaps_body() physics queries every frame.
+		_room_check_timer += delta
+		if _room_check_timer >= 0.2:
+			_room_check_timer = 0.0
+			var room = get_player_room()
+			if room == "Outside":
+				walk_speed = _exhausted_walk_speed * 0.35
+				run_speed = _exhausted_run_speed * 0.35
+				sprint_unlocked = false
+			else:
+				walk_speed = _exhausted_walk_speed
+				run_speed = _exhausted_run_speed
 
 	# ─── CABIN ENTRY DETECTION ──────────────────────────────────────────
 	# Check if the player has entered the cabin (fallback detection).
@@ -755,23 +758,28 @@ func _process(delta: float) -> void:
 	# must physically walk through the door to trigger this. Starting inside
 	# the cabin (e.g. after a death respawn) will NOT falsely trigger entry.
 	if not _cabin_entry_reported:
-		var room = get_player_room()
-		
-		# First frame calibration: _previous_room starts as "" (empty).
-		# On the first frame, just record the current room without triggering
-		# entry detection. This prevents false triggers when the player starts
-		# inside the cabin (e.g. dev mode spawn, death respawn, or scene reload).
-		if _previous_room == "":
+		# PERFORMANCE: Throttle cabin entry checks to 5Hz
+		_room_check_timer += delta
+		if _room_check_timer >= 0.2:
+			_room_check_timer = 0.0
+			var room = get_player_room()
+			
+			# First frame calibration: _previous_room starts as "" (empty).
+			# On the first frame, just record the current room without triggering
+			# entry detection. This prevents false triggers when the player starts
+			# inside the cabin (e.g. dev mode spawn, death respawn, or scene reload).
+			if _previous_room == "":
+				_previous_room = room
+			# Only report entry if the player was previously "Outside" and is now inside.
+			# The player must physically walk through the door to trigger this.
+			elif _previous_room == "Outside" and room != "Outside":
+				_cabin_entry_reported = true
+				if not _routine_manager:
+					_routine_manager = get_node_or_null("/root/RoutineManager")
+				if _routine_manager and _routine_manager.has_method("on_player_entered_cabin"):
+					_routine_manager.on_player_entered_cabin()
+					print("[Player] Cabin entry detected via room check: ", room)
 			_previous_room = room
-		# Only report entry if the player was previously "Outside" and is now inside.
-		# The player must physically walk through the door to trigger this.
-		elif _previous_room == "Outside" and room != "Outside":
-			_cabin_entry_reported = true
-			var rm = get_node_or_null("/root/RoutineManager")
-			if rm and rm.has_method("on_player_entered_cabin"):
-				rm.on_player_entered_cabin()
-				print("[Player] Cabin entry detected via room check: ", room)
-		_previous_room = room
 
 
 	

@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c2upxv76fm6t8"
 path.s3tc="res://.godot/imported/platform_ax_1_planks_hr_3.png-50f51bac4a331c08d34f4205885d45bc.s3tc.ctex"
+path.etc2="res://.godot/imported/platform_ax_1_planks_hr_3.png-50f51bac4a331c08d34f4205885d45bc.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Modular Structures/platform_ax_1_planks_hr_3.png"
-dest_files=["res://.godot/imported/platform_ax_1_planks_hr_3.png-50f51bac4a331c08d34f4205885d45bc.s3tc.ctex"]
+dest_files=["res://.godot/imported/platform_ax_1_planks_hr_3.png-50f51bac4a331c08d34f4205885d45bc.s3tc.ctex", "res://.godot/imported/platform_ax_1_planks_hr_3.png-50f51bac4a331c08d34f4205885d45bc.etc2.ctex"]
 
 [params]
 

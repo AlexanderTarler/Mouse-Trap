@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://byhb1llaqccem"
 path.s3tc="res://.godot/imported/vending_machine_1.png-51ce35b03be55c932a82152e047a4abf.s3tc.ctex"
+path.etc2="res://.godot/imported/vending_machine_1.png-51ce35b03be55c932a82152e047a4abf.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Large Props/vending_machine_1.png"
-dest_files=["res://.godot/imported/vending_machine_1.png-51ce35b03be55c932a82152e047a4abf.s3tc.ctex"]
+dest_files=["res://.godot/imported/vending_machine_1.png-51ce35b03be55c932a82152e047a4abf.s3tc.ctex", "res://.godot/imported/vending_machine_1.png-51ce35b03be55c932a82152e047a4abf.etc2.ctex"]
 
 [params]
 

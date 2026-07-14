@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dek0hnknp2euh"
 path.s3tc="res://.godot/imported/doorway_4_plain_metal_4.png-fa96f8f3b74cf7f090d1d00ac5224a68.s3tc.ctex"
+path.etc2="res://.godot/imported/doorway_4_plain_metal_4.png-fa96f8f3b74cf7f090d1d00ac5224a68.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Bunkers/Models/other-formats/GLB/doorway_4_plain_metal_4.png"
-dest_files=["res://.godot/imported/doorway_4_plain_metal_4.png-fa96f8f3b74cf7f090d1d00ac5224a68.s3tc.ctex"]
+dest_files=["res://.godot/imported/doorway_4_plain_metal_4.png-fa96f8f3b74cf7f090d1d00ac5224a68.s3tc.ctex", "res://.godot/imported/doorway_4_plain_metal_4.png-fa96f8f3b74cf7f090d1d00ac5224a68.etc2.ctex"]
 
 [params]
 

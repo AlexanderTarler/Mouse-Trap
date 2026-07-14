@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bc0rqpkei03dh"
 path.s3tc="res://.godot/imported/Log Wall.png-810d685d93b94494d1466cafebc3e183.s3tc.ctex"
+path.etc2="res://.godot/imported/Log Wall.png-810d685d93b94494d1466cafebc3e183.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/Three Cabins/Textures/Log Wall.png"
-dest_files=["res://.godot/imported/Log Wall.png-810d685d93b94494d1466cafebc3e183.s3tc.ctex"]
+dest_files=["res://.godot/imported/Log Wall.png-810d685d93b94494d1466cafebc3e183.s3tc.ctex", "res://.godot/imported/Log Wall.png-810d685d93b94494d1466cafebc3e183.etc2.ctex"]
 
 [params]
 

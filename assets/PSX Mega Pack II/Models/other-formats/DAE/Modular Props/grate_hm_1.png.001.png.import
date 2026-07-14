@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://ckh3x47ln1ngg"
 path.s3tc="res://.godot/imported/grate_hm_1.png.001.png-2577c1a9b2a1b3446b2cdf26a58e7421.s3tc.ctex"
+path.etc2="res://.godot/imported/grate_hm_1.png.001.png-2577c1a9b2a1b3446b2cdf26a58e7421.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Modular Props/grate_hm_1.png.001.png"
-dest_files=["res://.godot/imported/grate_hm_1.png.001.png-2577c1a9b2a1b3446b2cdf26a58e7421.s3tc.ctex"]
+dest_files=["res://.godot/imported/grate_hm_1.png.001.png-2577c1a9b2a1b3446b2cdf26a58e7421.s3tc.ctex", "res://.godot/imported/grate_hm_1.png.001.png-2577c1a9b2a1b3446b2cdf26a58e7421.etc2.ctex"]
 
 [params]
 

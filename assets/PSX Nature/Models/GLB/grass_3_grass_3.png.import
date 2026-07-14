@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://brtdq8jklxr6k"
 path.s3tc="res://.godot/imported/grass_3_grass_3.png-e00e7a391d69bfd72743059442205a81.s3tc.ctex"
+path.etc2="res://.godot/imported/grass_3_grass_3.png-e00e7a391d69bfd72743059442205a81.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Nature/Models/GLB/grass_3_grass_3.png"
-dest_files=["res://.godot/imported/grass_3_grass_3.png-e00e7a391d69bfd72743059442205a81.s3tc.ctex"]
+dest_files=["res://.godot/imported/grass_3_grass_3.png-e00e7a391d69bfd72743059442205a81.s3tc.ctex", "res://.godot/imported/grass_3_grass_3.png-e00e7a391d69bfd72743059442205a81.etc2.ctex"]
 
 [params]
 

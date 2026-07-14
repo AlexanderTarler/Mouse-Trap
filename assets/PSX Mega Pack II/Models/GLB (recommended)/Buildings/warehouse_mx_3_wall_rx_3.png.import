@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b3vogi7iyt1wm"
 path.s3tc="res://.godot/imported/warehouse_mx_3_wall_rx_3.png-a5e3a1f84fdd601d84aae407e866d922.s3tc.ctex"
+path.etc2="res://.godot/imported/warehouse_mx_3_wall_rx_3.png-a5e3a1f84fdd601d84aae407e866d922.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Buildings/warehouse_mx_3_wall_rx_3.png"
-dest_files=["res://.godot/imported/warehouse_mx_3_wall_rx_3.png-a5e3a1f84fdd601d84aae407e866d922.s3tc.ctex"]
+dest_files=["res://.godot/imported/warehouse_mx_3_wall_rx_3.png-a5e3a1f84fdd601d84aae407e866d922.s3tc.ctex", "res://.godot/imported/warehouse_mx_3_wall_rx_3.png-a5e3a1f84fdd601d84aae407e866d922.etc2.ctex"]
 
 [params]
 

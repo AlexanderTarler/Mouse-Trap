@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://46mwnwolodde"
 path.s3tc="res://.godot/imported/pipe_mp_1.png-71bc55114f39838595b6873b917e9a66.s3tc.ctex"
+path.etc2="res://.godot/imported/pipe_mp_1.png-71bc55114f39838595b6873b917e9a66.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Large Props/pipe_mp_1.png"
-dest_files=["res://.godot/imported/pipe_mp_1.png-71bc55114f39838595b6873b917e9a66.s3tc.ctex"]
+dest_files=["res://.godot/imported/pipe_mp_1.png-71bc55114f39838595b6873b917e9a66.s3tc.ctex", "res://.godot/imported/pipe_mp_1.png-71bc55114f39838595b6873b917e9a66.etc2.ctex"]
 
 [params]
 

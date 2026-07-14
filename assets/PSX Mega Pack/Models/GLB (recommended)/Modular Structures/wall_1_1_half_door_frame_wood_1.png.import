@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://ckmwv4co5atdx"
 path.s3tc="res://.godot/imported/wall_1_1_half_door_frame_wood_1.png-5792a1f872f7c1fd0fb4d98b48adb6db.s3tc.ctex"
+path.etc2="res://.godot/imported/wall_1_1_half_door_frame_wood_1.png-5792a1f872f7c1fd0fb4d98b48adb6db.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Modular Structures/wall_1_1_half_door_frame_wood_1.png"
-dest_files=["res://.godot/imported/wall_1_1_half_door_frame_wood_1.png-5792a1f872f7c1fd0fb4d98b48adb6db.s3tc.ctex"]
+dest_files=["res://.godot/imported/wall_1_1_half_door_frame_wood_1.png-5792a1f872f7c1fd0fb4d98b48adb6db.s3tc.ctex", "res://.godot/imported/wall_1_1_half_door_frame_wood_1.png-5792a1f872f7c1fd0fb4d98b48adb6db.etc2.ctex"]
 
 [params]
 

@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bn8b4i6nogjbx"
 path.s3tc="res://.godot/imported/lever_etx_2_1_electronics_etx_part_1.png-35b2a18b5932c267b634a514ccba631d.s3tc.ctex"
+path.etc2="res://.godot/imported/lever_etx_2_1_electronics_etx_part_1.png-35b2a18b5932c267b634a514ccba631d.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Tech/Models/GLB (recommended)/lever_etx_2_1_electronics_etx_part_1.png"
-dest_files=["res://.godot/imported/lever_etx_2_1_electronics_etx_part_1.png-35b2a18b5932c267b634a514ccba631d.s3tc.ctex"]
+dest_files=["res://.godot/imported/lever_etx_2_1_electronics_etx_part_1.png-35b2a18b5932c267b634a514ccba631d.s3tc.ctex", "res://.godot/imported/lever_etx_2_1_electronics_etx_part_1.png-35b2a18b5932c267b634a514ccba631d.etc2.ctex"]
 
 [params]
 

@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://ct8ncsfvfksn"
 path.s3tc="res://.godot/imported/hydraulic_spreader_etx_1_misc_etx_part_2.png-36e9709a8d9c77769be89eac3a0f3837.s3tc.ctex"
+path.etc2="res://.godot/imported/hydraulic_spreader_etx_1_misc_etx_part_2.png-36e9709a8d9c77769be89eac3a0f3837.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Tech/Models/GLB (recommended)/hydraulic_spreader_etx_1_misc_etx_part_2.png"
-dest_files=["res://.godot/imported/hydraulic_spreader_etx_1_misc_etx_part_2.png-36e9709a8d9c77769be89eac3a0f3837.s3tc.ctex"]
+dest_files=["res://.godot/imported/hydraulic_spreader_etx_1_misc_etx_part_2.png-36e9709a8d9c77769be89eac3a0f3837.s3tc.ctex", "res://.godot/imported/hydraulic_spreader_etx_1_misc_etx_part_2.png-36e9709a8d9c77769be89eac3a0f3837.etc2.ctex"]
 
 [params]
 

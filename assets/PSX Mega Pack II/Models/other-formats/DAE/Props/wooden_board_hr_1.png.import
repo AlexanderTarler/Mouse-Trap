@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://krmxr42t0mkw"
 path.s3tc="res://.godot/imported/wooden_board_hr_1.png-d33afdd38a5a8eda44a6831e84a0bb62.s3tc.ctex"
+path.etc2="res://.godot/imported/wooden_board_hr_1.png-d33afdd38a5a8eda44a6831e84a0bb62.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/other-formats/DAE/Props/wooden_board_hr_1.png"
-dest_files=["res://.godot/imported/wooden_board_hr_1.png-d33afdd38a5a8eda44a6831e84a0bb62.s3tc.ctex"]
+dest_files=["res://.godot/imported/wooden_board_hr_1.png-d33afdd38a5a8eda44a6831e84a0bb62.s3tc.ctex", "res://.godot/imported/wooden_board_hr_1.png-d33afdd38a5a8eda44a6831e84a0bb62.etc2.ctex"]
 
 [params]
 

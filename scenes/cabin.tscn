@@ -3,12 +3,6 @@
 [ext_resource type="Script" uid="uid://bl13537l4eohb" path="res://scripts/cabin_room.gd" id="1_ixm0y"]
 [ext_resource type="PackedScene" uid="uid://dapqur5bamuro" path="res://assets/Three Cabins/Mouse Trap Cabin 2.glb" id="3_84mq0"]
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
-size = Vector3(7.391968, 1, 13.524475)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_qf7ms"]
-size = Vector3(15.897888, 1, 14)
-
 [sub_resource type="BoxShape3D" id="BoxShape3D_0rnjq"]
 size = Vector3(6.419824, 3, 6.2)
 
@@ -40,14 +34,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
 
 [node name="GroundFloorCollision" type="StaticBody3D" parent="." unique_id=123450398 groups=["wood"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 14.88)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="GroundFloorCollision" unique_id=123450399 groups=["wood"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.25, -0.45, 5)
-shape = SubResource("BoxShape3D_floor")
-
-[node name="CollisionShape3D2" type="CollisionShape3D" parent="GroundFloorCollision" unique_id=1097738381 groups=["wood"]]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.3010559, -0.45, -3)
-shape = SubResource("BoxShape3D_qf7ms")
 
 [node name="ComputerRoom" type="Area3D" parent="." unique_id=846964507 groups=["Cabin_Interior"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.6787226, 2.7291758, 16.876305)

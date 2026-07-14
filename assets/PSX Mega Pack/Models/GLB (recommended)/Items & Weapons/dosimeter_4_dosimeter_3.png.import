@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://b8roa4p70q2id"
 path.s3tc="res://.godot/imported/dosimeter_4_dosimeter_3.png-71f966354fc8016cc4e3691db138c32b.s3tc.ctex"
+path.etc2="res://.godot/imported/dosimeter_4_dosimeter_3.png-71f966354fc8016cc4e3691db138c32b.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/dosimeter_4_dosimeter_3.png"
-dest_files=["res://.godot/imported/dosimeter_4_dosimeter_3.png-71f966354fc8016cc4e3691db138c32b.s3tc.ctex"]
+dest_files=["res://.godot/imported/dosimeter_4_dosimeter_3.png-71f966354fc8016cc4e3691db138c32b.s3tc.ctex", "res://.godot/imported/dosimeter_4_dosimeter_3.png-71f966354fc8016cc4e3691db138c32b.etc2.ctex"]
 
 [params]
 

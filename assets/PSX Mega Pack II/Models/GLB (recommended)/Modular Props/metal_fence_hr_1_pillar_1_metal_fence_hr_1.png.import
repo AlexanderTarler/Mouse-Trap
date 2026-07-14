@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bshhmr6q27cvb"
 path.s3tc="res://.godot/imported/metal_fence_hr_1_pillar_1_metal_fence_hr_1.png-1e262fd10e9e74be940c75cfdd4611bc.s3tc.ctex"
+path.etc2="res://.godot/imported/metal_fence_hr_1_pillar_1_metal_fence_hr_1.png-1e262fd10e9e74be940c75cfdd4611bc.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Modular Props/metal_fence_hr_1_pillar_1_metal_fence_hr_1.png"
-dest_files=["res://.godot/imported/metal_fence_hr_1_pillar_1_metal_fence_hr_1.png-1e262fd10e9e74be940c75cfdd4611bc.s3tc.ctex"]
+dest_files=["res://.godot/imported/metal_fence_hr_1_pillar_1_metal_fence_hr_1.png-1e262fd10e9e74be940c75cfdd4611bc.s3tc.ctex", "res://.godot/imported/metal_fence_hr_1_pillar_1_metal_fence_hr_1.png-1e262fd10e9e74be940c75cfdd4611bc.etc2.ctex"]
 
 [params]
 

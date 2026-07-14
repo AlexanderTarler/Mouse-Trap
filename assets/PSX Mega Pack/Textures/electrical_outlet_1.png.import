@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://dmx5u2nsvwbvv"
 path.s3tc="res://.godot/imported/electrical_outlet_1.png-b42a9a5626d08e0f02a858a7bba3f03f.s3tc.ctex"
+path.etc2="res://.godot/imported/electrical_outlet_1.png-b42a9a5626d08e0f02a858a7bba3f03f.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Textures/electrical_outlet_1.png"
-dest_files=["res://.godot/imported/electrical_outlet_1.png-b42a9a5626d08e0f02a858a7bba3f03f.s3tc.ctex"]
+dest_files=["res://.godot/imported/electrical_outlet_1.png-b42a9a5626d08e0f02a858a7bba3f03f.s3tc.ctex", "res://.godot/imported/electrical_outlet_1.png-b42a9a5626d08e0f02a858a7bba3f03f.etc2.ctex"]
 
 [params]
 

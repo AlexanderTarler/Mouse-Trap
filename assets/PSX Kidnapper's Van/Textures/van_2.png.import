@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cqy215fgmmwy0"
 path.s3tc="res://.godot/imported/van_2.png-db88f6ba4c4b050a965e581bc6dc3261.s3tc.ctex"
+path.etc2="res://.godot/imported/van_2.png-db88f6ba4c4b050a965e581bc6dc3261.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Kidnapper's Van/Textures/van_2.png"
-dest_files=["res://.godot/imported/van_2.png-db88f6ba4c4b050a965e581bc6dc3261.s3tc.ctex"]
+dest_files=["res://.godot/imported/van_2.png-db88f6ba4c4b050a965e581bc6dc3261.s3tc.ctex", "res://.godot/imported/van_2.png-db88f6ba4c4b050a965e581bc6dc3261.etc2.ctex"]
 
 [params]
 

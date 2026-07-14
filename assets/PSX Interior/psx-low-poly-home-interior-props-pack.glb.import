@@ -1,0 +1,3339 @@
+[remap]
+
+importer="scene"
+importer_version=1
+type="PackedScene"
+uid="uid://dddamdv4mwtjq"
+path="res://.godot/imported/psx-low-poly-home-interior-props-pack.glb-31f3c718371b1362afc844b177d933ef.scn"
+
+[deps]
+
+source_file="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack.glb"
+dest_files=["res://.godot/imported/psx-low-poly-home-interior-props-pack.glb-31f3c718371b1362afc844b177d933ef.scn"]
+
+[params]
+
+nodes/root_type=""
+nodes/root_name=""
+nodes/root_script=null
+nodes/apply_root_scale=true
+nodes/root_scale=1.0
+nodes/import_as_skeleton_bones=false
+nodes/use_name_suffixes=true
+nodes/use_node_type_suffixes=true
+meshes/ensure_tangents=true
+meshes/generate_lods=true
+meshes/create_shadow_meshes=true
+meshes/light_baking=1
+meshes/lightmap_texel_size=0.2
+meshes/force_disable_compression=false
+skins/use_named_skins=true
+animation/import=true
+animation/fps=30
+animation/trimming=false
+animation/remove_immutable_tracks=true
+animation/import_rest_as_RESET=false
+import_script/path=""
+materials/extract=0
+materials/extract_format=0
+materials/extract_path=""
+_subresources={
+"meshes": {
+"psx-low-poly-home-interior-props-pack_Backpack_001": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Backpack_001.res",
+"save_to_file/path": "uid://cuuskxtdsxi3q"
+},
+"psx-low-poly-home-interior-props-pack_Board": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Board.res",
+"save_to_file/path": "uid://b60vd8dal7gu3"
+},
+"psx-low-poly-home-interior-props-pack_Board_001": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Board_001.res",
+"save_to_file/path": "uid://dmgo37kyeni5b"
+},
+"psx-low-poly-home-interior-props-pack_Board_002": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Board_002.res",
+"save_to_file/path": "uid://n0np6a3oun0k"
+},
+"psx-low-poly-home-interior-props-pack_Board_003": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Board_003.res",
+"save_to_file/path": "uid://bj6magm0jqpwb"
+},
+"psx-low-poly-home-interior-props-pack_Broom": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Broom.res",
+"save_to_file/path": "uid://bmqrmh0ah4mwm"
+},
+"psx-low-poly-home-interior-props-pack_Broom_001": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Broom_001.res",
+"save_to_file/path": "uid://cdxpacurvttg5"
+},
+"psx-low-poly-home-interior-props-pack_Broom_02": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Broom_02.res",
+"save_to_file/path": "uid://c6chxtqg1wxrb"
+},
+"psx-low-poly-home-interior-props-pack_Broom_02_002": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Broom_02_002.res",
+"save_to_file/path": "uid://u6qt6oik7fqx"
+},
+"psx-low-poly-home-interior-props-pack_Circle_001": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Circle_001.res",
+"save_to_file/path": "uid://ddfynqw4l6ahc"
+},
+"psx-low-poly-home-interior-props-pack_Circle_002": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Circle_002.res",
+"save_to_file/path": "uid://l68wi465jct"
+},
+"psx-low-poly-home-interior-props-pack_Circle_003": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Circle_003.res",
+"save_to_file/path": "uid://iqs0do84al4a"
+},
+"psx-low-poly-home-interior-props-pack_Circle_004": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Circle_004.res",
+"save_to_file/path": "uid://sqnoc8d6favo"
+},
+"psx-low-poly-home-interior-props-pack_Circle_005": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Circle_005.res",
+"save_to_file/path": "uid://d1u0o17d8cv4v"
+},
+"psx-low-poly-home-interior-props-pack_Circle_008": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Circle_008.res",
+"save_to_file/path": "uid://mpecjtdet3sh"
+},
+"psx-low-poly-home-interior-props-pack_Circle_009": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Circle_009.res",
+"save_to_file/path": "uid://7isfq8ie5p0m"
+},
+"psx-low-poly-home-interior-props-pack_Circle_011": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Circle_011.res",
+"save_to_file/path": "uid://4pscsal0tpnv"
+},
+"psx-low-poly-home-interior-props-pack_Clock": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Clock.res",
+"save_to_file/path": "uid://c328xdwpeuk3d"
+},
+"psx-low-poly-home-interior-props-pack_Cone_004": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cone_004.res",
+"save_to_file/path": "uid://dhtd2eau5d16o"
+},
+"psx-low-poly-home-interior-props-pack_Cone_008": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cone_008.res",
+"save_to_file/path": "uid://drn6cei3x0hfg"
+},
+"psx-low-poly-home-interior-props-pack_Cone_009": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cone_009.res",
+"save_to_file/path": "uid://b5tfk5h6a1qxo"
+},
+"psx-low-poly-home-interior-props-pack_Cone_010": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cone_010.res",
+"save_to_file/path": "uid://ci2io6b3fc60k"
+},
+"psx-low-poly-home-interior-props-pack_Cone_011": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cone_011.res",
+"save_to_file/path": "uid://8pqxga3bw56b"
+},
+"psx-low-poly-home-interior-props-pack_Cone_012": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cone_012.res",
+"save_to_file/path": "uid://2lg7lg0f4tjw"
+},
+"psx-low-poly-home-interior-props-pack_Cone_013": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cone_013.res",
+"save_to_file/path": "uid://cgq7jrif3qoo4"
+},
+"psx-low-poly-home-interior-props-pack_Cone_015": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cone_015.res",
+"save_to_file/path": "uid://eiv2efohotqs"
+},
+"psx-low-poly-home-interior-props-pack_Control_01": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Control_01.res",
+"save_to_file/path": "uid://d3sjgpp5qjio2"
+},
+"psx-low-poly-home-interior-props-pack_Cube_001": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_001.res",
+"save_to_file/path": "uid://dfnftt1wkcv1y"
+},
+"psx-low-poly-home-interior-props-pack_Cube_005": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_005.res",
+"save_to_file/path": "uid://bdjeysewt6h7h"
+},
+"psx-low-poly-home-interior-props-pack_Cube_016": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_016.res",
+"save_to_file/path": "uid://b755wrx5u1yva"
+},
+"psx-low-poly-home-interior-props-pack_Cube_019": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_019.res",
+"save_to_file/path": "uid://sllq1wspof1m"
+},
+"psx-low-poly-home-interior-props-pack_Cube_020": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_020.res",
+"save_to_file/path": "uid://1tm1e3lueovk"
+},
+"psx-low-poly-home-interior-props-pack_Cube_045": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_045.res",
+"save_to_file/path": "uid://c86cafjdnlyq3"
+},
+"psx-low-poly-home-interior-props-pack_Cube_046": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_046.res",
+"save_to_file/path": "uid://ca7o2oyoxr8x8"
+},
+"psx-low-poly-home-interior-props-pack_Cube_048": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_048.res",
+"save_to_file/path": "uid://b1ltu3l7etbkd"
+},
+"psx-low-poly-home-interior-props-pack_Cube_051": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_051.res",
+"save_to_file/path": "uid://c0omff73vpj54"
+},
+"psx-low-poly-home-interior-props-pack_Cube_062": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_062.res",
+"save_to_file/path": "uid://c4ppc5o4qqbms"
+},
+"psx-low-poly-home-interior-props-pack_Cube_070": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_070.res",
+"save_to_file/path": "uid://ct8emasus2buw"
+},
+"psx-low-poly-home-interior-props-pack_Cube_083": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_083.res",
+"save_to_file/path": "uid://p6l046e1fmmx"
+},
+"psx-low-poly-home-interior-props-pack_Cube_089": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_089.res",
+"save_to_file/path": "uid://dojrs46c663k2"
+},
+"psx-low-poly-home-interior-props-pack_Cube_090": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_090.res",
+"save_to_file/path": "uid://be23x4mkeo0pe"
+},
+"psx-low-poly-home-interior-props-pack_Cube_091": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_091.res",
+"save_to_file/path": "uid://bh5ewmi81ud2e"
+},
+"psx-low-poly-home-interior-props-pack_Cube_093": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_093.res",
+"save_to_file/path": "uid://b5dvyrlsd08so"
+},
+"psx-low-poly-home-interior-props-pack_Cube_095": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_095.res",
+"save_to_file/path": "uid://dymvirdfxinnb"
+},
+"psx-low-poly-home-interior-props-pack_Cube_097": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_097.res",
+"save_to_file/path": "uid://dck3l3rtaes1o"
+},
+"psx-low-poly-home-interior-props-pack_Cube_098": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_098.res",
+"save_to_file/path": "uid://dkaqmn6w7d3gu"
+},
+"psx-low-poly-home-interior-props-pack_Cube_100": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_100.res",
+"save_to_file/path": "uid://dmfyy1ik6sull"
+},
+"psx-low-poly-home-interior-props-pack_Cube_101": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_101.res",
+"save_to_file/path": "uid://brg8jt8g6dlgf"
+},
+"psx-low-poly-home-interior-props-pack_Cube_103": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_103.res",
+"save_to_file/path": "uid://b1ejlk1kqorhx"
+},
+"psx-low-poly-home-interior-props-pack_Cube_104": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_104.res",
+"save_to_file/path": "uid://315ow1dnx2tc"
+},
+"psx-low-poly-home-interior-props-pack_Cube_105": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_105.res",
+"save_to_file/path": "uid://bi2s3i5xos07j"
+},
+"psx-low-poly-home-interior-props-pack_Cube_106": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_106.res",
+"save_to_file/path": "uid://blnml5pawg088"
+},
+"psx-low-poly-home-interior-props-pack_Cube_107": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_107.res",
+"save_to_file/path": "uid://dv72havgu1iy4"
+},
+"psx-low-poly-home-interior-props-pack_Cube_108": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_108.res",
+"save_to_file/path": "uid://dewk87hgggm2r"
+},
+"psx-low-poly-home-interior-props-pack_Cube_109": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_109.res",
+"save_to_file/path": "uid://2prhleenyenr"
+},
+"psx-low-poly-home-interior-props-pack_Cube_110": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_110.res",
+"save_to_file/path": "uid://bdjlom7ht4phx"
+},
+"psx-low-poly-home-interior-props-pack_Cube_111": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_111.res",
+"save_to_file/path": "uid://6jki76r3ee40"
+},
+"psx-low-poly-home-interior-props-pack_Cube_112": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_112.res",
+"save_to_file/path": "uid://k1tfg54hnnr8"
+},
+"psx-low-poly-home-interior-props-pack_Cube_113": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_113.res",
+"save_to_file/path": "uid://c6d4l12s0x0xu"
+},
+"psx-low-poly-home-interior-props-pack_Cube_114": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_114.res",
+"save_to_file/path": "uid://d0k5ek7awol1d"
+},
+"psx-low-poly-home-interior-props-pack_Cube_116": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_116.res",
+"save_to_file/path": "uid://hk5jioljec46"
+},
+"psx-low-poly-home-interior-props-pack_Cube_117": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_117.res",
+"save_to_file/path": "uid://c7snx2wgt60lj"
+},
+"psx-low-poly-home-interior-props-pack_Cube_118": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_118.res",
+"save_to_file/path": "uid://bffed2ae8jao1"
+},
+"psx-low-poly-home-interior-props-pack_Cube_119": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_119.res",
+"save_to_file/path": "uid://dhbsk838760l8"
+},
+"psx-low-poly-home-interior-props-pack_Cube_120": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_120.res",
+"save_to_file/path": "uid://bi6rnyy261ml3"
+},
+"psx-low-poly-home-interior-props-pack_Cube_121": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_121.res",
+"save_to_file/path": "uid://vljvvi5oujia"
+},
+"psx-low-poly-home-interior-props-pack_Cube_122": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_122.res",
+"save_to_file/path": "uid://jxi3mgx4djaq"
+},
+"psx-low-poly-home-interior-props-pack_Cube_124": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_124.res",
+"save_to_file/path": "uid://db3rqhtjchw6"
+},
+"psx-low-poly-home-interior-props-pack_Cube_125": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_125.res",
+"save_to_file/path": "uid://bhmlh6vcsruqs"
+},
+"psx-low-poly-home-interior-props-pack_Cube_126": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_126.res",
+"save_to_file/path": "uid://bmitswm2ktqt2"
+},
+"psx-low-poly-home-interior-props-pack_Cube_127": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_127.res",
+"save_to_file/path": "uid://uh2g1sin4k67"
+},
+"psx-low-poly-home-interior-props-pack_Cube_128": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_128.res",
+"save_to_file/path": "uid://b1pi2uq3r8p1y"
+},
+"psx-low-poly-home-interior-props-pack_Cube_134": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_134.res",
+"save_to_file/path": "uid://bsjme6pedwan6"
+},
+"psx-low-poly-home-interior-props-pack_Cube_137": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_137.res",
+"save_to_file/path": "uid://dmhhci6rqri76"
+},
+"psx-low-poly-home-interior-props-pack_Cube_138": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_138.res",
+"save_to_file/path": "uid://c6j8i0qqqq2wv"
+},
+"psx-low-poly-home-interior-props-pack_Cube_139": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_139.res",
+"save_to_file/path": "uid://hf6xokcpsdxw"
+},
+"psx-low-poly-home-interior-props-pack_Cube_140": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_140.res",
+"save_to_file/path": "uid://c8klmhh2l0vyy"
+},
+"psx-low-poly-home-interior-props-pack_Cube_145": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_145.res",
+"save_to_file/path": "uid://c8p7u46fvfoeq"
+},
+"psx-low-poly-home-interior-props-pack_Cube_146": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_146.res",
+"save_to_file/path": "uid://cstaeghiduini"
+},
+"psx-low-poly-home-interior-props-pack_Cube_147": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_147.res",
+"save_to_file/path": "uid://cwypu3rotbf6m"
+},
+"psx-low-poly-home-interior-props-pack_Cube_149": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_149.res",
+"save_to_file/path": "uid://33g5mwjs7m7p"
+},
+"psx-low-poly-home-interior-props-pack_Cube_150": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_150.res",
+"save_to_file/path": "uid://bb5lun3mx30gs"
+},
+"psx-low-poly-home-interior-props-pack_Cube_152": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_152.res",
+"save_to_file/path": "uid://diyyjg2ef1k77"
+},
+"psx-low-poly-home-interior-props-pack_Cube_153": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_153.res",
+"save_to_file/path": "uid://cx3k1sc46lg8n"
+},
+"psx-low-poly-home-interior-props-pack_Cube_166": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_166.res",
+"save_to_file/path": "uid://dmmswfgowc8dn"
+},
+"psx-low-poly-home-interior-props-pack_Cube_169": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_169.res",
+"save_to_file/path": "uid://i61c72k4tyat"
+},
+"psx-low-poly-home-interior-props-pack_Cube_170": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_170.res",
+"save_to_file/path": "uid://bmn7yn87vdecy"
+},
+"psx-low-poly-home-interior-props-pack_Cube_171": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_171.res",
+"save_to_file/path": "uid://yordd5f4w5l5"
+},
+"psx-low-poly-home-interior-props-pack_Cube_172": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_172.res",
+"save_to_file/path": "uid://cj0ssto5fg18"
+},
+"psx-low-poly-home-interior-props-pack_Cube_173": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_173.res",
+"save_to_file/path": "uid://c24xpfjsr4uv7"
+},
+"psx-low-poly-home-interior-props-pack_Cube_174": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_174.res",
+"save_to_file/path": "uid://dh1rutksx400v"
+},
+"psx-low-poly-home-interior-props-pack_Cube_175": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_175.res",
+"save_to_file/path": "uid://cogq1wxaf2t83"
+},
+"psx-low-poly-home-interior-props-pack_Cube_176": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_176.res",
+"save_to_file/path": "uid://buvry60xrhigx"
+},
+"psx-low-poly-home-interior-props-pack_Cube_178": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_178.res",
+"save_to_file/path": "uid://byd7e26wm3lsd"
+},
+"psx-low-poly-home-interior-props-pack_Cube_179": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_179.res",
+"save_to_file/path": "uid://bwqyymxg2awjx"
+},
+"psx-low-poly-home-interior-props-pack_Cube_240": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_240.res",
+"save_to_file/path": "uid://bxs4vh6boul6k"
+},
+"psx-low-poly-home-interior-props-pack_Cube_266": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_266.res",
+"save_to_file/path": "uid://cv7nawrgsi1fo"
+},
+"psx-low-poly-home-interior-props-pack_Cube_267": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_267.res",
+"save_to_file/path": "uid://dfycd2pa4kok3"
+},
+"psx-low-poly-home-interior-props-pack_Cube_275": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_275.res",
+"save_to_file/path": "uid://d2351x53r38mu"
+},
+"psx-low-poly-home-interior-props-pack_Cube_349": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_349.res",
+"save_to_file/path": "uid://x60wg30n8jib"
+},
+"psx-low-poly-home-interior-props-pack_Cube_355": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_355.res",
+"save_to_file/path": "uid://dg0mu3jqf4nac"
+},
+"psx-low-poly-home-interior-props-pack_Cube_356": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_356.res",
+"save_to_file/path": "uid://b2qlkuc2p3u2d"
+},
+"psx-low-poly-home-interior-props-pack_Cube_358": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_358.res",
+"save_to_file/path": "uid://culvwq6u0xa5q"
+},
+"psx-low-poly-home-interior-props-pack_Cube_359": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_359.res",
+"save_to_file/path": "uid://b2hcl8o8yl0g4"
+},
+"psx-low-poly-home-interior-props-pack_Cube_360": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_360.res",
+"save_to_file/path": "uid://by2re6x4uof7k"
+},
+"psx-low-poly-home-interior-props-pack_Cube_371": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_371.res",
+"save_to_file/path": "uid://cq1dnvxxpclyp"
+},
+"psx-low-poly-home-interior-props-pack_Cube_372": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_372.res",
+"save_to_file/path": "uid://3vt8f6em4a8b"
+},
+"psx-low-poly-home-interior-props-pack_Cube_373": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_373.res",
+"save_to_file/path": "uid://koatyet77cvh"
+},
+"psx-low-poly-home-interior-props-pack_Cube_374": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_374.res",
+"save_to_file/path": "uid://pk0eljm203ft"
+},
+"psx-low-poly-home-interior-props-pack_Cube_378": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_378.res",
+"save_to_file/path": "uid://bblxb360vtki"
+},
+"psx-low-poly-home-interior-props-pack_Cube_379": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_379.res",
+"save_to_file/path": "uid://d0ybt5d3bmsw"
+},
+"psx-low-poly-home-interior-props-pack_Cube_380": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_380.res",
+"save_to_file/path": "uid://ctt1yg6nptf4o"
+},
+"psx-low-poly-home-interior-props-pack_Cube_382": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_382.res",
+"save_to_file/path": "uid://dy5rpcgomeipa"
+},
+"psx-low-poly-home-interior-props-pack_Cube_383": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_383.res",
+"save_to_file/path": "uid://caosb7d68dgd1"
+},
+"psx-low-poly-home-interior-props-pack_Cube_384": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_384.res",
+"save_to_file/path": "uid://dgu6lljg8hspj"
+},
+"psx-low-poly-home-interior-props-pack_Cube_403": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_403.res",
+"save_to_file/path": "uid://bna67cr30pa8m"
+},
+"psx-low-poly-home-interior-props-pack_Cube_404": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_404.res",
+"save_to_file/path": "uid://bxq2ddv2ody3j"
+},
+"psx-low-poly-home-interior-props-pack_Cube_405": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_405.res",
+"save_to_file/path": "uid://cx8o5f12hag2g"
+},
+"psx-low-poly-home-interior-props-pack_Cube_406": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_406.res",
+"save_to_file/path": "uid://de7nwwj107b5h"
+},
+"psx-low-poly-home-interior-props-pack_Cube_407": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_407.res",
+"save_to_file/path": "uid://cs84jptygf0yy"
+},
+"psx-low-poly-home-interior-props-pack_Cube_408": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_408.res",
+"save_to_file/path": "uid://bvbkb8lgh5xd2"
+},
+"psx-low-poly-home-interior-props-pack_Cube_409": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_409.res",
+"save_to_file/path": "uid://be2ut4ivals8e"
+},
+"psx-low-poly-home-interior-props-pack_Cube_410": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_410.res",
+"save_to_file/path": "uid://s1f778xtf3sh"
+},
+"psx-low-poly-home-interior-props-pack_Cube_411": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_411.res",
+"save_to_file/path": "uid://c6x40cce5oqt4"
+},
+"psx-low-poly-home-interior-props-pack_Cube_412": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_412.res",
+"save_to_file/path": "uid://drj1hs0yovd44"
+},
+"psx-low-poly-home-interior-props-pack_Cube_413": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_413.res",
+"save_to_file/path": "uid://yboylovjreis"
+},
+"psx-low-poly-home-interior-props-pack_Cube_453": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_453.res",
+"save_to_file/path": "uid://caq2vkdsdc3ld"
+},
+"psx-low-poly-home-interior-props-pack_Cube_462": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_462.res",
+"save_to_file/path": "uid://ctwbv5tgwtktt"
+},
+"psx-low-poly-home-interior-props-pack_Cube_463": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_463.res",
+"save_to_file/path": "uid://lxmkbw28m4tx"
+},
+"psx-low-poly-home-interior-props-pack_Cube_464": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_464.res",
+"save_to_file/path": "uid://cg1rbyhbye2o8"
+},
+"psx-low-poly-home-interior-props-pack_Cube_465": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_465.res",
+"save_to_file/path": "uid://dqpm5mp6vyf2v"
+},
+"psx-low-poly-home-interior-props-pack_Cube_466": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_466.res",
+"save_to_file/path": "uid://ftncaqf2vby0"
+},
+"psx-low-poly-home-interior-props-pack_Cube_467": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_467.res",
+"save_to_file/path": "uid://bcmysf0f8561r"
+},
+"psx-low-poly-home-interior-props-pack_Cube_468": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_468.res",
+"save_to_file/path": "uid://byrevotitkhin"
+},
+"psx-low-poly-home-interior-props-pack_Cube_469": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_469.res",
+"save_to_file/path": "uid://cog48vt2uab7p"
+},
+"psx-low-poly-home-interior-props-pack_Cube_470": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_470.res",
+"save_to_file/path": "uid://v0gwk3a6lm6d"
+},
+"psx-low-poly-home-interior-props-pack_Cube_471": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_471.res",
+"save_to_file/path": "uid://b3ncv6cq3vg0h"
+},
+"psx-low-poly-home-interior-props-pack_Cube_472": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_472.res",
+"save_to_file/path": "uid://chfric6x6vrym"
+},
+"psx-low-poly-home-interior-props-pack_Cube_473": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_473.res",
+"save_to_file/path": "uid://ch51p23hisyk6"
+},
+"psx-low-poly-home-interior-props-pack_Cube_474": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_474.res",
+"save_to_file/path": "uid://dhinyuwtmxsia"
+},
+"psx-low-poly-home-interior-props-pack_Cube_475": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_475.res",
+"save_to_file/path": "uid://4dqioagig1m8"
+},
+"psx-low-poly-home-interior-props-pack_Cube_476": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_476.res",
+"save_to_file/path": "uid://ckmj1jsri1idr"
+},
+"psx-low-poly-home-interior-props-pack_Cube_477": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_477.res",
+"save_to_file/path": "uid://cjl7u1c32cneo"
+},
+"psx-low-poly-home-interior-props-pack_Cube_478": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_478.res",
+"save_to_file/path": "uid://mvuwlk0n4pno"
+},
+"psx-low-poly-home-interior-props-pack_Cube_479": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_479.res",
+"save_to_file/path": "uid://58njo0wf5f6j"
+},
+"psx-low-poly-home-interior-props-pack_Cube_480": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_480.res",
+"save_to_file/path": "uid://dmj33rhuva4np"
+},
+"psx-low-poly-home-interior-props-pack_Cube_481": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_481.res",
+"save_to_file/path": "uid://buitsf0uw6lei"
+},
+"psx-low-poly-home-interior-props-pack_Cube_482": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_482.res",
+"save_to_file/path": "uid://coe6vnbl0khiv"
+},
+"psx-low-poly-home-interior-props-pack_Cube_483": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_483.res",
+"save_to_file/path": "uid://btduq27tpl5uc"
+},
+"psx-low-poly-home-interior-props-pack_Cube_484": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_484.res",
+"save_to_file/path": "uid://c5atwuddso3y"
+},
+"psx-low-poly-home-interior-props-pack_Cube_485": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_485.res",
+"save_to_file/path": "uid://c6nypbfldtaw6"
+},
+"psx-low-poly-home-interior-props-pack_Cube_486": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_486.res",
+"save_to_file/path": "uid://domtyuxcacy3o"
+},
+"psx-low-poly-home-interior-props-pack_Cube_487": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_487.res",
+"save_to_file/path": "uid://ba76td7envlke"
+},
+"psx-low-poly-home-interior-props-pack_Cube_488": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_488.res",
+"save_to_file/path": "uid://ewbybp24doq1"
+},
+"psx-low-poly-home-interior-props-pack_Cube_489": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_489.res",
+"save_to_file/path": "uid://b2in6woquwo8y"
+},
+"psx-low-poly-home-interior-props-pack_Cube_490": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_490.res",
+"save_to_file/path": "uid://cworahpj8stlw"
+},
+"psx-low-poly-home-interior-props-pack_Cube_491": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_491.res",
+"save_to_file/path": "uid://8xl7n6ctaa5i"
+},
+"psx-low-poly-home-interior-props-pack_Cube_492": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_492.res",
+"save_to_file/path": "uid://dhx40w7m5yef0"
+},
+"psx-low-poly-home-interior-props-pack_Cube_493": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_493.res",
+"save_to_file/path": "uid://87b8s4grtpwm"
+},
+"psx-low-poly-home-interior-props-pack_Cube_494": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_494.res",
+"save_to_file/path": "uid://bkhow0fj1d0oe"
+},
+"psx-low-poly-home-interior-props-pack_Cube_496": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_496.res",
+"save_to_file/path": "uid://beyeuxskfne0j"
+},
+"psx-low-poly-home-interior-props-pack_Cube_497": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_497.res",
+"save_to_file/path": "uid://bwdxy2ybkn1wt"
+},
+"psx-low-poly-home-interior-props-pack_Cube_498": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_498.res",
+"save_to_file/path": "uid://cpwyqsn4ausc5"
+},
+"psx-low-poly-home-interior-props-pack_Cube_499": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_499.res",
+"save_to_file/path": "uid://d0bidypq4n4hb"
+},
+"psx-low-poly-home-interior-props-pack_Cube_500": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_500.res",
+"save_to_file/path": "uid://1xj5gycyameh"
+},
+"psx-low-poly-home-interior-props-pack_Cube_501": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_501.res",
+"save_to_file/path": "uid://jbvixhxxt4yh"
+},
+"psx-low-poly-home-interior-props-pack_Cube_502": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_502.res",
+"save_to_file/path": "uid://q2onc7jdiv6n"
+},
+"psx-low-poly-home-interior-props-pack_Cube_503": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_503.res",
+"save_to_file/path": "uid://bi4fvi36kspps"
+},
+"psx-low-poly-home-interior-props-pack_Cube_504": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_504.res",
+"save_to_file/path": "uid://jw5nxv47taj0"
+},
+"psx-low-poly-home-interior-props-pack_Cube_505": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_505.res",
+"save_to_file/path": "uid://b1asr4atwchu7"
+},
+"psx-low-poly-home-interior-props-pack_Cube_506": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_506.res",
+"save_to_file/path": "uid://bsba75l42rnd2"
+},
+"psx-low-poly-home-interior-props-pack_Cube_508": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_508.res",
+"save_to_file/path": "uid://bupnar2k2mmr4"
+},
+"psx-low-poly-home-interior-props-pack_Cube_510": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_510.res",
+"save_to_file/path": "uid://dfd0wu2bkxo1o"
+},
+"psx-low-poly-home-interior-props-pack_Cube_511": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_511.res",
+"save_to_file/path": "uid://cx1wqprbmuemf"
+},
+"psx-low-poly-home-interior-props-pack_Cube_512": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_512.res",
+"save_to_file/path": "uid://ns7urn2ofl1r"
+},
+"psx-low-poly-home-interior-props-pack_Cube_513": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_513.res",
+"save_to_file/path": "uid://cc1t8vmsu411f"
+},
+"psx-low-poly-home-interior-props-pack_Cube_528": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_528.res",
+"save_to_file/path": "uid://mu82uv4d7vhq"
+},
+"psx-low-poly-home-interior-props-pack_Cube_529": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_529.res",
+"save_to_file/path": "uid://7grrkh6e8juw"
+},
+"psx-low-poly-home-interior-props-pack_Cube_542": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_542.res",
+"save_to_file/path": "uid://dhbn82ennx65m"
+},
+"psx-low-poly-home-interior-props-pack_Cube_548": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_548.res",
+"save_to_file/path": "uid://da65l83q6t8et"
+},
+"psx-low-poly-home-interior-props-pack_Cube_550": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_550.res",
+"save_to_file/path": "uid://dc3vw1221sll2"
+},
+"psx-low-poly-home-interior-props-pack_Cube_560": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_560.res",
+"save_to_file/path": "uid://x1k33hekis2m"
+},
+"psx-low-poly-home-interior-props-pack_Cube_561": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_561.res",
+"save_to_file/path": "uid://b2i6e518cyya1"
+},
+"psx-low-poly-home-interior-props-pack_Cube_586": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_586.res",
+"save_to_file/path": "uid://0an16xykgi6t"
+},
+"psx-low-poly-home-interior-props-pack_Cube_587": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_587.res",
+"save_to_file/path": "uid://1isfcqxq8i6a"
+},
+"psx-low-poly-home-interior-props-pack_Cube_588": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_588.res",
+"save_to_file/path": "uid://cogr1sfenqqn6"
+},
+"psx-low-poly-home-interior-props-pack_Cube_589": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_589.res",
+"save_to_file/path": "uid://r8hcsyfdahic"
+},
+"psx-low-poly-home-interior-props-pack_Cube_595": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_595.res",
+"save_to_file/path": "uid://5uh2p6q5gkfi"
+},
+"psx-low-poly-home-interior-props-pack_Cube_596": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_596.res",
+"save_to_file/path": "uid://dftc0pkbx7p3b"
+},
+"psx-low-poly-home-interior-props-pack_Cube_597": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_597.res",
+"save_to_file/path": "uid://ue0g0mqfa5q6"
+},
+"psx-low-poly-home-interior-props-pack_Cube_598": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_598.res",
+"save_to_file/path": "uid://lnstahc3fdnm"
+},
+"psx-low-poly-home-interior-props-pack_Cube_599": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_599.res",
+"save_to_file/path": "uid://cb27hj0shxy8m"
+},
+"psx-low-poly-home-interior-props-pack_Cube_640": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_640.res",
+"save_to_file/path": "uid://dvql8xxkgy87"
+},
+"psx-low-poly-home-interior-props-pack_Cube_641": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_641.res",
+"save_to_file/path": "uid://bld72phqngpny"
+},
+"psx-low-poly-home-interior-props-pack_Cube_643": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_643.res",
+"save_to_file/path": "uid://dj8v0plgt2u4o"
+},
+"psx-low-poly-home-interior-props-pack_Cube_644": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_644.res",
+"save_to_file/path": "uid://ccp4saxpqwljg"
+},
+"psx-low-poly-home-interior-props-pack_Cube_645": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_645.res",
+"save_to_file/path": "uid://dkx8k16wiomxu"
+},
+"psx-low-poly-home-interior-props-pack_Cube_647": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_647.res",
+"save_to_file/path": "uid://do77k7vh0u2n0"
+},
+"psx-low-poly-home-interior-props-pack_Cube_648": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_648.res",
+"save_to_file/path": "uid://c1o2j1y2ngry8"
+},
+"psx-low-poly-home-interior-props-pack_Cube_650": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_650.res",
+"save_to_file/path": "uid://foa1ltu6xhk5"
+},
+"psx-low-poly-home-interior-props-pack_Cube_651": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_651.res",
+"save_to_file/path": "uid://bx3uo73bmlhwg"
+},
+"psx-low-poly-home-interior-props-pack_Cube_653": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_653.res",
+"save_to_file/path": "uid://b0k0qxe1emyl"
+},
+"psx-low-poly-home-interior-props-pack_Cube_654": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_654.res",
+"save_to_file/path": "uid://n5a8g7188ag4"
+},
+"psx-low-poly-home-interior-props-pack_Cube_655": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_655.res",
+"save_to_file/path": "uid://bcu1neat3rt2t"
+},
+"psx-low-poly-home-interior-props-pack_Cube_656": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_656.res",
+"save_to_file/path": "uid://bavjjtjpsmwre"
+},
+"psx-low-poly-home-interior-props-pack_Cube_658": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_658.res",
+"save_to_file/path": "uid://bnhwsb2gsa644"
+},
+"psx-low-poly-home-interior-props-pack_Cube_659": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_659.res",
+"save_to_file/path": "uid://di81thm8h7q0o"
+},
+"psx-low-poly-home-interior-props-pack_Cube_661": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_661.res",
+"save_to_file/path": "uid://gdyoo06m0ste"
+},
+"psx-low-poly-home-interior-props-pack_Cube_662": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_662.res",
+"save_to_file/path": "uid://bqk7qoinccfl6"
+},
+"psx-low-poly-home-interior-props-pack_Cube_663": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_663.res",
+"save_to_file/path": "uid://dgvyjf7mxfcqn"
+},
+"psx-low-poly-home-interior-props-pack_Cube_664": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_664.res",
+"save_to_file/path": "uid://cvjvw5uy7ttiq"
+},
+"psx-low-poly-home-interior-props-pack_Cube_665": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_665.res",
+"save_to_file/path": "uid://d2g3o8fojfbhb"
+},
+"psx-low-poly-home-interior-props-pack_Cube_672": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_672.res",
+"save_to_file/path": "uid://cslyfj83djb23"
+},
+"psx-low-poly-home-interior-props-pack_Cube_675": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_675.res",
+"save_to_file/path": "uid://c0j8lxqbxi3q1"
+},
+"psx-low-poly-home-interior-props-pack_Cube_676": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_676.res",
+"save_to_file/path": "uid://bxgs82xr6df81"
+},
+"psx-low-poly-home-interior-props-pack_Cube_677": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_677.res",
+"save_to_file/path": "uid://dxjk76vswvpxr"
+},
+"psx-low-poly-home-interior-props-pack_Cube_679": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_679.res",
+"save_to_file/path": "uid://bcb24gjedew48"
+},
+"psx-low-poly-home-interior-props-pack_Cube_691": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_691.res",
+"save_to_file/path": "uid://c07x64p1g10kq"
+},
+"psx-low-poly-home-interior-props-pack_Cube_693": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_693.res",
+"save_to_file/path": "uid://degw8nuv1ysj4"
+},
+"psx-low-poly-home-interior-props-pack_Cube_694": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_694.res",
+"save_to_file/path": "uid://b230bxsyqgr4u"
+},
+"psx-low-poly-home-interior-props-pack_Cube_695": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_695.res",
+"save_to_file/path": "uid://bl4nvx8k8ab66"
+},
+"psx-low-poly-home-interior-props-pack_Cube_721": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_721.res",
+"save_to_file/path": "uid://dlvxbqopou44h"
+},
+"psx-low-poly-home-interior-props-pack_Cube_727": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_727.res",
+"save_to_file/path": "uid://c57l8m56fk27g"
+},
+"psx-low-poly-home-interior-props-pack_Cube_728": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_728.res",
+"save_to_file/path": "uid://c7ly6cqhb7jji"
+},
+"psx-low-poly-home-interior-props-pack_Cube_729": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_729.res",
+"save_to_file/path": "uid://by7vrhlm22luv"
+},
+"psx-low-poly-home-interior-props-pack_Cube_741": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_741.res",
+"save_to_file/path": "uid://7otqbyciksd5"
+},
+"psx-low-poly-home-interior-props-pack_Cube_744": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_744.res",
+"save_to_file/path": "uid://ci8bmaddjylr1"
+},
+"psx-low-poly-home-interior-props-pack_Cube_748": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_748.res",
+"save_to_file/path": "uid://cv1pka4xjjp0v"
+},
+"psx-low-poly-home-interior-props-pack_Cube_752": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_752.res",
+"save_to_file/path": "uid://1r64n757bftq"
+},
+"psx-low-poly-home-interior-props-pack_Cube_753": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_753.res",
+"save_to_file/path": "uid://cc2o7l1w6ckq2"
+},
+"psx-low-poly-home-interior-props-pack_Cube_754": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_754.res",
+"save_to_file/path": "uid://cjkj8d04m266c"
+},
+"psx-low-poly-home-interior-props-pack_Cube_755": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_755.res",
+"save_to_file/path": "uid://c7rt3eqalxrhm"
+},
+"psx-low-poly-home-interior-props-pack_Cube_756": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_756.res",
+"save_to_file/path": "uid://e4ver6thbm2d"
+},
+"psx-low-poly-home-interior-props-pack_Cube_757": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_757.res",
+"save_to_file/path": "uid://lpwxjtjkset"
+},
+"psx-low-poly-home-interior-props-pack_Cube_758": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_758.res",
+"save_to_file/path": "uid://b4t55jsaoclq5"
+},
+"psx-low-poly-home-interior-props-pack_Cube_809": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_809.res",
+"save_to_file/path": "uid://33dc15b5iqpy"
+},
+"psx-low-poly-home-interior-props-pack_Cube_811": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_811.res",
+"save_to_file/path": "uid://2ok6euvp01mx"
+},
+"psx-low-poly-home-interior-props-pack_Cube_822": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_822.res",
+"save_to_file/path": "uid://de0opbv0mejk7"
+},
+"psx-low-poly-home-interior-props-pack_Cube_866": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_866.res",
+"save_to_file/path": "uid://h7xy0ide2142"
+},
+"psx-low-poly-home-interior-props-pack_Cube_867": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_867.res",
+"save_to_file/path": "uid://betmeiawbvcak"
+},
+"psx-low-poly-home-interior-props-pack_Cube_899": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_899.res",
+"save_to_file/path": "uid://bktt4poithfpk"
+},
+"psx-low-poly-home-interior-props-pack_Cube_906": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_906.res",
+"save_to_file/path": "uid://dsvc7arb1lxlo"
+},
+"psx-low-poly-home-interior-props-pack_Cube_921": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_921.res",
+"save_to_file/path": "uid://b3he5rdap1aq"
+},
+"psx-low-poly-home-interior-props-pack_Cube_923": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_923.res",
+"save_to_file/path": "uid://cxkk0dyic1s7b"
+},
+"psx-low-poly-home-interior-props-pack_Cube_924": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_924.res",
+"save_to_file/path": "uid://dyhctfwgoymkg"
+},
+"psx-low-poly-home-interior-props-pack_Cube_925": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_925.res",
+"save_to_file/path": "uid://mkixrnetrd8f"
+},
+"psx-low-poly-home-interior-props-pack_Cube_926": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_926.res",
+"save_to_file/path": "uid://cgs758t7uhpff"
+},
+"psx-low-poly-home-interior-props-pack_Cube_927": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_927.res",
+"save_to_file/path": "uid://bq2lb10gsdj5g"
+},
+"psx-low-poly-home-interior-props-pack_Cube_928": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_928.res",
+"save_to_file/path": "uid://btxtikl63vcus"
+},
+"psx-low-poly-home-interior-props-pack_Cube_929": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_929.res",
+"save_to_file/path": "uid://blm2vbravfa4o"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_001": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_001.res",
+"save_to_file/path": "uid://daj6bi0cosb0e"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_002": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_002.res",
+"save_to_file/path": "uid://bg3nrqakhd8uf"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_003": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_003.res",
+"save_to_file/path": "uid://cfpit1ksl6k32"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_005": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_005.res",
+"save_to_file/path": "uid://cu3ahwl84y1tl"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_027": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_027.res",
+"save_to_file/path": "uid://bhix1j1s5pwcq"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_031": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_031.res",
+"save_to_file/path": "uid://dmsd0qu501ubc"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_032": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_032.res",
+"save_to_file/path": "uid://biwmybmkt8tnc"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_058": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_058.res",
+"save_to_file/path": "uid://o533a7r8jpdk"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_068": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_068.res",
+"save_to_file/path": "uid://df1cox37rfkao"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_084": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_084.res",
+"save_to_file/path": "uid://bvs4ttekyj3g7"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_165": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_165.res",
+"save_to_file/path": "uid://bs34a15iorx01"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_180": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_180.res",
+"save_to_file/path": "uid://dxcx1fvphaxqb"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_182": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_182.res",
+"save_to_file/path": "uid://bhawvutcih25n"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_183": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_183.res",
+"save_to_file/path": "uid://ciw18sojkic1p"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_188": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_188.res",
+"save_to_file/path": "uid://b4e7yq30fv7xe"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_189": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_189.res",
+"save_to_file/path": "uid://ck0s018o6ou3i"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_190": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_190.res",
+"save_to_file/path": "uid://byq6itp52ij6k"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_191": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_191.res",
+"save_to_file/path": "uid://csrrx0ot64g4i"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_192": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_192.res",
+"save_to_file/path": "uid://cnhqwb4k0p1x"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_193": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_193.res",
+"save_to_file/path": "uid://dvqqcolxlx7f2"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_194": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_194.res",
+"save_to_file/path": "uid://dhb3l8sddlh0r"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_203": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_203.res",
+"save_to_file/path": "uid://dg688swuk1t06"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_204": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_204.res",
+"save_to_file/path": "uid://bewp4qf1loy78"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_211": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_211.res",
+"save_to_file/path": "uid://n55p01xdfmmk"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_214": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_214.res",
+"save_to_file/path": "uid://bt1rnqqrm3hbv"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_215": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_215.res",
+"save_to_file/path": "uid://c1vf4k3yu44cm"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_216": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_216.res",
+"save_to_file/path": "uid://dddxi5fm7bu6w"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_218": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_218.res",
+"save_to_file/path": "uid://bly5qbjkoed42"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_219": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_219.res",
+"save_to_file/path": "uid://cw55psbjy5f87"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_222": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_222.res",
+"save_to_file/path": "uid://lm47gbhh331a"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_223": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_223.res",
+"save_to_file/path": "uid://c5ypm103bfh55"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_225": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_225.res",
+"save_to_file/path": "uid://ckcg3ytsv57kw"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_227": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_227.res",
+"save_to_file/path": "uid://cwk3cwyc1cf2d"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_232": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_232.res",
+"save_to_file/path": "uid://nr4sn6ao8wbl"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_254": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_254.res",
+"save_to_file/path": "uid://b1u5yt2w1viax"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_265": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_265.res",
+"save_to_file/path": "uid://luv0y520xhvq"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_266": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_266.res",
+"save_to_file/path": "uid://bxh7xw1f58h5r"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_271": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_271.res",
+"save_to_file/path": "uid://btrvxnxt2j1c2"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_272": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_272.res",
+"save_to_file/path": "uid://bas245h7hf5fi"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_277": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_277.res",
+"save_to_file/path": "uid://bjj7fnllqqdnt"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_278": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_278.res",
+"save_to_file/path": "uid://lxsrlwxlja4d"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_282": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_282.res",
+"save_to_file/path": "uid://cgt80yiml8ccu"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_283": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_283.res",
+"save_to_file/path": "uid://lahqbk24j468"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_284": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_284.res",
+"save_to_file/path": "uid://clbyjxcnfoha5"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_285": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_285.res",
+"save_to_file/path": "uid://dgxapujeknyts"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_286": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_286.res",
+"save_to_file/path": "uid://bcj3p6qvu7j7k"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_287": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_287.res",
+"save_to_file/path": "uid://p0v8l5f0pg8x"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_303": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_303.res",
+"save_to_file/path": "uid://b3kpyfu48ilnf"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_304": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_304.res",
+"save_to_file/path": "uid://dk7uvhb1vxat4"
+},
+"psx-low-poly-home-interior-props-pack_Cylinder_313": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_313.res",
+"save_to_file/path": "uid://bofwmj3p6bm6l"
+},
+"psx-low-poly-home-interior-props-pack_Focus_01": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Focus_01.res",
+"save_to_file/path": "uid://btnmilwdf307y"
+},
+"psx-low-poly-home-interior-props-pack_Focus_01_001": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Focus_01_001.res",
+"save_to_file/path": "uid://2l2o613y076m"
+},
+"psx-low-poly-home-interior-props-pack_FootBall_LOD0": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_FootBall_LOD0.res",
+"save_to_file/path": "uid://bm2yiwwmr8jcd"
+},
+"psx-low-poly-home-interior-props-pack_Lamps": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Lamps.res",
+"save_to_file/path": "uid://defqbm4y3swf7"
+},
+"psx-low-poly-home-interior-props-pack_Lamps_001": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Lamps_001.res",
+"save_to_file/path": "uid://dtegm8u0cf30o"
+},
+"psx-low-poly-home-interior-props-pack_Lamps_01": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Lamps_01.res",
+"save_to_file/path": "uid://dyvpsqi8fwwra"
+},
+"psx-low-poly-home-interior-props-pack_Lamps_01_001": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Lamps_01_001.res",
+"save_to_file/path": "uid://d23moq5d1x86y"
+},
+"psx-low-poly-home-interior-props-pack_Mesh_002": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Mesh_002.res",
+"save_to_file/path": "uid://c111rie3nvner"
+},
+"psx-low-poly-home-interior-props-pack_Mop_01": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Mop_01.res",
+"save_to_file/path": "uid://drtnh78u5qdm1"
+},
+"psx-low-poly-home-interior-props-pack_Mop_01_001": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Mop_01_001.res",
+"save_to_file/path": "uid://djjykoecghoei"
+},
+"psx-low-poly-home-interior-props-pack_Outdoor Lamp": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Outdoor Lamp.res",
+"save_to_file/path": "uid://cddln34chjdp3"
+},
+"psx-low-poly-home-interior-props-pack_Phone": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Phone.res",
+"save_to_file/path": "uid://bb0qvqwcopsp4"
+},
+"psx-low-poly-home-interior-props-pack_Phone_001": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Phone_001.res",
+"save_to_file/path": "uid://o6k1jind33p6"
+},
+"psx-low-poly-home-interior-props-pack_Phone_002": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Phone_002.res",
+"save_to_file/path": "uid://dwqu8sd2nxgjm"
+},
+"psx-low-poly-home-interior-props-pack_Phone_003": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Phone_003.res",
+"save_to_file/path": "uid://cvt7nb608gsj6"
+},
+"psx-low-poly-home-interior-props-pack_Phone_004": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Phone_004.res",
+"save_to_file/path": "uid://b556saxeogc3d"
+},
+"psx-low-poly-home-interior-props-pack_Plane_037": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Plane_037.res",
+"save_to_file/path": "uid://bey6qdw5g8rdv"
+},
+"psx-low-poly-home-interior-props-pack_Plane_132": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Plane_132.res",
+"save_to_file/path": "uid://nqkiegin7al5"
+},
+"psx-low-poly-home-interior-props-pack_Plane_133": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Plane_133.res",
+"save_to_file/path": "uid://2sf3wlo2i6yu"
+},
+"psx-low-poly-home-interior-props-pack_Plane_134": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Plane_134.res",
+"save_to_file/path": "uid://bpea1yyx0np5u"
+},
+"psx-low-poly-home-interior-props-pack_Plane_135": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Plane_135.res",
+"save_to_file/path": "uid://cyh6chjmjbrqx"
+},
+"psx-low-poly-home-interior-props-pack_Plane_168": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Plane_168.res",
+"save_to_file/path": "uid://cu1hkiejg4niq"
+},
+"psx-low-poly-home-interior-props-pack_Plane_177": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Plane_177.res",
+"save_to_file/path": "uid://bi7mx5rk0jnfu"
+},
+"psx-low-poly-home-interior-props-pack_Plates_001": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Plates_001.res",
+"save_to_file/path": "uid://xpcv2h4y2rc2"
+},
+"psx-low-poly-home-interior-props-pack_Plates_003": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Plates_003.res",
+"save_to_file/path": "uid://d1c1cjyo5mc5w"
+},
+"psx-low-poly-home-interior-props-pack_Plates_006": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Plates_006.res",
+"save_to_file/path": "uid://dwkk3dcojipnn"
+},
+"psx-low-poly-home-interior-props-pack_Plates_007": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Plates_007.res",
+"save_to_file/path": "uid://dntiwuxmtvrc7"
+},
+"psx-low-poly-home-interior-props-pack_Plates_011": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Plates_011.res",
+"save_to_file/path": "uid://cymonnks80ju6"
+},
+"psx-low-poly-home-interior-props-pack_Plates_012": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Plates_012.res",
+"save_to_file/path": "uid://ckc7kgteoor0v"
+},
+"psx-low-poly-home-interior-props-pack_Plates_013": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Plates_013.res",
+"save_to_file/path": "uid://crje6rcgqfrcx"
+},
+"psx-low-poly-home-interior-props-pack_Radio_01": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Radio_01.res",
+"save_to_file/path": "uid://xdta2ribyhv"
+},
+"psx-low-poly-home-interior-props-pack_Radio_01_001": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Radio_01_001.res",
+"save_to_file/path": "uid://d0ig1a7f8tdmp"
+},
+"psx-low-poly-home-interior-props-pack_Radio_02": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Radio_02.res",
+"save_to_file/path": "uid://bf5j2lr7te2g7"
+},
+"psx-low-poly-home-interior-props-pack_Sphere": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Sphere.res",
+"save_to_file/path": "uid://bvcq6q2ca4sgd"
+},
+"psx-low-poly-home-interior-props-pack_Sphere_001": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Sphere_001.res",
+"save_to_file/path": "uid://c82xbn7a3lq4t"
+},
+"psx-low-poly-home-interior-props-pack_Torus_011": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Torus_011.res",
+"save_to_file/path": "uid://debnuljo0f3hv"
+},
+"psx-low-poly-home-interior-props-pack_Tray": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Tray.res",
+"save_to_file/path": "uid://b3tueiwoc87ad"
+},
+"psx-low-poly-home-interior-props-pack_Vase_02": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Vase_02.res",
+"save_to_file/path": "uid://dud3ffath5572"
+},
+"psx-low-poly-home-interior-props-pack_Vase_02_001": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Vase_02_001.res",
+"save_to_file/path": "uid://bdxogg3ioln1u"
+},
+"psx-low-poly-home-interior-props-pack_Vase_02_002": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Vase_02_002.res",
+"save_to_file/path": "uid://b1gcmd4c4fqun"
+},
+"psx-low-poly-home-interior-props-pack_Vase_02_003": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Vase_02_003.res",
+"save_to_file/path": "uid://ct20bodvsd417"
+},
+"psx-low-poly-home-interior-props-pack_Vase_02_004": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Vase_02_004.res",
+"save_to_file/path": "uid://b1fnl7xd3bstp"
+},
+"psx-low-poly-home-interior-props-pack_Vase_02_005": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Vase_02_005.res",
+"save_to_file/path": "uid://1wkmk1nyh8pv"
+},
+"psx-low-poly-home-interior-props-pack_Vase_04": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Vase_04.res",
+"save_to_file/path": "uid://dt5ghuliadsa6"
+},
+"psx-low-poly-home-interior-props-pack_Video_player": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Video_player.res",
+"save_to_file/path": "uid://dc06fhaomo7gd"
+},
+"psx-low-poly-home-interior-props-pack_Video_player_001": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Video_player_001.res",
+"save_to_file/path": "uid://b48hhqvt4mjok"
+},
+"psx-low-poly-home-interior-props-pack_alarm_clock_001": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_alarm_clock_001.res",
+"save_to_file/path": "uid://dv28bj1o32tuf"
+},
+"psx-low-poly-home-interior-props-pack_alarm_clock_002": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_alarm_clock_002.res",
+"save_to_file/path": "uid://dgjlchmp3evi5"
+},
+"psx-low-poly-home-interior-props-pack_alarm_clock_01": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_alarm_clock_01.res",
+"save_to_file/path": "uid://bk6e1mn222k45"
+},
+"psx-low-poly-home-interior-props-pack_basket_002": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_basket_002.res",
+"save_to_file/path": "uid://ddt5dneeldqkx"
+},
+"psx-low-poly-home-interior-props-pack_basket_002_001": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_basket_002_001.res",
+"save_to_file/path": "uid://ct8spdfw2nu78"
+},
+"psx-low-poly-home-interior-props-pack_bedside_lamp_01": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_bedside_lamp_01.res",
+"save_to_file/path": "uid://c8jdi2kqh5aga"
+},
+"psx-low-poly-home-interior-props-pack_bedside_lamp_02": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_bedside_lamp_02.res",
+"save_to_file/path": "uid://drso3qgq4273m"
+},
+"psx-low-poly-home-interior-props-pack_bedside_lamp_03": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_bedside_lamp_03.res",
+"save_to_file/path": "uid://cdr3ynqyp221t"
+},
+"psx-low-poly-home-interior-props-pack_bedside_lamp_04": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_bedside_lamp_04.res",
+"save_to_file/path": "uid://ddmqxkscc2l7m"
+},
+"psx-low-poly-home-interior-props-pack_bedside_lamp_05": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_bedside_lamp_05.res",
+"save_to_file/path": "uid://7lifveoqhi8l"
+},
+"psx-low-poly-home-interior-props-pack_bedside_lamp_06": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_bedside_lamp_06.res",
+"save_to_file/path": "uid://drkbb22k61oma"
+},
+"psx-low-poly-home-interior-props-pack_ceiling_lamp": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_ceiling_lamp.res",
+"save_to_file/path": "uid://tmltyk3cxr13"
+},
+"psx-low-poly-home-interior-props-pack_ceiling_lamp_001": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_ceiling_lamp_001.res",
+"save_to_file/path": "uid://bs76bjscjiyi0"
+},
+"psx-low-poly-home-interior-props-pack_ceiling_lamp_002": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_ceiling_lamp_002.res",
+"save_to_file/path": "uid://dklg11wx1uily"
+},
+"psx-low-poly-home-interior-props-pack_ceiling_lamp_003": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_ceiling_lamp_003.res",
+"save_to_file/path": "uid://cutr4rmk0unnd"
+},
+"psx-low-poly-home-interior-props-pack_ceiling_lamp_004": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_ceiling_lamp_004.res",
+"save_to_file/path": "uid://cmk760h0er4j2"
+},
+"psx-low-poly-home-interior-props-pack_ceiling_lamp_005": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_ceiling_lamp_005.res",
+"save_to_file/path": "uid://bj7dsfkn1l6gp"
+},
+"psx-low-poly-home-interior-props-pack_ceiling_lamp_006": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_ceiling_lamp_006.res",
+"save_to_file/path": "uid://wj8bib0ijduc"
+},
+"psx-low-poly-home-interior-props-pack_ceiling_lamp_010": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_ceiling_lamp_010.res",
+"save_to_file/path": "uid://cdpqit7fs7u5l"
+},
+"psx-low-poly-home-interior-props-pack_fluorescent_light": {
+"generate/lightmap_uv": 0,
+"generate/lods": 0,
+"generate/shadow_meshes": 0,
+"lods/normal_merge_angle": 20.0,
+"save_to_file/enabled": true,
+"save_to_file/fallback_path": "res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_fluorescent_light.res",
+"save_to_file/path": "uid://ch6gk4s0sn0qj"
+}
+}
+}
+gltf/naming_version=2
+gltf/embedded_image_handling=1

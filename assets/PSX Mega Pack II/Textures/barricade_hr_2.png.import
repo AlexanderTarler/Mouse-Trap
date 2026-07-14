@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://bqty8niwk81rp"
 path.s3tc="res://.godot/imported/barricade_hr_2.png-7afd7fc6beea44305eafdbc97ee62e67.s3tc.ctex"
+path.etc2="res://.godot/imported/barricade_hr_2.png-7afd7fc6beea44305eafdbc97ee62e67.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack II/Textures/barricade_hr_2.png"
-dest_files=["res://.godot/imported/barricade_hr_2.png-7afd7fc6beea44305eafdbc97ee62e67.s3tc.ctex"]
+dest_files=["res://.godot/imported/barricade_hr_2.png-7afd7fc6beea44305eafdbc97ee62e67.s3tc.ctex", "res://.godot/imported/barricade_hr_2.png-7afd7fc6beea44305eafdbc97ee62e67.etc2.ctex"]
 
 [params]
 

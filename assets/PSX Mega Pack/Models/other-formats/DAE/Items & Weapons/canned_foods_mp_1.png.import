@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://hvj2qawut6jv"
 path.s3tc="res://.godot/imported/canned_foods_mp_1.png-4d4b2369c774ecc32da585ad1a9f790b.s3tc.ctex"
+path.etc2="res://.godot/imported/canned_foods_mp_1.png-4d4b2369c774ecc32da585ad1a9f790b.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/other-formats/DAE/Items & Weapons/canned_foods_mp_1.png"
-dest_files=["res://.godot/imported/canned_foods_mp_1.png-4d4b2369c774ecc32da585ad1a9f790b.s3tc.ctex"]
+dest_files=["res://.godot/imported/canned_foods_mp_1.png-4d4b2369c774ecc32da585ad1a9f790b.s3tc.ctex", "res://.godot/imported/canned_foods_mp_1.png-4d4b2369c774ecc32da585ad1a9f790b.etc2.ctex"]
 
 [params]
 

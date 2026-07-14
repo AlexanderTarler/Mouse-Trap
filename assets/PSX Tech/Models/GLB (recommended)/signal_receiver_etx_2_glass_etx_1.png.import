@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://c55uaukp14mg2"
 path.s3tc="res://.godot/imported/signal_receiver_etx_2_glass_etx_1.png-0244326f02f7f9e02d361a8e10ba619d.s3tc.ctex"
+path.etc2="res://.godot/imported/signal_receiver_etx_2_glass_etx_1.png-0244326f02f7f9e02d361a8e10ba619d.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Tech/Models/GLB (recommended)/signal_receiver_etx_2_glass_etx_1.png"
-dest_files=["res://.godot/imported/signal_receiver_etx_2_glass_etx_1.png-0244326f02f7f9e02d361a8e10ba619d.s3tc.ctex"]
+dest_files=["res://.godot/imported/signal_receiver_etx_2_glass_etx_1.png-0244326f02f7f9e02d361a8e10ba619d.s3tc.ctex", "res://.godot/imported/signal_receiver_etx_2_glass_etx_1.png-0244326f02f7f9e02d361a8e10ba619d.etc2.ctex"]
 
 [params]
 

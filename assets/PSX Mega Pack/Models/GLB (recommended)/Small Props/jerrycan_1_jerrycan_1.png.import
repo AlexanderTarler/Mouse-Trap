@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://cffajfr1lofd8"
 path.s3tc="res://.godot/imported/jerrycan_1_jerrycan_1.png-a9913eb8b8c03f3a2c09471cc14f746c.s3tc.ctex"
+path.etc2="res://.godot/imported/jerrycan_1_jerrycan_1.png-a9913eb8b8c03f3a2c09471cc14f746c.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/jerrycan_1_jerrycan_1.png"
-dest_files=["res://.godot/imported/jerrycan_1_jerrycan_1.png-a9913eb8b8c03f3a2c09471cc14f746c.s3tc.ctex"]
+dest_files=["res://.godot/imported/jerrycan_1_jerrycan_1.png-a9913eb8b8c03f3a2c09471cc14f746c.s3tc.ctex", "res://.godot/imported/jerrycan_1_jerrycan_1.png-a9913eb8b8c03f3a2c09471cc14f746c.etc2.ctex"]
 
 [params]
 

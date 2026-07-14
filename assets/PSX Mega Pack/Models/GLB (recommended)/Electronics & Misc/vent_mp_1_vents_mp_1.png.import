@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://4tp7hml2ykc2"
 path.s3tc="res://.godot/imported/vent_mp_1_vents_mp_1.png-985c9e4d8508de841892f2d7a6beea1b.s3tc.ctex"
+path.etc2="res://.godot/imported/vent_mp_1_vents_mp_1.png-985c9e4d8508de841892f2d7a6beea1b.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/vent_mp_1_vents_mp_1.png"
-dest_files=["res://.godot/imported/vent_mp_1_vents_mp_1.png-985c9e4d8508de841892f2d7a6beea1b.s3tc.ctex"]
+dest_files=["res://.godot/imported/vent_mp_1_vents_mp_1.png-985c9e4d8508de841892f2d7a6beea1b.s3tc.ctex", "res://.godot/imported/vent_mp_1_vents_mp_1.png-985c9e4d8508de841892f2d7a6beea1b.etc2.ctex"]
 
 [params]
 
