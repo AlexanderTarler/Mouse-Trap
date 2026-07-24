@@ -169,6 +169,9 @@ func _add_to_notebook_and_cleanup(note_name_override: String = "", note_text_ove
 			call_deferred("_add_to_notebook_and_cleanup")
 			return
 	
+	# ─── NOTEBOOK WRITING SOUND ───────────────────────────────────
+	_play_notebook_sfx()
+	
 	# ─── HUD FEEDBACK ──────────────────────────────────────────────
 	_show_hud_message("Added to notebook.")
 	
@@ -194,6 +197,21 @@ func _add_to_notebook_and_cleanup(note_name_override: String = "", note_text_ove
 	
 	# Remove the note from the world
 	queue_free()
+
+
+## Plays the notebook_writing.ogg sound via a transient AudioStreamPlayer.
+## The player is auto-freed when the sound finishes.
+func _play_notebook_sfx() -> void:
+	var stream := load("res://assets/audio/notebook_writing.ogg")
+	if not stream:
+		return
+	var player := AudioStreamPlayer.new()
+	player.bus = "SFX"
+	player.stream = stream
+	add_child(player)
+	player.play()
+	player.finished.connect(player.queue_free)
+	print("[NotePickup] Played notebook_writing.ogg")
 
 
 ## Shows a temporary message on the HUD.

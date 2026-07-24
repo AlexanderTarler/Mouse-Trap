@@ -1003,6 +1003,13 @@ func restart_from_morning() -> void:
 		else:
 			player.global_position = Vector3(9.0, 1.0, 0.4)
 		
+		# ─── RESET CAMERA ──────────────────────────────────────────────
+		# The jumpscare mechanic may have tilted the camera (h_offset, v_offset,
+		# global_transform.basis, FOV). Call reset_camera() to restore defaults
+		# so the player doesn't see an askew view on respawn.
+		if player.has_method("reset_camera"):
+			player.reset_camera()
+		
 		if player.has_method("reset_health"):
 			player.reset_health()
 		elif "health" in player:

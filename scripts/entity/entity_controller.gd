@@ -515,6 +515,20 @@ var _fuse_sabotage_timer: float = 0.0
 ## After consuming the flag, the Director resets it to false.
 var is_fuse_sabotaged: bool = false
 
+# ─── TREE GHOST MODE (Van Chase Stuck Prevention) ─────────────────────────
+## When the Entity gets stuck on a tree during the van chase (STALK state),
+## this timer counts down from 2.0 seconds while "Creeping Ghost" mode
+## (no tree/rock collision) is active. When the timer expires, full
+## collision is restored. This gives the Entity 2 seconds to phase through
+## blocking foliage, then re-enables physics.
+var _tree_ghost_timer: float = 0.0
+
+## Whether tree ghost mode is currently active.
+var _tree_ghost_active: bool = false
+
+## The collision mask saved before entering tree ghost mode.
+var _saved_tree_ghost_mask: int = 0
+
 # --- OVERLOAD STUN STATE ---
 ## Timer counting down the stun duration (seconds remaining).
 ## Set by trigger_overload_stun() and decremented each frame during STUNNED.
@@ -1220,8 +1234,18 @@ func _on_night_started(night: int) -> void:
 		print("[Entity] Night %d: Debug-disabled via console. Skipping activation." % night)
 		return
 	
-	activate() # Controller handles visibility
+	activate() # Controller handles visibility (clears stale _pending_state)
 	_relocate_behind_player() # Controller handles physical placement
+	
+	# ─── NIGHT 3+ : ENSURE ENTITY ENTERS HUNTING STATE ──────────────
+	# After activate(), the Entity is visible and has physics enabled, but
+	# its state machine may still be in DORMANT from the day. The Director
+	# will transition it, but only if _pending_state is clear and the
+	# Entity is active. We explicitly request OBSERVE_FROM_TREELINE to
+	# ensure the Entity immediately enters its baseline hunting behavior
+	# for Night 3+ — any night where the Entity should be actively hunting.
+	# This fixes the "Night 3+ Entity stuck in DORMANT" bug.
+	request_state(EntityAI.State.OBSERVE_FROM_TREELINE)
 
 
 func _on_night_ended(night: int) -> void:
@@ -1292,6 +1316,14 @@ func _find_player() -> void:
 
 
 func activate() -> void:
+	# ─── CLEAR STALE PENDING STATE ────────────────────────────────────
+	# When deactivate() was called, request_state(DORMANT) was set but the
+	# Director never consumed it (the Entity froze before the next frame).
+	# On re-activation, this stale DORMANT state would immediately be applied
+	# by the Director's Tier 0, keeping the Entity stuck in DORMANT.
+	# Clear it so the Director sees a clean slate and evaluates normally.
+	_pending_state = -1
+	
 	# ─── PLAYER REFERENCE CHECK ───────────────────────────────────────
 	# If _player is null (e.g., scene was reloaded between nights), find it
 	# before proceeding. Without a valid _player, _physics_process() early-exits
@@ -1338,14 +1370,15 @@ func deactivate() -> void:
 	_is_enraged = false
 	_original_stalk_speed = 0.0
 	
-	# ─── HARD PHYSICS DISABLE (Daytime Ghost Collider Fix) ─────────
-	# When the Entity is deactivated (daytime), set process_mode to
-	# PROCESS_MODE_DISABLED to prevent _process() and _physics_process()
-	# from running. Also manually disable the CollisionShape3D so the
-	# player doesn't collide with an invisible, immovable physics body.
-	# This fixes the "Entity Ghost Collider" bug introduced by Night 2.2
-	# daytime despawns.
-	process_mode = Node.PROCESS_MODE_DISABLED
+	# ─── PHYSICS DISABLE (Daytime Ghost Collider Fix) ─────────────
+	# Disable the CollisionShape3D so the player doesn't collide with
+	# an invisible, immovable physics body.
+	# NOTE: We do NOT set process_mode to PROCESS_MODE_DISABLED here.
+	# Setting DISABLED on the Entity root prevents ALL children (including
+	# EntityConfidence with the F3 debug overlay) from processing, even
+	# if they have PROCESS_MODE_ALWAYS. The Entity's _physics_process()
+	# already early-exits via the _is_active guard, and _process() on
+	# children with PROCESS_MODE_ALWAYS will continue to run correctly.
 	if _collision_shape:
 		_collision_shape.disabled = true
 
@@ -1424,6 +1457,20 @@ func _physics_process(delta: float) -> void:
 
 	
 	_game_time += delta
+	
+	# ─── TREE GHOST TIMER DECREMENT ────────────────────────────────────
+	# When tree ghost mode is active, decrement the timer each frame.
+	# When the timer expires, restore the full collision mask so the
+	# Entity can collide with trees/rocks again.
+	if _tree_ghost_active:
+		_tree_ghost_timer -= delta
+		if _tree_ghost_timer <= 0.0:
+			_tree_ghost_active = false
+			# Restore the full collision mask saved when ghost mode was activated
+			if _saved_tree_ghost_mask != 0:
+				collision_mask = _saved_tree_ghost_mask
+				_saved_tree_ghost_mask = 0
+				print("[Entity] Tree ghost mode expired. Full collision restored.")
 	
 	if _relocate_cooldown > 0.0:
 		_relocate_cooldown -= delta
@@ -1509,6 +1556,23 @@ func _physics_process(delta: float) -> void:
 		# Halt the NavigationAgent3D to prevent residual nav data.
 		_nav_agent.target_position = global_position
 		return
+	
+	# ─── STALK TREE GHOST MODE (Van Chase Stuck Prevention) ──────────────
+	# When the Entity is in STALK state during the van chase and gets stuck
+	# on a tree for 2+ seconds, temporarily disable tree/rock collision to
+	# let it phase through foliage. The timer counts down from 2.0 seconds
+	# and restores full collision when it expires.
+	if _state == EntityAI.State.STALK and not _tree_ghost_active:
+		var _is_stuck: bool = _stuck_timer >= 2.0 or (is_nav_active and not is_moving and _stuck_timer >= 2.0)
+		if _is_stuck:
+			# Save the current mask and switch to "Creeping Ghost" mode
+			_saved_tree_ghost_mask = collision_mask
+			collision_mask = 0
+			collision_mask |= (1 << (COLLISION_LAYER_CABIN - 1))  # Layer 1: Cabin
+			collision_mask |= (1 << (COLLISION_LAYER_PLAYER - 1)) # Layer 2: Player
+			_tree_ghost_active = true
+			_tree_ghost_timer = 2.0
+			print("[Entity] TREE STUCK! Activating tree ghost mode for 2.0 seconds to phase through foliage.")
 	
 	# ─── SMART STUCK DETECTION ──────────────────────────────────────────────
 	# Detects when the Entity is stuck (not moving while nav is active) and

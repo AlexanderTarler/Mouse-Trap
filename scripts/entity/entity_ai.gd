@@ -170,6 +170,40 @@ class_name EntityAI
 ## Stare time threshold (in seconds) for CHARGE transition.
 @export var charge_stare_threshold: float = 1.5
 
+## ─── STALK BEHAVIOR TUNING ────────────────────────────────────────────
+## Minimum distance (meters) the Entity tries to maintain from the player
+## during STALK. When closer than this, speed drops to slow approach.
+## Default: 3.0m — keeps the Entity at a threatening but not face-hugging range.
+@export var stalk_min_distance: float = 3.0
+
+## Maximum distance (meters) for full-speed pursuit during STALK.
+## When farther than this, the Entity uses 100% stalk speed.
+## Default: 10.0m — beyond this range the Entity sprint-closes the gap.
+@export var stalk_max_distance: float = 10.0
+
+## Speed multiplier when the Entity is between stalk_min_distance and stalk_max_distance.
+## Applied proportionally: 0.3x at min_distance, 1.0x at max_distance.
+@export var stalk_close_speed_mult: float = 0.3
+
+## Whether STALK flanking behavior is enabled. When true, the Entity will
+## periodically circle to a flanking offset position instead of pathing
+## directly toward the player, creating more organic predatory movement.
+@export var flanking_enabled: bool = true
+
+## Interval (seconds) between flank maneuvers during STALK with LOS.
+## Default: 8.0s — flank every ~8 seconds while chasing.
+@export var flank_interval: float = 8.0
+
+## Offset distance (meters) for flanking waypoints. The Entity navigates
+## to a point offset perpendicular to the Entity→Player direction.
+## Default: 8.0m — wide arcs around the player's position.
+@export var flank_offset_distance: float = 8.0
+
+## Speed multiplier when LOS is broken during STALK. The Entity slows down
+## when it loses visual contact, simulating uncertainty.
+## Default: 0.5x — half speed while searching.
+@export var stalk_search_speed_mult: float = 0.5
+
 ## Confidence boost when player breaks flashlight stare.
 @export var stare_break_confidence_boost: float = 8.0
 
@@ -407,6 +441,25 @@ var _retreat_target_set: bool = false
 
 ## Guard flag for the STALK state's target_desired_distance = 0.3 assignment.
 var _stalk_target_distance_set: bool = false
+
+## STALK state: timer counting toward the next flank maneuver.
+var _stalk_flank_timer: float = 0.0
+
+## STALK state: whether a flank maneuver is currently active.
+var _stalk_is_flanking: bool = false
+
+## STALK state: the flank waypoint the Entity is pathing toward.
+var _stalk_flank_target: Vector3 = Vector3.ZERO
+
+## STALK state: LOS break timer. Accumulates delta when player is not visible.
+## When this exceeds a threshold, speed is reduced to stalk_search_speed.
+var _stalk_los_break_timer: float = 0.0
+
+## STALK state: duration (seconds) of LOS break before speed reduction kicks in.
+const STALK_LOS_BREAK_THRESHOLD: float = 1.0
+
+## STALK state: current speed multiplier (computed each frame from distance + LOS state).
+var _stalk_current_speed_mult: float = 1.0
 
 ## Debug frame counter for INDOOR_SEARCH Phase B logging.
 ## Incremented each frame in _indoor_search_state(). Used to throttle debug
@@ -1641,66 +1694,35 @@ func _relocate_to_treeline_after_sabotage() -> void:
 
 
 # ---------------------------------------------------------------------------
-# STATE: STALK (CHASE / PATROL)
+# STATE: STALK (CHASE / PATROL) — Enhanced with distance-range, LOS speed, and flanking
 # ---------------------------------------------------------------------------
 
 func _stalk_state(delta: float) -> void:
 	# ─── TIGHTEN NAV TARGET DISTANCE (ONCE ON ENTRY) ─────────────────
-	# Reduce the navigation agent's target_desired_distance so the Entity
-	# physically closes within ~0.3m of the player (instead of stopping
-	# 1.5m away). Also reduce path_desired_distance (default 1.0) so the
-	# agent doesn't stop short at intermediate waypoints. Without this,
-	# chasing a moving target leaves the Entity ~1.5-2m away because each
-	# path-point is considered "arrived" too early.
-	# IMPORTANT: This is set ONCE on state entry, NOT every frame, because
-	# setting target_desired_distance triggers a full NavigationAgent3D
-	# path recalculation (an expensive A* search over the NavMesh). Doing
-	# this 60 times per second caused the 2-3 FPS drop.
 	var nav_agent = entity.get_nav_agent()
 	if not _stalk_target_distance_set:
 		_stalk_target_distance_set = true
 		nav_agent.target_desired_distance = 0.3
 		nav_agent.path_desired_distance = 0.3
+		# Reset flank timer on state entry
+		_stalk_flank_timer = 0.0
+		_stalk_is_flanking = false
+		_stalk_los_break_timer = 0.0
+		_stalk_current_speed_mult = 1.0
 	
-	# ─── CHASE BREAKER: Player Reached Safety ───────────────────────────
-	# The Director handles the state transition when the player reaches
-	# safety (Tier 2: CHASE → OBSERVE_FROM_TREELINE if player is inside).
-	# This function only handles movement and pathfinding.
-	
-	# ─── PORTABLE TRAP ATTRACTION ───────────────────────────────────────
-	# The Director handles the ATTACK_LAMP transition. This function only
-	# handles movement toward the trap once the state is set.
-	
-	# ─── TASK 7: HALLROOM / INDOOR EXIT GUARD ──────────────────────────
-	# If the player runs inside the cabin (HallRoom or any non-Outside room),
-	# immediately exit STALK. Setting completion flags alone is not enough —
-	# the Director's State Persistence Guard may still prevent re-evaluation.
-	# We must explicitly request_state() to force the transition out of STALK.
+	# ─── HALLROOM / INDOOR EXIT GUARD ──────────────────────────
 	var nav = entity.get_navigation_module()
 	if nav and nav.has_method("get_player_room"):
 		var player_room = nav.get_player_room()
 		if player_room != "Outside" and player_room != "":
-			# ─── VAN SEQUENCE GUARD ──────────────────────────────────
-			# During Night 2.2's van chase, the Entity must STALK the
-			# player while they're outdoors investigating the car alarm.
-			# However, if the player reaches the cabin (HallRoom), the
-			# chase breaker MUST fire so the Entity stops stalking.
-			#
-			# The old guard skipped the HallRoom exit unconditionally
-			# during the van sequence, which caused the Entity to keep
-			# stalking even after the player entered the cabin.
 			if player_room == "Hallroom":
-				# Player reached the cabin — always exit STALK
-				print("[Entity AI] STALK: Player entered Hallroom during van sequence. Force-exiting STALK.")
+				print("[Entity AI] STALK: Player entered Hallroom. Force-exiting STALK.")
 				entity.is_observe_finished = true
 				entity.state_locked = false
 				entity.request_state(EntityAI.State.OBSERVE_FROM_TREELINE)
 				_calculated_velocity = Vector3.ZERO
 				return
 			elif night_manager and night_manager.is_van_sequence_active:
-				# Van sequence active and player is in a non-Hallroom
-				# room (e.g. still in bed, or temporarily inside the
-				# van trigger area) — keep stalking.
 				pass
 			else:
 				print("[Entity AI] STALK: Player entered '%s'. Force-exiting STALK." % player_room)
@@ -1714,120 +1736,141 @@ func _stalk_state(delta: float) -> void:
 	if not player:
 		return
 	
-	# ─── LIGHT SWITCH RETREAT CHECK (CHASE) ─────────────────────────────
-	# If the Entity is inside a lit room during CHASE (e.g., it chased the
-	# player inside and the player flipped the light switch), force immediate
-	# RETREAT. This check runs every frame for instant response.
+	# ─── LIGHT SWITCH RETREAT CHECK ─────────────────────────────
 	if RoomLightDetector.is_entity_in_lit_room():
 		entity.is_indoor_retreat = true
 		entity.state_locked = false
 		_calculated_velocity = Vector3.ZERO
 		return
 	
-	# ─── PATHFINDING & MOVEMENT ─────────────────────────────────────────
-	# Throttle NavigationAgent3D target_position updates to prevent FPS drops.
-	# Setting target_position triggers an expensive path recalculation.
-	# Updating every frame (60fps) causes significant lag. We throttle to
-	# PATH_UPDATE_INTERVAL (300ms), reducing pathfinding overhead by ~95%.
-	#
-	# The _path_timer is reset to 0.0 on state transitions so that pathfinding
-	# initiates immediately when the Entity enters a new state.
-	_path_timer -= delta
-	if _path_timer <= 0.0:
-		_path_timer = PATH_UPDATE_INTERVAL
-		
-		# ─── NAV TARGET JITTER (REDUCED FOR STALK) ──────────────────────────
-		# Add a tiny random offset (±0.1m) to the nav target so the Entity
-		# doesn't converge on the player's exact pixel coordinate. This creates
-		# more organic-looking pursuit and prevents micro-stuttering.
-		# NOTE: Jitter is reduced to 0.1m in STALK (from 0.5m in OBSERVE) to
-		# allow the Entity to close within ~0.3m of the player. The old ±0.5m
-		# + path_desired_distance=1.0 effectively kept the Entity ~1.5m away.
-		var jitter_offset = Vector3(
-			randf_range(-0.1, 0.1),
-			0.0,
-			randf_range(-0.1, 0.1)
-		)
-		entity.get_nav_agent().target_position = player.global_position + jitter_offset
-	
-	# ─── CATCH CHECK ────────────────────────────────────────────────────
-	# If the Entity is close enough to the player, catch them.
+	# ─── CATCH CHECK ────────────────────────────────────────────
 	var dist_to_player := entity.global_position.distance_to(player.global_position)
 	if dist_to_player <= entity.catch_distance:
 		entity._on_caught_player()
 		return
 	
-	# ─── UNIVERSAL FRUSTRATION: LIT ROOM BLOCK ──────────────────────────
-	# If the player is in a lit room and the Entity is outside (CHASE) or
-	# inside (INDOOR_SEARCH), accumulate frustration. The Entity can't
-	# reach the player through the light sanctuary, so it gets frustrated.
-	# When frustration reaches the threshold, the Director's Tier 1 Sabotage
-	# will transition to FUSE_SABOTAGE to kill the generator.
-	#
-	# This prevents the Entity from endlessly chasing the player through
-	# lit rooms without any adaptive response.
-	if entity.get_navigation_module().has_method("is_player_in_lit_room"):
-		var player_in_lit = entity.get_navigation_module().is_player_in_lit_room()
-		if player_in_lit:
-			_all_lit_frustration += ALL_LIT_FRUSTRATION_RATE * delta
-			_all_lit_frustration = minf(_all_lit_frustration, ALL_LIT_FRUSTRATION_THRESHOLD)
+	# ─── FEATURE 3B: LOS-AWARE SPEED MODULATION ────────────────
+	# Check if the Entity can see the player via sensory module.
+	# Accumulate LOS break time when the player is not visible.
+	# After STALK_LOS_BREAK_THRESHOLD seconds without LOS, slow down.
+	var sensory = entity.get_sensory_module()
+	var has_los: bool = false
+	if sensory and sensory.has_method("can_entity_see_player"):
+		has_los = sensory.can_entity_see_player()
 	
-	# ─── INVESTIGATION CONFUSION (CHASE) ────────────────────────────────
-	# When the Entity reaches the last_known_position and cannot see the
-	# player, enter an Investigation sub-state. The Entity freezes for 4
-	# seconds (playing a searching animation). If the player is seen or
-	# heard during this pause, the Entity immediately resumes the chase.
-	# If the timer expires and it finds nothing, it drops confidence and
-	# returns to OBSERVE_FROM_TREELINE.
-	if _is_investigating:
-		# Already investigating — count down the timer
-		_investigation_timer -= delta
+	if has_los:
+		_stalk_los_break_timer = 0.0
+	else:
+		_stalk_los_break_timer += delta
+	
+	var los_speed_mult: float = 1.0
+	if _stalk_los_break_timer >= STALK_LOS_BREAK_THRESHOLD:
+		los_speed_mult = stalk_search_speed_mult
+	
+	# ─── FEATURE 3A: MAINTAIN-DISTANCE RANGE ───────────────────
+	# Compute distance-based speed multiplier using stalk_min_distance
+	# and stalk_max_distance. When close, slow to stalk_close_speed_mult.
+	# When far, use full speed. In-between, lerp proportionally.
+	var dist_speed_mult: float = 1.0
+	if dist_to_player < stalk_min_distance:
+		# Too close — slow to minimum approach speed
+		dist_speed_mult = stalk_close_speed_mult
+	elif dist_to_player > stalk_max_distance:
+		# Too far — full speed
+		dist_speed_mult = 1.0
+	else:
+		# In between — lerp proportionally
+		var t = (dist_to_player - stalk_min_distance) / (stalk_max_distance - stalk_min_distance)
+		dist_speed_mult = stalk_close_speed_mult + (1.0 - stalk_close_speed_mult) * t
+	
+	# Combine both multipliers (LOS takes priority when active)
+	_stalk_current_speed_mult = dist_speed_mult * los_speed_mult
+	
+	# ─── FEATURE 3C: FLANKING BEHAVIOR ─────────────────────────
+	# Periodically navigate to a flanking offset position instead of
+	# pathing directly toward the player.
+	if flanking_enabled and has_los and not _stalk_is_flanking:
+		_stalk_flank_timer += delta
+		if _stalk_flank_timer >= flank_interval:
+			_stalk_flank_timer = 0.0
+			_stalk_is_flanking = true
+			
+			# Calculate flank target: perpendicular offset from Entity→Player direction
+			var dir_to_player = (player.global_position - entity.global_position).normalized()
+			var perp = Vector3(-dir_to_player.z, 0.0, dir_to_player.x)  # Left perpendicular
+			if randf() < 0.5:
+				perp = Vector3(dir_to_player.z, 0.0, -dir_to_player.x)  # Right perpendicular
+			
+			# Flank point: offset perpendicular to the player's position
+			_stalk_flank_target = player.global_position + perp * flank_offset_distance
+			
+			# Snap the flank target Y to the Entity's current Y (ground level)
+			_stalk_flank_target.y = entity.global_position.y
+			
+			print("[Entity AI] STALK: Flanking! Setting offset target.")
+	
+	# ─── PATHFINDING & MOVEMENT ────────────────────────────────
+	_path_timer -= delta
+	if _path_timer <= 0.0:
+		_path_timer = PATH_UPDATE_INTERVAL
 		
-		# Freeze movement during investigation
+		if _stalk_is_flanking:
+			# Navigate toward the flank target
+			var dist_to_flank = entity.global_position.distance_to(_stalk_flank_target)
+			if dist_to_flank <= 2.0:
+				# Reached flank point — resume direct chase
+				_stalk_is_flanking = false
+				_stalk_flank_target = Vector3.ZERO
+				# Set nav target to player
+				var jitter = Vector3(randf_range(-0.1, 0.1), 0.0, randf_range(-0.1, 0.1))
+				entity.get_nav_agent().target_position = player.global_position + jitter
+			else:
+				entity.get_nav_agent().target_position = _stalk_flank_target
+		else:
+			# Normal chase: direct pursuit with jitter
+			var jitter_offset = Vector3(randf_range(-0.1, 0.1), 0.0, randf_range(-0.1, 0.1))
+			entity.get_nav_agent().target_position = player.global_position + jitter_offset
+	
+	# ─── INVESTIGATION CONFUSION ────────────────────────────────
+	if _is_investigating:
+		_investigation_timer -= delta
 		_calculated_velocity = Vector3.ZERO
 		
-		# Check if player is spotted during investigation
-		var sensory = entity.get_sensory_module()
 		if sensory and sensory.has_method("can_entity_see_player") and sensory.can_entity_see_player():
 			_is_investigating = false
 			_investigation_timer = 0.0
 		elif entity.is_hunting() and entity.get_current_interest_level() > 50.0:
-			# Player was heard (acoustic detection) during investigation
 			_is_investigating = false
 			_investigation_timer = 0.0
 		
 		if _investigation_timer <= 0.0:
-			# Investigation complete — give up and transition to OBSERVE
 			_is_investigating = false
 			entity.is_observe_finished = true
 			entity.state_locked = false
 			_calculated_velocity = Vector3.ZERO
 			return
 		else:
-			# Still investigating — freeze and wait
 			return
 	
-	# ─── CHECK IF WE'VE ARRIVED AT LAST_KNOWN_POSITION ──────────────────
-	# If the nav agent finished AND we can't see the player, start investigating.
+	# ─── ARRIVED AT LAST_KNOWN_POSITION ─────────────────────────
 	var lkp = entity.get_last_known_position()
 	var dist_to_lkp = entity.global_position.distance_to(lkp)
 	var nav_finished = entity.get_nav_agent().is_navigation_finished()
 	
 	if (nav_finished or dist_to_lkp <= 3.0) and not _is_investigating:
-		var sensory = entity.get_sensory_module()
 		var can_see_player = false
 		if sensory and sensory.has_method("can_entity_see_player"):
 			can_see_player = sensory.can_entity_see_player()
 		
 		if not can_see_player:
-			# Start investigation
 			_is_investigating = true
 			_investigation_timer = 4.0
 			_calculated_velocity = Vector3.ZERO
 			return
 	
-	# ─── MOVEMENT ───────────────────────────────────────────────────────
-	# Follow the navigation path toward the player.
+	# ─── APPLY SPEED WITH ALL MULTIPLIERS ───────────────────────
+	var final_speed = entity.current_stalk_speed * _stalk_current_speed_mult
+	
 	if entity.get_nav_agent().is_navigation_finished():
 		_calculated_velocity.x = 0.0
 		_calculated_velocity.z = 0.0
@@ -1836,8 +1879,8 @@ func _stalk_state(delta: float) -> void:
 		var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
 		if dir_2d.length() > 0.01:
 			var move_dir_2d = dir_2d.normalized()
-			_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
-			_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
+			_calculated_velocity.x = move_dir_2d.x * final_speed
+			_calculated_velocity.z = move_dir_2d.y * final_speed
 
 # ---------------------------------------------------------------------------
 # STATE: CHARGE (3x speed sprint at the player)
@@ -3103,6 +3146,14 @@ func _window_peek_state(delta: float) -> void:
 					print("[WINDOW_PEEK] Breach: Landing position set to (%.2f, %.2f, %.2f)" % [landing.x, landing.y, landing.z])
 				else:
 					print("[WINDOW_PEEK] WARNING: Window target has no get_indoor_landing_position()! Teleport will fail.")
+				
+				# ─── FALLBACK: If landing position is zero (no IndoorBreachWaypoint),
+				# set a default landing point 1.5m inside from the window's position.
+				if entity.get_indoor_landing_position() == Vector3.ZERO:
+					var fallback_landing = window_target.global_position
+					fallback_landing.y = 0.0
+					entity.set_indoor_landing_position(fallback_landing)
+					print("[WINDOW_PEEK] Breach: No IndoorBreachWaypoint. Using fallback landing position: (%.2f, %.2f, %.2f)" % [fallback_landing.x, fallback_landing.y, fallback_landing.z])
 				
 				# ─── SIGNAL COMPLETION ──────────────────────────────────
 				# The glass has shattered. Signal the Director to transition

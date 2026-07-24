@@ -7,25 +7,26 @@ class_name TotemAnchor
 ## the Entity. Destroying the totem advances the RoutineManager step, which
 ## unlocks the escape van.
 ##
-## INTERACTION (HOLD-TO-PURGE):
+## ─── PROGRESSION LOCK ─────────────────────────────────────────────────────
+## The player CANNOT interact with/destroy the totem unless they have picked up
+## "Arvid's Note 2" (checked via EvidenceManager). Attempting to interact early
+## shows: "I don't know what to do with this yet."
+##
+## ─── DAY/NIGHT ANIMATION ──────────────────────────────────────────────────
+## The totem rises out of the ground at night and descends beneath it during
+## the day, using smooth 10-second Tween animations. The totem is connected
+## to NightManager's night_started and night_ended signals.
+##
+## ─── COLLISION MANAGEMENT ─────────────────────────────────────────────────
+## During the day, when the totem is fully buried, its collision shape is
+## disabled to prevent the player from interacting with empty dirt.
+## During the night, the collision shape is enabled when the totem emerges.
+##
+## ─── HOLD-TO-PURGE ───────────────────────────────────────────────────────
 ## Fully autonomous — no InteractionManager dependency. _process() checks the
 ## physical 'E' key (Input.is_physical_key_pressed(KEY_E)), player distance
 ## (5m), and a generous camera dot-product (53-degree cone, cos=0.6) to manage
-## its own hold-to-purge state. The InteractionManager's get_interact_text()
-## is kept only for the prompt display.
-##
-## RACE MECHANIC:
-## The totem is ALWAYS interactable — there is no stun gate. However, the
-## Entity will kill the player if it catches them mid-purge. Stunning the
-## Entity (via the porch light overload trap) gives the player a safe window
-## to reach the totem and begin the purge. If the Entity recovers while the
-## player is still purging, the Entity becomes ENRAGED and the player must
-## decide whether to finish the purge or flee.
-##
-## VISUAL FEEDBACK:
-## While purging, a progress bar is displayed on the HUD. When complete, the
-## totem plays a burning/destruction sound, spawns particle sparks, defeats
-## the Entity, and becomes non-interactable (is_purged = true).
+## its own hold-to-purge state.
 
 ## Whether this totem has been destroyed (purged).
 ## Once true, the totem cannot be interacted with again.
@@ -62,10 +63,35 @@ const INTERACT_PROMPT: String = "[E] Destroy Totem Anchor"
 ## plus some leeway so the player doesn't accidentally break the hold.
 const MAX_PURGE_DISTANCE: float = 8.0
 
+## ─── DAY/NIGHT ANIMATION ──────────────────────────────────────────────────
+## The original Y position of the totem (set in _ready).
+var _original_y: float = 0.0
+
+## How high the totem rises above its original position during the night.
+@export var raised_y: float = 1.5
+
+## How low the totem descends below its original position during the day.
+@export var buried_y: float = -2.0
+
+## Duration (seconds) of the rise/descent tweens.
+@export var animation_duration: float = 10.0
+
+## Whether the totem is currently in its "night" state (above ground).
+var _is_night: bool = false
+
+## Collision shape reference, disabled when totem is buried.
+@onready var _collision_shape: CollisionShape3D = $CollisionShape3D if has_node("CollisionShape3D") else null
+
+## NightManager reference, cached for signal connections.
+var _night_manager: Node = null
+
 
 func _ready() -> void:
 	add_to_group("interactable")
 	add_to_group("totem_anchor")
+	
+	# Store original Y position
+	_original_y = position.y
 	
 	# Find the Entity in the scene tree
 	_entity = get_tree().get_first_node_in_group("entity")
@@ -111,14 +137,106 @@ func _ready() -> void:
 	
 	add_child(_spark_particles)
 	
+	# ─── CONNECT TO NIGHT MANAGER ─────────────────────────────────────
+	_night_manager = get_node_or_null("/root/NightManager")
+	if _night_manager:
+		if _night_manager.has_signal("night_started"):
+			_night_manager.night_started.connect(_on_night_started)
+		if _night_manager.has_signal("night_ended"):
+			_night_manager.night_ended.connect(_on_night_ended)
+		print("[TotemAnchor] Connected to NightManager signals.")
+	
 	print("[TotemAnchor] Initialized at position: ", global_position)
+
+
+## ─── DAY/NIGHT SIGNAL HANDLERS ──────────────────────────────────────────────
+
+## Called when a night starts. Tweens the totem UP out of the ground
+## over animation_duration seconds. Enables collision at the end.
+func _on_night_started(night: int) -> void:
+	if is_purged:
+		return
+	
+	_is_night = true
+	print("[TotemAnchor] Night %d started. Raising totem from y=%.2f to y=%.2f over %.1fs..." % [night, _original_y + buried_y, _original_y + raised_y, animation_duration])
+	
+	# Kill any existing tweens to prevent conflicts
+	if has_node("_rise_tween"):
+		get_node("_rise_tween").kill()
+	
+	var tween = create_tween()
+	tween.set_trans(Tween.TRANS_SINE)
+	tween.set_ease(Tween.EASE_OUT)
+	tween.set_parallel(false)
+	
+	# Tween position.y UP over 10 seconds
+	tween.tween_property(self, "position:y", _original_y + raised_y, animation_duration)
+	
+	# Enable collision shape when the tween completes (totem is fully risen)
+	tween.tween_callback(_enable_collision)
+
+
+## Called when a night ends. Tweens the totem DOWN beneath the ground
+## over animation_duration seconds. Disables collision immediately so
+## the player can't interact with the empty dirt while it's descending.
+func _on_night_ended(night: int) -> void:
+	if is_purged:
+		return
+	
+	_is_night = false
+	print("[TotemAnchor] Night %d ended. Lowering totem from y=%.2f to y=%.2f over %.1fs..." % [night, _original_y + raised_y, _original_y + buried_y, animation_duration])
+	
+	# Disable collision immediately — totem is starting to descend
+	_disable_collision()
+	
+	# Kill any existing tweens to prevent conflicts
+	if has_node("_descent_tween"):
+		get_node("_descent_tween").kill()
+	
+	var tween = create_tween()
+	tween.set_trans(Tween.TRANS_SINE)
+	tween.set_ease(Tween.EASE_IN)
+	tween.set_parallel(false)
+	
+	# Tween position.y DOWN over 10 seconds
+	tween.tween_property(self, "position:y", _original_y + buried_y, animation_duration)
+
+
+## Enables the collision shape so the player can interact with the totem.
+func _enable_collision() -> void:
+	if _collision_shape:
+		_collision_shape.disabled = false
+		print("[TotemAnchor] Collision shape ENABLED (totem fully risen).")
+
+
+## Disables the collision shape so the player can't interact with empty dirt.
+func _disable_collision() -> void:
+	if _collision_shape:
+		_collision_shape.disabled = true
+		print("[TotemAnchor] Collision shape DISABLED (totem buried or descending).")
 
 
 ## Returns the interaction prompt text shown by the InteractionManager.
 func get_interact_text() -> String:
 	if is_purged:
 		return ""  # No prompt if already destroyed
+	
+	# ─── PROGRESSION LOCK CHECK ─────────────────────────────────────
+	if not _has_arvid_note_2():
+		return ""  # Player doesn't know what to do yet
+		
 	return INTERACT_PROMPT
+
+
+## Checks whether the player has found Arvid's Note 2 via EvidenceManager.
+## The evidence ID string must match exactly how note_pickup.gd registers it:
+##   em.collect_evidence(note_item.item_name)  (line 196 of note_pickup.gd)
+## item_data.item_name for Arvid's Note 2 is "Arvid's Note 2" (from resources/arvid_note_2.tres).
+func _has_arvid_note_2() -> bool:
+	var em = get_node_or_null("/root/EvidenceManager")
+	if not em:
+		return false
+	return em.has_evidence("Arvid's Note 2")
 
 
 ## Called every frame. Fully autonomous — no InteractionManager dependency.
@@ -126,6 +244,27 @@ func get_interact_text() -> String:
 ## dot-product (53-degree cone, cos=0.6) to manage its own hold-to-purge state.
 func _process(delta: float) -> void:
 	if is_purged:
+		return
+	
+	# ─── PROGRESSION LOCK ──────────────────────────────────────────────
+	# Player cannot interact with the totem unless they have Arvid's Note 2.
+	if not _has_arvid_note_2():
+		# Show hint if they're pressing E near it without the note
+		if Input.is_physical_key_pressed(KEY_E):
+			var player = get_tree().get_first_node_in_group("player")
+			if player and global_position.distance_to(player.global_position) <= 5.0:
+				_show_hud_message("I don't know what to do with this yet.")
+		if is_being_purged:
+			_abort_purge()
+		return
+	
+	# ─── COLLISION GUARD ───────────────────────────────────────────────
+	# If the collision shape is disabled (daytime / totem buried), skip
+	# interaction checks entirely.
+	if _collision_shape and _collision_shape.disabled:
+		# Also hide the interaction prompt via the Hud
+		if is_being_purged:
+			_abort_purge()
 		return
 	
 	# 1. Is the player physically holding the 'E' key?

@@ -766,7 +766,13 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 		# Use RoomLightDetector to check if the room this window belongs to
 		# is currently lit. Unlit rooms are preferred — the Entity can approach
 		# through darkness without being seen.
+		# IMPORTANT: If the room IS lit, skip this window entirely. The Entity
+		# will NOT approach a window in a lit room — the player would repel it
+		# with cabin light. The Entity must wait for the player to turn off
+		# the light or go to a different window.
 		var is_room_lit: bool = RoomLightDetector.is_position_in_lit_room(w.global_position)
+		if is_room_lit:
+			continue  # Skip — Entity will not approach lit rooms
 		
 		# ─── RESOLVE THE APPROACH POSITION ──────────────────────────
 		# The WindowMarker child is offset outside the window and is the
@@ -931,9 +937,23 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 		var parent = selected_marker.get_parent()
 		if parent:
 			selected_name = parent.name + "/" + selected_name
-		print("[Navigation] Tactical window selected: %s | score=%.1f | dist_from_entity=%.1f | dist_from_last_heard=%.1f" % [
-			selected_name, best_score, sqrt(best_candidate["dist_from_entity"]), sqrt(best_candidate["dist_from_last_heard"]) if best_candidate["dist_from_last_heard"] != INF else -1.0
+		print("[Navigation] Tactical window selected: %s | score=%.1f | dist_from_entity=%.1f | dist_from_last_heard=%.1f | is_door=%s" % [
+			selected_name, best_score, sqrt(best_candidate["dist_from_entity"]), sqrt(best_candidate["dist_from_last_heard"]) if best_candidate["dist_from_last_heard"] != INF else -1.0,
+			best_candidate.get("is_door", false)
 		])
+		
+		# ─── RETURN VALUE BY TYPE ──────────────────────────────────────────
+		# WINDOW: Return the parent CabinWindow node. The window target is
+		#   compared against the door waypoint marker in _approach_window_state()
+		#   to distinguish door from window. If it's NOT a door, it's a window.
+		# DOOR: Return the DOOR MARKER (EntityDoorWaypoint) directly, NOT the
+		#   Door parent node. The _approach_window_state() handler compares the
+		#   current window target against entity.get_door_waypoint_marker().
+		#   If we return the parent Door node, the comparison fails and the
+		#   Entity treats the door as a window — causing WINDOW_PEEK → INDOOR_SEARCH
+		#   while still outside.
+		if best_candidate.get("is_door", false):
+			return selected_marker  # Return the marker itself for door targets
 		return selected_marker.get_parent() as Node3D
 	
 	return null

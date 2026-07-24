@@ -88,6 +88,15 @@ func _ready() -> void:
 			_generator_audio.stream = stream
 			_generator_audio.bus = "SFX"
 			_generator_audio.max_db = 0.0
+			# ─── PROGRAMMATIC LOOP FALLBACK ──────────────────────────────────
+			# Force loop mode on the audio stream regardless of import settings.
+			# This ensures the generator hum loops seamlessly even if the .import
+			# file has loop=false. Matches the pattern used in entity_controller.gd
+			# for chase music and night ambience.
+			if stream is AudioStreamOggVorbis:
+				stream.loop = true
+			elif "loop_mode" in stream and stream.has_method("set"):
+				stream.loop_mode = 0  # LOOP_FORWARD for WAV streams
 			_audio_loaded = true
 			print("[Generator] Audio loaded: '%s' at %.1f dB (volume_db=%+.0f dB)" % [generator_audio_stream_path, generator_audio_volume_db, generator_audio_volume_db])
 		else:

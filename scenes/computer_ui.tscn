@@ -185,6 +185,15 @@ offset_bottom = 200.0
 theme_override_font_sizes/font_size = 11
 text = "Recycle Bin"
 
+[node name="RecoverDataIcon" type="Button" parent="DesktopView"]
+layout_mode = 0
+offset_left = 160.0
+offset_top = 60.0
+offset_right = 280.0
+offset_bottom = 120.0
+theme_override_font_sizes/font_size = 11
+text = "RECOVER_DATA.EXE"
+
 [node name="LogOffIcon" type="Button" parent="DesktopView" unique_id=600000024]
 layout_mode = 0
 offset_left = 40.0

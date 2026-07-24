@@ -621,7 +621,35 @@ func add_note(text: String) -> void:
 	_unlocked_notes[note_key] = text
 	_rebuild_all_pages()
 	_update_spread()
+	
+	# ─── PLAY SCRIBBLE SOUND ──────────────────────────────────────
+	# Play the notebook writing sound effect whenever a note is added,
+	# regardless of the source (NotePickup, tutorial, debug console).
+	# This is a complementary sound to the one in note_pickup.gd —
+	# this one catches all entry paths while note_pickup.gd's version
+	# catches the direct pickup case.
+	_play_scribble_sfx()
+	
 	print("[Notebook] Note appended. State-driven rebuild complete.")
+
+
+## Plays the notebook_writing.ogg scribble sound effect via a transient
+## AudioStreamPlayer. The player is auto-freed when the sound finishes.
+## Duplicates the logic from note_pickup.gd's _play_notebook_sfx() so
+## that the sound plays regardless of how the note is added.
+func _play_scribble_sfx() -> void:
+	var stream := load("res://assets/audio/notebook_writing.ogg")
+	if not stream:
+		# Fallback: try UI click sound if notebook writing sound is missing
+		stream = load("res://assets/audio/UI/ui_click_success.ogg")
+	if not stream:
+		return
+	var player := AudioStreamPlayer.new()
+	player.bus = "SFX"
+	player.stream = stream
+	add_child(player)
+	player.play()
+	player.finished.connect(player.queue_free)
 
 
 ## Splits a string into an array of CHARS_PER_PAGE-sized chunks,

@@ -417,11 +417,11 @@ func _sync_all_displays() -> void:
 
 func _on_night_started(night: int) -> void:
 	_update_night_label(night)
-	_show_event("Night %d - Survive until dawn..." % night)
+	# Event messages removed per design direction
 
 
 func _on_night_ended(night: int) -> void:
-	_show_event("Night %d survived!" % night)
+	# Event messages removed per design direction
 	# Defer the display sync to the next frame so that NightManager's
 	# end_current_night() has fully finished incrementing current_night
 	# before RoutineManager reads it. Without this, get_current_day_string()
@@ -430,12 +430,12 @@ func _on_night_ended(night: int) -> void:
 
 
 func _on_horror_event(event_name: String) -> void:
-	var display_name = event_name.replace("_", " ").capitalize()
-	_show_event(display_name)
+	# Event messages removed per design direction
+	pass
 
 
 ## Called when NightManager emits first_chase_started (Night 1 narrative event).
-## Unlocks the player's sprint ability and displays a prominent UI hint.
+## Unlocks the player's sprint ability.
 func _on_first_chase_started() -> void:
 	# Find the player and unlock sprint
 	var player = get_node_or_null("/root/CottageHorror/Player")
@@ -444,9 +444,6 @@ func _on_first_chase_started() -> void:
 	if player and "sprint_unlocked" in player:
 		player.sprint_unlocked = true
 		print("[HUD] Sprint unlocked for the player!")
-	
-	# Display a massive, highly visible UI hint
-	_show_event("⚠️ PRESS SHIFT TO RUN ⚠️")
 
 
 ## Updates the generator fuel bar on the HUD.
@@ -501,31 +498,18 @@ func _update_night_label(night: int) -> void:
 ## Shows an event message with a 3-second display time, then fades out.
 ## Messages are queued so each one gets its full display time.
 func _show_event(text: String) -> void:
-	_message_queue.append(text)
-	if not _message_busy:
-		_display_next_message()
+	# Event messages removed per design direction
+	pass
 
 
 func _display_next_message() -> void:
-	if _message_queue.is_empty():
-		_message_busy = false
-		return
-	
-	_message_busy = true
-	var text = _message_queue.pop_front()
-	
-	event_label.text = text
-	event_label.modulate = Color(1, 1, 1, 1)
-	if event_timer:
-		event_timer.wait_time = 3.0  # Show for 3 seconds before fade
-		event_timer.start()
+	# Event messages removed per design direction
+	_message_busy = false
 
 
 func _on_event_timer_timeout() -> void:
-	var tween = create_tween()
-	tween.tween_property(event_label, "modulate:a", 0.0, 1.0)
-	# After the fade completes, show the next message in the queue
-	tween.finished.connect(_display_next_message.bind(), CONNECT_ONE_SHOT)
+	# Event messages removed per design direction
+	pass
 
 
 # ─── PURGE PROGRESS BAR ────────────────────────────────────────────────
@@ -615,7 +599,8 @@ func _update_room_label() -> void:
 ## The message is displayed for 3.0 seconds, then fades out automatically
 ## via the existing _show_event() message queue system.
 func show_message(msg: String) -> void:
-	_show_event(msg)
+	# Event messages removed per design direction
+	pass
 
 
 var _hint_tween: Tween = null

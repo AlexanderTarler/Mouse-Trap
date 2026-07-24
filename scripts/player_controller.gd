@@ -454,11 +454,25 @@ func unlock_sprint() -> void:
 ## Called by JumpscareManager after the jumpscare completes to fix
 ## the tilted camera issue on respawn.
 func reset_camera() -> void:
+	# ─── RESET LOCAL ROTATION ──────────────────────────────────────
+	# Restore the camera holder's local rotation to zero (straight ahead).
 	_camera_holder.rotation = Vector3.ZERO
+	
+	# ─── RESET GLOBAL TRANSFORM BASIS ──────────────────────────────
+	# The jumpscare tween changes the camera holder's global_transform.basis
+	# to look at the Entity. Setting local rotation alone is not sufficient
+	# to undo this global transform change — we must also reset the global basis.
 	_camera_holder.global_transform.basis = Basis.IDENTITY
-	_camera.h_offset = 0.0
-	_camera.v_offset = 0.0
-	_camera.position = Vector3.ZERO
+	
+	# ─── RESET CAMERA OFFSETS & FOV ───────────────────────────────
+	# The jumpscare shake modifies camera h_offset, v_offset, and FOV.
+	# Restore them all to defaults so the player doesn't see a tilted/zoomed view.
+	if _camera:
+		_camera.h_offset = 0.0
+		_camera.v_offset = 0.0
+		_camera.fov = 75.0
+	
+	# ─── RESET HEAD BOB ───────────────────────────────────────────
 	_head_bob_time = 0.0
 
 

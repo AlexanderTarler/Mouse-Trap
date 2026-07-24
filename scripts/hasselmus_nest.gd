@@ -98,14 +98,23 @@ func _add_to_notebook() -> void:
 
 
 func _show_documented_message() -> void:
-	# Find the HUD to show a message
-	var hud = get_node_or_null("/root/CottageHorror/HUD")
-	if not hud:
-		hud = get_node_or_null("/root/Main/HUD")
-	
-	if hud and hud.has_method("_show_event"):
-		var rm = get_node_or_null("/root/RoutineManager")
-		var count = rm.nests_documented if rm else 0
+	# Play notebook_writing.ogg sound effect
+	_play_notebook_sfx()
+
+
+## Plays the notebook_writing.ogg sound via a transient AudioStreamPlayer.
+## The player is auto-freed when the sound finishes.
+func _play_notebook_sfx() -> void:
+	var stream := load("res://assets/audio/notebook_writing.ogg")
+	if not stream:
+		return
+	var player := AudioStreamPlayer.new()
+	player.bus = "SFX"
+	player.stream = stream
+	add_child(player)
+	player.play()
+	player.finished.connect(player.queue_free)
+	print("[HasselmusNest] Played notebook_writing.ogg")
 
 
 

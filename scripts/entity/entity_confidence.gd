@@ -123,6 +123,14 @@ signal confidence_threshold_crossed(threshold_name: String, direction: String)
 
 func setup(parent: CharacterBody3D) -> void:
 	entity = parent
+	# ─── ENSURE CONFIDENCE SYSTEM ALWAYS RUNS ─────────────────────────
+	# The Entity root may have PROCESS_MODE_INHERIT when deactivated.
+	# Setting PROCESS_MODE_ALWAYS here ensures _process() continues to run
+	# even when the Entity is dormant, so F3 toggling and confidence decay
+	# never stop working. This is a belt-and-suspenders approach — the
+	# deactivate() function no longer sets PROCESS_MODE_DISABLED on the
+	# Entity root, but if any future change re-adds it, this guard holds.
+	process_mode = PROCESS_MODE_ALWAYS
 	_setup_debug_overlay()
 
 

@@ -217,7 +217,7 @@ func _refresh_log() -> void:
 		
 		# Player visibility
 		var sensory = _entity.get_sensory_module() if _entity.has_method("get_sensory_module") else null
-		var can_see = sensory and sensory.has_method("can_entity_see_player") and sensory.can_see_player()
+		var can_see = sensory and sensory.has_method("can_entity_see_player") and sensory.can_entity_see_player()
 		var hears = _entity.is_hunting() if _entity.has_method("is_hunting") else false
 		lines.append("  Sees=%s | Hears=%s | Locked=%s" % [
 			"YES" if can_see else "NO",

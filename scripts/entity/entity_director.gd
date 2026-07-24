@@ -180,7 +180,11 @@ var _outside_confirmation_initialized: bool = false
 const OUTSIDE_CONFIRMATION_MIN: float = 5.0
 
 ## Maximum duration (in seconds) for the outside confirmation timer.
-const OUTSIDE_CONFIRMATION_MAX: float = 10.0
+## Extended to 20.0 seconds so the player cannot "hide outside" forever.
+## Combined with proximity-based STALK triggers below, this acts as a
+## backup: if the player hasn't been detected via proximity within 20s,
+## the timer forces the Entity to begin stalking anyway.
+const OUTSIDE_CONFIRMATION_MAX: float = 20.0
 
 ## Resets the indoor search persistence timer to 30.0 seconds.
 ## Called by entity_ai.gd when the Entity enters INDOOR_SEARCH state.
@@ -644,6 +648,26 @@ func _tier_0_pending_override(entity: CharacterBody3D) -> int:
 ##
 ## Returns: The target state, or -1 if no flashlight reaction applies.
 func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
+	# ─── LIT ROOM REACTIVE EXIT (APPROACH_WINDOW / WINDOW_PEEK) ─────
+	# If the Entity is approaching or peeking a window, and that window's
+	# room becomes lit (player turned on the light), immediately FLINCH.
+	# This prevents the Entity from standing at a window that just got lit up.
+	if (state == EntityAI.State.APPROACH_WINDOW or state == EntityAI.State.WINDOW_PEEK) and not entity.is_illuminated:
+		var window_target = entity.get_current_window_target()
+		if window_target:
+			var nav = entity.get_navigation_module()
+			if nav and nav.has_method("is_position_in_lit_room") and nav.is_position_in_lit_room(window_target.global_position):
+				# Reset locks and flags
+				entity.state_locked = false
+				entity.is_approach_finished = false
+				entity.is_window_unbarricaded = false
+				entity.is_observe_finished = false
+				entity.is_flinch_finished = false
+				# Clear window target so we don't re-select the same lit window
+				entity.set_current_window_target(null)
+				print("[Director] LIT ROOM REACTIVE EXIT: Window room became lit during %s! Flinching away." % _state_key(state))
+				return EntityAI.State.FLINCH
+	
 	# ─── LIGHT SWITCH RETREAT (is_indoor_retreat) ──────────────────────
 	# Checked BEFORE is_illuminated so that a light switch flip triggers
 	# RETREAT even if the flashlight is not currently shining on the Entity.
@@ -1004,9 +1028,34 @@ func _tier_3_active_aggression(entity: CharacterBody3D, state: int) -> int:
 	else:
 		entity.set_thinks_player_is_inside(true)
 	
+	# ─── PROXIMITY-BASED STALK TRIGGER (OBSERVE_FROM_TREELINE) ─────
+	# If the Entity is in OBSERVE_FROM_TREELINE and the player is outside,
+	# check distance. The Entity will immediately STALK if the player gets
+	# too close, bypassing the outside confirmation timer.
+	#
+	# RULES:
+	#   - Standing player within 15m → STALK (Entity detects them)
+	#   - Crouching player within 5m → STALK (harder to detect, but still possible)
+	#   - Crouching player beyond 5m → stay in OBSERVE (player is hidden)
+	#
+	# This prevents the player from standing 2 meters from the Entity
+	# without consequence while the confirmation timer ticks down.
+	if state == EntityAI.State.OBSERVE_FROM_TREELINE and is_player_actually_outside:
+		var player = entity.get_player()
+		if player:
+			var dist = entity.global_position.distance_to(player.global_position)
+			var is_crouching = player.has_method("is_crouching") and player.is_crouching()
+			
+			if is_crouching and dist <= 5.0:
+				print("[Director] PROXIMITY STALK: Crouching player within %.1fm (threshold 5.0m)! Immediate STALK." % dist)
+				return EntityAI.State.STALK
+			elif not is_crouching and dist <= 15.0:
+				print("[Director] PROXIMITY STALK: Standing player within %.1fm (threshold 15.0m)! Immediate STALK." % dist)
+				return EntityAI.State.STALK
+	
 	# ─── OUTSIDE CONFIRMATION TIMER MANAGEMENT ──────────────────────
 	# When the player is actually outside (ground truth), a random timer
-	# (5-10 seconds) starts counting DOWN. The Entity must remain in
+	# (5-20 seconds) starts counting DOWN. The Entity must remain in
 	# OBSERVE_FROM_TREELINE until the timer reaches 0.0, at which point
 	# it "confirms" the player is truly outside and transitions to STALK.
 	#

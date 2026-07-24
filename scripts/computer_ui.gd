@@ -211,6 +211,18 @@ func _ready() -> void:
 	if _desktop_logoff_btn:    _desktop_logoff_btn.pressed.connect(_on_log_off)
 	if _power_off_btn:         _power_off_btn.pressed.connect(_on_exit_computer)
 	if _desktop_shutdown_btn:  _desktop_shutdown_btn.pressed.connect(_on_exit_computer)
+	
+	# ─── CONNECT RECOVER_DATA.EXE ICON (if it exists in the scene) ──
+	var recover_btn = _desktop_view.find_child("RecoverDataIcon", true, false)
+	if recover_btn:
+		recover_btn.pressed.connect(_on_recover_data_open)
+	
+	# Check if an EXECUTE OVERLOAD button was already added (from a previous session)
+	var overload_btn = _desktop_view.find_child("OverloadExec", true, false)
+	if overload_btn and is_arvid_log_2_unlocked:
+		overload_btn.visible = true
+	elif overload_btn:
+		overload_btn.visible = false
 	if _btn_correlate:    _btn_correlate.pressed.connect(_on_correlate_data)
 	if _submit_key_btn:   _submit_key_btn.pressed.connect(_on_submit_decryption_key)
 	
@@ -337,6 +349,16 @@ func _show_desktop() -> void:
 	_desktop_field_log_btn.visible = (current_user == "LUND")
 	_desktop_recycle_btn.visible = (current_user == "STENBERG")
 	_desktop_logoff_btn.visible = true
+	
+	# Show RECOVER_DATA.EXE for the STENBERG user
+	var recover_btn = _desktop_view.find_child("RecoverDataIcon", true, false)
+	if recover_btn:
+		recover_btn.visible = (current_user == "STENBERG")
+	
+	# Show EXECUTE OVERLOAD if logs have been decrypted
+	var overload_btn = _desktop_view.find_child("OverloadExec", true, false)
+	if overload_btn:
+		overload_btn.visible = (current_user == "STENBERG" and is_arvid_log_2_unlocked)
 
 
 func _on_exit_computer() -> void:
@@ -654,16 +676,95 @@ func _trigger_login_tutorial() -> void:
 # RECOVER_DATA.EXE
 # ─────────────────────────────────────────────────────────────────────────────
 
+## Called when the RECOVER_DATA.EXE desktop icon is clicked.
+## Shows the recovery panel (key input + submit button).
+func _on_recover_data_open() -> void:
+	_desktop_view.visible = false
+	_main_window.visible = true
+	_main_window.find_child("TitleLabel", true, false).text = "RECOVER_DATA.EXE"
+	_status_label.text = "Opening: RECOVER_DATA.EXE — File Restoration Utility..."
+	
+	$MainWindow/HBoxContainer/ContentPanel.visible = false
+	_data_entry_panel.visible = false
+	_recovery_panel.visible = true
+	_key_input.text = ""
+	_recovery_status.text = ""
+
 func _on_submit_decryption_key() -> void:
 	var key = _key_input.text.strip_edges()
 	if key == ARVID_DECRYPTION_KEY:
 		_recovery_status.text = "DECRYPTION SUCCESSFUL. Arvid Stenberg's logs restored."
 		is_arvid_log_1_unlocked = true
 		is_arvid_log_2_unlocked = true
-		_content_display.text = ARVID_LOG_01_SURVEY + "\n\n---\n\n" + ARVID_LOG_02_CRITICAL
+		_content_display.text = ARVID_LOG_01_SURVEY + "\n---\n\n" + ARVID_LOG_02_CRITICAL
 		$MainWindow/HBoxContainer/ContentPanel.visible = true
 		_recovery_panel.visible = false
 		_play_success_sound()
+		
+		# ─── SHOW EXECUTE OVERLOAD BUTTON ON DESKTOP ────────────────
+		# After decrypting Arvid's logs, the player gains access to the
+		# Anchor Grid Overload executable. This button triggers the
+		# overload on the deployed portable lamp.
+		_show_overload_button()
 	else:
 		_recovery_status.text = "INVALID KEY — Access Denied"
 		_play_error_sound()
+
+
+## Shows the EXECUTE OVERLOAD button on the desktop after Arvid's logs are decrypted.
+func _show_overload_button() -> void:
+	# Create the EXECUTE OVERLOAD button programmatically
+	var overload_btn = Button.new()
+	overload_btn.name = "OverloadExec"
+	overload_btn.text = "EXECUTE OVERLOAD"
+	overload_btn.size.x = 140
+	overload_btn.add_theme_font_size_override("font_size", 11)
+	# Position next to RECOVER_DATA.EXE icon
+	overload_btn.position = Vector2(160, 140)
+	overload_btn.pressed.connect(_on_execute_overload)
+	_desktop_view.add_child(overload_btn)
+	
+	_status_label.text = "New executable available: EXECUTE OVERLOAD"
+	print("[ComputerUI] EXECUTE OVERLOAD button added to desktop.")
+
+
+## Called when the EXECUTE OVERLOAD button is pressed.
+## Finds the portable lamp in the scene and triggers the overload.
+## The lamp must be deployed for the overload to work.
+func _on_execute_overload() -> void:
+	print("[ComputerUI] EXECUTE OVERLOAD button pressed!")
+	
+	# Find the portable lamp via the "portable_lamp" group
+	var lamp = get_tree().get_first_node_in_group("portable_lamp")
+	if not lamp:
+		_show_access_denied("ERROR: No portable light source detected in the grid.")
+		return
+	
+	# Check if the lamp is deployed
+	if not lamp.has_method("is_deployed") or not lamp.is_deployed():
+		_show_access_denied("ERROR: Portable light source is not deployed. Place it on the ground first.")
+		return
+	
+	# Check if the lamp is already overloaded
+	if lamp.has_method("is_overloaded") and lamp.is_overloaded:
+		_show_access_denied("OVERLOAD ALREADY ACTIVE. Grid is at maximum draw.")
+		return
+	
+	# Execute the overload
+	if lamp.has_method("trigger_overload"):
+		lamp.trigger_overload()
+		_play_success_sound()
+		_status_label.text = "OVERLOAD INITIATED — Grid at catastrophic draw."
+		
+		# Show status in content display
+		_desktop_view.visible = false
+		_main_window.visible = true
+		_content_display.text = "[b]ANCHOR GRID OVERLOAD INITIATED[/b]\n\n"
+		_content_display.text += "The portable light source is now drawing maximum voltage.\n"
+		_content_display.text += "The Entity has been paralyzed by the blinding light.\n\n"
+		_content_display.text += "[color=red]WARNING: Generator fuel is draining at catastrophic rate![/color]"
+		$MainWindow/HBoxContainer/ContentPanel.visible = true
+		_data_entry_panel.visible = false
+		_recovery_panel.visible = false
+	else:
+		_show_access_denied("ERROR: Grid interface error. Cannot execute overload protocol.")
