@@ -40,11 +40,26 @@ func _on_body_entered(body: Node3D) -> void:
 		if nm and "current_night" in nm and nm.current_night != 0:
 			return
 	
+	# ─── TUTORIAL MANAGER GATE ─────────────────────────────────────
+	# If this hint text matches a known tutorial mechanic_id, route through
+	# the TutorialManager instead of directly showing the hint. This ensures
+	# prerequisite chains (e.g. notebook must wait for movement) are respected.
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("trigger"):
+		# Walk through loaded tutorials to see if this hint_text matches one
+		for tutorial in tm.tutorials:
+			if tutorial and tutorial is TutorialData and tutorial.prompt_text == hint_text:
+				tm.trigger(tutorial.mechanic_id)
+				_triggered = true
+				print("[HintArea] Routed through TutorialManager: '%s' (id='%s')" % [hint_text, tutorial.mechanic_id])
+				return
+	
+	# Fallback: direct hint display (no matching tutorial found)
 	var hud = _find_hud()
 	if hud and hud.has_method("show_hint"):
 		hud.show_hint(hint_text, fade_in_delay)
 		_triggered = true
-		print("[HintArea] Triggered hint: '%s'" % hint_text)
+		print("[HintArea] Triggered hint (direct): '%s'" % hint_text)
 	else:
 		push_warning("[HintArea] Could not find HorrorHUD with show_hint() method.")
 

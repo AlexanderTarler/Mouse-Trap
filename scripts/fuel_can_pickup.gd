@@ -14,6 +14,8 @@ extends Area3D
 
 
 func _ready() -> void:
+	add_to_group("xray_fuel_can")
+	
 	# Ensure this Area3D can be detected by the interaction manager's raycast
 	collision_layer = 1
 	

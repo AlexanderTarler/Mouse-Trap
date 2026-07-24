@@ -30,6 +30,17 @@ func _ready() -> void:
 	add_to_group("hasselmus_nests")
 	add_to_group("NestNodes")
 	add_to_group("interactable_nests")
+	
+	# Add to x-ray highlight group for objective tracking
+	# Uses nest_label (e.g. "Nest Alpha") rather than nest_id (e.g. "nest_01")
+	# because the routine_manager documents nests by label, not ID.
+	match nest_label:
+		"Nest Alpha":
+			add_to_group("xray_nest_alpha")
+		"Nest Beta":
+			add_to_group("xray_nest_beta")
+		"Nest Gamma":
+			add_to_group("xray_nest_gamma")
 
 
 ## Called when the player presses E on this nest.
@@ -49,7 +60,7 @@ func interact() -> void:
 	# Notify RoutineManager
 	var rm = get_node_or_null("/root/RoutineManager")
 	if rm and rm.has_method("document_nest"):
-		rm.document_nest(nest_id)
+		rm.document_nest(nest_label)
 	
 	# Add documentation entry to the NotebookUI
 	_add_to_notebook()
@@ -95,7 +106,7 @@ func _show_documented_message() -> void:
 	if hud and hud.has_method("_show_event"):
 		var rm = get_node_or_null("/root/RoutineManager")
 		var count = rm.nests_documented if rm else 0
-		hud._show_event("Nest %s documented! (%d/3)" % [nest_id, count])
+
 
 
 func get_interact_text() -> String:

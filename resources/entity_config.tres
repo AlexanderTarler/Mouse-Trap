@@ -1,0 +1,51 @@
+[gd_resource type="Resource" format=3 uid="uid://d0jca132wbqjd"]
+
+[ext_resource type="Script" path="res://scripts/entity/entity_config.gd" id="1_r4bpg"]
+
+[resource]
+script = ExtResource("1_r4bpg")
+threshold_window_approach = 30.0
+threshold_breach = 65.0
+threshold_climax = 85.0
+threshold_retreat = 20.0
+initial_confidence = 15.0
+resting_confidence_base = 15.0
+confidence_decay_rate = 2.0
+night_confidence_bonus = 8.0
+hysteresis_margin = 5.0
+min_state_dwell_time = 1.0
+walk_speed = 2.0
+charge_speed_multiplier = 3.0
+flinch_sprint_multiplier = 1.5
+indoor_retreat_sprint_multiplier = 1.5
+enraged_speed_multiplier = 1.5
+vision_range_flashlight_on = 30.0
+vision_range_lit = 15.0
+vision_range_dark = 10.0
+vision_range_observe = 35.0
+hearing_radius_sprint = 20.0
+hearing_radius_walk = 10.0
+approach_arrival_distance = 2.5
+interaction_radius = 2.5
+fuse_sabotage_range = 2.5
+lamp_attack_range = 3.0
+path_update_interval = 0.3
+siege_min_duration = 5.0
+barricade_damage_interval = 2.0
+breach_delay = 5.0
+indoor_search_persistence = 30.0
+door_breach_cooldown = 15.0
+charge_stare_threshold = 1.5
+flinch_duration_min = 3.0
+flinch_duration_max = 5.0
+flinch_distance = 8.0
+flinch_confidence_penalty = 20.0
+window_peek_stare_min = 8.0
+window_peek_stare_max = 15.0
+observe_wait_high_min = 2.0
+observe_wait_high_max = 4.5
+observe_wait_low_min = 4.0
+observe_wait_low_max = 8.0
+window_recency_penalty = 30.0
+room_avoidance_penalty = 500.0
+max_recent_windows = 3

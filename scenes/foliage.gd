@@ -1,54 +1,20 @@
 extends MultiMeshInstance3D
 
-@export_subgroup("Scatter Bounds")
-@export var min_bounds: Vector2 = Vector2(-50.0, -50.0) # Top-left X and Z limits
-@export var max_bounds: Vector2 = Vector2(50.0, 50.0)   # Bottom-right X and Z limits
-
-@export_subgroup("Grass Variation")
-@export var min_scale: float = 0.75
-@export var max_scale: float = 1.35
+## ─── PERFORMANCE: Visibility Range Culling ───────────────────────────────────
+## The Godot 4 visibility_range system automatically culls meshes from rendering
+## when they are beyond this distance from the camera. Without this, every blade
+## of grass in the entire forest is rendered every frame.
+## 
+## For a PSX-style dense forest, grass culling at 40m is imperceptible because
+## the grass blends into the ground texture at that distance anyway.
+##
+## NOTE: visibility_range_end and visibility_range_fade_mode are inherited from
+## GeometryInstance3D, so we do NOT redeclare them as @export. They are set
+## directly in _ready().
 
 func _ready() -> void:
-	# PSX Optimization: Foliage does NOT cast real-time shadows (decimates framerate)
-	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	# PSX Optimization: Distance culling for grass — invisible beyond 35 meters
-	visibility_range_end = 35.0
-	visibility_range_end_margin = 5.0
-	
-	# Fallback check to prevent engine exceptions if the resource isn't set up
-	if not multimesh:
-		push_error("MultiMesh resource is missing from this node!")
-		return
-	
-	# Duplicate the MultiMesh resource so runtime changes don't serialize back to the .tscn
-	multimesh = multimesh.duplicate()
-		
-	# Randomize the seed generation
-	randomize()
-	
-	# Loop through every pre-allocated instance index 
-	for i in range(multimesh.instance_count):
-		var xf := Transform3D()
-		
-		# 1. Calculate a random position across the X and Z ground planes
-		var random_x: float = randf_range(min_bounds.x, max_bounds.x)
-		var random_z: float = randf_range(min_bounds.y, max_bounds.y)
-		
-		# Optional Raycast: If your ground is uneven or bumpy, you'll want to 
-		# snap the Y coordinate to the height of the terrain. For now, we assume flat 0.0 ground:
-		var target_position := Vector3(random_x, 0.0, random_z)
-		
-		# 2. Add structural variety: Give each instance a random rotation around the Y axis
-		# This avoids a repetitive grid-like appearance
-		var random_rotation: float = randf_range(0.0, TAU) # TAU is 360 degrees in radians
-		xf = xf.rotated(Vector3.UP, random_rotation)
-		
-		# 3. Add biological variety: Slightly scale each individual patch up or down
-		var random_scale: float = randf_range(min_scale, max_scale)
-		xf = xf.scaled(Vector3(random_scale, random_scale, random_scale))
-		
-		# 4. Inject the calculated position coordinates into our temporary matrix
-		xf.origin = target_position
-		
-		# 5. Commit this individual matrix setup directly to the GPU's instance buffer
-		multimesh.set_instance_transform(i, xf)
+	# Apply visibility range culling at runtime.
+	# Grass beyond 40m from the camera is not rendered.
+	# Fade mode = SELF (smooth alpha fade-out) to avoid pop-in.
+	self.visibility_range_end = 40.0
+	self.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF

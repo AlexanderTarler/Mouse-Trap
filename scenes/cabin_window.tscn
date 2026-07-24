@@ -14,10 +14,10 @@ size = Vector3(1, 1, 0.2)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yfnpk"]
 transparency = 1
-albedo_color = Color(0.20250002, 0.27, 0.27, 0.39215687)
-metallic = 0.1
+albedo_color = Color(0.25490198, 0.33333334, 0.33333334, 0.21176471)
+metallic = 0.05
 metallic_specular = 0.31
-roughness = 0.1
+roughness = 0.2
 normal_enabled = true
 
 [sub_resource type="BoxMesh" id="BoxMesh_onr5d"]
@@ -40,16 +40,13 @@ shape = SubResource("BoxShape3D_xje28")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1398965, 0)
 
 [node name="Plank1" parent="BarricadePlanks" unique_id=779850049 instance=ExtResource("1_uo6og")]
-transform = Transform3D(0.9986577, -0.0005785492, -0.051792473, -0.0517956, -0.011154849, -0.9985955, 0, 0.99993783, -0.011169843, 0, 0.29102856, 0)
-visible = false
+transform = Transform3D(1, -3.946562e-16, 3.4501942e-23, 0, -4.371139e-08, -2, 3.946562e-16, 1, -8.742278e-08, 0, 0.5339465, 0)
 
 [node name="Plank2" parent="BarricadePlanks" unique_id=206261751 instance=ExtResource("1_uo6og")]
-transform = Transform3D(0.9998021, 0.00022222864, 0.019894123, 0.019895464, -0.011167632, -0.9997398, 3.1543082e-10, 0.99993783, -0.011169844, 0, 0.014867514, 0)
-visible = false
+transform = Transform3D(1, 8.1543364e-16, -7.128747e-23, 0, -4.371139e-08, -2, -8.1543364e-16, 1, -8.742278e-08, 0, 0.14803725, 0)
 
 [node name="Plank3" parent="BarricadePlanks" unique_id=1454939823 instance=ExtResource("1_uo6og")]
-transform = Transform3D(0.9996222, -0.00030700862, -0.02748382, -0.02748546, -0.0111656245, -0.99956, 3.154308e-10, 0.99993783, -0.011169844, 0, -0.35229316, 0)
-visible = false
+transform = Transform3D(1, -6.6603164e-16, 5.8226335e-23, 0, -4.371139e-08, -2, 6.6603164e-16, 1, -8.742278e-08, 0, -0.22321595, 0)
 
 [node name="WindowMarker" type="Marker3D" parent="." unique_id=1542265065 groups=["WindowMarkers"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.6295091, -1.4486231)
@@ -108,5 +105,5 @@ stream = ExtResource("4_hammer")
 [node name="GlassCrunchSound" type="AudioStreamPlayer3D" parent="." unique_id=-1294967293]
 stream = ExtResource("3_break")
 
-[node name="IndoorBreachWaypoint" type="Marker3D" parent="." groups=["DoorBreachWaypoint"]]
+[node name="IndoorBreachWaypoint" type="Marker3D" parent="." unique_id=1704834887 groups=["DoorBreachWaypoint"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.5)

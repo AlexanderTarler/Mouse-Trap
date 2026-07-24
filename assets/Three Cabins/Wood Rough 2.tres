@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://c7hm6v8ofmrbf"]
+
+[ext_resource type="Texture2D" uid="uid://57bkaakmfwis" path="res://assets/Three Cabins/textures/Rough Wood.png" id="1_x4lwq"]
+
+[resource]
+resource_name = "Wood Rough 2"
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_x4lwq")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0

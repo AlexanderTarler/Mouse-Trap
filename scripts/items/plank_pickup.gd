@@ -8,6 +8,8 @@ extends RigidBody3D
 
 
 func _ready() -> void:
+	add_to_group("xray_planks")
+	
 	# If no item_data assigned, create a default one
 	if not item_data:
 		item_data = ItemData.new()

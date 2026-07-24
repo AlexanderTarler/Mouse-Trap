@@ -50,6 +50,39 @@ var _anti_flap_cooldown: float = 0.0
 ## immediate re-entry into the same state.
 var _last_completed_state: int = -1
 
+## ─── HYSTERESIS TRACKING (H3: Oscillation Prevention) ──────────────────────────
+## Tracks the game time (seconds) when the current state was entered.
+## Used by the minimum state dwell time guard. Reset to Time.get_ticks_msec()/1000
+## when evaluate_master_state() transitions to a different state.
+var _state_entry_time: float = 0.0
+
+## Tracks the confidence value at the moment the current state was entered.
+## Used by confidence hysteresis: the Entity must drop below
+## (threshold - hysteresis_margin) before the Director de-escalates.
+## Prevents 60fps state flapping when confidence hovers at threshold boundaries.
+var _state_entry_confidence: float = -1.0
+
+## ─── NAVIGATION QUERY CACHE (H4: Performance) ─────────────────────────────────
+## Cached result of get_player_room() for the current evaluation frame.
+## Refreshed once at the top of evaluate_master_state() and reused across all
+## tiers. Eliminates 3 redundant navigation module queries per frame.
+var _cached_player_room: String = ""
+
+## Cached result of is_player_lit_by_static_lights() for the current frame.
+var _cached_player_lit: bool = false
+
+## Timer for throttling navigation query cache refreshes (seconds).
+## Room changes don't happen at 60Hz — 0.5s refresh is more than sufficient.
+var _nav_cache_timer: float = 0.0
+
+## Refresh interval for the navigation query cache.
+const NAV_CACHE_INTERVAL: float = 0.5
+
+## Cached NightManager reference — resolved once per frame in evaluate_master_state()
+## to avoid repeated get_node_or_null("/root/NightManager") lookups across tiers.
+## Set at the top of evaluate_master_state() and read by tier methods that need it.
+var _cached_night_manager: Node = null
+
 ## ─── PERIODIC DEBUG LOG ──────────────────────────────────────────────────────
 ## Timer that accumulates delta each frame. When it reaches 3.0 seconds, the
 ## Director prints a comprehensive debug log of all Blackboard data, confidence,
@@ -61,6 +94,41 @@ var _debug_log_timer: float = 0.0
 ## EntityAI is registered globally via class_name EntityAI in entity_ai.gd.
 ## No preload needed — reference EntityAI.State.X directly.
 
+## ─── PERFORMANCE: Pre-cached state keys ──────────────────────────────────────
+## Avoids EntityAI.State.keys() heap allocation every frame.
+## Populated in _ready().
+var _state_keys: Array = []
+
+## ─── PERFORMANCE: Debug trace gating ─────────────────────────────────────────
+## Set to false in production to eliminate all print() overhead from hot paths.
+## GODOT 4 NOTE: Const boolean lets the editor dead-code-eliminate guarded blocks
+## when this is set to false, resulting in zero runtime overhead for printing.
+const TRACE_DIRECTOR_ENABLED: bool = false
+
+## ─── PERFORMANCE: Director evaluation throttling ─────────────────────────────
+## The FSM doesn't need to re-evaluate state decisions 60 times per second.
+## 20 Hz (every 3rd physics frame) is more than sufficient for a horror game.
+## Threshold: increments every physics frame, evaluate when >= INTERVAL.
+var _director_tick_counter: int = 0
+const DIRECTOR_TICK_INTERVAL: int = 3  # 20 Hz at 60 fps physics
+
+## Trace print helper. Only formats and outputs when TRACE_DIRECTOR_ENABLED is true.
+## Wraps all [TRACE_DIRECTOR] prints so they can be globally disabled.
+func _trace(msg: String) -> void:
+	if TRACE_DIRECTOR_ENABLED:
+		print(msg)
+
+## Pre-cache STATE_KEYS to avoid EntityAI.State.keys() heap allocation.
+## Called once at startup. The cached array is used by _state_key(state)
+## instead of calling .keys() which allocates a new Array every time.
+func _ready() -> void:
+	_state_keys = EntityAI.State.keys()
+
+## Returns the human-readable name of a state enum value.
+## Uses the pre-cached _state_keys array instead of EntityAI.State.keys()
+## which allocates a new Array on every call (heap allocation → GC pressure).
+func _state_key(state: int) -> String:
+	return _state_keys[state] if state >= 0 and state < _state_keys.size() else "UNKNOWN"
 ## ─── INDOOR SEARCH PERSISTENCE ───────────────────────────────────────────────
 ## Timer that forces the Entity to stay in INDOOR_SEARCH for at least 30 seconds
 ## after breaching a window. This prevents the "Breach → Search → Give Up →
@@ -90,6 +158,18 @@ const INDOOR_SEARCH_PERSISTENCE_DURATION: float = 10.0
 ## Reset to a new random value whenever thinks_player_is_inside flips back to
 ## true (player was heard or sighted indoors again).
 var _outside_confirmation_timer: float = 0.0
+
+## ─── NIGHT 2.2 VAN SEQUENCE RESOLVED ──────────────────────────────────────
+## When true, the Night 2.2 van sequence has been fully resolved — the player
+## successfully entered the cabin (room != "Outside"). Once set, the ENTIRE
+## Van Sequence Persistent Lock (Guard A) is permanently bypassed. This
+## prevents the STALK↔OBSERVE_FROM_TREELINE ping-pong that occurred when the
+## player briefly stepped into the HallRoom but then moved to the Bedroom
+## (which also reports "Outside" in some room detectors).
+##
+## Set to true when Guard A detects player_room != "Outside".
+## Remains true for the rest of this game session.
+var _night_2_van_sequence_resolved: bool = false
 
 ## Whether the confirmation timer has been initialized with a random value.
 ## Set to false when thinks_player_is_inside flips to false, triggering a new
@@ -163,7 +243,13 @@ func _print_debug_dump(entity: CharacterBody3D) -> void:
 ## Returns: EntityAI.State enum value
 func evaluate_master_state(entity: CharacterBody3D) -> int:
 	var state = entity.get_state()
-		
+	
+	# ─── CACHE NIGHT MANAGER ──────────────────────────────────────────────
+	# Resolve the NightManager once at the top of this function so all tier
+	# methods can read _cached_night_manager instead of calling expensive
+	# get_node_or_null("/root/NightManager") up to 6 times per frame.
+	_cached_night_manager = entity.get_night_manager() if entity.has_method("get_night_manager") else null
+	
 	# ─── INDOOR SEARCH PERSISTENCE TIMER DECAY ──────────────────────────
 	# Decrement the indoor search persistence timer each frame so it counts
 	# down from 30.0 to 0.0 while the Entity is in INDOOR_SEARCH.
@@ -257,25 +343,39 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	#   This allows the Entity to leave STALK and start approaching the
 	#   cabin via windows/doors instead of endlessly stalking outside.
 	#   Only CHARGE/FLINCH override it while the lock is active.
-	var night_mgr_for_lock = entity.get_node_or_null("/root/NightManager")
-	if night_mgr_for_lock and night_mgr_for_lock.is_van_sequence_active:
+	if _cached_night_manager and _cached_night_manager.is_van_sequence_active:
+		# ─── PERMANENT RESOLUTION CHECK ─────────────────────────────
+		# Once the player has successfully entered the cabin (any room
+		# other than "Outside"), this flag is set to true. The ENTIRE
+		# van sequence lock is permanently bypassed for the rest of the
+		# session. This prevents the STALK↔OBSERVE ping-pong that occurs
+		# when the player briefly enters the HallRoom then moves to the
+		# Bedroom (which some room detectors report as "Outside").
+		if _night_2_van_sequence_resolved:
+			return -1  # Fall through to Tier 3+ evaluations
+		
 		# ─── PLAYER ENTERED CABIN CHECK ──────────────────────────
 		# If the player has entered the cabin (room != "Outside"),
-		# release the van sequence lock so the Entity can transition
-		# out of STALK and start approaching the cabin.
+		# release the van sequence lock permanently. The Entity can
+		# now transition out of STALK naturally via Tier 3.
+		#
+		# Uses get_player_room() which covers ALL indoor rooms:
+		# HallRoom, LivingRoom, ComputerRoom — not just HallRoom.
 		var nav = entity.get_navigation_module()
 		var player_room: String = "Outside"
 		if nav and nav.has_method("get_player_room"):
 			player_room = nav.get_player_room()
 		if player_room != "Outside":
-			# Player is inside the cabin — release the van lock.
-			# Don't force STALK, fall through to Tier 3+ evaluations
-			# which will naturally transition to APPROACH_WINDOW or
-			# OBSERVE based on confidence.
-			pass  # fall through
+			# Player is inside the cabin — permanently resolve the
+			# van sequence. The _night_2_van_sequence_resolved flag
+			# ensures this block NEVER evaluates again, preventing
+			# the Bedroom → "Outside" → re-lock oscillation.
+			_night_2_van_sequence_resolved = true
+			print("[TRACE_DIRECTOR] NIGHT 2.2 VAN SEQUENCE RESOLVED! Player room='%s'. Lock permanently released." % player_room)
+			return -1  # Fall through to Tier 3+ evaluations
 		else:
 			if state != EntityAI.State.STALK and state != EntityAI.State.CHARGE and state != EntityAI.State.FLINCH:
-				print("[TRACE_DIRECTOR] VAN SEQUENCE PERSISTENT LOCK: Forcing STALK (was %s)." % EntityAI.State.keys()[state])
+				_trace("[TRACE_DIRECTOR] VAN SEQUENCE PERSISTENT LOCK: Forcing STALK (was %s)." % _state_key(state))
 				return EntityAI.State.STALK
 			# State is already STALK, CHARGE, or FLINCH — preserve it.
 			# Returning the current state blocks ALL lower tiers (3-8) from
@@ -478,7 +578,7 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 			print("[TRACE_DIRECTOR] TIER 8 BASELINE: INDOOR_SEARCH (entity physically inside). Keeping INDOOR_SEARCH.")
 			return EntityAI.State.INDOOR_SEARCH
 	
-	print("[TRACE_DIRECTOR] TIER 8 BASELINE: Returning OBSERVE_FROM_TREELINE (state=%s, persistence=%.1f)" % [EntityAI.State.keys()[state], _indoor_search_persistence_timer])
+	_trace("[TRACE_DIRECTOR] TIER 8 BASELINE: Returning OBSERVE_FROM_TREELINE (state=%s, persistence=%.1f)" % [_state_key(state), _indoor_search_persistence_timer])
 	return EntityAI.State.OBSERVE_FROM_TREELINE
 
 
@@ -807,19 +907,33 @@ func _tier_1_sabotage(entity: CharacterBody3D, state: int) -> int:
 ##
 ## Returns: The target state, or -1 if no night rule applies.
 func _tier_2_night_rules(entity: CharacterBody3D, state: int) -> int:
-	var night_manager = entity.get_node_or_null("/root/NightManager")
-	var current_night: int = night_manager.current_night if night_manager else 1
+	# Use the cached NightManager reference (set at the top of evaluate_master_state).
+	var current_night: int = _cached_night_manager.current_night if _cached_night_manager else 1
 	
 	# ─── VAN SEQUENCE NARRATIVE OVERRIDE ──────────────────────────
 	# During the Night 2.2 van sequence (car alarm → player investigates),
 	# the Entity MUST stay in STALK mode. It cannot observe, retreat, or
 	# enter any passive state. This is a hard narrative gate — the Entity
 	# is actively hunting the player at the van.
-	if night_manager and night_manager.is_van_sequence_active:
-		if state != EntityAI.State.STALK and state != EntityAI.State.CHARGE and state != EntityAI.State.FLINCH:
-			print("[TRACE_DIRECTOR] TIER 2 NIGHT RULES: Van sequence active. Forcing STALK (was %s)." % EntityAI.State.keys()[state])
-			return EntityAI.State.STALK
+	#
+	# PERMANENT RESOLUTION CHECK:
+	# If the van sequence has been resolved (player entered the cabin),
+	# skip this override entirely. The _night_2_van_sequence_resolved flag
+	# was set by Guard A when the player's room was not "Outside".
+	if _cached_night_manager and _cached_night_manager.is_van_sequence_active:
+		if not _night_2_van_sequence_resolved:
+			if state != EntityAI.State.STALK and state != EntityAI.State.CHARGE and state != EntityAI.State.FLINCH:
+				_trace("[TRACE_DIRECTOR] TIER 2 NIGHT RULES: Van sequence active. Forcing STALK (was %s)." % _state_key(state))
+				return EntityAI.State.STALK
 	
+	# ─── NIGHT 1 RESTRICTION ─────────────────────────────────────
+	# Night 1: Entity can only observe from treeline (no aggressive states).
+	# IMPORTANT: DORMANT is the daytime/despawned state — we MUST allow it
+	# so the Entity can be hidden during the day. Without this exemption,
+	# the Night 1 check would force the Entity out of DORMANT into
+	# OBSERVE_FROM_TREELINE every frame, creating a 60fps DORMANT↔OBSERVE loop.
+	# The DORMANT state is also used when the Entity is intentionally hidden
+	# (e.g., Night 1 car alarm narrative, daytime hours).
 	if current_night == 1:
 		if state != EntityAI.State.DORMANT and state != EntityAI.State.OBSERVE_FROM_TREELINE and state != EntityAI.State.RETREAT:
 			return EntityAI.State.OBSERVE_FROM_TREELINE
@@ -962,6 +1076,17 @@ func _tier_3_active_aggression(entity: CharacterBody3D, state: int) -> int:
 		var sensory = entity.get_sensory_module()
 		var can_see_player = sensory and sensory.has_method("can_entity_see_player") and sensory.can_entity_see_player()
 		if not can_see_player:
+			# ─── VAN SEQUENCE OVERRIDE ───────────────────────────────
+			# During Night 2.2 van sequence, the Entity must NEVER enter
+			# OBSERVE_FROM_TREELINE through this path — doing so creates
+			# a 60fps oscillation: Tier 3 returns OBSERVE, then Tier 2
+			# (Night Rules) immediately forces back to STALK because
+			# is_van_sequence_active is true. This guard prevents the
+			# confirmation timer from triggering OBSERVE during the van
+			# sequence, matching all other van sequence bypasses.
+			if _cached_night_manager and _cached_night_manager.is_van_sequence_active:
+				return EntityAI.State.STALK
+			
 			# ─── OUTSIDE CONFIRMATION GATE ──────────────────────────────
 			# Even when hunting, the Entity must wait for the confirmation
 			# timer before entering STALK. This prevents the Entity from
@@ -1037,8 +1162,7 @@ func _tier_3_active_aggression(entity: CharacterBody3D, state: int) -> int:
 		# STALK immediately — the narrative overrides all confirmation
 		# logic. This prevents the "Entity toggles between STALK and
 		# OBSERVE every frame" bug where the timer keeps re-initializing.
-		var night_manager = entity.get_node_or_null("/root/NightManager")
-		if night_manager and night_manager.is_van_sequence_active:
+		if _cached_night_manager and _cached_night_manager.is_van_sequence_active:
 			print("[TRACE_DIRECTOR] VAN SEQUENCE: Bypassing outside confirmation timer. Forcing STALK.")
 			return EntityAI.State.STALK
 		
@@ -1077,8 +1201,7 @@ func _tier_3_active_aggression(entity: CharacterBody3D, state: int) -> int:
 		# regardless of lighting conditions, player location, or any
 		# other factor. This is a narrative override — the car alarm
 		# sequence demands the Entity aggressively pursue the player.
-		var night_manager = entity.get_node_or_null("/root/NightManager")
-		if night_manager and night_manager.is_van_sequence_active:
+		if _cached_night_manager and _cached_night_manager.is_van_sequence_active:
 			print("[TRACE_DIRECTOR] VAN SEQUENCE: Preserving STALK. Lighting and player location checks bypassed.")
 			return EntityAI.State.STALK
 		

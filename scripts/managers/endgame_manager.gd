@@ -24,6 +24,7 @@ signal ending_sequence_completed(ending: Ending)
 
 ## The three possible endings the player can achieve.
 enum Ending {
+	NONE = -1,       # No ending triggered yet (default state)
 	DEATH,           # Caught by the Entity (BAD)
 	ESCAPE_MEDIOCRE, # Repaired the van and escaped, but did NOT destroy the Totem
 	ESCAPE_GOOD,     # Repaired the van AND destroyed the Totem before escaping
@@ -37,7 +38,8 @@ const ENDING_NAMES: Dictionary = {
 }
 
 ## The ending that was triggered (NONE until one fires).
-var current_ending: Ending = -1 as Ending
+## Default to NONE (enum value 0) instead of -1 to avoid enum cast warning.
+var current_ending: Ending = Ending.NONE
 
 ## Whether an ending has been triggered (prevents double-triggers).
 var is_ending_active: bool = false
@@ -348,7 +350,7 @@ func has_ending_triggered(ending: Ending) -> bool:
 ## Resets the EndgameManager to its initial state.
 ## Called when the game is restarted from the main menu.
 func reset() -> void:
-	current_ending = -1 as Ending
+	current_ending = Ending.NONE
 	is_ending_active = false
 	is_sequence_playing = false
 	print("[EndgameManager] Reset to initial state.")

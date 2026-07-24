@@ -27,6 +27,16 @@ func _ready() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause_menu"):
+		# ─── COMPUTER UI PRIORITY ─────────────────────────────────────────
+		# If the computer UI is open, pressing Escape closes it instead of
+		# toggling the pause menu. This prevents the player from accidentally
+		# pausing the game while using the computer. The cursor remains in
+		# captured mode when the computer is closed (ComputerUI handles this).
+		if _close_computer_ui():
+			if _options_menu and _options_menu.visible:
+				_options_menu.hide_menu()
+			get_viewport().set_input_as_handled()
+			return
 		# ─── DEBUG CONSOLE PRIORITY ───────────────────────────────────────
 		# If the debug console is open, pressing Escape closes it instead of
 		# toggling the pause menu. This prevents the player from accidentally
@@ -63,6 +73,38 @@ func _find_debug_console_recursive(node: Node) -> Node:
 		if result:
 			return result
 	return null
+
+## Finds and closes the computer UI if it's open.
+## Returns true if the computer was found and closed, false otherwise.
+func _close_computer_ui() -> bool:
+	# Check multiple possible paths for the ComputerUI
+	var computer_ui = get_node_or_null("/root/CottageHorror/ComputerUI")
+	if not computer_ui:
+		computer_ui = get_node_or_null("/root/Main/ComputerUI")
+	if not computer_ui:
+		# Search the scene root recursively as a fallback
+		var scene = get_tree().current_scene
+		if scene:
+			computer_ui = _find_computer_ui_recursive(scene)
+	
+	if computer_ui and "is_open" in computer_ui and computer_ui.is_open:
+		if computer_ui.has_method("close_computer"):
+			computer_ui.close_computer()
+			print("[PauseMenu] Computer UI closed via Escape key.")
+			return true
+	return false
+
+
+## Recursively searches a node and its children for the ComputerUI script.
+func _find_computer_ui_recursive(node: Node) -> Node:
+	if "is_open" in node:
+		return node
+	for child in node.get_children():
+		var result = _find_computer_ui_recursive(child)
+		if result:
+			return result
+	return null
+
 
 ## Finds and closes the debug console if it's open and visible.
 ## Returns true if a console was found and closed, false otherwise.

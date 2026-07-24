@@ -347,13 +347,11 @@ func _on_sit_tween_completed() -> void:
 			_computer_ui.computer_closed.disconnect(_on_computer_closed)
 		_computer_ui.computer_closed.connect(_on_computer_closed)
 	
-	# ─── DAY 1 ONBOARDING: PHASE 2 — COMPUTER USED ──────────────────────
-	# Notify RoutineManager that the player has successfully used the computer.
-	# This marks Phase 2 as complete, allowing the player to proceed to Phase 3
-	# (lock the door and go to bed).
-	var rm = get_node_or_null("/root/RoutineManager")
-	if rm and rm.has_method("on_computer_used"):
-		rm.on_computer_used()
+	# ─── REMOVED: Day 1 onboarding `on_computer_used()` call.
+	# This incorrectly fired when the PC UI opened (before login), causing
+	# the "Get planks" objective to appear too early.
+	# The correct trigger is in computer_ui.gd:_on_login_submit() which only
+	# fires when the player actually logs in as LUND with the correct password.
 
 
 

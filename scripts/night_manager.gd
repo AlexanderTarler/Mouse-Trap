@@ -592,10 +592,25 @@ func _on_game_day_started() -> void:
 	if not is_night_active:
 		print("[NightManager] Ignoring spurious day_started — no night is active.")
 		return
+	
+	# ─── SAVE ORIGINAL NIGHT BEFORE END ──────────────────────────────
+	# end_current_night() bumps current_night by 1 after emitting
+	# night_ended. We need the original value to determine which night
+	# just ended for transition-specific logic like nest highlighting.
+	var _ended_night = current_night
+	
 	end_current_night()
 
 	if current_night >= 3:
 		_apply_dawn_exhaustion()
+	
+	# ─── DAY 2 START: Trigger nest highlighting ──
+	# When Night 1 ends and Day 2 begins, notify RoutineManager
+	# so it can schedule the nest alpha highlight after 20 seconds.
+	if _ended_night == 1:
+		var rm = get_node_or_null("/root/RoutineManager")
+		if rm and rm.has_method("on_day2_started"):
+			rm.on_day2_started()
 
 
 ## ─── DAY 3+ DAWN EXHAUSTION ────────────────────────────────────────────────
@@ -789,23 +804,37 @@ func _check_time_events() -> void:
 				_trigger_event("final_confrontation")
 
 
-## Synchronizes GameTime to the start of the night phase (cycle_progress = 0.5).
+## Synchronizes GameTime to the start of the night phase.
+## Night 1 starts at 00:00 (dusk, progress=0.5) and ticks normally.
+## When the clock reaches 02:00 (progress=0.7), it automatically freezes
+## so the peeker and car alarm narrative play out. This gives the player
+## a natural dusk-to-night transition instead of an instant pitch-black sky.
+##
+## CLOCK MATH:
+##   Night starts at progress 0.5 (00:00). 02:00 = 0.7 progress.
+##   Each minute of real time advances the night by 0.1 progress.
 func _force_game_time_to_night() -> void:
 	var gt = get_node_or_null("/root/GameTime")
 	if not gt:
 		return
 	
+	# ─── START AT DUSK ─────────────────────────────────────────────
+	# Night begins at 00:00 (progress=0.5). The clock ticks forward
+	# normally until it reaches 02:00 (progress=0.7), then pauses.
 	gt.cycle_progress = 0.5
-	gt._elapsed = gt.cycle_progress * gt.cycle_duration
+	gt._elapsed = 0.5 * gt.cycle_duration
 	gt.is_day = false
 	gt._was_day = false
 	
-	if gt.is_time_paused:
-		gt.is_time_paused = false
-		gt.is_running = true
+	# ─── LET TIME TICK NORMALLY ─────────────────────────────────────
+	# The clock advances in game_time.gd's _process() tick at 0.2s intervals.
+	# When it reaches 0.7 (02:00), game_time.gd will automatically pause
+	# via the _night_1_freeze_trigger check we add below.
+	gt.is_time_paused = false
+	gt.is_running = true
 	
-	gt.time_changed.emit(gt.cycle_progress)
-	print("[NightManager] GameTime synced to night phase (progress=0.5).")
+	gt.time_changed.emit(0.5)
+	print("[NightManager] GameTime synced to night phase (progress=0.5 = 00:00 dusk). Time is RUNNING.")
 
 
 func _trigger_event(event_name: String) -> void:
@@ -858,41 +887,69 @@ func trigger_first_chase() -> void:
 func advance_night() -> void:
 	print("[NightManager] advance_night() called. Advancing from Night %d..." % current_night)
 	
-	var gt: Node = get_node_or_null("/root/GameTime")
-	if gt:
-		gt.cycle_progress = 0.0
-		gt._elapsed = 0.0
-		gt.is_day = true
-		gt._was_day = true
-		gt.is_time_paused = false
-		gt.is_running = true
-		gt.time_changed.emit(0.0)
-		print("[NightManager] GameTime forced to cycle_progress=0.0 for new day start.")
-	is_time_paused = false
+	# ─── SAVE NIGHT NUMBER BEFORE BRANCH ─────────────────────────────
+	# end_current_night() bumps current_night by 1, and the else branch
+	# calls it. We need the original value to determine the new day's
+	# target progress. Save it here BEFORE the branch.
+	var _original_night: int = current_night
+	
+	# ─── PHASE TRANSITION ──────────────────────────────────────────────
+	# Emit the night_ended signal FIRST so all listeners (RoutineManager,
+	# EntityDirector, etc.) can react to the transition. Only THEN do we
+	# set the authoritative time for the new day. This prevents signal
+	# handlers from clobbering the time reset.
 	
 	if current_night == 0:
+		# Transition: Day 1 → Day 2 (survived Night 1)
 		current_night = 1
 		is_day_active = true
 		night_ended.emit(1)
 		print("[NightManager] Transitioned from Day 1 to Day 2 (current_night = 1). Night 1 survived!")
-		
-		gt = get_node_or_null("/root/GameTime")
-		if gt:
-			gt.cycle_progress = 0.0
-			gt._elapsed = 0.0
-			gt.is_day = true
-			gt._was_day = true
-			gt.is_time_paused = false
-			gt.is_running = true
-			gt.time_changed.emit(0.0)
-			print("[NightManager] Day 2 time forced to cycle_progress=0.0.")
 	else:
 		end_current_night()
+	
+	# ─── TRIGGER NEST HIGHLIGHTING ON DAY 2 ──────────────────────────
+	# _original_night == 1 means Night 1 just ended and Day 2 is starting.
+	# This must run AFTER the if/else branch because:
+	#   - The natural cycle path sets current_night to 1 via _on_game_night_started,
+	#     so the `current_night == 0` branch is NEVER taken during real gameplay.
+	#   - The else branch calls end_current_night() which bumps current_night to 2.
+	#   - _original_night was saved BEFORE the branch, so it correctly holds 1.
+	# This single location covers BOTH code paths (first-time and natural) and
+	# ensures on_day2_started() fires exactly when Night 1 transitions to Day 2.
+	if _original_night == 1:
+		var _rm_day2: Node = get_node_or_null("/root/RoutineManager")
+		if _rm_day2 and _rm_day2.has_method("on_day2_started"):
+			_rm_day2.on_day2_started()
+	
+	# ─── AUTHORITATIVE TIME RESET ─────────────────────────────────────
+	# Set the new day's start time in a SINGLE block, after all signals
+	# have been processed.
+	#   - Day 2 (original_night == 0 or 1): cycle_progress = 0.0 (00:00)
+	#   - Day 3+ (original_night >= 2): cycle_progress = 0.125 (morning)
+	# We use _original_night (saved BEFORE the branch) because the branch
+	# may have already bumped current_night via end_current_night().
+	is_time_paused = false
+	var gt: Node = get_node_or_null("/root/GameTime")
+	if gt:
+		var target_progress: float = 0.0 if _original_night <= 1 else 0.125
 		
-		gt = get_node_or_null("/root/GameTime")
-		if gt and gt.has_method("set_progress"):
-			gt.set_progress(0.125)
-			print("[NightManager] Time set to morning (progress: 0.125).")
+		gt.cycle_progress = target_progress
+		gt._elapsed = gt.cycle_progress * gt.cycle_duration
+		gt.is_day = true
+		gt._was_day = true
+		gt.is_time_paused = false
+		gt.is_running = true
+		gt.time_changed.emit(target_progress)
+		print("[NightManager] Day %d time forced to cycle_progress=%.3f. (original_night=%d)" % [current_night, target_progress, _original_night])
+	
+	# ─── RESET ROUTINEMANAGER OBJECTIVE HISTORY ──────────────────────
+	# Clear the Day 1 gating state so the notebook doesn't repopulate
+	# with "Go to bed" or other stale Day 1 objectives on Day 2+.
+	var rm: Node = get_node_or_null("/root/RoutineManager")
+	if rm and rm.has_method("reset_objective_history"):
+		rm.reset_objective_history()
+		print("[NightManager] RoutineManager objective history reset for new day.")
 	
 	print("[NightManager] Advanced to Day %d. Preparing for Night %d..." % [current_night, current_night + 1])
 

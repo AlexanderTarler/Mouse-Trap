@@ -28,6 +28,28 @@ extends Node
 ## Total duration of one full day/night cycle in seconds (10 minutes = 600s)
 @export var cycle_duration: float = 600.0
 
+## --- Night darkness tuning (Inspector-editable) ---
+## Ambient light energy at full night. Lower = darker.
+@export var night_ambient_energy: float = 0.025
+## Ambient light color at full night.
+@export var night_ambient_color: Color = Color(0.02, 0.02, 0.04)
+## Moon light energy multiplier at full night. Lower = darker.
+@export var night_moon_energy_mult: float = 0.1
+## Tonemap exposure at full night. Lower = darker, but may crush blacks.
+@export var night_tonemap_exposure: float = 0.85
+
+## --- Night fog tuning (Inspector-editable) ---
+## Base fog density at night. Higher = thicker fog.
+@export var night_fog_density: float = 0.025
+## Base volumetric fog density at night. Higher = thicker volumetric fog.
+@export var night_vfog_density: float = 0.012
+## Minimum fog fluctuation multiplier (0.0-1.0). Higher = fog never fully clears at night.
+@export var night_fog_fluctuation_min: float = 0.6
+## Maximum fog fluctuation multiplier. Higher = thicker fog peaks.
+@export var night_fog_fluctuation_max: float = 1.5
+## Night fog color.
+@export var night_fog_color: Color = Color(0.02, 0.02, 0.04)
+
 ## The ProceduralSkyMaterial to modify at runtime
 var _sky_material: ProceduralSkyMaterial
 
@@ -318,12 +340,12 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 		_cached_sun_angle_max = sun_angle_max
 	
 	# --- Ambient light: smoothly dim at night ---
-	var ambient_energy: float = lerpf(0.175, 0.7, p_day_factor)
+	var ambient_energy: float = lerpf(night_ambient_energy, 0.7, p_day_factor)
 	if not is_equal_approx(ambient_energy, _cached_ambient_energy):
 		_environment.ambient_light_energy = ambient_energy
 		_cached_ambient_energy = ambient_energy
 	
-	var ambient_color: Color = Color(0.04, 0.05, 0.12).lerp(Color(0.7, 0.75, 1.0), p_day_factor)
+	var ambient_color: Color = night_ambient_color.lerp(Color(0.7, 0.75, 1.0), p_day_factor)
 	if not _cached_ambient_color.is_equal_approx(ambient_color):
 		_environment.ambient_light_color = ambient_color
 		_cached_ambient_color = ambient_color
@@ -333,8 +355,8 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 		_environment.ambient_light_sky_contribution = ambient_sky_contrib
 		_cached_ambient_sky_contrib = ambient_sky_contrib
 	
-	# --- Tonemap exposure: slightly brighter at night to compensate ---
-	var tonemap_exposure: float = lerpf(1.1, 1.2, p_day_factor)
+	# --- Tonemap exposure: slightly darker at night for deeper shadows ---
+	var tonemap_exposure: float = lerpf(night_tonemap_exposure, 1.2, p_day_factor)
 	if not is_equal_approx(tonemap_exposure, _cached_tonemap_exposure):
 		_environment.tonemap_exposure = tonemap_exposure
 		_cached_tonemap_exposure = tonemap_exposure
@@ -352,7 +374,7 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 		var slow_wave: float = sin(_fog_noise_time * 0.1) * 0.35
 		var fast_wave: float = sin(_fog_noise_time * 0.3 + 1.2) * 0.15
 		fog_fluctuation = 1.0 + slow_wave + fast_wave
-		fog_fluctuation = clampf(fog_fluctuation, 0.3, 1.3)
+		fog_fluctuation = clampf(fog_fluctuation, night_fog_fluctuation_min, night_fog_fluctuation_max)
 	elif _fog_initialized:
 		_fog_initialized = false
 	
@@ -362,7 +384,7 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 			_environment.fog_enabled = fog_enabled
 			_cached_fog_enabled = fog_enabled
 		
-		var fog_density: float = 0.0075 * fog_factor * fog_fluctuation * _night_fog_base
+		var fog_density: float = night_fog_density * fog_factor * fog_fluctuation * _night_fog_base
 		if not is_equal_approx(fog_density, _cached_fog_density):
 			_environment.fog_density = fog_density
 			_cached_fog_density = fog_density
@@ -372,13 +394,12 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 			_environment.volumetric_fog_enabled = vfog_enabled
 			_cached_vfog_enabled = vfog_enabled
 		
-		var vfog_density: float = 0.003 * fog_factor * fog_fluctuation * _night_fog_base
+		var vfog_density: float = night_vfog_density * fog_factor * fog_fluctuation * _night_fog_base
 		if not is_equal_approx(vfog_density, _cached_vfog_density):
 			_environment.volumetric_fog_density = vfog_density
 			_cached_vfog_density = vfog_density
 		
 		var day_fog_color: Color = Color(0.7, 0.75, 0.8)
-		var night_fog_color: Color = Color(0.02, 0.02, 0.04)
 		var fog_color: Color = day_fog_color.lerp(night_fog_color, fog_factor)
 		if not _cached_fog_color.is_equal_approx(fog_color):
 			_environment.fog_light_color = fog_color
@@ -418,7 +439,7 @@ func _update_light_appearance(p_day_factor: float, p_sun_height: float) -> void:
 	
 	# --- Moon light energy: smoothly scales as sun goes down ---
 	if moon:
-		var moon_energy: float = maxf(0.0, -p_sun_height) * 0.3
+		var moon_energy: float = maxf(0.0, -p_sun_height) * night_moon_energy_mult
 		if not is_equal_approx(moon_energy, _cached_moon_energy):
 			moon.light_energy = moon_energy
 			_cached_moon_energy = moon_energy

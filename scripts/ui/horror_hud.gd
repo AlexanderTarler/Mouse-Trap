@@ -63,6 +63,8 @@ var _room_label_visible: bool = false
 
 
 func _ready() -> void:
+	add_to_group("hud")
+	
 	# Create the fade overlay programmatically
 	_fade_overlay = ColorRect.new()
 	_fade_overlay.color = Color(0, 0, 0, 0)  # Start fully transparent
@@ -454,7 +456,7 @@ func _on_generator_fuel_changed(current_fuel: float) -> void:
 		return
 	
 	fuel_bar.value = current_fuel
-	fuel_label.text = "⛽ %d%%" % current_fuel
+	fuel_label.text = "⛽ Generator"
 	
 	# Color the bar based on fuel level
 	if current_fuel <= 25.0:
@@ -482,7 +484,7 @@ func _on_generator_state_changed(is_running: bool) -> void:
 		if fuel_bar:
 			fuel_bar.modulate = Color(0.3, 0.8, 0.3, 1.0)
 		if fuel_label:
-			fuel_label.text = "⛽ %d%%" % fuel_bar.value
+			fuel_label.text = "⛽ Generator"
 
 
 func _update_night_label(night: int) -> void:
@@ -626,6 +628,14 @@ var _hint_has_been_shown: bool = false
 # Displays a short contextual hint that fades in after a small delay.
 # Designed for Day 1 onboarding triggers (e.g., HintArea near the cabin).
 
+## Helper: formatted timestamp in seconds for debug logging.
+func _timestamp() -> String:
+	var ms := Time.get_ticks_msec()
+	var sec := ms / 1000
+	var frac := ms % 1000
+	return "%d.%03d" % [sec, frac]
+
+
 ## Shows a hint with the given text. The hint stays invisible for `delay`
 ## seconds, then fades in over 0.5s. Call hide_hint() to dismiss it.
 ##
@@ -643,11 +653,13 @@ func show_hint(text: String, delay: float = 0.5) -> void:
 	# (The first call must pass through — HintLabel starts at alpha=1.0 in the
 	# scene file, so we'd skip every tutorial without this guard.)
 	if _hint_has_been_shown and hint_label.modulate.a > 0.0:
+		print("[HorrorHUD] T+%s show_hint BLOCKED — hint already visible: '%s'" % [_timestamp(), hint_label.text])
 		return
 	
 	# If hint timer is still running (fade-in hasn't started yet),
 	# just update the text — keep the existing timer/tween.
 	if hint_timer and not hint_timer.is_stopped():
+		print("[HorrorHUD] T+%s show_hint REPLACED timer text → '%s'" % [_timestamp(), text])
 		hint_label.text = text
 		return
 	
@@ -658,6 +670,8 @@ func show_hint(text: String, delay: float = 0.5) -> void:
 	_hint_has_been_shown = true
 	hint_label.text = text
 	hint_label.modulate = Color(0.9, 0.9, 0.8, 0.0)
+	
+	print("[HorrorHUD] T+%s show_hint SET → '%s' (fade-in in %.1fs)" % [_timestamp(), text, delay])
 	
 	if hint_timer:
 		hint_timer.stop()
@@ -674,6 +688,16 @@ func show_hint(text: String, delay: float = 0.5) -> void:
 func hide_hint() -> void:
 	if not hint_label:
 		return
+	
+	print("[HorrorHUD] T+%s hide_hint — stopped: '%s'" % [_timestamp(), hint_label.text])
+	
+	# CRITICAL FIX: Stop the hint_timer to prevent _on_hint_timer_timeout()
+	# from re-tweening the hint back to alpha 1.0. Without this, when the
+	# hint's 0.5s fade-in delay timer fires AFTER hide_hint() was called
+	# (e.g., player opens the notebook during the delay), the timeout
+	# kills the fade-out tween and re-shows the hint permanently.
+	hint_timer.stop()
+	hint_label.modulate.a = 0.0
 	
 	if is_instance_valid(_hint_tween):
 		_hint_tween.kill()

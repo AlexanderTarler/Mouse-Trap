@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dpcinf3js6rj7"]
+
+[ext_resource type="Texture2D" uid="uid://bc0rqpkei03dh" path="res://assets/Three Cabins/textures/Log Wall.png" id="1_s14w8"]
+
+[resource]
+resource_name = "Log Wall 2"
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_s14w8")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0

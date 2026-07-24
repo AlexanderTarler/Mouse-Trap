@@ -49,6 +49,16 @@ func _ready() -> void:
 ## Called every frame by the player controller with the current look_timer value.
 ## look_timer ranges from 0.0 (not looking) to 1.5+ (staring at the Entity).
 func update_look_timer(look_timer: float) -> void:
+	# ─── NIGHT GATE ─────────────────────────────────────────────────────
+	# Hallucination effects are only active from Night 2 Phase 2 onward.
+	# Before this point, the Entity is dormant/inactive and the player
+	# should not experience standoff effects even if they look toward
+	# the Entity's position.
+	var nm = get_node_or_null("/root/NightManager")
+	if nm and "current_night" in nm and nm.current_night < 2:
+		reset()
+		return
+	
 	# Calculate target alpha: 0.0 at 0s, 1.0 at 1.5s
 	_target_alpha = clampf(look_timer / 1.5, 0.0, 1.0)
 	

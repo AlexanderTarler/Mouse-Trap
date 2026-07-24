@@ -69,22 +69,16 @@ func _ready() -> void:
 
 
 ## Connects to NightManager's horror_event signal.
-## Uses a dedicated method (not _ready) to avoid re-running _ready() on retry.
 func _connect_night_manager() -> void:
 	_night_manager = get_node_or_null("/root/NightManager")
 	if _night_manager:
 		_night_manager.horror_event.connect(_on_horror_event)
 	else:
-		# Retry next frame — NightManager autoload may not be ready yet
 		call_deferred("_connect_night_manager")
 
 
 # ─── HORROR EVENTS ─────────────────────────────────────────
 
-## Listens for horror events from NightManager.
-## When "car_alarm" fires, activates the alarm audio and pulsing light.
-## If the player has already investigated the van, the alarm is ignored
-## to prevent the sequence from playing twice.
 func _on_horror_event(event_name: String) -> void:
 	if event_name == "car_alarm":
 		if van_investigated:
@@ -96,10 +90,6 @@ func _on_horror_event(event_name: String) -> void:
 		if _alarm_light:
 			_alarm_light.visible = true
 		
-		# ─── FORCE TIME TO DEEP NIGHT (cycle_progress = 0.9) ──────
-		# Night 2.2 van sequence: 0.9 = 4 minutes into the 5-min night
-		# phase (1 min until dawn). Time is paused so the world stays
-		# in this dark state until the player investigates the van.
 		var gt = get_node_or_null("/root/GameTime")
 		if gt:
 			gt.cycle_progress = 0.9
@@ -109,21 +99,12 @@ func _on_horror_event(event_name: String) -> void:
 			gt.time_changed.emit(0.9)
 			print("[EscapeVan] GameTime forced to cycle_progress=0.9 (4 min into night) and paused during van sequence.")
 		
-		# ─── DARKEN ENVIRONMENT ───────────────────────────────────
 		_darken_environment_for_van_sequence()
-		
 		print("[EscapeVan] Car alarm is blaring!")
 
 
 # ─── INTERACTION ───────────────────────────────────────────
 
-## Called by the InteractionManager when the player interacts with the van.
-##
-## BEHAVIOR:
-## - If alarm is active → triggers the first chase sequence (Night 1 narrative).
-## - If repaired → triggers the ending sequence.
-## - If not repaired and player has a car part in inventory → installs it.
-## - Otherwise → shows a contextual message.
 func interact() -> void:
 	# ─── PRIORITY 1: Alarm is active → trigger first chase ──────────
 	if alarm_active:
@@ -135,14 +116,23 @@ func interact() -> void:
 		_trigger_ending()
 		return
 	
-	# ─── PRIORITY 3: Not repaired → try to install a component ──────
+	# ─── PRIORITY 3: First time inspecting a non-repaired van ───────
+	# Notify RoutineManager to activate the van checklist in the notebook.
+	_ensure_van_inspected()
+	
+	# ─── PRIORITY 4: Not repaired → try to install a component ──────
 	_try_install_component()
 
 
+## Ensures the van inspection event fires exactly once.
+## Called on the first interact() when the van is not repaired.
+func _ensure_van_inspected() -> void:
+	var rm = get_node_or_null("/root/RoutineManager")
+	if rm and rm.has_method("on_van_inspected"):
+		rm.on_van_inspected()
+
+
 ## Tries to install a car component from the player's inventory.
-## Scans the inventory for items of type CAR_PART. For each one found,
-## checks if that specific part type has already been installed.
-## Rejects duplicates and installs only unique parts.
 func _try_install_component() -> void:
 	var inventory = get_node_or_null("/root/Inventory")
 	if not inventory:
@@ -165,13 +155,11 @@ func _try_install_component() -> void:
 		return
 	
 	# ─── UNIQUE PART VALIDATION ──────────────────────────────────
-	# Reject duplicate installs — each part type can only be installed once.
 	if _installed_parts.has(car_part_name):
 		_show_hud_message("I already installed a %s. I need different parts." % car_part_name)
 		print("[EscapeVan] DUPLICATE REJECTED: %s is already installed." % car_part_name)
 		return
 	
-	# Validate that this is actually one of the 3 required parts.
 	if car_part_name not in REQUIRED_PARTS:
 		_show_hud_message("This doesn't look like it belongs in the van...")
 		print("[EscapeVan] UNKNOWN PART REJECTED: '%s' is not a required van component." % car_part_name)
@@ -185,32 +173,38 @@ func _try_install_component() -> void:
 	print("[EscapeVan] Component installed: %s (%d/%d)" % [car_part_name, components_collected, COMPONENTS_NEEDED])
 	_show_hud_message("%s installed! (%d/%d parts)" % [car_part_name, components_collected, COMPONENTS_NEEDED])
 	
+	# ─── NOTIFY ROUTINEMANAGER ────────────────────────────────────
+	var rm = get_node_or_null("/root/RoutineManager")
+	if rm and rm.has_method("on_van_part_installed"):
+		rm.on_van_part_installed(car_part_name)
+	
 	# Check if all components are installed
 	if components_collected >= COMPONENTS_NEEDED:
 		_repair_complete()
 	else:
-		# Play a "part installed" sound if available
 		if _repair_audio:
 			_repair_audio.pitch_scale = 1.0
 			_repair_audio.play()
 
 
 ## Called when all 3 components have been installed.
-## Marks the van as repaired, plays a success sound, and updates the prompt.
 func _repair_complete() -> void:
 	is_repaired = true
 	
 	print("[EscapeVan] ⚡ VAN REPAIRED! All %d components installed." % COMPONENTS_NEEDED)
 	_show_hud_message("The van is repaired! Get in and escape!")
 	
-	# Play a triumphant repair sound
+	# ─── NOTIFY ROUTINEMANAGER ────────────────────────────────────
+	var rm = get_node_or_null("/root/RoutineManager")
+	if rm and rm.has_method("on_van_repaired"):
+		rm.on_van_repaired()
+	
 	if _repair_audio:
-		_repair_audio.pitch_scale = 1.5  # Higher pitch = success tone
+		_repair_audio.pitch_scale = 1.5
 		_repair_audio.play()
 
 
 ## Triggers the ending sequence via EndgameManager.
-## Checks if the TotemAnchor was destroyed to decide between Good and Mediocre.
 func _trigger_ending() -> void:
 	print("[EscapeVan] Player is escaping! Triggering ending sequence.")
 	
@@ -219,46 +213,32 @@ func _trigger_ending() -> void:
 		print("[EscapeVan] ERROR: EndgameManager not found!")
 		return
 	
-	# Check if the TotemAnchor was destroyed by looking for nodes in the
-	# dedicated "totem_anchor" group. The TotemAnchor adds itself to this
-	# group in _ready(), ensuring a reliable lookup.
+	# Check if the TotemAnchor was destroyed.
+	# Prefer RoutineManager's is_anchor_destroyed flag (authoritative).
 	var totem_destroyed = false
-	var totems = get_tree().get_nodes_in_group("totem_anchor")
-	for totem in totems:
-		if "is_purged" in totem and totem.is_purged:
-			totem_destroyed = true
-			break
+	var rm = get_node_or_null("/root/RoutineManager")
+	if rm and "is_anchor_destroyed" in rm:
+		totem_destroyed = rm.is_anchor_destroyed
+	else:
+		# Fallback: check totem_anchor group nodes
+		var totems = get_tree().get_nodes_in_group("totem_anchor")
+		for totem in totems:
+			if "is_purged" in totem and totem.is_purged:
+				totem_destroyed = true
+				break
 	
 	endgame.start_ending_sequence(totem_destroyed)
 
 
-## Triggers the first chase sequence (Night 1 narrative).
-## Stops the alarm, shows the "ignition torn out" message, unlocks sprint,
-## teleports the Entity to the van area in STALK state, and calls
-## NightManager.trigger_first_chase().
 func _trigger_first_chase() -> void:
-	# Stop the alarm
 	alarm_active = false
 	if _alarm_audio:
 		_alarm_audio.stop()
 	if _alarm_light:
 		_alarm_light.visible = false
 	
-	# Mark the van as investigated so the alarm can never be re-activated
 	van_investigated = true
 	
-	# ─── VAN SEQUENCE FLAG ────────────────────────────────────────
-	# Do NOT clear is_van_sequence_active here! The Entity needs this
-	# flag to remain true so the Director's Tier 2 forces STALK state
-	# throughout the entire outdoor chase. The flag is cleared when the
-	# Entity enters INDOOR_SEARCH (entity_ai.gd), meaning the player
-	# successfully escaped back inside the cabin.
-	
-	# ─── FORCE NIGHT 2.2 TIME & LIGHTING ──────────────────────
-	# The van sequence is over but we must stay in deep night at
-	# cycle_progress=0.9 (4 min into the 5-min night phase).
-	# Do NOT reset the night or push time back to midnight.
-	# 1. Force GameTime to deep night
 	var gt = get_node_or_null("/root/GameTime")
 	if gt:
 		gt.cycle_progress = 0.9
@@ -267,31 +247,25 @@ func _trigger_first_chase() -> void:
 		gt.time_changed.emit(0.9)
 		print("[EscapeVan] Time re-forced to cycle_progress=0.9 (4 min into night) for Night 2.2.")
 	
-	# 2. RESTORE ENVIRONMENT — but do it BEFORE unpausing time to prevent
-	#    the "bright flash" caused by a stale skybox evaluation.
 	_restore_environment_lighting()
 	
-	# 3. NOW unpause time so the clock ticks from 04:00
 	if gt:
 		gt.is_time_paused = false
 		gt.is_running = true
 		print("[EscapeVan] GameTime unpaused. Night 2.2 clock starts from 04:00.")
 	
-	# ─── UNLOCK SPRINT ─────────────────────────────────────────────
 	var player = get_tree().get_first_node_in_group("player")
 	if player and player.has_method("unlock_sprint"):
 		player.unlock_sprint()
 	
-	# Show "JOIN HIM" on the objective label for 0.5 seconds, then "FLEE"
 	var objective_label = _find_objective_label()
 	if objective_label:
 		objective_label.text = "JOIN HIM"
-		objective_label.modulate = Color(1, 0.2, 0.2, 1)  # Red
+		objective_label.modulate = Color(1, 0.2, 0.2, 1)
 		await get_tree().create_timer(0.5).timeout
 		objective_label.text = "FLEE"
-		objective_label.modulate = Color(1, 0.5, 0, 1)  # Orange
+		objective_label.modulate = Color(1, 0.5, 0, 1)
 	
-	# Show the ignition torn out message via the HUD
 	var hud = get_node_or_null("/root/CottageHorror/HUD")
 	if not hud:
 		hud = get_node_or_null("/root/Main/HUD")
@@ -300,13 +274,10 @@ func _trigger_first_chase() -> void:
 	else:
 		print("[EscapeVan] The ignition... it's been completely torn out.")
 	
-	# Wait 2 seconds before triggering the first chase
 	await get_tree().create_timer(2.0).timeout
 	
-	# ─── TELEPORT ENTITY TO VAN + FORCE STALK ──────────────────────
 	_teleport_entity_to_van()
 	
-	# Trigger the first chase — Entity spawns and begins pursuit
 	if _night_manager:
 		_night_manager.trigger_first_chase()
 	
@@ -315,9 +286,6 @@ func _trigger_first_chase() -> void:
 
 # ─── PROCESS ───────────────────────────────────────────────
 
-## Pulsing red alarm light effect.
-## Uses a sine wave based on Time.get_ticks_msec() to smoothly pulse
-## the light's energy property up and down like a hazard light.
 func _process(delta: float) -> void:
 	if alarm_active and _alarm_light:
 		_alarm_light.omni_range = 50.0
@@ -327,7 +295,6 @@ func _process(delta: float) -> void:
 
 # ─── UI HELPERS ────────────────────────────────────────────
 
-## Finds the objective label on the HUD so we can update it directly.
 func _find_objective_label() -> Label:
 	var hud = get_node_or_null("/root/CottageHorror/HUD")
 	if not hud:
@@ -337,7 +304,6 @@ func _find_objective_label() -> Label:
 	return null
 
 
-## Returns the interaction prompt text shown in the HUD.
 func get_interact_text() -> String:
 	if alarm_active:
 		return "[E] Investigate the car"
@@ -348,12 +314,8 @@ func get_interact_text() -> String:
 	return "[E] Examine the van"
 
 
-## ─── ENVIRONMENT & ENTITY HELPERS ──────────────────────────
+# ─── ENVIRONMENT & ENTITY HELPERS ──────────────────────────
 
-## Forces the EnvironmentController to unnaturally dark levels during the
-## van alarm sequence so the player is fully disoriented when they step
-## outside. Delegates to EnvironmentController.force_true_night() for
-## consistent, centralized darkness control.
 func _darken_environment_for_van_sequence() -> void:
 	var ec = get_node_or_null("/root/CottageHorror/EnvironmentController")
 	if not ec:
@@ -361,14 +323,9 @@ func _darken_environment_for_van_sequence() -> void:
 	if not ec:
 		print("[EscapeVan] EnvironmentController not found — skipping darkness override.")
 		return
-	
-	# Delegate to EnvironmentController's force_true_night() for proper
-	# centralized darkness control (solid black background, zero ambient, etc.)
 	if ec.has_method("force_true_night"):
 		ec.force_true_night()
-		print("[EscapeVan] Environment darkened for van sequence via force_true_night().")
 	else:
-		# Fallback: manual override for older EnvironmentController versions
 		if ec.world_environment and ec.world_environment.environment:
 			ec.world_environment.environment.ambient_light_energy = 0.02
 			ec.world_environment.environment.ambient_light_color = Color(0.01, 0.01, 0.03)
@@ -376,45 +333,31 @@ func _darken_environment_for_van_sequence() -> void:
 			ec.sun.light_energy = 0.0
 		if ec.moon:
 			ec.moon.light_energy = 0.03
-		print("[EscapeVan] Environment darkened via fallback manual override.")
 
 
-## Restores the EnvironmentController to normal day/night cycle behavior.
-## Called when the player investigates the van (end of van sequence).
 func _restore_environment_lighting() -> void:
 	var ec = get_node_or_null("/root/CottageHorror/EnvironmentController")
 	if not ec:
 		ec = get_node_or_null("/root/Main/EnvironmentController")
 	if not ec:
 		return
-	
-	# Use EnvironmentController's restore_cycle() to properly restore
-	# background_mode to BG_SKY and recalculate all lighting values.
 	if ec.has_method("restore_cycle"):
 		ec.restore_cycle()
 	elif ec.has_method("_apply_cycle"):
 		ec._apply_cycle()
-	
-	print("[EscapeVan] Environment lighting restored to normal cycle.")
 
 
-## Finds the Entity in the scene tree, teleports it to the EntityVanSpawn
-## marker, and forces it into the STALK state so it immediately begins
-## pursuing the player through the forest.
 func _teleport_entity_to_van() -> void:
-	# 1. Find the Entity
 	var entity = get_tree().get_first_node_in_group("entity")
 	if not entity:
 		print("[EscapeVan] ERROR: Entity not found in scene! Cannot teleport.")
 		return
 	
-	# 2. Find the EntityVanSpawn marker
 	var spawn_marker: Marker3D = null
 	var scene_root = get_tree().current_scene
 	if scene_root:
 		spawn_marker = scene_root.get_node_or_null("EntityVanSpawn") as Marker3D
 		if not spawn_marker:
-			# Recursive fallback
 			spawn_marker = _find_marker_recursive(scene_root, "EntityVanSpawn")
 	
 	if not spawn_marker:
@@ -424,44 +367,45 @@ func _teleport_entity_to_van() -> void:
 		entity.global_position = spawn_marker.global_position
 		print("[EscapeVan] Entity teleported to EntityVanSpawn: %s" % spawn_marker.global_position)
 	
-	# 3. Force STALK state
+	# ─── ACTIVATE ENTITY FIRST ─────────────────────────────────────────
+	# NightManager.start_night(2) does NOT activate the Entity (night <= 2
+	# guard in the narrative override). Without this call, _is_active stays
+	# false, _physics_process() early-exits, the pending STALK state is never
+	# consumed, and the Entity remains DORMANT (invisible, inactive).
+	if entity.has_method("activate"):
+		entity.activate()
+		print("[EscapeVan] Entity activated for van sequence.")
+	
 	if entity.has_method("request_state"):
 		entity.request_state(EntityAI.State.STALK)
-		print("[EscapeVan] Entity forced into STALK state.")
+		# ─── HARDENING: Belt-and-suspenders ─────────────────────────────
+		# activate() internally calls request_state(OBSERVE_FROM_TREELINE),
+		# setting _pending_state. Our request_state(STALK) above overwrites
+		# it synchronously. However, to completely harden against any
+		# edge-case where the Director consumes the pending state between
+		# the two synchronous calls (e.g., via _pending_state consumption
+		# in a _process or _physics_process callback), we also write the
+		# _pending_state member directly. This guarantees STALK wins
+		# regardless of intermediate frame processing.
+		if "_pending_state" in entity:
+			entity._pending_state = EntityAI.State.STALK
 	elif entity.has_method("change_state"):
 		entity.change_state("STALK")
-		print("[EscapeVan] Entity.change_state('STALK') called.")
 	else:
-		# Fallback: set state enum directly
 		if "_state" in entity:
-			entity._state = 2  # STALK = 2
-		print("[EscapeVan] Entity state forced to STALK via direct property.")
+			entity._state = 2
+			entity._pending_state = 2
 	
-	# 4. Ensure outdoors flag — prevents AI from pathfinding into cabin
 	if "thinks_player_is_inside" in entity:
 		entity.thinks_player_is_inside = false
-		print("[EscapeVan] Entity.thinks_player_is_inside = false.")
 	
-	# 5. ─── PERSISTENCE LOCK: Force STALK-only for 5 seconds ─────────
-	# The Entity must stay in STALK state and cannot flee or observe for
-	# the first 5 seconds after spawning at the van. This ensures the
-	# Entity immediately pursues the player rather than retreating to
-	# the treeline. The lock timestamp is checked by the Director.
 	entity.set_meta("stalk_lock_until_ms", Time.get_ticks_msec() + 5000)
-	print("[EscapeVan] Entity STALK lock armed for 5 seconds (until ms=%d)." % (Time.get_ticks_msec() + 5000))
 	
-	# 6. ─── TASK 6: SUPPRESS STUCK DETECTOR GRACE PERIOD (3 seconds) ─
-	# Set _stuck_timer to a negative value (-3.0) so the stuck failsafe
-	# in entity_controller.gd doesn't fire during the first 3 seconds
-	# while the NavigationAgent3D generates a valid path around the van's
-	# collision mesh. The stuck detector will add delta each frame until
-	# the timer reaches 0.0, then begin normal checks.
 	if "_stuck_timer" in entity:
 		entity._stuck_timer = -3.0
-		print("[EscapeVan] Entity _stuck_timer set to -3.0 (3-second stuck detection grace period).")
+	
 
 
-## Recursively searches for a Marker3D with the given name.
 func _find_marker_recursive(root: Node, marker_name: String) -> Marker3D:
 	for child in root.get_children():
 		if child is Marker3D and child.name == marker_name:
@@ -472,7 +416,6 @@ func _find_marker_recursive(root: Node, marker_name: String) -> Marker3D:
 	return null
 
 
-## Pushes a text message to the HUD overlay.
 func _show_hud_message(msg: String) -> void:
 	var hud = get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("show_message"):

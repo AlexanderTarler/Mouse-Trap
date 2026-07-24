@@ -33,6 +33,7 @@ var _health: int = 3
 
 func _ready() -> void:
 	add_to_group("interactable")
+	add_to_group("xray_fuse_box")
 	
 	# Ensure this StaticBody3D is on collision layer 1 so the
 	# InteractionManager's center-screen raycast can detect it.
@@ -72,37 +73,43 @@ func interact() -> void:
 	match current_state:
 		BoxState.BROKEN:
 			attempt_fuse_insertion()
-		BoxState.HAS_FUSE:
-			throw_switch()
 		BoxState.POWER_ON:
 			print("[FuseBox] The power is already humming softly.")
 
 
 ## Searches the player's Inventory autoload for a Fuse item.
-## If found, removes it and advances to HAS_FUSE state.
+## If found, removes it and immediately throws the switch (auto-restores
+## power). The intermediate HAS_FUSE state has been removed — the player
+## no longer needs to "pull the lever" after inserting the fuse.
 func attempt_fuse_insertion() -> void:
 	var fuse_item = _find_fuse_in_inventory()
 	if fuse_item:
 		Inventory.remove_item(fuse_item)
-		current_state = BoxState.HAS_FUSE
-		fuse_inserted.emit()
-		print("[FuseBox] You slot the heavy ceramic fuse into the terminal block. The switch can now be thrown.")
 		
-		# ─── DAY 1 ONBOARDING: PHASE 2 — FUSE INSERTED ──────────────────
 		# Notify RoutineManager that the fuse has been inserted.
 		var rm = get_node_or_null("/root/RoutineManager")
 		if rm and rm.has_method("on_fuse_inserted"):
 			rm.on_fuse_inserted()
+		
+		# Immediately throw the switch — no separate lever-pull step.
+		_throw_switch()
 	else:
 		print("[FuseBox] The fuse block is empty. The main circuit breaker is completely dead.")
 
 
-## Throws the switch — restores generator power via NightManager.
-func throw_switch() -> void:
+## Throws the switch immediately after fuse insertion — restores generator
+## power via NightManager. No longer called from interact() as a separate
+## step; it fires automatically when the fuse is inserted.
+func _throw_switch() -> void:
 	current_state = BoxState.POWER_ON
 	_set_generator_state(true)
 	power_restored.emit()
-	print("[FuseBox] The lever snaps down. The old generator spools up, and lights flicker to life!")
+	
+	# ─── REPAIR SOUND ──────────────────────────────────────────────
+	# Play button_19.ogg when the fuse box is successfully repaired.
+	_play_sfx("res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Buttons & Levers/button_19.ogg")
+	
+	print("[FuseBox] Fuse inserted! Power restored automatically.")
 	
 	# ─── DAY 1 ONBOARDING: PHASE 2 — FUSE FIXED ────────────────────────
 	# Notify RoutineManager that the fuse box has been fixed.
@@ -116,15 +123,28 @@ func throw_switch() -> void:
 ## so all CabinLight nodes update their visibility automatically.
 func _set_generator_state(enabled: bool) -> void:
 	var nm = get_node_or_null("/root/NightManager")
-	if nm:
-		nm.is_generator_on = enabled
-		nm.generator_state_changed.emit(enabled)
-		if enabled:
-			# Recalculate fuel drain to account for any lights that are switched on
-			nm.recalculate_fuel_drain()
-		print("[FuseBox] Generator state set to: ", enabled)
-	else:
+	if not nm:
 		print("[FuseBox] Warning: NightManager not found at /root/NightManager")
+		return
+	
+	# ─── FUEL GUARD (Bug 3 Fix) ──────────────────────────────────────────
+	# Power can ONLY be restored if BOTH conditions are met:
+	#   A. The fuse box is repaired (is_powered() == true when not BROKEN)
+	#   B. The generator has fuel (generator_fuel > 0)
+	#
+	# If the generator has 0 fuel, setting is_generator_on=true is pointless
+	# — the power still won't work because the generator can't run without fuel.
+	# This fixes the bug where inserting the fuse restores power even when
+	# the generator has 0.0% fuel.
+	if enabled and nm.generator_fuel <= 0.0:
+		print("[FuseBox] Cannot enable generator — fuel is at 0.0. Refuel the generator first.")
+		return
+	
+	nm.is_generator_on = enabled
+	nm.generator_state_changed.emit(enabled)
+	if enabled:
+		nm.recalculate_fuel_drain()
+	print("[FuseBox] Generator state set to: ", enabled)
 
 
 ## Iterates the Inventory autoload's items array looking for an item
@@ -146,6 +166,20 @@ func _find_fuse_in_inventory():
 	return null
 
 
+## Plays a sound effect via a transient AudioStreamPlayer3D attached to self.
+## The player is auto-freed when the sound finishes.
+func _play_sfx(res_path: String) -> void:
+	var stream := load(res_path)
+	if not stream:
+		return
+	var player := AudioStreamPlayer.new()
+	player.bus = "SFX"
+	player.stream = stream
+	add_child(player)
+	player.play()
+	player.finished.connect(player.queue_free)
+
+
 ## Returns whether the fuse box is currently powered (generator ON).
 ## Used by the Entity Director to check if the porch light is active,
 ## which prevents door approach until the fuse box is sabotaged.
@@ -164,6 +198,11 @@ func break_fuse() -> void:
 	current_state = BoxState.BROKEN
 	_health = 0
 	_set_generator_state(false)
+	
+	# ─── SABOTAGE SOUND ───────────────────────────────────────────
+	# Play electric_shock_mx_1.ogg when the Entity sabotages the fuse box.
+	_play_sfx("res://assets/audio/Echoes - Audio Super Kit/electric_shock_mx_1.ogg")
+	
 	print("[FuseBox] BREAK! The fuse box is shattered. Generator is OFF. All lights die.")
 
 

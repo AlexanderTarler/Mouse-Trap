@@ -62,6 +62,15 @@ var _vision_dot_threshold: float = cos(deg_to_rad(vision_angle_degrees))
 ## Created once in setup(), then .from and .to are updated per check.
 var _ray_query: PhysicsRayQueryParameters3D = null
 
+## Collision mask for line-of-sight (LOS) raycasts in is_point_visible().
+## This MUST include all physics layers that can block vision — most importantly
+## Layer 1 (Cabin walls, windows, doors). Without explicitly setting this mask
+## before each LOS raycast, the reused _ray_query instance can leak a narrower
+## mask from _is_player_spotting_entity_impl() (mask=18, bodies only), causing
+## the Entity to see through cabin walls ("X-Ray Vision").
+## 0xFFFFFFFF (all layers) is the safest default — walls/glass/doors all block vision.
+const LOS_COLLISION_MASK: int = 0xFFFFFFFF
+
 # ─── CACHED CAMERA REFERENCE ────────────────────────────────────────────────
 ## Cached reference to the active 3D camera. Updated only when a camera switch
 ## event occurs, avoiding expensive get_viewport().get_camera_3d() polling.
@@ -119,7 +128,10 @@ var _cached_entity_in_lit_room: bool = false
 var _cached_player_in_lit_room: bool = false
 
 ## How long to cache RoomLightDetector results (seconds).
-const ROOM_LIGHT_CACHE_DURATION: float = 0.5
+## Extended from 0.5 to 1.0 — room lighting state changes rarely (only when
+## the player flips a light switch), so there's no need to refresh every 0.5s.
+## This reduces RoomLightDetector Area3D traversal overhead by 50%.
+const ROOM_LIGHT_CACHE_DURATION: float = 1.0
 
 # Frame-skip counter for staggering expensive RayCast3D LOS checks across frames.
 var _sense_tick_counter: int = 0
@@ -191,10 +203,17 @@ func is_point_visible(target_pos: Vector3, max_dist: float) -> bool:
 	var space = entity.get_world_3d().direct_space_state
 	var head_pos = entity.global_position + Vector3(0, 2.5, 0)
 	
-	# Reuse the single _ray_query instance — just update from/to
+	# Reuse the single _ray_query instance — just update from/to/exclude/mask
 	_ray_query.from = head_pos
 	_ray_query.to = target_pos
 	_ray_query.exclude = [entity]
+	# CRITICAL FIX (H1): Explicitly reset the collision mask before each LOS raycast.
+	# _is_player_spotting_entity_impl() sets _ray_query.collision_mask = 18 (bodies
+	# only) for the flashlight beam check. Because _ray_query is a single reused
+	# instance, that narrow mask leaks into this LOS check if we don't reset it,
+	# causing the Entity to see through cabin walls ("X-Ray Vision").
+	# LOS_COLLISION_MASK (0xFFFFFFFF) ensures walls/glass/doors all block vision.
+	_ray_query.collision_mask = LOS_COLLISION_MASK
 	
 	var result = space.intersect_ray(_ray_query)
 	# Returns true if nothing is blocking the view (result is empty)

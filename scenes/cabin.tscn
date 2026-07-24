@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://cl2nlt2tucxol"]
 
 [ext_resource type="Script" uid="uid://bl13537l4eohb" path="res://scripts/cabin_room.gd" id="1_ixm0y"]
+[ext_resource type="PackedScene" uid="uid://b4kd6s4hhipat" path="res://assets/Three Cabins/Mouse Trap Cabin 2.fbx" id="3_1hpa6"]
 [ext_resource type="PackedScene" uid="uid://dapqur5bamuro" path="res://assets/Three Cabins/Mouse Trap Cabin 2.glb" id="3_84mq0"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_0rnjq"]
@@ -91,9 +92,15 @@ size = Vector3(6, 0.2, 11)
 [node name="Mouse Trap Cabin 2" parent="NavigationRegion3D" unique_id=10047741 groups=["ignore_navmesh"] instance=ExtResource("3_84mq0")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.12, -0.17, 29.678)
 
-[node name="StaticBody3D" type="StaticBody3D" parent="NavigationRegion3D/Mouse Trap Cabin 2/Cabin Two" parent_id_path=PackedInt32Array(10047741, 301814528) index="0" unique_id=923192232]
+[node name="Cabin Two" parent="NavigationRegion3D/Mouse Trap Cabin 2" index="0" unique_id=1949349281]
+visible = false
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="NavigationRegion3D/Mouse Trap Cabin 2/Cabin Two/StaticBody3D" unique_id=23755617]
+[node name="Mouse Trap Cabin 2" parent="NavigationRegion3D/Mouse Trap Cabin 2" unique_id=1704908733 instance=ExtResource("3_1hpa6")]
+
+[node name="StaticBody3D" type="StaticBody3D" parent="NavigationRegion3D/Mouse Trap Cabin 2/Mouse Trap Cabin 2" unique_id=923192232]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -14.069446)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavigationRegion3D/Mouse Trap Cabin 2/Mouse Trap Cabin 2/StaticBody3D" unique_id=23755617]
 shape = SubResource("ConcavePolygonShape3D_ixm0y")
 
 [node name="NavigationLink3D" type="NavigationLink3D" parent="NavigationRegion3D" unique_id=429131601]

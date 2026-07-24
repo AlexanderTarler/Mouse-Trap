@@ -166,15 +166,23 @@ func _process(delta: float) -> void:
 
 
 func _refresh_log() -> void:
-	# The debug log RichTextLabel shows the latest game output.
-	# Since we can't easily capture print() output in Godot 4,
-	# we'll show the Entity heartbeat and state transitions that
-	# are already being printed.
-	# For now, we display a placeholder that updates with the current state.
-	
 	var lines: Array[String] = []
 	
-	# Night info
+	# ─── FPS COUNTER ───────────────────────────────────────────────────
+	var fps = Engine.get_frames_per_second()
+	var frame_time = snapped(1000.0 / fps, 0.1) if fps > 0 else 0.0
+	var fps_color = "green"
+	if fps < 30:
+		fps_color = "red"
+	elif fps < 55:
+		fps_color = "yellow"
+	lines.append("[b]FPS:[/b] [color=%s]%d[/color] (%.1f ms/frame)" % [fps_color, fps, frame_time])
+	
+	# ─── MEMORY INFO ──────────────────────────────────────────────────
+	var mem_mb = snapped(OS.get_static_memory_usage() / (1024.0 * 1024.0), 0.1)
+	lines.append("[b]Memory:[/b] %.1f MB static" % mem_mb)
+	
+	# ─── NIGHT INFO ───────────────────────────────────────────────────
 	if _night_manager:
 		lines.append("[b]Night:[/b] %d | Active: %s | Progress: %.0f%%" % [
 			_night_manager.current_night,
@@ -182,7 +190,7 @@ func _refresh_log() -> void:
 			_night_manager.night_progress * 100.0
 		])
 	
-	# Entity info
+	# ─── ENTITY INFO ──────────────────────────────────────────────────
 	if _entity:
 		var state_name = "N/A"
 		if _entity.has_method("get_current_state_name"):
@@ -193,14 +201,44 @@ func _refresh_log() -> void:
 		var pos = _entity.global_position if _entity.has_method("get_global_position") else Vector3.ZERO
 		var dist = pos.distance_to(_player.global_position) if _player else 0.0
 		
-		lines.append("[b]Entity:[/b] State=%s | Pos=(%.1f, %.1f, %.1f) | Dist=%.1f" % [
-			state_name, pos.x, pos.y, pos.z, dist
+		# Entity state with color coding
+		var state_color = "white"
+		if state_name.contains("CHASE") or state_name.contains("CHARGE"):
+			state_color = "red"
+		elif state_name.contains("STALK") or state_name.contains("APPROACH"):
+			state_color = "orange"
+		elif state_name.contains("INDOOR"):
+			state_color = "purple"
+		elif state_name.contains("OBSERVE") or state_name.contains("DORMANT"):
+			state_color = "gray"
+		
+		lines.append("[b]Entity:[/b] [color=%s]%s[/color] | Dist=%.1f" % [state_color, state_name, dist])
+		lines.append("  Pos=(%.1f, %.1f, %.1f)" % [pos.x, pos.y, pos.z])
+		
+		# Player visibility
+		var sensory = _entity.get_sensory_module() if _entity.has_method("get_sensory_module") else null
+		var can_see = sensory and sensory.has_method("can_entity_see_player") and sensory.can_see_player()
+		var hears = _entity.is_hunting() if _entity.has_method("is_hunting") else false
+		lines.append("  Sees=%s | Hears=%s | Locked=%s" % [
+			"YES" if can_see else "NO",
+			"YES" if hears else "NO",
+			"YES" if _entity.get("state_locked") else "NO"
 		])
+		
+		# Entity confidence
+		var conf = _entity.get_confidence_module() if _entity.has_method("get_confidence_module") else null
+		if conf and conf.has_method("get_confidence"):
+			var c_val = conf.get_confidence()
+			lines.append("  Confidence: %.0f" % c_val)
 	
-	# Player info
+	# ─── PLAYER INFO ──────────────────────────────────────────────────
 	if _player:
 		var ppos = _player.global_position
 		lines.append("[b]Player:[/b] Pos=(%.1f, %.1f, %.1f)" % [ppos.x, ppos.y, ppos.z])
+		
+		# Player movement state
+		if _player.has_method("get_current_state_name"):
+			lines.append("  State: %s" % _player.get_current_state_name())
 	
 	debug_log.text = "\n".join(lines)
 

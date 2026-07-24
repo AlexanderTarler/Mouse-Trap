@@ -18,7 +18,7 @@ extends CharacterBody3D
 
 # Crouch settings
 @export var standing_height: float = 1.8
-@export var crouching_height: float = 1.1
+@export var crouching_height: float = 1.45
 @export var crouch_transition_speed: float = 10.0
 
 # References to scene nodes
@@ -141,6 +141,7 @@ var _sanity_controller: Node = null
 # Stamina system
 var _stamina: float = 100.0
 var _max_stamina: float = 100.0
+var _last_emitted_stamina_pct: float = -1.0  # Track last emitted value to avoid 60fps signal spam
 var _is_running: bool = false
 var _stamina_drain_rate: float = 5.625   # Points per second while running (62.5% slower than original 15.0)
 var _stamina_regen_rate: float = 8.0    # Points per second while not running
@@ -389,6 +390,12 @@ func _input(event: InputEvent) -> void:
 					var tm := get_node_or_null("/root/TutorialManager")
 					if tm and tm.has_method("mark_learned"):
 						tm.mark_learned("movement")
+					# ─── TUTORIAL FLOW: Notebook after movement (deferred) ──
+					# Delay the notebook trigger by 1 frame so the movement
+					# hint's hide animation has time to process before the
+					# notebook hint appears in the same label slot.
+					if tm and tm.has_method("trigger"):
+						tm.call_deferred("trigger", "notebook")
 					_movement_keys_pressed.clear()  # prevent re-check
 	
 	if event is InputEventKey and event.keycode == KEY_F and event.pressed:
@@ -471,6 +478,21 @@ func _toggle_flashlight() -> void:
 	else:
 		_flashlight_on = not _flashlight_on
 		_flashlight.visible = _flashlight_on
+	
+	# ─── FLASHLIGHT AUDIO ───────────────────────────────────────────
+	# Play a transient non-spatial sound when toggling the flashlight.
+	# button_flashlight_1.ogg = ON, button_flashlight_2.ogg = OFF.
+	# The AudioStreamPlayer is auto-freed when the sound finishes.
+	var sfx_path := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Buttons & Levers/button_flashlight_1.ogg" if _flashlight.is_on else "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Buttons & Levers/button_flashlight_2.ogg"
+	var sfx_stream := load(sfx_path)
+	if sfx_stream:
+		var sfx_player := AudioStreamPlayer.new()
+		sfx_player.bus = "SFX"
+		sfx_player.stream = sfx_stream
+		add_child(sfx_player)
+		sfx_player.play()
+		sfx_player.finished.connect(sfx_player.queue_free)
+	
 	print("[Player Flashlight] Toggled! is_on=%s visible=%s battery=%.1f" % [_flashlight.is_on, _flashlight.visible, _flashlight.get_battery_percent()])
 
 func _toggle_inventory() -> void:
@@ -531,7 +553,12 @@ func _physics_process(delta: float) -> void:
 		if _stamina > _max_stamina:
 			_stamina = _max_stamina
 	
-	stamina_changed.emit(_stamina / _max_stamina * 100.0)
+	# ─── PERFORMANCE: Only emit stamina signal when value actually changes ──
+	# Prevents 60fps signal spam when standing still with full stamina.
+	var _new_stamina_pct = _stamina / _max_stamina * 100.0
+	if _new_stamina_pct != _last_emitted_stamina_pct:
+		_last_emitted_stamina_pct = _new_stamina_pct
+		stamina_changed.emit(_new_stamina_pct)
 
 	var input_dir := Vector2(
 		-1.0 if Input.is_key_pressed(KEY_A) else (1.0 if Input.is_key_pressed(KEY_D) else 0.0),

@@ -8,6 +8,8 @@ extends RigidBody3D
 
 
 func _ready() -> void:
+	add_to_group("xray_flashlight")
+	
 	# Ensure this RigidBody3D can be detected by the interaction manager's raycast
 	collision_layer = 1
 	
@@ -34,6 +36,18 @@ func interact() -> void:
 	if player and player.has_method("enable_flashlight"):
 		player.enable_flashlight()
 		print("[FlashlightPickup] Flashlight enabled for player!")
+		
+		# ─── DAY 1 ONBOARDING: PHASE 2 — FLASHLIGHT PICKED UP ────
+		var rm = get_node_or_null("/root/RoutineManager")
+		if rm and rm.has_method("on_flashlight_picked_up"):
+			rm.on_flashlight_picked_up()
+		
+		# ─── FLASHLIGHT TUTORIAL ──────────────────────────────────
+		# Show the "Press F to toggle flashlight" hint.
+		var tm = get_node_or_null("/root/TutorialManager")
+		if tm and tm.has_method("trigger"):
+			tm.trigger("flashlight")
+		
 		queue_free()
 	else:
 		print("[FlashlightPickup] Could not find player or enable_flashlight method!")

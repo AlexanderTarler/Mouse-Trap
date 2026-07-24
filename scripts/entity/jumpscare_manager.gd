@@ -69,10 +69,12 @@ func _input(event: InputEvent) -> void:
 		var clicked_name = clicked_node.name if clicked_node else "nothing (UI)"
 		print("[DEBUG] Left-click at (%d, %d) — clicked: %s" % [mouse_pos.x, mouse_pos.y, clicked_name])
 	
-	# Press F1 to instantly trigger the jumpscare at any time
+	# Press F1 to instantly trigger the jumpscare (debug only — requires dev mode)
 	if event is InputEventKey and event.keycode == KEY_F1 and event.pressed and not event.is_echo():
 		if not is_jumping:
-			_execute_jumpscare()		
+			var nm = get_node_or_null("/root/NightManager")
+			if nm and nm.is_dev_mode:
+				_execute_jumpscare()
 
 func _on_horror_event(event_name: String) -> void:
 	if event_name == "entity_caught_player" and not is_jumping:

@@ -63,8 +63,7 @@ func interact(player: Node3D = null) -> void:
 			
 			var hud = get_tree().get_first_node_in_group("hud")
 			if hud and hud.has_method("fade_to_black"):
-				hud.fade_to_black(1.5)
-				await get_tree().create_timer(1.5).timeout
+				await hud.fade_to_black(3.0)
 			else:
 				await get_tree().create_timer(1.5).timeout
 			
@@ -95,8 +94,7 @@ func interact(player: Node3D = null) -> void:
 					obj_label.text = DAY2_OBJECTIVE
 			
 			if hud and hud.has_method("fade_from_black"):
-				hud.fade_from_black(2.0)
-				await get_tree().create_timer(2.0).timeout
+				await hud.fade_from_black(2.0)
 			
 			# ─── UNFREEZE CLOCK ────────────────────────────────────
 			# Time was frozen before and after advance_night() so the HUD
@@ -122,11 +120,17 @@ func interact(player: Node3D = null) -> void:
 	var phase3_done: bool = rm and rm.phase3_bed_used if rm else false
 	
 	# ─── GUARD B (checked FIRST): Nest tasks on Day 2+ ──────────
-	# Evaluated before Guard A so the Day 2 nest/van path takes
-	# priority over the Day 1→Day 2 sleep redirect. Without this,
-	# Guard A would fire again on Day 2 if phase3_bed_used is still
-	# false (e.g., window wasn't patched on Day 1).
-	if phase3_done and not _night_manager.is_van_sequence_active:
+	# Uses `nests_documented >= 1` instead of `current_night >= 1` because
+	# the natural day/night cycle can advance current_night to 1 BEFORE
+	# the player finishes Day 1 objectives (e.g., time runs out during
+	# the onboarding sequence). This caused a bug where the player was told
+	# "Document the nests" when they hadn't even finished Day 1 yet.
+	# The correct signal that the player is on Day 2 is that they've already
+	# found and documented at least one nest.
+	# The is_van_sequence_active guard prevents re-entering after the
+	# van sequence has already been triggered.
+	var nests_documented: int = rm.nests_documented if rm else 0
+	if nests_documented >= 1 and not _night_manager.is_van_sequence_active:
 		var nests_done: bool = rm and rm.nests_documented >= 3 if rm else false
 		var data_uploaded: bool = rm and rm.nests_uploaded if rm else false
 		
@@ -145,10 +149,9 @@ func interact(player: Node3D = null) -> void:
 		
 		var hud = get_tree().get_first_node_in_group("hud")
 		if hud and hud.has_method("fade_to_black"):
-			hud.fade_to_black(1.5)
-			await get_tree().create_timer(1.5).timeout
+			await hud.fade_to_black(3.0)
 		else:
-			await get_tree().create_timer(1.5).timeout
+			await get_tree().create_timer(3.0).timeout
 		
 		_night_manager.is_van_sequence_active = true
 		_night_manager.current_night = 2
@@ -189,14 +192,13 @@ func interact(player: Node3D = null) -> void:
 				obj_label.text = INTRO_OBJECTIVE
 		
 		if hud and hud.has_method("fade_from_black"):
-			hud.fade_from_black(2.0)
-			await get_tree().create_timer(2.0).timeout
+			await hud.fade_from_black(2.0)
 		
 		if player.has_method("set_physics_process"):
 			player.set_physics_process(true)
 			player.set_process_input(true)
 		
-		print("[Bed Scene] Day 2 ended! Night 2 started with car alarm. Objective: Investigate the car alarm outside.")
+		print("[Bed Scene] Day 2 ended! Night 2 started with car alarm.")
 		return
 	
 	# ─── GUARD A (FALLBACK): Day 1 → Day 2 sleep transition ─────
@@ -220,10 +222,9 @@ func interact(player: Node3D = null) -> void:
 			player.set_process_input(false)
 		var hud = get_tree().get_first_node_in_group("hud")
 		if hud and hud.has_method("fade_to_black"):
-			hud.fade_to_black(1.5)
-			await get_tree().create_timer(1.5).timeout
+			await hud.fade_to_black(3.0)
 		else:
-			await get_tree().create_timer(1.5).timeout
+			await get_tree().create_timer(3.0).timeout
 		# ─── FREEZE CLOCK BEFORE ADVANCE ───────────────────────
 		if _game_time:
 			_game_time.is_time_paused = true
@@ -246,8 +247,7 @@ func interact(player: Node3D = null) -> void:
 			if obj_label and obj_label is Label:
 				obj_label.text = DAY2_OBJECTIVE
 		if hud and hud.has_method("fade_from_black"):
-			hud.fade_from_black(2.0)
-			await get_tree().create_timer(2.0).timeout
+			await hud.fade_from_black(2.0)
 		
 		# ─── UNFREEZE CLOCK ────────────────────────────────────
 		if _game_time:
@@ -314,6 +314,12 @@ func _trigger_exhaustion_sleep(player: Node3D) -> void:
 	if rm_exh:
 		rm_exh.nests_documented = 0
 		rm_exh.nests_uploaded = false
+
+	# ─── ACTIVATE DAY 3 SANDBOX MODE ─────────────────────────────
+	# Pauses the linear Day 1–2 schedule and grants total exploration
+	# freedom. The van escape and side-track objectives become available.
+	if rm_exh and rm_exh.has_method("enable_sandbox_mode"):
+		rm_exh.enable_sandbox_mode()
 
 	# ─── NOW REFRESH THE HUD OBJECTIVE ───────────────────────────
 	# Now that the stale flags are cleared, refresh the HUD so it
@@ -384,7 +390,6 @@ func _trigger_sleep_intro_sequence(player: Node3D) -> void:
 
 func _advance_to_next_night() -> void:
 	print("[Bed Scene] Night survived! Saving progress and transitioning...")
-	_show_hud_message("Night survived. Progress saved.")
 	await get_tree().create_timer(2.0).timeout
 	
 	# ─── FORCE END_CURRENT_NIGHT TO EXECUTE ───────────────────────

@@ -16,6 +16,20 @@ var is_looted: bool = false
 var _monologue_shown: bool = false
 
 
+func _ready() -> void:
+	# Add to x-ray highlight group for the car part finding objective.
+	add_to_group("xray_car_wreck")
+	# Specific wreck group for individual targeting. Uses node name to determine
+	# which wreck this is (car_wreck_1, car_wreck_2, car_wreck_3).
+	match name.to_lower():
+		"car_wreck_1", "carwreck1", "wreck_1":
+			add_to_group("xray_wreck_1")
+		"car_wreck_2", "carwreck2", "wreck_2":
+			add_to_group("xray_wreck_2")
+		"car_wreck_3", "carwreck3", "wreck_3":
+			add_to_group("xray_wreck_3")
+
+
 ## Triggered when the player looks at the car and presses the interact key.
 func interact(player: Node3D = null) -> void:
 	print("[Wreck] interact() CALLED — is_looted=", is_looted, " | item_resource=", item_resource)
@@ -35,47 +49,56 @@ func interact(player: Node3D = null) -> void:
 			_monologue_shown = true
 			print("[Wreck] Inner monologue shown (before Day 3). Item NOT given.")
 		elif _monologue_shown:
-			# Monologue already seen — say nothing, but don't give item
 			print("[Wreck] Monologue already shown previously, skipping.")
 		else:
 			print("[Wreck] No inner_monologue set, but before Day 3. No action.")
 		return
 	
 	# ─── DAY 3+: Salvage the car part ───────────────────────────
-	# Validate we have a resource to give
 	if not item_resource:
-		print("[Wreck] ERROR: item_resource is NULL! No .tres assigned in the scene.")
+		print("[Wreck] ERROR: item_resource is NULL!")
 		_show_hud_message("Nothing useful here.")
 		return
 	
-	print("[Wreck] item_resource OK — class=", item_resource.get_class(), " | item_name=", _get_item_name())
-	
-	# Resolve the Inventory autoload
 	var inventory: Node = _get_inventory()
 	if not inventory:
-		print("[Wreck] ERROR: Could not find Inventory autoload (/root/Inventory)!")
+		print("[Wreck] ERROR: Could not find Inventory autoload!")
 		_show_hud_message("Cannot access inventory right now.")
 		return
-	print("[Wreck] Inventory autoload found: ", inventory)
 	
-	# Add to inventory
 	var added: bool = inventory.add_item(item_resource)
-	print("[Wreck] Inventory.add_item() returned: ", added)
-	
 	if not added:
 		_show_hud_message("Inventory is full!")
-		print("[Wreck] FAILED: Inventory full or item rejected.")
 		return
 	
-	# Update state & show message
+	# Mark as looted and clear x-ray highlight
 	is_looted = true
 	var item_name := _get_item_name()
 	_show_hud_message("Salvaged: " + item_name)
 	print("[Wreck] SUCCESS: Player salvaged '", item_name, "'. is_looted now true.")
+	
+	# Clear x-ray highlight for this specific wreck
+	var rm = get_node_or_null("/root/RoutineManager")
+	if rm and rm.has_method("clear_highlight"):
+		var group_name = _get_xray_group_name()
+		if not group_name.is_empty():
+			rm.clear_highlight(group_name)
+
+
+## Returns the x-ray group name for this specific wreck based on node name.
+func _get_xray_group_name() -> String:
+	var name_lower = name.to_lower()
+	match name_lower:
+		"car_wreck_1", "carwreck1", "wreck_1":
+			return "xray_wreck_1"
+		"car_wreck_2", "carwreck2", "wreck_2":
+			return "xray_wreck_2"
+		"car_wreck_3", "carwreck3", "wreck_3":
+			return "xray_wreck_3"
+	return ""
 
 
 ## Returns true if the game hasn't reached Day 3 yet.
-## Uses NightManager.current_night: 0 = Day 1, 1 = Day 2, 2 = Day 3, etc.
 func _is_before_day_3() -> bool:
 	var nm = get_node_or_null("/root/NightManager")
 	if nm and "current_night" in nm:
@@ -83,35 +106,40 @@ func _is_before_day_3() -> bool:
 	return false
 
 
-## Safely resolves the Inventory autoload singleton.
 func _get_inventory():
 	var inv = get_node_or_null("/root/Inventory")
 	if inv:
 		return inv
-	# Fallback: try finding it in groups
 	var candidates = get_tree().get_nodes_in_group("inventory")
 	if candidates.size() > 0:
-		print("[Wreck] Found Inventory via 'inventory' group.")
 		return candidates[0]
 	return null
 
 
-## Safely extracts the display name from the item resource.
 func _get_item_name() -> String:
 	if item_resource and "item_name" in item_resource:
 		return str(item_resource.item_name)
 	if item_resource and "resource_path" in item_resource:
 		var path := str(item_resource.resource_path)
 		return path.get_file().get_basename()
-	print("[Wreck] WARNING: Could not extract name from item_resource!")
 	return "Unknown Part"
 
 
-## UI Helper to push string messages to the HUD overlay.
+func get_interact_text() -> String:
+	if is_looted:
+		return ""
+	var item_name := _get_item_name()
+	if _is_before_day_3():
+		var nm = get_node_or_null("/root/NightManager")
+		if nm and "current_night" in nm and nm.current_night == 0:
+			return ""
+		return "[E] Examine the wreck"
+	return "[E] Salvage " + item_name
+
+
 func _show_hud_message(msg: String) -> void:
 	var hud = get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("show_message"):
 		hud.show_message(msg)
-		print("[Wreck HUD] ", msg)
 	else:
 		print("[Wreck HUD Missing] ", msg)

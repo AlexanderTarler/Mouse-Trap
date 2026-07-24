@@ -24,6 +24,7 @@ const TUTORIAL_PATHS: Array[String] = [
 	"res://resources/tutorial/tutorial_sprint.tres",
 	"res://resources/tutorial/tutorial_flashlight.tres",
 	"res://resources/tutorial/tutorial_inventory.tres",
+	"res://resources/tutorial/tutorial_pc_login.tres",
 ]
 
 ## Loaded TutorialData resources.
@@ -80,28 +81,48 @@ func _find_hud() -> Node:
 	return null
 
 
+## Helper: formatted timestamp in seconds for debug logging.
+func _timestamp() -> String:
+	var ms := Time.get_ticks_msec()
+	var sec := ms / 1000
+	var frac := ms % 1000
+	return "%d.%03d" % [sec, frac]
+
+
 ## Trigger a tutorial by its mechanic_id. Called by external scripts (player_controller,
 ## inventory, NightManager) when a trigger moment occurs.
 func trigger(mechanic_id: String) -> void:
 	var tutorial := _find_tutorial(mechanic_id)
 	if not tutorial:
+		push_warning("[TutorialManager] T+%s TRIGGER '%s' — NOT FOUND in loaded tutorials" % [_timestamp(), mechanic_id])
 		return
+	print("[TutorialManager] T+%s TRIGGER '%s' — prompt='%s'" % [_timestamp(), mechanic_id, tutorial.prompt_text])
 	_show(tutorial)
 
 
 ## Mark a mechanic as learned (player performed the action).
 ## Dispatches to RoutineManager for persistence and dismisses the hint.
 func mark_learned(mechanic_id: String) -> void:
-	# If this mechanic's prompt is currently visible, dismiss it.
-	var tut := _find_tutorial(mechanic_id)
-	if tut and _shown.get(mechanic_id, false):
-		var hud := _find_hud()
-		if hud and hud.has_method("hide_hint"):
-			hud.hide_hint()
+	print("[TutorialManager] T+%s MARK_LEARNED '%s' — hiding hint" % [_timestamp(), mechanic_id])
+	
+	# ─── UNCONDITIONALLY HIDE THE HINT ─────────────────────────────────
+	# The player has performed the action (e.g., opened the notebook).
+	# Regardless of whether _shown tracks this tutorial as currently visible,
+	# we must dismiss the hint. This handles the race condition where the
+	# player opens the notebook before the tutorial trigger fires, causing
+	# _shown["notebook"] to be false when hide_hint would be needed.
+	var hud := _find_hud()
+	if hud and hud.has_method("hide_hint"):
+		hud.hide_hint()
+	
+	# Clear from shown tracking so future triggers respect one_shot
+	_shown.erase(mechanic_id)
 	
 	var rm := get_node_or_null("/root/RoutineManager")
 	if rm and rm.has_method("mark_mechanic_learned"):
 		rm.mark_mechanic_learned(mechanic_id)
+	
+	print("[TutorialManager] T+%s MARK_LEARNED '%s' — done" % [_timestamp(), mechanic_id])
 
 
 ## Checks if a mechanic has been learned (via RoutineManager persistence).

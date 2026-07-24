@@ -933,6 +933,19 @@ func _set_visuals_visible(v: bool) -> void:
 		_monster_model.visible = v
 
 
+## Returns true if the Entity is currently active and should trigger
+## hallucination/sanity effects when the player looks at it.
+## Returns false if the Entity is hidden (Day 1, early Day 2, or banished).
+## Both perception_manager.gd and sanity_controller.gd call this via
+## has_method("is_active") + is_active() to gate their effects.
+func is_active() -> bool:
+	if not visible:
+		return false
+	if process_mode == PROCESS_MODE_DISABLED:
+		return false
+	return true
+
+
 func _initialize_entity() -> void:
 	_night_manager = get_node_or_null("/root/NightManager")
 	_room_light_detector = get_node_or_null("/root/RoomLightDetector")
@@ -1279,10 +1292,39 @@ func _find_player() -> void:
 
 
 func activate() -> void:
+	# ─── PLAYER REFERENCE CHECK ───────────────────────────────────────
+	# If _player is null (e.g., scene was reloaded between nights), find it
+	# before proceeding. Without a valid _player, _physics_process() early-exits
+	# and the Entity is brain-dead despite _is_active = true.
+	if not _player:
+		_find_player()
+	
 	_is_active = true
 	visible = true
-	request_state(EntityAI.State.OBSERVE_FROM_TREELINE)
 	_set_visuals_visible(true)
+	
+	# ─── RESTORE PHYSICS ──────────────────────────────────────────────
+	# Mirror the deactivate() disable logic: restore process mode,
+	# collision shape, collision layer, and collision mask so the Entity
+	# can move and physically interact with the world again.
+	process_mode = Node.PROCESS_MODE_INHERIT
+	if _collision_shape:
+		_collision_shape.disabled = false
+	
+	collision_layer = (1 << (COLLISION_LAYER_ENTITY - 1))  # Layer 5: Entity
+	collision_mask = 0
+	collision_mask |= (1 << (COLLISION_LAYER_CABIN - 1))   # Layer 1: Cabin
+	collision_mask |= (1 << (COLLISION_LAYER_PLAYER - 1))  # Layer 2: Player
+	collision_mask |= (1 << (COLLISION_LAYER_TREE - 1))    # Layer 3: Trees
+	collision_mask |= (1 << (COLLISION_LAYER_ROCK - 1))    # Layer 4: Rocks
+	
+	# NOTE: request_state() is intentionally NOT called here.
+	# The caller (escape_van.gd or _on_first_chase_started()) immediately
+	# calls request_state(STALK) after activate(). Calling
+	# request_state(OBSERVE_FROM_TREELINE) here would race against that
+	# STALK request, allowing the Director to consume OBSERVE first and
+	# leave the Entity stuck in DORMANT while _pending_state cycles.
+	# The caller owns the state transition, not activate().
 
 
 func deactivate() -> void:
@@ -1295,6 +1337,17 @@ func deactivate() -> void:
 	# Reset enrage state so the Entity starts fresh next night
 	_is_enraged = false
 	_original_stalk_speed = 0.0
+	
+	# ─── HARD PHYSICS DISABLE (Daytime Ghost Collider Fix) ─────────
+	# When the Entity is deactivated (daytime), set process_mode to
+	# PROCESS_MODE_DISABLED to prevent _process() and _physics_process()
+	# from running. Also manually disable the CollisionShape3D so the
+	# player doesn't collide with an invisible, immovable physics body.
+	# This fixes the "Entity Ghost Collider" bug introduced by Night 2.2
+	# daytime despawns.
+	process_mode = Node.PROCESS_MODE_DISABLED
+	if _collision_shape:
+		_collision_shape.disabled = true
 
 	
 	# ─── STOP ALL AUDIO ────────────────────────────────────────────
@@ -1332,38 +1385,42 @@ func _physics_process(delta: float) -> void:
 		return
 	
 	# ─── DEBUG: Position Log (every 2 seconds, ALL active states) ──────
-	_debug_pos_log_timer += delta
-	if _debug_pos_log_timer >= 2.0:
-		_debug_pos_log_timer = 0.0
-		var ray_hit = _floor_ray.is_colliding()
-		var hit_info = ""
-		if ray_hit:
-			var hit_point = _floor_ray.get_collision_point()
-			var hit_normal = _floor_ray.get_collision_normal()
-			var collider = _floor_ray.get_collider()
-			var collider_name = collider.name if collider else "null"
-			# ─── GROUND NOISE FILTER ──────────────────────────────────
-			# The floor raycast ALWAYS hits the ground (it's pointing down).
-			# "GroundFloorCollision" is the cabin floor — it's not useful info.
-			# Filter it out so the debug log only shows non-ground collisions
-			# (e.g., stairs, furniture, door thresholds).
-			if collider_name.contains("Ground") or collider_name.contains("Floor"):
-				hit_info = "collider=Ground hit_y=%.3f normal=%s" % [hit_point.y, hit_normal]
+	# PERFORMANCE: Only runs in debug builds. In production builds, this
+	# entire block (RoomLightDetector query, string formatting, print() calls)
+	# is skipped to avoid recurring frame spikes and console I/O overhead.
+	if OS.is_debug_build():
+		_debug_pos_log_timer += delta
+		if _debug_pos_log_timer >= 2.0:
+			_debug_pos_log_timer = 0.0
+			var ray_hit = _floor_ray.is_colliding()
+			var hit_info = ""
+			if ray_hit:
+				var hit_point = _floor_ray.get_collision_point()
+				var hit_normal = _floor_ray.get_collision_normal()
+				var collider = _floor_ray.get_collider()
+				var collider_name = collider.name if collider else "null"
+				# ─── GROUND NOISE FILTER ──────────────────────────────────
+				# The floor raycast ALWAYS hits the ground (it's pointing down).
+				# "GroundFloorCollision" is the cabin floor — it's not useful info.
+				# Filter it out so the debug log only shows non-ground collisions
+				# (e.g., stairs, furniture, door thresholds).
+				if collider_name.contains("Ground") or collider_name.contains("Floor"):
+					hit_info = "collider=Ground hit_y=%.3f normal=%s" % [hit_point.y, hit_normal]
+				else:
+					hit_info = "collider=%s hit_y=%.3f normal=%s" % [collider_name, hit_point.y, hit_normal]
 			else:
-				hit_info = "collider=%s hit_y=%.3f normal=%s" % [collider_name, hit_point.y, hit_normal]
-		else:
-			hit_info = "NO_HIT"
-		var _state_name = STATE_KEYS[_state] if _state >= 0 and _state < STATE_KEYS.size() else "UNKNOWN"
-		var _shape_d = _collision_shape.disabled if _collision_shape else "N/A"
-		var _room_name = RoomLightDetector.get_room_name_at(global_position)
-		print("[Entity DEBUG] pos=(%.3f, %.3f, %.3f) room=%s state=%s layer=%d mask=%d shape_disabled=%s floor_ray=%s" % [global_position.x, global_position.y, global_position.z, _room_name, _state_name, collision_layer, collision_mask, _shape_d, hit_info])
-		
-		# ─── TIME DIAGNOSTIC: NightManager vs GameTime ────────────────
-		var nm = _night_manager
-		var gt = get_node_or_null("/root/GameTime")
-		if nm and gt:
-			print("[TIME DIAGNOSTIC] NightManager: current_night=%d, is_night_active=%s, is_time_paused=%s" % [nm.current_night, nm.is_night_active, nm.is_time_paused])
-			print("[TIME DIAGNOSTIC] GameTime:     cycle_progress=%.4f, is_day=%s, is_time_paused=%s" % [gt.cycle_progress, gt.is_day, gt.is_time_paused])
+				hit_info = "NO_HIT"
+			var _state_name = STATE_KEYS[_state] if _state >= 0 and _state < STATE_KEYS.size() else "UNKNOWN"
+			var _shape_d = _collision_shape.disabled if _collision_shape else "N/A"
+			var _room_name = RoomLightDetector.get_room_name_at(global_position)
+			print("[Entity DEBUG] pos=(%.3f, %.3f, %.3f) room=%s state=%s layer=%d mask=%d shape_disabled=%s floor_ray=%s" % [global_position.x, global_position.y, global_position.z, _room_name, _state_name, collision_layer, collision_mask, _shape_d, hit_info])
+			
+			# ─── TIME DIAGNOSTIC: NightManager vs GameTime ────────────────
+			var nm = _night_manager
+			var gt = get_node_or_null("/root/GameTime")
+			if nm and gt:
+				print("[TIME DIAGNOSTIC] NightManager: current_night=%d, is_night_active=%s, is_time_paused=%s" % [nm.current_night, nm.is_night_active, nm.is_time_paused])
+				print("[TIME DIAGNOSTIC] GameTime:     cycle_progress=%.4f, is_day=%s, is_time_paused=%s" % [gt.cycle_progress, gt.is_day, gt.is_time_paused])
 
 	
 	_game_time += delta
@@ -1433,6 +1490,25 @@ func _physics_process(delta: float) -> void:
 		_state == EntityAI.State.FLINCH or
 		_state == EntityAI.State.STUNNED
 	)
+	
+	# ─── DORMANT STATE GUARD ────────────────────────────────────────────────
+	# When the Entity is in DORMANT (intentionally despawned/hidden), the stuck
+	# detector must NOT run. The Entity is supposed to be motionless — it's
+	# either daytime, hidden during Night 1 narrative, or has been deactivated.
+	# Without this guard, the stuck detector sees zero velocity + active nav
+	# and triggers fade_and_relocate(), which forces the Entity out of DORMANT
+	# and creates a 60fps DORMANT↔fade_and_relocate loop.
+	#
+	# DORMANT also means the NavigationAgent3D may have a stale target position
+	# from the previous active night. The Entity should not attempt to pathfind
+	# while hidden.
+	if _state == EntityAI.State.DORMANT:
+		_stuck_timer = 0.0
+		_pos_stuck_timer = 0.0
+		_pos_stuck_logged = false
+		# Halt the NavigationAgent3D to prevent residual nav data.
+		_nav_agent.target_position = global_position
+		return
 	
 	# ─── SMART STUCK DETECTION ──────────────────────────────────────────────
 	# Detects when the Entity is stuck (not moving while nav is active) and
@@ -2232,8 +2308,24 @@ func set_state(new_state: EntityAI.State) -> void:
 ##
 ## This prevents the "Two Masters" problem by funneling ALL state changes
 ## through the Director's single evaluation point.
+##
+## DORMANT DEADLOCK BREAKER:
+## When the Entity is in DORMANT state, the AI's process_state_logic() returns
+## early without calling the Director's evaluate_master_state(). This means
+## _pending_state (e.g., STALK from escape_van.gd) sits unread forever — the
+## Director never fires, and the Entity is stuck in DORMANT forever despite
+## _is_active = true.
+##
+## To break this deadlock, if the current state is DORMANT, we force the
+## transition directly via set_state() and clear _pending_state. This is safe
+## because DORMANT has no active state handler, no state_locked flag, and no
+## animation playing — there is nothing to interrupt.
 func request_state(new_state: EntityAI.State) -> void:
-	_pending_state = new_state
+	if _state == EntityAI.State.DORMANT:
+		set_state(new_state)
+		_pending_state = -1
+	else:
+		_pending_state = new_state
 
 ## Returns the pending state override value, or -1 if no override is pending.
 ## Called by the Master Director (entity_director.gd) at the start of

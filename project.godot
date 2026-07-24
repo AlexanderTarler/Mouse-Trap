@@ -8,11 +8,16 @@
 
 config_version=5
 
+[animation]
+
+warnings/check_invalid_track_paths=false
+
 [application]
 
 config/name="Mouse Trap"
 run/main_scene="res://scenes/ui/main_menu.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
+run/max_fps=60
 config/icon="res://icon.svg"
 
 [autoload]
@@ -29,6 +34,19 @@ EndgameManager="*res://scripts/managers/endgame_manager.gd"
 PeekerManager="*res://scripts/peeker_manager.gd"
 MCPRuntime="*uid://d0d44kj7mgnoo"
 TutorialManager="*res://scripts/managers/tutorial_manager.gd"
+
+[debug]
+
+gdscript/warnings/unused_variable=false
+gdscript/warnings/unused_private_class_variable=false
+gdscript/warnings/unused_parameter=false
+gdscript/warnings/unused_signal=false
+gdscript/warnings/shadowed_variable=false
+gdscript/warnings/shadowed_variable_base_class=false
+gdscript/warnings/shadowed_global_identifier=false
+gdscript/warnings/incompatible_ternary=false
+gdscript/warnings/int_as_enum_without_cast=false
+gdscript/warnings/confusable_local_declaration=false
 
 [display]
 
@@ -174,13 +192,8 @@ pause_menu={
 
 3d_physics/layer_16="RoomAreas"
 
-[physics]
-
-3d/physics_engine="Jolt Physics"
-
 [rendering]
 
-rendering_device/driver.windows="d3d12"
 textures/vram_compression/import_etc2_astc=true
 lights_and_shadows/directional_shadow/size=1024.0
 anti_aliasing/quality/msaa_3d=0.0

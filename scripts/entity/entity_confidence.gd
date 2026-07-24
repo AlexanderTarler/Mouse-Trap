@@ -101,6 +101,12 @@ var _debug_sensory_label: Label = null
 var _debug_nav_label: Label = null
 var _debug_ai_label: Label = null
 
+# ─── PERSISTENT FPS COUNTER (always visible, even when F3 overlay is off) ───
+var _fps_canvas: CanvasLayer = null
+var _fps_label: Label = null
+var _fps_update_timer: float = 0.0
+const FPS_UPDATE_INTERVAL: float = 0.25
+
 # ─── F3 DEBOUNCE ─────────────────────────────────────────────────────────────
 ## Prevents rapid toggling from holding F3.
 var _f3_was_pressed: bool = false
@@ -204,6 +210,23 @@ func _setup_debug_overlay() -> void:
 	_debug_canvas.add_child(_debug_ai_label)
 	
 	# ─── FORCED VISIBILITY DEBUG ────────────────────────────────────
+	# ─── FPS COUNTER (persistent, always visible) ────────────────────
+	_fps_canvas = CanvasLayer.new()
+	_fps_canvas.layer = 300  # Above everything including debug overlay
+	_fps_canvas.process_mode = PROCESS_MODE_ALWAYS
+	add_child(_fps_canvas)
+	
+	_fps_label = Label.new()
+	_fps_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	_fps_label.position = Vector2(10, 8)
+	_fps_label.size = Vector2(160, 24)
+	_fps_label.add_theme_font_size_override("font_size", 14)
+	# Semi-transparent bg for readability
+	_fps_label.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+	_fps_label.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3, 1.0))
+	_fps_label.text = "FPS: --"
+	_fps_canvas.add_child(_fps_label)
+	
 	print("[Confidence] Entity Debug UI initialized. CanvasLayer: ", _debug_canvas.get_path())
 	print("[Confidence] CanvasLayer layer: ", _debug_canvas.layer, " | visible: ", _debug_canvas.visible)
 	print("[Confidence] CanvasLayer process_mode: ", _debug_canvas.process_mode)
@@ -214,7 +237,23 @@ func _process(delta: float) -> void:
 	if not entity or not is_instance_valid(entity):
 		return
 	
-	# ─── 0. F3 TOGGLE (polled in _process for reliability) ──────────
+	# ─── 0. PERSISTENT FPS COUNTER (always visible) ─────────────────
+	_fps_update_timer += delta
+	if _fps_update_timer >= FPS_UPDATE_INTERVAL:
+		_fps_update_timer = 0.0
+		var fps = Engine.get_frames_per_second()
+		var frame_time = snapped(1000.0 / fps, 0.1) if fps > 0 else 0.0
+		var fps_color: Color
+		if fps < 30:
+			fps_color = Color(1.0, 0.2, 0.2)  # Red
+		elif fps < 55:
+			fps_color = Color(1.0, 1.0, 0.2)  # Yellow
+		else:
+			fps_color = Color(0.3, 1.0, 0.3)  # Green
+		_fps_label.add_theme_color_override("font_color", fps_color)
+		_fps_label.text = "FPS: %d (%.1f ms)" % [fps, frame_time]
+	
+	# ─── 1. F3 TOGGLE (polled in _process for reliability) ──────────
 	var f3_down: bool = Input.is_key_pressed(KEY_F3)
 	if f3_down and not _f3_was_pressed:
 		debug_overlay_active = not debug_overlay_active

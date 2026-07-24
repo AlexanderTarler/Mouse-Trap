@@ -19,14 +19,9 @@ signal computer_closed
 # MULTI-USER SYSTEM
 # ─────────────────────────────────────────────────────────────────────────────
 
-## Whether the computer is currently open. Used by external scripts (e.g.,
-## InventoryUI) to block input while the computer is in use.
 var is_open: bool = false
-
-## Who is currently logged in. "" = logged out, "LUND" = player, "STENBERG" = Arvid.
 var current_user: String = ""
 
-## Valid credentials. Key = username, value = password.
 const VALID_CREDENTIALS: Dictionary = {
 	"LUND": "PASSKEY1",
 	"STENBERG": "1996",
@@ -41,7 +36,7 @@ var _original_camera_transform: Transform3D
 var _camera_holder: Node3D = null
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STATE FLAGS (preserved from original)
+# STATE FLAGS
 # ─────────────────────────────────────────────────────────────────────────────
 
 var _unlocked_profiles: Dictionary = {}
@@ -50,7 +45,6 @@ var _nest_data_uploaded: bool = false
 var is_arvid_log_1_unlocked: bool = false
 var is_arvid_log_2_unlocked: bool = false
 
-## Alias for external compatibility.
 var nest_data_uploaded: bool:
 	get: return _nest_data_uploaded
 	set(v): _nest_data_uploaded = v
@@ -81,7 +75,7 @@ const ARVID_DECRYPTION_KEY: String = "STENBERG_1996"
 @onready var _desktop_shutdown_btn: Button = $DesktopView/ShutDownIcon
 
 # ─────────────────────────────────────────────────────────────────────────────
-# ONREADY NODES — Main Window (applications open inside this)
+# ONREADY NODES — Main Window
 # ─────────────────────────────────────────────────────────────────────────────
 
 @onready var _main_window: Panel = $MainWindow
@@ -91,11 +85,14 @@ const ARVID_DECRYPTION_KEY: String = "STENBERG_1996"
 @onready var _maximize_button: Button = $MainWindow/TitleBar/MaximizeButton
 @onready var _status_label: Label = $MainWindow/StatusBar/StatusLabel
 
-# Data entry (FIELD_LOG.EXE)
+# Data entry (FIELD_LOG.EXE) — 3 static nest rows from .tscn
 @onready var _data_entry_panel: Panel = $MainWindow/HBoxContainer/DataEntryPanel
-@onready var _dropdown_source: OptionButton = $MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox/DropdownSource
-@onready var _dropdown_anomaly: OptionButton = $MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox/DropdownAnomaly
-@onready var _dropdown_frequency: OptionButton = $MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox/DropdownFrequency
+@onready var _dropdown_anomaly_a: OptionButton = $MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox/DropdownAnomalyA
+@onready var _pop_input_a: LineEdit = $MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox/PopulationInputA
+@onready var _dropdown_anomaly_b: OptionButton = $MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox/DropdownAnomalyB
+@onready var _pop_input_b: LineEdit = $MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox/PopulationInputB
+@onready var _dropdown_anomaly_c: OptionButton = $MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox/DropdownAnomalyC
+@onready var _pop_input_c: LineEdit = $MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox/PopulationInputC
 @onready var _btn_correlate: Button = $MainWindow/HBoxContainer/DataEntryPanel/DataEntryVBox/CorrelateButton
 
 # Recovery (RECOVER_DATA.EXE)
@@ -109,7 +106,7 @@ var _is_maximized: bool = false
 var _normal_rect: Rect2
 
 # ─────────────────────────────────────────────────────────────────────────────
-# DATA & ANSWER KEYS (preserved from original)
+# DATA & ANSWER KEYS
 # ─────────────────────────────────────────────────────────────────────────────
 
 const NIGHT_ANSWER_KEY: Dictionary = {
@@ -117,11 +114,17 @@ const NIGHT_ANSWER_KEY: Dictionary = {
 	2: [2, 2, 1],
 }
 
-const NEST_CONCEPT_ANSWER_KEY := [0, 1, 2]
-const NEST_CONCEPT_CHOICES := [
-	"Extreme Photophobia",
-	"Active Observation",
-	"Acoustic Mimicry",
+const NEST_ANSWER_KEY: Dictionary = {
+	"Nest Alpha":  { "pop": "6",      "anomaly": "Photophobia" },
+	"Nest Beta":   { "pop": "unknown","anomaly": "Covert Observation" },
+	"Nest Gamma":  { "pop": "3",      "anomaly": "Audio-Specific Abnormalities" },
+}
+
+const ANOMALY_OPTIONS: Array[String] = [
+	"Standard Biological Behavior",
+	"Photophobia",
+	"Covert Observation",
+	"Audio-Specific Abnormalities",
 ]
 
 const TACTICAL_LOG_REWARDS: Dictionary = {
@@ -193,23 +196,21 @@ func set_original_camera_transform(transform: Transform3D) -> void:
 func _ready() -> void:
 	visible = false
 	add_to_group("computer_ui")
+	always_pass_correlation = false
 	
-	# Connect title bar buttons
 	if _close_button:   _close_button.pressed.connect(_on_close_app_window)
 	if _minimize_button: _minimize_button.pressed.connect(_on_minimize)
 	if _maximize_button: _maximize_button.pressed.connect(_on_maximize)
-	
-	# Connect login
 	if _login_button:   _login_button.pressed.connect(_on_login_submit)
-	
-	# Connect desktop icons
+	if _username_input:
+		_username_input.text_submitted.connect(func(_text): _on_login_submit())
+	if _password_input:
+		_password_input.text_submitted.connect(func(_text): _on_login_submit())
 	if _desktop_field_log_btn: _desktop_field_log_btn.pressed.connect(_on_field_log_open)
 	if _desktop_recycle_btn:   _desktop_recycle_btn.pressed.connect(_on_trash)
 	if _desktop_logoff_btn:    _desktop_logoff_btn.pressed.connect(_on_log_off)
 	if _power_off_btn:         _power_off_btn.pressed.connect(_on_exit_computer)
 	if _desktop_shutdown_btn:  _desktop_shutdown_btn.pressed.connect(_on_exit_computer)
-	
-	# Connect correlation
 	if _btn_correlate:    _btn_correlate.pressed.connect(_on_correlate_data)
 	if _submit_key_btn:   _submit_key_btn.pressed.connect(_on_submit_decryption_key)
 	
@@ -226,7 +227,6 @@ func _ready() -> void:
 # ─────────────────────────────────────────────────────────────────────────────
 
 func open_computer() -> void:
-	# Safety: ensure we're in the scene tree
 	if not is_inside_tree():
 		var main_loop = Engine.get_main_loop()
 		if main_loop is SceneTree:
@@ -242,32 +242,20 @@ func open_computer() -> void:
 	is_open = true
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	
-	# ─── CLOSE INVENTORY ──────────────────────────────────────────
-	# Ensure the inventory is closed so the player cannot accidentally
-	# toggle it with TAB while using the computer.
 	var inv_ui = get_node_or_null("/root/CottageHorror/InventoryUI")
 	if not inv_ui:
 		inv_ui = get_node_or_null("/root/Main/InventoryUI")
 	if inv_ui and inv_ui.has_method("_close_inventory") and inv_ui.get("_is_open"):
 		inv_ui._close_inventory()
 	
-	# ─── HIDE HORROR HUD ─────────────────────────────────────────
-	# Hide the HUD while the player is using the computer so it
-	# doesn't show distracting day/night/battery/stamina info
-	# behind/over the computer interface.
-	# NOTE: HorrorHUD is NOT in the "hud" group, so we resolve
-	# the path directly instead of using a group lookup.
-	var hud = get_node_or_null("/root/CottageHorror/HorrorHUD")
-	if not hud:
-		hud = get_node_or_null("/root/Main/HorrorHUD")
-	if hud:
-		hud.visible = false
+	var hud_nodes = get_tree().get_nodes_in_group("hud")
+	for h in hud_nodes:
+		h.visible = false
 	
 	if _player:
 		_player.set_process_input(false)
 		_player.set_physics_process(false)
 	
-	# Branch: logged in → desktop, logged out → login
 	if current_user == "":
 		_show_login_screen()
 	else:
@@ -284,8 +272,7 @@ func close_computer() -> void:
 	if _camera_holder and _original_camera_transform != Transform3D():
 		var tween = create_tween()
 		tween.set_parallel(false)
-		tween.tween_property(_camera_holder, "global_transform", _original_camera_transform, 0.5)\
-			.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+		tween.tween_property(_camera_holder, "global_transform", _original_camera_transform, 0.5)
 		tween.finished.connect(_on_stand_tween_completed)
 	else:
 		_restore_player_controls()
@@ -305,7 +292,6 @@ func _show_login_screen() -> void:
 	_username_input.text = ""
 	_password_input.text = ""
 	_login_error.text = ""
-	print("[ComputerUI] Login screen displayed.")
 
 
 func _on_login_submit() -> void:
@@ -315,26 +301,26 @@ func _on_login_submit() -> void:
 	if not VALID_CREDENTIALS.has(user):
 		_login_error.text = "INVALID USERNAME"
 		_play_error_sound()
-		print("[ComputerUI] Login failed: unknown user '%s'" % user)
+		_trigger_login_tutorial()
 		return
 	
 	if VALID_CREDENTIALS[user] != pw:
 		_login_error.text = "INVALID PASSWORD"
 		_play_error_sound()
-		print("[ComputerUI] Login failed: wrong password for '%s'" % user)
+		_trigger_login_tutorial()
 		return
 	
-	# Success
 	current_user = user
 	_login_error.text = ""
 	print("[ComputerUI] LOGIN SUCCESS: user='%s'" % current_user)
 	
-	# Only trigger Day 1 progression for LUND on first login
 	if user == "LUND":
 		var rm = get_node_or_null("/root/RoutineManager")
 		if rm and rm.has_method("on_computer_used"):
 			rm.on_computer_used()
-			print("[ComputerUI] RoutineManager.on_computer_used() called for LUND.")
+		if not _eco_survey_completed:
+			_eco_survey_completed = true
+			print("[ComputerUI] Eco-survey marked as completed on LUND login.")
 	
 	_show_desktop()
 
@@ -346,36 +332,19 @@ func _on_login_submit() -> void:
 func _show_desktop() -> void:
 	_login_screen.visible = false
 	_main_window.visible = false
-	
 	_desktop_view.visible = true
 	
-	# Show/hide icons based on current_user
-	if current_user == "LUND":
-		_desktop_field_log_btn.visible = true
-		_desktop_recycle_btn.visible = false
-	elif current_user == "STENBERG":
-		_desktop_field_log_btn.visible = false
-		_desktop_recycle_btn.visible = true
-	else:
-		_desktop_field_log_btn.visible = false
-		_desktop_recycle_btn.visible = false
-	
-	# Log Off is always visible
+	_desktop_field_log_btn.visible = (current_user == "LUND")
+	_desktop_recycle_btn.visible = (current_user == "STENBERG")
 	_desktop_logoff_btn.visible = true
-	
-	print("[ComputerUI] Desktop displayed for user '%s'" % current_user)
 
 
-## Called by POWER OFF / SHUT DOWN buttons and the interact key (E).
-## Closes the entire computer UI and returns control to the player.
 func _on_exit_computer() -> void:
 	close_computer()
-
 
 func _on_log_off() -> void:
 	current_user = ""
 	_show_login_screen()
-	print("[ComputerUI] User logged off.")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -387,15 +356,9 @@ func _on_stand_tween_completed() -> void:
 
 func _restore_player_controls() -> void:
 	Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
-	
-	# ─── RESTORE HORROR HUD ──────────────────────────────────────
-	# Show the HUD again now that the player is back in control.
-	var hud = get_node_or_null("/root/CottageHorror/HorrorHUD")
-	if not hud:
-		hud = get_node_or_null("/root/Main/HorrorHUD")
-	if hud:
-		hud.visible = true
-	
+	var hud_nodes = get_tree().get_nodes_in_group("hud")
+	for h in hud_nodes:
+		h.visible = true
 	if _player:
 		_player.set_process_input(true)
 		_player.set_physics_process(true)
@@ -406,8 +369,6 @@ func _restore_player_controls() -> void:
 			_player.global_rotation.z = 0.0
 			if _camera_holder:
 				_camera_holder.rotation = Vector3(orig_euler.x, 0.0, 0.0)
-				_camera_holder.global_transform.basis = _camera_holder.global_transform.basis.orthonormalized()
-			print("[ComputerUI] Deep matrix alignment complete.")
 		else:
 			if _camera_holder:
 				_camera_holder.rotation.z = 0.0
@@ -442,33 +403,19 @@ func _on_maximize() -> void:
 		_is_maximized = true
 		_status_label.text = "Maximized"
 
-## Closes the application window and returns to the desktop.
-## Bound to the MainWindow CloseButton (X).
 func _on_close_app_window() -> void:
 	_main_window.visible = false
 	_desktop_view.visible = true
-	print("[ComputerUI] Application window closed. Returning to desktop.")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# FIELD_LOG.EXE — Gated behind Day 2+
+# FIELD_LOG.EXE
 # ─────────────────────────────────────────────────────────────────────────────
 
 func _on_field_log_open() -> void:
-	# ─── DAY 1 GUARD: FIELD_LOG.EXE is locked on Day 1 ───────────────
 	var rm = get_node_or_null("/root/RoutineManager")
 	if rm:
-		# Check if eco-survey has been completed (Day 1 computer task done)
-		# If phase2_computer_used isn't set, this is Day 1 — block access
-		var comp_used = rm.get("phase2_computer_used") if rm else false
-		var nests_done = rm.get("nests_documented") >= 3 if rm else false
-		
-		# On Day 1 (phase2_computer_used just set, but nests not done),
-		# FIELD_LOG should show "access denied" or the eco-survey if appropriate.
-		# On Day 2, the player needs to have documented nests first.
-		# But if always_pass_correlation is set (debug), allow access.
 		if not always_pass_correlation:
-			# Block if eco-survey hasn't been completed yet
 			if not _eco_survey_completed:
 				_show_access_denied("FIELD_LOG.EXE requires completed eco-survey baseline.")
 				return
@@ -478,40 +425,30 @@ func _on_field_log_open() -> void:
 	_main_window.find_child("TitleLabel", true, false).text = "FIELD_LOG.EXE"
 	_status_label.text = "Opening: FIELD_LOG.EXE — Data Correlation Utility..."
 	
-	# Hide content, show data entry
 	$MainWindow/HBoxContainer/ContentPanel.visible = false
 	_data_entry_panel.visible = true
 	_recovery_panel.visible = false
 	
-	if _dropdown_source:   _dropdown_source.selected = 0
-	if _dropdown_anomaly:  _dropdown_anomaly.selected = 0
-	if _dropdown_frequency: _dropdown_frequency.selected = 0
+	# Reset all dropdowns to index 0 and clear all population inputs
+	if _dropdown_anomaly_a: _dropdown_anomaly_a.selected = 0
+	if _pop_input_a: _pop_input_a.text = ""
+	if _dropdown_anomaly_b: _dropdown_anomaly_b.selected = 0
+	if _pop_input_b: _pop_input_b.text = ""
+	if _dropdown_anomaly_c: _dropdown_anomaly_c.selected = 0
+	if _pop_input_c: _pop_input_c.text = ""
 	
-	# If eco-survey is completed and nests documented, show concept puzzle
-	if _eco_survey_completed:
-		var nests_documented := 0
-		if rm: nests_documented = rm.get("nests_documented")
-		
-		if nests_documented >= 3 and not _nest_data_uploaded:
-			_show_nest_concept_puzzle()
-			return
-		
-		if _nest_data_uploaded:
-			_status_label.text = "FIELD_LOG.EXE — Nest Data Uploaded"
-			$MainWindow/HBoxContainer/ContentPanel.visible = true
-			_data_entry_panel.visible = false
-			_content_display.text = "[b]NEST DOCUMENTATION CORRELATION COMPLETE[/b]\n\n"
-			_content_display.text += "All three Hazelnest observations have been successfully archived."
-			return
-		
-		# Eco-survey already done — show completion
-		_status_label.text = "FIELD_LOG.EXE — Eco-Survey Complete"
+	if _nest_data_uploaded:
+		_status_label.text = "FIELD_LOG.EXE — Nest Data Uploaded"
 		$MainWindow/HBoxContainer/ContentPanel.visible = true
 		_data_entry_panel.visible = false
-		_content_display.text = "[b]ECO-SURVEY CORRELATION COMPLETE[/b]\n\nBaseline data archived."
+		_content_display.text = "[b]NEST DOCUMENTATION CORRELATION COMPLETE[/b]\n\n"
+		_content_display.text += "All three Hazelnest observations have been successfully archived."
 		return
 	
-	print("[ComputerUI] FIELD_LOG.EXE opened.")
+	_status_label.text = "FIELD_LOG.EXE — Enter Nest Observation Data"
+	_data_entry_panel.visible = true
+	$MainWindow/HBoxContainer/ContentPanel.visible = false
+	print("[ComputerUI] FIELD_LOG.EXE opened with nest correlation form.")
 
 
 func _show_access_denied(reason: String) -> void:
@@ -522,7 +459,6 @@ func _show_access_denied(reason: String) -> void:
 	_recovery_panel.visible = false
 	_status_label.text = "ACCESS DENIED"
 	_content_display.text = "[color=red][b]ACCESS DENIED[/b][/color]\n\n%s" % reason
-	print("[ComputerUI] ACCESS DENIED: %s" % reason)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -557,49 +493,84 @@ func _on_trash() -> void:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CORRELATION LOGIC (preserved)
+# CORRELATION LOGIC — Validates ALL 3 static nest rows from .tscn
 # ─────────────────────────────────────────────────────────────────────────────
+
+## Validates all 3 nest rows against NEST_ANSWER_KEY.
+## Each row has its own anomaly dropdown and population LineEdit.
+## All 3 must be correct for the correlation to succeed.
+func _validate_nest_correlation() -> bool:
+	var all_correct := true
+	
+	var nest_rows := [
+		{ "name": "Nest Alpha", "anomaly": _dropdown_anomaly_a, "pop": _pop_input_a },
+		{ "name": "Nest Beta",  "anomaly": _dropdown_anomaly_b, "pop": _pop_input_b },
+		{ "name": "Nest Gamma", "anomaly": _dropdown_anomaly_c, "pop": _pop_input_c },
+	]
+	
+	for row in nest_rows:
+		var nest_name: String = row.name
+		var dropdown: OptionButton = row.anomaly
+		var line_edit: LineEdit = row.pop
+		
+		var selected_anomaly: String = dropdown.get_item_text(dropdown.selected) if dropdown else ""
+		var entered_pop: String = line_edit.text.strip_edges() if line_edit else ""
+		
+		var expected = NEST_ANSWER_KEY.get(nest_name, {})
+		if expected.is_empty():
+			all_correct = false
+			continue
+		
+		var expected_anomaly: String = expected.get("anomaly", "")
+		var expected_pop: String = expected.get("pop", "")
+		
+		var anomaly_ok: bool = (selected_anomaly == expected_anomaly)
+		var pop_ok: bool = (entered_pop.to_lower() == expected_pop.to_lower())
+		
+		if not anomaly_ok or not pop_ok:
+			all_correct = false
+	
+	return all_correct
+
 
 func _on_correlate_data() -> void:
 	print("[ComputerUI] CORRELATE DATA BUTTON PRESSED")
 	
-	if always_pass_correlation:
-		_on_correlation_success(_get_current_night())
-		return
-	
-	var source_idx: int = _dropdown_source.selected if _dropdown_source else 0
-	var anomaly_idx: int = _dropdown_anomaly.selected if _dropdown_anomaly else 0
-	var freq_idx: int = _dropdown_frequency.selected if _dropdown_frequency else 0
-	var selected_indices: Array = [source_idx, anomaly_idx, freq_idx]
-	var current_night: int = _get_current_night()
-	
-	# Night 1 pre-check: nests must be photographed
-	if current_night == 1 and selected_indices == [0, 0, 0] and not _eco_survey_completed:
-		if not _all_nests_photographed():
-			_play_error_sound()
-			_status_label.text = "ERROR: FLOATING FIELD SAMPLES DETECTED"
-			_content_display.text = "[color=red][b]ERROR: FLOATING FIELD SAMPLES DETECTED.[/b][/color]\n\n"
-			_content_display.text += "[color=red]ALL PERIMETER NEST LOCATIONS MUST HAVE EXACTLY ONE LOGGED JPEG PROFILE.[/color]"
-			$MainWindow/HBoxContainer/ContentPanel.visible = true
-			return
-		print("[ComputerUI] All nests photographed — falling through to night answer key check.")
-	
-	# Day 2 nest concept puzzle
-	if _eco_survey_completed and not _nest_data_uploaded:
-		var rm = get_node_or_null("/root/RoutineManager")
-		var nests_doc = rm.get("nests_documented") if rm else 0
-		if rm and nests_doc >= 3:
-			if selected_indices == NEST_CONCEPT_ANSWER_KEY:
-				_on_nest_concept_success()
-			else:
-				_on_nest_concept_failure()
-			return
-	
-	var correct_indices = NIGHT_ANSWER_KEY.get(current_night, null)
-	if correct_indices != null and selected_indices == correct_indices:
-		_on_correlation_success(current_night)
+	_nest_correlation_check()
+
+
+## Validates all 3 nest rows. On success: calls _on_nest_correlation_success().
+## On failure: shows error text.
+func _nest_correlation_check() -> void:
+	if _validate_nest_correlation():
+		_on_nest_correlation_success()
 	else:
-		_on_correlation_failure()
+		_on_nest_correlation_failure()
+
+
+func _on_nest_correlation_success() -> void:
+	_play_success_sound()
+	_nest_data_uploaded = true
+	nest_data_uploaded = true
+	_status_label.text = "CORRELATION ACCEPTED"
+	
+	var rm = get_node_or_null("/root/RoutineManager")
+	if rm and rm.has_method("on_nest_data_uploaded"):
+		rm.on_nest_data_uploaded()
+	
+	_data_entry_panel.visible = false
+	$MainWindow/HBoxContainer/ContentPanel.visible = true
+	_content_display.text = "[b]NEST DOCUMENTATION CORRELATION COMPLETE[/b]\n\n"
+	_content_display.text += "Nest Alpha → Photophobia ✓ (Pop: 6)\n"
+	_content_display.text += "Nest Beta → Covert Observation ✓ (Pop: Unknown)\n"
+	_content_display.text += "Nest Gamma → Audio-Specific Abnormalities ✓ (Pop: 3)\n\n"
+	_content_display.text += "Data uploaded."
+
+
+func _on_nest_correlation_failure() -> void:
+	_play_error_sound()
+	_status_label.text = "ERROR: Data correlation mismatch. Review notebook entries."
+	_content_display.text = "[color=red][b]ERROR: Data correlation mismatch. Review notebook entries.[/b][/color]"
 
 
 func _on_correlation_success(night: int) -> void:
@@ -617,12 +588,9 @@ func _on_correlation_success(night: int) -> void:
 	if night == 1 and not _eco_survey_completed:
 		_eco_survey_completed = true
 		_trigger_phone_drop_event()
-		print("[ComputerUI] Night 1 eco-survey correlated!")
 	
-	# Day 2 nest upload
 	var rm = get_node_or_null("/root/RoutineManager")
-	var nests_done: bool = rm and rm.get("nests_documented") >= 3 if rm else false
-	if night == 2 and (_eco_survey_completed or nests_done):
+	if night == 2 and (_eco_survey_completed or (rm and rm.get("nests_documented") >= 3)):
 		if rm and rm.has_method("on_nest_data_uploaded"):
 			rm.on_nest_data_uploaded()
 	
@@ -631,11 +599,9 @@ func _on_correlation_success(night: int) -> void:
 	
 	var reward = TACTICAL_LOG_REWARDS.get(night, null)
 	if reward:
-		_content_display.text = "[b]" + reward["title"] + "[/b]\n\n" + reward["body"] + "\n\n---\n[color=gray]Decryption Key: NIGHT_" + str(night) + "_CORRELATION_ACCEPTED[/color]"
+		_content_display.text = "[b]" + reward["title"] + "[/b]\n\n" + reward["body"]
 	else:
 		_content_display.text = "[b]NIGHT " + str(night) + " — DATA CORRELATION ACCEPTED[/b]\n\nNo additional intelligence available."
-	
-	print("[ComputerUI] Night %d correlation successful!" % night)
 
 
 func _on_correlation_failure() -> void:
@@ -649,59 +615,6 @@ func _on_correlation_failure() -> void:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# NEST CONCEPT PUZZLE
-# ─────────────────────────────────────────────────────────────────────────────
-
-func _show_nest_concept_puzzle() -> void:
-	_status_label.text = "FIELD_LOG.EXE — Nest Documentation Correlation"
-	if _dropdown_source:
-		_dropdown_source.clear()
-		for c in NEST_CONCEPT_CHOICES: _dropdown_source.add_item(c)
-		_dropdown_source.selected = 0
-	if _dropdown_anomaly:
-		_dropdown_anomaly.clear()
-		for c in NEST_CONCEPT_CHOICES: _dropdown_anomaly.add_item(c)
-		_dropdown_anomaly.selected = 0
-	if _dropdown_frequency:
-		_dropdown_frequency.clear()
-		for c in NEST_CONCEPT_CHOICES: _dropdown_frequency.add_item(c)
-		_dropdown_frequency.selected = 0
-	
-	var sl = _dropdown_source.get_parent().get_node_or_null("SourceLabel")
-	var al = _dropdown_anomaly.get_parent().get_node_or_null("AnomalyLabel")
-	var fl = _dropdown_frequency.get_parent().get_node_or_null("FrequencyLabel")
-	if sl: sl.text = "Nest Alpha:"
-	if al: al.text = "Nest Beta:"
-	if fl: fl.text = "Nest Gamma:"
-	
-	_data_entry_panel.visible = true
-	$MainWindow/HBoxContainer/ContentPanel.visible = false
-	print("[ComputerUI] Nest concept puzzle displayed.")
-
-
-func _on_nest_concept_success() -> void:
-	_play_success_sound()
-	_nest_data_uploaded = true
-	nest_data_uploaded = true
-	_status_label.text = "CORRELATION ACCEPTED"
-	var rm = get_node_or_null("/root/RoutineManager")
-	if rm and rm.has_method("on_nest_data_uploaded"):
-		rm.on_nest_data_uploaded()
-	_data_entry_panel.visible = false
-	$MainWindow/HBoxContainer/ContentPanel.visible = true
-	_content_display.text = "[b]NEST DOCUMENTATION CORRELATION COMPLETE[/b]\n\n"
-	_content_display.text += "Nest Alpha → Extreme Photophobia ✓\nNest Beta → Active Observation ✓\nNest Gamma → Acoustic Mimicry ✓\n\nData uploaded."
-
-
-func _on_nest_concept_failure() -> void:
-	_play_error_sound()
-	_status_label.text = "FIELD OBSERVATION MISMATCH"
-	_data_entry_panel.visible = false
-	$MainWindow/HBoxContainer/ContentPanel.visible = true
-	_content_display.text = "[color=red][b]FIELD OBSERVATION MISMATCH.[/b][/color]\n\nCross-reference your field notebook."
-
-
-# ─────────────────────────────────────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -709,28 +622,6 @@ func _get_current_night() -> int:
 	var nm = get_node_or_null("/root/NightManager")
 	if nm and "current_night" in nm: return nm.current_night
 	return 1
-
-func _all_nests_photographed() -> bool:
-	var photo_cam = get_node_or_null("/root/CottageHorror/Player/CameraHolder/Camera3D/PhotoCamera")
-	if not photo_cam: photo_cam = get_node_or_null("/root/Main/Player/CameraHolder/Camera3D/PhotoCamera")
-	if not photo_cam:
-		var nests = get_tree().get_nodes_in_group("hasselmus_nests")
-		for nest in nests:
-			if "is_photographed" in nest and not nest.is_photographed: return false
-		return nests.size() > 0
-	var count = photo_cam.get_documented_count() if photo_cam.has_method("get_documented_count") else photo_cam.documented_nests.size()
-	var total = photo_cam.get("TOTAL_NESTS") if "TOTAL_NESTS" in photo_cam else 3
-	return count >= total
-
-func _trigger_phone_drop_event() -> void:
-	var gt = get_node_or_null("/root/GameTime")
-	if gt:
-		if gt.has_method("set_progress"): gt.set_progress(0.438)
-		if gt.has_method("unpause_time"): gt.unpause_time()
-	var inv_ui = get_node_or_null("/root/CottageHorror/InventoryUI")
-	if not inv_ui: inv_ui = get_node_or_null("/root/Main/InventoryUI")
-	if inv_ui and inv_ui.has_method("_close_inventory"): inv_ui._close_inventory()
-	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 func _play_success_sound() -> void:
 	var stream = load("res://assets/audio/UI/ui_click_success.ogg")
@@ -745,8 +636,22 @@ func _play_error_sound() -> void:
 		p.play(); p.finished.connect(p.queue_free)
 
 
+func _trigger_phone_drop_event() -> void:
+	# Kept for compatibility with _on_correlation_success.
+	# The phone drop is now handled by the eco-survey completion on login.
+	pass
+
+
+func _trigger_login_tutorial() -> void:
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("trigger"):
+		tm.trigger("pc_login_hint")
+	if _login_error:
+		_login_error.text = "ACCESS DENIED. HINT: Press [J] to check your Notebook for credentials."
+
+
 # ─────────────────────────────────────────────────────────────────────────────
-# RECOVER_DATA.EXE (preserved)
+# RECOVER_DATA.EXE
 # ─────────────────────────────────────────────────────────────────────────────
 
 func _on_submit_decryption_key() -> void:

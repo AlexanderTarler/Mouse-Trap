@@ -1,68 +1,139 @@
 [gd_scene format=3 uid="uid://w2nhpuaugrii"]
 
-[ext_resource type="Script" path="res://scripts/inventory/inventory_ui.gd" id="1_inv_ui"]
+[ext_resource type="Script" uid="uid://bsagcdq5s16ko" path="res://scripts/inventory/inventory_ui.gd" id="1_inv_ui"]
 
-[node name="InventoryUI" type="CanvasLayer"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
+content_margin_left = 12.0
+content_margin_top = 12.0
+content_margin_right = 12.0
+content_margin_bottom = 12.0
+bg_color = Color(0.05, 0.02, 0.02, 0.92)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.25, 0.12, 0.04, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn"]
+bg_color = Color(0.12, 0.05, 0.02, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.3, 0.15, 0.05, 1)
+border_blend = true
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_hover"]
+bg_color = Color(0.2, 0.1, 0.05, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.5, 0.25, 0.08, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn_disabled"]
+bg_color = Color(0.04, 0.02, 0.01, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.1, 0.05, 0.02, 1)
+
+[node name="InventoryUI" type="CanvasLayer" unique_id=336586731]
 layer = 10
 script = ExtResource("1_inv_ui")
 
-[node name="Panel" type="Panel" parent="."]
-visible = false
-anchors_preset = 0
-offset_left = 100.0
-offset_top = 100.0
-offset_right = 700.0
-offset_bottom = 500.0
+[node name="Panel" type="Panel" parent="." unique_id=1265479928]
+offset_left = 541.0
+offset_top = 278.0
+offset_right = 1381.0
+offset_bottom = 858.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="CloseButton" type="Button" parent="Panel"]
-offset_left = 560.0
-offset_top = 8.0
-offset_right = 592.0
-offset_bottom = 40.0
-text = "X"
+[node name="CloseButton" type="Button" parent="Panel" unique_id=648835346]
+layout_mode = 0
+offset_left = 809.0
+offset_top = 4.0
+offset_right = 837.0
+offset_bottom = 32.0
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "x"
 
-[node name="ItemNameLabel" type="Label" parent="Panel"]
+[node name="ItemNameLabel" type="Label" parent="Panel" unique_id=354815350]
+layout_mode = 0
 offset_left = 16.0
-offset_top = 16.0
-offset_right = 300.0
-offset_bottom = 40.0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
+offset_top = 14.0
+offset_right = 600.0
+offset_bottom = 38.0
+theme_override_colors/font_color = Color(1, 0.95, 0.85, 1)
 theme_override_font_sizes/font_size = 18
 
-[node name="ItemDescLabel" type="Label" parent="Panel"]
+[node name="ItemDescLabel" type="Label" parent="Panel" unique_id=1031662410]
+layout_mode = 0
 offset_left = 16.0
-offset_top = 44.0
-offset_right = 400.0
-offset_bottom = 68.0
-theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
-theme_override_font_sizes/font_size = 14
+offset_top = 38.0
+offset_right = 600.0
+offset_bottom = 62.0
+theme_override_colors/font_color = Color(0.6, 0.6, 0.55, 1)
+theme_override_font_sizes/font_size = 12
 
-[node name="MarginContainer" type="MarginContainer" parent="Panel"]
+[node name="GridBg" type="ColorRect" parent="Panel" unique_id=239846582]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 70.0
+offset_right = 826.0
+offset_bottom = 420.0
+color = Color(0.83, 0.766505, 0.6889, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel" unique_id=763801653]
+layout_mode = 0
 offset_left = 16.0
-offset_top = 80.0
-offset_right = 584.0
-offset_bottom = 320.0
+offset_top = 72.0
+offset_right = 824.0
+offset_bottom = 418.0
 
-[node name="GridContainer" type="GridContainer" parent="Panel/MarginContainer"]
-columns = 4
-custom_minimum_size = Vector2(0, 0)
+[node name="GridContainer" type="GridContainer" parent="Panel/MarginContainer" unique_id=985206765]
+layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
+columns = 8
 
-[node name="UseButton" type="Button" parent="Panel"]
-offset_left = 16.0
-offset_top = 336.0
-offset_right = 120.0
-offset_bottom = 368.0
+[node name="UseButton" type="Button" parent="Panel" unique_id=85284237]
+layout_mode = 0
+offset_left = 157.0
+offset_top = 500.0
+offset_right = 281.0
+offset_bottom = 532.0
+theme_override_colors/font_color = Color(0.8984528, 0.79071814, 0.52134633, 1)
+theme_override_colors/font_hover_color = Color(0.8983003, 0.77115977, 0.05629813, 1)
+theme_override_colors/font_disabled_color = Color(0.9815603, 0.8940035, 0.65712816, 1)
+theme_override_font_sizes/font_size = 12
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
 disabled = true
-text = "Use"
+text = "USE ITEM"
 
-[node name="DropButton" type="Button" parent="Panel"]
-offset_left = 136.0
-offset_top = 336.0
-offset_right = 240.0
-offset_bottom = 368.0
+[node name="DropButton" type="Button" parent="Panel" unique_id=1196438508]
+layout_mode = 0
+offset_left = 572.0
+offset_top = 500.0
+offset_right = 696.0
+offset_bottom = 532.0
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_disabled_color = Color(0.98039216, 0.89411765, 0.65882355, 1)
+theme_override_font_sizes/font_size = 12
+theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_btn_disabled")
 disabled = true
-text = "Drop"
+text = "DROP ITEM"

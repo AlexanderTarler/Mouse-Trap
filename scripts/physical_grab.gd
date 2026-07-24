@@ -34,6 +34,13 @@ var _prompt_label: Label = null
 var _door_lock_target: Node = null
 var _has_passed_door_threshold: bool = false
 
+# Generator refuel tracking
+## The generator interaction node currently being refueled (while E is held).
+## Set on E press in _input(), cleared on E release.
+## Generator refueling is continuous while held, unlike the door's one-shot toggle.
+var _generator_refuel_target: Node = null
+var _has_generator_refuel_started: bool = false
+
 # Saved gravity scale to restore on release
 var _saved_gravity_scale: float = 1.0
 
@@ -134,9 +141,22 @@ func _input(event: InputEvent) -> void:
 		_has_passed_door_threshold = false
 		_door_lock_target = null
 		
+		# ─── GENERATOR: Start refuel on E press ───────────────────────────
+		var generator_target = _find_generator_target()
+		if generator_target:
+			_generator_refuel_target = generator_target
+			_has_generator_refuel_started = true
+			generator_target.start_refuel()
+		
 	elif not event.pressed and _e_is_held:
 		# E released
 		_e_is_held = false
+		
+		# ─── GENERATOR: Stop refuel on E release ─────────────────────────
+		if _generator_refuel_target:
+			_generator_refuel_target.stop_refuel()
+			_generator_refuel_target = null
+			_has_generator_refuel_started = false
 		
 		if _has_passed_door_threshold:
 			# Door lock hold completed — do nothing on release (already handled)
@@ -407,6 +427,49 @@ func _find_door_target() -> Node:
 		current = current.get_parent()
 	
 	return null
+
+
+## Finds a generator interaction target in front of the camera.
+## Walks up the parent chain to find a node that has both start_refuel()
+## and stop_refuel() methods (generator_interaction.gd).
+func _find_generator_target() -> Node:
+	if not _camera:
+		return null
+	
+	var space_state = get_world_3d().direct_space_state
+	if not space_state:
+		return null
+	
+	var viewport_size = _camera.get_viewport().size
+	var center = viewport_size / 2.0
+	var from = _camera.project_ray_origin(center)
+	var to = from + _camera.project_ray_normal(center) * grab_distance
+	
+	var query = PhysicsRayQueryParameters3D.create(from, to)
+	query.collide_with_areas = true
+	query.collide_with_bodies = true
+	
+	var player = _find_player()
+	if player:
+		query.exclude = [player]
+	
+	var result = space_state.intersect_ray(query)
+	if result.is_empty():
+		return null
+	
+	var collider = result.collider
+	if not collider:
+		return null
+	
+	# Walk up the parent chain to find a node with start_refuel
+	var current = collider
+	while current:
+		if current.has_method("start_refuel") and current.has_method("stop_refuel"):
+			return current
+		current = current.get_parent()
+	
+	return null
+
 
 func _update_prompt() -> void:
 	if not _prompt_label:

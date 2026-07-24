@@ -1,0 +1,12 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://dhpqx2y0e6eaq"]
+
+[ext_resource type="Texture2D" uid="uid://8dgixiriuqx" path="res://assets/Three Cabins/textures/Thatched Roof.png" id="1_umf6g"]
+
+[resource]
+resource_name = "Thatched Roof 2"
+transparency = 4
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("1_umf6g")
+emission_enabled = true
+emission = Color(1, 1, 1, 1)
+emission_energy_multiplier = 0.0

@@ -84,6 +84,21 @@ func _process(delta: float) -> void:
 		_elapsed += 0.2 * speed_multiplier
 		cycle_progress = fmod(_elapsed / cycle_duration, 1.0)
 	
+	# ─── NIGHT 1 FREEZE AT 02:00 ────────────────────────────────────
+	# Night 1 starts at dusk (0.5) and ticks forward naturally. When the
+	# clock reaches 02:00 (progress=0.7), automatically freeze time so
+	# the peeker event and car alarm narrative can play out without the
+	# night progressing further. Time is unpaused by escape_van.gd when
+	# the player investigates the van.
+	var nm = get_node_or_null("/root/NightManager")
+	var is_night_1: bool = nm and nm.current_night == 1 and nm.is_night_active
+	if is_night_1 and cycle_progress >= 0.7 and not is_time_paused:
+		is_time_paused = true
+		cycle_progress = 0.7
+		_elapsed = 0.7 * cycle_duration
+		time_changed.emit(cycle_progress)
+		print("[GameTime] Night 1 reached 02:00 (progress=0.7). Time frozen for narrative events.")
+	
 	# Determine current phase (always evaluated, even when paused,
 	# so set_progress() updates propagate correctly)
 	is_day = cycle_progress < 0.5

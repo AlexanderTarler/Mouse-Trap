@@ -110,4 +110,6 @@ func on_cable_destroyed() -> void:
 func get_interact_text() -> String:
 	if _active_cable:
 		return "[E] Disconnect Cable"
+	if not _player_has_cable_spool():
+		return ""
 	return "[E] Connect Power Cable"

@@ -120,10 +120,34 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	# --------------------------------------------------------
+	# NIGHT GATE: Hallucinations only work from Night 2 onward.
+	# Before Night 2, the Entity is inactive and the player
+	# should NOT experience sanity/gaze effects even if they
+	# look in the Entity's direction.
+	# --------------------------------------------------------
+	var nm = get_node_or_null("/root/NightManager")
+	if nm and "current_night" in nm and nm.current_night < 2:
+		# Before Night 2 — suppress all hallucination effects
+		if _shader_intensity > 0.0:
+			_shader_intensity = move_toward(_shader_intensity, 0.0, shader_fall_speed * delta)
+			_overlay_material.set_shader_parameter("corruption_intensity", _shader_intensity)
+		if _prev_entity_seen:
+			_audio.stop()
+			_prev_entity_seen = false
+		if gaze_meter > 0.0:
+			gaze_meter = maxf(gaze_meter - decay_rate * delta, 0.0)
+		return
+	
+	# --------------------------------------------------------
 	# Gaze detection — two-step cone + occlusion
 	# --------------------------------------------------------
 	var entity_seen: bool = false
 	var entity_node = get_tree().get_first_node_in_group("entity")
+	
+	# Also check if the entity is actually active — if it's
+	# dormant/inactive, don't trigger hallucination effects.
+	if entity_node and entity_node.has_method("is_active") and not entity_node.is_active():
+		entity_node = null
 	
 	if entity_node:
 		var cam = get_viewport().get_camera_3d()

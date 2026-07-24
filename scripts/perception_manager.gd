@@ -7,6 +7,17 @@ class_name PerceptionManager
 @export var max_detection_distance: float = 40.0
 @export var blindness_duration: float = 2.0
 
+# Frame-skip throttling — perception (watched intensity) only needs ~10Hz.
+# The _process() loop runs every rendering frame (~60Hz), but we only
+# perform the expensive occlusion raycast every 6 frames (~10Hz).
+var _perception_tick_counter: int = 0
+const PERCEPTION_TICK_INTERVAL: int = 6
+
+# Cached result of the last occlusion raycast, reused on skip frames.
+var _cached_in_fov: bool = false
+var _cached_is_occluded: bool = true
+var _cached_dist_to_entity: float = 99999.0
+
 @onready var _camera: Camera3D = get_viewport().get_camera_3d()
 @onready var _raycast: RayCast3D = $OcclusionRayCast
 
@@ -42,35 +53,56 @@ func _process(delta: float) -> void:
 	if not _entity or not _camera:
 		return
 	
-	var cam_pos = _camera.global_position
-	var cam_forward = -_camera.global_transform.basis.z
-	var entity_pos = _entity.global_position
-	var dir_to_entity = (entity_pos - cam_pos).normalized()
-	var dist_to_entity = cam_pos.distance_to(entity_pos)
+	# ─── THROTTLED PERCEPTION CHECK (~10Hz) ───────────────────────────────
+	# The expensive occlusion raycast only runs every PERCEPTION_TICK_INTERVAL
+	# frames. Between ticks, the cached FOV/occlusion result is reused.
+	_perception_tick_counter += 1
+	if _perception_tick_counter >= PERCEPTION_TICK_INTERVAL:
+		_perception_tick_counter = 0
+		_perform_perception_check()
 	
-	if dist_to_entity > max_detection_distance:
-		_decrease_intensity(delta)
-		return
-	
-	var dot = cam_forward.dot(dir_to_entity)
-	var in_fov = dot > fov_cos_threshold
-	
-	var is_occluded = true
-	if in_fov:
-		is_occluded = _check_occlusion(cam_pos, entity_pos)
-	
-	if in_fov and not is_occluded:
+	# ─── INTENSITY UPDATE (runs every frame regardless of tick) ───────────
+	# Uses the cached perception result to smoothly fade intensity.
+	if _cached_in_fov and not _cached_is_occluded:
 		_increase_intensity(delta)
 	else:
 		_decrease_intensity(delta)
 	
+	# ─── BLINDNESS STATE MACHINE ─────────────────────────────────────────
 	if watched_intensity >= 1.0 and not is_blind:
 		_trigger_blindness()
 	elif watched_intensity < 1.0 and is_blind:
 		# Release blindness when the player looks away (intensity drops below 1.0)
 		is_blind = false
 		blindness_ended.emit()
-		print("PerceptionManager: Blindness released (player looked away).")
+
+
+## Performs the full FOV + occlusion raycast check.
+## Called only every PERCEPTION_TICK_INTERVAL frames by _process().
+func _perform_perception_check() -> void:
+	if _entity.has_method("is_active") and not _entity.is_active():
+		_cached_in_fov = false
+		_cached_is_occluded = true
+		_cached_dist_to_entity = 99999.0
+		return
+	
+	var cam_pos = _camera.global_position
+	var cam_forward = -_camera.global_transform.basis.z
+	var entity_pos = _entity.global_position
+	var dir_to_entity = (entity_pos - cam_pos).normalized()
+	_cached_dist_to_entity = cam_pos.distance_to(entity_pos)
+	
+	if _cached_dist_to_entity > max_detection_distance:
+		_cached_in_fov = false
+		_cached_is_occluded = true
+		return
+	
+	var dot = cam_forward.dot(dir_to_entity)
+	_cached_in_fov = dot > fov_cos_threshold
+	
+	_cached_is_occluded = true
+	if _cached_in_fov:
+		_cached_is_occluded = _check_occlusion(cam_pos, entity_pos)
 
 
 func _check_occlusion(from: Vector3, to: Vector3) -> bool:

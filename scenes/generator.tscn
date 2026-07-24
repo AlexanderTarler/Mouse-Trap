@@ -39,3 +39,13 @@ script = ExtResource("3_outlet")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="GeneratorOutlet" unique_id=382526836]
 shape = SubResource("BoxShape3D_ef8yp")
+
+[node name="FuelIndicatorLight" type="OmniLight3D" parent="." unique_id=1487293228]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7753939, 1.2951641, 0.53755516)
+light_color = Color(0, 1, 0, 1)
+light_energy = 0.5
+omni_range = 1.5
+
+[node name="GeneratorAudio" type="AudioStreamPlayer3D" parent="." unique_id=1865201560]
+volume_db = -12.0
+max_distance = 20.0

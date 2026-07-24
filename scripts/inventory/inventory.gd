@@ -65,6 +65,27 @@ func add_item(item) -> bool:
 		if rm and rm.has_method("on_plank_picked_up"):
 			rm.on_plank_picked_up()
 	
+	# ─── DAY 3+ CAR PART COLLECTED ─────────────────────────────────────
+	# If the player picked up a car part (item_type == 7 CAR_PART),
+	# notify RoutineManager so the notebook can show the "collected" state.
+	if item.item_type == 7:
+		var rm_car = get_node_or_null("/root/RoutineManager")
+		if rm_car and rm_car.has_method("on_car_part_collected"):
+			rm_car.on_car_part_collected(item.item_name)
+	
+	# ─── DAY 3+ SIDE-TRACK ITEMS ────────────────────────────────────────
+	# Notify RoutineManager about side-track quest item pickups.
+	var rm_side = get_node_or_null("/root/RoutineManager")
+	if rm_side:
+		if item.item_name == "Arvid_Note_2" and rm_side.has_method("on_arvid_note_2_found"):
+			rm_side.on_arvid_note_2_found()
+		if item.item_name == "Portable Light" and rm_side.has_method("on_portable_light_found"):
+			rm_side.on_portable_light_found()
+		if item.item_name == "Cable Spool" and rm_side.has_method("on_cable_spool_found"):
+			rm_side.on_cable_spool_found()
+		if item.item_name == "Jerrycan" and rm_side.has_method("on_fuel_can_found"):
+			rm_side.on_fuel_can_found()
+	
 	# ─── TUTORIAL: Inventory prompt on first real pickup ──────────────────
 	# Skip during startup — NightManager clears the inventory right after
 	# player_controller adds the starting items. Only trigger for items that

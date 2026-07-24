@@ -54,7 +54,22 @@ var _hand_marker: Marker3D = null
 @onready var lamp_light: OmniLight3D = $OmniLight3D
 
 ## Reference to the LampMesh for visibility control.
-@onready var lamp_mesh: MeshInstance3D = $LampMesh
+## Uses get_node_or_null to handle scenes where the LampMesh child
+## doesn't exist (e.g., if the model was re-imported with a different
+## structure). Falls back to finding the first MeshInstance3D child.
+@onready var lamp_mesh: MeshInstance3D = _find_lamp_mesh()
+
+
+## Returns the LampMesh MeshInstance3D child, or null if it doesn't exist.
+func _find_lamp_mesh() -> MeshInstance3D:
+	var mesh = get_node_or_null("LampMesh") as MeshInstance3D
+	if not mesh:
+		# Fallback: find the first MeshInstance3D child
+		for child in get_children():
+			if child is MeshInstance3D:
+				mesh = child
+				break
+	return mesh
 
 ## Reference to the AggroRadius Area3D for Entity attraction detection.
 @onready var aggro_radius: Area3D = $AggroRadius

@@ -114,12 +114,27 @@ func _is_stash_ui_open() -> bool:
 	return false
 
 
+## Plays a simple sound effect via a transient AudioStreamPlayer.
+## The player is auto-freed when the sound finishes.
+func _play_sfx(res_path: String) -> void:
+	var stream := load(res_path)
+	if not stream:
+		return
+	var player := AudioStreamPlayer.new()
+	player.bus = "SFX"
+	player.stream = stream
+	add_child(player)
+	player.play()
+	player.finished.connect(player.queue_free)
+
+
 func _open_inventory() -> void:
 	_is_open = true
 	panel.visible = true
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_refresh_grid()
+	_play_sfx("res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Misc/inventory_open.ogg")
 	print("[InventoryUI] Inventory OPENED")
 
 
@@ -130,10 +145,50 @@ func _close_inventory() -> void:
 	_selected_index = -1
 	_update_selection()
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_play_sfx("res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Misc/inventory_close.ogg")
 	# Ensure the game is unpaused if it was paused for reading
 	if get_tree().paused:
 		get_tree().paused = false
 	print("[InventoryUI] Inventory CLOSED")
+
+
+# ─── ITEM TYPE COLORS (PSX retro palette) ──────────────────────────────
+# These colors tint the slot border based on item type for quick visual ID.
+const TYPE_COLORS: Dictionary = {
+	0: Color(0.9, 0.6, 0.15, 1),  # BATTERY — warm amber
+	1: Color(0.85, 0.8, 0.6, 1),  # NOTE — parchment cream
+	2: Color(0.7, 0.7, 0.7, 1),   # TOOL — steel gray
+	3: Color(0.6, 0.4, 0.2, 1),   # PLANK — wood brown
+	4: Color(0.9, 0.2, 0.1, 1),   # FUEL — danger red
+	5: Color(0.85, 0.75, 0.3, 1), # KEY — brass gold
+	6: Color(0.4, 0.6, 0.8, 1),   # CABLE_SPOOL — copper blue
+	7: Color(0.5, 0.7, 0.9, 1),   # CAR_PART — cool steel blue
+}
+
+## Returns a StyleBoxFlat configured as an inventory slot for the given item type.
+## Normal state uses a dark background with a type-colored border.
+## Hover state brightens the background and border.
+func _create_slot_style(item_type: int, selected: bool = false) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	var type_color = TYPE_COLORS.get(item_type, Color(0.4, 0.4, 0.4, 1))
+	
+	if selected:
+		s.bg_color = Color(0.2, 0.12, 0.06, 1)
+		s.border_width_left = 2
+		s.border_width_top = 2
+		s.border_width_right = 2
+		s.border_width_bottom = 2
+		s.border_color = Color(1, 0.85, 0.4, 1)
+	else:
+		s.bg_color = Color(0.08, 0.04, 0.02, 1)
+		s.border_width_left = 1
+		s.border_width_top = 1
+		s.border_width_right = 1
+		s.border_width_bottom = 1
+		s.border_color = type_color
+		s.border_color.a = 0.6
+	
+	return s
 
 
 func _refresh_grid() -> void:
@@ -148,13 +203,17 @@ func _refresh_grid() -> void:
 	for i in range(Inventory.items.size()):
 		var item = Inventory.items[i]
 		var btn = Button.new()
-		btn.custom_minimum_size = Vector2(64, 64)
+		btn.custom_minimum_size = Vector2(72, 72)
 		btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		
 		if item.item_icon:
 			btn.icon = item.item_icon
 		else:
 			btn.text = item.item_name.left(2)
+		
+		# Apply the type-colored slot style
+		var slot_style = _create_slot_style(item.item_type, false)
+		btn.add_theme_stylebox_override("normal", slot_style)
 		
 		btn.tooltip_text = item.item_name
 		btn.pressed.connect(_on_item_selected.bind(i))
@@ -170,13 +229,14 @@ func _on_item_selected(index: int) -> void:
 
 
 func _update_selection() -> void:
-	# Highlight selected button
+	# Update slot styles based on selection state
 	for i in range(_item_buttons.size()):
 		var btn = _item_buttons[i]
-		if i == _selected_index:
-			btn.modulate = Color(1, 1, 0.5, 1)
-		else:
-			btn.modulate = Color(1, 1, 1, 1)
+		var is_selected = (i == _selected_index)
+		btn.add_theme_stylebox_override("normal", _create_slot_style(
+			Inventory.items[i].item_type if i < Inventory.items.size() else 0,
+			is_selected
+		))
 	
 	if _selected_index >= 0 and _selected_index < Inventory.items.size():
 		var item = Inventory.items[_selected_index]
@@ -220,7 +280,7 @@ func _use_battery(item) -> void:
 		# Play battery-swap sound via HorrorSoundManager
 		var sm = get_node_or_null("/root/HorrorSoundManager")
 		if sm:
-			sm.play_footstep("wooden")
+			sm.play_footstep_at("wooden", Vector3.ZERO)
 		
 		# Remove the battery from inventory
 		Inventory.remove_item(item)

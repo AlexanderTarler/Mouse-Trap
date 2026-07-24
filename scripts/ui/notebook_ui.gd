@@ -38,6 +38,17 @@ const MAX_SPREAD: int = 1
 ## Layout: [0] = Credentials, [1..N] = Nest Data, [...M] = Notes
 var _all_pages: Array[String] = []
 
+## Tracks which nest documentation entries have already been added,
+## keyed by nest_label string (e.g. "Nest Alpha"). Prevents duplicate
+## entries when the same nest is documented or signalled twice.
+var _unlocked_nests: Dictionary = {}
+
+## Tracks which note items have already been added to the notebook,
+## keyed by a content-hash or unique note ID. Prevents the same note
+## text from appearing twice when note_pickup.gd fires duplicate
+## add_note calls.
+var _unlocked_notes: Dictionary = {}
+
 ## Current page index (points to the left page of the current spread).
 ## Always even. Right page is _current_page + 1.
 var _current_page: int = 0
@@ -110,6 +121,11 @@ func _connect_to_managers() -> void:
 	if rm:
 		if rm.has_signal("routine_step_changed"):
 			rm.routine_step_changed.connect(_on_routine_step_changed)
+		# ─── DAY 3+ SIGNALS ──────────────────────────────────────────
+		if rm.has_signal("van_checklist_changed"):
+			rm.van_checklist_changed.connect(_refresh_van_checklist)
+		if rm.has_signal("side_track_changed"):
+			rm.side_track_changed.connect(_refresh_side_track)
 		rm._notebook_ui = self
 		var current_obj: String = rm.get_current_objective() if rm.has_method("get_current_objective") else ""
 		if not current_obj.is_empty():
@@ -118,6 +134,11 @@ func _connect_to_managers() -> void:
 	else:
 		call_deferred("_connect_to_managers")
 		return
+	
+	var nm = get_node_or_null("/root/NightManager")
+	if nm:
+		if nm.has_signal("night_ended"):
+			nm.night_ended.connect(_on_night_ended)
 	
 	var em = get_node_or_null("/root/EvidenceManager")
 	if em:
@@ -129,7 +150,29 @@ func _connect_to_managers() -> void:
 		dm.documentation_added.connect(add_documentation)
 
 
+## Called when NightManager emits night_ended. Clears the old day's
+## objectives so the To-Do list is fresh when the new day starts.
+## Connected from _connect_to_managers().
+func _on_night_ended(night: int) -> void:
+	_completed_objectives.clear()
+	_current_objective = ""
+	_current_day = night + 1
+	_day_label.text = "DAY %d" % _current_day
+	print("[Notebook] Night ended. Objectives cleared for Day %d." % _current_day)
+
+
 func _on_routine_step_changed(_step: int, objective_text: String) -> void:
+	# ─── DAY 3 SANDBOX OVERRIDE ────────────────────────────────────
+	# When sandbox mode is active, the To-Do section is managed by the
+	# dynamic van checklist / side-track formatters instead of the Day 1–2
+	# linear objectives. We skip the standard objective list logic.
+	var rm = get_node_or_null("/root/RoutineManager")
+	if rm and rm.is_day3_sandbox:
+		# The step number / objective text from routine_step_changed is still
+		# used by the HUD, but the notebook uses its own checklist formatter.
+		_refresh_van_checklist()
+		return
+	
 	if not objective_text.is_empty() and objective_text != _current_objective:
 		if not _current_objective.is_empty():
 			_completed_objectives.append(_current_objective)
@@ -141,17 +184,10 @@ func _on_routine_step_changed(_step: int, objective_text: String) -> void:
 	if not _current_objective.is_empty():
 		bbcode += "\n[b]  [ ] %s[/b]" % _current_objective
 	_todo_label.text = bbcode
-	
-	var nm = get_node_or_null("/root/NightManager")
-	if nm and "current_night" in nm:
-		var game_day = nm.current_night + 1
-		if game_day != _current_day:
-			_current_day = game_day
-			_day_label.text = "DAY %d" % game_day
 
 
 func _on_evidence_collected(evidence_id: String) -> void:
-	add_note("[b]Evidence:[/b] %s" % evidence_id)
+	add_note("[b]%s[/b]" % evidence_id)
 
 
 func _call_deferred_todo_seed() -> void:
@@ -287,17 +323,41 @@ func _input(event: InputEvent) -> void:
 		
 	elif event.is_action_pressed("notebook_prev_page"):
 		if current_spread == 1:
-			if _current_page >= 2:
+			# EXPLICIT CHECK: If on the first content page (index 0), wrap to last page.
+			# This mirrors the E-key wrap behavior symmetrically: pressing Q on the
+			# first page goes to the last page, just like E on the last page goes
+			# to the first page.
+			if _current_page == 0:
+				var max_page = max(0, _all_pages.size() - 1)
+				var last_even = max_page if max_page % 2 == 0 else max_page - 1
+				if last_even > 0 and _all_pages.size() >= 2:
+					_current_page = last_even
+					_refresh_spread_1()
+				else:
+					# 0 or 1 content pages only — no wrap available, go to Spread 0
+					current_spread = maxi(current_spread - 1, 0)
+					_current_page = 0
+					_update_spread()
+			elif _current_page >= 2:
 				_current_page -= 2
 				_refresh_spread_1()
 			else:
+				# Safety: should not be reached with the explicit 0-check above,
+				# but acts as a graceful fallback to the index spread.
 				current_spread = maxi(current_spread - 1, 0)
 				_current_page = 0
 				_update_spread()
 		else:
-			current_spread = maxi(current_spread - 1, 0)
-			_current_page = 0
-			_update_spread()
+			# On spread 0 (Index/To-Do). If there are content pages, wrap to last spread.
+			if _all_pages.size() > 0:
+				current_spread = 1
+				var max_page = max(0, _all_pages.size() - 1)
+				_current_page = max_page if max_page % 2 == 0 else max_page - 1
+				_update_spread()
+			else:
+				current_spread = maxi(current_spread - 1, 0)
+				_current_page = 0
+				_update_spread()
 		get_viewport().set_input_as_handled()
 
 
@@ -373,6 +433,106 @@ func update_objectives(day: int, completed_objectives: Array[String], current_ob
 	_todo_label.text = bbcode
 
 
+# ============================================================
+# Day 3+ Dynamic Checklists
+# ============================================================
+
+## Refreshes the van repair checklist in the To-Do section.
+## Reads RoutineManager's van flags and renders [X]/[ ] checkboxes.
+## Called when van_checklist_changed signal fires.
+func _refresh_van_checklist() -> void:
+	var rm = get_node_or_null("/root/RoutineManager")
+	if not rm:
+		return
+	
+	# ─── SAFETY: Only show the van checklist in sandbox mode ───────
+	if not rm.is_day3_sandbox:
+		return
+	
+	var bbcode := "[center][b]%s[/b][/center]\n\n" % _day_label.text
+	
+	# ─── GATED PROGRESSION: Must inspect the car first ──────────
+	if not rm.van_inspected:
+		bbcode += "\n[b]  [ ] Investigate the car again.[/b]\n"
+		if rm.arvid_note_2_found:
+			bbcode += "\n------------------------\n"
+			bbcode += _build_side_track_text(rm)
+		_todo_label.text = bbcode
+		return
+	
+	bbcode += "[b]Find parts to repair the van:[/b]\n\n"
+	
+	# Check installed status from RoutineManager flags
+	var battery_done = rm.van_battery_installed
+	var radiator_done = rm.van_radiator_installed
+	var wiring_done = rm.van_wiring_installed
+	
+	# Also check if part is in inventory (collected but not yet installed)
+	var battery_collected = rm.has_car_part_in_inventory("Car Battery")
+	var radiator_collected = rm.has_car_part_in_inventory("Radiator")
+	var wiring_collected = rm.has_car_part_in_inventory("Ignition Wiring")
+	
+	# Render checkboxes: [X] if installed, [/] if collected but not installed, [ ] otherwise
+	bbcode += "  %s Battery (0/1)\n" % _checkbox_char(battery_done, battery_collected)
+	bbcode += "  %s Radiator (0/1)\n" % _checkbox_char(radiator_done, radiator_collected)
+	bbcode += "  %s Ignition Wiring (0/1)\n" % _checkbox_char(wiring_done, wiring_collected)
+	
+	# If all 3 parts are installed, show the escape objective
+	if rm.van_fully_repaired:
+		bbcode += "\n[b]  [ ] Start the van and escape.[/b]\n"
+	
+	# ─── Append side-track section if active ───────────────────────
+	if rm.arvid_note_2_found:
+		bbcode += "\n------------------------\n"
+		bbcode += _build_side_track_text(rm)
+	
+	_todo_label.text = bbcode
+
+
+## Returns the appropriate checkbox character for a part:
+##   [X] if installed
+##   [/] if in inventory but not installed
+##   [ ] otherwise
+func _checkbox_char(is_installed: bool, is_in_inventory: bool) -> String:
+	if is_installed:
+		return "[X]"
+	elif is_in_inventory:
+		return "[/]"
+	return "[ ]"
+
+
+## Builds the side-track (Unsanctioned Discoveries) BBcode text.
+## Shows the 9-step sequence with checkboxes reflecting current progress.
+func _build_side_track_text(rm: Node) -> String:
+	var text := "[b]UNSANCTIONED DISCOVERIES:[/b]\n\n"
+	
+	var steps = [
+		["Log in with Arvid's credentials", rm.arvid_logged_in],
+		["Read logs", rm.arvid_logs_read],
+		["Find portable light", rm.arvid_portable_light_found],
+		["Find cable spool", rm.arvid_cable_spool_found],
+		["Find fuel can", rm.arvid_fuel_can_found],
+		["Locate anchor", rm.arvid_anchor_located],
+		["Set trap", rm.is_cable_to_gen_connected and rm.is_cable_to_light_connected],
+		["Trigger trap", rm.is_trap_triggered],
+		["Destroy anchor", rm.is_anchor_destroyed],
+	]
+	
+	for step in steps:
+		var check = "[X]" if step[1] else "[ ]"
+		text += "  %s %s\n" % [check, step[0]]
+	
+	return text
+
+
+## Refreshes the side-track section in the To-Do list.
+## Called when side_track_changed signal fires.
+func _refresh_side_track() -> void:
+	# The side-track is rendered as part of the van checklist.
+	# Just refresh the entire todo display.
+	_refresh_van_checklist()
+
+
 func set_documentation(text: String) -> void:
 	# Deprecated single-doc mode — clear and populate
 	_all_pages = [text]
@@ -383,121 +543,85 @@ func set_documentation(text: String) -> void:
 		_refresh_spread_1()
 
 
-## Appends a documented nest entry. The lore text flows into the
-## unified page array, inserted AFTER credentials but BEFORE any notes.
+## ─── STATE-DRIVEN REBUILD ──────────────────────────────────────
+## Completely clears and rebuilds _all_pages from the two backend
+## dictionaries (_unlocked_nests, _unlocked_notes). This guarantees
+## mathematical ordering: Chapter 2 (Credentials) → Chapter 3 (Nest
+## Data) → Chapter 4 (Notes), regardless of pickup order.
+func _rebuild_all_pages() -> void:
+	_all_pages.clear()
+	
+	# Chapter 2: Personnel Credentials (always page 0)
+	_all_pages.append("[center][b]PERSONNEL CREDENTIALS[/b][/center]\n\n[font_size=14][b]Svea Naturinstitut[/b][/font_size]\n[font_size=11][i]Ekologisk Fältundersökning[/i][/font_size]\n\n[font_size=12][b]Researcher:[/b] Arvid Lindqvist\n[b]ID:[/b] SNI-7742-AL\n[b]Clearance:[/b] Level 3 (Ecological)\n[b]Vehicle:[/b] Unit 12 — '92 Volvo 240\n[b]Assignment:[/b] Hazel Mouse (Muscardinus avellanarius) Population Survey — Phase 2\n\n[b]─── COMPUTER LOGIN ───[/b]\n[b]Login:[/b] LUND\n[b]Password:[/b] PASSKEY1\n\n[font_size=11][i]This notebook is the property of Svea Naturinstitut.\nUnauthorised access or reproduction is a violation of the Swedish Environmental Code (Miljöbalken, 1998:808).\n\nReport lost or damaged equipment to your supervising officer immediately.[/i][/font_size]")
+	
+	_nest_data_start_page = 1
+	
+	# Chapter 3: Nest Data — insert all unlocked nests in order
+	for nest_key in _unlocked_nests.keys():
+		var lore_text = NEST_LORE.get(nest_key, "")
+		if not lore_text.is_empty():
+			_append_page_content(lore_text)
+	
+	# Chapter 4: Notes — insert all unlocked notes
+	_notes_start_page = _all_pages.size()
+	for note_text in _unlocked_notes.values():
+		_append_page_content(note_text)
+	
+	_rebuild_index()
+
+
+## Appends a text block to _all_pages, splitting across page boundaries
+## when the content exceeds CHARS_PER_PAGE. Word-wrap aware.
+func _append_page_content(content: String) -> void:
+	# Sanitize
+	content = content.replace("\\n", "\n")
+	content = content.trim_prefix("\"").trim_suffix("\"")
+	content = content.trim_prefix("\"\"\"").trim_suffix("\"\"\"")
+	content = content.strip_edges()
+	if content.is_empty():
+		return
+	
+	var chunks: Array[String] = _split_into_pages(content)
+	for chunk in chunks:
+		if _all_pages.is_empty() or _all_pages[-1] != "":
+			_all_pages.append("")
+		_all_pages[_all_pages.size() - 1] = chunk
+
+
+## Appends a documented nest entry. Stores the nest ID in the backend
+## dictionary and triggers a full rebuild of all pages.
 func add_documentation(nest_id: String) -> void:
-	if NEST_LORE.has(nest_id):
-		var lore_text = NEST_LORE[nest_id]
-		_insert_text_before_notes(lore_text)
-		_rebuild_index()
-		_update_spread()
-	else:
+	# ─── DUPLICATE GUARD ──────────────────────────────────────────
+	if _unlocked_nests.has(nest_id):
+		print("[Notebook] Nest '%s' already documented. Skipping duplicate." % nest_id)
+		return
+	
+	if not NEST_LORE.has(nest_id):
 		push_error("Notebook: Could not find nest data for ID: " + nest_id)
+		return
+	
+	_unlocked_nests[nest_id] = true
+	_rebuild_all_pages()
+	_update_spread()
+	print("[Notebook] Nest '%s' documented. State-driven rebuild complete." % nest_id)
 
 
-## Appends a note entry. Always placed at the end of _all_pages,
-## after all documentation entries.
+## Appends a note entry. Stores the note text in the backend dictionary
+## and triggers a full rebuild of all pages.
 func add_note(text: String) -> void:
 	if text.is_empty():
 		return
 	
-	# Append to the end of _all_pages
-	_append_text(text)
-	
-	# Update _notes_start_page if no notes existed before
-	if _notes_start_page >= 999999:
-		_notes_start_page = _all_pages.size() - 1
-		# Walk backwards to find the actual start of notes (the first non-blank page
-		# after documentation ends). _append_text adds a blank page separator.
-		var probe = _notes_start_page
-		while probe > 0 and (_all_pages[probe].is_empty() or _all_pages[probe] == ""):
-			probe -= 1
-		_notes_start_page = probe + 1
-	
-	_rebuild_index()
-	_update_spread()
-
-
-## Inserts text into _all_pages at the notes boundary — right BEFORE the
-## first notes page. Documentation always comes before notes.
-func _insert_text_before_notes(new_text: String) -> void:
-	# Sanitize
-	new_text = new_text.replace("\\n", "\n")
-	new_text = new_text.trim_prefix("\"").trim_suffix("\"")
-	new_text = new_text.trim_prefix("\"\"\"").trim_suffix("\"\"\"")
-	new_text = new_text.strip_edges()
-	
-	# Split the text into page-sized chunks
-	var chunks: Array[String] = _split_into_pages(new_text)
-	if chunks.is_empty():
+	# ─── DUPLICATE GUARD ──────────────────────────────────────────
+	var note_key = text.hash()
+	if _unlocked_notes.has(note_key):
+		print("[Notebook] Note already added (hash=%d). Skipping duplicate." % note_key)
 		return
 	
-	# If notes already exist, insert at _notes_start_page
-	if _notes_start_page < _all_pages.size():
-		# Add a blank separator page before the nest data chunk
-		_all_pages.insert(_notes_start_page, "")
-		_notes_start_page += 1
-		# Insert each chunk before the notes
-		for chunk in chunks:
-			_all_pages.insert(_notes_start_page, chunk)
-			_notes_start_page += 1
-	else:
-		# No notes exist yet — append normally
-		for chunk in chunks:
-			if _all_pages.is_empty() or _all_pages[-1] != "":
-				_all_pages.append("")
-			_all_pages[_all_pages.size() - 1] = chunk
-
-
-## Appends text to the end of _all_pages, splitting across pages when
-## text exceeds CHARS_PER_PAGE. Maintains sequential book-like flow.
-func _append_text(new_text: String) -> void:
-	# Sanitize any double-escaped strings or literal quotes coming from resources/AI file writes
-	new_text = new_text.replace("\\n", "\n")
-	new_text = new_text.trim_prefix("\"").trim_suffix("\"")
-	new_text = new_text.trim_prefix("\"\"\"").trim_suffix("\"\"\"") # Catch triple quotes just in case
-	new_text = new_text.strip_edges()
-	
-	# Force a brand new page for every new entry if the current last page isn't entirely blank
-	if _all_pages.is_empty() or _all_pages[-1] != "":
-		_all_pages.append("")
-		
-	var last_idx = _all_pages.size() - 1
-	var page_text = _all_pages[last_idx]
-	var space_left = CHARS_PER_PAGE - page_text.length()
-
-	var current = new_text
-	if space_left > 0:
-		var chunk = current.substr(0, space_left)
-		var remainder = current.substr(space_left)
-		var nl_pos = chunk.rfind("\n")
-		if nl_pos > 0 and nl_pos > space_left / 2:
-			chunk = current.substr(0, nl_pos + 1)
-			remainder = current.substr(nl_pos + 1)
-		else:
-			var sp_pos = chunk.rfind(" ")
-			if sp_pos > 0 and sp_pos > space_left / 2:
-				chunk = current.substr(0, sp_pos + 1)
-				remainder = current.substr(sp_pos + 1)
-		_all_pages[last_idx] = page_text + chunk
-		current = remainder
-	
-	# Split remaining text into full pages of CHARS_PER_PAGE
-	while current.length() > 0:
-		if current.length() <= CHARS_PER_PAGE:
-			_all_pages.append(current)
-			break
-		else:
-			var split_at = CHARS_PER_PAGE
-			var nl_pos = current.rfind("\n", CHARS_PER_PAGE)
-			if nl_pos > CHARS_PER_PAGE / 2:
-				split_at = nl_pos + 1
-			else:
-				var sp_pos = current.rfind(" ", CHARS_PER_PAGE)
-				if sp_pos > CHARS_PER_PAGE / 2:
-					split_at = sp_pos + 1
-			_all_pages.append(current.substr(0, split_at))
-			current = current.substr(split_at)
+	_unlocked_notes[note_key] = text
+	_rebuild_all_pages()
+	_update_spread()
+	print("[Notebook] Note appended. State-driven rebuild complete.")
 
 
 ## Splits a string into an array of CHARS_PER_PAGE-sized chunks,
@@ -513,11 +637,12 @@ func _split_into_pages(text: String) -> Array[String]:
 		else:
 			var split_at = CHARS_PER_PAGE
 			var nl_pos = remaining.rfind("\n", CHARS_PER_PAGE)
-			if nl_pos > CHARS_PER_PAGE / 2:
+			var half_page = int(CHARS_PER_PAGE) / 2.0
+			if nl_pos > half_page:
 				split_at = nl_pos + 1
 			else:
 				var sp_pos = remaining.rfind(" ", CHARS_PER_PAGE)
-				if sp_pos > CHARS_PER_PAGE / 2:
+				if sp_pos > half_page:
 					split_at = sp_pos + 1
 			result.append(remaining.substr(0, split_at))
 			remaining = remaining.substr(split_at)
@@ -531,17 +656,20 @@ func _split_into_pages(text: String) -> Array[String]:
 
 const NEST_LORE: Dictionary = {
 	"Nest Alpha": """[b]Subject: Nest Alpha[/b]
-Species: Muscardinus avellanarius
-Observation: The nest and the mice actively and impossibly reject light.
-[b]Conclusion: Extreme Photophobia — the colony exhibits an extreme, hostile aversion to all light sources.[/b]""",
+[b]Population:[/b] 6
+[b]Anomaly:[/b] Photophobia
+[b]Notebook Observations:[/b]
+Nest constructed inside a hollowed tree stump, but the colony displays violent photophobia. Upon shining the flashlight into the cavity, the six specimens panicked. Rather than seeking natural cover, two attempted to burrow blindly into pitch darkness while the others hissed and lunged directly toward the beam, aggressively trying to extinguish or attack the light source.""" ,
 
 	"Nest Beta": """[b]Subject: Nest Beta[/b]
-Species: Muscardinus avellanarius
-Observation: They are acting like scouts. It feels like something else is watching me through them.
-[b]Conclusion: Active Observation — the mice appear to be gathering intelligence for a larger entity.[/b]""",
+[b]Population:[/b] Unknown
+[b]Anomaly:[/b] Covert Observation
+[b]Notebook Observations:[/b]
+The nest is built deep within a hollowed tree stump, making an exact count impossible. Whenever I adjusted my position, eyes glinted from within the dark fissures of the wood, instantly adjusting to remain hidden behind bark. They aren't running away—they are almost spying on me, positioning themselves so they can observe my every movement without being seen.""" ,
 
 	"Nest Gamma": """[b]Subject: Nest Gamma[/b]
-Species: Muscardinus avellanarius
-Observation: The colony is producing a low, rhythmic clicking that vibrates through the cabin's exterior wood. It is mimicking the acoustic properties of my footsteps.
-[b]Conclusion: Acoustic Mimicry — the colony replicates and weaponises sound patterns for tracking purposes.[/b]"""
+[b]Population:[/b] 3
+[b]Anomaly:[/b] Audio-Specific Abnormalities
+[b]Notebook Observations:[/b]
+Only three specimens were present inside this tree stump nest. Their vocalizations are deeply unnatural. Instead of standard high-pitched dormouse squeaks or rustles, they emit raspy, modulated clicks and low-frequency resonance. Listening closely, the cadence is rhythmic and erratic... almost as if they are attempting to imitate human speech."""
 }

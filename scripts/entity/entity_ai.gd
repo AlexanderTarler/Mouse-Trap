@@ -1681,14 +1681,26 @@ func _stalk_state(delta: float) -> void:
 		var player_room = nav.get_player_room()
 		if player_room != "Outside" and player_room != "":
 			# ─── VAN SEQUENCE GUARD ──────────────────────────────────
-			# During Night 2.2's van chase, the Entity must STALK even
-			# if the player is recorded as being inside. The player starts
-			# in the cabin bed and walks outside — until they're actually
-			# outdoors, the Entity holds STALK. Without this guard, the
-			# Hallroom check and Director's Tier 2 fight at 60fps.
-			var nm_stalk = night_manager
-			if nm_stalk and nm_stalk.is_van_sequence_active:
-				# Van sequence active — skip Hallroom exit, keep stalking
+			# During Night 2.2's van chase, the Entity must STALK the
+			# player while they're outdoors investigating the car alarm.
+			# However, if the player reaches the cabin (HallRoom), the
+			# chase breaker MUST fire so the Entity stops stalking.
+			#
+			# The old guard skipped the HallRoom exit unconditionally
+			# during the van sequence, which caused the Entity to keep
+			# stalking even after the player entered the cabin.
+			if player_room == "Hallroom":
+				# Player reached the cabin — always exit STALK
+				print("[Entity AI] STALK: Player entered Hallroom during van sequence. Force-exiting STALK.")
+				entity.is_observe_finished = true
+				entity.state_locked = false
+				entity.request_state(EntityAI.State.OBSERVE_FROM_TREELINE)
+				_calculated_velocity = Vector3.ZERO
+				return
+			elif night_manager and night_manager.is_van_sequence_active:
+				# Van sequence active and player is in a non-Hallroom
+				# room (e.g. still in bed, or temporarily inside the
+				# van trigger area) — keep stalking.
 				pass
 			else:
 				print("[Entity AI] STALK: Player entered '%s'. Force-exiting STALK." % player_room)
@@ -2236,6 +2248,17 @@ var _approach_debug_timer: float = 0.0
 const APPROACH_DEBUG_INTERVAL: float = 2.0
 
 func _approach_window_state(delta: float) -> void:
+	# ─── FLINCH OVERRIDE GATE (defensive early-exit) ────────────────────
+	# If the Entity is illuminated by the player's flashlight while the player
+	# is inside, the Director should transition to FLINCH. Release the lock
+	# and exit early so the Director can apply FLINCH on the next frame.
+	# This prevents a 1-frame race where _approach_window_state locks the
+	# state each frame, fighting the Director's FLINCH override.
+	if entity.is_illuminated and entity.has_method("get_thinks_player_is_inside") and entity.get_thinks_player_is_inside():
+		entity.state_locked = false
+		_calculated_velocity = Vector3.ZERO
+		return
+	
 	# Lock the state — the Director must not override while we're mid-approach
 	entity.state_locked = true
 	
