@@ -4,15 +4,19 @@
 [ext_resource type="Script" uid="uid://batgnoo2rflnk" path="res://scripts/generator.gd" id="1_rqoq6"]
 [ext_resource type="Script" uid="uid://c83w5oahgle2v" path="res://scripts/generator_interaction.gd" id="2_w5vnv"]
 [ext_resource type="Script" uid="uid://dcskrxu6772q2" path="res://scripts/generator_outlet.gd" id="3_outlet"]
+[ext_resource type="PackedScene" uid="uid://ywtg3yf5ct6s" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/button_12.glb" id="5_4pjfl"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_5yxne"]
-size = Vector3(3, 2.2, 1.2)
+size = Vector3(2.8676758, 2.046411, 1.2)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_w5vnv"]
-size = Vector3(3.5, 2, 1)
+size = Vector3(3.5, 1.8826904, 1)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ef8yp"]
 size = Vector3(0.3, 0.3, 1)
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_kgmdj"]
+radius = 0.3
 
 [node name="Generator" type="StaticBody3D" unique_id=125374002]
 script = ExtResource("1_rqoq6")
@@ -26,11 +30,11 @@ base_drain_rate = 0.06
 script = ExtResource("2_w5vnv")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionArea" unique_id=1708067714]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6054693, 0.90117836, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.22704679, 0.82438385, 0)
 shape = SubResource("BoxShape3D_5yxne")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=675924970]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9138731, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8552183, 0)
 shape = SubResource("BoxShape3D_w5vnv")
 
 [node name="GeneratorOutlet" type="Area3D" parent="." unique_id=1179567553 groups=["generator_outlet"]]
@@ -49,3 +53,12 @@ omni_range = 1.5
 [node name="GeneratorAudio" type="AudioStreamPlayer3D" parent="." unique_id=1865201560]
 volume_db = -12.0
 max_distance = 20.0
+
+[node name="GeneratorSwitch" parent="." unique_id=1158213921 instance=ExtResource("5_4pjfl")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.1974615, 1.0647137, 0.40391856)
+
+[node name="StaticBody3D" type="StaticBody3D" parent="GeneratorSwitch" unique_id=1034666623]
+transform = Transform3D(0.58, 0, 0, 0, 0.58, 0, 0, 0, 0.58, 0, 0.9102888, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="GeneratorSwitch/StaticBody3D" unique_id=667310103]
+shape = SubResource("SphereShape3D_kgmdj")

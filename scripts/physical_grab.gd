@@ -41,6 +41,13 @@ var _has_passed_door_threshold: bool = false
 var _generator_refuel_target: Node = null
 var _has_generator_refuel_started: bool = false
 
+# ─── GENERIC HOLD-TO-INTERACT (planks, car parts, fuse box) ──────────────
+## The currently active hold-to-interact target (e.g., CabinWindow for planks).
+## Set on E press when the target responds to has_hold_interact(), cleared on release.
+## Mirrors the generator's start_refuel()/stop_refuel() pattern.
+var _hold_interact_target: Node = null
+var _hold_interact_cached: bool = false
+
 # Saved gravity scale to restore on release
 var _saved_gravity_scale: float = 1.0
 
@@ -141,6 +148,15 @@ func _input(event: InputEvent) -> void:
 		_has_passed_door_threshold = false
 		_door_lock_target = null
 		
+		# ─── HOLD-TO-INTERACT: Delegate to target's start_hold_interact() ──
+		var im = get_node_or_null("../InteractionManager")
+		if im and im.has_method("get_current_target"):
+			var current = im.get_current_target()
+			if current and current.has_method("start_hold_interact"):
+				_hold_interact_target = current
+				_hold_interact_cached = true
+				current.start_hold_interact()
+		
 		# ─── GENERATOR: Start refuel on E press ───────────────────────────
 		var generator_target = _find_generator_target()
 		if generator_target:
@@ -151,6 +167,13 @@ func _input(event: InputEvent) -> void:
 	elif not event.pressed and _e_is_held:
 		# E released
 		_e_is_held = false
+		
+		# ─── HOLD-TO-INTERACT: Delegate to target's stop_hold_interact() ───
+		if _hold_interact_target and _hold_interact_cached:
+			if _hold_interact_target.has_method("stop_hold_interact"):
+				_hold_interact_target.stop_hold_interact()
+			_hold_interact_target = null
+			_hold_interact_cached = false
 		
 		# ─── GENERATOR: Stop refuel on E release ─────────────────────────
 		if _generator_refuel_target:
@@ -177,6 +200,16 @@ func _process(delta: float) -> void:
 	# Track how long E has been held
 	if _e_is_held and not _is_grabbing:
 		_e_held_time += delta
+		
+		# ─── HOLD-TO-INTERACT: Forward delta to the target's hold handler ──
+		# The target (CabinWindow, EscapeVan, FuseBox) manages its own
+		# progress timer internally. physical_grab just passes the frame
+		# delta and the player's look-target status via the target's
+		# _process_hold_interact(delta) method.
+		# This mirrors the generator's _process() self-managed pattern.
+		if _hold_interact_target and _hold_interact_cached and is_instance_valid(_hold_interact_target):
+			if _hold_interact_target.has_method("_process_hold_interact"):
+				_hold_interact_target._process_hold_interact(delta)
 		
 		# Check for door lock hold (1s threshold)
 		if not _has_passed_door_threshold and _e_held_time >= door_lock_threshold:

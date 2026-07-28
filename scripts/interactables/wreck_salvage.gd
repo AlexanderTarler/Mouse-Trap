@@ -74,7 +74,16 @@ func interact(player: Node3D = null) -> void:
 	# Mark as looted and clear x-ray highlight
 	is_looted = true
 	var item_name := _get_item_name()
-	_show_hud_message("Salvaged: " + item_name)
+	_show_hud_message("CAR PART SALVAGED: " + item_name)
+	
+	# ─── AUDIO FEEDBACK ──────────────────────────────────────────────
+	var hsm := get_node_or_null("/root/HorrorSoundManager")
+	if hsm and hsm.has_method("play_sound"):
+		hsm.play_sound("scrap_salvage")
+	
+	# ─── VISUAL FEEDBACK: Brief spark particle burst ────────────────
+	_spawn_salvage_spark_particles()
+	
 	print("[Wreck] SUCCESS: Player salvaged '", item_name, "'. is_looted now true.")
 	
 	# Clear x-ray highlight for this specific wreck
@@ -123,6 +132,35 @@ func _get_item_name() -> String:
 		var path := str(item_resource.resource_path)
 		return path.get_file().get_basename()
 	return "Unknown Part"
+
+
+func _spawn_salvage_spark_particles() -> void:
+	var particles := GPUParticles3D.new()
+	particles.name = "SalvageSparkParticles"
+	particles.one_shot = true
+	particles.emitting = false
+	particles.amount = 20
+	particles.lifetime = 0.8
+	particles.explosiveness = 0.9
+	particles.randomness = 0.5
+	particles.global_position = global_position + Vector3.UP * 1.0
+	
+	var mat := ParticleProcessMaterial.new()
+	mat.direction = Vector3.UP
+	mat.spread = 180.0
+	mat.initial_velocity_min = 1.0
+	mat.initial_velocity_max = 3.0
+	mat.gravity = Vector3(0.0, -3.0, 0.0)
+	mat.color = Color(1.0, 0.7, 0.1, 1)  # Orange sparks
+	mat.scale_min = 0.05
+	mat.scale_max = 0.15
+	particles.process_material = mat
+	
+	add_child(particles)
+	particles.emitting = true
+	
+	# Auto-remove after lifetime
+	get_tree().create_timer(1.5).timeout.connect(particles.queue_free)
 
 
 func get_interact_text() -> String:

@@ -28,6 +28,10 @@ const FUEL_PER_CAN: float = 50.0
 ## Cached reference to the NightManager.
 var _nm: Node = null
 
+## Whether the portable light + cable spool has been connected at this generator.
+## When true, the connection check is skipped on future interactions.
+var _is_light_connected: bool = false
+
 ## Accumulated hold time for the current fuel can transfer (seconds).
 ## Resets to 0.0 when a new can is selected or refueling stops.
 var _hold_time: float = 0.0
@@ -124,28 +128,6 @@ func _process(delta: float) -> void:
 		_hold_time = new_hold_time
 		_can_progress = new_can_progress
 	
-	# ─── RESTART GENERATOR IF OFF ─────────────────────────────────────
-	if not _nm.is_generator_on and _nm.generator_fuel > 0.0:
-		_nm.is_generator_on = true
-		_nm.generator_state_changed.emit(true)
-		print("[Generator] Generator restarted during refuel!")
-		
-		# ─── DAY 1 POWER FEEDBACK: Auto-light the first interior light ──
-		# When the generator powers on for the first time, give the player
-		# immediate visual feedback by turning on one of the cabin lights.
-		# We find the first non-faulty interior light that's currently off
-		# and toggle it on. The CabinLight's _on_generator_state_changed
-		# handler will play the power-on flicker animation automatically.
-		var cabin_lights = get_tree().get_nodes_in_group("CabinLights")
-		for light in cabin_lights:
-			if "is_faulty" in light and light.is_faulty:
-				continue  # Skip the faulty porch light
-			if "is_switched_on" in light and not light.is_switched_on:
-				if light.has_method("toggle_light"):
-					light.toggle_light()
-					print("[Generator] Auto-turned on '%s' for power feedback." % light.name)
-					break  # Only turn on one light
-	
 	# ─── NOTIFY ROUTINE MANAGER AT 40% FUEL ──────────────────────────
 	# The objective "Refuel the generator" should complete when the
 	# generator has received at least 40 units (40% of max_fuel).
@@ -173,6 +155,14 @@ func start_refuel() -> void:
 		print("[Generator] ERROR: NightManager not found!")
 		return
 	
+	# ─── CONNECTION PUZZLE CHECK ────────────────────────────────────
+	# Before refueling, check if the player has the Portable Light,
+	# Cable Spool, and Arvid's Note 2. If so, consume them and spawn
+	# the connected portable light near the generator.
+	if not _is_light_connected:
+		if _try_connect_portable_light():
+			return  # Connection succeeded — don't start refuel
+	
 	if _is_refueling:
 		return
 	
@@ -189,6 +179,92 @@ func start_refuel() -> void:
 	_hold_time = 0.0
 	_can_progress = 0.0
 	print("[Generator] Refuel started. Rate: %.1f units/sec (%.1fs per can)." % [FUEL_PER_CAN / refuel_duration_per_can, refuel_duration_per_can])
+
+
+## Checks if the player has the Portable Light, Cable Spool, and
+## Arvid's Note 2. If all three are present, consumes the items and
+## spawns the connected portable light near the generator.
+## Returns true if the connection was made, false if requirements
+## are not met.
+func _try_connect_portable_light() -> bool:
+	# Check EvidenceManager for Arvid's Note 2
+	var em := get_node_or_null("/root/EvidenceManager")
+	if not em or not em.has_evidence("Arvid's Note 2"):
+		return false
+	
+	# Check inventory for Portable Light and Cable Spool
+	var has_light := false
+	var has_cable := false
+	var light_item = null
+	var cable_item = null
+	
+	for item in Inventory.items:
+		if item == null:
+			continue
+		if item.item_name == "Portable Light":
+			has_light = true
+			light_item = item
+		if item.item_name == "Cable Spool":
+			has_cable = true
+			cable_item = item
+	
+	if not has_light or not has_cable:
+		return false
+	
+	# All requirements met! Consume the items.
+	print("[Generator] All 3 requirements met! Connecting portable light...")
+	
+	# Remove Portable Light from inventory
+	if light_item:
+		Inventory.remove_item(light_item)
+	
+	# Remove Cable Spool from inventory
+	if cable_item:
+		Inventory.remove_item(cable_item)
+	
+	# Spawn the portable light near the generator
+	var light_scene := preload("res://scenes/portable_light.tscn")
+	if not light_scene:
+		print("[Generator] ERROR: Could not load portable_light.tscn!")
+		return false
+	
+	var lamp := light_scene.instantiate()
+	get_tree().current_scene.add_child(lamp)
+	
+	# Position the lamp near the generator
+	# Check if there's a specific spawn marker, otherwise use generator position
+	var spawn_marker := get_node_or_null("../PortableLightSpawn") as Marker3D
+	if spawn_marker:
+		lamp.global_position = spawn_marker.global_position
+	else:
+		# Default: 1.5m in front of the generator
+		var gen_pos := global_position
+		# Use the generator's forward direction (usually -Z)
+		var forward := Vector3(0, 0, -1.5)
+		if global_transform.basis.z:
+			forward = -global_transform.basis.z * 1.5
+		lamp.global_position = gen_pos + Vector3(forward.x, 0.5, forward.z)
+	
+	# Mark the lamp as deployed so it's interactive
+	lamp.is_deployed = true
+	
+	print("[Generator] Portable light spawned at: ", lamp.global_position)
+	
+	# Show HUD message
+	_show_hud_message("The portable light is now connected to the generator!")
+	
+	_is_light_connected = true
+	print("[Generator] Portable light connected and deployed at: ", lamp.global_position)
+	return true
+
+
+## Pushes a text message to the HUD overlay.
+func _show_hud_message(msg: String) -> void:
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("show_message"):
+		hud.show_message(msg)
+	else:
+		print("[Generator HUD]: ", msg)
 
 
 ## Called by PhysicalGrab when the player releases E while refueling.

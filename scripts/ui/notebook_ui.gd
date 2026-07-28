@@ -187,7 +187,11 @@ func _on_routine_step_changed(_step: int, objective_text: String) -> void:
 
 
 func _on_evidence_collected(evidence_id: String) -> void:
-	add_note("[b]%s[/b]" % evidence_id)
+	# Note text is already added by note_pickup.gd's _add_to_notebook_and_cleanup()
+	# with full title + content formatting. This handler only triggers evidence
+	# tracking for the INDEX — it should NOT add a duplicate note.
+	# The notebook's index is rebuilt by add_note() which is called by the pickup flow.
+	pass
 
 
 func _call_deferred_todo_seed() -> void:
@@ -573,8 +577,19 @@ func _rebuild_all_pages() -> void:
 ## Appends a text block to _all_pages, splitting across page boundaries
 ## when the content exceeds CHARS_PER_PAGE. Word-wrap aware.
 func _append_page_content(content: String) -> void:
-	# Sanitize
-	content = content.replace("\\n", "\n")
+	# ─── TEXT SANITIZATION ─────────────────────────────────────────
+	# GDScript's Resource loader escapes backslashes in .tres files.
+	# A string like "line1\\n\\nline2" in the .tres becomes
+	# "line1\\n\\nline2" in the loaded string (the backslash is preserved).
+	# Replace all forms:
+	#   \\n → actual newline (GDScript Resource load escape)
+	#   /n → actual newline (forward-slash variant that sometimes appears)
+	#   \\r\\n → actual newline (Windows line endings)
+	#   \n (literal backslash-n as separate chars) → newline
+	content = content.replace("\\n", "\n")     # "\\n" in GDScript string -> actual newline
+	content = content.replace("/n", "\n")      # forward-slash variant
+	content = content.replace("\\r\\n", "\n")  # Windows CR+LF
+	content = content.replace("\\r", "\n")     # standalone CR
 	content = content.trim_prefix("\"").trim_suffix("\"")
 	content = content.trim_prefix("\"\"\"").trim_suffix("\"\"\"")
 	content = content.strip_edges()

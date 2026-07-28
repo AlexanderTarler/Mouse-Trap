@@ -142,6 +142,10 @@ func _state_key(state: int) -> String:
 var _indoor_search_persistence_timer: float = 0.0
 
 ## Duration (in seconds) the Entity must stay in INDOOR_SEARCH after breaching.
+## NOTE: The controller's indoor patrol timers and fade_and_relocate() logic
+## handle the actual 30-second persistence. This const provides the MINIMUM
+## hold time — the Director will NOT transition away from INDOOR_SEARCH until
+## this timer expires AND the Entity is physically outside the cabin.
 const INDOOR_SEARCH_PERSISTENCE_DURATION: float = 10.0
 
 ## ─── OUTSIDE CONFIRMATION TIMER ──────────────────────────────────────────────
@@ -347,17 +351,15 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	#   This allows the Entity to leave STALK and start approaching the
 	#   cabin via windows/doors instead of endlessly stalking outside.
 	#   Only CHARGE/FLINCH override it while the lock is active.
-	if _cached_night_manager and _cached_night_manager.is_van_sequence_active:
-		# ─── PERMANENT RESOLUTION CHECK ─────────────────────────────
-		# Once the player has successfully entered the cabin (any room
-		# other than "Outside"), this flag is set to true. The ENTIRE
-		# van sequence lock is permanently bypassed for the rest of the
-		# session. This prevents the STALK↔OBSERVE ping-pong that occurs
-		# when the player briefly enters the HallRoom then moves to the
-		# Bedroom (which some room detectors report as "Outside").
-		if _night_2_van_sequence_resolved:
-			return -1  # Fall through to Tier 3+ evaluations
-		
+	#
+	# PERMANENT RESOLUTION CHECK:
+	#   Once _night_2_van_sequence_resolved is true (player entered the
+	#   cabin and the flag was set), the ENTIRE Guard A block is bypassed.
+	#   The function falls through to Tier 3, which evaluates the player's
+	#   current room and naturally transitions STALK→APPROACH_WINDOW or
+	#   STALK→OBSERVE_FROM_TREELINE. Without this bypass, Guard A would
+	#   return `state` on every frame, preventing Tier 3 from ever running.
+	if _cached_night_manager and _cached_night_manager.is_van_sequence_active and not _night_2_van_sequence_resolved:
 		# ─── PLAYER ENTERED CABIN CHECK ──────────────────────────
 		# If the player has entered the cabin (room != "Outside"),
 		# release the van sequence lock permanently. The Entity can
@@ -371,20 +373,18 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 			player_room = nav.get_player_room()
 		if player_room != "Outside":
 			# Player is inside the cabin — permanently resolve the
-			# van sequence. The _night_2_van_sequence_resolved flag
-			# ensures this block NEVER evaluates again, preventing
-			# the Bedroom → "Outside" → re-lock oscillation.
+			# van sequence. Set the flag so this block NEVER evaluates
+			# again, preventing the Bedroom → "Outside" → re-lock
+			# oscillation. Then fall through to Tier 3 by doing nothing
+			# (no return) — the function continues to tiers below.
 			_night_2_van_sequence_resolved = true
-			print("[TRACE_DIRECTOR] NIGHT 2.2 VAN SEQUENCE RESOLVED! Player room='%s'. Lock permanently released." % player_room)
-			return -1  # Fall through to Tier 3+ evaluations
+			print("[TRACE_DIRECTOR] NIGHT 2.2 VAN SEQUENCE RESOLVED! Player room='%s'. Lock permanently released. Falling through to Tier 3." % player_room)
+			# Do NOT return — fall through to Tier 3+ evaluations below
 		else:
 			if state != EntityAI.State.STALK and state != EntityAI.State.CHARGE and state != EntityAI.State.FLINCH:
 				_trace("[TRACE_DIRECTOR] VAN SEQUENCE PERSISTENT LOCK: Forcing STALK (was %s)." % _state_key(state))
 				return EntityAI.State.STALK
 			# State is already STALK, CHARGE, or FLINCH — preserve it.
-			# Returning the current state blocks ALL lower tiers (3-8) from
-			# evaluating and overriding, preventing the 1-frame STALK↔OBSERVE
-			# oscillation where Tier 3 demotes STALK→OBSERVE every frame.
 			return state
 	
 	# ─── STALK CABIN-ENTRY INTERRUPT ─────────────────────────────────
@@ -610,6 +610,36 @@ func _tier_0_pending_override(entity: CharacterBody3D) -> int:
 # ═══════════════════════════════════════════════════════════════════════════════
 # TIER 0: CRITICAL SURVIVAL & REACTIONS (Flashlight + Light Switch)
 # ═══════════════════════════════════════════════════════════════════════════════
+## Applies the flashlight-confirmed confidence penalty (-15.0) to the Entity.
+## Called by _tier_0_flashlight_reaction() when transitioning to FLINCH.
+## The penalty is applied only once per FLINCH transition, gated by
+## _last_completed_state != FLINCH. This prevents the penalty from
+## stacking every frame while is_illuminated is true.
+func _apply_flinch_confidence_penalty(entity: CharacterBody3D) -> void:
+	if _last_completed_state != EntityAI.State.FLINCH:
+		var confidence_module = entity.get_confidence_module()
+		if confidence_module:
+			var current_conf = confidence_module.get_confidence()
+			var new_conf = maxf(0.0, current_conf - 15.0)
+			confidence_module.set_confidence(new_conf)
+			print("[Director] FLINCH confidence penalty applied: %.1f → %.1f (Δ-15.0)" % [current_conf, new_conf])
+
+## Captures the current window target's ID to the flinch blacklist.
+## Called by _tier_0_flashlight_reaction() when transitioning to FLINCH
+## from APPROACH_WINDOW or WINDOW_PEEK. This prevents the Entity from
+## re-selecting the same window on the next approach cycle (Correction 3).
+func _capture_flinch_window_id(entity: CharacterBody3D) -> void:
+	var window_target = entity.get_current_window_target()
+	if window_target and entity.has_method("add_flinch_blacklisted_window"):
+		var window_id: String = ""
+		if window_target.has_method("get_window_id"):
+			window_id = window_target.get_window_id()
+		elif "window_id" in window_target:
+			window_id = str(window_target.window_id)
+		
+		if not window_id.is_empty():
+			entity.add_flinch_blacklisted_window(window_id)
+
 ## Evaluates flashlight-based reactions AND light-switch indoor retreat.
 ## These are checked BEFORE the state_locked guard so that reactions can
 ## forcefully interrupt any ongoing task (approach, climb, etc.).
@@ -641,10 +671,14 @@ func _tier_0_pending_override(entity: CharacterBody3D) -> int:
 ##   - RETREAT (indoor escape): Only allowed if the Entity is in an "Aggression"
 ##     state (WINDOW_PEEK, INDOOR_SEARCH, CHASE). The Entity is inside or at a
 ##     window and must escape back outside.
-##   - FLINCH (lateral sprint): Only allowed if the Entity is in APPROACH_WINDOW
-##     (approaching a window from outside). The Entity dodges sideways.
+##   - FLINCH (escape from cabin): Only allowed if the Entity is in APPROACH_WINDOW
+##     (approaching a window from outside). The Entity sprints AWAY from the cabin.
 ##   - STANDOFF (freeze): Default reaction when the Entity is outside and the
 ##     player is staring with the flashlight.
+##
+## CORRECTION 2: Every FLINCH transition from a flashlight trigger applies a
+##   -15.0 confidence penalty. This damages the Entity's confidence as a root-
+##   cause fix for the "flinch → re-approach → flinch" ping-pong loop.
 ##
 ## Returns: The target state, or -1 if no flashlight reaction applies.
 func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
@@ -663,6 +697,10 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 				entity.is_window_unbarricaded = false
 				entity.is_observe_finished = false
 				entity.is_flinch_finished = false
+				# Capture the window ID to the flinch blacklist (Correction 3)
+				_capture_flinch_window_id(entity)
+				# Apply confidence penalty (Correction 2)
+				_apply_flinch_confidence_penalty(entity)
 				# Clear window target so we don't re-select the same lit window
 				entity.set_current_window_target(null)
 				print("[Director] LIT ROOM REACTIVE EXIT: Window room became lit during %s! Flinching away." % _state_key(state))
@@ -701,7 +739,7 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 	# ─── FLINCH STATE LOCK PRESERVATION ──────────────────────────────
 	# If the Entity is already in FLINCH and state_locked is true, the
 	# indoor retreat handler just set this state. Preserve the lock so
-	# the FLINCH handler can complete its lateral sprint.
+	# the FLINCH handler can complete its escape sprint.
 	if state == EntityAI.State.FLINCH and entity.state_locked:
 		return EntityAI.State.FLINCH
 	
@@ -721,11 +759,73 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 	entity.is_window_unbarricaded = false
 	entity.is_observe_finished = false
 	
+	# ═══════════════════════════════════════════════════════════════════════
+	# ANTI-FLAP GUARD (Bug 1 Fix)
+	# ═══════════════════════════════════════════════════════════════════════
+	# Before any flashlight-triggered FLINCH, check the anti-flap cooldown.
+	# If the cooldown is still active (last FLINCH completed < 0.5s ago),
+	# do NOT force FLINCH again — prevent 60fps FLINCH→OBSERVE→FLINCH cycling.
+	# This guard is checked BEFORE the ground truth override so that even
+	# the definitive trigger respects the cooldown.
+	if entity.is_illuminated and _anti_flap_cooldown > 0.0:
+		# The Entity is lit but the anti-flap cooldown is active. Do NOT
+		# force FLINCH. Fall through to the normal tiers below so the
+		# Director can evaluate other state transitions (STANDOFF, etc.).
+		# Also do not return -1 here — we need the standard light-based
+		# reaction logic to still apply (e.g., STANDOFF for outdoor stare).
+		pass
+	else:
+		# ═══════════════════════════════════════════════════════════════════════
+		# GROUND TRUTH FLASHLIGHT OVERRIDE
+		# ═══════════════════════════════════════════════════════════════════════
+		# Uses the NAVIGATION MODULE's get_player_room() as ground truth,
+		# NOT the belief system (thinks_player_is_inside). This prevents the
+		# "flashlight bypass" where the Entity registers the light but refuses
+		# to enter FLINCH because its belief system hasn't caught up with the
+		# player re-entering the cabin.
+		#
+		# RULE: If the Entity is illuminated by the flashlight AND the player
+		# is ACTUALLY inside the cabin (ground truth), the Entity MUST flinch
+		# regardless of its belief state. This check runs BEFORE the belief-
+		# system gates below so it cannot be bypassed by stale beliefs.
+		#
+		# EXCEPTIONS:
+		#   - FLINCH state lock: Preserve if already flinching
+		#   - CHARGE: Flashlight has no effect on a charging Entity
+		#   - INDOOR_SEARCH: Handled by RETREAT path below
+		if entity.is_illuminated and state != EntityAI.State.FLINCH and state != EntityAI.State.CHARGE and state != EntityAI.State.INDOOR_SEARCH:
+			# Query ground truth player room from navigation module
+			var nav_gt = entity.get_navigation_module()
+			var player_room_gt: String = "Outside"
+			if nav_gt and nav_gt.has_method("get_player_room"):
+				player_room_gt = nav_gt.get_player_room()
+			
+			# Ground truth: player is actually inside the cabin
+			if player_room_gt != "Outside" and not player_room_gt.is_empty():
+				# Forcefully break locks and FLINCH
+				entity.state_locked = false
+				entity.is_approach_finished = false
+				entity.is_climb_finished = false
+				entity.is_flinch_finished = false
+				entity.is_retreat_arrived = false
+				entity.is_window_unbarricaded = false
+				entity.is_observe_finished = false
+				entity.is_indoor_retreat = false
+				
+				# Capture window target to blacklist if applicable
+				if state == EntityAI.State.WINDOW_PEEK or state == EntityAI.State.APPROACH_WINDOW:
+					_capture_flinch_window_id(entity)
+				
+				# Apply -15.0 confidence penalty (Correction 2)
+				_apply_flinch_confidence_penalty(entity)
+				
+				print("[Director] GROUND TRUTH FLINCH: Player is ACTUALLY inside (room='%s')! Forcing FLINCH from state %s." % [player_room_gt, _state_key(state)])
+				return EntityAI.State.FLINCH
+	
 	# ─── SAFELY CHECK PLAYER LOCATION (BELIEF SYSTEM) ──────────────
-	# The Director NO LONGER magically knows the player's actual location.
-	# It relies entirely on the Entity's belief system (thinks_player_is_inside),
-	# which is updated by entity_sensory.gd (sight/sound) and entity_ai.gd
-	# (3-waypoint miss rule). Default to "player is outside" if unavailable.
+	# The Director also checks the Entity's belief about the player's
+	# location. This is a SECONDARY check — the ground truth override
+	# above has already handled the "stale belief" case.
 	var is_player_inside = entity.get_thinks_player_is_inside() if entity.has_method("get_thinks_player_is_inside") else false
 	
 	# ─── INDOOR AGGRESSION STATE → RETREAT (Player inside, Entity inside) ──
@@ -749,51 +849,40 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 	# ─── WINDOW PEEK → FLINCH (Player inside, Entity outside at window) ──
 	# The Entity is standing outside a window, peering in. When the player
 	# shines the flashlight at it through the window, the Entity should flinch
-	# (lateral sprint away from the window) rather than RETREAT (which makes
-	# no sense — the Entity is already outside). The Entity loses 20% confidence
-	# and sprints sideways for 3-5 seconds to evade the flashlight beam.
+	# (sprint away from the cabin). The Entity loses 15% confidence and sprints
+	# away for 5.0 seconds to evade the flashlight beam.
 	if state == EntityAI.State.WINDOW_PEEK:
 		entity.is_indoor_retreat = false  # Entity is outside, NOT retreating
 		entity.is_observe_finished = false  # Cancel any in-progress observation
 		
-		# Apply 20% confidence penalty only once per FLINCH transition
-		if _last_completed_state != EntityAI.State.FLINCH:
-			var confidence_module = entity.get_confidence_module()
-			if confidence_module:
-				var current_conf = confidence_module.get_confidence()
-				var new_conf = maxf(0.0, current_conf - 20.0)
-				confidence_module.set_confidence(new_conf)
+		# Capture the window ID to the flinch blacklist (Correction 3)
+		_capture_flinch_window_id(entity)
+		# Apply -15.0 confidence penalty (Correction 2)
+		_apply_flinch_confidence_penalty(entity)
 		
 		return EntityAI.State.FLINCH
 	
 	# ─── APPROACH WINDOW → FLINCH ───────────────────────────────────
 	# The Entity is approaching a window from outside. The flashlight
-	# causes it to flinch laterally (sideways sprint) to evade the beam.
+	# causes it to sprint away from the cabin to evade the beam.
 	if state == EntityAI.State.APPROACH_WINDOW:
+		# Capture the window ID to the flinch blacklist (Correction 3)
+		_capture_flinch_window_id(entity)
+		# Apply -15.0 confidence penalty (Correction 2)
+		_apply_flinch_confidence_penalty(entity)
 		return EntityAI.State.FLINCH
 	
 	# ─── PLAYER INSIDE, ENTITY OUTSIDE → FLINCH ─────────────────────
 	# If the player is inside the cabin and shines the flashlight at the
-	# Entity (which is outside), the Entity loses 20% confidence and goes
-	# into FLINCH state — it tries to flee from the flashlight beam and
-	# runs further away for 3-5 seconds.
+	# Entity (which is outside), the Entity loses 15% confidence and goes
+	# into FLINCH state — it sprints away from the cabin for 5.0 seconds.
 	#
-	# ONE-SHOT GUARD: The confidence penalty is only applied ONCE per
-	# FLINCH transition. Without this guard, the penalty would be applied
-	# every frame while is_illuminated is true, dropping confidence below
-	# 0% in a single frame. We track whether we've already applied the
-	# penalty for this FLINCH via the _last_completed_state system.
+	# ONE-SHOT GUARD: The confidence penalty is applied once per FLINCH
+	# transition. We use _apply_flinch_confidence_penalty() which checks
+	# _last_completed_state != FLINCH to prevent double-application.
 	if is_player_inside:
-		# Apply 20% confidence penalty only if we haven't already done so
-		# for this FLINCH transition. Check if the last completed state
-		# was FLINCH — if so, the penalty was already applied.
-		if _last_completed_state != EntityAI.State.FLINCH:
-			var confidence_module = entity.get_confidence_module()
-			if confidence_module:
-				var current_conf = confidence_module.get_confidence()
-				var new_conf = maxf(0.0, current_conf - 20.0)
-				confidence_module.set_confidence(new_conf)
-				print("[Director] Player inside + Entity outside flashlight! Confidence dropped by 20%% to %.1f" % new_conf)
+		# Apply -15.0 confidence penalty (Correction 2)
+		_apply_flinch_confidence_penalty(entity)
 		
 		return EntityAI.State.FLINCH
 	
@@ -804,7 +893,6 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 		return EntityAI.State.CHARGE
 	
 	# Player is outside staring — STANDOFF (frozen in place, stunned)
-	# The Entity is briefly "stunned" (immobile) while the player shines
 	# the flashlight. If the player stops shining, this immobility ends.
 	# When stare_time reaches 1.5s, the Entity enters CHARGE state above.
 	return EntityAI.State.STANDOFF
@@ -1250,7 +1338,15 @@ func _tier_3_active_aggression(entity: CharacterBody3D, state: int) -> int:
 		# regardless of lighting conditions, player location, or any
 		# other factor. This is a narrative override — the car alarm
 		# sequence demands the Entity aggressively pursue the player.
-		if _cached_night_manager and _cached_night_manager.is_van_sequence_active:
+		#
+		# PERMANENT RESOLUTION CHECK:
+		# If _night_2_van_sequence_resolved is true (the player has
+		# entered the cabin room), the van sequence lock is permanently
+		# bypassed. This prevents a STALK deadlock where the Entity
+		# preserves STALK forever because is_van_sequence_active remains
+		# true until entity_ai clears it during INDOOR_SEARCH — but the
+		# Entity can never reach INDOOR_SEARCH while STALK is preserved.
+		if _cached_night_manager and _cached_night_manager.is_van_sequence_active and not _night_2_van_sequence_resolved:
 			print("[TRACE_DIRECTOR] VAN SEQUENCE: Preserving STALK. Lighting and player location checks bypassed.")
 			return EntityAI.State.STALK
 		
@@ -1440,6 +1536,15 @@ func _tier_5_completion_flags(entity: CharacterBody3D, state: int) -> int:
 	if state == EntityAI.State.OBSERVE_FROM_TREELINE:
 		if entity.is_observe_finished:
 			entity.is_observe_finished = false
+			
+			# ─── CLEAR FLINCH BLACKLIST ON RELOCATION CYCLE ────────────────
+			# The Entity is completing an OBSERVE observation cycle and
+			# relocating to a new vantage point. Clear the flinch blacklist
+			# so all windows are available for selection on the next approach.
+			# This is the primary clear condition (Correction 3).
+			if entity.has_method("clear_flinch_blacklist"):
+				entity.clear_flinch_blacklist()
+			
 			entity.fade_and_relocate()
 			return EntityAI.State.OBSERVE_FROM_TREELINE
 		return EntityAI.State.OBSERVE_FROM_TREELINE

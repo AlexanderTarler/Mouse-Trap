@@ -755,6 +755,19 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 			var window_id = cabin_window.get_window_id()
 			if _breach_cooldowns.has(window_id) and _breach_cooldowns[window_id] > 0.0:
 				continue
+			
+			# ─── FLINCH FAILED WINDOW BLACKLIST FILTER ────────────────
+			# If the Entity was repelled from this window via FLINCH while
+			# in APPROACH_WINDOW or WINDOW_PEEK, skip it on the next
+			# selection cycle. Prevents ping-ponging between two guarded
+			# windows (Correction 3 from plan).
+			# The blacklist is cleared when the Entity completes an
+			# OBSERVE relocation cycle or enters DORMANT.
+			if entity and entity.has_method("get_flinch_blacklisted_windows"):
+				var blacklisted = entity.get_flinch_blacklisted_windows()
+				if not blacklisted.is_empty() and blacklisted.has(window_id):
+					print("[Navigation] Skipping window '%s': blacklisted by FLINCH." % window_id)
+					continue
 		
 		# ─── DETERMINE WHICH ROOM THIS WINDOW BELONGS TO ─────────────
 		# Use RoomLightDetector to resolve the window's position to a room name.

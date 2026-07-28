@@ -63,6 +63,26 @@ class_name CabinWindow
 ## Whether this window is currently boarded up with planks
 var is_boarded: bool = false
 
+# ─── HOLD-TO-INTERACT: Plank Boarding ─────────────────────────────────────
+## Whether the player is currently holding E to board this window.
+## Set to true by start_hold_interact(), set to false by stop_hold_interact().
+var _is_boarding: bool = false
+
+## Accumulated hold progress (seconds) for boarding the current plank.
+## Counts up from 0.0 to BOARD_PER_PLANK_TIME (4.0s), then one plank is added.
+## Saved on release so the player can continue from where they left off.
+var _boarding_progress: float = 0.0
+
+## How long the player must hold E to add one plank to this window.
+const BOARD_PER_PLANK_TIME: float = 4.0
+
+## Whether to show an extra visual plank while the player is holding E.
+## Set to true when start_hold_interact() begins, set to false in
+## stop_hold_interact() or when a plank finishes hammering.
+## The _update_plank_visuals() function checks this to show the
+## "pending" plank during the hold animation.
+var _show_preview_plank: bool = false
+
 ## Whether the glass panes and crossbars have been shattered by the Entity.
 ## Once true, the glass is permanently destroyed and can never be restored.
 ## The player can still board up the opening with planks, but the glass is gone.
@@ -244,25 +264,36 @@ func get_indoor_landing_position() -> Vector3:
 
 ## Updates the visibility of Plank1, Plank2, Plank3 based on planks_remaining.
 ## Called after boarding up, taking damage, or shattering.
+##
+## PREVIEW PLANK: When the player holds E to board a plank, _show_preview_plank
+## is true. This shows the NEXT plank (planks_remaining + 1) as a "pending"
+## visual during the hold. If the player releases E, _show_preview_plank goes
+## false and the preview plank is hidden. If the hold completes, the preview
+## becomes a real plank via planks_remaining += 1.
 func _update_plank_visuals() -> void:
-	if not is_boarded:
-		# All planks hidden when not boarded
+	if not is_boarded and not _show_preview_plank:
+		# All planks hidden when not boarded and no preview
 		if _plank_1: _plank_1.visible = false
 		if _plank_2: _plank_2.visible = false
 		if _plank_3: _plank_3.visible = false
 		return
 	
-	# Plank1 visible if at least 1 plank remains
+	# Calculate effective plank count (including preview plank during hold)
+	var effective_planks = planks_remaining
+	if _show_preview_plank and _is_boarding and effective_planks < 3:
+		effective_planks += 1
+	
+	# Plank1 visible if at least 1 effective plank
 	if _plank_1:
-		_plank_1.visible = planks_remaining >= 1
+		_plank_1.visible = effective_planks >= 1
 	
-	# Plank2 visible if at least 2 planks remain
+	# Plank2 visible if at least 2 effective planks
 	if _plank_2:
-		_plank_2.visible = planks_remaining >= 2
+		_plank_2.visible = effective_planks >= 2
 	
-	# Plank3 visible if all 3 planks remain
+	# Plank3 visible if all 3 effective planks
 	if _plank_3:
-		_plank_3.visible = planks_remaining >= 3
+		_plank_3.visible = effective_planks >= 3
 
 
 ## Updates the two-stage visual state (PristineVisuals vs ShatteredVisuals).
@@ -321,6 +352,153 @@ func is_secure() -> bool:
 		return true
 	
 	return false
+
+
+# ─── HOLD-TO-INTERACT: Plank Boarding ─────────────────────────────────────
+## Called by PhysicalGrab when the player presses E while looking at this window.
+## Starts accumulating hold progress for boarding up the window.
+## Only works if the glass is shattered and the player has planks in inventory.
+func start_hold_interact() -> void:
+	# Can only board if glass is shattered
+	if not is_glass_shattered:
+		return
+	# If already fully boarded, nothing to do
+	if is_boarded and planks_remaining >= 3:
+		return
+	# Check if player has planks in inventory
+	if not _has_planks():
+		return
+	_is_boarding = true
+	_show_preview_plank = true
+	# If the window was completely unboarded, initialize boarding state
+	if not is_boarded:
+		is_boarded = true
+		planks_remaining = 0
+	
+	# Show the preview plank immediately
+	_update_plank_visuals()
+	
+	# ─── START LOOPING HAMMER SOUND ────────────────────────────────────
+	# Play the hammer sound continuously while the player holds E.
+	# The sound is set to loop and stopped on release.
+	if _hammer_sound and _hammer_sound.stream:
+		_hammer_sound.play()
+	
+	print("[Window Boarding] Start boarding at progress %.1f/%.1fs" % [_boarding_progress, BOARD_PER_PLANK_TIME])
+
+
+## Called by PhysicalGrab when the player releases E.
+## Saves the current progress so the player can continue from where they left off.
+## Also hides the preview plank since the player stopped holding.
+func stop_hold_interact() -> void:
+	if not _is_boarding:
+		return
+	_is_boarding = false
+	_show_preview_plank = false
+	_update_plank_visuals()
+	
+	# ─── STOP LOOPING HAMMER SOUND ─────────────────────────────────────
+	if _hammer_sound and _hammer_sound.playing:
+		_hammer_sound.stop()
+	
+	print("[Window Boarding] Released at progress %.1f/%.1fs" % [_boarding_progress, BOARD_PER_PLANK_TIME])
+
+
+## Called by PhysicalGrab every frame while E is held and the player is
+## still looking at this window. Accumulates hold progress.
+func _process_hold_interact(delta: float) -> void:
+	if not _is_boarding:
+		return
+	
+	_boarding_progress += delta
+	
+	# Clamp to avoid overshooting
+	if _boarding_progress >= BOARD_PER_PLANK_TIME:
+		# One plank added! Consume from inventory
+		_boarding_progress = 0.0
+		_show_preview_plank = false  # Preview plank becomes real
+		
+		# Try to consume a plank from inventory
+		if _consume_plank_from_inventory():
+			planks_remaining += 1
+			_update_plank_visuals()
+			_update_nav_blocker()
+			print("[Window Boarding] Plank %d/3 installed!" % planks_remaining)
+			
+			# Check if fully boarded
+			if planks_remaining >= 3:
+				_is_boarding = false
+				_boarding_progress = 0.0
+				_show_preview_plank = false
+				if _hammer_sound and _hammer_sound.playing:
+					_hammer_sound.stop()
+				print("[Window Boarding] Window fully boarded!")
+				
+				# ─── TUTORIAL: Mark boarding as learned ──────────────
+				var tm := get_node_or_null("/root/TutorialManager")
+				if tm and tm.has_method("mark_learned"):
+					tm.mark_learned("board_window")
+				
+				# Notify RoutineManager
+				var rm = get_node_or_null("/root/RoutineManager")
+				if rm and rm.has_method("on_window_patched"):
+					rm.on_window_patched()
+			else:
+				# More planks needed — check if player has another
+				if not _has_planks():
+					# No more planks — stop boarding immediately
+					print("[Window Boarding] No more planks in inventory! Stopping.")
+					_is_boarding = false
+					_boarding_progress = 0.0
+					_show_preview_plank = false
+					_update_plank_visuals()
+					if _hammer_sound and _hammer_sound.playing:
+						_hammer_sound.stop()
+				else:
+					# Has more planks — show preview for the next one
+					_show_preview_plank = true
+					_update_plank_visuals()
+		else:
+			# No more planks in inventory — stop boarding
+			print("[Window Boarding] No more planks in inventory!")
+			_is_boarding = false
+
+
+## Checks if the player has at least one Wooden Plank in inventory.
+func _has_planks() -> bool:
+	for item in Inventory.items:
+		if item != null and "item_name" in item and item.item_name == "Wooden Plank":
+			return true
+	return false
+
+
+## Removes one Wooden Plank from the player's inventory.
+## Returns true if a plank was found and removed.
+func _consume_plank_from_inventory() -> bool:
+	for i in range(Inventory.items.size()):
+		var item = Inventory.items[i]
+		if item != null and "item_name" in item and item.item_name == "Wooden Plank":
+			Inventory.remove_at(i)
+			return true
+	return false
+
+
+## Override get_interact_text to show boarding progress.
+func get_interact_text() -> String:
+	if _is_boarding:
+		var pct = int((_boarding_progress / BOARD_PER_PLANK_TIME) * 100.0)
+		return "[E] Boarding... %d%%" % pct
+	if not is_glass_shattered:
+		return ""  # Can't board intact glass
+	if is_boarded and planks_remaining >= 3:
+		return "[E] Window (Secured)"
+	if not _has_planks():
+		if planks_remaining > 0:
+			return "[E] Board Window (%d/3) — No Planks" % planks_remaining
+		return "[E] Board Window — No Planks"
+	if planks_remaining > 0:
+		return "[E] Board Window (%d/3) [Hold %.1fs]" % [planks_remaining, BOARD_PER_PLANK_TIME]
+	return "[E] Board Window [Hold %.1fs]" % BOARD_PER_PLANK_TIME
 
 
 ## Returns the type of security active on this window.
@@ -542,17 +720,5 @@ func interact() -> void:
 	
 
 
-## Returns the interaction prompt text shown in the HUD.
-func get_interact_text() -> String:
-	if is_boarded:
-		var total_hits = (planks_remaining * HITS_PER_PLANK) - hits_on_current_plank
-		return "[E] Window - Boarded (Hits remaining: %d)" % total_hits
-	
-	# Check if the player has a plank
-	var inventory = get_node_or_null("/root/Inventory")
-	if inventory:
-		for item in inventory.items:
-			if item != null and item.item_type == ItemData.ItemType.PLANK:
-				return "[E] Board up window"
-	
-	return "[E] Window - No planks available"
+## NOTICE: get_interact_text() is now defined in the HOLD-TO-INTERACT section
+## near is_secure(). The old version was removed to fix duplicate function error.

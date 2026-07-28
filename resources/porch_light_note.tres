@@ -1,0 +1,10 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "Scrap of Paper"
+item_description = "A crumpled note with electrical scribbles."
+note_text = "The porch light's wiring is completely shot. No matter how many times I flip the switch, it stays on whenever the generator's running. I've given up trying to fix it — just another thing this cabin has broken."
+item_type = 1

@@ -124,11 +124,17 @@ func interact() -> void:
 	if is_being_carried:
 		return
 	
-	# ─── CABLE CONNECTION CHECK ──────────────────────────────────────────
-	# If the lamp is deployed and there's an active PowerCable in
-	# PLUGGED_TO_SOURCE state, connect the cable to this lamp.
+	# ─── DROP/PICKUP TUTORIAL TRIGGER ─────────────────────────────────
+	# If the lamp is deployed and no cable is connected (freshly spawned
+	# from the generator connection puzzle), trigger the pickup/drop tutorial.
 	if is_deployed:
 		var cable: Node = _find_active_cable()
+		if not cable:
+			var tm := get_node_or_null("/root/TutorialManager")
+			if tm and tm.has_method("trigger"):
+				tm.trigger("pickup_drop")
+		
+		# ─── CABLE CONNECTION CHECK ──────────────────────────────────
 		if cable and cable.has_method("connect_to_lamp"):
 			cable.connect_to_lamp(self)
 			print("[PortableLamp] Cable connected to lamp!")

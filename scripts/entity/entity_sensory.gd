@@ -251,7 +251,7 @@ func _calculate_vision_range() -> float:
 	# or 15m (lit environment). The Entity needs at least 35m to see from
 	# the treeline vantage points to the cabin windows.
 	var entity_state = entity.get_state()
-	var is_observing = (entity_state == 1 or entity_state == 3)  # OBSERVE_FROM_TREELINE=1, WINDOW_PEEK=3
+	var is_observing = (entity_state == EntityAI.State.OBSERVE_FROM_TREELINE or entity_state == EntityAI.State.WINDOW_PEEK)
 	if is_observing:
 		return 35.0  # Extended range for treeline/window observation
 	

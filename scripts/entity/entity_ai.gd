@@ -2280,8 +2280,10 @@ const APPROACH_MIN_DURATION: float = 2.0
 ## soft-locks. This can happen when the NavMesh can't reach the window
 ## (e.g., the cabin wall blocks pathfinding) and the Entity stutters at the
 ## edge of the NavMesh indefinitely.
+### NOTE: The actual timeout value is set via @export approach_failsafe_timeout.
+### The const below is kept as a reference default but the @export
+### is the canonical source of truth.
 var _approach_failsafe_timer: float = 0.0
-const APPROACH_FAILSAFE_TIMEOUT: float = 15.0
 
 ## ─── APPROACH DEBUG LOG TIMER ──────────────────────────────────────────────
 ## Prints Entity and window coordinates every 2 seconds during APPROACH_WINDOW
@@ -2644,10 +2646,20 @@ func _approach_window_state(delta: float) -> void:
 					return
 			else:
 				# ─── NAV FINISHED BUT NOT YET AT WINDOW ─────────────────────
-				# The NavMesh can't get us closer. Stop moving and wait for
-				# the failsafe timeout (15s) or distance threshold to be met.
-				_calculated_velocity.x = 0.0
-				_calculated_velocity.z = 0.0
+				# The NavMesh can't get us closer. Stop moving immediately and
+				# wait for the failsafe timeout or distance threshold.
+				# CRITICAL FIX: Force velocity to ZERO in the physics engine
+				# to stop the jitter loop where ground snapping + nav agent
+				# fight over the Entity's Y position. Without this, the Entity
+				# jitters in place and the _path_timer re-triggers next frame.
+				_calculated_velocity = Vector3.ZERO
+				entity.velocity = Vector3.ZERO
+				# Prevent the path timer from re-triggering next frame by
+				# setting it to a high value. Without this, _path_timer -= delta
+				# on the next frame causes _path_timer <= 0.0, which resets
+				# target_position and re-engages the nav agent, creating a
+				# 60fps NavFinished=true→false→true jitter loop.
+				_path_timer = PATH_UPDATE_INTERVAL
 		
 		# ─── DOOR PHASE 2 LOOP: Runs every frame when _door_phase == 2 ─────
 		# This MUST be checked BEFORE the arrival check below, because once
@@ -3256,40 +3268,131 @@ func _flinch_state(delta: float) -> void:
 	
 	# ─── INITIALIZE FLINCH ON FIRST FRAME ──────────────────────────────
 	# If the flinch timer is 0.0 (or less), this is the first frame of the
-	# flinch. Calculate the target position and set the timer.
+	# flinch. Calculate the escape target (away from cabin) and set the timer
+	# to exactly 5.0 seconds.
+	#
+	# ESCAPE FROM CABIN (NEW):
+	#   Instead of the old lateral sprint perpendicular to the player's camera,
+	#   the Entity now flees from the cabin center toward a NavMesh-projected
+	#   point in the forest. This makes FLINCH feel like a real retreat rather
+	#   than a combat sidestep.
 	if entity.get_flinched_timer() <= 0.0:
-		# Randomize flinch duration between 3-5 seconds
-		var flinch_duration = randf_range(3.0, 5.0)
-		entity.set_flinched_timer(flinch_duration)
+		# Fixed 5.0-second escape sprint duration
+		entity.set_flinched_timer(5.0)
 		
-		# Calculate lateral sprint direction (perpendicular to player's camera)
-		var player = entity.get_player()
-		if player:
-			var cam = null
-			if player.has_node("Camera3D"):
-				cam = player.get_node("Camera3D")
-			if cam:
-				var cam_forward = -cam.global_transform.basis.z
-				cam_forward.y = 0.0
-				cam_forward = cam_forward.normalized()
-				
-				# Pick left or right randomly
-				var lateral_dir = cam_forward.cross(Vector3.UP).normalized()
-				if randf() < 0.5:
-					lateral_dir = -lateral_dir
-				
-				# Calculate target position 8 meters laterally
-				entity.set_flinch_target_pos(entity.global_position + lateral_dir * flinch_distance)
+		# ─── CALCULATE ESCAPE VECTOR: Away from cabin center + window outward ──
+		# Bug Fix: Combining cabin-center direction with the window's outward-facing
+		# normal (-Z basis) prevents the Entity from hugging the cabin wall.
+		# When the Entity is pressed against the cabin (from APPROACH_WINDOW/
+		# WINDOW_PEEK), the cabin-center vector points *along* the wall rather
+		# than outward. Adding the window's outward normal ensures a clean
+		# perpendicular escape into the forest.
+		var cabin_center = entity.cabin_center if "cabin_center" in entity else Vector3(0.0, 0.0, 14.88)
+		var away_from_cabin = (entity.global_position - cabin_center)
+		away_from_cabin.y = 0.0
+		var away_len = away_from_cabin.length()
+		if away_len > 0.01:
+			away_from_cabin = away_from_cabin / away_len
+		else:
+			away_from_cabin = Vector3(0.0, 0.0, -1.0)
 		
-		print("[FLINCH] Initialized! Duration=%.1fs, Distance=%.1fm" % [flinch_duration, flinch_distance])
+		# Blend with window outward direction if available
+		var window_target_escape = entity.get_current_window_target()
+		var window_outward = Vector3.ZERO
+		if window_target_escape:
+			# The window's -Z basis points outward from the glass
+			window_outward = -window_target_escape.global_transform.basis.z
+			window_outward.y = 0.0
+			var w_len = window_outward.length()
+			if w_len > 0.01:
+				window_outward = window_outward / w_len
+		
+		# Blend: 60% cabin-away + 40% window-outward. This ensures the Entity
+		# flees both away from the cabin structure AND away from the specific
+		# window it was at, preventing wall-hugging.
+		var escape_dir_raw = away_from_cabin * 0.6
+		if window_outward.length_squared() > 0.01:
+			escape_dir_raw += window_outward * 0.4
+		escape_dir_raw.y = 0.0
+		var escape_len = escape_dir_raw.length()
+		var escape_dir = escape_dir_raw / escape_len if escape_len > 0.01 else Vector3(0.0, 0.0, -1.0)
+		
+		# Add a random perturbation (±30 degrees) to avoid predictable
+		# straight-line escape paths. The Entity should not run the exact
+		# same direction every time.
+		var random_angle = deg_to_rad(randf_range(-30.0, 30.0))
+		escape_dir = escape_dir.rotated(Vector3.UP, random_angle)
+		
+		# ─── NAVMESH-PROJECTED ESCAPE TARGET ────────────────────────────
+		# Project the escape vector endpoint onto the NavMesh so the Entity
+		# sprints to a reachable position in the forest. This prevents the
+		# "face plant into a tree" problem where a straight-line escape would
+		# intersect with impassable foliage (Correction 1: NavMesh Edge Trap).
+		var escape_distance: float = 15.0  # 15m escape into the forest
+		var raw_target = entity.global_position + escape_dir * escape_distance
+		
+		# Use NavigationServer3D to snap the target to the nearest valid
+		# point on the NavMesh surface
+		var nav_map = entity.get_world_3d().navigation_map
+		var snapped_target = NavigationServer3D.map_get_closest_point(nav_map, raw_target)
+		# Preserve the source XZ but use the NavMesh-snapped Y
+		snapped_target.x = raw_target.x
+		snapped_target.z = raw_target.z
+		
+		entity.set_flinch_target_pos(snapped_target)
+		
+		# Set the NavigationAgent's target so the Entity actually nav-pathfinds
+		# toward the escape point, rather than blindly sprinting in world-space.
+		var nav_agent = entity.get_nav_agent()
+		if nav_agent:
+			nav_agent.target_position = snapped_target
+			nav_agent.target_desired_distance = 0.5
+		
+		print("[FLINCH] ESCAPE INITIALIZED! Duration=5.0s, EscapeDir=(%.2f, %.2f), NavTarget=(%.2f, %.2f, %.2f)" % [escape_dir.x, escape_dir.z, snapped_target.x, snapped_target.y, snapped_target.z])
+	
+	# ─── EARLY ABORT GUARD (Correction 1: NavMesh Edge Trap + Min Duration) ─
+	# If the Entity has reached the escape target (navigation finished OR
+	# distance < 0.5m) BEFORE the 5.0s timer expires, abort early. The Entity
+	# would otherwise stand still facing a tree for the remaining seconds.
+	#
+	# MINIMUM DURATION (Bug 3 Fix): The Entity must sprint for at least 1.5
+	# seconds before the early abort can trigger. Without this, map_get_closest_point
+	# at the NavMesh edge returns a point very close to the Entity, causing
+	# immediate "arrival" on frame 2 → Entity sits still for 5s.
+	var nav_agent = entity.get_nav_agent()
+	var reached_target: bool = false
+	var elapsed_time: float = 5.0 - entity.get_flinched_timer()
+	if nav_agent and elapsed_time >= 1.5:
+		var dist_to_target = entity.global_position.distance_to(entity.get_flinch_target_pos())
+		if nav_agent.is_navigation_finished() or dist_to_target < 0.5:
+			reached_target = true
+	
+	if reached_target and entity.get_flinched_timer() > 0.0:
+		print("[FLINCH] Early abort: Reached escape target (timer still at %.2fs). Signaling completion." % entity.get_flinched_timer())
+		entity.is_flinch_finished = true
+		entity.state_locked = false
+		_calculated_velocity = Vector3.ZERO
+		return
 	
 	# ─── SPRINT TOWARD TARGET ──────────────────────────────────────────
+	# Use speed-limited sprint toward the escape target. The flinch speed
+	# multiplier (1.5x default) makes the Entity sprint significantly faster
+	# than normal stalk speed, creating the feeling of desperate retreat.
 	var target = entity.get_flinch_target_pos()
-	var dir_to_target = (target - entity.global_position).normalized()
-	var flinch_speed = entity.current_stalk_speed * flinch_sprint_multiplier
+	var dir_to_target_flat = (target - entity.global_position)
+	dir_to_target_flat.y = 0.0
+	var flat_dist = dir_to_target_flat.length()
 	
-	_calculated_velocity.x = dir_to_target.x * flinch_speed
-	_calculated_velocity.z = dir_to_target.z * flinch_speed
+	if flat_dist > 0.1:
+		var move_dir = dir_to_target_flat.normalized()
+		var flinch_speed = entity.current_stalk_speed * flinch_sprint_multiplier
+		_calculated_velocity.x = move_dir.x * flinch_speed
+		_calculated_velocity.z = move_dir.z * flinch_speed
+	else:
+		# At the exact target — this shouldn't happen due to the early abort
+		# guard above, but just in case, stop movement.
+		_calculated_velocity.x = 0.0
+		_calculated_velocity.z = 0.0
 	
 	# ─── DECREMENT TIMER ───────────────────────────────────────────────
 	entity.set_flinched_timer(entity.get_flinched_timer() - delta)
@@ -3299,7 +3402,7 @@ func _flinch_state(delta: float) -> void:
 		entity.is_flinch_finished = true
 		entity.state_locked = false
 		_calculated_velocity = Vector3.ZERO
-		print("[FLINCH] Complete! Signaling completion to Director.")
+		print("[FLINCH] Timer expired (5.0s). Signaling completion to Director.")
 		return
 
 

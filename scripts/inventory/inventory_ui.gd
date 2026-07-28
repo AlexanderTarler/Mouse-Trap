@@ -9,8 +9,12 @@ extends CanvasLayer
 @onready var close_button: Button = $Panel/CloseButton
 @onready var use_button: Button = $Panel/UseButton
 @onready var drop_button: Button = $Panel/DropButton
+@onready var info_box: Panel = $Panel/InfoBox
 @onready var item_name_label: Label = $Panel/ItemNameLabel
 @onready var item_desc_label: Label = $Panel/ItemDescLabel
+@onready var info_item_name_label: Label = $Panel/InfoBox/InfoItemName
+@onready var info_item_desc_label: Label = $Panel/InfoBox/InfoItemDesc
+@onready var tooltip_label: Label = $TooltipLabel
 
 # Reference to the NoteUI (set in _ready)
 var _note_ui: Node = null
@@ -101,6 +105,39 @@ func _process(_delta: float) -> void:
 	# Force the mouse to stay visible as long as inventory is open, overriding the Player's camera lock
 	if _is_open:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	
+	# ─── HOVER TOOLTIP ─────────────────────────────────────
+	# Update the tooltip label position and text when hovering over a slot.
+	if _is_open:
+		_update_tooltip()
+
+
+## Updates the hover tooltip: finds the slot under the mouse cursor and
+## shows its item name next to the cursor.
+func _update_tooltip() -> void:
+	var mouse_pos := get_viewport().get_mouse_position()
+	var found_hover := false
+	
+	for i in range(_item_buttons.size()):
+		var btn := _item_buttons[i]
+		if not btn or not btn.visible:
+			continue
+		
+		# Check if the mouse is within the button's screen rect
+		var btn_rect := Rect2(btn.global_position, btn.size)
+		if btn_rect.has_point(mouse_pos):
+			if i < Inventory.items.size():
+				var item = Inventory.items[i]
+				if item:
+					tooltip_label.text = item.item_name
+					# Position the tooltip offset from the cursor (16, 16)
+					tooltip_label.global_position = mouse_pos + Vector2(16, 16)
+					tooltip_label.visible = true
+					found_hover = true
+			break
+	
+	if not found_hover:
+		tooltip_label.visible = false
 
 
 ## Checks if the StashUI (scrap heap looting interface) is currently open.
@@ -142,6 +179,7 @@ func _close_inventory() -> void:
 	_is_open = false
 	panel.visible = false
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tooltip_label.visible = false
 	_selected_index = -1
 	_update_selection()
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -202,12 +240,15 @@ func _refresh_grid() -> void:
 	
 	for i in range(Inventory.items.size()):
 		var item = Inventory.items[i]
-		var btn = Button.new()
+		
+		# Create a Button for the slot with icon + type-colored border
+		var btn := Button.new()
 		btn.custom_minimum_size = Vector2(72, 72)
 		btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		
 		if item.item_icon:
 			btn.icon = item.item_icon
+			btn.expand_icon = true
 		else:
 			btn.text = item.item_name.left(2)
 		
@@ -215,7 +256,6 @@ func _refresh_grid() -> void:
 		var slot_style = _create_slot_style(item.item_type, false)
 		btn.add_theme_stylebox_override("normal", slot_style)
 		
-		btn.tooltip_text = item.item_name
 		btn.pressed.connect(_on_item_selected.bind(i))
 		grid_container.add_child(btn)
 		_item_buttons.append(btn)

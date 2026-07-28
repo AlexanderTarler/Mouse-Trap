@@ -57,6 +57,16 @@ class_name Generator
 var _generator_audio: AudioStreamPlayer3D = null
 var _audio_loaded: bool = false
 
+# ─── GENERATOR SWITCH ────────────────────────────────────────────────
+## Whether the physical On/Off switch on the generator is toggled ON.
+## The generator only runs when BOTH switch is ON AND fuel > 10%.
+## Automatically toggles OFF when fuel runs out (auto-shutdown).
+var is_switched_on: bool = false
+
+## Minimum fuel percentage required to start the generator.
+## If fuel is below this threshold, toggle_switch() refuses to turn on.
+const MIN_START_FUEL_PERCENT: float = 10.0
+
 # ─── FUEL INDICATOR LIGHT ───────────────────────────────────────────
 var _fuel_light: OmniLight3D = null
 
@@ -216,3 +226,83 @@ func calculate_total_drain() -> float:
 			total += cabin_light_drain_rate
 	
 	return total
+
+
+# ─── GENERATOR SWITCH ────────────────────────────────────────────────
+## Called by InteractionManager when the player presses E while looking
+## at the generator's switch collider. Toggles the generator on/off.
+func interact() -> void:
+	toggle_switch()
+
+
+## Toggles the generator on/off. Requires fuel > MIN_START_FUEL_PERCENT
+## to turn on. Auto-shutdown is handled in _process() when fuel hits 0.
+func toggle_switch() -> void:
+	var nm := get_node_or_null("/root/NightManager")
+	if not nm:
+		return
+	
+	if is_switched_on:
+		# Turn OFF
+		is_switched_on = false
+		nm.is_generator_on = false
+		if nm.has_signal("generator_state_changed"):
+			nm.generator_state_changed.emit(false)
+		_play_sfx("res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/UI/generator_switch.ogg")
+		_show_hud_msg("Generator stopped.")
+	else:
+		# Turn ON — check fuse box prerequisite first
+		var fuse_box = get_tree().get_first_node_in_group("FuseBox")
+		if not fuse_box:
+			var interactables = get_tree().get_nodes_in_group("interactable")
+			for node in interactables:
+				if node is FuseBox:
+					fuse_box = node
+					break
+		if not fuse_box or not fuse_box.has_method("is_powered") or not fuse_box.is_powered():
+			_show_hud_msg("The fuse box needs to be repaired first...")
+			return
+		
+		# Check fuel threshold
+		var fuel_pct: float = (nm.generator_fuel / nm.max_fuel) * 100.0
+		if nm.generator_fuel <= 0.0:
+			_show_hud_msg("The generator is out of fuel...")
+			return
+		if fuel_pct < MIN_START_FUEL_PERCENT:
+			_show_hud_msg("Not enough fuel to start (need > 10%%)...")
+			return
+		is_switched_on = true
+		nm.is_generator_on = true
+		if nm.has_signal("generator_state_changed"):
+			nm.generator_state_changed.emit(true)
+		_play_sfx("res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/UI/generator_switch.ogg")
+		_show_hud_msg("Generator started.")
+
+
+## Returns the interaction prompt text shown in the HUD.
+func get_interact_text() -> String:
+	if is_switched_on:
+		return "[E] Turn Generator Off"
+	return "[E] Turn Generator On"
+
+
+## Shows a HUD message via the HUD node.
+func _show_hud_msg(msg: String) -> void:
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("show_message"):
+		hud.show_message(msg)
+	else:
+		print("[Generator HUD]: ", msg)
+
+
+## Plays a one-shot sound effect via a temporary AudioStreamPlayer3D.
+func _play_sfx(res_path: String) -> void:
+	var stream := load(res_path)
+	if not stream:
+		return
+	var player := AudioStreamPlayer3D.new()
+	player.stream = stream
+	player.bus = "SFX"
+	add_child(player)
+	player.play()
+	player.finished.connect(player.queue_free)

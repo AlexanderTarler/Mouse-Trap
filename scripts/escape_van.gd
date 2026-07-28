@@ -49,6 +49,23 @@ var alarm_active: bool = false
 ## night restart. This prevents the alarm sequence from playing twice.
 var van_investigated: bool = false
 
+# ─── HOLD-TO-INTERACT: Car Part Installation ──────────────────────────────
+## Whether the player is currently holding E to install a car part.
+## Set by start_hold_interact(), cleared by stop_hold_interact().
+var _is_installing: bool = false
+
+## Accumulated hold progress (seconds) for the current car part installation.
+## Counts up from 0.0 to INSTALL_TIME (5.0s), then one part is installed.
+## Saved on release so the player can continue from where they left off.
+var _install_progress: float = 0.0
+
+## How long the player must hold E to install one car part.
+const INSTALL_TIME: float = 5.0
+
+## The car part currently being installed (cached name for completion).
+var _pending_part_name: String = ""
+var _pending_part_index: int = -1
+
 # ─── NODE REFERENCES ───────────────────────────────────────
 
 ## Reference to the AlarmAudio AudioStreamPlayer3D child node.
@@ -150,7 +167,7 @@ func _try_install_component() -> void:
 			break
 	
 	if car_part_index < 0:
-		_show_hud_message("You need car parts to repair the van. Check the scrap heaps.")
+		_show_hud_message("This van is busted. I need to find parts to fix it... maybe the wrecked cars nearby still have some useable components.")
 		print("[EscapeVan] No car parts in inventory.")
 		return
 	
@@ -202,6 +219,111 @@ func _repair_complete() -> void:
 	if _repair_audio:
 		_repair_audio.pitch_scale = 1.5
 		_repair_audio.play()
+
+
+# ─── HOLD-TO-INTERACT: Car Part Installation ──────────────────────────────
+## Called by PhysicalGrab when the player presses E while looking at the van.
+## Starts accumulating hold progress for installing a car part.
+func start_hold_interact() -> void:
+	if is_repaired or not van_investigated or alarm_active:
+		return
+	# Find a valid car part to install
+	_pending_part_index = -1
+	_pending_part_name = ""
+	var inventory = get_node_or_null("/root/Inventory")
+	if not inventory:
+		return
+	for i in range(inventory.items.size()):
+		var item = inventory.items[i]
+		if item and item.item_type == 7:
+			# Check it's not a duplicate
+			if not _installed_parts.has(item.item_name) and item.item_name in REQUIRED_PARTS:
+				_pending_part_index = i
+				_pending_part_name = item.item_name
+				break
+	if _pending_part_index < 0:
+		return
+	_is_installing = true
+	print("[Van Install] Start installing %s at progress %.1f/%.1fs" % [_pending_part_name, _install_progress, INSTALL_TIME])
+
+
+## Called by PhysicalGrab when the player releases E.
+## Saves progress so the player can continue from where they left off.
+func stop_hold_interact() -> void:
+	if not _is_installing:
+		return
+	_is_installing = false
+	print("[Van Install] Released at progress %.1f/%.1fs" % [_install_progress, INSTALL_TIME])
+
+
+## Called by PhysicalGrab every frame while E is held.
+## Accumulates hold progress for installing the car part.
+func _process_hold_interact(delta: float) -> void:
+	if not _is_installing:
+		return
+	
+	_install_progress += delta
+	
+	if _install_progress >= INSTALL_TIME:
+		_install_progress = 0.0
+		
+		# Check the car part is still in inventory
+		var inventory = get_node_or_null("/root/Inventory")
+		if not inventory or _pending_part_index >= inventory.items.size():
+			_is_installing = false
+			return
+		var item = inventory.items[_pending_part_index]
+		if not item or item.item_name != _pending_part_name:
+			# Part was removed somehow — find a new one
+			_is_installing = false
+			start_hold_interact()
+			return
+		
+		# Install it
+		inventory.remove_at(_pending_part_index)
+		_installed_parts[_pending_part_name] = true
+		components_collected += 1
+		
+		print("[EscapeVan] Component installed via hold: %s (%d/%d)" % [_pending_part_name, components_collected, COMPONENTS_NEEDED])
+		_show_hud_message("%s installed! (%d/%d parts)" % [_pending_part_name, components_collected, COMPONENTS_NEEDED])
+		
+		var rm = get_node_or_null("/root/RoutineManager")
+		if rm and rm.has_method("on_van_part_installed"):
+			rm.on_van_part_installed(_pending_part_name)
+		
+		if _repair_audio:
+			_repair_audio.pitch_scale = 1.0
+			_repair_audio.play()
+		
+		if components_collected >= COMPONENTS_NEEDED:
+			_is_installing = false
+			_repair_complete()
+		else:
+			# Try to automatically start next part
+			_is_installing = false
+			start_hold_interact()
+
+
+## Override get_interact_text to show installation progress.
+func get_interact_text() -> String:
+	if alarm_active:
+		return "[E] Investigate the car"
+	if is_repaired:
+		return "[E] Escape"
+	if _is_installing and _pending_part_name != "":
+		var pct = int((_install_progress / INSTALL_TIME) * 100.0)
+		return "[E] Installing %s... %d%%" % [_pending_part_name, pct]
+	if not van_investigated:
+		return "[E] Examine the van"
+	# Check if there's a valid part to install
+	var inventory = get_node_or_null("/root/Inventory")
+	if inventory:
+		for i in range(inventory.items.size()):
+			var item = inventory.items[i]
+			if item and item.item_type == 7:
+				if not _installed_parts.has(item.item_name) and item.item_name in REQUIRED_PARTS:
+					return "[E] Install %s (%d/3) [Hold %.1fs]" % [item.item_name, components_collected, INSTALL_TIME]
+	return "[E] Try to repair the van (%d/3)" % components_collected
 
 
 ## Triggers the ending sequence via EndgameManager.
@@ -258,6 +380,12 @@ func _trigger_first_chase() -> void:
 	if player and player.has_method("unlock_sprint"):
 		player.unlock_sprint()
 	
+	# ─── SPRINT TUTORIAL (1 second after van interaction) ─────────────
+	await get_tree().create_timer(1.0).timeout
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("trigger"):
+		tm.trigger("sprint")
+	
 	var objective_label = _find_objective_label()
 	if objective_label:
 		objective_label.text = "JOIN HIM"
@@ -304,15 +432,9 @@ func _find_objective_label() -> Label:
 	return null
 
 
-func get_interact_text() -> String:
-	if alarm_active:
-		return "[E] Investigate the car"
-	if is_repaired:
-		return "[E] Escape"
-	if van_investigated:
-		return "[E] Repair the van (%d/3 parts)" % components_collected
-	return "[E] Examine the van"
-
+# ─── NOTE: get_interact_text() is now defined in the HOLD-TO-INTERACT section
+# ─── near the @export variables (line ~308). The old version was removed
+# ─── to fix duplicate function error.
 
 # ─── ENVIRONMENT & ENTITY HELPERS ──────────────────────────
 

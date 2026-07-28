@@ -129,6 +129,13 @@ var phase2_computer_used: bool = false            # Logged into computer
 # ═══════════════════════════════════════════════════════════════════════
 
 var phase2b_plank_picked_up: bool = false    # Picked up a Wooden Plank
+
+## Counter for how many Wooden Planks the player has picked up during Day 1.
+## The x-ray highlight for planks persists until the player has collected 3
+## planks (enough to fully board the broken tutorial window).
+## Reset to 0 in reset_all_phases() and reset_objective_history().
+var phase2b_plank_count: int = 0
+
 var phase2b_window_patched: bool = false     # Barricaded the broken window
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -859,13 +866,14 @@ func on_computer_used() -> void:
 # ═══════════════════════════════════════════════════════════════════════
 
 func on_plank_picked_up() -> void:
-	if phase2b_plank_picked_up:
-		return
 	phase2b_plank_picked_up = true
-	print("[RoutineManager] Phase 2B: Player picked up a Wooden Plank.")
+	phase2b_plank_count += 1
+	print("[RoutineManager] Phase 2B: Player picked up a Wooden Plank (count: %d/3)." % phase2b_plank_count)
 	_update_hud()
-	# ─── X-RAY HIGHLIGHT: Clear plank highlight ──
-	clear_highlight("xray_planks")
+	# ─── X-RAY HIGHLIGHT: Clear plank highlight only after 3 planks ──
+	if phase2b_plank_count >= 3:
+		clear_highlight("xray_planks")
+		print("[RoutineManager] Phase 2B: Player has 3 planks. X-ray highlight cleared.")
 
 func on_window_patched() -> void:
 	if phase2b_window_patched:
@@ -996,6 +1004,7 @@ func reset_objective_history() -> void:
 	phase2_computer_used = false
 	
 	phase2b_plank_picked_up = false
+	phase2b_plank_count = 0
 	phase2b_window_patched = false
 	
 	phase3_door_locked = false
@@ -1044,6 +1053,7 @@ func reset_all_phases() -> void:
 	phase2_computer_used = false
 	
 	phase2b_plank_picked_up = false
+	phase2b_plank_count = 0
 	phase2b_window_patched = false
 	
 	phase3_door_locked = false

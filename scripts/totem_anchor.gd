@@ -68,10 +68,19 @@ const MAX_PURGE_DISTANCE: float = 8.0
 var _original_y: float = 0.0
 
 ## How high the totem rises above its original position during the night.
-@export var raised_y: float = 1.5
+## Total vertical travel from buried_y to raised_y = 5.0 meters
+## (raised_y=3.0 - buried_y=-2.0 = 5.0m).
+@export var raised_y: float = 3.0
 
 ## How low the totem descends below its original position during the day.
-@export var buried_y: float = -2.0
+## The willow tree model extends ~6.9m above its origin point. With the
+## original Y at ~0.45m (set by scene placement), buried_y must be at least
+## -8.0 to fully submerge the tree's canopy beneath the ground plane (y=0,
+## leaving the top at roughly 0.45 + (-8.0) + 6.9 ≈ -0.65m, safely under).
+## Total vertical travel from buried_y to raised_y = 11.0 meters
+## (raised_y=3.0 - buried_y=-8.0 = 11.0m). The night_started tween takes it
+## from -8.0 to 3.0 over 10 seconds; night_ended goes from 3.0 to -8.0.
+@export var buried_y: float = -8.0
 
 ## Duration (seconds) of the rise/descent tweens.
 @export var animation_duration: float = 10.0

@@ -4,8 +4,8 @@
 [ext_resource type="Script" uid="uid://d3vvc4y65g0fj" path="res://scripts/cabin_window.gd" id="1_yfnpk"]
 [ext_resource type="AudioStream" uid="uid://cnr55qbh3dgjn" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Misc/hit_3.ogg" id="2_xje28"]
 [ext_resource type="AudioStream" uid="uid://yg064tcrr1k6" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Misc/break_1.ogg" id="3_break"]
-[ext_resource type="AudioStream" uid="uid://drvhyapvtvebb" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Misc/crack_1_wood.ogg" id="4_hammer"]
 [ext_resource type="Texture2D" uid="uid://dlbvhtgwc4cov" path="res://assets/Textures/Wood/Wood_08-512x512.png" id="4_o3qxs"]
+[ext_resource type="AudioStream" uid="uid://hok1gmq73a77" path="res://assets/audio/objects/hammer_board.ogg" id="6_o3qxs"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_xje28"]
 
@@ -14,9 +14,9 @@ size = Vector3(1, 1, 0.2)
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_yfnpk"]
 transparency = 1
-albedo_color = Color(0.25490198, 0.33333334, 0.33333334, 0.21176471)
-metallic = 0.05
-metallic_specular = 0.31
+albedo_color = Color(0.3116, 0.41, 0.41, 0.06666667)
+metallic = 0.01
+metallic_specular = 0.1
 roughness = 0.2
 normal_enabled = true
 
@@ -30,6 +30,9 @@ albedo_texture = ExtResource("4_o3qxs")
 
 [node name="CabinWindow" type="Node3D" unique_id=1290486114]
 script = ExtResource("1_yfnpk")
+window_id = null
+is_upstairs_window = null
+start_broken = null
 
 [node name="InteractionArea" type="Area3D" parent="." unique_id=2017977008]
 
@@ -100,7 +103,7 @@ visible = false
 stream = ExtResource("3_break")
 
 [node name="HammerSound" type="AudioStreamPlayer3D" parent="." unique_id=-1294967294]
-stream = ExtResource("4_hammer")
+stream = ExtResource("6_o3qxs")
 
 [node name="GlassCrunchSound" type="AudioStreamPlayer3D" parent="." unique_id=-1294967293]
 stream = ExtResource("3_break")

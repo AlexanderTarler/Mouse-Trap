@@ -251,21 +251,35 @@ func _on_take_all_pressed() -> void:
 			i += 1
 			continue
 
-		# Try to add one instance to player inventory
-		var added = Inventory.add_item(item_data)
-		if not added:
-			# Inventory full — stop
-			_show_hud_message("Inventory is full!")
-			break
-
-		# Decrement or remove
-		if quantity > 1:
-			entry["quantity"] = quantity - 1
-		else:
-			contents.remove_at(i)
-			continue  # Don't increment i — next entry shifted into this index
-
-		i += 1
+		# Try to add items to player inventory, respecting quantity
+		var items_added_this_entry := 0
+		var take_success := true
+		
+		for _q in range(quantity):
+			var added = Inventory.add_item(item_data)
+			if not added:
+				# Inventory full — stop entire Take All
+				if items_added_this_entry > 0 and quantity > 1:
+					_show_hud_message("Inventory full — took %d/%d %s" % [items_added_this_entry, quantity, item_data.item_name])
+				else:
+					_show_hud_message("Inventory is full!")
+				take_success = false
+				break
+			items_added_this_entry += 1
+		
+		if not take_success:
+			# Update or preserve the remaining quantity
+			var remaining = quantity - items_added_this_entry
+			if remaining > 0:
+				entry["quantity"] = remaining
+			else:
+				contents.remove_at(i)
+				continue  # Don't increment i — next entry shifted into this index
+			break  # Stop all further processing — inventory is full
+		
+		# All quantity items were transferred — remove the entry
+		contents.remove_at(i)
+		continue  # Don't increment i — next entry shifted into this index
 
 	# Refresh both grids
 	_refresh_player_grid()

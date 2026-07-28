@@ -18,6 +18,22 @@ corner_radius_top_right = 4
 corner_radius_bottom_right = 4
 corner_radius_bottom_left = 4
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_info"]
+content_margin_left = 8.0
+content_margin_top = 6.0
+content_margin_right = 8.0
+content_margin_bottom = 6.0
+bg_color = Color(0.08, 0.04, 0.02, 0.95)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.2, 0.1, 0.03, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn"]
 bg_color = Color(0.12, 0.05, 0.02, 1)
 border_width_left = 1
@@ -46,6 +62,12 @@ border_color = Color(0.1, 0.05, 0.02, 1)
 [node name="InventoryUI" type="CanvasLayer" unique_id=336586731]
 layer = 10
 script = ExtResource("1_inv_ui")
+
+[node name="TooltipLabel" type="Label" parent="." unique_id=215679823]
+visible = false
+theme_override_colors/font_color = Color(1, 0.95, 0.85, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+theme_override_font_sizes/font_size = 13
 
 [node name="Panel" type="Panel" parent="." unique_id=1265479928]
 offset_left = 541.0
@@ -106,12 +128,38 @@ theme_override_constants/h_separation = 10
 theme_override_constants/v_separation = 10
 columns = 8
 
+[node name="InfoBox" type="Panel" parent="Panel" unique_id=184726395]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 425.0
+offset_right = 824.0
+offset_bottom = 505.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_info")
+
+[node name="InfoItemName" type="Label" parent="Panel/InfoBox" unique_id=30083808]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 6.0
+offset_right = 790.0
+offset_bottom = 28.0
+theme_override_colors/font_color = Color(1, 0.95, 0.85, 1)
+theme_override_font_sizes/font_size = 16
+
+[node name="InfoItemDesc" type="Label" parent="Panel/InfoBox" unique_id=1742368508]
+layout_mode = 0
+offset_left = 8.0
+offset_top = 30.0
+offset_right = 790.0
+offset_bottom = 50.0
+theme_override_colors/font_color = Color(0.6, 0.6, 0.55, 1)
+theme_override_font_sizes/font_size = 12
+
 [node name="UseButton" type="Button" parent="Panel" unique_id=85284237]
 layout_mode = 0
 offset_left = 157.0
-offset_top = 500.0
+offset_top = 520.0
 offset_right = 281.0
-offset_bottom = 532.0
+offset_bottom = 552.0
 theme_override_colors/font_color = Color(0.8984528, 0.79071814, 0.52134633, 1)
 theme_override_colors/font_hover_color = Color(0.8983003, 0.77115977, 0.05629813, 1)
 theme_override_colors/font_disabled_color = Color(0.9815603, 0.8940035, 0.65712816, 1)
@@ -125,9 +173,9 @@ text = "USE ITEM"
 [node name="DropButton" type="Button" parent="Panel" unique_id=1196438508]
 layout_mode = 0
 offset_left = 572.0
-offset_top = 500.0
+offset_top = 520.0
 offset_right = 696.0
-offset_bottom = 532.0
+offset_bottom = 552.0
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
 theme_override_colors/font_disabled_color = Color(0.98039216, 0.89411765, 0.65882355, 1)

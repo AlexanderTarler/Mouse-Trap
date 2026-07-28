@@ -549,6 +549,24 @@ var _is_motor_locked: bool = false
 ## Persists until the Entity breaches a different window.
 var last_breached_window: Node = null
 
+## ─── FLINCH FAILED WINDOW BLACKLIST ─────────────────────────────────────────
+## Array of window IDs (String) that the Entity was repelled from via FLINCH
+## while in APPROACH_WINDOW or WINDOW_PEEK state. When the Entity transitions
+## to the next APPROACH_WINDOW cycle, pick_tactical_window() will skip any
+## window whose ID appears in this list.
+##
+## Append: When the Director transitions to FLINCH from APPROACH_WINDOW or
+##   WINDOW_PEEK (Tier 0), the current window target's ID is appended here.
+##
+## Clear: The entire array is cleared when:
+##   1. The Entity successfully completes an OBSERVE_FROM_TREELINE relocation
+##      cycle (fade_and_relocate() is called by the Director).
+##   2. The Entity enters DORMANT state.
+##   3. The Entity successfully breaches a DIFFERENT window (INDOOR_SEARCH).
+##
+## This prevents rapid ping-ponging between two guarded windows.
+var _flinch_blacklisted_windows: Array[String] = []
+
 ## ─── DOOR APPROACH COOLDOWN ──────────────────────────────────────────────
 ## Cooldown timer preventing the Entity from immediately re-attempting the
 ## door after finding it locked. Set to 30.0 seconds when the Entity tries
@@ -1363,6 +1381,14 @@ func deactivate() -> void:
 	_is_active = false
 	velocity = Vector3.ZERO
 	visible = false
+	
+	# ─── CLEAR FLINCH BLACKLIST ON DORMANT ENTRY ────────────────────────
+	# When the Entity despawns (daytime/reset), clear all flinch-blacklisted
+	# windows so the Entity starts fresh on the next night (Correction 3).
+	if not _flinch_blacklisted_windows.is_empty():
+		print("[FLINCH BLACKLIST] Cleared %d blacklisted windows on deactivation." % _flinch_blacklisted_windows.size())
+		_flinch_blacklisted_windows.clear()
+	
 	request_state(EntityAI.State.DORMANT)
 	_set_visuals_visible(false)
 	
@@ -2858,6 +2884,29 @@ func increment_consecutive_vantage_misses() -> void:
 ## Called by entity_sensory.gd when the Entity hears or sees the player indoors.
 func reset_consecutive_vantage_misses() -> void:
 	_consecutive_vantage_misses = 0
+
+
+## ─── FLINCH BLACKLIST ACCESSORS ──────────────────────────────────────────────
+## Returns the array of window IDs the Entity was repelled from via FLINCH.
+func get_flinch_blacklisted_windows() -> Array[String]:
+	return _flinch_blacklisted_windows
+
+## Appends a window ID to the flinch blacklist. Called by the Director when
+## transitioning to FLINCH from APPROACH_WINDOW or WINDOW_PEEK. Prevents the
+## Entity from re-selecting this window on the next approach cycle.
+func add_flinch_blacklisted_window(window_id: String) -> void:
+	if not window_id.is_empty() and not _flinch_blacklisted_windows.has(window_id):
+		_flinch_blacklisted_windows.append(window_id)
+		print("[FLINCH BLACKLIST] Added window '%s' to flinch blacklist. Total: %d" % [window_id, _flinch_blacklisted_windows.size()])
+
+## Clears the entire flinch blacklist. Called when:
+##   1. The Entity completes an OBSERVE relocation cycle (fade_and_relocate).
+##   2. The Entity enters DORMANT state.
+##   3. The Entity successfully breaches a DIFFERENT window.
+func clear_flinch_blacklist() -> void:
+	if not _flinch_blacklisted_windows.is_empty():
+		print("[FLINCH BLACKLIST] Cleared %d blacklisted windows." % _flinch_blacklisted_windows.size())
+		_flinch_blacklisted_windows.clear()
 
 
 # ─── ACOUSTIC DETECTION ──────────────────────────────────────────────────────

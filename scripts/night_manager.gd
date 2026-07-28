@@ -680,16 +680,7 @@ func start_night(night: int) -> void:
 	if night <= 2 and not is_dev_mode:
 		print("Night %d: Entity remains hidden for the car alarm narrative event." % night)
 	else:
-		var entity_nodes = get_tree().get_nodes_in_group("entity")
-		var should_activate = true
-		for e in entity_nodes:
-			if e.has_meta("debug_disabled") and e.get_meta("debug_disabled"):
-				should_activate = false
-				print("Night %d: Entity is debug-disabled. Skipping auto-activation." % night)
-				break
-		
-		if should_activate:
-			get_tree().call_group("entity", "activate")
+		print("Night %d: Entity activation delegated to signal-connected _on_night_started()." % night)
 	
 	print("Night %d has begun..." % night)
 

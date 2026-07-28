@@ -28,6 +28,17 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		_close_note()
 		get_viewport().set_input_as_handled()
+		return
+	
+	# ─── KEYBOARD CLOSE: ESCAPE or E ────────────────────────────
+	# Escape closes the note AND prevents the pause menu from opening
+	# by consuming the event. E just closes the note.
+	if event is InputEventKey and event.pressed:
+		match event.keycode:
+			KEY_ESCAPE, KEY_E:
+				_close_note()
+				get_viewport().set_input_as_handled()
+				return
 
 
 ## Opens the note reader and displays the given content.

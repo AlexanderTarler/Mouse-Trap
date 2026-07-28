@@ -25,6 +25,19 @@ enum BoxState { BROKEN, HAS_FUSE, POWER_ON }
 
 var current_state: BoxState = BoxState.POWER_ON
 
+# ─── HOLD-TO-INTERACT: Fuse Repair ────────────────────────────────────────
+## Whether the player is currently holding E to repair the fuse box.
+## Set by start_hold_interact(), cleared by stop_hold_interact().
+var _is_repairing: bool = false
+
+## Accumulated hold progress (seconds) for inserting a fuse.
+## Counts up from 0.0 to REPAIR_TIME (3.0s), then the fuse is inserted.
+## Saved on release so the player can continue from where they left off.
+var _repair_progress: float = 0.0
+
+## How long the player must hold E to insert a fuse.
+const REPAIR_TIME: float = 3.0
+
 ## Internal health for the brute-force sabotage (frustration-based FUSE_SABOTAGE).
 ## The Entity strikes the fuse box repeatedly until health reaches 0.
 ## The door-prerequisite SABOTAGE_FUSE state calls break_fuse() directly.
@@ -57,10 +70,47 @@ func _ready() -> void:
 	print("[FuseBox] _ready() complete. State: ", BoxState.keys()[current_state])
 
 
-## Main interaction entry point — called by the InteractionManager
-## when the player looks at this node and presses E.
-## Takes zero parameters, matching the convention used by all other
-## interactables in the codebase (door.gd, generator_interaction.gd, etc.).
+# ─── HOLD-TO-INTERACT: Fuse Repair ────────────────────────────────────────
+## Called by PhysicalGrab when the player presses E while looking at the fuse box.
+## Starts accumulating hold progress for inserting a fuse.
+func start_hold_interact() -> void:
+	if current_state != BoxState.BROKEN:
+		return
+	# Check if player has a fuse
+	if not _find_fuse_in_inventory():
+		return
+	_is_repairing = true
+	print("[FuseBox] Start repairing at progress %.1f/%.1fs" % [_repair_progress, REPAIR_TIME])
+
+
+## Called by PhysicalGrab when the player releases E.
+## Saves progress so the player can continue from where they left off.
+func stop_hold_interact() -> void:
+	if not _is_repairing:
+		return
+	_is_repairing = false
+	print("[FuseBox] Released at progress %.1f/%.1fs" % [_repair_progress, REPAIR_TIME])
+
+
+## Called by PhysicalGrab every frame while E is held.
+## Accumulates hold progress for inserting the fuse.
+func _process_hold_interact(delta: float) -> void:
+	if not _is_repairing:
+		return
+	
+	_repair_progress += delta
+	
+	if _repair_progress >= REPAIR_TIME:
+		_repair_progress = 0.0
+		_is_repairing = false
+		
+		# Insert the fuse
+		attempt_fuse_insertion()
+
+
+## Override interact to allow quick-tap fuse insertion (backwards compatible).
+## The hold-to-interact system uses start/stop/_process instead, but quick-tap
+## still works via _fire_interact() for players who prefer it.
 func interact() -> void:
 	print("[FuseBox] interact() called! Current state: ", BoxState.keys()[current_state])
 	
@@ -72,6 +122,8 @@ func interact() -> void:
 	
 	match current_state:
 		BoxState.BROKEN:
+			# Play broken fuse box inspection sound
+			_play_sfx("res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/UI/check_fusebox.ogg")
 			attempt_fuse_insertion()
 		BoxState.POWER_ON:
 			print("[FuseBox] The power is already humming softly.")
@@ -106,8 +158,8 @@ func _throw_switch() -> void:
 	power_restored.emit()
 	
 	# ─── REPAIR SOUND ──────────────────────────────────────────────
-	# Play button_19.ogg when the fuse box is successfully repaired.
-	_play_sfx("res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Buttons & Levers/button_19.ogg")
+	# Play repair_fusebox.ogg when the fuse box is successfully repaired.
+	_play_sfx("res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/UI/repair_fusebox.ogg")
 	
 	print("[FuseBox] Fuse inserted! Power restored automatically.")
 	

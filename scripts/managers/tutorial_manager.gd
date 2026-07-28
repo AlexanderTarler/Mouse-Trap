@@ -25,6 +25,7 @@ const TUTORIAL_PATHS: Array[String] = [
 	"res://resources/tutorial/tutorial_flashlight.tres",
 	"res://resources/tutorial/tutorial_inventory.tres",
 	"res://resources/tutorial/tutorial_pc_login.tres",
+	"res://resources/tutorial/tutorial_pickup_drop.tres",
 ]
 
 ## Loaded TutorialData resources.
