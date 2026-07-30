@@ -43,6 +43,13 @@ const REPAIR_TIME: float = 3.0
 ## The door-prerequisite SABOTAGE_FUSE state calls break_fuse() directly.
 var _health: int = 3
 
+# ─── SOUND EFFECTS (Assign in Inspector) ────────────────────────────────
+## Sound played when the player inspects the broken fuse box (no fuse inserted).
+@export var check_fusebox_sfx: AudioStream = null
+
+## Sound played when the fuse box is successfully repaired (fuse inserted + power restored).
+@export var repair_fusebox_sfx: AudioStream = null
+
 
 func _ready() -> void:
 	add_to_group("interactable")
@@ -123,7 +130,7 @@ func interact() -> void:
 	match current_state:
 		BoxState.BROKEN:
 			# Play broken fuse box inspection sound
-			_play_sfx("res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/UI/check_fusebox.ogg")
+			_play_sfx(check_fusebox_sfx)
 			attempt_fuse_insertion()
 		BoxState.POWER_ON:
 			print("[FuseBox] The power is already humming softly.")
@@ -158,8 +165,7 @@ func _throw_switch() -> void:
 	power_restored.emit()
 	
 	# ─── REPAIR SOUND ──────────────────────────────────────────────
-	# Play repair_fusebox.ogg when the fuse box is successfully repaired.
-	_play_sfx("res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/UI/repair_fusebox.ogg")
+	_play_sfx(repair_fusebox_sfx)
 	
 	print("[FuseBox] Fuse inserted! Power restored automatically.")
 	
@@ -220,8 +226,8 @@ func _find_fuse_in_inventory():
 
 ## Plays a sound effect via a transient AudioStreamPlayer3D attached to self.
 ## The player is auto-freed when the sound finishes.
-func _play_sfx(res_path: String) -> void:
-	var stream := load(res_path)
+## Accepts an AudioStream resource (assignable in the Inspector).
+func _play_sfx(stream: AudioStream) -> void:
 	if not stream:
 		return
 	var player := AudioStreamPlayer.new()
@@ -252,8 +258,8 @@ func break_fuse() -> void:
 	_set_generator_state(false)
 	
 	# ─── SABOTAGE SOUND ───────────────────────────────────────────
-	# Play electric_shock_mx_1.ogg when the Entity sabotages the fuse box.
-	_play_sfx("res://assets/audio/Echoes - Audio Super Kit/electric_shock_mx_1.ogg")
+	# The Entity's sabotage sound uses the repair sound (electric spark).
+	_play_sfx(repair_fusebox_sfx)
 	
 	print("[FuseBox] BREAK! The fuse box is shattered. Generator is OFF. All lights die.")
 

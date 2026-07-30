@@ -357,11 +357,12 @@ func is_secure() -> bool:
 # ─── HOLD-TO-INTERACT: Plank Boarding ─────────────────────────────────────
 ## Called by PhysicalGrab when the player presses E while looking at this window.
 ## Starts accumulating hold progress for boarding up the window.
-## Only works if the glass is shattered and the player has planks in inventory.
+## Works on ANY window regardless of glass state. The player can board up an
+## intact window to reinforce it, or board a shattered window to seal the breach.
+## Previously gated on is_glass_shattered which silently blocked non-tutorial
+## windows (those without "Start Broken" enabled in the scene Inspector).
+## Only the player's plank inventory limits boarding.
 func start_hold_interact() -> void:
-	# Can only board if glass is shattered
-	if not is_glass_shattered:
-		return
 	# If already fully boarded, nothing to do
 	if is_boarded and planks_remaining >= 3:
 		return
@@ -488,8 +489,9 @@ func get_interact_text() -> String:
 	if _is_boarding:
 		var pct = int((_boarding_progress / BOARD_PER_PLANK_TIME) * 100.0)
 		return "[E] Boarding... %d%%" % pct
-	if not is_glass_shattered:
-		return ""  # Can't board intact glass
+	# NOTE: No is_glass_shattered guard here — boarding works on ALL windows
+	# regardless of glass state. The prompt should always show when the player
+	# has planks, so they know they can board any window.
 	if is_boarded and planks_remaining >= 3:
 		return "[E] Window (Secured)"
 	if not _has_planks():

@@ -2,6 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://ciuslcp5b0twm" path="res://assets/PSX Bunkers/Models/FBX/generator_1.fbx" id="1_5yxne"]
 [ext_resource type="Script" uid="uid://batgnoo2rflnk" path="res://scripts/generator.gd" id="1_rqoq6"]
+[ext_resource type="AudioStream" uid="uid://csxrkjyxqmuw5" path="res://assets/audio/objects/generator_switch.ogg" id="2_kgmdj"]
 [ext_resource type="Script" uid="uid://c83w5oahgle2v" path="res://scripts/generator_interaction.gd" id="2_w5vnv"]
 [ext_resource type="Script" uid="uid://dcskrxu6772q2" path="res://scripts/generator_outlet.gd" id="3_outlet"]
 [ext_resource type="PackedScene" uid="uid://ywtg3yf5ct6s" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/button_12.glb" id="5_4pjfl"]
@@ -23,6 +24,7 @@ script = ExtResource("1_rqoq6")
 cabin_light_drain_rate = 0.25
 porch_light_drain_rate = 0.15
 base_drain_rate = 0.06
+generator_switch_sfx = ExtResource("2_kgmdj")
 
 [node name="generator_1" parent="." unique_id=1280159935 instance=ExtResource("1_5yxne")]
 

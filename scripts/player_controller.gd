@@ -150,6 +150,13 @@ var _stamina_exhausted_timer: float = 0.0
 var _stamina_exhausted_delay: float = 1.5  # Seconds before regen starts after exhaustion
 signal stamina_changed(stamina_percent: float)
 
+# ─── STAMINA BREATHING AUDIO ─────────────────────────────────────────
+## Looping audio player for heavy breathing when stamina < 50%.
+## Created programmatically in _ready() to avoid scene node dependency.
+var _breathing_audio: AudioStreamPlayer3D = null
+var _breathing_audio_loaded: bool = false
+var _breathing_fade_tween: Tween = null
+
 # Noise system
 var _noise_timer: float = 0.0
 
@@ -157,6 +164,10 @@ var _noise_timer: float = 0.0
 ## Drag ItemData resources (e.g. key_resource.tres, battery_resource.tres) here
 ## in the editor to give the player items at the beginning of the game.
 @export var starting_items: Array[ItemData] = []
+
+## Looping audio stream for heavy breathing when stamina < 50%.
+## Assign Breathing_fast.wav from res://assets/audio/player/ here.
+@export var breathing_sfx: AudioStream = null
 
 func _ready() -> void:
 	# Add starting items to the Inventory autoload
@@ -178,6 +189,22 @@ func _ready() -> void:
 	floor_snap_length = 1.2
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	add_to_group("player")
+	
+	# ─── BREATHING AUDIO INIT ─────────────────────────────────────────
+	# Create a looping 3D audio player for heavy breathing at low stamina.
+	# Uses the exported breathing_sfx AudioStream (assign in Inspector).
+	if breathing_sfx:
+		_breathing_audio = AudioStreamPlayer3D.new()
+		if breathing_sfx is AudioStreamOggVorbis or "loop" in breathing_sfx:
+			breathing_sfx.loop = true
+		_breathing_audio.stream = breathing_sfx
+		_breathing_audio.bus = "SFX"
+		_breathing_audio.volume_db = -10.0
+		_breathing_audio.pitch_scale = 0.7
+		_breathing_audio.max_db = 0.0
+		add_child(_breathing_audio)
+		_breathing_audio_loaded = true
+		print("[Player] Breathing audio loaded (pitch=%s, vol=%s)." % [0.7, -10.0])
 	
 	# ─── FLASHLIGHT INIT ─────────────────────────────────────────────
 	# If start_with_flashlight is true (default), the player can toggle the
@@ -573,6 +600,25 @@ func _physics_process(delta: float) -> void:
 	if _new_stamina_pct != _last_emitted_stamina_pct:
 		_last_emitted_stamina_pct = _new_stamina_pct
 		stamina_changed.emit(_new_stamina_pct)
+	
+	# ─── STAMINA BREATHING AUDIO ──────────────────────────────────────
+	# Play heavy breathing when stamina < 50% AND the player is sprinting.
+	# Fades in over 0.5s on start, fades out over 1.0s on stop.
+	if _breathing_audio_loaded and _breathing_audio:
+		var should_breathe = _new_stamina_pct < 50.0 and _is_running
+		if should_breathe and not _breathing_audio.playing:
+			_breathing_audio.volume_db = -80.0
+			_breathing_audio.play()
+			# Fade in over 0.5s
+			if _breathing_fade_tween: _breathing_fade_tween.kill()
+			_breathing_fade_tween = create_tween().set_parallel(true)
+			_breathing_fade_tween.tween_property(_breathing_audio, "volume_db", -10.0, 0.5).set_ease(Tween.EASE_OUT)
+		elif not should_breathe and _breathing_audio.playing:
+			# Fade out over 1.0s then stop
+			if _breathing_fade_tween: _breathing_fade_tween.kill()
+			_breathing_fade_tween = create_tween().set_parallel(true)
+			_breathing_fade_tween.tween_property(_breathing_audio, "volume_db", -80.0, 1.0).set_ease(Tween.EASE_IN)
+			_breathing_fade_tween.finished.connect(_on_breathing_fade_out)
 
 	var input_dir := Vector2(
 		-1.0 if Input.is_key_pressed(KEY_A) else (1.0 if Input.is_key_pressed(KEY_D) else 0.0),
@@ -997,3 +1043,10 @@ func make_noise(radius: float, intensity: float = 1.0) -> void:
 	var entity = get_tree().get_first_node_in_group("entity")
 	if entity and entity.has_method("hear_noise"):
 		entity.hear_noise(global_position, radius, intensity)
+
+
+## Called when the breathing audio fade-out tween finishes.
+## Stops the breathing audio player after the fade completes.
+func _on_breathing_fade_out() -> void:
+	if _breathing_audio and _breathing_audio.playing:
+		_breathing_audio.stop()

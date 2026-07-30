@@ -669,305 +669,218 @@ func is_player_lit_by_static_lights() -> bool:
 	return false
 
 
-## Picks a tactical window using smart room-based deduction.
-## The Entity selects the window the player is LEAST likely to be watching,
-## based on acoustic intelligence and room lighting.
+## Picks a tactical window using room-grouped selection.
+## The Entity selects windows by room, not by individual markers.
 ##
-## SELECTION LOGIC:
-##   1. Identify the `last_heard_room` (from entity_sensory) — the room the
-##      Entity last heard the player in.
-##   2. Get all available ground-floor windows (with standard filters applied).
-##   3. Filter OUT any windows that belong to the `last_heard_room` — the Entity
-##      avoids approaching the room it last heard the player in, because the
-##      player is likely watching that window.
-##   4. Prefer windows that belong to UNLIT rooms (using RoomLightDetector).
-##      Dark rooms are safer approach points — the player can't see the Entity
-##      approaching through the darkness.
-##   5. If multiple candidates remain, pick the one furthest from the
-##      `last_heard_exact_position` — the Entity flanks to the opposite side
-##      of the cabin from where the player was last heard.
-##
-## LIGHT SANCTUARY FILTER:
-##   Windows whose room light is switched on are EXCLUDED from selection.
-##   The Entity will never approach a window that has an active CabinLight,
-##   because the light makes the window "secure" — the Entity avoids lit areas.
-##
-## NIGHT 2 BOARDED WINDOW FILTER:
-##   On Night 2, boarded windows are also excluded. The Entity can only
-##   approach and peek through unboarded (glass-only) windows on Night 2.
-##   On Night 3+, boarded windows are fair game.
+## SELECTION LOGIC (Room-Based):
+##   1. Group all bottom-floor windows by room name. Include the front door
+##      as a separate "Outside" entry.
+##   2. REMOVE rooms where the cabin light is ON (lit rooms = unsafe).
+##   3. If ALL rooms are lit, return null (triggers frustration → SABOTAGE_FUSE).
+##   4. REMOVE the room where the player was last heard acoustically.
+##   5. Among remaining rooms, pick the one with the FEWEST boarded windows.
+##      If equal → random.
+##   6. Within the chosen room, pick an unboarded window. If all boarded,
+##      pick the one with the least barricade health remaining (closest to break).
+##      If equal → random.
+##   7. Apply breach cooldown and flinch blacklist as final safety filters.
+##      If ALL windows in the chosen room are filtered, fall back to the
+##      next-best room.
 ##
 ## Parameters:
-##   player: The player Node3D to measure distance from.
+##   player: The player Node3D (unused in the new logic but kept for API compatibility).
 ##
-## Returns: A Node3D window marker, or null if no windows are available.
+## Returns: A Node3D (the CabinWindow parent), or null if no windows are available.
 func pick_tactical_window(player: Node3D) -> Node3D:
 	if not player or _window_markers.is_empty():
 		return null
 	
 	# ─── GET ACOUSTIC INTELLIGENCE ──────────────────────────────────────
-	# Read the last_heard_room from the sensory module. This tells us which
-	# room the Entity last heard the player in. If empty, the Entity has no
-	# acoustic intelligence and falls back to standard selection.
 	var sensory = entity.get_sensory_module()
 	var last_heard_room: String = ""
 	if sensory and "last_heard_room" in sensory:
 		last_heard_room = sensory.last_heard_room
 	
-	# Read the last_heard_exact_position from the controller for distance
-	# calculations. This is the exact 3D position of the last noise the
-	# Entity heard.
-	var last_heard_pos: Vector3 = entity.get_last_heard_exact_position()
+	# ─── STEP 1: GROUP WINDOWS BY ROOM ─────────────────────────────────
+	# Iterate all bottom-floor window markers and build a room-name → list mapping.
+	# Each entry stores the CabinWindow reference for accessing is_boarded, planks_remaining, etc.
+	var rooms: Dictionary = {}  # room_name → Array[{cabin_window, marker, window_id}]
 	
-	# Determine the current night for boarded window filtering.
-	var current_night: int = 3
-	var night_manager = entity.get_node_or_null("/root/NightManager")
-	if night_manager and "current_night" in night_manager:
-		current_night = night_manager.current_night
-	
-	# ─── BUILD CANDIDATE LIST ───────────────────────────────────────────
-	# Gather all ground-floor windows that pass standard filters.
-	# Each candidate is stored as a dictionary with metadata for scoring.
-	var candidates: Array[Dictionary] = []
 	for w in _window_markers:
-		# ─── BOTTOM FLOOR FILTER ──────────────────────────────────────
+		# Only ground-floor windows
 		if not w.get_parent().is_in_group("BottomFloorWindows"):
 			continue
 		
-		# ─── LIGHT SANCTUARY FILTER ──────────────────────────────────
-		# REMOVED: The Entity should be able to approach any window regardless
-		# of whether the room's light is on. Light sanctuary only matters once
-		# the Entity is INSIDE the cabin (INDOOR_SEARCH state). Blocking window
-		# approach based on light status prevented the Entity from ever breaching,
-		# creating a deadlock where the player could keep all lights on forever
-		# and the Entity would never enter the cabin.
-		# The original filter was:
-		#   if "room_light" in w and w.room_light and w.room_light.is_switched_on:
-		#       continue
-		
-		# ─── NIGHT 2 BOARDED WINDOW FILTER ──────────────────────────
-		if current_night == 2 and w.has_method("is_barricaded") and w.is_barricaded():
+		var cabin_window = w.get_parent() as CabinWindow
+		if not cabin_window:
 			continue
 		
-		# ─── BREACH COOLDOWN FILTER ──────────────────────────────────
-		var cabin_window = w.get_parent() as CabinWindow
-		if cabin_window and cabin_window.has_method("get_window_id"):
-			var window_id = cabin_window.get_window_id()
-			if _breach_cooldowns.has(window_id) and _breach_cooldowns[window_id] > 0.0:
-				continue
-			
-			# ─── FLINCH FAILED WINDOW BLACKLIST FILTER ────────────────
-			# If the Entity was repelled from this window via FLINCH while
-			# in APPROACH_WINDOW or WINDOW_PEEK, skip it on the next
-			# selection cycle. Prevents ping-ponging between two guarded
-			# windows (Correction 3 from plan).
-			# The blacklist is cleared when the Entity completes an
-			# OBSERVE relocation cycle or enters DORMANT.
-			if entity and entity.has_method("get_flinch_blacklisted_windows"):
-				var blacklisted = entity.get_flinch_blacklisted_windows()
-				if not blacklisted.is_empty() and blacklisted.has(window_id):
-					print("[Navigation] Skipping window '%s': blacklisted by FLINCH." % window_id)
-					continue
+		# Resolve the room name via RoomLightDetector using the CabinWindow's
+		# position (the window frame), NOT the WindowMarker's exterior position.
+		# The marker is placed outside the cabin wall and does NOT overlap the
+		# Cabin_Interior Area3D — get_room_name_at() returns "Outside" for all
+		# markers, causing EVERY window to be dropped from the room group.
+		var window_room: String = RoomLightDetector.get_room_name_at(cabin_window.global_position)
+		if window_room == "" or window_room == "Outside":
+			# Fallback: if the room name resolved to "Outside" even for the
+			# CabinWindow position, the Interior Area3D volumes may not cover
+			# this area. Log a diagnostic but do NOT skip the window — let it
+			# be placed in a default "Unknown" room so the Entity can still
+			# approach it.
+			window_room = "Unknown_%s" % cabin_window.name
 		
-		# ─── DETERMINE WHICH ROOM THIS WINDOW BELONGS TO ─────────────
-		# Use RoomLightDetector to resolve the window's position to a room name.
-		# This tells us which room the window is in, so we can apply the
-		# "avoid last_heard_room" rule.
-		var window_room: String = RoomLightDetector.get_room_name_at(w.global_position)
+		var window_id: String = ""
+		if cabin_window.has_method("get_window_id"):
+			window_id = cabin_window.get_window_id()
 		
-		# ─── CHECK IF THE WINDOW'S ROOM IS LIT ──────────────────────
-		# Use RoomLightDetector to check if the room this window belongs to
-		# is currently lit. Unlit rooms are preferred — the Entity can approach
-		# through darkness without being seen.
-		# IMPORTANT: If the room IS lit, skip this window entirely. The Entity
-		# will NOT approach a window in a lit room — the player would repel it
-		# with cabin light. The Entity must wait for the player to turn off
-		# the light or go to a different window.
-		var is_room_lit: bool = RoomLightDetector.is_position_in_lit_room(w.global_position)
-		if is_room_lit:
-			continue  # Skip — Entity will not approach lit rooms
+		# Determine approach marker (WindowMarker child or the marker itself)
+		var approach_marker: Node3D = w
+		if cabin_window.has_node("WindowMarker"):
+			approach_marker = cabin_window.get_node("WindowMarker") as Node3D
 		
-		# ─── RESOLVE THE APPROACH POSITION ──────────────────────────
-		# The WindowMarker child is offset outside the window and is the
-		# actual position the Entity will pathfind to. Use it for all
-		# distance calculations, not the CabinWindow node (which is inside
-		# the wall and unreachable).
-		var approach_pos: Vector3 = w.global_position
-		if w.get_parent().has_node("WindowMarker"):
-			approach_pos = w.get_parent().get_node("WindowMarker").global_position
+		# Build the window entry
+		var entry: Dictionary = {
+			"cabin_window": cabin_window,
+			"marker": approach_marker,
+			"window_id": window_id,
+			"is_boarded": cabin_window.is_boarded,
+			"planks_remaining": cabin_window.planks_remaining,
+			"hits_on_current_plank": cabin_window.hits_on_current_plank,
+		}
 		
-		# ─── CALCULATE DISTANCE FROM LAST HEARD POSITION ────────────
-		# If we have a last_heard_exact_position, calculate the distance
-		# from that position to this window using squared distance with
-		# flattened Y to avoid Vector2 allocations. The Entity prefers
-		# windows that are FAR from where the player was last heard
-		# (flanking behavior).
-		var dist_from_last_heard: float = INF
-		if last_heard_pos != Vector3.ZERO:
-			var w_pos = approach_pos
-			w_pos.y = last_heard_pos.y  # Flatten Y to ignore height differences
-			dist_from_last_heard = last_heard_pos.distance_squared_to(w_pos)
-		
-		# ─── CALCULATE DISTANCE FROM ENTITY ─────────────────────────
-		# The Entity must be able to physically REACH the window marker. A
-		# window on the opposite side of the cabin may score high on
-		# flanking, but if the Entity has to pathfind 25m around the cabin
-		# it will likely get stuck at the NavMesh edge. We store the
-		# distance from the Entity so the scorer can penalize unreachable
-		# windows.
-		var dist_from_entity: float = INF
-		if entity:
-			var w_pos_entity = approach_pos
-			w_pos_entity.y = entity.global_position.y
-			dist_from_entity = entity.global_position.distance_squared_to(w_pos_entity)
-		
-		# ─── STORE CANDIDATE ─────────────────────────────────────────
-		candidates.append({
-			"marker": w,
-			"window_room": window_room,
-			"is_room_lit": is_room_lit,
-			"dist_from_last_heard": dist_from_last_heard,
-			"dist_from_entity": dist_from_entity,
-			"is_last_heard_room": (window_room == last_heard_room and last_heard_room != "")
-		})
+		# Add to the room group
+		if not rooms.has(window_room):
+			rooms[window_room] = []
+		rooms[window_room].append(entry)
 	
-	# ─── ADD THE FRONT DOOR AS A CANDIDATE ──────────────────────────────
-	# The front door is treated as an entry point alongside windows.
-	# It gets a bonus score (preferred over windows) because it's the most
-	# direct entry point. The door is excluded if:
-	#   1. It's locked (door.is_locked == true) — the Entity can't enter
-	#   2. The door approach cooldown is active (entity._door_approach_cooldown > 0.0)
-	#      — the Entity recently tried the door and found it locked
-	#
-	# The door is added as a candidate with special metadata:
-	#   - "is_door": true (distinguishes it from window candidates)
-	#   - "dist_from_last_heard": INF (the door has no room association,
-	#     so it's always treated as "furthest from last heard position")
-	#   - "is_last_heard_room": false (the door is not a room)
-	#   - "is_room_lit": false (the door is not a room, so it's never "lit")
-	var door = get_tree().get_first_node_in_group("Door")
-	if door and door.has_method("is_in_group"):
-		var door_locked: bool = door.is_locked if "is_locked" in door else false
-		var door_cooldown: float = entity._door_approach_cooldown if "_door_approach_cooldown" in entity else 0.0
-		
-		if not door_locked and door_cooldown <= 0.0:
-			# Find the EntityDoorWaypoint marker for pathfinding
-			var door_wp: Node3D = null
-			var waypoints = get_tree().get_nodes_in_group("EntityWaypoints")
-			for wp in waypoints:
-				if wp.name == "EntityDoorWaypoint":
-					door_wp = wp
-					break
-			
-			if door_wp:
-				var door_dist_from_entity: float = INF
-				if entity:
-					var door_pos = door_wp.global_position
-					door_pos.y = entity.global_position.y
-					door_dist_from_entity = entity.global_position.distance_squared_to(door_pos)
-				candidates.append({
-					"marker": door_wp,
-					"is_door": true,
-					"window_room": "Outside",
-					"is_room_lit": false,
-					"dist_from_last_heard": INF,
-					"dist_from_entity": door_dist_from_entity,
-					"is_last_heard_room": false
-				})
-				print("[Navigation] Door added as approach candidate (unlocked, cooldown=%.1f)." % door_cooldown)
-	
-	if candidates.is_empty():
+	if rooms.is_empty():
 		return null
 	
-	# ─── STEP 1: FILTER OUT LAST_HEARD_ROOM WINDOWS ────────────────────
-
-	# Remove any windows that belong to the room the Entity last heard the
-	# player in. The Entity avoids approaching the same room — the player
-	# is likely watching that window. If ALL windows are in the last_heard_room
-	# (or last_heard_room is empty), keep all candidates.
-	var filtered: Array[Dictionary] = []
-	for c in candidates:
-		if not c["is_last_heard_room"]:
-			filtered.append(c)
+	# ─── STEP 1.5: REMOVE LIT ROOMS ────────────────────────────────────
+	# Check each room's windows: if ANY window in that room has a room_light
+	# that is switched on AND the generator is running (is_room_lit()), remove
+	# the entire room from consideration. The Entity will not approach lit rooms.
+	var lit_rooms: Array[String] = []
+	for room_name in rooms.keys():
+		var windows = rooms[room_name] as Array
+		if windows.is_empty():
+			lit_rooms.append(room_name)
+			continue
+		# Check the first window's CabinWindow for room_light
+		var first_window = windows[0] as Dictionary
+		var cw = first_window["cabin_window"] as CabinWindow
+		if cw and cw.room_light:
+			if cw.room_light.has_method("is_room_lit") and cw.room_light.is_room_lit():
+				lit_rooms.append(room_name)
 	
-	# If filtering removed everything, fall back to all candidates
-	if filtered.is_empty():
-		filtered = candidates
+	for lit_room in lit_rooms:
+		rooms.erase(lit_room)
+		print("[Navigation] Room '%s' excluded: cabin light is ON." % lit_room)
 	
-	# ─── STEP 2: PREFER UNLIT ROOMS ────────────────────────────────────
-	# Separate candidates into unlit (preferred) and lit (fallback).
-	var unlit_candidates: Array[Dictionary] = []
-	var lit_candidates: Array[Dictionary] = []
-	for c in filtered:
-		if not c["is_room_lit"]:
-			unlit_candidates.append(c)
-		else:
-			lit_candidates.append(c)
+	# ─── STEP 1.75: ALL ROOMS LIT → TRIGGER SABOTAGE ──────────────────
+	# If ALL rooms were removed because their lights are on, return null.
+	# The caller (_approach_window_state()) will detect null → signal completion
+	# → Director transitions to OBSERVE_FROM_TREELINE → frustration accumulates
+	# → Tier 1 Sabotage eventually triggers SABOTAGE_FUSE to break the fuse box.
+	if rooms.is_empty():
+		print("[Navigation] ALL ROOMS ARE LIT! Returning null: Entity cannot approach any window. Frustration will trigger SABOTAGE_FUSE.")
+		return null
 	
-	# ─── STEP 3: SCORE CANDIDATES ─────────────────────────────────────
-	# Combine two factors:
-	#   1. FLANKING BONUS: distance from last_heard_position (higher = better)
-	#      This makes the Entity approach from the opposite side of where
-	#      the player was last heard.
-	#   2. REACHABILITY PENALTY: distance from Entity (lower = better)
-	#      This prevents the Entity from picking a window on the far side
-	#      of the cabin that it cannot pathfind to from its current position.
+	# ─── STEP 2: REMOVE LAST-HEARD ROOM ────────────────────────────────
+	# If the Entity heard the player in a specific room, exclude that
+	# room's windows. The Entity flanks to a different room.
+	if last_heard_room != "" and rooms.has(last_heard_room):
+		rooms.erase(last_heard_room)
+		print("[Navigation] Room '%s' excluded: player was last heard here. Flanking to a different room." % last_heard_room)
+	
+	# ─── STEP 3: PICK ROOM WITH FEWEST BOARDED WINDOWS ─────────────────
+	# Count boarded windows per remaining room. Pick the room with the
+	# lowest count. If equal, pick randomly.
+	var candidate_rooms: Array[String] = []
+	var lowest_boarded_count: int = 999
+	for room_name in rooms.keys():
+		var windows = rooms[room_name] as Array
+		var boarded_count: int = 0
+		for entry in windows:
+			if entry["is_boarded"]:
+				boarded_count += 1
+		
+		if boarded_count < lowest_boarded_count:
+			lowest_boarded_count = boarded_count
+			candidate_rooms = [room_name]
+		elif boarded_count == lowest_boarded_count:
+			candidate_rooms.append(room_name)
+	
+	if candidate_rooms.is_empty():
+		return null
+	
+	# Pick randomly among tied rooms
+	var chosen_room: String = candidate_rooms[randi() % candidate_rooms.size()]
+	var room_windows: Array = rooms[chosen_room] as Array
+	print("[Navigation] Room '%s' selected (%d/%d windows boarded)." % [chosen_room, lowest_boarded_count, room_windows.size()])
+	
+	# ─── STEP 4: PICK SPECIFIC WINDOW IN CHOSEN ROOM ──────────────────
+	# Apply final safety filters (breach cooldown, flinch blacklist),
+	# then pick: unboarded > least barricade health > random.
 	#
-	# The final score is: dist_from_last_heard - (dist_from_entity * reachability_weight)
-	# The reachability_weight is tuned so that a window 25m away from the Entity
-	# is heavily penalized, but a nearby window still gets some flanking bonus.
-	const REACHABILITY_WEIGHT: float = 1.5
-	
-	var best_candidate: Dictionary = {}
-	var best_score: float = -INF
-	
-	var pool = unlit_candidates if not unlit_candidates.is_empty() else lit_candidates
-	
-	for c in pool:
-		var d_heard: float = c["dist_from_last_heard"]
-		var d_entity: float = c["dist_from_entity"]
+	# Build a filtered list that passes safety checks.
+	var filtered_windows: Array[Dictionary] = []
+	for entry in room_windows:
+		var cw = entry["cabin_window"] as CabinWindow
+		var wid = entry["window_id"] as String
 		
-		# If we have no last_heard_pos, d_heard is INF. In that case, just
-		# use the negative distance from Entity (pick the closest reachable window).
-		var score: float
-		if d_heard == INF:
-			score = -d_entity
+		# Breach cooldown filter
+		if _breach_cooldowns.has(wid) and _breach_cooldowns[wid] > 0.0:
+			continue
+		
+		# Flinch blacklist filter
+		if entity and entity.has_method("get_flinch_blacklisted_windows"):
+			var blacklisted = entity.get_flinch_blacklisted_windows()
+			if not blacklisted.is_empty() and blacklisted.has(wid):
+				continue
+		
+		filtered_windows.append(entry)
+	
+	# If ALL windows were filtered out, fall back to the unfiltered list
+	# (the Entity must approach something, even if it's on cooldown).
+	if filtered_windows.is_empty():
+		filtered_windows = room_windows
+	
+	# Prefer unboarded windows
+	var unboarded: Array[Dictionary] = []
+	var boarded: Array[Dictionary] = []
+	for entry in filtered_windows:
+		if entry["is_boarded"]:
+			boarded.append(entry)
 		else:
-			score = d_heard - (d_entity * REACHABILITY_WEIGHT)
-		
-		if score > best_score:
-			best_score = score
-			best_candidate = c
+			unboarded.append(entry)
 	
-	if best_candidate.is_empty():
-		# Absolute fallback: pick the first candidate
-		best_candidate = filtered[0]
-	
-	# Debug print the selected candidate so we can verify the scoring
-	var selected_marker: Node3D = best_candidate["marker"] as Node3D
-	if selected_marker:
-		var selected_name: String = selected_marker.name
-		var parent = selected_marker.get_parent()
-		if parent:
-			selected_name = parent.name + "/" + selected_name
-		print("[Navigation] Tactical window selected: %s | score=%.1f | dist_from_entity=%.1f | dist_from_last_heard=%.1f | is_door=%s" % [
-			selected_name, best_score, sqrt(best_candidate["dist_from_entity"]), sqrt(best_candidate["dist_from_last_heard"]) if best_candidate["dist_from_last_heard"] != INF else -1.0,
-			best_candidate.get("is_door", false)
-		])
+	var chosen_entry: Dictionary = {}
+	if not unboarded.is_empty():
+		# Pick randomly among unboarded windows
+		chosen_entry = unboarded[randi() % unboarded.size()]
+		print("[Navigation] Window '%s' selected (unboarded)." % chosen_entry["window_id"])
+	else:
+		# All boarded — pick the one with least barricade health.
+		# barricade health = (planks_remaining * HITS_PER_PLANK) - hits_on_current_plank
+		# Lower = closer to breaking.
+		var best_boarded: Array[Dictionary] = []
+		var lowest_health: int = 999
+		for entry in boarded:
+			var hits_remaining: int = (entry["planks_remaining"] * 3) - entry["hits_on_current_plank"]
+			if hits_remaining < lowest_health:
+				lowest_health = hits_remaining
+				best_boarded = [entry]
+			elif hits_remaining == lowest_health:
+				best_boarded.append(entry)
 		
-		# ─── RETURN VALUE BY TYPE ──────────────────────────────────────────
-		# WINDOW: Return the parent CabinWindow node. The window target is
-		#   compared against the door waypoint marker in _approach_window_state()
-		#   to distinguish door from window. If it's NOT a door, it's a window.
-		# DOOR: Return the DOOR MARKER (EntityDoorWaypoint) directly, NOT the
-		#   Door parent node. The _approach_window_state() handler compares the
-		#   current window target against entity.get_door_waypoint_marker().
-		#   If we return the parent Door node, the comparison fails and the
-		#   Entity treats the door as a window — causing WINDOW_PEEK → INDOOR_SEARCH
-		#   while still outside.
-		if best_candidate.get("is_door", false):
-			return selected_marker  # Return the marker itself for door targets
-		return selected_marker.get_parent() as Node3D
+		chosen_entry = best_boarded[randi() % best_boarded.size()]
+		print("[Navigation] Window '%s' selected (boarded, %d hits remaining)." % [chosen_entry["window_id"], lowest_health])
+	
+	# Return the CabinWindow parent (same return type as before)
+	var result_cabin_window: CabinWindow = chosen_entry["cabin_window"] as CabinWindow
+	if result_cabin_window:
+		return result_cabin_window
 	
 	return null
 

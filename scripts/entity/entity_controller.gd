@@ -145,6 +145,11 @@ var _state: EntityAI.State = EntityAI.State.DORMANT
 ## Used by the state transition debug log to print what triggered the change.
 var _last_state: EntityAI.State = EntityAI.State.DORMANT
 
+## Returns the previous state before the last state transition.
+## Used by the Director's hysteresis tracking in evaluate_master_state().
+func get_previous_state() -> int:
+	return _last_state
+
 ## ─── STATE PERSISTENCE TIMER ──────────────────────────────────────────────
 ## Counts down each frame while the Entity is in an active state (FLINCH,
 ## CHARGE, etc.). When > 0.0, the Director's State Persistence
@@ -634,6 +639,15 @@ var _is_enraged: bool = false
 ## one-time +8.0 confidence boost exactly once when line of sight breaks.
 var _confidence_stare_was_active: bool = false
 
+## Cooldown timer for the flashlight stare break confidence boost.
+## Prevents the +8.0 boost from firing repeatedly when the flashlight beam
+## rapidly oscillates across the Entity (e.g., player toggling the flashlight
+## on/off). The boost can only fire once per 2.0 seconds.
+## Set to 2.0 each time the boost fires. Decremented by delta each frame.
+## If > 0.0, the boost is blocked.
+var _confidence_stare_break_cooldown: float = 0.0
+const CONFIDENCE_STARE_BREAK_COOLDOWN: float = 2.0
+
 ## Whether the player is standing on wood flooring (inside the cabin).
 ## Updated every frame in _physics_process() via floor raycast.
 ## Used by the floor material safety guard to prevent the Entity from
@@ -883,13 +897,22 @@ func _ready() -> void:
 	add_child(_ray_right)
 	
 	# ─── FLOOR RAYCAST (Floating Sphere Ground Snapping) ──────────────
-	# Projects 3.0m downward to detect the floor beneath the Entity.
+	# Projects 4.0m downward to detect the floor beneath the Entity.
 	# Used in _physics_process() to hover the floating sphere above terrain
 	# and snap the visual model to the actual ground surface.
+	# Collision mask covers all physics layers that the Entity can walk on:
+	#   Layer 1: Cabin geometry (walls, interior floors, foundation)
+	#   Layer 2: Player (in case Entity stands on the player or vice versa)
+	#   Layer 3: Trees / large foliage
+	#   Layer 4: Rocks / terrain obstacles
 	_floor_ray = RayCast3D.new()
 	_floor_ray.name = "FloorRayCast"
 	_floor_ray.target_position = Vector3(0, -4.0, 0)
-	_floor_ray.collision_mask = 1  # Layer 1: Cabin/terrain geometry
+	_floor_ray.collision_mask = 0
+	_floor_ray.collision_mask |= (1 << (COLLISION_LAYER_CABIN - 1))   # Layer 1: Cabin
+	_floor_ray.collision_mask |= (1 << (COLLISION_LAYER_PLAYER - 1))  # Layer 2: Player
+	_floor_ray.collision_mask |= (1 << (COLLISION_LAYER_TREE - 1))    # Layer 3: Trees
+	_floor_ray.collision_mask |= (1 << (COLLISION_LAYER_ROCK - 1))    # Layer 4: Rocks
 	_floor_ray.hit_from_inside = true
 	add_child(_floor_ray)
 	
@@ -1555,6 +1578,23 @@ func _physics_process(delta: float) -> void:
 	#
 	# NOTE: Stuck detection is disabled during CHASE and CHARGE — the
 	# Entity should never teleport away while actively pursuing the player.
+	#
+	# STATE AWARENESS GUARD: Stuck detection is also DISABLED during the
+	# following states where the Entity is INTENTIONALLY stationary:
+	#   - DORMANT: Entity is despawned/hidden (handled separately above)
+	#   - WINDOW_PEEK: Entity stares through window for 8-15 seconds
+	#   - STANDOFF: Entity frozen in place (flashlight stare)
+	#   - OBSERVE_FROM_TREELINE: Entity waits at treeline vantage point
+	#   - STUNNED: Entity paralyzed by overload trap
+	#   - HARASS: Entity performing psychological harassment at window
+	# Without this guard, the stuck detector fires during these intentional
+	# stationary periods and triggers unnecessary fade_and_relocate() calls.
+	var _state_exempt: bool = (
+		_state == EntityAI.State.WINDOW_PEEK or
+		_state == EntityAI.State.STANDOFF or
+		_state == EntityAI.State.HARASS or
+		_state == EntityAI.State.STUNNED
+	)
 	var is_nav_active: bool = not _nav_agent.is_navigation_finished()
 	var is_moving: bool = get_real_velocity().length_squared() > 0.01
 	var is_attack_state: bool = (
@@ -1563,6 +1603,23 @@ func _physics_process(delta: float) -> void:
 		_state == EntityAI.State.FLINCH or
 		_state == EntityAI.State.STUNNED
 	)
+	
+	# ─── STUCK DETECTOR STATE-AWARENESS ────────────────────────────
+	# When in exempt states (WINDOW_PEEK, STANDOFF, HARASS, STUNNED),
+	# the stuck detectors must NOT fire — the Entity is intentionally
+	# stationary. We reset the timers each frame so they never trigger
+	# a false-positive fade_and_relocate().
+	#
+	# IMPORTANT: We do NOT return early here. The rest of the physics
+	# process (AI state logic, sensor processing, move_and_slide, and
+	# Director evaluation) must still run every frame, otherwise the
+	# Entity freezes — the AI never processes state transitions, the
+	# Director never checks flashlight reactions (FLINCH), and the
+	# WINDOW_PEEK siege timer never advances.
+	if _state_exempt:
+		_stuck_timer = 0.0
+		_pos_stuck_timer = 0.0
+		_pos_stuck_logged = false
 	
 	# ─── DORMANT STATE GUARD ────────────────────────────────────────────────
 	# When the Entity is in DORMANT (intentionally despawned/hidden), the stuck
@@ -1666,7 +1723,6 @@ func _physics_process(delta: float) -> void:
 		var real_vel_stuck = get_real_velocity()
 		if is_stranded or (is_nav_active and not is_moving):
 			_stuck_timer += delta
-			print("[TRACE_STUCK] INDOOR_SEARCH: is_stranded=%s, is_nav_active=%s, is_moving=%s, stuck_timer=%.2f/3.0, dist_to_target=%.2f, vel_len=%.3f" % [is_stranded, is_nav_active, is_moving, _stuck_timer, dist_to_target, real_vel_stuck.length()])
 			if _stuck_timer > 3.0:
 				# ─── BARRICADE AWARENESS CHECK ──────────────────────────
 				# DOOR ENTRY GUARD: If the Entity entered through a door
@@ -1695,7 +1751,7 @@ func _physics_process(delta: float) -> void:
 					if not is_door:
 						var dist_to_window = global_position.distance_to(window_target.global_position)
 						if dist_to_window <= 5.0:
-							print("[TRACE_STUCK] INDOOR_SEARCH: Near window (dist=%.2f <= 5.0). Resetting stuck timer." % dist_to_window)
+							
 							_stuck_timer = 0.0
 							return
 
@@ -1796,7 +1852,16 @@ func _physics_process(delta: float) -> void:
 	#   because the NavMesh may not cover the cabin interior, causing the
 	#   Entity to appear "stuck" when it's actually stranded. The INDOOR_SEARCH
 	#   state has its own dedicated stuck detection logic above.
-	if not is_attack_state and _state != EntityAI.State.INDOOR_SEARCH:
+	#
+	# STATIONARY STATE GUARD:
+	#   Position-based stuck detection is also disabled during WINDOW_PEEK,
+	#   STANDOFF, STUNNED, and HARASS — the Entity is intentionally stationary
+	#   during these states (staring through a window, frozen by flashlight,
+	#   paralyzed by overload trap, or performing harassment). Without this
+	#   guard, the position-based detector fires after 2.0 seconds and logs
+	#   a confusing "Entity stuck" diagnostic even though the Entity is behaving
+	#   correctly.
+	if not is_attack_state and _state != EntityAI.State.INDOOR_SEARCH and not _state_exempt:
 		var current_pos = global_position
 		var pos_changed = current_pos.distance_squared_to(_last_stuck_position) > POS_STUCK_THRESHOLD * POS_STUCK_THRESHOLD
 		
@@ -1891,11 +1956,24 @@ func _physics_process(delta: float) -> void:
 		# Continuous drain: -2.0 confidence per second while stared at
 		if _confidence and _confidence.has_method("modify"):
 			_confidence.modify(-2.0 * delta, "flashlight_stare")
-	elif _confidence_stare_was_active and not _confidence_stare_active:
-		# One-time boost: +8.0 confidence when the player breaks line of sight
+	# ─── STARE BREAK COOLDOWN DECAY ─────────────────────────────────
+	# Decrement the cooldown timer each frame. When it reaches 0.0, the
+	# +8.0 confidence boost can trigger again on the next stare break.
+	# This prevents the "flashlight pump" where rapidly toggling the
+	# flashlight fires the +8.0 boost every toggle, reaching 40+ in
+	# ~3 seconds.
+	if _confidence_stare_break_cooldown > 0.0:
+		_confidence_stare_break_cooldown -= delta
+	
+	# ─── STARE BREAK CONFIDENCE BOOST ────────────────────────────────
+	# One-time boost: +8.0 confidence when the player breaks line of sight.
+	# Gated by a 2-second cooldown to prevent rapid-fire pumping when the
+	# flashlight beam rapidly oscillates across the Entity.
+	if _confidence_stare_was_active and not _confidence_stare_active and _confidence_stare_break_cooldown <= 0.0:
 		if _confidence and _confidence.has_method("modify"):
 			_confidence.modify(8.0, "flashlight_stare_break")
-			print("[Entity Controller] Confidence boost: +8.0 (player broke flashlight stare)")
+			_confidence_stare_break_cooldown = CONFIDENCE_STARE_BREAK_COOLDOWN
+			print("[Entity Controller] Confidence boost: +8.0 (player broke flashlight stare). Cooldown set to %.1fs." % CONFIDENCE_STARE_BREAK_COOLDOWN)
 	
 	_confidence_stare_was_active = _confidence_stare_active
 	
@@ -2019,11 +2097,28 @@ func _physics_process(delta: float) -> void:
 			_update_animations(delta)
 			return
 		
-		# ─── LERP TOWARD GHOST TARGET ─────────────────────────────────────
+		# ─── VELOCITY-BASED GHOST MOVEMENT (Physics-Resolved) ────────
+		# Convert the old manual global_position lerp to a calculated velocity
+		# vector applied via the motor and move_and_slide(). This allows Godot's
+		# physics engine to resolve collision against doorframes — the Entity
+		# pushes through the doorway naturally rather than phasing through
+		# geometry, which prevented the engine from resolving the collision
+		# and caused the "jitter into floor/wall" bug.
+		#
+		# Unlike the old ghost mode (which disabled collision entirely),
+		# we now keep FULL collision enabled so the physics engine can
+		# react to doorframe interference. The failsafe timeout (5s) still
+		# force-teleports if the Entity is truly stuck.
+		var ghost_dir = (_ghost_target - global_position).normalized()
+		ghost_dir.y = 0.0  # Stay on ground plane
 		var ghost_speed = current_stalk_speed * 1.0  # Normal walk speed
-		var new_pos = global_position.move_toward(_ghost_target, ghost_speed * delta)
-		global_position = new_pos
-		velocity = Vector3.ZERO
+		velocity = ghost_dir * ghost_speed
+		# Re-enable collision so the physics engine resolves doorframe contacts
+		set_collision_mask_value(1, true)
+		if has_method("get_collision_shape"):
+			get_collision_shape().disabled = false
+		is_physics_suspended = false
+		move_and_slide()
 		
 		# ─── ARRIVAL CHECK ────────────────────────────────────────────────
 		var ghost_dist = global_position.distance_to(_ghost_target)
@@ -2119,35 +2214,29 @@ func _physics_process(delta: float) -> void:
 
 		move_and_slide()
 		
-		# ─── FLOATING SPHERE GROUND SNAPPING ──────────────────────────────
-		# After move_and_slide(), use the Floor RayCast to hover the invisible
-		# physics sphere above terrain and snap the visual model to the ground.
-		# This permanently prevents the Entity from snagging on geometry.
+		# ─── GROUND CONTACT (move_and_slide handles this) ─────────────
+		# CharacterBody3D's move_and_slide() natively resolves ground contact
+		# — no manual Y override is needed or safe. The old "Floating Sphere
+		# Ground Snapping" system used lerp() to forcibly hover the Entity
+		# 0.3m above the floor every frame, which fought against the physics
+		# engine: move_and_slide() pushed the Entity down → ground snapping
+		# pushed it back up → repeat every frame, creating a perpetual ~1.7cm
+		# Y oscillation visible as the Entity "shaking" at all times.
 		#
-		# DISABLE GUARD: When _floor_snap_disabled is true (Door Phase 2), the
-		# ground snapping is temporarily disabled to allow the Entity to use
-		# standard physics to walk up the stairs. Without this, the lerp hovers
-		# the Entity above stair treads, preventing it from climbing to the
-		# interior waypoint.
+		# The monster model's visual offset (_monster_model.position.y = -0.95
+		# in _update_animations()) handles the "hover" look independently.
+		# No Y-position overrides on the physics body are required.
+		#
+		# DISABLE GUARD: When _floor_snap_disabled is true (Door Phase 2),
+		# skip the gravity fallback. During indoor search ghosting, skip too.
 		var is_ghosting = false
 		if _state == EntityAI.State.INDOOR_SEARCH and _ai and _ai.has_method("has_arrived_indoor"):
 			is_ghosting = not _ai.has_arrived_indoor()
 		
 		if not is_ghosting and not _floor_snap_disabled:
-			if _floor_ray.is_colliding():
-				var floor_y = _floor_ray.get_collision_point().y
-				
-				# Hover the physics sphere 0.3m above the ground (just above floor surface)
-				# to clear small bumps (door thresholds, rug edges) while staying low
-				# enough to pass under doorframes and between furniture.
-				global_position.y = lerp(global_position.y, floor_y + 0.3, 15.0 * delta)
-				
-				# Snap the visual model perfectly down to the actual floor surface.
-				if _monster_model:
-					_monster_model.global_position.y = floor_y
-			else:
-				# Fallback gravity if the raycast misses (e.g., Entity is airborne
-				# or above a gap in the NavMesh geometry).
+			if not _floor_ray.is_colliding():
+				# Fallback gravity: only applies when the raycast misses
+				# entirely (Entity airborne or above a NavMesh gap).
 				velocity += get_gravity() * delta
 		
 		var flat_vel = Vector2(velocity.x, velocity.z)
@@ -2172,9 +2261,24 @@ func _physics_process(delta: float) -> void:
 		else:
 			_entity_step_timer = 0.0
 	
+	# ─── Y-AXIS DEBUG: Floor clipping diagnostic ──────────────────
+	_y_debug_frame_counter += 1
+	if _y_debug_frame_counter >= 60 and is_physically_inside():
+		_y_debug_frame_counter = 0
+		var ray_hit = _floor_ray.is_colliding()
+		var hit_name = _floor_ray.get_collider().name if ray_hit else "None"
+		var hit_y = _floor_ray.get_collision_point().y if ray_hit else -999.0
+		var ray_mask = _floor_ray.collision_mask
+		var landing_y = _indoor_landing_position.y
+		print("[Y-AXIS DEBUG] Inside Cabin | Entity Y: ", global_position.y,
+		      " | RayCast hit: ", hit_name,
+		      " | hit_y: ", hit_y,
+		      " | Ray mask: ", ray_mask,
+		      " | Landing Y: ", landing_y,
+		      " | Velocity.y: ", velocity.y,
+		      " | Physics suspended: ", is_physics_suspended)
+	
 	_update_animations(delta)
-
-
 # ─── DEBUG: F2 — Window Siege Stress Test ────────────────────────────────────
 # Development-only shortcut to stress-test the outside-to-inside sequential
 # window destruction system (glass shatter → plank damage → breach → INDOOR_SEARCH).
@@ -3888,6 +3992,13 @@ func _play_entity_footstep() -> void:
 		_footstep_audio.stream = array.pick_random()
 		_footstep_audio.pitch_scale = randf_range(footstep_pitch_min, footstep_pitch_max)
 		_footstep_audio.play()
+
+
+## Frame counter for throttled Y-axis debug logging.
+## Incremented each frame in _physics_process(). When it reaches 60,
+## the [Y-AXIS DEBUG] print fires and the counter resets to 0.
+## This prevents console flooding while still providing 1 Hz logging.
+var _y_debug_frame_counter: int = 0
 
 
 func _update_animations(_delta: float) -> void:

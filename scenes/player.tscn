@@ -48,7 +48,7 @@
 [ext_resource type="AudioStream" uid="uid://c21q2dpxubikx" path="res://assets/audio/Entity/Entity_Seen.ogg" id="42_holxr"]
 [ext_resource type="PackedScene" uid="uid://dq8dml7wclf03" path="res://scenes/ui/notebook_ui.tscn" id="47_mx1m4"]
 
-[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_mx1m4"]
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_6e8lb"]
 points = PackedVector3Array(0.3, 0.5, 0, 0.27716386, 0.5, 0.11480503, 0.21213204, 0.5, 0.21213204, 0.11480503, 0.5, 0.27716386, 1.8369096e-17, 0.5, 0.3, -0.11480503, 0.5, 0.27716386, -0.21213204, 0.5, 0.21213204, -0.27716386, 0.5, 0.11480503, -0.3, 0.5, 3.673819e-17, -0.27716386, 0.5, -0.11480503, -0.21213204, 0.5, -0.21213204, -0.11480503, 0.5, -0.27716386, -5.5107285e-17, 0.5, -0.3, 0.11480503, 0.5, -0.27716386, 0.21213204, 0.5, -0.21213204, 0.27716386, 0.5, -0.11480503, 0.3, -0.5, 0, 0.27716386, -0.5, 0.11480503, 0.21213204, -0.5, 0.21213204, 0.11480503, -0.5, 0.27716386, 1.8369096e-17, -0.5, 0.3, -0.11480503, -0.5, 0.27716386, -0.21213204, -0.5, 0.21213204, -0.27716386, -0.5, 0.11480503, -0.3, -0.5, 3.673819e-17, -0.27716386, -0.5, -0.11480503, -0.21213204, -0.5, -0.21213204, -0.11480503, -0.5, -0.27716386, -5.5107285e-17, -0.5, -0.3, 0.11480503, -0.5, -0.27716386, 0.21213204, -0.5, -0.21213204, 0.27716386, -0.5, -0.11480503, 0, 1, 0, 0, -1, 0)
 
 [node name="Player" type="CharacterBody3D" unique_id=629523076 groups=["player"]]
@@ -64,7 +64,7 @@ starting_items = Array[ExtResource("35_hhpqf")]([ExtResource("36_g5jhy"), ExtRes
 
 [node name="PrismCollider3D" type="CollisionShape3D" parent="." unique_id=2059181722]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
-shape = SubResource("ConvexPolygonShape3D_mx1m4")
+shape = SubResource("ConvexPolygonShape3D_6e8lb")
 script = ExtResource("39_4gjji")
 body_radius = 0.3
 body_radius = 0.3

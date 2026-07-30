@@ -29,6 +29,9 @@ class_name CabinLight
 ## It no longer gates any overload behavior in this script.
 @export var is_overload_target: bool = false
 
+## Sound played when this light switch is toggled (both ON and OFF).
+@export var light_switch_sfx: AudioStream = null
+
 
 @onready var light_node: Light3D = $OmniLight3D
 @onready var mesh_on: Node3D = $LightMeshOn if has_node("LightMeshOn") else null
@@ -209,4 +212,16 @@ func _on_generator_state_changed(is_running: bool) -> void:
 ## (scripts/objects/portable_lamp.gd). The porch light is no longer an overload
 ## target — it remains in the scene as a baseline environmental hazard with
 ## is_faulty = true (permanently stuck ON, drawing normal energy_drain_rate).
+
+
+## Plays a one-shot sound effect via a temporary AudioStreamPlayer3D.
+func _play_sfx(stream: AudioStream) -> void:
+	if not stream:
+		return
+	var player := AudioStreamPlayer3D.new()
+	player.stream = stream
+	player.bus = "SFX"
+	add_child(player)
+	player.play()
+	player.finished.connect(player.queue_free)
 

@@ -45,9 +45,6 @@ extends Resource
 
 # ─── HYSTERESIS BANDS (Oscillation Prevention) ───────────────────────────────
 ## Confidence hysteresis margin for threshold crossings.
-## When entering a state that requires threshold X, the Entity must maintain
-## confidence >= X - hysteresis_margin to avoid immediate exit.
-## Prevents rapid state flapping when confidence hovers at the threshold boundary.
 @export var hysteresis_margin: float = 5.0
 
 ## Minimum dwell time (seconds) in a non-emergency state before the Director
@@ -70,8 +67,11 @@ extends Resource
 ## Permanent speed boost when enraged (blackout release).
 @export var enraged_speed_multiplier: float = 1.5
 
+## Speed multiplier when LOS is broken during STALK.
+@export var stalk_search_speed_mult: float = 0.5
+
 # ─── DETECTION RANGES ────────────────────────────────────────────────────────
-## Vision range when player's flashlight is ON (they're a beacon in the dark).
+## Vision range when player's flashlight is ON.
 @export var vision_range_flashlight_on: float = 30.0
 
 ## Vision range when environment is lit (room lights on).
@@ -102,16 +102,24 @@ extends Resource
 ## Distance threshold for lamp attack arrival.
 @export var lamp_attack_range: float = 3.0
 
-## Path update throttle interval (seconds) — prevents NavigationAgent3D
-## target_position spam that causes FPS drops.
+## Path update throttle interval (seconds).
 @export var path_update_interval: float = 0.3
 
 # ─── STATE TIMERS ────────────────────────────────────────────────────────────
 ## Minimum duration for WINDOW_PEEK siege before exit is allowed.
 @export var siege_min_duration: float = 5.0
 
+## Siege max duration — hard failsafe to prevent permanent WINDOW_PEEK lock.
+@export var siege_max_duration: float = 30.0
+
 ## Barricade damage interval during WINDOW_PEEK (seconds between hits).
 @export var barricade_damage_interval: float = 2.0
+
+## Barricade animation lock duration (seconds) — how long AttackWindow is forced.
+@export var barricade_anim_lock_duration: float = 1.5
+
+## Pending damage delay (seconds) — syncs health subtraction with animation impact.
+@export var pending_damage_delay: float = 0.6
 
 ## Breach delay before Entity attempts window breach (seconds).
 @export var breach_delay: float = 5.0
@@ -121,6 +129,37 @@ extends Resource
 
 ## Door breach cooldown — minimum time between door breach attempts.
 @export var door_breach_cooldown: float = 15.0
+
+# ─── ANIMATION TIMING ────────────────────────────────────────────────────────
+## Duration of the EnterWindow vault animation (seconds).
+@export var enter_window_anim_duration: float = 1.5
+
+## Glass shatter impact delay (seconds) — syncs AttackWindow animation with shatter.
+@export var glass_shatter_impact_delay: float = 0.5
+
+# ─── APPROACH TIMING ─────────────────────────────────────────────────────────
+## Minimum duration (seconds) the Entity must pathfind in APPROACH_WINDOW.
+@export var approach_min_duration: float = 2.0
+
+## Failsafe timeout (seconds) for APPROACH_WINDOW.
+@export var approach_failsafe_timeout: float = 15.0
+
+## Approach debug log interval (seconds).
+@export var approach_debug_interval: float = 2.0
+
+# ─── DOOR PARAMETERS ─────────────────────────────────────────────────────────
+## Arrival distance (meters) for Door Phase 2 breach waypoint.
+@export var door_phase_2_arrival_distance: float = 0.5
+
+## Failsafe timeout (seconds) for Door Phase 2 pathfinding.
+@export var door_phase_2_failsafe_timeout: float = 5.0
+
+# ─── DESPERATION MECHANIC ────────────────────────────────────────────────────
+## Passive timer threshold (seconds) before desperation modifier kicks in.
+@export var desperation_threshold: float = 45.0
+
+## Desperation confidence modifier rate (confidence per second).
+@export var desperation_modifier_rate: float = 0.5
 
 # ─── STARE/FLINCH MECHANICS ──────────────────────────────────────────────────
 ## Stare time threshold (seconds) before CHARGE transition.
@@ -136,6 +175,53 @@ extends Resource
 ## Confidence penalty on FLINCH completion.
 @export var flinch_confidence_penalty: float = 20.0
 
+## Indoor retreat confidence — what confidence is set to when caught inside.
+@export var indoor_retreat_confidence: float = 20.0
+
+## Confidence threshold for APPROACH_WINDOW escalation.
+@export var confidence_approach_threshold: float = 40.0
+
+## Confidence boost when player breaks flashlight stare.
+@export var stare_break_confidence_boost: float = 8.0
+
+## Confidence drain rate while being stared at (per second).
+@export var stare_confidence_drain: float = 2.0
+
+## Stare grace threshold (seconds) — extends anti-flap if stare timer is high.
+@export var stare_grace_threshold: float = 0.5
+
+## Anti-flap cooldown duration (seconds) — prevents same-state re-entry.
+@export var anti_flap_cooldown_duration: float = 0.5
+
+# ─── STALK BEHAVIOR ──────────────────────────────────────────────────────────
+## Minimum distance (meters) the Entity tries to maintain during STALK.
+@export var stalk_min_distance: float = 3.0
+
+## Maximum distance (meters) for full-speed pursuit during STALK.
+@export var stalk_max_distance: float = 10.0
+
+## Speed multiplier when Entity is between min/max STALK distance.
+@export var stalk_close_speed_mult: float = 0.3
+
+## Whether STALK flanking behavior is enabled.
+@export var flanking_enabled: bool = true
+
+## Interval (seconds) between flank maneuvers during STALK with LOS.
+@export var flank_interval: float = 8.0
+
+## Offset distance (meters) for flanking waypoints.
+@export var flank_offset_distance: float = 8.0
+
+# ─── LAMP & FUSE ATTACK ──────────────────────────────────────────────────────
+## Lamp attack interval (seconds) between strikes.
+@export var lamp_attack_interval: float = 3.0
+
+## Fuse sabotage interval (seconds) between strikes.
+@export var fuse_sabotage_interval: float = 2.0
+
+## Fuse sabotage stuck timeout (seconds) before teleport bypass.
+@export var fuse_sabotage_stuck_timeout: float = 4.0
+
 # ─── WINDOW PEEK / OBSERVE TIMERS ────────────────────────────────────────────
 ## Window peek stare timer range (seconds).
 @export var window_peek_stare_min: float = 8.0
@@ -148,6 +234,10 @@ extends Resource
 ## Observe wait time range for low confidence (< 40).
 @export var observe_wait_low_min: float = 4.0
 @export var observe_wait_low_max: float = 8.0
+
+# ─── RETREAT ─────────────────────────────────────────────────────────────────
+## Retreat teleport distance (meters) outside the breach window.
+@export var retreat_teleport_distance: float = 2.0
 
 # ─── UTILITY SCORER PENALTIES ────────────────────────────────────────────────
 ## Recency penalty for recently visited windows (utility scorer).

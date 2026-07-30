@@ -47,6 +47,11 @@ const SPOTTED_VANISH_DELAY: float = 0.325
 ## Resets to 0 if the player looks away before SPOTTED_VANISH_DELAY elapses.
 var _spotted_timer: float = 0.0
 
+## Sound played when the peeker is spotted and vanishes.
+## Assign Piano_stinger_dissonent.wav from assets/audio/ here.
+## Leave null for no sound.
+@export var piano_stinger_sfx: AudioStream = null
+
 ## ─── RISE-UP SPAWN ANIMATION ────────────────────────────────────────
 
 ## How far below the window the peeker starts (meters).
@@ -159,6 +164,10 @@ func _vanish() -> void:
 	
 	_is_vanishing = true
 	
+	# ─── PIANO STINGER ────────────────────────────────────────────────
+	# When the player spots the peeker, play a dissonant piano sting.
+	_play_sfx(piano_stinger_sfx)
+	
 	if not _monster_model:
 		peeker_vanish_finished.emit()
 		queue_free()
@@ -176,3 +185,20 @@ func _vanish() -> void:
 func _on_duck_finished() -> void:
 	peeker_vanish_finished.emit()
 	queue_free()
+
+
+## Plays a one-shot sound effect via a temporary AudioStreamPlayer3D.
+## The piano stinger is played at 50% volume (-6.0 dB) to avoid being jarring.
+## Reparents to the scene root so queue_free() on this node doesn't cut the sound.
+func _play_sfx(stream: AudioStream) -> void:
+	if not stream:
+		return
+	var player := AudioStreamPlayer3D.new()
+	player.stream = stream
+	player.bus = "SFX"
+	player.volume_db = -9.0
+	player.global_position = global_position
+	# Reparent to scene root so queue_free() on the peeker doesn't destroy this player
+	get_tree().current_scene.add_child(player)
+	player.play()
+	player.finished.connect(player.queue_free)

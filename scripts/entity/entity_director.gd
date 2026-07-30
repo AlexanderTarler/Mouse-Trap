@@ -50,9 +50,32 @@ var _anti_flap_cooldown: float = 0.0
 ## immediate re-entry into the same state.
 var _last_completed_state: int = -1
 
+## ─── FLINCH RE-APPROACH COOLDOWN ────────────────────────────────────────
+## When the Entity transitions from APPROACH_WINDOW to FLINCH (flashlight
+## evasion), the stale _state_entry_confidence from the interrupted approach
+## can cause Tier 4 to immediately re-enter APPROACH_WINDOW after FLINCH
+## completes, even though confidence is below threshold. This timer enforces
+## a minimum cooldown before the Director can re-enter APPROACH_WINDOW after
+## a FLINCH interruption. Set to FLINCH_REAPPROACH_COOLDOWN when the
+## Director detects a FLINCH transition. Decremented by delta each frame.
+var _flinch_approach_cooldown: float = 0.0
+const FLINCH_REAPPROACH_COOLDOWN: float = 5.0
+
+## ─── SPATIAL HYSTERESIS BAND (Distance-Based Oscillation Prevention) ──
+## Tracks the 2D distance at which the last distance-based state transition
+## occurred. When the Entity oscillates between two states at a threshold
+## boundary (e.g., STALK↔OBSERVE at 15m), this band requires the Entity to
+## move 20% further past the threshold before it can transition back.
+## This prevents "straddle-the-line" oscillation where distance fluctuations
+## of ±0.1m at the threshold cause rapid state flipping.
+var _last_transition_distance: float = 0.0
+var _last_transition_state: int = -1
+const SPATIAL_HYSTERESIS_FACTOR: float = 1.2  # 20% band
+const SPATIAL_HYSTERESIS_MIN_MARGIN: float = 1.0  # Minimum 1m margin
+
 ## ─── HYSTERESIS TRACKING (H3: Oscillation Prevention) ──────────────────────────
 ## Tracks the game time (seconds) when the current state was entered.
-## Used by the minimum state dwell time guard. Reset to Time.get_ticks_msec()/1000
+## Used by the minimum state dwell time guard. Set to Time.get_ticks_msec()/1000
 ## when evaluate_master_state() transitions to a different state.
 var _state_entry_time: float = 0.0
 
@@ -61,6 +84,29 @@ var _state_entry_time: float = 0.0
 ## (threshold - hysteresis_margin) before the Director de-escalates.
 ## Prevents 60fps state flapping when confidence hovers at threshold boundaries.
 var _state_entry_confidence: float = -1.0
+
+## Confidence hysteresis margin for de-escalation.
+## When the Entity escalates to APPROACH_WINDOW at confidence >= 40.0,
+## it must drop to CONFIDENCE_HYSTERESIS_MARGIN below threshold (i.e., 35.0)
+## before the Director allows de-escalation back to OBSERVE_FROM_TREELINE.
+## This prevents 60fps state flapping when confidence hovers at the threshold boundary.
+const CONFIDENCE_HYSTERESIS_MARGIN: float = 5.0
+
+## Minimum dwell time (seconds) before the Director can re-escalate to a
+## state after having dropped out of it. Prevents the "approach → de-escalate
+## → re-approach" ping-pong on every frame boundary.
+const MIN_CONFIDENCE_DWELL: float = 3.0
+
+## Timestamp (seconds from game start) when the Director last de-escalated from
+## an escalated state (APPROACH_WINDOW, WINDOW_PEEK) back to a passive state
+## (OBSERVE_FROM_TREELINE). Used with MIN_CONFIDENCE_DWELL to prevent immediate
+## re-escalation. Set by get_state_timer() >= 0.0 transitions in evaluate_master_state().
+var _last_de_escalation_time: float = -999.0
+
+## Records the state that was the "last escalated state" before de-escalation.
+## Used by the re-entry gate in _tier_4_confidence_escalation() to prevent
+## immediately climbing back into the same escalated state.
+var _last_de_escalated_from_state: int = -1
 
 ## ─── NAVIGATION QUERY CACHE (H4: Performance) ─────────────────────────────────
 ## Cached result of get_player_room() for the current evaluation frame.
@@ -252,6 +298,15 @@ func _print_debug_dump(entity: CharacterBody3D) -> void:
 func evaluate_master_state(entity: CharacterBody3D) -> int:
 	var state = entity.get_state()
 	
+	# ─── TRACK STATE ENTRY METADATA FOR HYSTERESIS ─────────────────────
+	# When the state changes from what it was last frame, record the
+	# entry time and entry confidence. This data is used by the confidence
+	# hysteresis (Tier 4) and minimum dwell time guards.
+	var _previous_state = entity.get_previous_state()
+	if state != _previous_state:
+		_state_entry_time = Time.get_ticks_msec() / 1000.0
+		_state_entry_confidence = entity.get_confidence_module().get_confidence() if entity.get_confidence_module() else 0.0
+	
 	# ─── CACHE NIGHT MANAGER ──────────────────────────────────────────────
 	# Resolve the NightManager once at the top of this function so all tier
 	# methods can read _cached_night_manager instead of calling expensive
@@ -266,6 +321,17 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	# OBSERVE_FROM_TREELINE if appropriate.
 	if state == EntityAI.State.INDOOR_SEARCH and _indoor_search_persistence_timer > 0.0:
 		_indoor_search_persistence_timer -= entity.get_physics_process_delta_time()
+	
+	# ─── FLINCH RE-APPROACH COOLDOWN DECAY ──────────────────────────
+	# Decrement the flinch approach cooldown timer each frame. When this
+	# timer is > 0.0, Tier 4 will block APPROACH_WINDOW transitions,
+	# giving the Entity time to settle into a passive state after a FLINCH
+	# interruption. This prevents the stale hysteresis from immediately
+	# re-entering APPROACH_WINDOW when confidence is below threshold.
+	if _flinch_approach_cooldown > 0.0:
+		_flinch_approach_cooldown -= entity.get_physics_process_delta_time()
+		if _flinch_approach_cooldown < 0.0:
+			_flinch_approach_cooldown = 0.0
 	
 	# ─── TIER 0: PENDING STATE OVERRIDE ──────────────────────────────
 	# Checked BEFORE state_locked so critical overrides (stun release,
@@ -760,73 +826,95 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 	entity.is_observe_finished = false
 	
 	# ═══════════════════════════════════════════════════════════════════════
-	# ANTI-FLAP GUARD (Bug 1 Fix)
+	# FLASHLIGHT REACTION MATRIX (BELIEF SYSTEM ONLY)
 	# ═══════════════════════════════════════════════════════════════════════
-	# Before any flashlight-triggered FLINCH, check the anti-flap cooldown.
-	# If the cooldown is still active (last FLINCH completed < 0.5s ago),
-	# do NOT force FLINCH again — prevent 60fps FLINCH→OBSERVE→FLINCH cycling.
-	# This guard is checked BEFORE the ground truth override so that even
-	# the definitive trigger respects the cooldown.
-	if entity.is_illuminated and _anti_flap_cooldown > 0.0:
-		# The Entity is lit but the anti-flap cooldown is active. Do NOT
-		# force FLINCH. Fall through to the normal tiers below so the
-		# Director can evaluate other state transitions (STANDOFF, etc.).
-		# Also do not return -1 here — we need the standard light-based
-		# reaction logic to still apply (e.g., STANDOFF for outdoor stare).
-		pass
-	else:
-		# ═══════════════════════════════════════════════════════════════════════
-		# GROUND TRUTH FLASHLIGHT OVERRIDE
-		# ═══════════════════════════════════════════════════════════════════════
-		# Uses the NAVIGATION MODULE's get_player_room() as ground truth,
-		# NOT the belief system (thinks_player_is_inside). This prevents the
-		# "flashlight bypass" where the Entity registers the light but refuses
-		# to enter FLINCH because its belief system hasn't caught up with the
-		# player re-entering the cabin.
-		#
-		# RULE: If the Entity is illuminated by the flashlight AND the player
-		# is ACTUALLY inside the cabin (ground truth), the Entity MUST flinch
-		# regardless of its belief state. This check runs BEFORE the belief-
-		# system gates below so it cannot be bypassed by stale beliefs.
-		#
-		# EXCEPTIONS:
-		#   - FLINCH state lock: Preserve if already flinching
-		#   - CHARGE: Flashlight has no effect on a charging Entity
-		#   - INDOOR_SEARCH: Handled by RETREAT path below
-		if entity.is_illuminated and state != EntityAI.State.FLINCH and state != EntityAI.State.CHARGE and state != EntityAI.State.INDOOR_SEARCH:
-			# Query ground truth player room from navigation module
-			var nav_gt = entity.get_navigation_module()
-			var player_room_gt: String = "Outside"
-			if nav_gt and nav_gt.has_method("get_player_room"):
-				player_room_gt = nav_gt.get_player_room()
-			
-			# Ground truth: player is actually inside the cabin
-			if player_room_gt != "Outside" and not player_room_gt.is_empty():
-				# Forcefully break locks and FLINCH
-				entity.state_locked = false
-				entity.is_approach_finished = false
-				entity.is_climb_finished = false
-				entity.is_flinch_finished = false
-				entity.is_retreat_arrived = false
-				entity.is_window_unbarricaded = false
-				entity.is_observe_finished = false
-				entity.is_indoor_retreat = false
-				
-				# Capture window target to blacklist if applicable
-				if state == EntityAI.State.WINDOW_PEEK or state == EntityAI.State.APPROACH_WINDOW:
-					_capture_flinch_window_id(entity)
-				
-				# Apply -15.0 confidence penalty (Correction 2)
-				_apply_flinch_confidence_penalty(entity)
-				
-				print("[Director] GROUND TRUTH FLINCH: Player is ACTUALLY inside (room='%s')! Forcing FLINCH from state %s." % [player_room_gt, _state_key(state)])
-				return EntityAI.State.FLINCH
+	# The Entity uses its BELIEF about the player's location
+	# (thinks_player_is_inside) to decide how to react to the flashlight.
+	# The belief system is synced to ground truth by Tier 3 (Active
+	# Aggression) every evaluation cycle via the navigation module's
+	# get_player_room() — so the belief is never more than 0.2 seconds stale.
+	#
+	# MATRIX:
+	#   Outside/Outside: STANDOFF (freeze) → CHARGE (if stare >= 1.5s)
+	#   Inside/Outside: FLINCH (player inside, Entity outside)
+	#   Inside/Inside: RETREAT (Entity caught inside by flashlight)
+	#
+	# NO direct get_player_room() calls. All decisions are based on the
+	# Entity's belief system (thinks_player_is_inside), which is synced
+	# by Tier 3 every evaluation cycle. This prevents the Entity from
+	# "omnisciently" knowing the player's true location, which broke the
+	# systemic hunting illusion.
 	
-	# ─── SAFELY CHECK PLAYER LOCATION (BELIEF SYSTEM) ──────────────
-	# The Director also checks the Entity's belief about the player's
-	# location. This is a SECONDARY check — the ground truth override
-	# above has already handled the "stale belief" case.
+	# ─── ANTI-FLAP GUARD ──────────────────────────────────────────
+	# If the anti-flap cooldown is active, skip the flashlight reaction
+	# entirely and fall through to STANDOFF/CHARGE logic below.
 	var is_player_inside = entity.get_thinks_player_is_inside() if entity.has_method("get_thinks_player_is_inside") else false
+	
+	if entity.is_illuminated and _anti_flap_cooldown > 0.0 and state != EntityAI.State.CHARGE:
+		# Anti-flap active — skip FLINCH/RETREAT reactions but still
+		# allow STANDOFF (freeze) or CHARGE (if stare >= 1.5s).
+		pass
+	elif entity.is_illuminated and state != EntityAI.State.CHARGE:
+		# ─── FLINCH STATE LOCK PRESERVATION ────────────────────────────
+		# If the Entity is already in FLINCH and state_locked is true, the
+		# indoor retreat handler just set this state. Preserve the lock so
+		# the FLINCH handler can complete its escape sprint.
+		if state == EntityAI.State.FLINCH and entity.state_locked:
+			return EntityAI.State.FLINCH
+		
+		# ─── BREAK ALL LOCKS ───────────────────────────────────────────
+		# Forcefully break any existing task locks so we can react
+		entity.state_locked = false
+		entity.is_approach_finished = false
+		entity.is_climb_finished = false
+		entity.is_flinch_finished = false
+		entity.is_retreat_arrived = false
+		entity.is_window_unbarricaded = false
+		entity.is_observe_finished = false
+		
+		# ─── MATRIX EVALUATION ───────────────────────────────────────
+		# Determine the entity's own position and belief about the player
+		var entity_inside = entity.has_method("is_physically_inside") and entity.is_physically_inside()
+		var player_inside = is_player_inside
+		
+		if entity_inside and player_inside:
+			# BOTH INSIDE: The Entity is caught by the flashlight inside
+			# the cabin. It must RETREAT through the breach window.
+			entity.is_indoor_retreat = true
+			var conf_mod = entity.get_confidence_module()
+			if conf_mod:
+				conf_mod.set_confidence(20.0)
+			print("[Director] MATRIX: RETREAT (Entity inside + Player inside).")
+			return EntityAI.State.RETREAT
+		
+		if entity_inside and not player_inside:
+			# ENTITY INSIDE, PLAYER BELIEVED OUTSIDE: The Entity is inside
+			# but it believes the player is outside (stale belief). Still
+			# retreat — the flashlight is blinding regardless of belief.
+			entity.is_indoor_retreat = true
+			var conf_mod = entity.get_confidence_module()
+			if conf_mod:
+				conf_mod.set_confidence(20.0)
+			print("[Director] MATRIX: RETREAT (Entity inside + Player believed outside — stale belief).")
+			return EntityAI.State.RETREAT
+		
+		if not entity_inside and player_inside:
+			# ENTITY OUTSIDE, PLAYER INSIDE: The Entity is outside and the
+			# player is inside shining the flashlight. The Entity FLINCHes.
+			if state == EntityAI.State.WINDOW_PEEK or state == EntityAI.State.APPROACH_WINDOW:
+				_capture_flinch_window_id(entity)
+			_apply_flinch_confidence_penalty(entity)
+			_flinch_approach_cooldown = FLINCH_REAPPROACH_COOLDOWN
+			_state_entry_confidence = -1.0
+			print("[Director] MATRIX: FLINCH (Entity outside + Player inside. Player believed inside.)")
+			return EntityAI.State.FLINCH
+		
+		# ─── OUTSIDE/OUTSIDE (BOTH OUTSIDE): STANDOFF or CHARGE ──────
+		# Both are outside. The flashlight freezes the Entity in place
+		# (STANDOFF). If the player stares long enough (>= 1.5s), the
+		# Entity CHARGES at 3x speed. No action needed here — fall
+		# through to the STANDOFF/CHARGE logic below.
+		pass
 	
 	# ─── INDOOR AGGRESSION STATE → RETREAT (Player inside, Entity inside) ──
 
@@ -870,6 +958,10 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 		_capture_flinch_window_id(entity)
 		# Apply -15.0 confidence penalty (Correction 2)
 		_apply_flinch_confidence_penalty(entity)
+		# Set flinch approach cooldown to prevent immediate re-entry
+		_flinch_approach_cooldown = FLINCH_REAPPROACH_COOLDOWN
+		# Reset stale hysteresis from interrupted APPROACH_WINDOW
+		_state_entry_confidence = -1.0
 		return EntityAI.State.FLINCH
 	
 	# ─── PLAYER INSIDE, ENTITY OUTSIDE → FLINCH ─────────────────────
@@ -883,6 +975,10 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 	if is_player_inside:
 		# Apply -15.0 confidence penalty (Correction 2)
 		_apply_flinch_confidence_penalty(entity)
+		# Set flinch approach cooldown to prevent immediate re-entry
+		_flinch_approach_cooldown = FLINCH_REAPPROACH_COOLDOWN
+		# Reset stale hysteresis from interrupted APPROACH_WINDOW
+		_state_entry_confidence = -1.0
 		
 		return EntityAI.State.FLINCH
 	
@@ -1128,6 +1224,11 @@ func _tier_3_active_aggression(entity: CharacterBody3D, state: int) -> int:
 	#
 	# This prevents the player from standing 2 meters from the Entity
 	# without consequence while the confirmation timer ticks down.
+	#
+	# SPATIAL HYSTERESIS: If the Entity just transitioned TO STALK from
+	# OBSERVE at a given distance, it must move 20% further away (or
+	# at least 1m) before it can transition back to OBSERVE. This
+	# prevents oscillation at the detection boundary.
 	if state == EntityAI.State.OBSERVE_FROM_TREELINE and is_player_actually_outside:
 		var player = entity.get_player()
 		if player:
@@ -1135,11 +1236,37 @@ func _tier_3_active_aggression(entity: CharacterBody3D, state: int) -> int:
 			var is_crouching = player.has_method("is_crouching") and player.is_crouching()
 			
 			if is_crouching and dist <= 5.0:
+				# Record spatial hysteresis for STALK→OBSERVE transition
+				_last_transition_distance = dist
+				_last_transition_state = EntityAI.State.STALK
 				print("[Director] PROXIMITY STALK: Crouching player within %.1fm (threshold 5.0m)! Immediate STALK." % dist)
 				return EntityAI.State.STALK
 			elif not is_crouching and dist <= 15.0:
+				# Record spatial hysteresis for STALK→OBSERVE transition
+				_last_transition_distance = dist
+				_last_transition_state = EntityAI.State.STALK
 				print("[Director] PROXIMITY STALK: Standing player within %.1fm (threshold 15.0m)! Immediate STALK." % dist)
 				return EntityAI.State.STALK
+	
+	# ─── SPATIAL HYSTERESIS: STALK→OBSERVE REVERSE TRANSITION ─────
+	# If the Entity is in STALK and was triggered by the proximity check
+	# above (last_transition_state == STALK), prevent transitioning back
+	# to OBSERVE until the player has moved significantly further away.
+	# The required margin is 20% of the original transition distance,
+	# or 1m minimum — whichever is larger.
+	if state == EntityAI.State.STALK and _last_transition_state == EntityAI.State.STALK:
+		var player = entity.get_player()
+		if player:
+			var current_dist = entity.global_position.distance_to(player.global_position)
+			var hysteresis_threshold = maxf(_last_transition_distance * SPATIAL_HYSTERESIS_FACTOR, 
+				_last_transition_distance + SPATIAL_HYSTERESIS_MIN_MARGIN)
+			# If player is still within the hysteresis threshold, STAY in STALK.
+			if current_dist < hysteresis_threshold:
+				return EntityAI.State.STALK
+			# Player moved past the hysteresis threshold — clear the record
+			# and allow fall-through to normal evaluation.
+			_last_transition_state = -1
+			_last_transition_distance = 0.0
 	
 	# ─── OUTSIDE CONFIRMATION TIMER MANAGEMENT ──────────────────────
 	# When the player is actually outside (ground truth), a random timer
@@ -1407,12 +1534,85 @@ func _tier_4_confidence_escalation(entity: CharacterBody3D, state: int) -> int:
 	if state != EntityAI.State.OBSERVE_FROM_TREELINE and state != EntityAI.State.STANDOFF:
 		return -1
 	
+	# ─── CONFIDENCE HYSTERESIS GATE ──────────────────────────────────
+	# Prevents 60fps state flapping when confidence hovers at the 40.0
+	# threshold boundary. Three guards work together:
+	#
+	#   1. DE-ESCALATION HYSTERESIS (guard 1): Once the Entity has escalated
+	#      to APPROACH_WINDOW (state_entry_confidence >= 40.0), it must drop
+	#      to (40.0 - CONFIDENCE_HYSTERESIS_MARGIN) = 35.0 before the Director
+	#      allows de-escalation back to OBSERVE_FROM_TREELINE. Without this,
+	#      a confidence of 39.9 → OBSERVE → 40.1 → APPROACH → 39.9 → OBSERVE
+	#      creates a 60fps oscillation.
+	#
+	#   2. MINIMUM DWELL TIME (guard 2): After the Director de-escalates from
+	#      an escalated state (last_de_escalation_time is set), re-escalation
+	#      is blocked for MIN_CONFIDENCE_DWELL (3.0) seconds. This prevents
+	#      the "approach → de-escalate → re-approach" ping-pong on every frame
+	#      boundary when confidence is oscillating due to stare drain/boost.
+	#
+	#   3. SAME-STATE RE-ENTRY GATE (guard 3): When de-escalating, we record
+	#      which state we de-escalated FROM (_last_de_escalated_from_state).
+	#      If the Director tries to immediately re-enter the same escalated
+	#      state within the dwell window, it's blocked. This prevents the
+	#      "APPROACH_WINDOW → OBSERVE → APPROACH_WINDOW" 60fps loop.
+	
 	var confidence = entity.get_confidence_module().get_confidence()
 	
-	# Safely check if player is inside (BELIEF SYSTEM) — default to false
-	var is_player_inside = entity.get_thinks_player_is_inside() if entity.has_method("get_thinks_player_is_inside") else false
+	# ─── DE-ESCALATION HYSTERESIS (Guard 1) ──────────────────────────
+	# If we are still above the hysteresis floor (35.0), preserve the
+	# current state. Only de-escalate when confidence has meaningfully
+	# dropped below threshold - margin.
+	if _state_entry_confidence >= 40.0 and confidence >= (40.0 - CONFIDENCE_HYSTERESIS_MARGIN):
+		# Entity is still "above the floor" — do NOT de-escalate.
+		# The confidence dropped below 40.0 but hasn't fallen far enough
+		# (less than 5.0 below threshold) to warrant a state change.
+		return EntityAI.State.APPROACH_WINDOW
 	
+	# ─── RECORD DE-ESCALATION (crossed below the hysteresis floor) ──
+	# If we WERE escalated (state_entry_confidence >= 40.0) and the
+	# confidence has now dropped below the hysteresis floor (35.0),
+	# record the de-escalation time and state for the re-entry gates below.
+	if _state_entry_confidence >= 40.0 and confidence < (40.0 - CONFIDENCE_HYSTERESIS_MARGIN):
+		_last_de_escalation_time = Time.get_ticks_msec() / 1000.0
+		_last_de_escalated_from_state = EntityAI.State.APPROACH_WINDOW
+		# Reset entry confidence so we don't gate on the next escalation
+		_state_entry_confidence = -1.0
+	
+	# ─── MINIMUM DWELL TIME (Guard 2) ──────────────────────────────
+	# Prevent re-escalation within MIN_CONFIDENCE_DWELL seconds of the
+	# last de-escalation. This gives the Entity time to settle into its
+	# new state before the Director can escalate again.
+	var current_time = Time.get_ticks_msec() / 1000.0
+	var time_since_de_escalation = current_time - _last_de_escalation_time
+	if time_since_de_escalation < MIN_CONFIDENCE_DWELL:
+		return -1
+	
+	# ─── SAME-STATE RE-ENTRY GATE (Guard 3) ────────────────────────
+	# If the Director is trying to re-enter APPROACH_WINDOW after just
+	# having de-escalated from it, block it. The Entity needs a full
+	# dwell cycle before it can re-approach the same escalated state.
+	if confidence >= 40.0 and _last_de_escalated_from_state == EntityAI.State.APPROACH_WINDOW:
+		# The Entity is trying to re-enter the same escalated state it
+		# just de-escalated from. Block it — the dwell timer must expire.
+		_last_de_escalated_from_state = -1  # Reset for next cycle
+		return -1
+	
+	# ─── FLINCH RE-APPROACH COOLDOWN GATE (Guard 4) ─────────────
+	# After a FLINCH transition from APPROACH_WINDOW, the stale
+	# _state_entry_confidence from the interrupted approach can cause
+	# Tier 4 to immediately re-enter APPROACH_WINDOW, even though
+	# confidence is well below threshold. This 5-second cooldown
+	# prevents the "FLINCH → OBSERVE → APPROACH_WINDOW" ping-pong
+	# by giving the Entity time to settle into a passive state before
+	# the Director can escalate again.
+	if _flinch_approach_cooldown > 0.0:
+		return -1
+	
+	# ─── STANDARD ESCALATION ───────────────────────────────────────
 	if confidence >= 40.0:
+		# Record the escalation for hysteresis guards
+		_state_entry_confidence = confidence
 		return EntityAI.State.APPROACH_WINDOW
 	
 	return -1
@@ -1430,6 +1630,21 @@ func _tier_5_completion_flags(entity: CharacterBody3D, state: int) -> int:
 	if state == EntityAI.State.APPROACH_WINDOW:
 		if entity.is_approach_finished:
 			entity.is_approach_finished = false
+			
+			# ─── NULL TARGET GUARD (Oscillation Prevention) ──────────
+			# If pick_tactical_window() returned null (no windows available),
+			# _approach_window_state() sets is_approach_finished = true without
+			# setting a window target. The WINDOW_PEEK handler immediately
+			# aborts (no target → is_observe_finished = true), causing a
+			# 60fps APPROACH_WINDOW → WINDOW_PEEK → OBSERVE → APPROACH cycle.
+			# Detect this: if the Entity has no current window target AND is
+			# not a door target, set a 5-second cooldown and return OBSERVE
+			# so the Entity pauses before Tier 4 can re-escalate.
+			if not entity.get_current_window_target() and not entity.is_door_target:
+				print("[Director] APPROACH_WINDOW null target guard: No window selected. Cooling down for 5s.")
+				_flinch_approach_cooldown = FLINCH_REAPPROACH_COOLDOWN
+				return EntityAI.State.OBSERVE_FROM_TREELINE
+			
 			# ─── DOOR VS WINDOW DISPATCH ───────────────────────────────
 			# The APPROACH_WINDOW handler now handles both windows AND the
 			# front door using a multi-phase sequence.
@@ -1520,9 +1735,45 @@ func _tier_5_completion_flags(entity: CharacterBody3D, state: int) -> int:
 			# ─── CLEAR WINDOW TARGET ──────────────────────────────────
 			entity.set_current_window_target(null)
 			
+			# ─── RESET STARE TIMER TO BREAK RE-TRIGGER LOOP ──────────
+			# When FLINCH completes, reset the player_stare_timer to 0.0
+			# so that the next frame's Tier 0 evaluation does NOT see a
+			# stare_time >= 1.5 and immediately force FLINCH/CHARGE again.
+			# Without this, the stare timer accumulates during FLINCH (the
+			# player keeps the light on), and by the time FLINCH completes,
+			# stare_time is already at 1.5+ — instantly re-qualifying for
+			# another FLINCH via the BELIEF SYSTEM path or CHARGE via the
+			# OUTDOOR STARE path. This creates an infinite FLINCH→OBSERVE
+			# →FLINCH loop at 60fps.
+			entity.player_stare_timer = 0.0
+			
 			# ─── ANTI-FLAP: Set cooldown to prevent immediate re-entry ──
-			_anti_flap_cooldown = 0.5
+			# Extended from 0.5s to 2.0s for FLINCH specifically. The 0.5s
+			# cooldown was too short — the player can keep the flashlight
+			# beam on the Entity for longer than 0.5s, causing the anti-flap
+			# guard to expire and Tier 0 to re-trigger FLINCH again.
+			# 2.0 seconds gives the Entity enough time to physically sprint
+			# out of the beam (and for the player to lose tracking).
+			_anti_flap_cooldown = 2.0
 			_last_completed_state = EntityAI.State.FLINCH
+			
+			# ─── FIX 1: FLINCH RE-APPROACH COOLDOWN ─────────────────
+			# Re-set the flinch approach cooldown to 5.0 seconds so Tier 4
+			# cannot immediately re-enter APPROACH_WINDOW after FLINCH
+			# completes. Without this, the 5.0s timer set when FLINCH was
+			# triggered expires at the same moment FLINCH finishes, allowing
+			# the Director to escalate back to APPROACH_WINDOW before the
+			# Entity has a chance to relocate to a valid treeline position.
+			_flinch_approach_cooldown = FLINCH_REAPPROACH_COOLDOWN
+			
+			# ─── FIX 3: RELOCATE TO TREELINE ────────────────────────
+			# After FLINCH, the Entity is 15m deep in the forest at the
+			# escape endpoint. This position may be unreachable from the
+			# cabin's NavMesh region. Call fade_and_relocate() to teleport
+			# the Entity to a valid treeline vantage point so the next
+			# APPROACH_WINDOW starts from a known-valid NavMesh position.
+			entity.fade_and_relocate()
+			
 			return EntityAI.State.OBSERVE_FROM_TREELINE
 		return EntityAI.State.FLINCH
 	

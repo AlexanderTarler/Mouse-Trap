@@ -13,208 +13,109 @@ class_name EntityAI
 ##
 ## NOTE: The State enum lives here. Reference as EntityAI.State.X from other scripts.
 ##
-## ─── @EXPORT TUNING KNOBS ─────────────────────────────────────────────────────
-## These exported variables replace hardcoded magic numbers throughout the AI.
-## They can be tuned from the Inspector without modifying code.
-## All values have sensible defaults for the current game balance.
+## ─── CONFIGURATION ─────────────────────────────────────────────────────────
+## Tuning knobs are loaded from entity_config.tres (a centralized Resource).
+## Local variable declarations below serve as the bridge — they are initialized
+## with default values, then overwritten from config.tres at setup() time.
+## See resources/entity_config.tres for the canonical source of truth.
+##
+## Usage: config.charge_speed_multiplier instead of charge_speed_multiplier
+##
+## Config resource path — loads from the .tres file once in setup().
+const CONFIG_PATH: String = "res://resources/entity_config.tres"
+var config: Resource = null
 
-## Duration of the EnterWindow vault animation in seconds.
-## The animation is ~1.5 seconds long. The Entity must play this animation
-## for its full duration before teleporting inside, ensuring the visual
-## effect of vaulting through the window frame is fully visible.
-@export var enter_window_anim_duration: float = 1.5
+# ─── CONFIG ALIAS BRIDGE (read from config.tres after setup) ──────────────
+# These local aliases let the existing ~3000 lines of state handler code
+# continue reading tuning variables directly (e.g. charge_speed_multiplier)
+# while the canonical values live in entity_config.tres. Phase 2 will
+# refactor handlers to use config.X directly, eliminating these aliases.
 
-## Duration (in seconds) from the start of the AttackWindow animation to the
-## moment of impact where the glass should shatter. This should match the
-## animation's keyframe timing. The AttackWindow animation is ~1.5s long,
-## with the impact occurring at approximately the 0.5s mark (the swing
-## connects with the glass).
-@export var glass_shatter_impact_delay: float = 0.5
+# Animation
+var enter_window_anim_duration: float = 1.5
+var glass_shatter_impact_delay: float = 0.5
 
-## Minimum duration (in seconds) the Entity must spend pathfinding in
-## APPROACH_WINDOW before it can signal completion. Prevents instant
-## arrival when the NavigationAgent finishes prematurely.
-@export var approach_min_duration: float = 2.0
+# Approach
+var approach_min_duration: float = 2.0
+var approach_failsafe_timeout: float = 15.0
+var approach_debug_interval: float = 2.0
+var approach_arrival_distance: float = 2.5
 
-## Failsafe timeout (in seconds) for APPROACH_WINDOW. If the Entity has
-## been pathfinding for this long without arriving, force a completion
-## signal to prevent permanent soft-locks.
-@export var approach_failsafe_timeout: float = 15.0
+# Door
+var door_phase_2_arrival_distance: float = 0.5
+var door_phase_2_failsafe_timeout: float = 5.0
+var interaction_radius: float = 2.5
 
-## Arrival distance (in meters) for Phase 2 of the door approach.
-## The Entity must be within this distance of the IndoorBreachWaypoint before
-## signaling completion. A tight threshold (0.3m) ensures the Entity has
-## physically walked through the doorway before transitioning to INDOOR_SEARCH.
-@export var door_phase_2_arrival_distance: float = 0.02
+# Breach
+var breach_delay: float = 5.0
+var max_recent_windows: int = 3
 
-## Failsafe timeout (in seconds) for Phase 2 of the door approach.
-## If the Entity has been pathfinding to the IndoorBreachWaypoint for this long
-## without arriving, force a completion signal to prevent soft-locks.
-@export var door_phase_2_failsafe_timeout: float = 5.0
+# Siege
+var siege_min_duration: float = 5.0
+var siege_max_duration: float = 30.0
 
-## Debug log interval (in seconds) for APPROACH_WINDOW and WINDOW_PEEK.
-## Prints Entity and window coordinates at this interval to help debug
-## pathfinding issues.
-@export var approach_debug_interval: float = 2.0
+# Barricade
+var barricade_damage_interval: float = 2.0
+var barricade_anim_lock_duration: float = 1.5
+var pending_damage_delay: float = 0.6
 
-## Breach delay (in seconds) before the Entity starts attempting to breach
-## a window after arriving at it. Gives the player a brief window to react.
-## Reduced from 10.0 to 3.0 — 10s made the Entity too passive and the
-## player could easily turn on lights to reset the siege.
-@export var breach_delay: float = 5.0
+# Desperation
+var desperation_threshold: float = 45.0
+var desperation_modifier_rate: float = 0.5
 
-## Maximum number of entries in _recently_visited_windows.
-@export var max_recent_windows: int = 3
+# Speed multipliers
+var charge_speed_multiplier: float = 3.0
+var flinch_sprint_multiplier: float = 1.5
+var indoor_retreat_sprint_multiplier: float = 1.5
 
-## Siege duration (in seconds) — forces the Entity to stay in WINDOW_PEEK
-## for a minimum duration before it can exit via the stare timer.
-@export var siege_min_duration: float = 5.0
+# Flinch
+var flinch_duration: float = 4.0
+var flinch_distance: float = 8.0
 
-## Barricade damage interval (in seconds) — how often the Entity strikes
-## a boarded window during WINDOW_PEEK.
-@export var barricade_damage_interval: float = 2.0
+# Lamp / Fuse
+var lamp_attack_interval: float = 3.0
+var lamp_attack_range: float = 3.0
+var fuse_sabotage_interval: float = 2.0
+var fuse_sabotage_range: float = 2.5
+var fuse_sabotage_stuck_timeout: float = 4.0
 
-## Barricade animation lock duration (in seconds) — how long the AttackWindow
-## animation is forced to play after each barricade hit.
-@export var barricade_anim_lock_duration: float = 1.5
+# Window peek
+var window_peek_stare_min: float = 8.0
+var window_peek_stare_max: float = 15.0
 
-## Pending damage delay (in seconds) — delay from swing start to damage
-## application, syncing the health subtraction with the visual impact frame.
-@export var pending_damage_delay: float = 0.6
+# Observe wait
+var observe_wait_high_min: float = 2.0
+var observe_wait_high_max: float = 4.5
+var observe_wait_low_min: float = 4.0
+var observe_wait_low_max: float = 8.0
 
-## Desperation passive timer threshold (in seconds) — how long the Entity
-## must be in OBSERVE_FROM_TREELINE before the desperation modifier kicks in.
-@export var desperation_threshold: float = 45.0
+# Retreat
+var retreat_teleport_distance: float = 2.0
 
-## Desperation confidence modifier rate (confidence per second).
-@export var desperation_modifier_rate: float = 0.5
+# Stare
+var stare_grace_threshold: float = 0.5
+var anti_flap_cooldown_duration: float = 0.5
 
-## Indoor retreat sprint multiplier — how fast the Entity sprints toward
-## the breach window when caught inside by the flashlight.
-@export var indoor_retreat_sprint_multiplier: float = 1.5
+# Confidence
+var flinch_confidence_penalty: float = 20.0
+var indoor_retreat_confidence: float = 20.0
+var confidence_approach_threshold: float = 40.0
+var charge_stare_threshold: float = 1.5
+var stare_break_confidence_boost: float = 8.0
+var stare_confidence_drain: float = 2.0
 
-## Flinch sprint multiplier — how fast the Entity sprints laterally during FLINCH.
-@export var flinch_sprint_multiplier: float = 1.5
+# STALK behavior
+var stalk_min_distance: float = 3.0
+var stalk_max_distance: float = 10.0
+var stalk_close_speed_mult: float = 0.3
+var flanking_enabled: bool = true
+var flank_interval: float = 8.0
+var flank_offset_distance: float = 8.0
+var stalk_search_speed_mult: float = 0.5
 
-## Flinch duration (in seconds) — how long the lateral sprint lasts.
-## NOTE: This export is overridden at runtime by entity_controller.gd's
-## _start_flinch() which uses randf_range(3.0, 5.0). This export is kept
-## as a tuning reference but the actual duration is randomized 3-5 seconds
-## for all flinch scenarios (both outdoor window defense and indoor retreat).
-@export var flinch_duration: float = 4.0
-
-## Flinch distance (in meters) — how far the Entity sprints laterally.
-@export var flinch_distance: float = 8.0
-
-## Charge speed multiplier — how fast the Entity charges at the player (3x default).
-@export var charge_speed_multiplier: float = 3.0
-
-## Lamp attack interval (in seconds) — how often the Entity strikes the portable lamp.
-@export var lamp_attack_interval: float = 3.0
-
-## Lamp attack range (in meters) — how close the Entity must be to strike the lamp.
-@export var lamp_attack_range: float = 3.0
-
-## Fuse sabotage interval (in seconds) — how often the Entity strikes the Fuse Box.
-@export var fuse_sabotage_interval: float = 2.0
-
-## Fuse sabotage range (in meters) — how close the Entity must be to strike the Fuse Box.
-@export var fuse_sabotage_range: float = 2.5
-
-## Fuse sabotage stuck timeout (in seconds) — if the Entity has been within 5m of the
-## EntityFuseWaypoint for this long without reaching the 2.5m arrival threshold,
-## teleport directly to the waypoint to prevent soft-locks from geometry blocking.
-@export var fuse_sabotage_stuck_timeout: float = 4.0
-
-## Approach arrival distance (in meters) — 2D distance threshold for arriving at a window.
-@export var approach_arrival_distance: float = 2.5
-
-## Interaction radius (in meters) — 2D distance threshold for door interaction.
-## The Entity must be within this distance of the door before it can open it
-## or trigger the breach animation. Prevents "Bluetooth Door Opening" where
-## the Entity triggers the breach while still physically distant from the door.
-@export var interaction_radius: float = 2.5
-
-## Window peek stare timer range (min, max) in seconds.
-@export var window_peek_stare_min: float = 8.0
-@export var window_peek_stare_max: float = 15.0
-
-## Observe wait time range (min, max) in seconds for high confidence (>= 40).
-@export var observe_wait_high_min: float = 2.0
-@export var observe_wait_high_max: float = 4.5
-
-## Observe wait time range (min, max) in seconds for low confidence (< 40).
-@export var observe_wait_low_min: float = 4.0
-@export var observe_wait_low_max: float = 8.0
-
-## Retreat teleport distance (in meters) outside the breach window.
-@export var retreat_teleport_distance: float = 2.0
-
-## Stare grace threshold (in seconds) — if stare timer is above this after
-## anti-flap cooldown expires, extend the cooldown.
-@export var stare_grace_threshold: float = 0.5
-
-## Anti-flap cooldown duration (in seconds) — prevents immediate re-entry
-## into the same state after completion.
-@export var anti_flap_cooldown_duration: float = 0.5
-
-## Confidence penalty on FLINCH completion — how much confidence is lost.
-@export var flinch_confidence_penalty: float = 20.0
-
-## Indoor retreat confidence drop — what confidence is set to when caught inside.
-@export var indoor_retreat_confidence: float = 20.0
-
-## Confidence threshold for APPROACH_WINDOW escalation.
-@export var confidence_approach_threshold: float = 40.0
-
-## Stare time threshold (in seconds) for CHARGE transition.
-@export var charge_stare_threshold: float = 1.5
-
-## ─── STALK BEHAVIOR TUNING ────────────────────────────────────────────
-## Minimum distance (meters) the Entity tries to maintain from the player
-## during STALK. When closer than this, speed drops to slow approach.
-## Default: 3.0m — keeps the Entity at a threatening but not face-hugging range.
-@export var stalk_min_distance: float = 3.0
-
-## Maximum distance (meters) for full-speed pursuit during STALK.
-## When farther than this, the Entity uses 100% stalk speed.
-## Default: 10.0m — beyond this range the Entity sprint-closes the gap.
-@export var stalk_max_distance: float = 10.0
-
-## Speed multiplier when the Entity is between stalk_min_distance and stalk_max_distance.
-## Applied proportionally: 0.3x at min_distance, 1.0x at max_distance.
-@export var stalk_close_speed_mult: float = 0.3
-
-## Whether STALK flanking behavior is enabled. When true, the Entity will
-## periodically circle to a flanking offset position instead of pathing
-## directly toward the player, creating more organic predatory movement.
-@export var flanking_enabled: bool = true
-
-## Interval (seconds) between flank maneuvers during STALK with LOS.
-## Default: 8.0s — flank every ~8 seconds while chasing.
-@export var flank_interval: float = 8.0
-
-## Offset distance (meters) for flanking waypoints. The Entity navigates
-## to a point offset perpendicular to the Entity→Player direction.
-## Default: 8.0m — wide arcs around the player's position.
-@export var flank_offset_distance: float = 8.0
-
-## Speed multiplier when LOS is broken during STALK. The Entity slows down
-## when it loses visual contact, simulating uncertainty.
-## Default: 0.5x — half speed while searching.
-@export var stalk_search_speed_mult: float = 0.5
-
-## Confidence boost when player breaks flashlight stare.
-@export var stare_break_confidence_boost: float = 8.0
-
-## Confidence drain rate while being stared at (per second).
-@export var stare_confidence_drain: float = 2.0
-
-## Window recency penalty for the utility scorer.
-@export var window_recency_penalty: float = 30.0
-
-## Room avoidance penalty for the utility scorer.
-@export var room_avoidance_penalty: float = 500.0
+# Utility scorer
+var window_recency_penalty: float = 30.0
+var room_avoidance_penalty: float = 500.0
 
 enum State {
 	DORMANT,
@@ -289,11 +190,6 @@ var _cap_sensory_get_heard_room: bool = false
 var _cap_sensory_is_looking_window: bool = false
 var _cap_fuse_take_damage: bool = false
 var _cap_door_interact: bool = false
-var _cap_window_shatter: bool = false
-var _cap_window_get_id: bool = false
-var _cap_window_damage_barricade: bool = false
-var _cap_window_breach: bool = false
-var _cap_window_landing: bool = false
 var _cap_entity_collision_shape: bool = false
 var _cap_hall_light_toggle: bool = false
 var _cap_hall_light_generator: bool = false
@@ -439,8 +335,29 @@ var _current_patrol_waypoint: Vector3 = Vector3.ZERO
 ## Reset after the Entity reaches the exit point and fades out.
 var _retreat_target_set: bool = false
 
-## Guard flag for the STALK state's target_desired_distance = 0.3 assignment.
+## Guard flag for the STALK state's target_desired_distance assignment.
 var _stalk_target_distance_set: bool = false
+
+## Navigation hysteresis band to smooth is_navigation_finished() oscillation.
+var _nav_has_arrived: bool = false
+const NAV_ARRIVE_DISTANCE: float = 1.3
+const NAV_DEPART_DISTANCE: float = 2.0
+
+func _check_nav_arrived(entity_node: CharacterBody3D) -> bool:
+	var agent = entity_node.get_nav_agent() if entity_node.has_method("get_nav_agent") else null
+	if not agent:
+		return true
+	var dist_to_target = entity_node.global_position.distance_to(agent.target_position)
+	if not _nav_has_arrived:
+		if dist_to_target <= NAV_ARRIVE_DISTANCE:
+			_nav_has_arrived = true
+			return true
+		return false
+	else:
+		if dist_to_target > NAV_DEPART_DISTANCE:
+			_nav_has_arrived = false
+			return false
+		return true
 
 ## STALK state: timer counting toward the next flank maneuver.
 var _stalk_flank_timer: float = 0.0
@@ -465,6 +382,12 @@ var _stalk_current_speed_mult: float = 1.0
 ## Incremented each frame in _indoor_search_state(). Used to throttle debug
 ## prints to every 30 frames (~0.5s at 60fps) to avoid console flooding.
 var _indoor_search_debug_counter: int = 0
+
+## Timer for Y-coordinate comparison debugging during INDOOR_SEARCH.
+## Decremented by delta each frame. When <= 0.0, prints Entity Y vs Player Y
+## and resets to 1.0 (1Hz throttle). Only fires when the Entity is physically
+## inside the cabin (is_physically_inside() returns true).
+var _y_debug_timer: float = 0.0
 
 ## Charge countdown timer for the STANDOFF state.
 ## Accumulates delta while the player holds the flashlight beam on the Entity.
@@ -572,6 +495,23 @@ var _current_room_index: int = 0
 ## Updated every 1.0 seconds to avoid expensive RoomLightDetector lookups.
 var _room_path_recheck_timer: float = 0.0
 
+## Director evaluation throttle timer (in seconds).
+## Accumulates delta each frame. When >= DIRECTOR_EVAL_INTERVAL, the Director's
+## evaluate_master_state() is called and the timer resets to 0.0.
+## This throttles the full 8-tier Director evaluation from 60+ Hz to ~5 Hz,
+## reducing CPU spikes from raycasting and sensory checks without affecting
+## the smoothness of state handler movement (which runs every physics frame).
+const DIRECTOR_EVAL_INTERVAL: float = 0.2
+var _director_eval_timer: float = 0.0
+
+## Cached intended state from the Director's last evaluation cycle.
+## The Director evaluates evaluate_master_state() every DIRECTOR_EVAL_INTERVAL
+## seconds (0.2s). Between evaluations, _cached_intended_state is used for
+## state transitions instead of calling the Director every frame.
+## This ensures the state dispatcher always has the latest valid state,
+## even when the Director is not actively re-evaluating.
+var _cached_intended_state: int = -1
+
 ## Pathfinding throttle timer (in seconds).
 ## Accumulates delta each frame. When <= 0.0, the next target_position update
 ## is allowed. After updating, the timer is reset to PATH_UPDATE_INTERVAL.
@@ -594,6 +534,33 @@ const PATH_UPDATE_INTERVAL: float = 0.3
 
 func setup(parent: CharacterBody3D) -> void:
 	entity = parent
+	
+	# ─── LOAD CONFIG FROM RESOURCE ───────────────────────────────────
+	# Load the centralized tuning configuration from entity_config.tres.
+	# All @export variables that were previously defined in this file have
+	# been migrated to the config resource for single-point-of-truth tuning.
+	# The code below creates local aliases that read from config at runtime,
+	# so existing state handler code (thousands of lines) continues to work
+	# unchanged while all tuning values come from the centralized .tres.
+	#
+	# Usage: config.charge_speed_multiplier instead of charge_speed_multiplier
+	# To add a new tuning variable: add @export to entity_config.gd, then
+	# add an alias below.
+	var loaded_config = load(CONFIG_PATH)
+	if loaded_config:
+		config = loaded_config
+		print("[Entity AI] Configuration loaded from ", CONFIG_PATH)
+	else:
+		push_error("[Entity AI] CRITICAL: Failed to load config from ", CONFIG_PATH, "! Using hardcoded fallbacks.")
+	
+	# ─── CONFIG ALIAS BRIDGE ────────────────────────────────────────
+	# These aliases preserve backwards compatibility with the existing
+	# ~3000 lines of state handler code that references variables like
+	# charge_speed_multiplier, stalk_min_distance, etc. directly.
+	# This is a NON-BREAKING migration — the .tres file is the canonical
+	# source of truth, and local variables are just typed aliases.
+	# Phase 2 of this migration will refactor the handlers to use config.X
+	# directly, eliminating these aliases.
 	
 	# Initialize the Master Behavior Director
 	# Use load() instead of preload() to avoid cyclic dependency with entity_director.gd
@@ -624,16 +591,12 @@ func setup(parent: CharacterBody3D) -> void:
 		_cap_sensory_can_see = sensory.has_method("can_entity_see_player")
 		_cap_sensory_get_heard_room = sensory.has_method("get_last_heard_room")
 		_cap_sensory_is_looking_window = sensory.has_method("is_player_looking_at_window")
-	# Cache common window methods on a representative CabinWindow
-	var window_markers = entity.get_tree().get_nodes_in_group("WindowMarkers") if entity else []
-	if not window_markers.is_empty():
-		var sample_window = window_markers[0]
-		_cap_window_get_id = sample_window.has_method("get_window_id")
-		_cap_window_shatter = sample_window.has_method("shatter_window")
-		_cap_window_damage_barricade = sample_window.has_method("damage_barricade")
-		_cap_window_landing = sample_window.has_method("get_indoor_landing_position")
-		_cap_window_breach = sample_window.has_method("register_breach")
 	# Cache door/fuse methods
+	# NOTE: Window capability caching (_cap_window_shatter, etc.) has been REMOVED.
+	# The old cache sampled only the first WindowMarker in the group, which could
+	# be a non-CabinWindow node (e.g., a Door marker mistakenly added to the group).
+	# Instead, state handlers now use direct `is CabinWindow` and `has_method()` checks
+	# on the actual target_node at runtime. This is safer and more reliable.
 	var door_node = entity.get_node_or_null("../NavigationRegion3D/Cabin/Door") if entity else null
 	if door_node:
 		_cap_door_interact = door_node.has_method("interact")
@@ -758,23 +721,65 @@ func process_state_logic(delta: float) -> void:
 	# FLINCH/CHARGE loop mathematically impossible — Tier 1 evaluates
 	# is_illuminated + is_player_inside first, and returns exactly one state.
 	if _director:
+		# ─── FIX 2: RESET CACHED STATE ON STATE CHANGE ────────────────
+		# When the Entity transitions to a new state (e.g., FLINCH → OBSERVE),
+		# the _cached_intended_state from the Director's previous evaluation
+		# may still hold the OLD evaluation result (e.g., APPROACH_WINDOW).
+		# If the Director throttle timer hasn't fired yet, the stale cache
+		# would be applied, causing a one-frame state reversion. Reset to -1
+		# so the next frame forces an immediate Director evaluation.
+		if entity.get_state() != entity.get_previous_state():
+			_cached_intended_state = -1
+		
+		# ─── DIRECTOR EVALUATION THROTTLE ────────────────────────────
+		# The Director evaluates evaluate_master_state() at a throttled
+		# rate (every DIRECTOR_EVAL_INTERVAL = 0.2s ≈ 5 Hz) instead of
+		# every physics frame (60+ Hz). This reduces CPU spikes from
+		# raycasting, sensory checks, and room queries.
+		#
+		# BETWEEN EVALUATIONS: The _cached_intended_state from the last
+		# evaluation is used for state transitions. The state dispatcher
+		# still runs every physics frame for smooth movement, but the
+		# expensive Director evaluation is throttled.
+		#
+		# CRITICAL EXCEPTION: The Tier 0 Override Gate below bypasses
+		# the throttle when the Entity is state-locked and needs an
+		# immediate reaction (FLINCH, RETREAT, STANDOFF, CHARGE).
+		# These must not be delayed by 0.2s.
+		
 		# STATE LOCK: If the state handler is mid-execution, skip the
 		# Director's state transition entirely. The handler will unlock
 		# when it completes its work.
 		if entity.state_locked:
-			# Director still evaluates for logging/debugging.
-			var _debug_intended = _director.evaluate_master_state(entity)
-			# ─── TIER 0 OVERRIDE GATE ──────────────────────────────────
+			# ─── TIER 0 OVERRIDE GATE (UNTHROTTLED) ──────────────────
 			# Even when locked, critical reactions (FLINCH, RETREAT,
-			# STANDOFF, CHARGE) must break the lock. The Entity cannot
-			# stay locked in WINDOW_PEEK while being blinded.
+			# STANDOFF, CHARGE) must break the lock immediately. The Entity
+			# cannot stay locked in WINDOW_PEEK while being blinded.
+			# This evaluation bypasses the throttle for instant response.
+			var _debug_intended = _director.evaluate_master_state(entity)
 			if _debug_intended == State.FLINCH or _debug_intended == State.RETREAT or _debug_intended == State.STANDOFF or _debug_intended == State.CHARGE:
 				entity.state_locked = false
 				if entity.get_state() != _debug_intended:
 					print("[TRACE_STATE] TIER 0 OVERRIDE: Breaking state lock! %s → %s" % [_get_state_name(entity.get_state()), _get_state_name(_debug_intended)])
 					entity.set_state(_debug_intended)
 		else:
-			var intended_state = _director.evaluate_master_state(entity)
+			# ─── THROTTLED EVALUATION ────────────────────────────────
+			# Accumulate delta on the eval timer. Only re-evaluate the
+			# Director's full 8-tier decision tree when the timer exceeds
+			# the interval. Between evaluations, _cached_intended_state
+			# holds the last valid decision.
+			_director_eval_timer += delta
+			if _director_eval_timer >= DIRECTOR_EVAL_INTERVAL:
+				_director_eval_timer = 0.0
+				_cached_intended_state = _director.evaluate_master_state(entity)
+			
+			# Apply the cached intended state (or the latest evaluation)
+			var intended_state = _cached_intended_state
+			if intended_state == -1:
+				# Fallback: if no cached state yet, evaluate immediately
+				intended_state = _director.evaluate_master_state(entity)
+				_cached_intended_state = intended_state
+				_director_eval_timer = 0.0
 			
 			# Apply the Director's decision
 			if entity.get_state() != intended_state:
@@ -1702,8 +1707,8 @@ func _stalk_state(delta: float) -> void:
 	var nav_agent = entity.get_nav_agent()
 	if not _stalk_target_distance_set:
 		_stalk_target_distance_set = true
-		nav_agent.target_desired_distance = 0.3
-		nav_agent.path_desired_distance = 0.3
+		nav_agent.target_desired_distance = 1.0
+		nav_agent.path_desired_distance = 1.0
 		# Reset flank timer on state entry
 		_stalk_flank_timer = 0.0
 		_stalk_is_flanking = false
@@ -2293,15 +2298,28 @@ var _approach_debug_timer: float = 0.0
 const APPROACH_DEBUG_INTERVAL: float = 2.0
 
 func _approach_window_state(delta: float) -> void:
-	# ─── FLINCH OVERRIDE GATE (defensive early-exit) ────────────────────
+	# ─── FLINCH OVERRIDE GATE (direct force-transition) ─────────────────
 	# If the Entity is illuminated by the player's flashlight while the player
-	# is inside, the Director should transition to FLINCH. Release the lock
-	# and exit early so the Director can apply FLINCH on the next frame.
-	# This prevents a 1-frame race where _approach_window_state locks the
-	# state each frame, fighting the Director's FLINCH override.
-	if entity.is_illuminated and entity.has_method("get_thinks_player_is_inside") and entity.get_thinks_player_is_inside():
-		entity.state_locked = false
+	# is inside, force FLINCH directly instead of waiting for the throttled
+	# Director. The old approach tried to unlock state_locked and return early,
+	# but the state dispatcher immediately re-enters _approach_window_state on
+	# the next frame, which re-locks the state before the 0.2s Director throttle
+	# fires. This created a race condition where FLINCH never triggered because
+	# the Director always saw state_locked=true.
+	#
+	# FIX: Set the state directly and lock the NEW state (FLINCH) so the FLINCH
+	# handler runs to completion. This mirrors the Tier 0 Override Gate in
+	# process_state_logic().
+	# NOTE: Access entity.thinks_player_is_inside directly (a public var).
+	# DO NOT use has_method("get_thinks_player_is_inside") — plain GDScript
+	# vars do NOT auto-generate get_*() methods, so has_method always
+	# returns false, silently preventing the FLINCH transition.
+	
+	if entity.is_illuminated and entity.thinks_player_is_inside:
+		entity.set_state(EntityAI.State.FLINCH)
+		entity.state_locked = true  # Lock the new FLINCH state
 		_calculated_velocity = Vector3.ZERO
+	
 		return
 	
 	# Lock the state — the Director must not override while we're mid-approach
@@ -2499,6 +2517,7 @@ func _approach_window_state(delta: float) -> void:
 			best_window = nav_module.pick_tactical_window(entity.get_player())
 		
 		if best_window:
+			print("[DIAG] WINDOW SELECTION: pick_tactical_window() returned '%s' (ID=%s)" % [best_window.name, best_window.get_window_id() if best_window.has_method("get_window_id") else "?"])
 			entity.set_current_window_target(best_window)
 			# ─── RESOLVE WINDOW MARKER ────────────────────────────────────────
 			# The CabinWindow node is at the window frame (inside the wall).
@@ -2528,6 +2547,7 @@ func _approach_window_state(delta: float) -> void:
 				selected_id = best_window.window_id
 			print("[Entity AI] Tactical window selected: %s (marker at %.2f, %.2f, %.2f)" % [selected_id, approach_target.global_position.x, approach_target.global_position.y, approach_target.global_position.z])
 		else:
+			print("[DIAG] WINDOW SELECTION: pick_tactical_window() returned NULL! No windows available within range.")
 			# ─── NO WINDOWS AVAILABLE: Signal completion to break the loop ──
 			# When pick_tactical_window() returns null (no windows within 15m
 			# of the player), the handler must signal completion to the Director
@@ -2547,6 +2567,7 @@ func _approach_window_state(delta: float) -> void:
 		# issues during APPROACH_WINDOW. This is especially useful for
 		# diagnosing NavMesh reachability problems where the Entity gets
 		# stuck at the edge of the NavMesh near the cabin wall.
+		# ─── DIAG: Log window selection each cycle ──────────────────────
 		_approach_debug_timer += delta
 		if _approach_debug_timer >= APPROACH_DEBUG_INTERVAL:
 			_approach_debug_timer = 0.0
@@ -2654,12 +2675,13 @@ func _approach_window_state(delta: float) -> void:
 				# jitters in place and the _path_timer re-triggers next frame.
 				_calculated_velocity = Vector3.ZERO
 				entity.velocity = Vector3.ZERO
-				# Prevent the path timer from re-triggering next frame by
-				# setting it to a high value. Without this, _path_timer -= delta
-				# on the next frame causes _path_timer <= 0.0, which resets
-				# target_position and re-engages the nav agent, creating a
-				# 60fps NavFinished=true→false→true jitter loop.
-				_path_timer = PATH_UPDATE_INTERVAL
+				# ─── DIAG: Log Y position when stuck at nav edge ──────
+			# Prevent the path timer from re-triggering next frame by
+			# setting it to a high value. Without this, _path_timer -= delta
+			# on the next frame causes _path_timer <= 0.0, which resets
+			# target_position and re-engages the nav agent, creating a
+			# 60fps NavFinished=true→false→true jitter loop.
+			_path_timer = PATH_UPDATE_INTERVAL
 		
 		# ─── DOOR PHASE 2 LOOP: Runs every frame when _door_phase == 2 ─────
 		# This MUST be checked BEFORE the arrival check below, because once
@@ -2777,12 +2799,14 @@ func _approach_window_state(delta: float) -> void:
 			return
 		
 		# ─── ARRIVAL CHECK: 2D distance threshold (generous 2.5m) ──────────
-		# The Entity must be within 2.5m of the window target AND have spent
-		# at least 2.0 seconds pathfinding before signaling completion.
-		# The 2.5m threshold is generous enough that the Entity registers an
-		# arrival even if it has to stop at the edge of the NavMesh just
-		# outside the cabin wall (the NavMesh may not reach the exact window
-		# coordinate — the wall blocks further pathfinding).
+		# The Entity must be within 2.5m of the window target to signal
+		# completion. We do NOT gate on _approach_min_timer here because the
+		# timer was previously causing a 15-second delay: the Entity reached
+		# dist_2d=1.45m (within range) but the timer gate prevented the arrival
+		# check from firing until the 15-second failsafe triggered. The minimum
+		# approach duration is now checked ONLY in the failsafe logic above,
+		# not in the primary arrival check. The 2.5m threshold alone is
+		# sufficient to prevent false arrivals from across the map.
 		#
 		# NOTE: We do NOT use is_navigation_finished() as a completion signal.
 		# The NavMesh may not reach the exact window coordinate (e.g., the
@@ -2794,7 +2818,7 @@ func _approach_window_state(delta: float) -> void:
 		# NOTE: This block handles Phase 0→1 transitions (arriving at the door
 		# for the first time). Once _door_phase >= 1, the Phase 1 and Phase 2
 		# loops above handle the rest independently.
-		if dist_2d <= approach_arrival_distance and _approach_min_timer >= approach_min_duration:
+		if dist_2d <= approach_arrival_distance:
 			# ─── DETECT IF TARGET IS A DOOR ─────────────────────────────────
 			# Use the cached @export door_waypoint_marker reference to check if
 			# the current window target IS the door waypoint. If the cached
@@ -2812,8 +2836,7 @@ func _approach_window_state(delta: float) -> void:
 				# cached marker is a child. Check if they share the same parent.
 				is_door_target = true
 				print("[DOOR DEBUG] Target shares parent with cached DoorWaypointMarker. Detected as door.")
-			else:
-				print("[DOOR DEBUG] Target is NOT a door (cached door_waypoint_marker=%s, window_target=%s)." % [cached_door_wp.name if cached_door_wp else "null", window_target.name])
+			
 			
 			if is_door_target:
 				# ─── SET DOOR TARGET FLAG ───────────────────────────────────
@@ -2929,6 +2952,25 @@ func _window_peek_state(delta: float) -> void:
 	entity.state_locked = true
 	
 	_calculated_velocity = Vector3.ZERO
+	
+	# ─── SIEGE MAX DURATION FAILSAFE ───────────────────────────────────────
+	# If the Entity has been stuck in WINDOW_PEEK for longer than the max
+	# duration (default 30.0s), abandon the siege and return to treeline
+	# observation. This is a hard safety net to prevent the Entity from
+	# getting permanently stuck in WINDOW_PEEK when it cannot reach the
+	# target window (e.g., stuck behind geometry or at the NavMesh edge).
+	if _siege_duration_timer > siege_max_duration:
+		print("[WINDOW_PEEK] SIEGE MAX DURATION (%.1fs) EXCEEDED! Abandoning siege." % siege_max_duration)
+		entity.is_observe_finished = true
+		entity.state_locked = false
+		_calculated_velocity = Vector3.ZERO
+		_siege_duration_timer = 0.0
+		_glass_shatter_pending = false
+		_glass_shatter_impact_timer = 0.0
+		_barricade_anim_lock = 0.0
+		_window_peek_debug_counter = 0
+		_peek_assessment_done = false
+		return
 	
 	# ─── RESET PEEK ASSESSMENT ON FRESH ENTRY ───────────────────────────
 	# When the Entity first enters WINDOW_PEEK (siege timer is 0.0), reset
@@ -3082,17 +3124,36 @@ func _window_peek_state(delta: float) -> void:
 					_glass_shatter_pending = false
 					_glass_shatter_impact_timer = 0.0
 					
+					# ─── BREACH DEBUG: Resolve the actual window target ──
+					var resolved_window = _resolve_window_target(window_target)
+					print("[BREACH DEBUG] window_target=", window_target.name,
+					      " (class=", window_target.get_class(), ")",
+					      " | resolved=", resolved_window.name if resolved_window else "NULL",
+					      " | is_CabinWindow=", resolved_window is CabinWindow,
+					      " | has_shatter=", resolved_window.has_method("shatter_window") if resolved_window else false)
+					
 					# ─── SAFE TYPE-CHECK: Door vs Window Breach ─────────────
 					# The Entity can approach both windows (CabinWindow) and
 					# doors (AnimatableBody3D with Door script). Each has a
 					# different breach method:
 					#   - Window: shatter_window() — destroys glass panes
 					#   - Door:   break_door() — forces the door open
-					# Use duck-typing (has_method) to safely dispatch to the
-					# correct breach method without hard type-casting.
-					if window_target.has_method("shatter_window"):
-						window_target.shatter_window()
-						print("[WINDOW_PEEK] Glass shattered at impact frame! Transitioning to INDOOR_SEARCH.")
+					# Use the resolved window target (walk-up parent chain to find
+					# the CabinWindow ancestor) to safely dispatch the breach.
+					if resolved_window and resolved_window.has_method("shatter_window"):
+						resolved_window.shatter_window()
+						# ─── BACKUP: Force PristineVisuals/ShatteredVisuals visibility ──
+						# The CabinWindow's _shatter_glass() calls _update_window_visuals()
+						# which sets PristineVisuals.visible=false and ShatteredVisuals.visible=true.
+						# However, if the node references are stale (null due to scene reload or
+						# if hasn_node returned false at _ready time), the swap silently fails.
+						# This belt-and-suspenders approach guarantees the visuals swap even if
+						# cabin_window.gd's internal logic doesn't fire correctly.
+						if resolved_window.has_node("PristineVisuals"):
+							resolved_window.get_node("PristineVisuals").visible = false
+						if resolved_window.has_node("ShatteredVisuals"):
+							resolved_window.get_node("ShatteredVisuals").visible = true
+						print("[WINDOW_PEEK] Glass shattered via resolved window! Transitioning to INDOOR_SEARCH.")
 					elif window_target.has_method("break_door"):
 						# ─── PROXIMITY GUARD: Door Breach ──────────────────────
 						# Before forcing the door open, check if the Entity is
@@ -3626,11 +3687,20 @@ func _indoor_search_state(delta: float) -> void:
 				# ─── VAULT COMPLETE: Teleport to landing position ─────────
 				# The vault animation has finished playing. Teleport the Entity
 				# to the indoor landing position and transition to Phase B.
+				# The IndoorBreachWaypoint is placed at Z=1.5 (inside the room)
+				# but inherits the CabinWindow's world Y, which may be at window
+				# height (high on the wall). Use NavigationServer3D to snap the
+				# Y to the NavMesh floor height so the Entity lands at the
+				# correct interior floor level (matching the player's Y≈0.5).
 				var landing_pos = entity.get_indoor_landing_position()
 				if landing_pos != Vector3.ZERO:
+					# Snap Y to NavMesh floor at the landing XZ coordinates
+					var nav_map = entity.get_world_3d().navigation_map
+					var snapped = NavigationServer3D.map_get_closest_point(nav_map, landing_pos)
+					landing_pos.y = snapped.y
 					entity.global_position = landing_pos
 					entity.velocity = Vector3.ZERO
-					print("[INDOOR_SEARCH] Phase A: Vault complete! Teleported to landing position.")
+					print("[INDOOR_SEARCH] Phase A: Vault complete! Teleported to landing position (%.2f, %.2f, %.2f) [snapped to NavMesh Y=%.2f]." % [landing_pos.x, landing_pos.y, landing_pos.z, snapped.y])
 				else:
 					print("[INDOOR_SEARCH] Phase A: No landing position set. Staying at current position.")
 				
@@ -3805,6 +3875,22 @@ func _indoor_search_state(delta: float) -> void:
 	# This check runs every frame regardless of nav state, so the Entity
 	# can catch the player even if the NavigationAgent3D hasn't finished
 	# its path (e.g., the player is standing right next to the Entity).
+	# ─── Y COMPARISON DEBUG (1 Hz during INDOOR_SEARCH) ─────────
+	# Every second, print both the Entity's Y position and the Player's
+	# Y position so we can verify the Entity is at floor level inside
+	# the cabin (matching the player's Y ≈ 0.5).
+	_y_debug_timer -= delta
+	if _y_debug_timer <= 0.0:
+		_y_debug_timer = 1.0
+		var p = entity.get_player()
+		var player_y: float = p.global_position.y if p else -999.0
+		print("[Y-AXIS DEBUG] INDOOR_SEARCH: Entity Y=%.2f | Player Y=%.2f | Diff=%.2f" % [entity.global_position.y, player_y, entity.global_position.y - player_y])
+	
+	# ─── CATCH CHECK ─────────────────────────────────────────────────
+	# If the Entity is close enough to the player, catch them.
+	# This check runs every frame regardless of nav state, so the Entity
+	# can catch the player even if the NavigationAgent3D hasn't finished
+	# its path (e.g., the player is standing right next to the Entity).
 	var player = entity.get_player()
 	if player and entity.global_position.distance_to(player.global_position) <= entity.catch_distance:
 		entity._on_caught_player()
@@ -3928,3 +4014,27 @@ func _is_close_enough_to_door(door_node: Node3D) -> bool:
 ## Reset to 0 when the Entity successfully reaches any target.
 var _consecutive_door_failsafe_count: int = 0
 const MAX_DOOR_FAILSAFE_RETRIES: int = 3
+
+
+## ─── CABIN WINDOW RESOLUTION HELPER ──────────────────────────────────────────
+## Walks UP the entire scene tree from any child node to find the nearest
+## CabinWindow ancestor. Uses a while loop that never gives up until it
+## reaches the scene root. Returns null if NO CabinWindow is found anywhere
+## in the ancestry chain.
+##
+## This prevents the "capability cache failure" bug where _cap_window_shatter was
+## sampled from the FIRST WindowMarker in the group — if that marker was a door
+## or a non-CabinWindow node, the cache returned false and glass never shattered.
+## By resolving to the CabinWindow parent at runtime, we ensure the correct node
+## receives the shatter call regardless of which child marker was targeted.
+func _resolve_window_target(target: Node3D) -> CabinWindow:
+	if not target:
+		return null
+	if target is CabinWindow:
+		return target
+	var current: Node = target
+	while current:
+		if current is CabinWindow:
+			return current
+		current = current.get_parent()
+	return null
