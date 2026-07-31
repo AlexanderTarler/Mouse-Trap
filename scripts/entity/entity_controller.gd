@@ -2238,6 +2238,27 @@ func _physics_process(delta: float) -> void:
 				# Fallback gravity: only applies when the raycast misses
 				# entirely (Entity airborne or above a NavMesh gap).
 				velocity += get_gravity() * delta
+			else:
+				# ─── HOVER & FREEZE FIX ────────────────────────────────────
+				# The floor ray HITS the floor below, but the Entity may still be
+				# hovering well above it (e.g. after a window-breach teleport to
+				# the NavMesh Y, which can be baked ~1.5m above the physical
+				# cabin floor). This body has NO CollisionShape3D (see the
+				# "Node not found: CollisionShape3D" error at _ready), so
+				# move_and_slide() cannot resolve floor contact and the branch
+				# above only applies gravity when the ray MISSES. A hovering
+				# Entity (ray hitting) therefore never falls and floats frozen.
+				#
+				# Fix: if the Entity's feet are well above the floor surface the
+				# ray hit, snap it straight down onto the floor. The threshold
+				# accounts for the resting height (~0.5m, matching the player) so
+				# a grounded Entity is not re-snapped. This is a one-shot snap,
+				# not a per-frame lerp, so it does not cause the Y oscillation the
+				# old Floating-Sphere system produced.
+				var floor_y = _floor_ray.get_collision_point().y
+				if global_position.y > floor_y + 0.6:
+					global_position.y = floor_y + 0.5
+					velocity.y = 0.0
 		
 		var flat_vel = Vector2(velocity.x, velocity.z)
 		if flat_vel.length_squared() > 0.05 and _monster_model:
@@ -2941,7 +2962,19 @@ func get_last_heard_exact_position() -> Vector3:
 ## Unlike the Entity's belief system (thinks_player_is_inside), this is a
 ## physical fact based on the Entity's actual global_position.
 func is_physically_inside() -> bool:
-	var room_name = RoomLightDetector.get_room_name_at(global_position)
+	# ─── BUG FIX (INDOOR_SEARCH -> APPROACH_WINDOW): Height-independent ──
+	# RoomLightDetector.get_room_name_at() uses room.contains_point(), which
+	# checks a 3D volume. If the Entity is hovering above the cabin floor
+	# (e.g. mid-breach or the NavMesh-Y landing bug), the room volume may not
+	# extend to that height, so get_room_name_at() returns "Outside" and the
+	# Director's Tier 8 guard falls through to OBSERVE_FROM_TREELINE ->
+	# APPROACH_WINDOW while the Entity is still physically inside. Fix: sample
+	# the room at the floor beneath the Entity (via the floor ray) instead of
+	# the Entity's own Y, so the check is robust to vertical offset.
+	var check_pos = global_position
+	if _floor_ray and _floor_ray.is_colliding():
+		check_pos.y = _floor_ray.get_collision_point().y + 0.5
+	var room_name = RoomLightDetector.get_room_name_at(check_pos)
 	return room_name in ["HallRoom", "LivingRoom", "ComputerRoom"]
 
 

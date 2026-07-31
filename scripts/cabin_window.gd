@@ -532,6 +532,7 @@ func get_secure_type() -> String:
 ## CRITICAL: Phase 1 hard-returns before Phase 2 can execute. Planks are
 ## NEVER touched while glass is intact.
 func damage_barricade() -> bool:
+	print("[SHATTER DEBUG] damage_barricade() called on '%s' (id=%s). is_glass_shattered=%s is_boarded=%s" % [name, window_id, is_glass_shattered, is_boarded])
 	# ─── DEBUG LOG: Track every damage call ─────────────────────────
 	print("[Barricade Debug] damage_barricade() called. is_glass_shattered=", is_glass_shattered,
 		  " | is_boarded=", is_boarded,
@@ -584,7 +585,7 @@ func damage_barricade() -> bool:
 ## was boarded up, the planks remain at full health behind the shattered frame.
 ## The NavBlocker stays enabled because planks still block the path.
 func shatter_window() -> void:
-	
+	print("[SHATTER DEBUG] shatter_window() called on '%s' (id=%s). is_glass_shattered=%s" % [name, window_id, is_glass_shattered])
 	_shatter_glass()
 
 
@@ -597,6 +598,7 @@ func shatter_window() -> void:
 ## The NavBlocker stays enabled because planks still block the path.
 func _shatter_glass() -> void:
 	is_glass_shattered = true
+	print("[SHATTER DEBUG] _shatter_glass() called on window '%s' (id=%s). is_glass_shattered now true. PristineVisuals=%s" % [name, window_id, str(_pristine_visuals)])
 	
 	# ─── IMMEDIATE VISUAL SWAP ───────────────────────────────────────────
 	# The visual swap (pristine → shattered), glass shard particles, layered
@@ -607,7 +609,21 @@ func _shatter_glass() -> void:
 	# a double-delay, causing the Entity to phase through visible glass when
 	# it teleports into the cabin via INDOOR_SEARCH Phase A.
 	_update_window_visuals()
-	
+
+	# ─── EXPLICIT PRISTINE NODE DESTRUCTION ──────────────────────────────
+	# Belt-and-suspenders: in addition to toggling the PristineVisuals parent
+	# container above, explicitly hide/free the exact pristine visual nodes so
+	# the glass and wooden cross are guaranteed to disappear even if the parent
+	# container reference is stale or the container toggle is skipped.
+	var _glass_pane = get_node_or_null("PristineVisuals/GlassPane")
+	if _glass_pane:
+		_glass_pane.visible = false
+		_glass_pane.queue_free()
+	var _wooden_cross = get_node_or_null("PristineVisuals/WoodenCross")
+	if _wooden_cross:
+		_wooden_cross.visible = false
+		_wooden_cross.queue_free()
+
 	# Burst glass shard GPU particles
 	if _glass_shards:
 		_glass_shards.emitting = true

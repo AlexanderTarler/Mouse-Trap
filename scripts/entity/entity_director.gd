@@ -532,6 +532,21 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 			return EntityAI.State.INDOOR_SEARCH  # Minimum stay not yet expired
 		if entity.has_method("is_physically_inside") and entity.is_physically_inside():
 			return EntityAI.State.INDOOR_SEARCH  # Still inside — hold indefinitely
+		if entity.last_breached_window != null:
+			# ─── BUG FIX (INDOOR_SEARCH -> APPROACH_WINDOW) ───────────────
+			# The Entity breached a window and is still inside the cabin it
+			# entered. This top-level guard previously relied ONLY on
+			# is_physically_inside(), which uses RoomLightDetector.get_room_name_at()
+			# (a 3D volume check). If the Entity is hovering above the cabin
+			# floor (the NavMesh-Y landing bug), the room volume may not extend
+			# to that height, so is_physically_inside() returns false and the
+			# guard falls through to Tier 4/5/7, which can return APPROACH_WINDOW
+			# while the Entity is still physically inside. Holding on
+			# last_breached_window makes the indoor lock permanent and
+			# height-independent — the Entity can only leave via Tier 0
+			# (flashlight RETREAT) or Tier 1 (frustration SABOTAGE), which run
+			# ABOVE this guard.
+			return EntityAI.State.INDOOR_SEARCH  # Breached a window — hold indoors
 		if entity.was_door_entry:
 			# Entity just entered via door breach — hold INDOOR_SEARCH for one
 			# frame so the state handler can prime the persistence timer.
@@ -644,7 +659,16 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 		# If any hold condition is met, ALWAYS return INDOOR_SEARCH — no timeout.
 		# The persistence timer is handled by the INDOOR_SEARCH preservation
 		# guard above, so this check is purely a safety net.
-		if (entity.has_method("is_physically_inside") and entity.is_physically_inside()) or _indoor_search_persistence_timer > 0.0 or entity.was_door_entry:
+		#
+		# BUG FIX (INDOOR_SEARCH -> APPROACH_WINDOW): Also hold INDOOR_SEARCH
+		# while entity.last_breached_window is set (the Entity is still inside
+		# the cabin it breached). Previously this inner guard relied on
+		# is_physically_inside(), which uses RoomLightDetector.get_room_name_at().
+		# If the Entity was floating ~1m above the floor (hover bug), the room
+		# detector volume did not extend to that height, so is_physically_inside()
+		# returned false and the Director fell through to OBSERVE_FROM_TREELINE
+		# -> APPROACH_WINDOW while the Entity was still physically inside.
+		if (entity.has_method("is_physically_inside") and entity.is_physically_inside()) or _indoor_search_persistence_timer > 0.0 or entity.was_door_entry or entity.last_breached_window != null:
 			print("[TRACE_DIRECTOR] TIER 8 BASELINE: INDOOR_SEARCH (entity physically inside). Keeping INDOOR_SEARCH.")
 			return EntityAI.State.INDOOR_SEARCH
 	

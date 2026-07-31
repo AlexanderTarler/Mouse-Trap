@@ -3127,10 +3127,10 @@ func _window_peek_state(delta: float) -> void:
 					# ─── BREACH DEBUG: Resolve the actual window target ──
 					var resolved_window = _resolve_window_target(window_target)
 					print("[BREACH DEBUG] window_target=", window_target.name,
-					      " (class=", window_target.get_class(), ")",
-					      " | resolved=", resolved_window.name if resolved_window else "NULL",
-					      " | is_CabinWindow=", resolved_window is CabinWindow,
-					      " | has_shatter=", resolved_window.has_method("shatter_window") if resolved_window else false)
+						  " (class=", window_target.get_class(), ")",
+						  " | resolved=", resolved_window.name if resolved_window else "NULL",
+						  " | is_CabinWindow=", resolved_window is CabinWindow,
+						  " | has_shatter=", resolved_window.has_method("shatter_window") if resolved_window else false)
 					
 					# ─── SAFE TYPE-CHECK: Door vs Window Breach ─────────────
 					# The Entity can approach both windows (CabinWindow) and
@@ -3207,6 +3207,23 @@ func _window_peek_state(delta: float) -> void:
 				# Store the breached window so INDOOR_SEARCH knows which
 				# window to retreat through when repelled by light.
 				entity.last_breached_window = window_target
+
+				# ─── GUARANTEED VISUAL DESTRUCTION (BUG FIX) ─────────────
+				# The shatter_window() call above is nested inside the
+				# `if resolved_window and resolved_window.has_method(...)`
+				# branch. If window resolution fails (resolved_window is null)
+				# the breach STILL completes below (last_breached_window set,
+				# INDOOR_SEARCH entered) but the glass is never visually
+				# broken — GlassPane/WoodenCross stay intact. This unconditional
+				# block re-runs the visual swap at the exact breach moment so
+				# the pristine visuals are always destroyed and ShatteredVisuals
+				# always shown, regardless of which sub-branch executed.
+				# Guarded by is_glass_shattered so it is idempotent (no double
+				# shatter if the branch above already fired).
+				var breach_win = _resolve_window_target(window_target)
+				if breach_win and breach_win.has_method("shatter_window") and not breach_win.is_glass_shattered:
+					breach_win.shatter_window()
+					print("[WINDOW_PEEK] GUARANTEED shatter fired on '%s' (id=%s)." % [breach_win.name, breach_win.window_id if "window_id" in breach_win else "?"])
 				
 				# ─── CAPTURE INDOOR LANDING POSITION ──────────────────
 				# Store the window's IndoorBreachWaypoint position so
@@ -3257,7 +3274,25 @@ func _window_peek_state(delta: float) -> void:
 				_barricade_damage_timer = 0.0
 				
 				# Apply damage to the barricade
-				if window_target.has_method("damage_barricade"):
+				# BUG FIX (Missing Visual Window Destruction): Resolve the actual
+				# CabinWindow ancestor before calling damage_barricade(). The raw
+				# window_target may be a child node (e.g. a marker or sub-node), in
+				# which case has_method("damage_barricade") is false and the glass
+				# is never shattered. damage_barricade() internally calls
+				# _shatter_glass() on the first hit when glass is intact, which
+				# performs the PristineVisuals -> ShatteredVisuals swap.
+				var resolved_win = _resolve_window_target(window_target)
+				if resolved_win and resolved_win.has_method("damage_barricade"):
+					resolved_win.damage_barricade()
+					print("[WINDOW_PEEK] Barricade hit! Damaging barricade (resolved window).")
+					# Belt-and-suspenders: if the glass is now shattered, force the
+					# visual swap in case cabin_window.gd's internal logic missed it.
+					if resolved_win.is_glass_shattered:
+						if resolved_win.has_node("PristineVisuals"):
+							resolved_win.get_node("PristineVisuals").visible = false
+						if resolved_win.has_node("ShatteredVisuals"):
+							resolved_win.get_node("ShatteredVisuals").visible = true
+				elif window_target.has_method("damage_barricade"):
 					window_target.damage_barricade()
 					print("[WINDOW_PEEK] Barricade hit! Damaging barricade.")
 				
@@ -3547,6 +3582,12 @@ func _harass_state(delta: float) -> void:
 ##     immediately resumes the chase. If the scan timer expires without
 ##     finding the player, the Entity returns to patrol.
 func _indoor_search_state(delta: float) -> void:
+	# ─── ENTRY PATH DEBUG ────────────────────────────────────────────
+	# Log whether the Entity entered via door or window, and which window
+	# (if any) was recorded as last breached. This tells us whether the
+	# window breach path (which calls _shatter_glass) was actually used.
+	var _lw = entity.last_breached_window
+	print("[INDOOR_SEARCH ENTRY] was_door_entry=%s | last_breached_window=%s | _has_arrived_indoor=%s" % [entity.was_door_entry, _lw.name if _lw else "NULL", _has_arrived_indoor])
 	# ─── LIGHT SWITCH RETREAT CHECK ──────────────────────────────────
 	# If the Entity is inside a lit room, immediately set the indoor
 	# retreat flag. The Director's Tier 0 will detect this and transition
@@ -3689,24 +3730,78 @@ func _indoor_search_state(delta: float) -> void:
 				# to the indoor landing position and transition to Phase B.
 				# The IndoorBreachWaypoint is placed at Z=1.5 (inside the room)
 				# but inherits the CabinWindow's world Y, which may be at window
-				# height (high on the wall). Use NavigationServer3D to snap the
-				# Y to the NavMesh floor height so the Entity lands at the
-				# correct interior floor level (matching the player's Y≈0.5).
+				# height (high on the wall). Snap the Y to the NavMesh floor
+				# height so the Entity lands at the correct interior floor level
+				# (matching the player's Y≈0.5).
+				#
+				# NOTE: We deliberately do NOT cast a downward physics ray from
+				# the waypoint. The waypoint sits at window height, so a ray cast
+				# from there (or above) hits the cabin's ceiling/attic floor before
+				# reaching the ground floor, teleporting the Entity into the attic.
+				# The NavMesh is baked on the ground floor (never the ceiling), so
+				# snapping Y to the NavMesh is safe and lands the Entity correctly.
 				var landing_pos = entity.get_indoor_landing_position()
 				if landing_pos != Vector3.ZERO:
 					# Snap Y to NavMesh floor at the landing XZ coordinates
 					var nav_map = entity.get_world_3d().navigation_map
 					var snapped = NavigationServer3D.map_get_closest_point(nav_map, landing_pos)
 					landing_pos.y = snapped.y
+					# ─── BUG FIX (Hover & Freeze): Snap to the REAL floor ─────
+					# The NavMesh Y at the landing XZ can be baked ~1.5m above the
+					# physical cabin floor (e.g. at window-sill height), leaving the
+					# Entity hovering. The controller's gravity fallback only fires
+					# when _floor_ray.is_colliding() is false, but the 4m downward
+					# floor ray DOES hit the floor below, so gravity never applies
+					# and the Entity floats frozen. Cast a downward physics ray from
+					# the NavMesh-snapped position (which is already below the
+					# ceiling) to find the actual ground floor and land on it.
+					var space = entity.get_world_3d().direct_space_state
+					var ray_from = landing_pos + Vector3(0, 0.5, 0)
+					var ray_to = landing_pos + Vector3(0, -6.0, 0)
+					var q = PhysicsRayQueryParameters3D.create(ray_from, ray_to)
+					# Reuse the floor ray's collision mask (Cabin/Player/Tree/Rock)
+					q.collision_mask = 0
+					q.collision_mask |= (1 << (1 - 1))  # Layer 1: Cabin
+					q.collision_mask |= (1 << (2 - 1))  # Layer 2: Player
+					q.collision_mask |= (1 << (3 - 1))  # Layer 3: Trees
+					q.collision_mask |= (1 << (4 - 1))  # Layer 4: Rocks
+					var hit = space.intersect_ray(q)
+					if hit:
+						landing_pos.y = hit.position.y + 0.1
+						print("[INDOOR_SEARCH] Phase A: Floor ray hit at Y=%.2f. Landing on real floor (Y=%.2f)." % [hit.position.y, landing_pos.y])
+					else:
+						print("[INDOOR_SEARCH] Phase A: Floor ray missed. Keeping NavMesh Y=%.2f." % snapped.y)
 					entity.global_position = landing_pos
 					entity.velocity = Vector3.ZERO
-					print("[INDOOR_SEARCH] Phase A: Vault complete! Teleported to landing position (%.2f, %.2f, %.2f) [snapped to NavMesh Y=%.2f]." % [landing_pos.x, landing_pos.y, landing_pos.z, snapped.y])
+					print("[INDOOR_SEARCH] Phase A: Vault complete! Teleported to landing position (%.2f, %.2f, %.2f) [NavMesh floor Y=%.2f]." % [landing_pos.x, landing_pos.y, landing_pos.z, snapped.y])
 				else:
 					print("[INDOOR_SEARCH] Phase A: No landing position set. Staying at current position.")
 				
 				_has_arrived_indoor = true
 				entity.state_locked = false
 				_enter_window_anim_timer = 0.0
+				
+				# ─── RESTORE PHYSICS (BUG FIX: Hover & Freeze) ─────────────
+				# The window breach path (unlike the door ghost-motor path) never
+				# explicitly restored normal physical movement. If is_physics_suspended
+				# was left true (e.g. from a prior door Phase-2 ghost climb, or set
+				# during the approach), the controller's physics block
+				# (`if not is_physics_suspended:`) is skipped entirely — no
+				# move_and_slide(), no gravity, no ground snapping. The Entity then
+				# hovers frozen ~1m above the floor. Re-enable collision and restore
+				# normal physics here so the Entity lands and patrols correctly.
+				entity.set_collision_mask_value(1, true)
+				# Null-check the collision shape: the Entity may not have a
+				# CollisionShape3D child (get_collision_shape() can return null),
+				# so guard against assigning .disabled on a null instance.
+				if entity.has_method("get_collision_shape"):
+					var _cs = entity.get_collision_shape()
+					if _cs:
+						_cs.disabled = false
+				entity.is_physics_suspended = false
+				entity.is_breach_locked = false
+				entity._breach_lock_timer = 0.0
+				entity.velocity = Vector3.ZERO
 				
 				# ─── CLEAR VAN SEQUENCE FLAG ──────────────────────────
 				# The Entity has successfully entered the cabin. The Night 2.2
