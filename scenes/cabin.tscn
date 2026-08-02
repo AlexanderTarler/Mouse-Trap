@@ -14,8 +14,6 @@ size = Vector3(6.333496, 2.75, 6.057617)
 size = Vector3(6.1220703, 3, 6.3789063)
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_ixm0y"]
-vertices = PackedVector3Array(5.700001, 0.05, 19.94, 5.700001, 0.05, 14.24, 0, 0.05, 13.940001, -5.7, 0.05, 19.94, -5.7, 0.05, 7.6400003, 0, 0.05, 7.6400003)
-polygons = [PackedInt32Array(1, 0, 2), PackedInt32Array(2, 0, 3), PackedInt32Array(5, 2, 4), PackedInt32Array(4, 2, 3)]
 geometry_source_geometry_mode = 1
 geometry_source_group_name = &"navmesh_source"
 cell_size = 0.3
@@ -106,6 +104,10 @@ shape = SubResource("ConcavePolygonShape3D_ixm0y")
 [node name="NavigationLink3D" type="NavigationLink3D" parent="NavigationRegion3D" unique_id=429131601]
 start_position = Vector3(1.6552938, 0.86493415, 18.689304)
 end_position = Vector3(-1.4696823, 0.86493415, 18.689304)
+
+[node name="NavigationLink3D2" type="NavigationLink3D" parent="NavigationRegion3D" unique_id=950480264]
+start_position = Vector3(-1.48, 0.865, 12.594)
+end_position = Vector3(-1.47, 0.865, 15.489)
 
 [node name="Porch Stair StaticBody3D" type="StaticBody3D" parent="." unique_id=768928286]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4.730276)

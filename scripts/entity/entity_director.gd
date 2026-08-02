@@ -1092,6 +1092,48 @@ func _tier_1_sabotage(entity: CharacterBody3D, state: int) -> int:
 					
 					return EntityAI.State.SABOTAGE_FUSE
 	
+	# ─── ALL WINDOWS LIT SEMANTIC CHECK ──────────────────────────────
+	# Directly detect the "all windows lit" condition via the navigation
+	# module's are_all_windows_lit(). This IMMEDIATELY routes the Entity to
+	# SABOTAGE_FUSE instead of relying on the slow frustration accumulation
+	# (2.0/s → 90.0 threshold takes ~45s).
+	#
+	# WHY THIS IS NEEDED: The confidence escalation (Tier 4) loops through
+	# APPROACH_WINDOW → (null window target) → OBSERVE_FROM_TREELINE → 5s
+	# cooldown → APPROACH_WINDOW at high confidence. Each cycle resets the
+	# _all_lit_frustration counter to 0 when it leaves OBSERVE, so it can
+	# NEVER reach the 90.0 threshold — the Entity oscillates forever:
+	#   APPROACH_WINDOW → OBSERVE_FROM_TREELINE → APPROACH_WINDOW → ...
+	#
+	# The semantic check breaks this loop: "all windows lit" is a BOOLEAN
+	# truth, not a threshold, so it fires on the first cycle.
+	#
+	# SCOPE: Only outdoor approach states (OBSERVE, APPROACH_WINDOW,
+	# WINDOW_PEEK). If the Entity is already inside hunting (INDOOR_SEARCH),
+	# it should continue, not run outside to sabotage.
+	#
+	# NO ONE-SHOT GUARD NEEDED: After the fuse box is destroyed, all
+	# generator-powered lights die, are_all_windows_lit() returns false,
+	# and this check naturally self-clears.
+	if state == EntityAI.State.OBSERVE_FROM_TREELINE or state == EntityAI.State.APPROACH_WINDOW or state == EntityAI.State.WINDOW_PEEK:
+		var nav_sem = entity.get_navigation_module()
+		if nav_sem and nav_sem.has_method("are_all_windows_lit") and nav_sem.are_all_windows_lit():
+			print("[Director] TIER 1 SABOTAGE: ALL WINDOWS LIT! Direct semantic trigger → SABOTAGE_FUSE.")
+			# Reset all completion flags to prevent stale state
+			entity.state_locked = false
+			entity.is_approach_finished = false
+			entity.is_climb_finished = false
+			entity.is_flinch_finished = false
+			entity.is_retreat_arrived = false
+			entity.is_window_unbarricaded = false
+			entity.is_observe_finished = false
+			entity.is_indoor_retreat = false
+			# Reset AI-specific state flags
+			var ai_sem = entity.get_ai_module()
+			if ai_sem and ai_sem.has_method("reset_retreat_target"):
+				ai_sem.reset_retreat_target()
+			return EntityAI.State.SABOTAGE_FUSE
+	
 	# ─── UNIVERSAL FRUSTRATION CHECK ──────────────────────────────────
 	# Read frustration directly from the AI module. This works regardless
 	# of the current state — frustration accumulates in OBSERVE_FROM_TREELINE
@@ -1717,9 +1759,24 @@ func _tier_5_completion_flags(entity: CharacterBody3D, state: int) -> int:
 
 	
 	if state == EntityAI.State.WINDOW_PEEK:
-		# ─── NULL WINDOW TARGET GUARD ──────────────────────────────────
-		if not entity.get_current_window_target():
+		# ─── BREACH COMPLETION FIRST ─────────────────────────────────
+		# Check is_window_unbarricaded BEFORE the null-target guard.
+		# The AI clears _current_window_target as part of breach cleanup,
+		# so the null-target guard would intercept the INDOOR_SEARCH
+		# transition and bounce the Entity back to OBSERVE_FROM_TREELINE,
+		# causing an infinite WINDOW_PEEK → OBSERVE → APPROACH_WINDOW
+		# loop where the Entity never physically enters the cabin.
+		# is_window_unbarricaded is the definitive signal that the glass
+		# shattered and the Entity has earned entry.
+		if entity.is_window_unbarricaded:
 			entity.is_window_unbarricaded = false
+			return EntityAI.State.INDOOR_SEARCH
+		
+		# ─── NULL WINDOW TARGET GUARD ──────────────────────────────────
+		# If we reach this point, is_window_unbarricaded is already false
+		# (consumed by the check above), so the target being null means
+		# this peek session has no valid window — fall back to observation.
+		if not entity.get_current_window_target():
 			return EntityAI.State.OBSERVE_FROM_TREELINE
 		
 		# ─── PEEK ABORT HANDLING ──────────────────────────────────────
@@ -1732,9 +1789,6 @@ func _tier_5_completion_flags(entity: CharacterBody3D, state: int) -> int:
 			entity.is_observe_finished = false
 			return EntityAI.State.OBSERVE_FROM_TREELINE
 		
-		if entity.is_window_unbarricaded:
-			entity.is_window_unbarricaded = false
-			return EntityAI.State.INDOOR_SEARCH
 		return EntityAI.State.WINDOW_PEEK
 	
 	if state == EntityAI.State.RETREAT:

@@ -391,29 +391,29 @@ door_breach_waypoint = NodePath("../NavigationRegion3D/Cabin/Door/IndoorBreachWa
 fuse_waypoint = NodePath("../EntityWaypoints/EntityFuseWaypoint")
 door_waypoint_marker = NodePath("../NavigationRegion3D/Cabin/Door/EntityDoorWaypoint")
 
-[node name="GeneralSkeleton" parent="TheEntity/MonsterModel/Armature" parent_id_path=PackedInt32Array(133456140, 1066769687, 881725804) index="0" unique_id=382657082]
-bones/1/rotation = Quaternion(0.101251855, -0.17596056, -0.015273822, 0.9790571)
-bones/3/rotation = Quaternion(0.14812067, 0.35418752, 0.90847325, -0.16519022)
-bones/4/rotation = Quaternion(-0.038172334, 0.92247343, -0.37772083, 0.07009038)
-bones/5/rotation = Quaternion(-0.11102443, 0.64583963, -0.7450977, 0.12407361)
-bones/7/rotation = Quaternion(-2.036446e-09, 0.99997294, 0.0073620006, 2.1061291e-08)
-bones/18/rotation = Quaternion(-0.13359325, 0.2986354, 0.9389428, 0.106565334)
-bones/21/rotation = Quaternion(0.039890714, 0.9338009, -0.35031012, -0.060889214)
-bones/22/rotation = Quaternion(0.103945896, 0.63428056, -0.75730455, -0.115642905)
-bones/23/rotation = Quaternion(-1.4034572e-09, 1, 0.0001485002, -2.6259412e-08)
-bones/33/rotation = Quaternion(0.019423243, -0.0051755127, 0.015694212, 0.99967486)
-bones/34/rotation = Quaternion(0.06284929, -0.011868577, 0.012359456, 0.9978759)
-bones/35/rotation = Quaternion(0.062933, -0.010866447, 0.012984768, 0.99787414)
-bones/36/rotation = Quaternion(-0.049948674, 0.027756836, -0.020950176, 0.9981462)
-bones/38/rotation = Quaternion(-0.1933041, 0.12128019, -0.035176203, 0.9729786)
-bones/49/rotation = Quaternion(0.5674946, 0.42588758, 0.52494156, -0.47011304)
-bones/50/rotation = Quaternion(0.18777108, 0.87567914, -0.44304216, -0.04052167)
-bones/51/rotation = Quaternion(0.4736622, -0.52501804, 0.4736629, 0.5250178)
-bones/55/rotation = Quaternion(-0.1552355, 0.7976974, 0.18105859, 0.553894)
-bones/58/rotation = Quaternion(0.5160924, -0.45987645, -0.5725793, -0.44081214)
-bones/59/rotation = Quaternion(-0.20645937, 0.84004587, -0.5002147, -0.03850708)
-bones/62/rotation = Quaternion(0.4886553, 0.5110928, -0.48865607, 0.51109254)
-bones/66/rotation = Quaternion(0.06523863, -0.84786, -0.024056982, 0.5256413)
+[node name="GeneralSkeleton" parent="TheEntity/MonsterModel/Armature" parent_id_path=PackedInt32Array(133456140, 1066769687, 719992929) index="0" unique_id=519438561]
+bones/1/rotation = Quaternion(0.10129963, -0.17984171, -0.0165671, 0.9783256)
+bones/3/rotation = Quaternion(0.14935705, 0.35425767, 0.9081792, -0.1655432)
+bones/4/rotation = Quaternion(-0.03698634, 0.92044455, -0.38214675, 0.07333428)
+bones/5/rotation = Quaternion(-0.107575014, 0.6445157, -0.74738866, 0.12015544)
+bones/7/rotation = Quaternion(1.8449487e-08, 0.9999541, 0.009582836, -4.3070983e-08)
+bones/18/rotation = Quaternion(-0.1346493, 0.2952327, 0.9397753, 0.10737598)
+bones/21/rotation = Quaternion(0.040008344, 0.93690383, -0.342692, -0.056327075)
+bones/22/rotation = Quaternion(0.10462894, 0.6358131, -0.7558015, -0.11644133)
+bones/23/rotation = Quaternion(-3.862069e-09, 1, 0.0002060068, -2.8397338e-08)
+bones/33/rotation = Quaternion(0.018408252, -0.004808825, 0.015436472, 0.99969983)
+bones/34/rotation = Quaternion(0.061833158, -0.012646649, 0.0095326, 0.9979609)
+bones/35/rotation = Quaternion(0.06195847, -0.011590214, 0.010247207, 0.9979589)
+bones/36/rotation = Quaternion(-0.049662538, 0.026997551, -0.016224863, 0.99826926)
+bones/38/rotation = Quaternion(-0.19146545, 0.121819735, -0.035086695, 0.9732779)
+bones/49/rotation = Quaternion(0.56227547, 0.43107826, 0.5251959, -0.47136736)
+bones/50/rotation = Quaternion(0.18056953, 0.8781606, -0.44112536, -0.04046099)
+bones/51/rotation = Quaternion(0.472753, -0.525837, 0.47275335, 0.52583677)
+bones/55/rotation = Quaternion(-0.15433128, 0.7974859, 0.18305507, 0.55379504)
+bones/58/rotation = Quaternion(0.51956826, -0.45458633, -0.5757428, -0.43808728)
+bones/59/rotation = Quaternion(-0.2086685, 0.8377235, -0.5023554, -0.048124097)
+bones/62/rotation = Quaternion(0.48502094, 0.514543, -0.4850217, 0.5145429)
+bones/66/rotation = Quaternion(0.06889318, -0.8559287, -0.022313057, 0.5119981)
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1000000002]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.015592637, 0, -0.084306605)
@@ -2438,7 +2438,7 @@ transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 27.2
 [node name="shed_ax_32" parent="Shed" unique_id=1197565466 instance=ExtResource("51_0emg7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.330378)
 
-[node name="StaticBody3D" type="StaticBody3D" parent="Shed/shed_ax_32/shed_ax_3" parent_id_path=PackedInt32Array(1197565466, 196530026) index="0" unique_id=665105083]
+[node name="StaticBody3D" type="StaticBody3D" parent="Shed/shed_ax_32/shed_ax_3" parent_id_path=PackedInt32Array(1197565466, 1191932805) index="0" unique_id=665105083]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Shed/shed_ax_32/shed_ax_3/StaticBody3D" unique_id=165821588]
 shape = SubResource("ConcavePolygonShape3D_dwrs0")
@@ -2864,7 +2864,7 @@ shape = SubResource("BoxShape3D_ot5vq")
 [node name="beam_72" parent="." unique_id=1269393552 instance=ExtResource("21_4te7d")]
 transform = Transform3D(0.653764, 0, -0.7566985, 0, 1, 0, 0.7566985, 0, 0.653764, -36.00796, 0.3058832, 60.577522)
 
-[node name="StaticBody3D" type="StaticBody3D" parent="beam_72/beam_7" parent_id_path=PackedInt32Array(1269393552, 1041455074) index="0" unique_id=1556061791]
+[node name="StaticBody3D" type="StaticBody3D" parent="beam_72/beam_7" parent_id_path=PackedInt32Array(1269393552, 697163439) index="0" unique_id=1556061791]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="beam_72/beam_7/StaticBody3D" unique_id=401827746]
 shape = SubResource("ConcavePolygonShape3D_ot5vq")
@@ -2872,7 +2872,7 @@ shape = SubResource("ConcavePolygonShape3D_ot5vq")
 [node name="chair_wooden_12" parent="." unique_id=1267966035 instance=ExtResource("125_6phoh")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -33.2994, -0.09411681, 63.233208)
 
-[node name="StaticBody3D" type="StaticBody3D" parent="chair_wooden_12/chair_wooden_1" parent_id_path=PackedInt32Array(1267966035, 1969013320) index="0" unique_id=21795078]
+[node name="StaticBody3D" type="StaticBody3D" parent="chair_wooden_12/chair_wooden_1" parent_id_path=PackedInt32Array(1267966035, 206043746) index="0" unique_id=21795078]
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="chair_wooden_12/chair_wooden_1/StaticBody3D" unique_id=274245211]
 shape = SubResource("ConcavePolygonShape3D_silv4")

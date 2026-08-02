@@ -188,6 +188,12 @@ var _pos_stuck_logged: bool = false  # Prevents spam-logging every frame after f
 const POS_STUCK_TIMEOUT: float = 2.0  # Seconds before logging the diagnostic
 const POS_STUCK_THRESHOLD: float = 0.1  # Meters — minimum movement to reset the timer
 
+## Tracks the room the Entity was in during the previous physics frame.
+## Used by the INDOOR_SEARCH stuck detector to reset the stuck timer when the
+## Entity successfully crosses a room boundary (e.g., Hallroom -> Livingroom).
+## Persistent class-level variable — must NOT be a local that resets each frame.
+var _last_known_room_internal: String = ""
+
 
 # Cached NightManager reference — resolved once in _initialize_entity().
 # Sub-modules access this via get_night_manager() instead of polling
@@ -945,8 +951,19 @@ func _ready() -> void:
 	# precisely in tight interior spaces, and disable RVO avoidance which
 	# fights the physics engine in narrow corridors (cabin doorframes).
 	_nav_agent.path_desired_distance = 1.0
-	_nav_agent.target_desired_distance = 1.5
-	_nav_agent.radius = 0.4  # Reduced from default 0.5 by 20% for tighter pathfinding
+	# CRITICAL: target_desired_distance MUST be small (0.5m). A large value
+	# (previously 1.5m) made NavigationAgent3D declare "arrived" while the
+	# Entity was still standing on the narrow NavMesh sliver inside a
+	# doorframe (0.2m agent_radius carve leaves a tight walking line through
+	# ~0.8m doorways). Declaring arrival mid-doorframe caused the next path
+	# query to fail from a dead-end pinch point, stranding the Entity forever.
+	# At 0.5m the Entity must physically step into the room before advancing.
+	_nav_agent.target_desired_distance = 0.5
+	# CRITICAL: NavigationAgent3D radius MUST match the baked NavigationMesh
+	# agent_radius (0.2 in cottage_horror.tscn). A larger agent radius than
+	# the navmesh carve causes the path to hug doorframe edges instead of
+	# centering through them, wedging the Entity in interior doorways.
+	_nav_agent.radius = 0.2  # Matches baked navmesh agent_radius for centered doorway routing
 	_nav_agent.avoidance_enabled = false  # RVO avoidance fights physics in tight spaces
 	
 	# ─── PHYSICS PROPERTY TWEAKS ──────────────────────────────────────
@@ -1593,7 +1610,8 @@ func _physics_process(delta: float) -> void:
 		_state == EntityAI.State.WINDOW_PEEK or
 		_state == EntityAI.State.STANDOFF or
 		_state == EntityAI.State.HARASS or
-		_state == EntityAI.State.STUNNED
+		_state == EntityAI.State.STUNNED or
+		_state == EntityAI.State.SABOTAGE_FUSE
 	)
 	var is_nav_active: bool = not _nav_agent.is_navigation_finished()
 	var is_moving: bool = get_real_velocity().length_squared() > 0.01
@@ -1718,6 +1736,18 @@ func _physics_process(delta: float) -> void:
 		else:
 			_breach_lock_timer = 0.0
 
+		
+		# ─── ROOM-BOUNDARY CROSSING RESET ─────────────────────────────
+		# If the Entity's detected room changed this frame, it just crossed
+		# a room boundary (e.g., Hallroom -> Livingroom through a doorframe).
+		# The Entity may slow to squeeze through the tight NavMesh pinch
+		# point, so the stuck timer must NOT accumulate during the crossing.
+		# Only reset when the room actually changes — do not reset on
+		# continuous motion within the same room.
+		var _current_room_internal = RoomLightDetector.get_room_name_at(global_position)
+		if _current_room_internal != _last_known_room_internal:
+			_last_known_room_internal = _current_room_internal
+			_stuck_timer = 0.0
 		
 		# [TRACE] Log stuck detection state for INDOOR_SEARCH
 		var real_vel_stuck = get_real_velocity()
@@ -3972,7 +4002,35 @@ func _update_collision_layers() -> void:
 			collision_mask |= (1 << (COLLISION_LAYER_PLAYER - 1)) # Layer 2: Player
 			# NOTE: Layers 3 (Tree) and 4 (Rock) are intentionally excluded.
 			
-		EntityAI.State.STALK, EntityAI.State.CHARGE, EntityAI.State.APPROACH_WINDOW, EntityAI.State.WINDOW_PEEK, EntityAI.State.INDOOR_SEARCH, EntityAI.State.FLINCH, EntityAI.State.ATTACK_LAMP, EntityAI.State.RETREAT:
+		EntityAI.State.STALK:
+			# STALK: Tree/rock collision DISABLED so the Entity can pathfind
+			# smoothly from the forest to the cabin porch/entry point without
+			# getting snagged on foliage. Cabin geometry (Layer 1) and the
+			# Player body (Layer 2) still block, preserving wall/doorframe
+			# collisions during the approach.
+			collision_mask = 0
+			collision_mask |= (1 << (COLLISION_LAYER_CABIN - 1))  # Layer 1: Cabin
+			collision_mask |= (1 << (COLLISION_LAYER_PLAYER - 1)) # Layer 2: Player
+			# NOTE: Layers 3 (Tree) and 4 (Rock) are intentionally excluded.
+			# The Entity phases through foliage while stalking the cabin.
+
+		EntityAI.State.INDOOR_SEARCH:
+			# INDOOR_SEARCH: Cabin geometry (Layer 1) removed from the mask.
+			# The Entity is inside the cabin; the baked NavigationMesh already
+			# confines it to walkable interior spaces (walls are baked out of
+			# the navmesh). Keeping Layer 1 in the mask means the physics
+			# capsule catches on interior doorframe lip colliders, jamming
+			# the Entity between rooms (e.g., Hallroom ↔ Livingroom).
+			# The NavMesh routes around walls, so Layer 1 is redundant for
+			# interior navigation and only causes stuck states. Exterior walls
+			# are also Layer 1, but the nav agent never routes through them,
+			# so the Entity cannot phase out of the cabin.
+			collision_mask = 0
+			collision_mask |= (1 << (COLLISION_LAYER_PLAYER - 1)) # Layer 2: Player
+			# NOTE: Layers 1 (Cabin), 3 (Tree), 4 (Rock) intentionally excluded.
+			# Indoor search is fully NavMesh-confined.
+
+		EntityAI.State.CHARGE, EntityAI.State.APPROACH_WINDOW, EntityAI.State.WINDOW_PEEK, EntityAI.State.FLINCH, EntityAI.State.ATTACK_LAMP, EntityAI.State.RETREAT:
 			# Full collision mode: Re-enable ALL collision layers.
 			# The Entity must collide with everything during aggressive states
 			# to prevent phasing through doors, window frames, or cabin walls.
