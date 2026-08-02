@@ -3767,7 +3767,13 @@ func _indoor_search_state(delta: float) -> void:
 					q.collision_mask |= (1 << (4 - 1))  # Layer 4: Rocks
 					var hit = space.intersect_ray(q)
 					if hit:
-						landing_pos.y = hit.position.y + 0.1
+						# ─── RAISE LANDING (BUG FIX) ─────────────────────────────
+						# Previously landed at hit.position.y + 0.1, which left the
+						# Entity clipping slightly into the cabin floor. Raise the
+						# landing to +0.6 so it rests at the same height the
+						# controller's hover-snap uses (floor_y + 0.6), matching the
+						# player's resting height and clearing the floor mesh.
+						landing_pos.y = hit.position.y + 0.6
 						print("[INDOOR_SEARCH] Phase A: Floor ray hit at Y=%.2f. Landing on real floor (Y=%.2f)." % [hit.position.y, landing_pos.y])
 					else:
 						print("[INDOOR_SEARCH] Phase A: Floor ray missed. Keeping NavMesh Y=%.2f." % snapped.y)

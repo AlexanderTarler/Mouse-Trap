@@ -2257,7 +2257,7 @@ func _physics_process(delta: float) -> void:
 				# old Floating-Sphere system produced.
 				var floor_y = _floor_ray.get_collision_point().y
 				if global_position.y > floor_y + 0.6:
-					global_position.y = floor_y + 0.5
+					global_position.y = floor_y + 0.6
 					velocity.y = 0.0
 		
 		var flat_vel = Vector2(velocity.x, velocity.z)
