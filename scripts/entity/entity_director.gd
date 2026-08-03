@@ -124,6 +124,15 @@ var _nav_cache_timer: float = 0.0
 ## Refresh interval for the navigation query cache.
 const NAV_CACHE_INTERVAL: float = 0.5
 
+## ─── OVERCHARGE STANDOFF ──────────────────────────────────────────────────
+## Duration (in seconds) the player must continuously hit the Entity with the
+## OVERCHARGE flashlight beam while both are indoors before the Entity RETREATs.
+## While the timer is below this threshold, the Entity staggers in place
+## (STANDOFF — zero velocity). When reached, the Director forces RETREAT through
+## the breach window.
+## Reset to 0.0 on ANY break (LoS lost, flashlight off, battery death, release).
+const OVERCHARGE_STARE_THRESHOLD: float = 1.5
+
 ## Cached NightManager reference — resolved once per frame in evaluate_master_state()
 ## to avoid repeated get_node_or_null("/root/NightManager") lookups across tiers.
 ## Set at the top of evaluate_master_state() and read by tier methods that need it.
@@ -730,6 +739,92 @@ func _capture_flinch_window_id(entity: CharacterBody3D) -> void:
 		if not window_id.is_empty():
 			entity.add_flinch_blacklisted_window(window_id)
 
+## Plays a high-pitched pained scream when the indoor overcharge standoff
+## completes and the Entity RETREATs. Raises the growl pitch to 1.8 to
+## differentiate the pained reaction from aggression growls — this matches
+## the overload stun pattern in entity_controller.trigger_overload_stun().
+func _play_indoor_retreat_scream(entity: CharacterBody3D) -> void:
+	var growl = entity.get_growl_audio()
+	if growl:
+		growl.pitch_scale = 1.8
+		growl.play()
+
+## ─── INDOOR FLASHLIGHT REACTION MATRIX (Overcharge Standoff) ────────────────
+## Evaluates the flashlight reaction when the Entity is PHYSICALLY INSIDE the
+## cabin. This is the core of the Hold-to-Overcharge defense mechanic:
+##
+##   STANDARD BEAM (is_overcharged = false):
+##     IGNORED — the Entity continues advancing toward the player. The standard
+##     beam no longer triggers RETREAT indoors. Returns -1 (fall through) or
+##     INDOOR_SEARCH if the Entity was frozen in a STANDOFF that got interrupted.
+##
+##   OVERCHARGE BEAM (is_overcharged = true):
+##     - While overcharge_stare_timer < OVERCHARGE_STARE_THRESHOLD (1.5s):
+##       The Entity staggers in place — STANDOFF (zero velocity) pins it down.
+##       The stagger lock is broken, and on_player_stare() keeps accumulating
+##       the stare timer on the Blackboard.
+##     - When overcharge_stare_timer >= 1.5s:
+##       The standoff completes — the Entity RETREATs through the nearest
+##       breach window, dropping confidence to 20%.
+##
+## Returns: The target state (STANDOFF / RETREAT / INDOOR_SEARCH), or -1 if no
+##          indoor reaction applies (Entity is outside → caller falls through
+##          to the standard outdoor matrix).
+func _tier_0_indoor_flashlight(entity: CharacterBody3D, state: int) -> int:
+	# Only applies when the Entity is physically inside the cabin.
+	var entity_inside = entity.has_method("is_physically_inside") and entity.is_physically_inside()
+	if not entity_inside:
+		return -1
+	
+	# ─── OVERCHARGE BEAM: INDOOR STANDOFF → RETREAT ─────────────────────
+	if entity.is_overcharged:
+		# Forcefully break any existing task locks so the stagger can begin.
+		# The overcharge reaction is a critical survival override and must be
+		# able to interrupt any ongoing indoor behavior (patrol, scan, breach).
+		entity.state_locked = false
+		entity.is_approach_finished = false
+		entity.is_climb_finished = false
+		entity.is_flinch_finished = false
+		entity.is_retreat_arrived = false
+		entity.is_window_unbarricaded = false
+		entity.is_observe_finished = false
+		
+		# Overcharge stare progress toward the 1.5s RETREAT threshold.
+		var stare: float = entity.overcharge_stare_timer
+		if stare >= OVERCHARGE_STARE_THRESHOLD:
+			# ─── 1.5s STANDOFF COMPLETE → RETREAT ─────────────────────
+			# The player successfully drove the Entity off indoors. The Entity
+			# flees through the nearest breach window (pathfind → teleport
+			# outside → FLINCH).
+			entity.is_indoor_retreat = true
+			var conf_mod = entity.get_confidence_module()
+			if conf_mod:
+				conf_mod.set_confidence(20.0)
+			# ─── PAIN SCREAM: The overcharge burned the Entity — emit a
+			# high-pitched pained growl as it flees. Pitch-raised to
+			# differentiate from aggression growls (matches the overload
+			# stun pattern).
+			_play_indoor_retreat_scream(entity)
+			print("[Director] INDOOR OVERCHARGE: Standoff complete (stare=%.2fs >= %.1fs). TRIGGERING RETREAT!" % [stare, OVERCHARGE_STARE_THRESHOLD])
+			return EntityAI.State.RETREAT
+		
+		# ─── STAGGER IN PLACE (STANDOFF = zero velocity) ─────────────
+		# The Entity is pinned by the overcharge beam. The stare timer keeps
+		# accumulating in entity_controller.on_player_stare() while the player
+		# maintains line-of-sight. If the beam breaks, the timer resets to 0
+		# and the Entity resumes its hunt (handled below via INDOOR_SEARCH).
+		print("[Director] INDOOR OVERCHARGE: Staggering in place (stare=%.2fs / %.1fs)." % [stare, OVERCHARGE_STARE_THRESHOLD])
+		return EntityAI.State.STANDOFF
+	
+	# ─── STANDARD BEAM: IGNORED — Entity continues advancing ──────────
+	# The standard beam no longer triggers RETREAT indoors. The Entity presses
+	# toward the player (run to the door/computer room and overcharge to defend).
+	if state == EntityAI.State.STANDOFF:
+		# The player interrupted an overcharge standoff without completing it
+		# (released F → standard beam). Resume the indoor hunt immediately.
+		return EntityAI.State.INDOOR_SEARCH
+	return -1
+
 ## Evaluates flashlight-based reactions AND light-switch indoor retreat.
 ## These are checked BEFORE the state_locked guard so that reactions can
 ## forcefully interrupt any ongoing task (approach, climb, etc.).
@@ -772,6 +867,16 @@ func _capture_flinch_window_id(entity: CharacterBody3D) -> void:
 ##
 ## Returns: The target state, or -1 if no flashlight reaction applies.
 func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
+	# ─── FLINCH STATE LOCK PRESERVATION (TOP - DEFENSE IN DEPTH) ─────
+	# If the Entity is already in FLINCH and state_locked is true, the
+	# FLINCH handler is running its 5-second uninterruptible escape sprint.
+	# Preserve the lock NO MATTER WHAT the Blackboard says — including when
+	# the player drops from overcharge to a standard beam (which would
+	# otherwise re-evaluate to STANDOFF outdoors). This guarantees FLINCH
+	# runs to completion, so CHARGE/STALK/STANDOFF cannot interrupt it.
+	if state == EntityAI.State.FLINCH and entity.state_locked:
+		return EntityAI.State.FLINCH
+	
 	# ─── LIT ROOM REACTIVE EXIT (APPROACH_WINDOW / WINDOW_PEEK) ─────
 	# If the Entity is approaching or peeking a window, and that window's
 	# room becomes lit (player turned on the light), immediately FLINCH.
@@ -826,19 +931,21 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 	if not entity.is_illuminated:
 		return -1
 	
-	# ─── FLINCH STATE LOCK PRESERVATION ──────────────────────────────
-	# If the Entity is already in FLINCH and state_locked is true, the
-	# indoor retreat handler just set this state. Preserve the lock so
-	# the FLINCH handler can complete its escape sprint.
-	if state == EntityAI.State.FLINCH and entity.state_locked:
-		return EntityAI.State.FLINCH
-	
 	# ─── CHARGE IGNORES FLASHLIGHT ──────────────────────────────────
 	# The Entity has committed to a charge attack. It will NOT flinch,
 	# retreat, or standoff. The flashlight has no effect on a charging
 	# Entity — it continues sprinting at 3x speed toward the player.
 	if state == EntityAI.State.CHARGE:
 		return EntityAI.State.CHARGE
+	
+	# ─── INDOOR OVERCHARGE STANDOFF (checked BEFORE anti-flap) ──────────
+	# The indoor reaction matrix runs unconditionally whenever the Entity is
+	# illuminated — even during the anti-flap cooldown. This guarantees the
+	# overcharge stagger and the 1.5s RETREAT can never be blocked by the
+	# anti-flap timer or the Director's throttle.
+	var indoor_flashlight_state = _tier_0_indoor_flashlight(entity, state)
+	if indoor_flashlight_state >= 0:
+		return indoor_flashlight_state
 	
 	# Forcefully break any existing task locks so we can react
 	entity.state_locked = false
@@ -902,25 +1009,20 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 		var player_inside = is_player_inside
 		
 		if entity_inside and player_inside:
-			# BOTH INSIDE: The Entity is caught by the flashlight inside
-			# the cabin. It must RETREAT through the breach window.
-			entity.is_indoor_retreat = true
-			var conf_mod = entity.get_confidence_module()
-			if conf_mod:
-				conf_mod.set_confidence(20.0)
-			print("[Director] MATRIX: RETREAT (Entity inside + Player inside).")
-			return EntityAI.State.RETREAT
+			# BOTH INSIDE: Indoor reactions are handled by
+			# _tier_0_indoor_flashlight() above. The standard beam is IGNORED
+			# (the Entity keeps advancing), while the overcharge beam drives the
+			# standoff → RETREAT. This block is only reachable during a brief
+			# transition — hold the indoor hunt.
+			print("[Director] MATRIX: Both inside — standard beam ignored (overcharge standoff handles defensive reactions).")
+			return -1
 		
 		if entity_inside and not player_inside:
-			# ENTITY INSIDE, PLAYER BELIEVED OUTSIDE: The Entity is inside
-			# but it believes the player is outside (stale belief). Still
-			# retreat — the flashlight is blinding regardless of belief.
-			entity.is_indoor_retreat = true
-			var conf_mod = entity.get_confidence_module()
-			if conf_mod:
-				conf_mod.set_confidence(20.0)
-			print("[Director] MATRIX: RETREAT (Entity inside + Player believed outside — stale belief).")
-			return EntityAI.State.RETREAT
+			# ENTITY INSIDE, PLAYER BELIEVED OUTSIDE (stale belief): Same
+			# indoor handling — the standard beam is ignored. The Entity's
+			# physical position overrides its belief for flashlight reactions.
+			print("[Director] MATRIX: Entity inside (stale outside belief) — standard beam ignored.")
+			return -1
 		
 		if not entity_inside and player_inside:
 			# ENTITY OUTSIDE, PLAYER INSIDE: The Entity is outside and the
@@ -941,14 +1043,24 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 		pass
 	
 	# ─── INDOOR AGGRESSION STATE → RETREAT (Player inside, Entity inside) ──
-
-	# If the Entity is inside the cabin (INDOOR_SEARCH) and the player shines
-	# the flashlight, the Entity must RETREAT — run to the nearest
-	# broken/unboarded window, leave through it, then FLINCH.
-	# CHASE is NOT included here — CHASE is outdoor pursuit, not indoor.
+	# Only the OVERCHARGE beam triggers an indoor RETREAT, and only after the
+	# 1.5s standoff completes. The standard beam is IGNORED — the Entity keeps
+	# advancing toward the player. This gate runs even during the anti-flap
+	# cooldown window (the paths above may have returned -1).
 	if state == EntityAI.State.INDOOR_SEARCH:
-		# Set the indoor retreat flag so the RETREAT handler knows to
-		# pathfind to the breach window instead of the farthest treeline.
+		if not entity.is_overcharged:
+			# Standard beam indoors = no reaction. The Entity presses forward
+			# and continues its indoor hunt.
+			return EntityAI.State.INDOOR_SEARCH
+		
+		var overcharge_stare = entity.overcharge_stare_timer
+		if overcharge_stare < OVERCHARGE_STARE_THRESHOLD:
+			# Still staggering in place — the 1.5s standoff is not complete.
+			# Hold the Entity pinned (zero velocity) until the player finishes
+			# the stare or breaks the beam.
+			return EntityAI.State.STANDOFF
+		
+		# Standoff complete — flee through the nearest breach window.
 		entity.is_indoor_retreat = true
 		
 		# Drop confidence to 20% — the Entity is spooked by being caught inside
@@ -989,6 +1101,15 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 		return EntityAI.State.FLINCH
 	
 	# ─── PLAYER INSIDE, ENTITY OUTSIDE → FLINCH ─────────────────────
+	# GATE: If the Entity is physically inside the cabin, never FLINCH — indoor
+	# reactions are exclusively handled by _tier_0_indoor_flashlight() above
+	# (standard beam ignored, overcharge beam → standoff → RETREAT).
+	if entity.has_method("is_physically_inside") and entity.is_physically_inside():
+		if state == EntityAI.State.STANDOFF:
+			# Frozen by an interrupted standoff — resume the indoor hunt.
+			return EntityAI.State.INDOOR_SEARCH
+		return -1
+	
 	# If the player is inside the cabin and shines the flashlight at the
 	# Entity (which is outside), the Entity loses 15% confidence and goes
 	# into FLINCH state — it sprints away from the cabin for 5.0 seconds.
@@ -1006,15 +1127,34 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 		
 		return EntityAI.State.FLINCH
 	
-	# ─── OUTDOOR STARE → STANDOFF or CHARGE ─────────────────────────
+	# ─── OUTDOOR STARE → STANDOFF / CHARGE / OVERCHARGE FLINCH ─────
+	# OVERCHARGE BEAM OVERRIDE: While BOTH the player and the Entity are
+	# outside, holding the overcharge beam on the Entity for 1.5s makes it
+	# FLINCH — a fast lateral escape sprint (running_crawl animation,
+	# 1.5x speed, 5.0 seconds) — instead of the standard CHARGE. This
+	# rewards the overcharge precision outdoors with a defensive repulse
+	# rather than provoking the Entity's attack.
 	var stare_time = entity.player_stare_timer
+	if entity.is_overcharged and stare_time >= 1.5:
+		# ─── OUTDOOR OVERCHARGE STANDOFF COMPLETE → FLINCH ───────────
+		# Apply the same one-shot confidence penalty and re-approach
+		# cooldown as the player-inside FLINCH path, then sprint away.
+		_apply_flinch_confidence_penalty(entity)
+		_flinch_approach_cooldown = FLINCH_REAPPROACH_COOLDOWN
+		_state_entry_confidence = -1.0
+		print("[Director] OUTDOOR OVERCHARGE: Standoff complete (stare=%.2fs >= 1.5s). TRIGGERING FLINCH!" % stare_time)
+		return EntityAI.State.FLINCH
+	
 	if stare_time >= 1.5:
-		# Player stared too long while outside — CHARGE at 3x speed
+		# Player stared too long while outside — CHARGE at 3x speed.
+		# Only the STANDARD beam takes this path; the overcharge beam
+		# is intercepted above.
 		return EntityAI.State.CHARGE
 	
 	# Player is outside staring — STANDOFF (frozen in place, stunned)
 	# the flashlight. If the player stops shining, this immobility ends.
-	# When stare_time reaches 1.5s, the Entity enters CHARGE state above.
+	# When stare_time reaches 1.5s, the Entity enters CHARGE (standard
+	# beam) or FLINCH (overcharge beam) state above.
 	return EntityAI.State.STANDOFF
 
 

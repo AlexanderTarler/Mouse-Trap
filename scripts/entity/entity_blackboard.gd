@@ -99,6 +99,15 @@ var thinks_player_is_inside: bool = true
 ## How long the player has been staring at the Entity.
 var player_stare_timer: float = 0.0
 
+## Whether the player's flashlight is in OVERCHARGE mode, driving the
+## indoor standoff (stagger → RETREAT after 1.5s continuous stare).
+var is_overcharged: bool = false
+
+## How long the Entity has been continuously hit by the OVERCHARGE beam
+## indoors. Reset to 0.0 on any break (LoS lost, flashlight off, battery death).
+## Mirrors entity_controller.overcharge_stare_timer for debug/overlay use.
+var overcharge_stare_timer: float = 0.0
+
 ## Last known world-space position of the player.
 var last_known_position: Vector3 = Vector3.ZERO
 
@@ -233,6 +242,8 @@ func to_debug_dict() -> Dictionary:
 	return {
 		"state_locked": state_locked,
 		"is_illuminated": is_illuminated,
+		"is_overcharged": is_overcharged,
+		"overcharge_stare_timer": overcharge_stare_timer,
 		"thinks_player_is_inside": thinks_player_is_inside,
 		"player_stare_timer": player_stare_timer,
 		"state": state,

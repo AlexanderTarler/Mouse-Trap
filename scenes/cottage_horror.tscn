@@ -161,7 +161,6 @@
 [ext_resource type="PackedScene" uid="uid://djelpwbnfmqo0" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Coreopsis/Coreopsis.fbx" id="146_i4sg3"]
 [ext_resource type="PackedScene" uid="uid://btv6jrpkldxui" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/wardrobe_mp_1.glb" id="159_mnguq"]
 [ext_resource type="PackedScene" uid="uid://b4x6xdujhoya1" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/supply_crate_1.glb" id="160_eb5pj"]
-[ext_resource type="PackedScene" uid="uid://dvei6d2vk810t" path="res://assets/PSX Mega Pack II/Models/other-formats/FBX/Modular Props/fence_e_1.fbx" id="162_2rri1"]
 [ext_resource type="PackedScene" uid="uid://foyjpk5knjsk" path="res://assets/PSX Nature/Models/GLB/pine_tree_n_1_2.glb" id="163_de5mx"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_50dpl"]
@@ -324,9 +323,6 @@ size = Vector3(2.456, 3.108, 260)
 [sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_oq0n2"]
 data = PackedVector3Array(0, 0, 0, 0.48, 0, 0.2961, 0.48, 0, 0, 0, 0, 0, 0, 0, 0.2961, 0.48, 0, 0.2961, 0, 0, -0.2961, 0, 0, 0, 0.48, 0, 0, 0, 0, -0.2961, 0.48, 0, 0, 0.48, 0, -0.2961, -0.48, 0, -0.2961, 0, 0, 0, 0, 0, -0.2961, -0.48, 0, -0.2961, -0.48, 0, 0, 0, 0, 0, -0.48, 0, 0, 0, 0, 0.2961, 0, 0, 0, -0.48, 0, 0, -0.48, 0, 0.2961, 0, 0, 0.2961, -0.4606, 0.48, 0, -0.4606, 0.0232, 0.27989998, -0.4606, 0.48, 0.27989998, -0.4606, 0.48, 0, -0.4606, 0.0232, 0, -0.4606, 0.0232, 0.27989998, -0.4606, 0.48, 0, -0.48, 0.48, -0.2961, -0.4606, 0.48, -0.27989998, -0.4606, 0.48, -0.27989998, -0.48, 0.48, -0.2961, 0, 0.48, -0.2961, -0.4606, 0.48, 0, -0.48, 0.48, 0, -0.48, 0.48, -0.2961, -0.4606, 0.48, 0.27989998, -0.48, 0.48, 0, -0.4606, 0.48, 0, -0.4606, 0.48, 0.27989998, -0.48, 0.48, 0.2961, -0.48, 0.48, 0, -0.4606, 0.48, -0.27989998, 0, 0.48, -0.2961, 0, 0.48, -0.27989998, 0, 0.48, -0.27989998, 0, 0.48, -0.2961, 0.48, 0.48, -0.2961, 0, 0.48, -0.27989998, 0.48, 0.48, -0.2961, 0.4606, 0.48, -0.27989998, 0.4606, 0.48, -0.27989998, 0.48, 0.48, -0.2961, 0.48, 0.48, 0, 0.4606, 0.48, -0.27989998, 0.48, 0.48, 0, 0.4606, 0.48, 0, 0.4606, 0.48, 0, 0.48, 0.48, 0, 0.48, 0.48, 0.2961, 0.4606, 0.48, 0, 0.48, 0.48, 0.2961, 0.4606, 0.48, 0.27989998, -0.48, 0, 0, -0.48, 0.48, 0.2961, -0.48, 0, 0.2961, -0.48, 0, 0, -0.48, 0.48, 0, -0.48, 0.48, 0.2961, 0, 0, 0.2961, 0.48, 0.48, 0.2961, 0.48, 0, 0.2961, 0, 0, 0.2961, 0, 0.48, 0.2961, 0.48, 0.48, 0.2961, -0.48, 0, 0.2961, 0, 0.48, 0.2961, 0, 0, 0.2961, -0.48, 0, 0.2961, -0.48, 0.48, 0.2961, 0, 0.48, 0.2961, 0, 0.48, -0.27989998, -0.4606, 0.0232, -0.27989998, -0.4606, 0.48, -0.27989998, 0, 0.48, -0.27989998, 0, 0.0232, -0.27989998, -0.4606, 0.0232, -0.27989998, 0, 0, -0.2961, 0.48, 0.48, -0.2961, 0, 0.48, -0.2961, 0, 0, -0.2961, 0.48, 0, -0.2961, 0.48, 0.48, -0.2961, 0.48, 0.48, 0, 0.48, 0, -0.2961, 0.48, 0, 0, 0.48, 0.48, 0, 0.48, 0.48, -0.2961, 0.48, 0, -0.2961, 0, 0.0232, 0, -0.4606, 0.0232, 0.27989998, -0.4606, 0.0232, 0, 0, 0.0232, 0, 0, 0.0232, 0.27989998, -0.4606, 0.0232, 0.27989998, 0, 0.0232, -0.27989998, 0, 0.0232, 0, -0.4606, 0.0232, 0, 0, 0.0232, -0.27989998, -0.4606, 0.0232, 0, -0.4606, 0.0232, -0.27989998, 0.4606, 0.0232, -0.27989998, 0, 0.0232, 0, 0, 0.0232, -0.27989998, 0.4606, 0.0232, -0.27989998, 0.4606, 0.0232, 0, 0, 0.0232, 0, 0.4606, 0.0232, 0, 0, 0.0232, 0.27989998, 0, 0.0232, 0, 0.4606, 0.0232, 0, 0.4606, 0.0232, 0.27989998, 0, 0.0232, 0.27989998, 0, 0.48, 0.27989998, -0.48, 0.48, 0.2961, -0.4606, 0.48, 0.27989998, 0, 0.48, 0.27989998, 0, 0.48, 0.2961, -0.48, 0.48, 0.2961, 0.4606, 0.48, 0.27989998, 0, 0.48, 0.2961, 0, 0.48, 0.27989998, 0.4606, 0.48, 0.27989998, 0.48, 0.48, 0.2961, 0, 0.48, 0.2961, 0.4606, 0.48, 0, 0.4606, 0.0232, -0.27989998, 0.4606, 0.48, -0.27989998, 0.4606, 0.48, 0, 0.4606, 0.0232, 0, 0.4606, 0.0232, -0.27989998, 0, 0.48, 0.27989998, 0.4606, 0.0232, 0.27989998, 0.4606, 0.48, 0.27989998, 0, 0.48, 0.27989998, 0, 0.0232, 0.27989998, 0.4606, 0.0232, 0.27989998, 0.4606, 0.48, 0.27989998, 0.4606, 0.0232, 0, 0.4606, 0.48, 0, 0.4606, 0.48, 0.27989998, 0.4606, 0.0232, 0.27989998, 0.4606, 0.0232, 0, 0.48, 0.48, 0.2961, 0.48, 0, 0, 0.48, 0, 0.2961, 0.48, 0.48, 0.2961, 0.48, 0.48, 0, 0.48, 0, 0, -0.48, 0, -0.2961, -0.48, 0.48, 0, -0.48, 0, 0, -0.48, 0, -0.2961, -0.48, 0.48, -0.2961, -0.48, 0.48, 0, -0.4606, 0.48, -0.27989998, -0.4606, 0.0232, 0, -0.4606, 0.48, 0, -0.4606, 0.48, -0.27989998, -0.4606, 0.0232, -0.27989998, -0.4606, 0.0232, 0, -0.4606, 0.48, 0.27989998, 0, 0.0232, 0.27989998, 0, 0.48, 0.27989998, -0.4606, 0.48, 0.27989998, -0.4606, 0.0232, 0.27989998, 0, 0.0232, 0.27989998, -0.48, 0, -0.2961, 0, 0.48, -0.2961, -0.48, 0.48, -0.2961, -0.48, 0, -0.2961, 0, 0, -0.2961, 0, 0.48, -0.2961, 0.4606, 0.48, -0.27989998, 0, 0.0232, -0.27989998, 0, 0.48, -0.27989998, 0.4606, 0.48, -0.27989998, 0.4606, 0.0232, -0.27989998, 0, 0.0232, -0.27989998)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_de5mx"]
-size = Vector3(0.001, 2.8167725, 10.550842)
-
 [node name="CottageHorror" type="Node3D" unique_id=110475989]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=715701991]
@@ -392,28 +388,28 @@ fuse_waypoint = NodePath("../EntityWaypoints/EntityFuseWaypoint")
 door_waypoint_marker = NodePath("../NavigationRegion3D/Cabin/Door/EntityDoorWaypoint")
 
 [node name="GeneralSkeleton" parent="TheEntity/MonsterModel/Armature" parent_id_path=PackedInt32Array(133456140, 1066769687, 719992929) index="0" unique_id=519438561]
-bones/1/rotation = Quaternion(0.10129963, -0.17984171, -0.0165671, 0.9783256)
-bones/3/rotation = Quaternion(0.14935705, 0.35425767, 0.9081792, -0.1655432)
-bones/4/rotation = Quaternion(-0.03698634, 0.92044455, -0.38214675, 0.07333428)
-bones/5/rotation = Quaternion(-0.107575014, 0.6445157, -0.74738866, 0.12015544)
-bones/7/rotation = Quaternion(1.8449487e-08, 0.9999541, 0.009582836, -4.3070983e-08)
-bones/18/rotation = Quaternion(-0.1346493, 0.2952327, 0.9397753, 0.10737598)
-bones/21/rotation = Quaternion(0.040008344, 0.93690383, -0.342692, -0.056327075)
-bones/22/rotation = Quaternion(0.10462894, 0.6358131, -0.7558015, -0.11644133)
-bones/23/rotation = Quaternion(-3.862069e-09, 1, 0.0002060068, -2.8397338e-08)
-bones/33/rotation = Quaternion(0.018408252, -0.004808825, 0.015436472, 0.99969983)
-bones/34/rotation = Quaternion(0.061833158, -0.012646649, 0.0095326, 0.9979609)
-bones/35/rotation = Quaternion(0.06195847, -0.011590214, 0.010247207, 0.9979589)
-bones/36/rotation = Quaternion(-0.049662538, 0.026997551, -0.016224863, 0.99826926)
-bones/38/rotation = Quaternion(-0.19146545, 0.121819735, -0.035086695, 0.9732779)
-bones/49/rotation = Quaternion(0.56227547, 0.43107826, 0.5251959, -0.47136736)
-bones/50/rotation = Quaternion(0.18056953, 0.8781606, -0.44112536, -0.04046099)
-bones/51/rotation = Quaternion(0.472753, -0.525837, 0.47275335, 0.52583677)
-bones/55/rotation = Quaternion(-0.15433128, 0.7974859, 0.18305507, 0.55379504)
-bones/58/rotation = Quaternion(0.51956826, -0.45458633, -0.5757428, -0.43808728)
-bones/59/rotation = Quaternion(-0.2086685, 0.8377235, -0.5023554, -0.048124097)
-bones/62/rotation = Quaternion(0.48502094, 0.514543, -0.4850217, 0.5145429)
-bones/66/rotation = Quaternion(0.06889318, -0.8559287, -0.022313057, 0.5119981)
+bones/1/rotation = Quaternion(0.100155026, -0.17648296, -0.0182157, 0.9790256)
+bones/3/rotation = Quaternion(0.14772752, 0.35462272, 0.90827423, -0.1657022)
+bones/4/rotation = Quaternion(-0.03822635, 0.9201144, -0.38421953, 0.06560319)
+bones/5/rotation = Quaternion(-0.10725059, 0.64239144, -0.74931514, 0.119822726)
+bones/7/rotation = Quaternion(6.153467e-08, 0.99996614, 0.008227457, -6.690946e-08)
+bones/18/rotation = Quaternion(-0.13595222, 0.29510632, 0.93955827, 0.10797932)
+bones/21/rotation = Quaternion(0.03964353, 0.9344106, -0.348475, -0.06221484)
+bones/22/rotation = Quaternion(0.10071781, 0.6370404, -0.75594807, -0.11215218)
+bones/23/rotation = Quaternion(-5.870472e-08, 0.99999964, 0.00091219426, 6.6837225e-09)
+bones/33/rotation = Quaternion(0.021313766, -0.004743718, 0.015959375, 0.99963427)
+bones/34/rotation = Quaternion(0.06664818, -0.009564632, 0.009883528, 0.99768174)
+bones/35/rotation = Quaternion(0.06672679, -0.008547783, 0.010298968, 0.99768156)
+bones/36/rotation = Quaternion(-0.052543115, 0.027699348, -0.018787274, 0.9980577)
+bones/38/rotation = Quaternion(-0.19690187, 0.12153152, -0.031732522, 0.97234404)
+bones/49/rotation = Quaternion(0.5630666, 0.4303708, 0.52486265, -0.47144055)
+bones/50/rotation = Quaternion(0.18200505, 0.87710786, -0.4433202, -0.031987622)
+bones/51/rotation = Quaternion(0.47579044, -0.52309, 0.47579122, 0.5230899)
+bones/55/rotation = Quaternion(-0.14897166, 0.7967385, 0.18677697, 0.55509436)
+bones/58/rotation = Quaternion(0.51891947, -0.45564675, -0.575117, -0.4385761)
+bones/59/rotation = Quaternion(-0.20554486, 0.8395738, -0.50046265, -0.04903519)
+bones/62/rotation = Quaternion(0.49386132, 0.50606394, -0.4938621, 0.5060638)
+bones/66/rotation = Quaternion(0.0620574, -0.85004276, -0.021107804, 0.522619)
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1000000002]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.015592637, 0, -0.084306605)
@@ -3520,34 +3516,6 @@ transform = Transform3D(-1, 8.742278e-08, 3.821371e-15, 0, -4.371139e-08, 1, 8.7
 
 [node name="CarWreck" parent="." unique_id=822693322 instance=ExtResource("99_yfgex")]
 transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 33.569527, 0.025000177, -72.920944)
-
-[node name="ChainFence" type="StaticBody3D" parent="." unique_id=1688999559]
-
-[node name="fence_e_1" parent="ChainFence" unique_id=1944545877 instance=ExtResource("162_2rri1")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -23.038292, 0.024999619, 6.992376)
-
-[node name="fence_e_2" parent="ChainFence" unique_id=1381043325 instance=ExtResource("162_2rri1")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.54195, 0.024999619, 6.992376)
-
-[node name="fence_e_3" parent="ChainFence" unique_id=2147166657 instance=ExtResource("162_2rri1")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.037752, 0.024999619, 6.992376)
-
-[node name="fence_e_4" parent="ChainFence" unique_id=652353540 instance=ExtResource("162_2rri1")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -14.2627535, 0.024999619, 5.1850486)
-
-[node name="fence_e_5" parent="ChainFence" unique_id=1370729543 instance=ExtResource("162_2rri1")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -14.2627535, 0.024999619, 1.6832943)
-
-[node name="fence_e_6" parent="ChainFence" unique_id=1717621351 instance=ExtResource("162_2rri1")]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -14.2627535, 0.024999619, -1.8091352)
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="ChainFence" unique_id=663732962]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.339325, 0.90838623, 1.6934509)
-shape = SubResource("BoxShape3D_de5mx")
-
-[node name="CollisionShape3D2" type="CollisionShape3D" parent="ChainFence" unique_id=94690659]
-transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, -19.546337, 0.7621467, 6.966917)
-shape = SubResource("BoxShape3D_de5mx")
 
 [editable path="TheEntity"]
 [editable path="TheEntity/MonsterModel"]

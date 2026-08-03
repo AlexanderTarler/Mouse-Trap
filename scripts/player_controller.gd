@@ -47,6 +47,22 @@ var _is_crouching: bool = false
 var _flashlight_on: bool = false
 var _has_flashlight: bool = false
 
+# ─── FLASHLIGHT TAP-vs-HOLD INPUT ─────────────────────────────────────────
+## Minimum hold duration (seconds) before the flashlight enters overcharge.
+## Taps shorter than this toggle the flashlight ON/OFF. Holds at/above this
+## activate the overcharge beam.
+const FLASHLIGHT_OVERCHARGE_HOLD_TIME: float = 0.25
+
+## Timestamp (seconds from Time.get_ticks_msec) when F was pressed.
+var _flashlight_press_time: float = 0.0
+
+## Whether the F key is currently held down.
+var _flashlight_key_held: bool = false
+
+## Whether the flashlight was ON before the current F press.
+## Used to distinguish "tap to turn OFF" from "tap turned it ON, leave it ON".
+var _flashlight_was_on_before_press: bool = false
+
 # Crosshair
 var _crosshair: Control
 
@@ -425,8 +441,11 @@ func _input(event: InputEvent) -> void:
 						tm.call_deferred("trigger", "notebook")
 					_movement_keys_pressed.clear()  # prevent re-check
 	
-	if event is InputEventKey and event.keycode == KEY_F and event.pressed:
-		_toggle_flashlight()
+	if event is InputEventKey and event.keycode == KEY_F and not event.echo:
+		if event.pressed:
+			_flashlight_key_pressed()
+		else:
+			_flashlight_key_released()
 	
 	# ─── NOTEBOOK OPEN: Q/E flip pages, E is NOT interact ──────────
 	if _notebook and _notebook.visible:
@@ -535,6 +554,69 @@ func _toggle_flashlight() -> void:
 		sfx_player.finished.connect(sfx_player.queue_free)
 	
 	print("[Player Flashlight] Toggled! is_on=%s visible=%s battery=%.1f" % [_flashlight.is_on, _flashlight.visible, _flashlight.get_battery_percent()])
+
+
+## ─── FLASHLIGHT TAP vs HOLD ─────────────────────────────────────────────
+## Called on F key press (edge-triggered, no echo).
+## - Flashlight OFF → turn ON immediately (zero latency), track for hold.
+## - Flashlight ON → defer the toggle decision to release or hold threshold.
+func _flashlight_key_pressed() -> void:
+	if not _has_flashlight or not _flashlight:
+		# Show a hint that the player needs to find the flashlight first
+		print("[Player] You don't have a flashlight yet! Find one in the cabin.")
+		return
+	
+	_flashlight_key_held = true
+	_flashlight_press_time = Time.get_ticks_msec() / 1000.0
+	_flashlight_was_on_before_press = _flashlight.is_on
+	
+	if not _flashlight.is_on:
+		# Turn ON immediately — zero input latency for the common action.
+		_toggle_flashlight()
+
+
+## Called every frame from _process() while F may be held. Once the hold
+## duration reaches the overcharge threshold AND the flashlight is ON,
+## activate the overcharge beam.
+func _update_flashlight_overcharge(_delta: float) -> void:
+	if not _flashlight_key_held or not _flashlight or not _has_flashlight:
+		return
+	if not _flashlight.is_on:
+		return
+	if _flashlight.is_overcharged:
+		return  # Already overcharging
+	
+	var held_duration := (Time.get_ticks_msec() / 1000.0) - _flashlight_press_time
+	if held_duration >= FLASHLIGHT_OVERCHARGE_HOLD_TIME:
+		if _flashlight.has_method("activate_overcharge"):
+			_flashlight.activate_overcharge()
+
+
+## Called on F key release.
+## - Overcharge was active → deactivate, flashlight stays ON.
+## - Tap (< threshold) while flashlight was already ON → toggle OFF.
+## - Tap while flashlight was OFF (turned ON on press) → stays ON.
+func _flashlight_key_released() -> void:
+	if not _flashlight_key_held:
+		return  # Safety — release without a tracked press
+	
+	_flashlight_key_held = false
+	
+	if not _flashlight:
+		return
+	
+	if _flashlight.is_overcharged:
+		# Hold released overcharge — drop back to standard beam, keep light ON.
+		if _flashlight.has_method("deactivate_overcharge"):
+			_flashlight.deactivate_overcharge()
+		return
+	
+	var held_duration := (Time.get_ticks_msec() / 1000.0) - _flashlight_press_time
+	if held_duration < FLASHLIGHT_OVERCHARGE_HOLD_TIME and _flashlight_was_on_before_press:
+		# Tap while the flashlight was already ON → toggle it OFF.
+		_toggle_flashlight()
+	# else: tap that just turned the light ON → it stays ON.
+
 
 func _toggle_inventory() -> void:
 	# ─── TUTORIAL: Inventory learned ───────────────────────────────────
@@ -812,6 +894,12 @@ var _routine_manager: Node = null
 
 # --- STANDOFF / CHARGE: LOOK TIMER & CAMERA SHAKE ---
 func _process(delta: float) -> void:
+	# ─── FLASHLIGHT OVERCHARGE HOLD DETECTION ─────────────────────────
+	# While F is held and the flashlight is ON, accumulate toward the
+	# overcharge threshold. Runs in _process (not _physics_process) so
+	# hold detection is smooth and independent of physics tick rate.
+	_update_flashlight_overcharge(delta)
+	
 	# ─── EXHAUSTION SPEED PENALTY (Day 3+) ────────────────────────────
 	# When the player is exhausted AND outside the cabin, apply a 65%
 	# movement speed reduction and lock sprinting. This creates a heavy,
@@ -923,8 +1011,10 @@ func _process(delta: float) -> void:
 			look_timer = 2.0
 		
 		# Notify the Entity that it's being stared at (triggers STANDOFF state)
+		# Pass is_overcharged so the Director knows whether this is the standard
+		# beam (ignored indoors) or the overcharge beam (drives the standoff).
 		if _entity_node and _entity_node.has_method("on_player_stare"):
-			_entity_node.on_player_stare(look_timer)
+			_entity_node.on_player_stare(look_timer, is_flashlight_overcharged())
 	else:
 		# Not looking at the Entity — decay look_timer
 		if look_timer > 0.0:
@@ -932,9 +1022,9 @@ func _process(delta: float) -> void:
 			if look_timer < 0.0:
 				look_timer = 0.0
 			
-			# Notify the Entity that stare is ending
+			# Notify the Entity that stare is ending — clear overcharge flag
 			if _entity_node and _entity_node.has_method("on_player_stare"):
-				_entity_node.on_player_stare(look_timer)
+				_entity_node.on_player_stare(look_timer, is_flashlight_overcharged())
 	
 	# ─── COMBINED CAMERA SHAKE ───────────────────────────────────
 	# Takes the MAX of flashlight stare intensity and sanity gaze
@@ -953,6 +1043,12 @@ func _process(delta: float) -> void:
 	# Update the StandoffEffect with the current look_timer
 	if _standoff_effect and _standoff_effect.has_method("update_look_timer"):
 		_standoff_effect.update_look_timer(look_timer)
+	
+	# ─── OVERCHARGE UI ESCALATION ─────────────────────────────────────
+	# Forward the overcharge state to the StandoffEffect so it can amplify
+	# the hallucination visuals/audio during the indoor standoff.
+	if _standoff_effect and _standoff_effect.has_method("update_overcharge"):
+		_standoff_effect.update_overcharge(is_flashlight_overcharged())
 
 
 ## Checks if the player's flashlight is currently shining on the Entity.
@@ -973,12 +1069,17 @@ func _is_flashlight_on_entity() -> bool:
 	
 	# ─── STEP 1: VISION CONE (dot product) ────────────────────────
 	# The player must be looking roughly at the Entity.
-	# dot > 0.95 = ~18° cone — matches the tight flashlight beam.
+	# Standard beam: dot > 0.95 = ~18° cone — matches the flashlight beam.
+	# Overcharge beam: dot > 0.985 = ~10° cone — tighter, rewards precision.
 	var cam_forward = -_camera.global_transform.basis.z.normalized()
 	var entity_target = _entity_node.global_position + Vector3(0, 1.0, 0)
 	var dir_to_entity = (entity_target - _camera.global_position).normalized()
 	
-	if cam_forward.dot(dir_to_entity) < 0.95:
+	var cone_dot_threshold: float = 0.95
+	if _flashlight and _flashlight.is_overcharged:
+		cone_dot_threshold = 0.985
+	
+	if cam_forward.dot(dir_to_entity) < cone_dot_threshold:
 		return false
 	
 	# ─── STEP 2: OCCLUSION RAYCAST ────────────────────────────────
@@ -1004,6 +1105,13 @@ func _is_flashlight_on_entity() -> bool:
 ## Called by entity_sensory.gd to check flashlight state without string-based property access.
 func is_flashlight_on() -> bool:
 	return _has_flashlight and _flashlight != null and _flashlight.is_on
+
+
+## Public API: returns true if the flashlight is currently in overcharge mode.
+## Forwarded to the Entity's on_player_stare() so the Director can distinguish
+## the standard beam (ignored indoors) from the overcharge beam (standoff).
+func is_flashlight_overcharged() -> bool:
+	return _has_flashlight and _flashlight != null and _flashlight.is_overcharged
 
 
 ## Returns true if the player is currently crouching.

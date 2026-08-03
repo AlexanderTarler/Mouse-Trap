@@ -756,22 +756,47 @@ func process_state_logic(delta: float) -> void:
 			# STANDOFF, CHARGE) must break the lock immediately. The Entity
 			# cannot stay locked in WINDOW_PEEK while being blinded.
 			# This evaluation bypasses the throttle for instant response.
+			#
+			# FLINCH LOCK INTEGRITY FIX:
+			# The lock is ONLY cleared when the Director returns a GENUINELY
+			# DIFFERENT state. If the Director returns the CURRENT state
+			# (e.g., FLINCH while the 5-second flinch timer is active), the
+			# result is a no-op — clearing state_locked would let the throttled
+			# path re-evaluate on the next frame and break the Entity out of
+			# FLINCH (e.g., dropping from overcharge to the standard beam
+			# immediately re-enters STANDOFF outdoors). Preserving the lock
+			# guarantees the full 5-second flinch is uninterruptible.
 			var _debug_intended = _director.evaluate_master_state(entity)
 			if _debug_intended == State.FLINCH or _debug_intended == State.RETREAT or _debug_intended == State.STANDOFF or _debug_intended == State.CHARGE:
-				entity.state_locked = false
 				if entity.get_state() != _debug_intended:
+					entity.state_locked = false
 					print("[TRACE_STATE] TIER 0 OVERRIDE: Breaking state lock! %s → %s" % [_get_state_name(entity.get_state()), _get_state_name(_debug_intended)])
 					entity.set_state(_debug_intended)
 		else:
-			# ─── THROTTLED EVALUATION ────────────────────────────────
-			# Accumulate delta on the eval timer. Only re-evaluate the
-			# Director's full 8-tier decision tree when the timer exceeds
-			# the interval. Between evaluations, _cached_intended_state
-			# holds the last valid decision.
-			_director_eval_timer += delta
-			if _director_eval_timer >= DIRECTOR_EVAL_INTERVAL:
-				_director_eval_timer = 0.0
+			# ─── OVERCHARGE UNTHROTTLED EVALUATION ────────────────────
+			# During an indoor overcharge standoff, the Director MUST evaluate
+			# EVERY frame so the 1.5s stare timer transitions to STANDOFF →
+			# RETREAT with zero throttle lag. The 0.2s DIRECTOR_EVAL_INTERVAL
+			# would otherwise delay the stagger start/end by up to 200ms,
+			# making the precision standoff feel unresponsive and unfair.
+			#
+			# The is_overcharged flag is written by entity_controller.gd's
+			# on_player_stare() each frame — it is only true while the player
+			# actively holds the overcharge beam on the Entity. When it clears,
+			# this branch is skipped and normal throttling resumes.
+			if entity.is_overcharged:
 				_cached_intended_state = _director.evaluate_master_state(entity)
+				_director_eval_timer = 0.0
+			else:
+				# ─── THROTTLED EVALUATION ────────────────────────────────
+				# Accumulate delta on the eval timer. Only re-evaluate the
+				# Director's full 8-tier decision tree when the timer exceeds
+				# the interval. Between evaluations, _cached_intended_state
+				# holds the last valid decision.
+				_director_eval_timer += delta
+				if _director_eval_timer >= DIRECTOR_EVAL_INTERVAL:
+					_director_eval_timer = 0.0
+					_cached_intended_state = _director.evaluate_master_state(entity)
 			
 			# Apply the cached intended state (or the latest evaluation)
 			var intended_state = _cached_intended_state

@@ -322,6 +322,21 @@ var _consecutive_vantage_misses: int = 0
 ## Range: 0.0 to 2.0+. 1.5+ triggers CHARGE if player is outside.
 var player_stare_timer: float = 0.0
 
+## Whether the player's flashlight is currently in OVERCHARGE mode.
+## Written by on_player_stare(). Read by the Master Director (entity_director.gd).
+## Standard beam (false) is IGNORED indoors. Overcharge beam (true) drives the
+## indoor standoff: the Entity staggers in place until the stare timer completes,
+## then RETREATs.
+var is_overcharged: bool = false
+
+## How long the Entity has been continuously hit by the OVERCHARGE beam indoors.
+## Written by on_player_stare() (accumulated by the player controller's look_timer
+## while is_overcharged is true). Read by the Master Director (entity_director.gd).
+## When this reaches OVERCHARGE_STARE_THRESHOLD (1.5s), the Director triggers RETREAT.
+## Reset to 0.0 immediately on ANY break: LoS lost, flashlight off, battery death,
+## or overcharge deactivated.
+var overcharge_stare_timer: float = 0.0
+
 ## The last world-space position the Entity knows the player was at.
 ## Written by entity_sensory.gd when the player is seen or heard.
 ## Read by entity_ai.gd for pathfinding toward the player.
@@ -3645,13 +3660,31 @@ func _on_catch_area_body_entered(body: Node) -> void:
 ##
 ## The Director reads these Blackboard values once per frame and evaluates
 ## the correct state from top-to-bottom priority.
-func on_player_stare(time: float) -> void:
+func on_player_stare(time: float, overcharged: bool = false) -> void:
 	if not _is_active:
 		return
 	
 	# Update the Blackboard — the Director will read these next frame
 	player_stare_timer = time
 	is_illuminated = (time > 0.0)
+	
+	# ─── OVERCHARGE BLACKBOARD SYNC ─────────────────────────────────
+	# Track whether the beam hitting us is the overcharge variant. The Director
+	# uses this to decide between "standard beam = ignored indoors" and
+	# "overcharge beam = indoor standoff".
+	is_overcharged = overcharged and is_illuminated
+	
+	# ─── OVERCHARGE STARE TIMER ─────────────────────────────────────
+	# While the overcharge beam is actively on the Entity, accumulate the
+	# stare progress. The Director reads this to trigger RETREAT at 1.5s.
+	# The timer resets immediately on ANY break: LoS lost, flashlight off,
+	# battery death, or overcharge release (all of which make `time` decay
+	# or make overcharged false).
+	if is_overcharged and is_illuminated:
+		overcharge_stare_timer = maxf(overcharge_stare_timer, player_stare_timer)
+	else:
+		# Hard reset — no partial credit for broken standoffs.
+		overcharge_stare_timer = 0.0
 	
 	# During CHARGE, continuously update nav target to the player's current position
 	# This is movement/pathfinding logic, NOT state transition logic.
