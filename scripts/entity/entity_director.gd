@@ -776,45 +776,10 @@ func _tier_0_indoor_flashlight(entity: CharacterBody3D, state: int) -> int:
 	if not entity_inside:
 		return -1
 	
-	# ─── OVERCHARGE BEAM: INDOOR STANDOFF → RETREAT ─────────────────────
-	if entity.is_overcharged:
-		# Forcefully break any existing task locks so the stagger can begin.
-		# The overcharge reaction is a critical survival override and must be
-		# able to interrupt any ongoing indoor behavior (patrol, scan, breach).
-		entity.state_locked = false
-		entity.is_approach_finished = false
-		entity.is_climb_finished = false
-		entity.is_flinch_finished = false
-		entity.is_retreat_arrived = false
-		entity.is_window_unbarricaded = false
-		entity.is_observe_finished = false
-		
-		# Overcharge stare progress toward the 1.5s RETREAT threshold.
-		var stare: float = entity.overcharge_stare_timer
-		if stare >= OVERCHARGE_STARE_THRESHOLD:
-			# ─── 1.5s STANDOFF COMPLETE → RETREAT ─────────────────────
-			# The player successfully drove the Entity off indoors. The Entity
-			# flees through the nearest breach window (pathfind → teleport
-			# outside → FLINCH).
-			entity.is_indoor_retreat = true
-			var conf_mod = entity.get_confidence_module()
-			if conf_mod:
-				conf_mod.set_confidence(20.0)
-			# ─── PAIN SCREAM: The overcharge burned the Entity — emit a
-			# high-pitched pained growl as it flees. Pitch-raised to
-			# differentiate from aggression growls (matches the overload
-			# stun pattern).
-			_play_indoor_retreat_scream(entity)
-			print("[Director] INDOOR OVERCHARGE: Standoff complete (stare=%.2fs >= %.1fs). TRIGGERING RETREAT!" % [stare, OVERCHARGE_STARE_THRESHOLD])
-			return EntityAI.State.RETREAT
-		
-		# ─── STAGGER IN PLACE (STANDOFF = zero velocity) ─────────────
-		# The Entity is pinned by the overcharge beam. The stare timer keeps
-		# accumulating in entity_controller.on_player_stare() while the player
-		# maintains line-of-sight. If the beam breaks, the timer resets to 0
-		# and the Entity resumes its hunt (handled below via INDOOR_SEARCH).
-		print("[Director] INDOOR OVERCHARGE: Staggering in place (stare=%.2fs / %.1fs)." % [stare, OVERCHARGE_STARE_THRESHOLD])
-		return EntityAI.State.STANDOFF
+	# NOTE: The OVERCHARGE beam is handled entirely by the UNIFIED OVERCHARGE
+	# DISPATCH in _tier_0_flashlight_reaction() (STANDOFF < 1.5s, RETREAT
+	# indoors / FLINCH outdoors >= 1.5s). It returns before this function is
+	# ever called, so only the STANDARD beam reaches here.
 	
 	# ─── STANDARD BEAM: IGNORED — Entity continues advancing ──────────
 	# The standard beam no longer triggers RETREAT indoors. The Entity presses
@@ -867,7 +832,18 @@ func _tier_0_indoor_flashlight(entity: CharacterBody3D, state: int) -> int:
 ##
 ## Returns: The target state, or -1 if no flashlight reaction applies.
 func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
-	# ─── FLINCH STATE LOCK PRESERVATION (TOP - DEFENSE IN DEPTH) ─────
+	# ─── PERSISTENT INDOOR RETREAT (TOP - HIGHEST PRIORITY) ─────────
+	# Once the 1.5s indoor overcharge standoff completes, the Entity is
+	# COMMITTED to escaping. This flag is set by _tier_0_indoor_flashlight()
+	# and cleared by the indoor retreat handler once the Entity escapes
+	# outside. While set, ALWAYS return RETREAT — regardless of whether
+	# the player kept holding F, released F (dropping is_overcharged),
+	# or the beam state changed in any way. This prevents the Entity from
+	# re-evaluating to FLINCH/STANDOFF mid-escape.
+	if entity.is_indoor_retreat_pending:
+		return EntityAI.State.RETREAT
+	
+	# ─── FLINCH STATE LOCK PRESERVATION (DEFENSE IN DEPTH) ─────────
 	# If the Entity is already in FLINCH and state_locked is true, the
 	# FLINCH handler is running its 5-second uninterruptible escape sprint.
 	# Preserve the lock NO MATTER WHAT the Blackboard says — including when
@@ -938,7 +914,43 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 	if state == EntityAI.State.CHARGE:
 		return EntityAI.State.CHARGE
 	
-	# ─── INDOOR OVERCHARGE STANDOFF (checked BEFORE anti-flap) ──────────
+	# ─── UNIFIED OVERCHARGE DISPATCH (SINGLE DECISION POINT) ────────
+	# Both indoors and outdoors, the overcharge beam forces the SAME reaction
+	# shape — stagger in place until 1.5s, THEN escape:
+	#   - Stare < 1.5s: STANDOFF (stagger, zero velocity) — identical indoors
+	#     and outdoors.
+	#   - Stare >= 1.5s: Escape. RETREAT if the Entity is physically inside
+	#     (flee through the nearest window/door), FLINCH if outside (fast
+	#     escape sprint).
+	#
+	# is_physically_inside() is evaluated EXACTLY ONCE here, eliminating the
+	# race between the indoor gate (_tier_0_indoor_flashlight) and the
+	# terminal OUTDOOR STARE block that previously caused an indoor Entity to
+	# enter FLINCH instead of RETREAT.
+	if entity.is_overcharged:
+		var stare_time: float = entity.overcharge_stare_timer
+		if stare_time >= 1.5:
+			# ─── STANDOFF COMPLETE → ESCAPE ─────────────────────────
+			if entity.has_method("is_physically_inside") and entity.is_physically_inside():
+				# ─── INDOOR: RETREAT through nearest window/door ──
+				entity.is_indoor_retreat = true
+				entity.is_indoor_retreat_pending = true
+				var conf_mod = entity.get_confidence_module()
+				if conf_mod:
+					conf_mod.set_confidence(20.0)
+				_play_indoor_retreat_scream(entity)
+				print("[Director] OVERCHARGE >= 1.5s INDOOR: TRIGGERING RETREAT!")
+				return EntityAI.State.RETREAT
+			# ─── OUTDOOR: FLINCH (fast escape sprint) ───────────────
+			_apply_flinch_confidence_penalty(entity)
+			_flinch_approach_cooldown = FLINCH_REAPPROACH_COOLDOWN
+			_state_entry_confidence = -1.0
+			print("[Director] OVERCHARGE >= 1.5s OUTDOOR: TRIGGERING FLINCH!")
+			return EntityAI.State.FLINCH
+		# ─── STAGGER IN PLACE (identical indoors & outdoors) ─────────
+		return EntityAI.State.STANDOFF
+	
+	# ─── INDOOR STANDARD-BEAM HANDLING (checked BEFORE anti-flap) ──────────
 	# The indoor reaction matrix runs unconditionally whenever the Entity is
 	# illuminated — even during the anti-flap cooldown. This guarantees the
 	# overcharge stagger and the 1.5s RETREAT can never be blocked by the
@@ -1026,14 +1038,20 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 		
 		if not entity_inside and player_inside:
 			# ENTITY OUTSIDE, PLAYER INSIDE: The Entity is outside and the
-			# player is inside shining the flashlight. The Entity FLINCHes.
-			if state == EntityAI.State.WINDOW_PEEK or state == EntityAI.State.APPROACH_WINDOW:
-				_capture_flinch_window_id(entity)
-			_apply_flinch_confidence_penalty(entity)
-			_flinch_approach_cooldown = FLINCH_REAPPROACH_COOLDOWN
-			_state_entry_confidence = -1.0
-			print("[Director] MATRIX: FLINCH (Entity outside + Player inside. Player believed inside.)")
-			return EntityAI.State.FLINCH
+			# player is inside shining the flashlight. ONLY the OVERCHARGE
+			# beam causes FLINCH — the standard beam is IGNORED so the
+			# Entity falls through to the STANDOFF/CHARGE logic below.
+			# This enforces the "only the overcharged flashlight repels"
+			# design rule.
+			if entity.is_overcharged:
+				if state == EntityAI.State.WINDOW_PEEK or state == EntityAI.State.APPROACH_WINDOW:
+					_capture_flinch_window_id(entity)
+				_apply_flinch_confidence_penalty(entity)
+				_flinch_approach_cooldown = FLINCH_REAPPROACH_COOLDOWN
+				_state_entry_confidence = -1.0
+				print("[Director] MATRIX: FLINCH (Entity outside + Player inside. OVERCHARGE beam.)")
+				return EntityAI.State.FLINCH
+			# Standard beam — do NOT flinch. Fall through to STANDOFF/CHARGE.
 		
 		# ─── OUTSIDE/OUTSIDE (BOTH OUTSIDE): STANDOFF or CHARGE ──────
 		# Both are outside. The flashlight freezes the Entity in place
@@ -1071,11 +1089,11 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 		return EntityAI.State.RETREAT
 
 	# ─── WINDOW PEEK → FLINCH (Player inside, Entity outside at window) ──
-	# The Entity is standing outside a window, peering in. When the player
-	# shines the flashlight at it through the window, the Entity should flinch
-	# (sprint away from the cabin). The Entity loses 15% confidence and sprints
-	# away for 5.0 seconds to evade the flashlight beam.
-	if state == EntityAI.State.WINDOW_PEEK:
+	# The Entity is standing outside a window, peering in. ONLY when it is
+	# hit with the OVERCHARGE beam does it flinch (sprint away). The standard
+	# beam is IGNORED — the Entity keeps peeking and falls through to the
+	# STANDOFF/CHARGE logic below.
+	if state == EntityAI.State.WINDOW_PEEK and entity.is_overcharged:
 		entity.is_indoor_retreat = false  # Entity is outside, NOT retreating
 		entity.is_observe_finished = false  # Cancel any in-progress observation
 		
@@ -1087,9 +1105,10 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 		return EntityAI.State.FLINCH
 	
 	# ─── APPROACH WINDOW → FLINCH ───────────────────────────────────
-	# The Entity is approaching a window from outside. The flashlight
-	# causes it to sprint away from the cabin to evade the beam.
-	if state == EntityAI.State.APPROACH_WINDOW:
+	# The Entity is approaching a window from outside. ONLY the OVERCHARGE
+	# beam causes it to sprint away from the cabin. The standard beam is
+	# IGNORED — the Entity keeps approaching.
+	if state == EntityAI.State.APPROACH_WINDOW and entity.is_overcharged:
 		# Capture the window ID to the flinch blacklist (Correction 3)
 		_capture_flinch_window_id(entity)
 		# Apply -15.0 confidence penalty (Correction 2)
@@ -1117,7 +1136,7 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 	# ONE-SHOT GUARD: The confidence penalty is applied once per FLINCH
 	# transition. We use _apply_flinch_confidence_penalty() which checks
 	# _last_completed_state != FLINCH to prevent double-application.
-	if is_player_inside:
+	if is_player_inside and entity.is_overcharged:
 		# Apply -15.0 confidence penalty (Correction 2)
 		_apply_flinch_confidence_penalty(entity)
 		# Set flinch approach cooldown to prevent immediate re-entry
@@ -1127,24 +1146,12 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 		
 		return EntityAI.State.FLINCH
 	
-	# ─── OUTDOOR STARE → STANDOFF / CHARGE / OVERCHARGE FLINCH ─────
-	# OVERCHARGE BEAM OVERRIDE: While BOTH the player and the Entity are
-	# outside, holding the overcharge beam on the Entity for 1.5s makes it
-	# FLINCH — a fast lateral escape sprint (running_crawl animation,
-	# 1.5x speed, 5.0 seconds) — instead of the standard CHARGE. This
-	# rewards the overcharge precision outdoors with a defensive repulse
-	# rather than provoking the Entity's attack.
+	# ─── OUTDOOR STARE → STANDOFF / CHARGE ─────────────────────────
+	# NOTE: The OVERCHARGE beam is handled entirely by the UNIFIED OVERCHARGE
+	# DISPATCH in _tier_0_flashlight_reaction() — it returns RETREAT indoors /
+	# FLINCH outdoors at >= 1.5s before reaching this block. This terminal
+	# block only handles the STANDARD beam: STANDOFF < 1.5s, CHARGE >= 1.5s.
 	var stare_time = entity.player_stare_timer
-	if entity.is_overcharged and stare_time >= 1.5:
-		# ─── OUTDOOR OVERCHARGE STANDOFF COMPLETE → FLINCH ───────────
-		# Apply the same one-shot confidence penalty and re-approach
-		# cooldown as the player-inside FLINCH path, then sprint away.
-		_apply_flinch_confidence_penalty(entity)
-		_flinch_approach_cooldown = FLINCH_REAPPROACH_COOLDOWN
-		_state_entry_confidence = -1.0
-		print("[Director] OUTDOOR OVERCHARGE: Standoff complete (stare=%.2fs >= 1.5s). TRIGGERING FLINCH!" % stare_time)
-		return EntityAI.State.FLINCH
-	
 	if stare_time >= 1.5:
 		# Player stared too long while outside — CHARGE at 3x speed.
 		# Only the STANDARD beam takes this path; the overcharge beam

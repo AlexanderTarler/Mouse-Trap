@@ -224,4 +224,3 @@ func _play_sfx(stream: AudioStream) -> void:
 	add_child(player)
 	player.play()
 	player.finished.connect(player.queue_free)
-

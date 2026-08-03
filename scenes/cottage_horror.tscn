@@ -33,6 +33,8 @@
 [ext_resource type="ArrayMesh" uid="uid://bm2yiwwmr8jcd" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_FootBall_LOD0.res" id="18_i4sg3"]
 [ext_resource type="Image" uid="uid://dboy530q14flx" path="res://scenes/CottageHorror/Splatmap_0_0_0.res" id="18_pjlug"]
 [ext_resource type="PackedScene" uid="uid://c2wx8r8v7rdcc" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/cardboard_box_1.glb" id="19_ui7ij"]
+[ext_resource type="ArrayMesh" uid="uid://di81thm8h7q0o" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_659.res" id="19_xtukk"]
+[ext_resource type="ArrayMesh" uid="uid://bqk7qoinccfl6" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_662.res" id="20_6t8rv"]
 [ext_resource type="PackedScene" uid="uid://cg887s8br1ysp" path="res://assets/PSX Bunkers/Models/other-formats/GLB/beam_6.glb" id="20_ihije"]
 [ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0c6" path="res://scenes/note.tscn" id="20_note"]
 [ext_resource type="PackedScene" uid="uid://jgdjt1dtob7u" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/carpet_mp_1.glb" id="20_q663k"]
@@ -88,11 +90,16 @@
 [ext_resource type="PackedScene" uid="uid://cicj1pkx7sn1u" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Fern/Fern.fbx" id="60_eb5pj"]
 [ext_resource type="PackedScene" uid="uid://cpvhl2k7wl3jq" path="res://scenes/computer.tscn" id="60_ot2p7"]
 [ext_resource type="PackedScene" uid="uid://l101wfdbbfth" path="res://scenes/key.tscn" id="63_key"]
+[ext_resource type="ArrayMesh" uid="uid://cuuskxtdsxi3q" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Backpack_001.res" id="63_tb8s0"]
 [ext_resource type="PackedScene" uid="uid://c1cbq04lfrmh6" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/coffee_table_1_2.glb" id="64_1cglp"]
 [ext_resource type="ArrayMesh" uid="uid://b1u5yt2w1viax" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_254.res" id="64_v32b0"]
+[ext_resource type="ArrayMesh" uid="uid://ddt5dneeldqkx" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_basket_002.res" id="64_y8m46"]
 [ext_resource type="PackedScene" uid="uid://chomp5702sq14" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/display_cabinet_mp_1.glb" id="65_hnqef"]
+[ext_resource type="ArrayMesh" uid="uid://0an16xykgi6t" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_586.res" id="65_nxwiy"]
+[ext_resource type="ArrayMesh" uid="uid://bx3uo73bmlhwg" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_651.res" id="66_7xolv"]
 [ext_resource type="PackedScene" uid="uid://c8veqd3spasgi" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/coin_mp_1.glb" id="66_j6uu5"]
 [ext_resource type="PackedScene" uid="uid://rhlnj4o8hclw" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/glass_bottle_1.glb" id="67_1qcio"]
+[ext_resource type="ArrayMesh" uid="uid://bnhwsb2gsa644" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_658.res" id="67_yp47x"]
 [ext_resource type="PackedScene" uid="uid://bp604ge3vljoy" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/glass_bottle_2.glb" id="68_frym3"]
 [ext_resource type="PackedScene" uid="uid://ctosb4mcp1ff3" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/matchbox_1.glb" id="69_en0qb"]
 [ext_resource type="PackedScene" uid="uid://dyqwf06b45pk7" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/screwdriver_mp_1.glb" id="70_h7pim"]
@@ -388,28 +395,28 @@ fuse_waypoint = NodePath("../EntityWaypoints/EntityFuseWaypoint")
 door_waypoint_marker = NodePath("../NavigationRegion3D/Cabin/Door/EntityDoorWaypoint")
 
 [node name="GeneralSkeleton" parent="TheEntity/MonsterModel/Armature" parent_id_path=PackedInt32Array(133456140, 1066769687, 719992929) index="0" unique_id=519438561]
-bones/1/rotation = Quaternion(0.100155026, -0.17648296, -0.0182157, 0.9790256)
-bones/3/rotation = Quaternion(0.14772752, 0.35462272, 0.90827423, -0.1657022)
-bones/4/rotation = Quaternion(-0.03822635, 0.9201144, -0.38421953, 0.06560319)
-bones/5/rotation = Quaternion(-0.10725059, 0.64239144, -0.74931514, 0.119822726)
-bones/7/rotation = Quaternion(6.153467e-08, 0.99996614, 0.008227457, -6.690946e-08)
-bones/18/rotation = Quaternion(-0.13595222, 0.29510632, 0.93955827, 0.10797932)
-bones/21/rotation = Quaternion(0.03964353, 0.9344106, -0.348475, -0.06221484)
-bones/22/rotation = Quaternion(0.10071781, 0.6370404, -0.75594807, -0.11215218)
-bones/23/rotation = Quaternion(-5.870472e-08, 0.99999964, 0.00091219426, 6.6837225e-09)
-bones/33/rotation = Quaternion(0.021313766, -0.004743718, 0.015959375, 0.99963427)
-bones/34/rotation = Quaternion(0.06664818, -0.009564632, 0.009883528, 0.99768174)
-bones/35/rotation = Quaternion(0.06672679, -0.008547783, 0.010298968, 0.99768156)
-bones/36/rotation = Quaternion(-0.052543115, 0.027699348, -0.018787274, 0.9980577)
-bones/38/rotation = Quaternion(-0.19690187, 0.12153152, -0.031732522, 0.97234404)
-bones/49/rotation = Quaternion(0.5630666, 0.4303708, 0.52486265, -0.47144055)
-bones/50/rotation = Quaternion(0.18200505, 0.87710786, -0.4433202, -0.031987622)
-bones/51/rotation = Quaternion(0.47579044, -0.52309, 0.47579122, 0.5230899)
-bones/55/rotation = Quaternion(-0.14897166, 0.7967385, 0.18677697, 0.55509436)
-bones/58/rotation = Quaternion(0.51891947, -0.45564675, -0.575117, -0.4385761)
-bones/59/rotation = Quaternion(-0.20554486, 0.8395738, -0.50046265, -0.04903519)
-bones/62/rotation = Quaternion(0.49386132, 0.50606394, -0.4938621, 0.5060638)
-bones/66/rotation = Quaternion(0.0620574, -0.85004276, -0.021107804, 0.522619)
+bones/1/rotation = Quaternion(0.09715955, -0.16860989, -0.017291108, 0.9807303)
+bones/3/rotation = Quaternion(0.14880584, 0.3511488, 0.90957767, -0.16498452)
+bones/4/rotation = Quaternion(-0.03632261, 0.9263645, -0.37019473, 0.059037536)
+bones/5/rotation = Quaternion(-0.10620471, 0.6499823, -0.74298453, 0.11923773)
+bones/7/rotation = Quaternion(-3.5849617e-08, 0.9999732, 0.0073225256, -4.5667417e-09)
+bones/18/rotation = Quaternion(-0.14017764, 0.29295495, 0.9397137, 0.107078865)
+bones/21/rotation = Quaternion(0.035111267, 0.9339272, -0.34975803, -0.0649348)
+bones/22/rotation = Quaternion(0.09725205, 0.6330418, -0.76030636, -0.10832559)
+bones/23/rotation = Quaternion(-1.5190565e-08, 0.9999999, 0.00047097876, -3.8248203e-08)
+bones/33/rotation = Quaternion(0.020299433, -0.0043737195, 0.01438774, 0.9996809)
+bones/34/rotation = Quaternion(0.06581737, -0.0114467, 0.008113447, 0.9977331)
+bones/35/rotation = Quaternion(0.065965675, -0.010447241, 0.0086690625, 0.99772954)
+bones/36/rotation = Quaternion(-0.05207674, 0.027206358, -0.017878685, 0.9981123)
+bones/38/rotation = Quaternion(-0.1897883, 0.121103644, -0.03474545, 0.973708)
+bones/49/rotation = Quaternion(0.56483835, 0.4286943, 0.52441746, -0.47134417)
+bones/50/rotation = Quaternion(0.18230464, 0.87730044, -0.44204247, -0.0413233)
+bones/51/rotation = Quaternion(0.4723167, -0.52622867, 0.4723175, 0.52622867)
+bones/55/rotation = Quaternion(-0.14257608, 0.80635256, 0.18881477, 0.5420486)
+bones/58/rotation = Quaternion(0.5201356, -0.4544105, -0.5749724, -0.43860793)
+bones/59/rotation = Quaternion(-0.21040362, 0.83753216, -0.50201565, -0.047441076)
+bones/62/rotation = Quaternion(0.48499057, 0.5145715, -0.48499128, 0.5145715)
+bones/66/rotation = Quaternion(0.06978939, -0.85485065, -0.023663525, 0.51361454)
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1000000002]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.015592637, 0, -0.084306605)
@@ -453,12 +460,20 @@ visible = false
 use_collision = false
 
 [node name="PsxLowPolyHomeInteriorPropsPackMesh002" type="MeshInstance3D" parent="NavigationRegion3D/Cabin/NavigationRegion3D/Mouse Trap Cabin 2" parent_id_path=PackedInt32Array(1282417259, 10047741) index="1" unique_id=956038802]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.31317425, 0.9679781, -18.230915)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.41873455, 0.9679781, -18.230915)
 mesh = ExtResource("17_7578e")
 
 [node name="PsxLowPolyHomeInteriorPropsPackFootBallLod0" type="MeshInstance3D" parent="NavigationRegion3D/Cabin/NavigationRegion3D/Mouse Trap Cabin 2" parent_id_path=PackedInt32Array(1282417259, 10047741) index="2" unique_id=1687336345]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3261404, 0.97196716, -17.61013)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.39429188, 0.97196716, -17.61013)
 mesh = ExtResource("18_i4sg3")
+
+[node name="PsxLowPolyHomeInteriorPropsPackCube659" type="MeshInstance3D" parent="NavigationRegion3D/Cabin/NavigationRegion3D/Mouse Trap Cabin 2" parent_id_path=PackedInt32Array(1282417259, 10047741) index="4" unique_id=1267178261]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5967188, 0.8817011, -18.288311)
+mesh = ExtResource("19_xtukk")
+
+[node name="PsxLowPolyHomeInteriorPropsPackCube662" type="MeshInstance3D" parent="NavigationRegion3D/Cabin/NavigationRegion3D/Mouse Trap Cabin 2" parent_id_path=PackedInt32Array(1282417259, 10047741) index="5" unique_id=867844676]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.19736958, 0.88170123, -17.592545)
+mesh = ExtResource("20_6t8rv")
 
 [node name="Door" parent="NavigationRegion3D/Cabin" unique_id=187910433 groups=["BottomFloorWindows", "Door"] instance=ExtResource("11_jjdw5")]
 transform = Transform3D(-5.2453668e-08, 0, -1.2, 0, 1.1, 0, 1.2, 0, -5.2453668e-08, 0.15686512, 0.7928264, 8.645942)
@@ -1287,6 +1302,26 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5343285, 0.08127086, 0.757
 
 [node name="Thistles" parent="Details/Outside Cabin/FoliagePatch5" unique_id=1425406772 instance=ExtResource("112_ylw6y")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.8669586)
+
+[node name="PsxLowPolyHomeInteriorPropsPackBackpack001" type="MeshInstance3D" parent="Details/Outside Cabin/FoliagePatch5" unique_id=750126834]
+transform = Transform3D(0.9005995, 0, -0.4346496, 0, 1, 0, 0.4346496, 0, 0.9005995, 18.288427, 0.7387278, 14.811596)
+mesh = ExtResource("63_tb8s0")
+
+[node name="PsxLowPolyHomeInteriorPropsPackBasket002" type="MeshInstance3D" parent="Details/Outside Cabin/FoliagePatch5" unique_id=1664218773]
+transform = Transform3D(0.9005995, 0, -0.4346496, 0, 1, 0, 0.4346496, 0, 0.9005995, 21.409714, 0.73849976, 16.604399)
+mesh = ExtResource("64_y8m46")
+
+[node name="PsxLowPolyHomeInteriorPropsPackCube586" type="MeshInstance3D" parent="Details/Outside Cabin/FoliagePatch5" unique_id=1736820017]
+transform = Transform3D(-0.3355502, 0, -0.942022, 0, 1, 0, 0.942022, 0, -0.3355502, 15.973821, 0.73850024, 19.695356)
+mesh = ExtResource("65_nxwiy")
+
+[node name="PsxLowPolyHomeInteriorPropsPackCube651" type="MeshInstance3D" parent="Details/Outside Cabin/FoliagePatch5" unique_id=2043138620]
+transform = Transform3D(0.9005995, 0, -0.4346496, 0, 1, 0, 0.4346496, 0, 0.9005995, 18.264471, 0.73869777, 21.05648)
+mesh = ExtResource("66_7xolv")
+
+[node name="PsxLowPolyHomeInteriorPropsPackCube658" type="MeshInstance3D" parent="Details/Outside Cabin/FoliagePatch5" unique_id=1773856344]
+transform = Transform3D(0.9005995, 0, -0.4346496, 0, 1, 0, 0.4346496, 0, 0.9005995, 21.95087, 0.7617012, 13.378382)
+mesh = ExtResource("67_yp47x")
 
 [node name="pine_tree_n_1_22" parent="Details/Outside Cabin" unique_id=1536123066 instance=ExtResource("163_de5mx")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.883678, 0.024999619, 23.60397)

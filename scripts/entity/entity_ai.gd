@@ -2188,26 +2188,52 @@ func _retreat_state(delta: float) -> void:
 ##            completion to the Director
 ##
 ## The is_indoor_retreat flag is reset to false when the sequence completes.
+## Whether the current indoor retreat is escaping through a WINDOW (true) or
+## the DOOR (false). Set in Phase 0. Phase 2 teleports outside using the
+## appropriate exit.
+var _retreat_exit_was_window: bool = true
+
+## The world-space position the Entity pathfinds to during Phase 1 before the
+## Phase 2 outside-teleport. For window entries this is the indoor landing
+## position; for door entries it is the door's interior position.
+var _retreat_exit_pos: Vector3 = Vector3.ZERO
+
 func _indoor_retreat_handler(delta: float) -> void:
 	var breach_window = entity.last_breached_window
 	
-	# ─── PHASE 1: Pathfind to the breach window's indoor landing position ──
+	# ─── PHASE 0: Select escape target (window OR door) ────────────────
 	if _indoor_retreat_phase == 0:
 		if breach_window and breach_window.has_method("get_indoor_landing_position"):
-			var landing_pos = breach_window.get_indoor_landing_position()
-			entity.get_nav_agent().target_position = landing_pos
+			# WINDOW ENTRY — escape back through the same window.
+			_retreat_exit_was_window = true
+			_retreat_exit_pos = breach_window.get_indoor_landing_position()
+			entity.get_nav_agent().target_position = _retreat_exit_pos
 			_indoor_retreat_phase = 1
-			print("[INDOOR RETREAT] Phase 1: Pathfinding to breach window indoor landing position.")
+			print("[INDOOR RETREAT] Phase 0: Window entry — pathfinding to breach window indoor landing position.")
 		else:
-			# No breach window — skip directly to Phase 3 (flinch)
-			_indoor_retreat_phase = 3
-			entity.set_flinched_timer(5.0)
-			print("[INDOOR RETREAT] No breach window found. Skipping to Phase 3 (flinch).")
+			# DOOR ENTRY (or no breach window recorded) — escape through the
+			# door the Entity came in through. Pathfind to the door's interior
+			# position, then teleport to the exterior door waypoint in Phase 2.
+			# This fixes the "Entity goes into FLINCH and never leaves the
+			# cabin" bug for door entries.
+			_retreat_exit_was_window = false
+			var door_breach_wp = entity.get_door_breach_waypoint()
+			if door_breach_wp:
+				_retreat_exit_pos = door_breach_wp.global_position
+			else:
+				var door_node = entity.get_door_node()
+				if door_node:
+					_retreat_exit_pos = door_node.global_position
+				else:
+					_retreat_exit_pos = entity.global_position + Vector3(0, 0, 2.0)  # Fallback: toward door
+			entity.get_nav_agent().target_position = _retreat_exit_pos
+			_indoor_retreat_phase = 1
+			print("[INDOOR RETREAT] Phase 0: Door entry — pathfinding to door interior position.")
 	
+	# ─── PHASE 1: Pathfind toward the escape point ─────────────────────
 	if _indoor_retreat_phase == 1:
-		# Pathfind toward the indoor landing position
 		if entity.get_nav_agent().is_navigation_finished():
-			# Arrived at the window — advance to Phase 2 (teleport outside)
+			# Arrived at the exit point — advance to Phase 2 (teleport outside)
 			_indoor_retreat_phase = 2
 			print("[INDOOR RETREAT] Phase 1 complete. Advancing to Phase 2 (teleport outside).")
 		else:
@@ -2219,18 +2245,35 @@ func _indoor_retreat_handler(delta: float) -> void:
 				_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed * 1.5
 			return
 	
-	# ─── PHASE 2: Teleport outside the breach window ──────────────────────
+	# ─── PHASE 2: Teleport outside the exit ─────────────────────────────
 	if _indoor_retreat_phase == 2:
-		if breach_window:
-			# Teleport to the window's exterior position (2m outside the window)
+		if _retreat_exit_was_window and breach_window:
+			# WINDOW EXIT — teleport to the window's exterior (2m outside).
 			var window_pos = breach_window.global_position
 			var window_basis = breach_window.global_transform.basis
-			# Move 2m in the -Z direction (outside) from the window's facing
 			var outside_pos = window_pos - window_basis.z * 2.0
 			outside_pos.y = entity.global_position.y  # Keep current Y to avoid vertical snapping
 			entity.global_position = outside_pos
 			entity.velocity = Vector3.ZERO
-			print("[INDOOR RETREAT] Phase 2: Teleported outside to (%.2f, %.2f, %.2f)" % [outside_pos.x, outside_pos.y, outside_pos.z])
+			print("[INDOOR RETREAT] Phase 2: Teleported outside via WINDOW to (%.2f, %.2f, %.2f)" % [outside_pos.x, outside_pos.y, outside_pos.z])
+		else:
+			# DOOR EXIT — teleport to the door's exterior waypoint (or the
+			# door position if no exterior marker exists).
+			var outside_pos: Vector3
+			var door_wp = entity.get_door_waypoint_marker()
+			if door_wp:
+				outside_pos = door_wp.global_position
+			else:
+				var door_node = entity.get_door_node()
+				if door_node:
+					var door_basis = door_node.global_transform.basis
+					outside_pos = door_node.global_position - door_basis.z * 2.0
+				else:
+					outside_pos = entity.global_position + Vector3(0, 0, -2.0)
+			outside_pos.y = entity.global_position.y  # Keep current Y to avoid vertical snapping
+			entity.global_position = outside_pos
+			entity.velocity = Vector3.ZERO
+			print("[INDOOR RETREAT] Phase 2: Teleported outside via DOOR to (%.2f, %.2f, %.2f)" % [outside_pos.x, outside_pos.y, outside_pos.z])
 		
 		# ─── TRANSITION TO FLINCH ──────────────────────────────────────────
 		# The Entity has successfully escaped outside through the breach window.
@@ -2247,6 +2290,12 @@ func _indoor_retreat_handler(delta: float) -> void:
 		# its first frame (it checks if timer <= 0.0 and initializes).
 		_indoor_retreat_phase = 0
 		entity.is_indoor_retreat = false
+		# ─── CLEAR PERSISTENT RETREAT COMMITMENT ─────────────────────
+		# The Entity has physically escaped outside through the window/door.
+		# Clear the commitment flag so the Director can evaluate normally —
+		# the Entity is now OUTSIDE, so the outdoor flashlight matrix (FLINCH,
+		# STANDOFF, CHARGE) applies again for the 5-second flinch sprint.
+		entity.is_indoor_retreat_pending = false
 		entity.set_state(EntityAI.State.FLINCH)
 		entity.state_locked = true
 		_calculated_velocity = Vector3.ZERO
@@ -2352,11 +2401,22 @@ func _approach_window_state(delta: float) -> void:
 	# vars do NOT auto-generate get_*() methods, so has_method always
 	# returns false, silently preventing the FLINCH transition.
 	
-	if entity.is_illuminated and entity.thinks_player_is_inside:
-		entity.set_state(EntityAI.State.FLINCH)
-		entity.state_locked = true  # Lock the new FLINCH state
-		_calculated_velocity = Vector3.ZERO
-	
+	if entity.is_illuminated and entity.thinks_player_is_inside and entity.is_overcharged:
+		# ─── INDOOR RETREAT GATE ─────────────────────────────────────
+		# The FLINCH OVERRIDE is intended for the Entity approaching a WINDOW
+		# from OUTSIDE. If the Entity is physically INSIDE the cabin, this
+		# direct set_state(FLINCH) bypasses the Director's unified overcharge
+		# dispatch (which correctly returns RETREAT indoors). Gate the FLINCH
+		# to outdoor-only so an indoor Entity proceeds to the Director's
+		# normal evaluation (which handles the overcharge → RETREAT path).
+		#
+		# CRITICAL: Also gate on is_overcharged — ONLY the overcharged
+		# flashlight beam may force a FLINCH. The standard beam is IGNORED
+		# so the Entity keeps approaching the window.
+		if not (entity.has_method("is_physically_inside") and entity.is_physically_inside()):
+			entity.set_state(EntityAI.State.FLINCH)
+			entity.state_locked = true  # Lock the new FLINCH state
+			_calculated_velocity = Vector3.ZERO
 		return
 	
 	# Lock the state — the Director must not override while we're mid-approach
@@ -2845,17 +2905,22 @@ func _approach_window_state(delta: float) -> void:
 		# not in the primary arrival check. The 2.5m threshold alone is
 		# sufficient to prevent false arrivals from across the map.
 		#
-		# NOTE: We do NOT use is_navigation_finished() as a completion signal.
-		# The NavMesh may not reach the exact window coordinate (e.g., the
-		# cabin wall blocks further pathfinding). In that case, the Entity
-		# gets as close as the NavMesh allows and then is_navigation_finished()
-		# fires. But the Entity is still 3.6m away from the window — not close
-		# enough to peek inside. We rely solely on the 2D distance check.
+		# NOTE: We use BOTH the 2D distance check AND is_navigation_finished()
+		# as arrival signals. The NavMesh may not reach the exact window
+		# coordinate (e.g., the cabin wall blocks further pathfinding). In that
+		# case, the Entity gets as close as the NavMesh allows and then
+		# is_navigation_finished() fires. The old code relied SOLELY on the
+		# 2.5m distance check — if the NavMesh stopped at 3-4m (blocked by the
+		# cabin wall collision box), the Entity physically could not get closer
+		# and was stuck until the 15-second failsafe. Now, if the NavMesh
+		# reports finished AND the Entity is within a generous 5m of the window
+		# marker, we treat it as arrived (walk-up-and-peek position).
 		#
-		# NOTE: This block handles Phase 0→1 transitions (arriving at the door
-		# for the first time). Once _door_phase >= 1, the Phase 1 and Phase 2
-		# loops above handle the rest independently.
-		if dist_2d <= approach_arrival_distance:
+		# ERROR PREVENTION: is_navigation_finished() ALONE is NOT sufficient —
+		# if the NavMesh is completely blocked early (e.g., at 10m), it would
+		# fire falsely. The 5m gate ensures the Entity is actually close enough
+		# to transition into WINDOW_PEEK.
+		if dist_2d <= approach_arrival_distance or (nav_finished and dist_2d <= 5.0):
 			# ─── DETECT IF TARGET IS A DOOR ─────────────────────────────────
 			# Use the cached @export door_waypoint_marker reference to check if
 			# the current window target IS the door waypoint. If the cached
@@ -3367,21 +3432,26 @@ func _window_peek_state(delta: float) -> void:
 		# The timer is reset to 0.0 when the Entity transitions out of
 		# WINDOW_PEEK (handled in the completion block above).
 		
-		# ─── FACE THE WINDOW ─────────────────────────────────────────────
-		# Rotate the monster model to face the window while peeking.
-		# Use the WindowMarker (outside the window) as the look target, not
-		# the CabinWindow node which is inside the wall.
-		var peek_target = window_target
-		if window_target.has_node("WindowMarker"):
-			peek_target = window_target.get_node("WindowMarker") as Node3D
-		var window_pos = peek_target.global_position
-		var dir_to_window = (window_pos - entity.global_position).normalized()
-		var target_angle = atan2(dir_to_window.x, dir_to_window.z)
-		var model = entity.get_monster_model()
-		if model:
-			model.rotation.y = lerp_angle(model.rotation.y, target_angle, 0.1)
-		
-		_calculated_velocity = Vector3.ZERO
+
+
+	# ─── FACE THE WINDOW (ALL WINDOW TYPES) ───────────────────────────────
+	# Rotate the monster model to face the window while peeking.
+	# Use the WindowMarker (outside the window) as the look target, not
+	# the CabinWindow node which is inside the wall. This runs for BOTH
+	# barricaded and unbarricaded (glass-only) windows — previously only
+	# the barricaded damage path rotated the model toward the glass, so the
+	# Entity looked away during the unbarricaded siege/glass-shatter sequence.
+	var peek_target = window_target
+	if window_target.has_node("WindowMarker"):
+		peek_target = window_target.get_node("WindowMarker") as Node3D
+	var window_pos = peek_target.global_position
+	var dir_to_window = (window_pos - entity.global_position).normalized()
+	var target_angle = atan2(dir_to_window.x, dir_to_window.z)
+	var model = entity.get_monster_model()
+	if model:
+		model.rotation.y = lerp_angle(model.rotation.y, target_angle, 0.1)
+	
+	_calculated_velocity = Vector3.ZERO
 
 
 # ---------------------------------------------------------------------------

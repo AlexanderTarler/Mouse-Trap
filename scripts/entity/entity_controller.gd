@@ -290,6 +290,16 @@ var is_observe_finished: bool = false
 ## Reset to false by the RETREAT handler when the indoor retreat completes.
 var is_indoor_retreat: bool = false
 
+## PERSISTENT indoor retreat commitment flag — set by the Director when the
+## 1.5s indoor overcharge standoff completes, BEFORE the Entity transitions
+## to RETREAT. Unlike `is_indoor_retreat` (which is a behavior hint), this
+## flag survives the player releasing F: once the standoff completes, the
+## Entity is COMMITTED to escaping and must never re-evaluate to FLINCH or
+## STANDOFF mid-flight (the bug where the Entity went into FLINCH and never
+## left the cabin). The Director returns RETREAT while this is true, and the
+## indoor retreat handler clears it once the Entity has escaped outside.
+var is_indoor_retreat_pending: bool = false
+
 ## ─── PHYSICS SUSPENSION FLAG ──────────────────────────────────────────────────
 ## When true, the core physics calculations (gravity, ground snapping, and
 ## move_and_slide()) are bypassed in _physics_process(). Used by the
@@ -336,6 +346,13 @@ var is_overcharged: bool = false
 ## Reset to 0.0 immediately on ANY break: LoS lost, flashlight off, battery death,
 ## or overcharge deactivated.
 var overcharge_stare_timer: float = 0.0
+
+## Tracks the previous player_stare_timer value when the OVERCHARGE beam is
+## active. Used to compute the delta between consecutive on_player_stare()
+## samples so overcharge_stare_timer only accumulates time spent in the
+## OVERCHARGE beam (NOT standard-beam stare time). Reset to -1.0 whenever
+## the overcharge beam breaks (LoS lost, flashlight off, release).
+var _last_overcharge_time_sample: float = -1.0
 
 ## The last world-space position the Entity knows the player was at.
 ## Written by entity_sensory.gd when the player is seen or heard.
@@ -3020,7 +3037,13 @@ func is_physically_inside() -> bool:
 	if _floor_ray and _floor_ray.is_colliding():
 		check_pos.y = _floor_ray.get_collision_point().y + 0.5
 	var room_name = RoomLightDetector.get_room_name_at(check_pos)
-	return room_name in ["HallRoom", "LivingRoom", "ComputerRoom"]
+	# CASE-INSENSITIVE MATCH: RoomLightDetector returns lowercase room names
+	# (e.g. "Hallroom", "Livingroom"), but the original comparison used
+	# "HallRoom" / "LivingRoom" with a capital R. This mismatch made
+	# is_physically_inside() return false even when the Entity was physically
+	# inside the cabin, allowing the Director's Tier 4/Tier 7 escalation guards
+	# to be bypassed and forcing APPROACH_WINDOW while indoors.
+	return room_name.to_lower() in ["hallroom", "livingroom", "computerroom"]
 
 
 ## ─── BELIEF SYSTEM ACCESSORS ──────────────────────────────────────────────────
@@ -3681,10 +3704,16 @@ func on_player_stare(time: float, overcharged: bool = false) -> void:
 	# battery death, or overcharge release (all of which make `time` decay
 	# or make overcharged false).
 	if is_overcharged and is_illuminated:
-		overcharge_stare_timer = maxf(overcharge_stare_timer, player_stare_timer)
+		if _last_overcharge_time_sample < 0.0:
+			overcharge_stare_timer = 0.0
+		else:
+			var sample_delta: float = maxf(0.0, player_stare_timer - _last_overcharge_time_sample)
+			overcharge_stare_timer += sample_delta
+		_last_overcharge_time_sample = player_stare_timer
 	else:
 		# Hard reset — no partial credit for broken standoffs.
 		overcharge_stare_timer = 0.0
+		_last_overcharge_time_sample = -1.0
 	
 	# During CHARGE, continuously update nav target to the player's current position
 	# This is movement/pathfinding logic, NOT state transition logic.
@@ -4133,6 +4162,15 @@ func _update_animations(_delta: float) -> void:
 	if _monster_model:
 		_monster_model.position = Vector3(0.0, -0.95, 0.0)
 	
+	# Indoor Retreat Phase 1 Sprint (running_crawl)
+	# The Entity sprints toward the escape window/door during the indoor
+	# retreat pathfinding phase. It must visibly RUN — not glide with an
+	# Idle pose. The RETREAT→Idle hard clamp below would otherwise freeze
+	# the model mid-sprint. Check BEFORE the Idle clamp.
+	if _state == EntityAI.State.RETREAT and _ai and _ai.get("_indoor_retreat_phase") == 1:
+		_anim_state_machine.travel("running_crawl")
+		return
+	
 	# Flinch Override (RETREAT Phase 3)
 	# When the Entity is in RETREAT state AND the indoor retreat Phase 3
 	# flinch is active, we MUST play the "Flinch" animation instead of "Idle".
@@ -4143,6 +4181,17 @@ func _update_animations(_delta: float) -> void:
 	# completing).
 	if _state == EntityAI.State.RETREAT and _ai and _ai.get("_retreat_indoor_phase_3") == true:
 		_anim_state_machine.travel("Flinch")
+		return
+	
+	# ─── OVERCHARGE STANDOFF: entity_in_light (stagger/twitch) ──────────
+	# While the player holds the OVERCHARGE flashlight beam on the Entity,
+	# play the staggered twitching reaction instead of the static Idle.
+	# The animation loops/holds while the beam remains active; when the
+	# Director transitions away (RETREAT after 1.5s, INDOOR_SEARCH on beam
+	# break, FLINCH outdoors, etc.), this check fails on the next frame
+	# and normal locomotion resumes.
+	if _state == EntityAI.State.STANDOFF and is_overcharged:
+		_anim_state_machine.travel("entity_in_light")
 		return
 	
 	# Hard clamp animations to Idle if we are retreating, dormant, or in a
