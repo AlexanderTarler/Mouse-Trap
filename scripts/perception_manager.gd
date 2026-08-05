@@ -86,6 +86,18 @@ func _perform_perception_check() -> void:
 		_cached_dist_to_entity = 99999.0
 		return
 	
+	# ─── OVERCHARGE GATE ─────────────────────────────────────────
+	# While the player holds the OVERCHARGE flashlight beam on the Entity,
+	# suppress the "watched" distortion / blindness effects. Overcharge is
+	# the player's strongest defensive mechanic — it should NOT make them
+	# MORE vulnerable via perception-based hallucinations. The watched
+	# intensity fades naturally while the beam is held.
+	if _entity.get("is_overcharged") == true:
+		_cached_in_fov = false
+		_cached_is_occluded = true
+		_cached_dist_to_entity = 99999.0
+		return
+	
 	var cam_pos = _camera.global_position
 	var cam_forward = -_camera.global_transform.basis.z
 	var entity_pos = _entity.global_position

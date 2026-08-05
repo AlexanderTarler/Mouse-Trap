@@ -519,17 +519,17 @@ func is_player_inside() -> bool:
 	# If the room name is anything other than "Outside", the player is inside.
 	var result = get_player_room() != "Outside"
 	
-	# ─── PERIODIC DEBUG LOG (every 2 seconds) ──────────────────────────
+	# ─── PERIODIC DEBUG LOG (every 2 seconds, DEBUG BUILDS ONLY) ────────
 	# Logs whether the player is considered inside or outside by both the
 	# player's own room detection AND the Entity's navigation module.
-	# This helps debug false "player is outside" detections that cause the
-	# Entity to incorrectly enter STALK instead of INDOOR_SEARCH.
-	_inside_outside_debug_timer += 0.016  # Approximate delta for _process
-	if _inside_outside_debug_timer >= 2.0:
-		_inside_outside_debug_timer = 0.0
-		var player_room = get_player_room()
-		var entity_inside = result
-		print("[INSIDE/OUTSIDE DEBUG] Player room='%s' | Entity thinks player is inside=%s" % [player_room, entity_inside])
+	# Debug-only to eliminate console spam in release builds.
+	if OS.is_debug_build():
+		_inside_outside_debug_timer += 0.016  # Approximate delta for _process
+		if _inside_outside_debug_timer >= 2.0:
+			_inside_outside_debug_timer = 0.0
+			var player_room = get_player_room()
+			var entity_inside = result
+			print("[INSIDE/OUTSIDE DEBUG] Player room='%s' | Entity thinks player is inside=%s" % [player_room, entity_inside])
 	
 	return result
 
@@ -924,11 +924,51 @@ func find_nearest_broken_window() -> Node3D:
 
 
 func pick_next_vantage_point() -> void:
+	# ─── STATE GUARD: Never override an active approach/breach targeting ──
+	# If the Entity is mid-approach (APPROACH_WINDOW), peeking (WINDOW_PEEK),
+	# or hunting inside (INDOOR_SEARCH), a treeline vantage point is NOT a
+	# valid destination — it would redirect the Entity 30m+ away from the
+	# cabin mid-action. Only callers in passive states (OBSERVE, FLINCH,
+	# RETREAT arrival, etc.) should legitimately set a new vantage point.
+	var entity_state = entity.get_state()
+	if entity_state == EntityAI.State.APPROACH_WINDOW \
+			or entity_state == EntityAI.State.WINDOW_PEEK \
+			or entity_state == EntityAI.State.INDOOR_SEARCH:
+		print("[NAV_GUARD] pick_next_vantage_point() BLOCKED — Entity is in %s. Preserving current nav target." % EntityAI.State.keys()[entity_state])
+		return
+	
 	var candidates = _treeline_markers.filter(func(m): return m != entity.get_last_vantage_point())
 	if candidates.is_empty():
 		candidates = _treeline_markers
 	
-	var best_marker = candidates.pick_random()
+	# ─── UTILITY SCORING (smarter flanking) ──────────────────────────────
+	# Score each candidate by:
+	#   1. Darkness (preferred) — the Entity hides in shadows, using the
+	#      existing light cost grid.
+	#   2. Reasonable distance from the player (25-45m band) — close enough
+	#      to keep pressure but far enough to stay unnoticed.
+	var best_marker: Node3D = candidates[0]
+	var best_score: float = -INF
+	var player_ref = entity.get_player()
+	
+	for marker in candidates:
+		var score: float = 1.0
+		var mark_pos: Vector3 = marker.global_position
+		
+		# Darkness bonus — prefer markers in pitch-black areas
+		if is_position_in_dark(mark_pos):
+			score += 2.0
+		
+		# Distance band bonus — prefer the 25-45m band from the player
+		if player_ref:
+			var dist_player: float = mark_pos.distance_to(player_ref.global_position)
+			if dist_player >= 25.0 and dist_player <= 45.0:
+				score += 1.0
+		
+		if score > best_score:
+			best_score = score
+			best_marker = marker
+	
 	entity.set_last_vantage_point(best_marker)
 	entity.get_nav_agent().target_position = best_marker.global_position
 	entity.set_at_vantage_point(false)
@@ -943,7 +983,8 @@ func pick_next_vantage_point() -> void:
 	# If the target is in the forest (e.g., (30.45, 0, -10.52)), something
 	# is wrong — the Entity is being redirected to a treeline vantage point
 	# instead of the door/window it was approaching.
-	var entity_state = entity.get_state()
+	# NOTE: entity_state is already declared at the top of this function
+	# by the STATE GUARD. Reuse it here for the debug warning.
 	if entity_state == EntityAI.State.INDOOR_SEARCH or entity_state == EntityAI.State.APPROACH_WINDOW:
 		var cabin_dist = best_marker.global_position.distance_to(entity.cabin_center)
 		if cabin_dist > 10.0:

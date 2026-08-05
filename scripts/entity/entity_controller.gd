@@ -354,6 +354,21 @@ var overcharge_stare_timer: float = 0.0
 ## the overcharge beam breaks (LoS lost, flashlight off, release).
 var _last_overcharge_time_sample: float = -1.0
 
+## Timestamp (seconds from Time.get_ticks_msec) when the overcharge beam last
+## dropped the Entity. Used with OVERCHARGE_GRACE_PERIOD to preserve standoff
+## progress across brief aim-wobble frame drops. Reset to -1.0 whenever the
+## beam is actively on the Entity.
+var _overcharge_break_since: float = -1.0
+
+## Grace period (seconds) after the overcharge beam drops the Entity before
+## the standoff progress is discarded. The overcharge cone is very tight
+## (~10°), and the player_controller LOS check only runs at 10Hz, so any
+## micro-wobble in first-person aim can drop the beam for a single tick.
+## Without this grace period, the 1.5s standoff timer hard-resets on the
+## first frame of wobble, making the indoor overcharge → RETREAT escape
+## nearly impossible to trigger.
+const OVERCHARGE_GRACE_PERIOD: float = 0.35
+
 ## The last world-space position the Entity knows the player was at.
 ## Written by entity_sensory.gd when the player is seen or heard.
 ## Read by entity_ai.gd for pathfinding toward the player.
@@ -2344,22 +2359,25 @@ func _physics_process(delta: float) -> void:
 		else:
 			_entity_step_timer = 0.0
 	
-	# ─── Y-AXIS DEBUG: Floor clipping diagnostic ──────────────────
-	_y_debug_frame_counter += 1
-	if _y_debug_frame_counter >= 60 and is_physically_inside():
-		_y_debug_frame_counter = 0
-		var ray_hit = _floor_ray.is_colliding()
-		var hit_name = _floor_ray.get_collider().name if ray_hit else "None"
-		var hit_y = _floor_ray.get_collision_point().y if ray_hit else -999.0
-		var ray_mask = _floor_ray.collision_mask
-		var landing_y = _indoor_landing_position.y
-		print("[Y-AXIS DEBUG] Inside Cabin | Entity Y: ", global_position.y,
-		      " | RayCast hit: ", hit_name,
-		      " | hit_y: ", hit_y,
-		      " | Ray mask: ", ray_mask,
-		      " | Landing Y: ", landing_y,
-		      " | Velocity.y: ", velocity.y,
-		      " | Physics suspended: ", is_physics_suspended)
+	# ─── Y-AXIS DEBUG: Floor clipping diagnostic (DEBUG BUILDS ONLY) ──
+	# Gated behind OS.is_debug_build() to eliminate console spam in
+	# release builds. The F3 overlay covers this diagnostics in-editor.
+	if OS.is_debug_build():
+		_y_debug_frame_counter += 1
+		if _y_debug_frame_counter >= 60 and is_physically_inside():
+			_y_debug_frame_counter = 0
+			var ray_hit = _floor_ray.is_colliding()
+			var hit_name = _floor_ray.get_collider().name if ray_hit else "None"
+			var hit_y = _floor_ray.get_collision_point().y if ray_hit else -999.0
+			var ray_mask = _floor_ray.collision_mask
+			var landing_y = _indoor_landing_position.y
+			print("[Y-AXIS DEBUG] Inside Cabin | Entity Y: ", global_position.y,
+			      " | RayCast hit: ", hit_name,
+			      " | hit_y: ", hit_y,
+			      " | Ray mask: ", ray_mask,
+			      " | Landing Y: ", landing_y,
+			      " | Velocity.y: ", velocity.y,
+			      " | Physics suspended: ", is_physics_suspended)
 	
 	_update_animations(delta)
 # ─── DEBUG: F2 — Window Siege Stress Test ────────────────────────────────────
@@ -3703,17 +3721,49 @@ func on_player_stare(time: float, overcharged: bool = false) -> void:
 	# The timer resets immediately on ANY break: LoS lost, flashlight off,
 	# battery death, or overcharge release (all of which make `time` decay
 	# or make overcharged false).
+	#
+	# CRITICAL FIX (wall-clock timing): The old implementation accumulated
+	# player_stare_timer differentials. But player_controller.gd CAPS
+	# look_timer at 2.0 — once the player has stared for 2 seconds, the
+	# timer stops climbing and the per-frame delta becomes 0.0 forever.
+	# overcharge_stare_timer froze mid-value, so a player who held the
+	# overcharge beam for 5+ seconds never crossed the 1.5s threshold and
+	# the Entity stayed in STANDOFF until the battery died and the beam
+	# broke. Switching to wall-clock time (Time.get_ticks_msec) means the
+	# accumulation ALWAYS advances while the beam is held, so 1.5s is
+	# always reachable.
+	#
+	# GRACE PERIOD: The overcharge beam's 10° cone is extremely tight and
+	# the LOS check in player_controller.gd runs at only 10Hz. A single
+	# frame of aim wobble can drop the beam off the Entity for one tick,
+	# which would previously hard-reset overcharge_stare_timer to 0.0 and
+	# make the 1.5s standoff (needed to trigger the indoor RETREAT) almost
+	# impossible to complete. Progress is now preserved for
+	# OVERCHARGE_GRACE_PERIOD (0.35s) after the beam breaks — only a
+	# genuine sustained break resets the timer.
 	if is_overcharged and is_illuminated:
+		_overcharge_break_since = -1.0
+		var _now_sec: float = Time.get_ticks_msec() / 1000.0
 		if _last_overcharge_time_sample < 0.0:
-			overcharge_stare_timer = 0.0
+			# Fresh overcharge acquisition — start timing from now.
+			# NOTE: We intentionally do NOT reset overcharge_stare_timer,
+			# so re-acquisitions within the grace period preserve progress.
+			_last_overcharge_time_sample = _now_sec
 		else:
-			var sample_delta: float = maxf(0.0, player_stare_timer - _last_overcharge_time_sample)
+			# Accumulate wall-clock elapsed time since the last sample.
+			var sample_delta: float = maxf(0.0, _now_sec - _last_overcharge_time_sample)
 			overcharge_stare_timer += sample_delta
-		_last_overcharge_time_sample = player_stare_timer
+			_last_overcharge_time_sample = _now_sec
 	else:
-		# Hard reset — no partial credit for broken standoffs.
-		overcharge_stare_timer = 0.0
-		_last_overcharge_time_sample = -1.0
+		var _now_sec: float = Time.get_ticks_msec() / 1000.0
+		if _overcharge_break_since < 0.0:
+			# Beam just broke — start the grace timer instead of resetting.
+			_overcharge_break_since = _now_sec
+		elif _now_sec - _overcharge_break_since >= OVERCHARGE_GRACE_PERIOD:
+			# Break persisted past the grace period — a genuine standoff break.
+			overcharge_stare_timer = 0.0
+			_last_overcharge_time_sample = -1.0
+			_overcharge_break_since = -1.0
 	
 	# During CHARGE, continuously update nav target to the player's current position
 	# This is movement/pathfinding logic, NOT state transition logic.
@@ -3777,6 +3827,10 @@ func fade_and_relocate() -> void:
 	
 	# Pick a new vantage point via the navigation system.
 	# This sets _nav_agent.target_position to the new coordinate.
+	# NOTE: pick_next_vantage_point() now has its own internal state guard —
+	# it will refuse to override the nav target if the Entity is mid-approach
+	# (APPROACH_WINDOW/WINDOW_PEEK/INDOOR_SEARCH). This prevents the
+	# "Entity turns around mid-approach and walks to a treeline" bug.
 	_navigation.pick_next_vantage_point()
 	
 	# ─── RELOCATE TARGET SET ────────────────────────────────────────────
@@ -4076,7 +4130,7 @@ func _update_collision_layers() -> void:
 			# NOTE: Layers 3 (Tree) and 4 (Rock) are intentionally excluded.
 			# The Entity phases through foliage while stalking the cabin.
 
-		EntityAI.State.INDOOR_SEARCH:
+		EntityAI.State.INDOOR_SEARCH, EntityAI.State.RETREAT:
 			# INDOOR_SEARCH: Cabin geometry (Layer 1) removed from the mask.
 			# The Entity is inside the cabin; the baked NavigationMesh already
 			# confines it to walkable interior spaces (walls are baked out of
@@ -4087,12 +4141,35 @@ func _update_collision_layers() -> void:
 			# interior navigation and only causes stuck states. Exterior walls
 			# are also Layer 1, but the nav agent never routes through them,
 			# so the Entity cannot phase out of the cabin.
+			#
+			# RETREAT: REUSES the same mask. The Entity must sprint through the
+			# cabin interior to reach the breached window/door exit point. The
+			# NavMesh routes around walls — cabin collision (Layer 1) only
+			# catches the physics capsule on doorframe lips and jams it, so the
+			# Entity never reaches the 2m proximity gate in _indoor_retreat_handler
+			# Phase 1. Excluding Layer 1 lets the sprint-to-exit succeed; the
+			# Phase 2 safety check (is_physically_inside) still guarantees the
+			# Entity exits and doesn't phase through the exterior walls.
 			collision_mask = 0
 			collision_mask |= (1 << (COLLISION_LAYER_PLAYER - 1)) # Layer 2: Player
 			# NOTE: Layers 1 (Cabin), 3 (Tree), 4 (Rock) intentionally excluded.
 			# Indoor search is fully NavMesh-confined.
 
-		EntityAI.State.CHARGE, EntityAI.State.APPROACH_WINDOW, EntityAI.State.WINDOW_PEEK, EntityAI.State.FLINCH, EntityAI.State.ATTACK_LAMP, EntityAI.State.RETREAT:
+		EntityAI.State.APPROACH_WINDOW:
+			# APPROACH_WINDOW: Tree/rock collision DISABLED. The Entity travels
+			# through the forest toward a selected window/door; the baked
+			# NavigationMesh already routes around trees, so physics-only tree
+			# collision is redundant and jams the capsule on foliage between
+			# the Entity's position and the cabin. Cabin geometry (Layer 1) and
+			# the Player body (Layer 2) still block, preserving wall/doorframe
+			# collisions during the approach itself.
+			collision_mask = 0
+			collision_mask |= (1 << (COLLISION_LAYER_CABIN - 1))  # Layer 1: Cabin
+			collision_mask |= (1 << (COLLISION_LAYER_PLAYER - 1)) # Layer 2: Player
+			# NOTE: Layers 3 (Tree) and 4 (Rock) are intentionally excluded.
+			# The Entity phases through foliage while approaching the cabin.
+
+		EntityAI.State.CHARGE, EntityAI.State.WINDOW_PEEK, EntityAI.State.FLINCH, EntityAI.State.ATTACK_LAMP:
 			# Full collision mode: Re-enable ALL collision layers.
 			# The Entity must collide with everything during aggressive states
 			# to prevent phasing through doors, window frames, or cabin walls.

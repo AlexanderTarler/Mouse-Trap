@@ -149,6 +149,16 @@ func _physics_process(delta: float) -> void:
 	if entity_node and entity_node.has_method("is_active") and not entity_node.is_active():
 		entity_node = null
 	
+	# ─── OVERCHARGE GATE ─────────────────────────────────────────
+	# While the player holds the OVERCHARGE flashlight beam on the Entity,
+	# suppress all hallucination effects (shader corruption, growling audio,
+	# gaze meter). Overcharge is the player's strongest defensive mechanic —
+	# seeing the Entity stagger in place under the beam is a MOMENT OF POWER,
+	# not a punishment. Nulling the node skips the vision cone entirely, so
+	# the shader fades out and the audio stops naturally.
+	if entity_node and entity_node.is_overcharged:
+		entity_node = null
+	
 	if entity_node:
 		var cam = get_viewport().get_camera_3d()
 		if cam:

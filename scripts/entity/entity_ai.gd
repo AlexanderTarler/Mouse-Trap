@@ -33,7 +33,7 @@ var config: Resource = null
 
 # Animation
 var enter_window_anim_duration: float = 1.5
-var glass_shatter_impact_delay: float = 0.5
+var glass_shatter_impact_delay: float = 1.5
 
 # Approach
 var approach_min_duration: float = 2.0
@@ -2133,6 +2133,15 @@ var _retreat_indoor_phase_3: bool = false
 var _retreat_indoor_phase_3_timer: float = 0.0
 var _retreat_indoor_phase_3_triggered: bool = false
 
+## Counts down the "EnterWindow" vault-out animation during the indoor retreat.
+## When the Entity reaches the breach window in Phase 1, this timer is set to
+## enter_window_anim_duration (1.5s). The Entity plays the EnterWindow animation
+## (reversed vault-out through the window frame) while this timer counts down.
+## When it reaches 0.0, Phase 3 teleports the Entity outside. The controller's
+## _update_animations() plays "EnterWindow" while this timer > 0 and the
+## _indoor_retreat_phase == 2.
+var _retreat_vault_timer: float = 0.0
+
 func _retreat_state(delta: float) -> void:
 	# Lock the state — the Director must not override while we're mid-retreat
 	entity.state_locked = true
@@ -2198,11 +2207,27 @@ var _retreat_exit_was_window: bool = true
 ## position; for door entries it is the door's interior position.
 var _retreat_exit_pos: Vector3 = Vector3.ZERO
 
+## Timer enforcing a MINIMUM sprint duration in Phase 1 before the proximity
+## gate can advance to Phase 2 (teleport outside). Without this, an Entity
+## already standing near the breach point (e.g. it breached the window the
+## player is currently overcharging) completes Phase 1 on the FIRST frame and
+## teleports outside instantly — skipping the visible sprint-to-exit escape.
+## Measured in seconds. Reset to 0.0 in Phase 0. Gate fires when >= 1.5.
+var _retreat_indoor_phase_1_timer: float = 0.0
+
+## Minimum duration (seconds) the Entity must sprint toward the exit in
+## Phase 1 before the proximity check can advance to Phase 2. This guarantees
+## the player SEES the Entity physically escape toward the breach point,
+## even when it is already within the 2m proximity gate.
+const RETREAT_PHASE_1_MIN_DURATION: float = 1.5
+
 func _indoor_retreat_handler(delta: float) -> void:
 	var breach_window = entity.last_breached_window
 	
 	# ─── PHASE 0: Select escape target (window OR door) ────────────────
 	if _indoor_retreat_phase == 0:
+		# Reset the Phase 1 minimum sprint timer — a new escape sequence is beginning.
+		_retreat_indoor_phase_1_timer = 0.0
 		if breach_window and breach_window.has_method("get_indoor_landing_position"):
 			# WINDOW ENTRY — escape back through the same window.
 			_retreat_exit_was_window = true
@@ -2232,30 +2257,83 @@ func _indoor_retreat_handler(delta: float) -> void:
 	
 	# ─── PHASE 1: Pathfind toward the escape point ─────────────────────
 	if _indoor_retreat_phase == 1:
-		if entity.get_nav_agent().is_navigation_finished():
-			# Arrived at the exit point — advance to Phase 2 (teleport outside)
+		# CRITICAL FIX: is_navigation_finished() alone is NOT sufficient to
+		# advance to Phase 2. If the NavMesh doesn't cover the cabin interior
+		# (documented limitation), the agent reports "finished" immediately
+		# and the Entity advances to Phase 2 without ever moving toward the
+		# exit — then teleports from wherever it is, which can leave it stuck
+		# inside the cabin ("Entity runs around inside but never leaves").
+		#
+		# Fix: require physical proximity to the chosen exit point AND (nav
+		# finished OR close enough via 2D distance).
+		#
+		# MINIMUM SPRINT WINDOW: Accumulate the Phase 1 timer. The proximity
+		# gate below is NOT allowed to fire until the Entity has sprinted for
+		# at least RETREAT_PHASE_1_MIN_DURATION (1.5s). Without this, an Entity
+		# already standing at the breach point (the window the player is
+		# overcharging) would complete Phase 1 on the FIRST frame and teleport
+		# outside instantly — skipping the dramatic visible escape.
+		_retreat_indoor_phase_1_timer += delta
+		var exit_2d := Vector2(_retreat_exit_pos.x, _retreat_exit_pos.z)
+		var ent_2d := Vector2(entity.global_position.x, entity.global_position.z)
+		var dist_to_exit_2d: float = ent_2d.distance_to(exit_2d)
+		var nav_finished_r = entity.get_nav_agent().is_navigation_finished()
+		
+		if _retreat_indoor_phase_1_timer >= RETREAT_PHASE_1_MIN_DURATION and (dist_to_exit_2d <= 2.0 or (nav_finished_r and dist_to_exit_2d <= 4.0)):
+			# Physically at (or very near) the exit point — advance to Phase 2.
 			_indoor_retreat_phase = 2
-			print("[INDOOR RETREAT] Phase 1 complete. Advancing to Phase 2 (teleport outside).")
+			print("[INDOOR RETREAT] Phase 1 complete. At exit (dist=%.2f). Advancing to Phase 2 (teleport outside)." % dist_to_exit_2d)
 		else:
-			var next_pos = entity.get_nav_agent().get_next_path_position()
-			var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
-			if dir_2d.length() > 0.01:
-				var move_dir_2d = dir_2d.normalized()
-				_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed * 1.5  # Sprint to escape
-				_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed * 1.5
+			# Still not close enough — keep sprinting toward the exit.
+			var next_pos_r = entity.get_nav_agent().get_next_path_position()
+			var dir_2d_r := Vector2(next_pos_r.x - entity.global_position.x, next_pos_r.z - entity.global_position.z)
+			if dir_2d_r.length() > 0.01:
+				var move_dir_2d_r = dir_2d_r.normalized()
+				_calculated_velocity.x = move_dir_2d_r.x * entity.current_stalk_speed * 1.5  # Sprint to escape
+				_calculated_velocity.z = move_dir_2d_r.y * entity.current_stalk_speed * 1.5
+			else:
+				# Nav path gone (NavMesh limitation) — walk directly at the exit.
+				var direct_exit = (_retreat_exit_pos - entity.global_position)
+				direct_exit.y = 0.0
+				if direct_exit.length() > 0.01:
+					var direct_dir = direct_exit.normalized()
+					_calculated_velocity.x = direct_dir.x * entity.current_stalk_speed * 1.5
+					_calculated_velocity.z = direct_dir.z * entity.current_stalk_speed * 1.5
 			return
 	
 	# ─── PHASE 2: Teleport outside the exit ─────────────────────────────
 	if _indoor_retreat_phase == 2:
 		if _retreat_exit_was_window and breach_window:
-			# WINDOW EXIT — teleport to the window's exterior (2m outside).
-			var window_pos = breach_window.global_position
-			var window_basis = breach_window.global_transform.basis
-			var outside_pos = window_pos - window_basis.z * 2.0
+			# WINDOW EXIT — teleport to the window's EXTERIOR.
+			# Prefer the WindowMarker child (guaranteed to face outward),
+			# falling back to the raw CabinWindow position with an offset
+			# along its -Z basis (the exterior-facing side).
+			var outside_pos: Vector3
+			if breach_window.has_node("WindowMarker"):
+				var marker: Node3D = breach_window.get_node("WindowMarker")
+				outside_pos = marker.global_position
+			else:
+				var window_pos = breach_window.global_position
+				var window_basis = breach_window.global_transform.basis
+				outside_pos = window_pos - window_basis.z * 2.5
 			outside_pos.y = entity.global_position.y  # Keep current Y to avoid vertical snapping
 			entity.global_position = outside_pos
 			entity.velocity = Vector3.ZERO
 			print("[INDOOR RETREAT] Phase 2: Teleported outside via WINDOW to (%.2f, %.2f, %.2f)" % [outside_pos.x, outside_pos.y, outside_pos.z])
+			
+			# SAFETY: verify the teleport actually landed OUTSIDE. If the
+			# window was oriented away from the cabin, the offset may still
+			# be inside — fall back to a NavMesh-snapped far point.
+			if entity.has_method("is_physically_inside") and entity.is_physically_inside():
+				var nav_map_r = entity.get_world_3d().navigation_map
+				var fallback_r = breach_window.global_position - (breach_window.global_transform.basis.z * 6.0)
+				fallback_r.y = entity.global_position.y
+				var snapped_r = NavigationServer3D.map_get_closest_point(nav_map_r, fallback_r)
+				snapped_r.x = fallback_r.x
+				snapped_r.z = fallback_r.z
+				entity.global_position = snapped_r
+				entity.velocity = Vector3.ZERO
+				print("[INDOOR RETREAT] SAFETY: Teleport was still inside! Forced to NavMesh point (%.2f, %.2f, %.2f)" % [snapped_r.x, snapped_r.y, snapped_r.z])
 		else:
 			# DOOR EXIT — teleport to the door's exterior waypoint (or the
 			# door position if no exterior marker exists).
@@ -2586,13 +2664,37 @@ func _approach_window_state(delta: float) -> void:
 			entity.was_door_entry = true
 			entity.is_door_target = true
 		else:
-			# ─── WINDOW FAILSAFE: Standard completion (no teleport) ───────
-			# For window targets, just signal completion. The Director will
-			# transition to OBSERVE_FROM_TREELINE and try a different window.
-			# Reset the consecutive door failsafe counter since we successfully
-			# handled a window (non-door) target.
+			# ─── WINDOW FAILSAFE: Distance-aware completion ─────────────────
+			# The 15-second failsafe fired while approaching a WINDOW. We MUST
+			# NOT blindly signal completion — if the Entity is still far from
+			# the window (e.g. 20m in the forest), transitioning to WINDOW_PEEK
+			# would start the siege while far away, and the breach would teleport
+			# the Entity inside from across the map.
+			#
+			# Fix: if the Entity is within a sane arrival band (2.5m) of the
+			# WindowMarker, treat as arrived → WINDOW_PEEK. Otherwise, clear the
+			# window target so the Director's NULL TARGET GUARD returns
+			# OBSERVE_FROM_TREELINE (picking a different window on the next
+			# confidence escalation) instead of WINDOW_PEEK.
 			_consecutive_door_failsafe_count = 0
-			print("[Entity AI] APPROACH_WINDOW FAILSAFE: Window target. Signaling completion without teleport.")
+			
+			var failsafe_entity_pos = entity.global_position
+			var failsafe_marker_pos = failsafe_window_target.global_position
+			if failsafe_window_target.has_node("WindowMarker"):
+				failsafe_marker_pos = failsafe_window_target.get_node("WindowMarker").global_position
+			
+			var dist_fs_2d := Vector2(failsafe_entity_pos.x, failsafe_entity_pos.z).distance_to(
+				Vector2(failsafe_marker_pos.x, failsafe_marker_pos.z))
+			
+			if dist_fs_2d <= approach_arrival_distance:
+				# Close enough — genuine arrival. Keep the target so the
+				# Director transitions to WINDOW_PEEK.
+				print("[Entity AI] APPROACH_WINDOW FAILSAFE: Window target within %.2f m. Treating as arrived → WINDOW_PEEK." % dist_fs_2d)
+			else:
+				# Too far — clear target and let the NULL TARGET GUARD
+				# fall back to OBSERVE_FROM_TREELINE (next cycle re-picks).
+				print("[Entity AI] APPROACH_WINDOW FAILSAFE: Still %.2f m from window. Clearing target → OBSERVE." % dist_fs_2d)
+				entity.set_current_window_target(null)
 		
 		_calculated_velocity = Vector3.ZERO
 		entity.is_approach_finished = true

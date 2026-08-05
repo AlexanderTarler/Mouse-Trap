@@ -204,6 +204,16 @@ func _process(delta: float) -> void:
 	if not entity or not is_instance_valid(entity):
 		return
 	
+	# ─── PAUSE GUARD ───────────────────────────────────────────────
+	# Confidence must NOT accumulate while the game is paused (pause menu
+	# open). This node runs with PROCESS_MODE_ALWAYS, so without this guard
+	# it would keep drifting/modifying confidence (and triggering threshold
+	# events) while the player is in the pause menu — unfairly eroding the
+	# player's defensive progress off-screen.
+	if get_tree().paused:
+		_update_fps_only(delta)
+		return
+	
 	# ─── DORMANT/DAYTIME GUARD ─────────────────────────────────────
 	# Confidence does NOT accumulate while the Entity is dormant.
 	if not entity.get("_is_active"):
