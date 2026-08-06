@@ -491,6 +491,18 @@ const MAX_RECENT_WINDOWS: int = 3
 var _room_path: Array[String] = []
 var _current_room_index: int = 0
 
+## ─── BUG 1/2 FIX: DIRECT INTERIOR MOVEMENT TARGET ────────────────────────────
+## The world-space position the Entity moves DIRECTLY toward during
+## INDOOR_SEARCH Phase B and indoor RETREAT. The cabin interior is NOT
+## covered by the NavMesh (documented limitation), so the NavigationAgent
+## snaps both the Entity and the target to the nearest OUTDOOR NavMesh
+## points, producing a path that routes OUT through the front door and back
+## in — the "doorway detour" bug. Since the Entity ignores cabin wall
+## collisions while inside (collision mask = Player only), a straight line
+## to the target is always valid. Vector3.ZERO means "no direct target —
+## fall back to legacy NavAgent following."
+var _indoor_direct_target: Vector3 = Vector3.ZERO
+
 ## Throttle timer for re-checking the player's current room during indoor search.
 ## Updated every 1.0 seconds to avoid expensive RoomLightDetector lookups.
 var _room_path_recheck_timer: float = 0.0
@@ -525,6 +537,30 @@ var _path_timer: float = 0.0
 ## Entity teleports directly to the waypoint to prevent soft-locks from
 ## geometry blocking (e.g., crates blocking the last 0.07m of the path).
 var _sabotage_stuck_timer: float = 0.0
+
+## ─── BUG 3 FIX: DISTANCE-LATCHED STUCK DETECTION ───────────────────────────
+## The previous velocity-based stuck detection failed when the Entity
+## oscillated against a NavMesh edge: it jitters back and forth with non-zero
+## velocity, so the stuck timer never accumulated and the Entity was paralyzed
+## forever. These variables track distance-to-waypoint over time instead,
+## plus a global failsafe that covers ALL branches.
+var _sabotage_last_dist: float = 0.0          # distance at last check interval
+var _sabotage_dist_check_timer: float = 0.0   # accumulates toward the check interval
+var _sabotage_elapsed: float = 0.0            # total time spent in SABOTAGE_FUSE
+
+## How often (seconds) to compare the current distance to the latched
+## distance for progress detection.
+const SABOTAGE_PROGRESS_CHECK_INTERVAL: float = 2.0
+
+## Minimum distance DECREASE (meters) required over each check interval to
+## consider the Entity "making progress" toward the waypoint.
+const SABOTAGE_PROGRESS_EPSILON: float = 0.5
+
+## Global failsafe: if the Entity remains in SABOTAGE_FUSE for this many
+## seconds without completing, force-teleport to the waypoint and break the
+## fuse box. Covers ALL branches (including the no-waypoint fallback that
+## previously had no stuck timeout at all).
+const SABOTAGE_GLOBAL_FAILSAFE: float = 15.0
 
 ## Minimum interval (in seconds) between NavigationAgent3D target_position updates.
 ## Setting target_position triggers a path recalculation which is expensive.
@@ -917,8 +953,9 @@ func process_state_logic(delta: float) -> void:
 	# flashlight beam is currently on the Entity.
 	#
 	# STUN RULES:
-	#   - If state is CHARGE or RETREAT, the Entity is immune to the stun
-	#     (it's already committed to an action).
+	#   - If state is CHARGE, RETREAT, or FLINCH, the Entity is immune to
+	#     the stun (it's already committed to an action — the post-retreat
+	#     FLINCH sprint must play out so the Entity flees the window).
 	#   - If state is any other state AND the player is staring, force
 	#     velocity to zero and play the Idle animation.
 	#   - The _stare_timer accumulates while the player stares. If the
@@ -935,7 +972,7 @@ func process_state_logic(delta: float) -> void:
 		entity.get_nav_agent().target_desired_distance = 1.5
 		entity.get_nav_agent().path_desired_distance = 1.0
 	
-	if _is_being_stared_at and current_state != State.CHARGE and current_state != State.RETREAT:
+	if _is_being_stared_at and current_state != State.CHARGE and current_state != State.RETREAT and current_state != State.FLINCH:
 		# ─── FREEZE VELOCITY ────────────────────────────────────────────────
 		# Override the calculated velocity to zero, preventing the Entity
 		# from moving while being stared at.
@@ -1543,6 +1580,17 @@ func _sabotage_fuse_state(delta: float) -> void:
 	# Lock the state — the Director must not override while we're mid-sabotage
 	entity.state_locked = true
 	
+	# ─── RESET SABOTAGE TRACKERS ON FRESH ENTRY (BUG 3 FIX) ─────────────
+	# If this is the first frame of SABOTAGE_FUSE (transitioned from another
+	# state), reset the distance-latch, stuck timer, and elapsed failsafe so
+	# a previous interrupted sabotage session doesn't carry stale values
+	# into a new attempt.
+	if entity.get_state() != entity.get_previous_state():
+		_sabotage_last_dist = 0.0
+		_sabotage_dist_check_timer = 0.0
+		_sabotage_stuck_timer = 0.0
+		_sabotage_elapsed = 0.0
+	
 	# Use the cached @export fuse_box_node reference (resolved once in
 	# _initialize_entity()). This avoids the expensive scene tree traversal
 	# that was previously called every frame via get_fuse_box_node().
@@ -1604,6 +1652,28 @@ func _sabotage_fuse_state(delta: float) -> void:
 				_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
 		return
 	
+	# ─── BUG 3 FIX: GLOBAL FAILSAFE ────────────────────────────────────
+	# Track total elapsed time in SABOTAGE_FUSE. If the Entity remains in
+	# this state for longer than SABOTAGE_GLOBAL_FAILSAFE (15s) without
+	# completing through ANY branch (including the no-waypoint fallback
+	# above, which previously had no stuck timeout at all), force-teleport
+	# to the waypoint, break the fuse box, and relocate to the treeline.
+	_sabotage_elapsed += delta
+	if _sabotage_elapsed >= SABOTAGE_GLOBAL_FAILSAFE:
+		print("[SABOTAGE_FUSE] GLOBAL FAILSAFE (%.1fs elapsed, dist=%.2f)! Forcing completion." % [_sabotage_elapsed, entity.global_position.distance_to(fuse_waypoint.global_position)])
+		entity.global_position = fuse_waypoint.global_position
+		entity.velocity = Vector3.ZERO
+		_sabotage_stuck_timer = 0.0
+		_sabotage_dist_check_timer = 0.0
+		_sabotage_elapsed = 0.0
+		fuse_box.break_fuse()
+		entity.is_fuse_sabotaged = true
+		entity.state_locked = false
+		_calculated_velocity = Vector3.ZERO
+		_relocate_to_treeline_after_sabotage()
+		print("[SABOTAGE_FUSE] Global failsafe fired. Fuse Box broken! Relocated to treeline. Signaling completion.")
+		return
+	
 	# ─── PATHFIND TOWARD THE FUSE WAYPOINT ──────────────────────────────
 	_path_timer -= delta
 	if _path_timer <= 0.0:
@@ -1612,52 +1682,71 @@ func _sabotage_fuse_state(delta: float) -> void:
 	
 	var dist_to_wp = entity.global_position.distance_to(fuse_waypoint.global_position)
 	
-	# ─── STUCK DETECTION ────────────────────────────────────────────────
-	# If the Entity is NOT yet at the waypoint (> 2.5m) AND it is not
-	# making progress (zero real velocity OR nav path finished), accumulate
-	# the stuck timer. If the timer exceeds the timeout, teleport directly
-	# to the waypoint and break the fuse box to prevent soft-locks.
+	# ─── STUCK DETECTION (BUG 3 FIX: DISTANCE-LATCHED) ──────────────────
+	# If the Entity is NOT yet at the waypoint (> 2.5m), accumulate the
+	# stuck timer based on PHYSICAL PROGRESS toward the waypoint.
 	#
-	# WHY THIS WAS CHANGED: The previous condition only accumulated within a
-	# tight 5m → 2.5m band, assuming "within 5m should arrive quickly".
-	# But the Entity can jam against a NavMesh-edge / cabin-exterior collider
-	# MUCH farther away (observed stuck 9.59m from the EntityFuseWaypoint,
-	# zero velocity, nav still active). That fell into the reset branch and
-	# reset the timer every frame forever — the timeout never fired.
+	# WHY THE OLD VELOCITY CHECK FAILED: The previous condition treated
+	# "non-zero velocity" as progress. But when the Entity oscillates
+	# against a NavMesh-edge / cabin-exterior collider, it jitters back
+	# and forth with non-zero velocity — so the stuck timer never
+	# accumulated and the Entity was paralyzed forever.
+	#
+	# NEW APPROACH: Latch the distance to the waypoint every check interval
+	# (2s). If the distance hasn't decreased by at least 0.5m over the
+	# interval, the Entity is NOT making progress (whether it is frozen or
+	# jittering) and the stuck timer accumulates. On timeout, teleport to
+	# the waypoint, break the fuse box, and relocate to avoid a soft-lock.
+	#
 	# The global stuck detector in entity_controller.gd previously rescued
 	# this, but with SABOTAGE_FUSE now exempt (so it doesn't teleport away
 	# mid-sabotage), this per-state timer must handle ALL distances.
 	if dist_to_wp > 2.5:
-		var _sab_vel = entity.get_real_velocity()
-		var _not_making_progress = entity.get_nav_agent().is_navigation_finished() or _sab_vel.length_squared() < 0.01
-		if _not_making_progress:
-			_sabotage_stuck_timer += delta
-			if _sabotage_stuck_timer >= fuse_sabotage_stuck_timeout:
-				print("[SABOTAGE_FUSE] STUCK TIMEOUT! Entity stuck at dist=%.2f for %.1fs. Teleporting to waypoint." % [dist_to_wp, _sabotage_stuck_timer])
-				entity.global_position = fuse_waypoint.global_position
-				entity.velocity = Vector3.ZERO
-				_sabotage_stuck_timer = 0.0
-				# Now check arrival immediately
-				fuse_box.break_fuse()
-				entity.is_fuse_sabotaged = true
-				entity.state_locked = false
-				_calculated_velocity = Vector3.ZERO
-				# ─── RELOCATE TO TREELINE VANTAGE POINT ──────────────────────────
-				# After teleporting to the EntityFuseWaypoint, the Entity is at
-				# (1.154, 0.172, 16.596) — inside the cabin area near the fuse box.
-				# The NavMesh cannot find a path from this position to any window,
-				# causing the APPROACH_WINDOW state to fail (15s timeout) and the
-				# Entity to get stuck. Relocate to a treeline vantage point so the
-				# next APPROACH_WINDOW starts from a valid NavMesh position.
-				_relocate_to_treeline_after_sabotage()
-				print("[SABOTAGE_FUSE] Teleported to EntityFuseWaypoint. Fuse Box broken! Relocated to treeline. Signaling completion.")
-				return
+		if _sabotage_last_dist <= 0.0:
+			# First frame in this branch — latch the initial distance.
+			_sabotage_last_dist = dist_to_wp
+			_sabotage_dist_check_timer = 0.0
 		else:
-			# Making progress — reset the stuck timer
+			_sabotage_dist_check_timer += delta
+			if _sabotage_dist_check_timer >= SABOTAGE_PROGRESS_CHECK_INTERVAL:
+				_sabotage_dist_check_timer = 0.0
+				var dist_decrease = _sabotage_last_dist - dist_to_wp
+				_sabotage_last_dist = dist_to_wp
+				if dist_decrease >= SABOTAGE_PROGRESS_EPSILON:
+					# Genuinely made progress — reset the stuck timer.
+					_sabotage_stuck_timer = 0.0
+				else:
+					# No meaningful progress (frozen OR oscillating jitter).
+					_sabotage_stuck_timer += SABOTAGE_PROGRESS_CHECK_INTERVAL
+		
+		if _sabotage_stuck_timer >= fuse_sabotage_stuck_timeout:
+			print("[SABOTAGE_FUSE] STUCK TIMEOUT! Entity stuck at dist=%.2f for %.1fs. Teleporting to waypoint." % [dist_to_wp, _sabotage_stuck_timer])
+			entity.global_position = fuse_waypoint.global_position
+			entity.velocity = Vector3.ZERO
 			_sabotage_stuck_timer = 0.0
+			_sabotage_dist_check_timer = 0.0
+			_sabotage_elapsed = 0.0
+			# Now check arrival immediately
+			fuse_box.break_fuse()
+			entity.is_fuse_sabotaged = true
+			entity.state_locked = false
+			_calculated_velocity = Vector3.ZERO
+			# ─── RELOCATE TO TREELINE VANTAGE POINT ──────────────────────────
+			# After teleporting to the EntityFuseWaypoint, the Entity is at
+			# (1.154, 0.172, 16.596) — inside the cabin area near the fuse box.
+			# The NavMesh cannot find a path from this position to any window,
+			# causing the APPROACH_WINDOW state to fail (15s timeout) and the
+			# Entity to get stuck. Relocate to a treeline vantage point so the
+			# next APPROACH_WINDOW starts from a valid NavMesh position.
+			_relocate_to_treeline_after_sabotage()
+			print("[SABOTAGE_FUSE] Teleported to EntityFuseWaypoint. Fuse Box broken! Relocated to treeline. Signaling completion.")
+			return
 	elif dist_to_wp <= 2.5:
-		# Arrived at the waypoint — reset stuck timer and break the fuse box
+		# Arrived at the waypoint — reset all trackers and break the fuse box
 		_sabotage_stuck_timer = 0.0
+		_sabotage_dist_check_timer = 0.0
+		_sabotage_last_dist = 0.0
+		_sabotage_elapsed = 0.0
 		fuse_box.break_fuse()
 		entity.is_fuse_sabotaged = true
 		entity.state_locked = false
@@ -2228,6 +2317,13 @@ func _indoor_retreat_handler(delta: float) -> void:
 	if _indoor_retreat_phase == 0:
 		# Reset the Phase 1 minimum sprint timer — a new escape sequence is beginning.
 		_retreat_indoor_phase_1_timer = 0.0
+		# ─── FLUSH STALE NAV PATH (BUG 2 FIX) ─────────────────────────
+		# The NavigationAgent may still hold the previous INDOOR_SEARCH
+		# patrol path (often ending near the door). Setting target_position
+		# to the Entity's CURRENT position first forces the agent to discard
+		# that stale path and recompute from scratch, so the first sprint
+		# frame heads toward the breach window, not the doorway.
+		entity.get_nav_agent().target_position = entity.global_position
 		if breach_window and breach_window.has_method("get_indoor_landing_position"):
 			# WINDOW ENTRY — escape back through the same window.
 			_retreat_exit_was_window = true
@@ -2285,20 +2381,39 @@ func _indoor_retreat_handler(delta: float) -> void:
 			print("[INDOOR RETREAT] Phase 1 complete. At exit (dist=%.2f). Advancing to Phase 2 (teleport outside)." % dist_to_exit_2d)
 		else:
 			# Still not close enough — keep sprinting toward the exit.
-			var next_pos_r = entity.get_nav_agent().get_next_path_position()
-			var dir_2d_r := Vector2(next_pos_r.x - entity.global_position.x, next_pos_r.z - entity.global_position.z)
-			if dir_2d_r.length() > 0.01:
-				var move_dir_2d_r = dir_2d_r.normalized()
-				_calculated_velocity.x = move_dir_2d_r.x * entity.current_stalk_speed * 1.5  # Sprint to escape
-				_calculated_velocity.z = move_dir_2d_r.y * entity.current_stalk_speed * 1.5
+			# BUG 2 FIX (REVISED): Sprint DIRECTLY at the exit position. The
+			# cabin interior is NOT covered by the NavMesh (documented
+			# limitation), so following the NavigationAgent's path snaps both
+			# the Entity and the exit target to outdoor NavMesh points and
+			# routes through the front doorway — the "doorway detour" bug.
+			# The Entity ignores cabin wall collisions during indoor retreat
+			# (the interior is open-plan), so the straight line to the breach
+			# window is always the correct escape vector. NavAgent following
+			# is retained only as a last-resort safeguard if the direct line
+			# degenerates (zero-length direction).
+			var direct_exit = (_retreat_exit_pos - entity.global_position)
+			direct_exit.y = 0.0
+			if direct_exit.length() > 0.01:
+				var direct_dir = direct_exit.normalized()
+				_calculated_velocity.x = direct_dir.x * entity.current_stalk_speed * 1.5
+				_calculated_velocity.z = direct_dir.z * entity.current_stalk_speed * 1.5
+				# ─── FACE MOVEMENT DIRECTION (issue 2 fix) ─────────────
+				# The sprint sets velocity directly, but nothing rotates the
+				# monster model — so during the indoor retreat sprint it kept
+				# the last INDOOR_SEARCH orientation (often 180° away from
+				# the direction of travel, toward the cabin). Rotate the model
+				# smoothly toward the escape heading every sprint frame.
+				var retreat_model = entity.get_monster_model()
+				if retreat_model:
+					var retreat_angle = atan2(direct_dir.x, direct_dir.z)
+					retreat_model.rotation.y = lerp_angle(retreat_model.rotation.y, retreat_angle, 0.15)
 			else:
-				# Nav path gone (NavMesh limitation) — walk directly at the exit.
-				var direct_exit = (_retreat_exit_pos - entity.global_position)
-				direct_exit.y = 0.0
-				if direct_exit.length() > 0.01:
-					var direct_dir = direct_exit.normalized()
-					_calculated_velocity.x = direct_dir.x * entity.current_stalk_speed * 1.5
-					_calculated_velocity.z = direct_dir.z * entity.current_stalk_speed * 1.5
+				var next_pos_r = entity.get_nav_agent().get_next_path_position()
+				var dir_2d_r := Vector2(next_pos_r.x - entity.global_position.x, next_pos_r.z - entity.global_position.z)
+				if dir_2d_r.length() > 0.01:
+					var move_dir_2d_r = dir_2d_r.normalized()
+					_calculated_velocity.x = move_dir_2d_r.x * entity.current_stalk_speed * 1.5
+					_calculated_velocity.z = move_dir_2d_r.y * entity.current_stalk_speed * 1.5
 			return
 	
 	# ─── PHASE 2: Teleport outside the exit ─────────────────────────────
@@ -2319,6 +2434,29 @@ func _indoor_retreat_handler(delta: float) -> void:
 			outside_pos.y = entity.global_position.y  # Keep current Y to avoid vertical snapping
 			entity.global_position = outside_pos
 			entity.velocity = Vector3.ZERO
+			# ─── RESTORE OUTDOOR COLLISION MASK (issue 1 fix) ─────────
+			# During INDOOR_SEARCH the Entity's collision mask is forced to
+			# Player-only (Cabin geometry ignored). After the teleport the
+			# Entity is OUTSIDE — restore the full outdoor mask (Cabin /
+			# Player / Trees / Rocks) so the flashlight LOS raycast and
+			# physics interactions with the environment work normally again.
+			entity.collision_mask = 0
+			entity.collision_mask |= (1 << (1 - 1))  # Layer 1: Cabin
+			entity.collision_mask |= (1 << (2 - 1))  # Layer 2: Player
+			entity.collision_mask |= (1 << (3 - 1))  # Layer 3: Trees
+			entity.collision_mask |= (1 << (4 - 1))  # Layer 4: Rocks
+			# ─── FACE OUTWARD (issue 1 fix) ───────────────────────────
+			# The Entity lands at the WindowMarker looking INWARD toward the
+			# cabin. Rotate the monster model to face AWAY from the window
+			# (out into the forest) so the FLINCH sprint direction is correct
+			# and the Entity is not staring into the window it just left.
+			var retreat_out_model = entity.get_monster_model()
+			if retreat_out_model and breach_window:
+				var outward = (entity.global_position - breach_window.global_position)
+				outward.y = 0.0
+				if outward.length() > 0.01:
+					var outward_dir = outward.normalized()
+					retreat_out_model.rotation.y = atan2(outward_dir.x, outward_dir.z)
 			print("[INDOOR RETREAT] Phase 2: Teleported outside via WINDOW to (%.2f, %.2f, %.2f)" % [outside_pos.x, outside_pos.y, outside_pos.z])
 			
 			# SAFETY: verify the teleport actually landed OUTSIDE. If the
@@ -3449,6 +3587,31 @@ func _window_peek_state(delta: float) -> void:
 					entity.set_indoor_landing_position(fallback_landing)
 					print("[WINDOW_PEEK] Breach: No IndoorBreachWaypoint. Using fallback landing position: (%.2f, %.2f, %.2f)" % [fallback_landing.x, fallback_landing.y, fallback_landing.z])
 				
+				# ─── NAVMESH LANDING VALIDATION (BUG 1 FIX) ───────────────
+				# The landing position from get_indoor_landing_position() may
+				# clip just outside the NavMesh boundary (e.g. inside a wall
+				# collider). When INDOOR_SEARCH teleports the Entity there,
+				# the NavigationAgent cannot find a direct path to patrol
+				# waypoints and routes OUT through the only valid NavMesh
+				# exit — the front door — producing the "doorway detour" bug.
+				#
+				# Fix: project the landing XZ onto the NavMesh floor and
+				# verify the snapped point is inside a VALID_INDOOR_ROOM. If
+				# it is NOT, fall back to the IndoorBreachWaypoint (the
+				# known-safe door entry point) for the landing position.
+				var landing_check = entity.get_indoor_landing_position()
+				if landing_check != Vector3.ZERO:
+					var nav_map_v = entity.get_world_3d().navigation_map
+					var snapped_v = NavigationServer3D.map_get_closest_point(nav_map_v, landing_check)
+					var check_pos_v = landing_check
+					check_pos_v.y = snapped_v.y
+					if not _is_position_inside_cabin(check_pos_v):
+						var fallback_wp = entity.get_door_breach_waypoint()
+						if fallback_wp:
+							var wp_landing = fallback_wp.global_position
+							entity.set_indoor_landing_position(wp_landing)
+							print("[WINDOW_PEEK] Breach: Landing (%.2f, %.2f, %.2f) is OUTSIDE valid cabin rooms! Falling back to IndoorBreachWaypoint (%.2f, %.2f, %.2f)." % [landing_check.x, landing_check.y, landing_check.z, wp_landing.x, wp_landing.y, wp_landing.z])
+				
 				# ─── SIGNAL COMPLETION ──────────────────────────────────
 				# The glass has shattered. Signal the Director to transition
 				# to INDOOR_SEARCH.
@@ -4087,9 +4250,12 @@ func _indoor_search_state(delta: float) -> void:
 			if not room_path.is_empty():
 				_room_path = room_path
 				_current_room_index = 0
-				# Set the nav target to the first room's center
+				# Set BOTH the direct interior move target AND the nav target
+				# (nav target only serves as a stale fallback). The cabin
+				# interior is off-NavMesh, so direct movement is authoritative.
 				var room_center = _get_room_center_position(_room_path[_current_room_index])
 				if room_center != Vector3.ZERO:
+					_indoor_direct_target = room_center
 					entity.get_nav_agent().target_position = room_center
 					print("[INDOOR_SEARCH] Heard player in '%s'. Pathfinding to room center." % heard_room)
 		elif player_room != "" and player_room != "Outside" and not player_in_lit_room:
@@ -4111,6 +4277,7 @@ func _indoor_search_state(delta: float) -> void:
 				_current_room_index = 0
 				var room_center = _get_room_center_position(_room_path[_current_room_index])
 				if room_center != Vector3.ZERO:
+					_indoor_direct_target = room_center
 					entity.get_nav_agent().target_position = room_center
 					print("[INDOOR_SEARCH] Player spotted in dark room '%s'. Routing via '%s'." % [player_room, str(_room_path)])
 			else:
@@ -4118,6 +4285,7 @@ func _indoor_search_state(delta: float) -> void:
 				# because there is no intervening wall.
 				var player = entity.get_player()
 				if player:
+					_indoor_direct_target = player.global_position
 					entity.get_nav_agent().target_position = player.global_position
 					print("[INDOOR_SEARCH] Player spotted in same room '%s'. Direct approach." % player_room)
 		elif player_room != "" and player_room != "Outside" and player_in_lit_room:
@@ -4138,112 +4306,77 @@ func _indoor_search_state(delta: float) -> void:
 					_current_room_index = 0
 					var room_center = _get_room_center_position(_room_path[_current_room_index])
 					if room_center != Vector3.ZERO:
+						_indoor_direct_target = room_center
 						entity.get_nav_agent().target_position = room_center
 						print("[INDOOR_SEARCH] Player in lit room '%s'. Patrolling to adjacent '%s'." % [player_room, target_room])
 	
-	# ─── PATHFINDING ─────────────────────────────────────────────────
-	# Throttle NavigationAgent3D target_position updates to prevent FPS drops.
+	# ─── PATHFINDING / DIRECT MOVEMENT SETUP ─────────────────────────
+	# BUG 1 FIX (REVISED): The cabin interior is NOT covered by the
+	# NavMesh. Do NOT trust the NavigationAgent inside the cabin — snapping
+	# both the Entity and the room-center target to outdoor NavMesh points
+	# produces a path that routes OUT through the front door and back in
+	# (the "doorway detour" bug). Instead, always set a DIRECT world-space
+	# move target to the current room center; the Entity walks a straight
+	# line through the open-plan interior (it ignores cabin wall collisions
+	# via the Player-only collision mask set at the top of this state).
+	# Re-sync every frame in case the room path changed (throttled to the
+	# usual PATH_UPDATE_INTERVAL to keep the NavAgent fallback in sync).
 	_path_timer -= delta
 	if _path_timer <= 0.0:
 		_path_timer = PATH_UPDATE_INTERVAL
-		
-		# If we have a room path, navigate to the current room's center
+		# If we have a room path, update BOTH the direct target and the
+		# (stale-fallback) nav target to the current room's center.
 		if not _room_path.is_empty() and _current_room_index < _room_path.size():
-			var room_center = _get_room_center_position(_room_path[_current_room_index])
-			if room_center != Vector3.ZERO:
-				entity.get_nav_agent().target_position = room_center
+			var room_center_b = _get_room_center_position(_room_path[_current_room_index])
+			if room_center_b != Vector3.ZERO:
+				_indoor_direct_target = room_center_b
+				entity.get_nav_agent().target_position = room_center_b
 	
-	# ─── ARRIVAL CHECK ───────────────────────────────────────────────
-	# If the NavigationAgent3D has finished, check if we've arrived at
-	# the current room center. If so, advance to the next room or enter
-	# the scanning sub-state.
-	if entity.get_nav_agent().is_navigation_finished():
-		if not _room_path.is_empty() and _current_room_index < _room_path.size():
-			var room_center = _get_room_center_position(_room_path[_current_room_index])
-			var dist_to_center = entity.global_position.distance_to(room_center)
-			
-			if dist_to_center <= 1.5 and not _is_scanning:
-				# ─── ARRIVED AT ROOM CENTER: Start scanning ──────────────
-				_is_scanning = true
-				_scan_timer = 4.0
-				print("[INDOOR_SEARCH] Arrived at '%s'. Starting scan (%.1fs)." % [_room_path[_current_room_index], _scan_timer])
-			
-			elif dist_to_center > 1.5:
-				# ─── NOT AT CENTER YET: SAME-ROOM GUARD ─────────────────
-				# The nav agent declared "finished" but the Entity is still
-				# > 1.5m from the room center. This happens when the entity
-				# is wedged in a doorframe pinch point (the NavMesh carve
-				# declares arrival at target_desired_distance=0.5m but the
-				# BFS room path re-targets a new center > 1.5m away).
-				#
-				# OLD BUG (REMOVED): This branch blindly advanced
-				# _current_room_index += 1, telling the AI "you reached the
-				# room" when the Entity's physical body was STILL in the
-				# doorway between rooms. The next path query then failed
-				# from the doorframe pinch point, stranding the Entity
-				# forever.
-				#
-				# FIX: Verify the Entity is physically inside the expected
-				# room via RoomLightDetector. Only advance the room path
-				# when the physical body has ACTUALLY crossed the threshold.
-				var actual_room = RoomLightDetector.get_room_name_at(entity.global_position)
-				# ROOM-NAME NORMALIZATION: RoomLightDetector may return
-				# "Hallroom" vs the BFS path key "HallRoom" — compare
-				# case-insensitively for matching.
-				var expected_room = str(_room_path[_current_room_index])
-				var room_matches = actual_room.to_lower() == expected_room.to_lower()
-				
-				if room_matches:
-					# ─── PHYSICALLY IN EXPECTED ROOM: Advance ─────────
-					# The Entity genuinely crossed the threshold but the
-					# NavMesh couldn't reach the exact room center. Advance
-					# to the next room as intended by the original design.
-					_current_room_index += 1
-					if _current_room_index >= _room_path.size():
-						# Reached the end of the path — new patrol route
-						_room_path = _compute_random_patrol_route()
-						_current_room_index = 0
-				else:
-					# ─── STILL IN PREVIOUS ROOM / DOORWAY: RE-TARGET ──
-					# The Entity has NOT physically crossed into the
-					# expected room. Re-set the nav target to the room
-					# center so the agent keeps pathfinding through the
-					# doorframe instead of advancing prematurely.
-					entity.get_nav_agent().target_position = room_center
-					print("[INDOOR_SEARCH] SAME-ROOM GUARD: In '%s' but targeting '%s'. Re-pathfinding to room center." % [actual_room, expected_room])
-		
+	# ─── ARRIVAL CHECK (distance-based, NavAgent-independent) ─────────
+	# The NavigationAgent cannot report "finished" at the true room center
+	# (interior is off-NavMesh / its path routes via the doorway), so
+	# arrival is gated on PHYSICAL distance to the room center instead
+	# via _arrived_at_indoor_target().
+	if _is_scanning:
 		# ─── SCANNING SUB-STATE ──────────────────────────────────────
-		if _is_scanning:
-			_scan_timer -= delta
-			
-			# Rotate slowly in place while scanning
-			var model = entity.get_monster_model()
-			if model:
-				model.rotation.y += delta * 0.5  # Slow rotation
-			
-			# Check if player is spotted during scan
-			var sensory = entity.get_sensory_module()
-			if sensory and sensory.has_method("can_entity_see_player") and sensory.can_entity_see_player():
-				# Player spotted! CHARGE!
-				_is_scanning = false
-				_scan_timer = 0.0
-				entity.is_charge_triggered = true
-				entity.state_locked = false
-				_calculated_velocity = Vector3.ZERO
-				print("[INDOOR_SEARCH] Player spotted during scan! CHARGING!")
-				return
-			
-			if _scan_timer <= 0.0:
-				# Scan complete — advance to next room or compute new route
-				_is_scanning = false
-				_current_room_index += 1
-				if _current_room_index >= _room_path.size():
-					_room_path = _compute_random_patrol_route()
-					_current_room_index = 0
-				print("[INDOOR_SEARCH] Scan complete. Moving to next room.")
-			
+		_scan_timer -= delta
+		
+		# Rotate slowly in place while scanning
+		var model = entity.get_monster_model()
+		if model:
+			model.rotation.y += delta * 0.5  # Slow rotation
+		
+		# Check if player is spotted during scan
+		var sensory = entity.get_sensory_module()
+		if sensory and sensory.has_method("can_entity_see_player") and sensory.can_entity_see_player():
+			# Player spotted! CHARGE!
+			_is_scanning = false
+			_scan_timer = 0.0
+			entity.is_charge_triggered = true
+			entity.state_locked = false
 			_calculated_velocity = Vector3.ZERO
+			print("[INDOOR_SEARCH] Player spotted during scan! CHARGING!")
 			return
+		
+		if _scan_timer <= 0.0:
+			# Scan complete — advance to next room or compute new route
+			_is_scanning = false
+			_current_room_index += 1
+			if _current_room_index >= _room_path.size():
+				_room_path = _compute_random_patrol_route()
+				_current_room_index = 0
+			print("[INDOOR_SEARCH] Scan complete. Moving to next room.")
+		
+		_calculated_velocity = Vector3.ZERO
+		return
+	elif _arrived_at_indoor_target():
+		# ─── PHYSICALLY ARRIVED AT ROOM CENTER: Start scanning ──────
+		_is_scanning = true
+		_scan_timer = 4.0
+		print("[INDOOR_SEARCH] Arrived at '%s'. Starting scan (%.1fs)." % [_room_path[_current_room_index], _scan_timer])
+		# Do NOT clear _indoor_direct_target or return here — fall through
+		# to the CATCH CHECK below so the arrival frame still catches the
+		# player if they are within reach at the room center.
 	
 	# ─── CATCH CHECK ─────────────────────────────────────────────────
 	# If the Entity is close enough to the player, catch them.
@@ -4272,7 +4405,24 @@ func _indoor_search_state(delta: float) -> void:
 		return
 	
 	# ─── MOVEMENT ────────────────────────────────────────────────────
-	if entity.get_nav_agent().is_navigation_finished():
+	# BUG 1/2 FIX (REVISED): Prefer DIRECT straight-line movement toward
+	# the indoor move target. The NavigationAgent cannot be trusted inside
+	# the cabin (interior is off-NavMesh; its path routes through the front
+	# door). The Entity ignores cabin wall collisions during indoor search,
+	# so the straight line to the target is always valid and never detours
+	# to the door. NavAgent following is kept only when no direct target
+	# is set (e.g., stale empty room path) as a last-resort safeguard.
+	if _indoor_direct_target != Vector3.ZERO:
+		var direct_dir = (_indoor_direct_target - entity.global_position)
+		direct_dir.y = 0.0
+		if direct_dir.length() > 0.01:
+			var move_dir = direct_dir.normalized()
+			_calculated_velocity.x = move_dir.x * entity.current_stalk_speed
+			_calculated_velocity.z = move_dir.z * entity.current_stalk_speed
+		else:
+			_calculated_velocity.x = 0.0
+			_calculated_velocity.z = 0.0
+	elif entity.get_nav_agent().is_navigation_finished():
 		_calculated_velocity.x = 0.0
 		_calculated_velocity.z = 0.0
 	else:
@@ -4329,6 +4479,21 @@ func _get_room_center_position(room_name: String) -> Vector3:
 		if "room_name" in room and room.room_name == room_name:
 			return room.global_position
 	return Vector3.ZERO
+
+
+## BUG 1 FIX: Returns true if the Entity has physically arrived (distance
+## <= 1.5m) at the current indoor move-target room center. Used to gate the
+## INDOOR_SEARCH arrival/scan logic independently of the NavigationAgent,
+## which cannot be trusted inside the cabin (interior is off-NavMesh — its
+## path routes via the doorway and may never report "finished" at the true
+## room center).
+func _arrived_at_indoor_target() -> bool:
+	if _room_path.is_empty() or _current_room_index >= _room_path.size():
+		return false
+	var room_center = _get_room_center_position(_room_path[_current_room_index])
+	if room_center == Vector3.ZERO:
+		return false
+	return entity.global_position.distance_to(room_center) <= 1.5
 
 
 ## Computes a BFS path from start_room to end_room using INDOOR_ROOM_GRAPH.

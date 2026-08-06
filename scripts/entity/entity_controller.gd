@@ -3709,6 +3709,16 @@ func on_player_stare(time: float, overcharged: bool = false) -> void:
 	player_stare_timer = time
 	is_illuminated = (time > 0.0)
 	
+	# ─── AI STARE FLAG SYNC ───────────────────────────────────────
+	# Mirror the illuminate state onto the AI module's _is_being_stared_at
+	# flag so the Zero-Animation Stun (velocity freeze + Idle animation)
+	# in entity_ai.gd's process_state_logic() actually activates. This
+	# flag was declared and read but never WRITTEN anywhere, so the Entity
+	# never visually froze during the overcharge STANDOFF — it would keep
+	# its previous locomotion pose instead of the pinned Idle/stagger.
+	if _ai:
+		_ai._is_being_stared_at = is_illuminated
+	
 	# ─── OVERCHARGE BLACKBOARD SYNC ─────────────────────────────────
 	# Track whether the beam hitting us is the overcharge variant. The Director
 	# uses this to decide between "standard beam = ignored indoors" and

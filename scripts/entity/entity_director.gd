@@ -138,6 +138,15 @@ const OVERCHARGE_STARE_THRESHOLD: float = 1.5
 ## Set at the top of evaluate_master_state() and read by tier methods that need it.
 var _cached_night_manager: Node = null
 
+## One-shot guard for the pained scream during the overcharge STANDOFF.
+## The scream (_play_indoor_retreat_scream) is now played when the Entity
+## RESISTS the overcharge beam (STANDOFF entry) rather than when it flees.
+## This flag prevents the scream from retriggering every frame while the
+## beam remains held — it only plays once per STANDOFF session.
+## Reset to false when the Entity leaves STANDOFF state (see
+## evaluate_master_state's state-change tracking).
+var _standoff_scream_played: bool = false
+
 ## ─── PERIODIC DEBUG LOG ──────────────────────────────────────────────────────
 ## Timer that accumulates delta each frame. When it reaches 3.0 seconds, the
 ## Director prints a comprehensive debug log of all Blackboard data, confidence,
@@ -315,6 +324,12 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	if state != _previous_state:
 		_state_entry_time = Time.get_ticks_msec() / 1000.0
 		_state_entry_confidence = entity.get_confidence_module().get_confidence() if entity.get_confidence_module() else 0.0
+		# ─── RESET STANDOFF SCREAM GUARD ────────────────────────────
+		# When the Entity leaves STANDOFF (to RETREAT, FLINCH, CHARGE,
+		# INDOOR_SEARCH, etc.), re-arm the one-shot scream so the next
+		# STANDOFF session plays it again.
+		if state != EntityAI.State.STANDOFF:
+			_standoff_scream_played = false
 	
 	# ─── CACHE NIGHT MANAGER ──────────────────────────────────────────────
 	# Resolve the NightManager once at the top of this function so all tier
@@ -929,6 +944,46 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 	# enter FLINCH instead of RETREAT.
 	if entity.is_overcharged:
 		var stare_time: float = entity.overcharge_stare_timer
+		
+		# ─── OVERCHARGE INSTANT FLINCH (P INSIDE + E OUTSIDE) ────────
+		# Per the design spec, if the PLAYER is inside the cabin and the
+		# ENTITY is physically OUTSIDE (e.g. peeking a window, approaching,
+		# or just escaped a retreat), the overcharge beam repels the Entity
+		# IMMEDIATELY into FLINCH — no 1.5s standoff stagger.
+		#
+		# Previously this case fell through to the unconditional STANDOFF
+		# return below for the first 1.5 seconds, which made an outside
+		# Entity stagger in place instead of sprinting away. The four-case
+		# spec is:
+		#   P inside + E inside  = STANDOFF → RETREAT → FLINCH
+		#   P inside + E outside = FLINCH (instant)
+		#   P outside + E inside = RETREAT → FLINCH (instant RETREAT)
+		#   P outside + E outside = STANDOFF → FLINCH
+		var _oc_entity_inside = entity.has_method("is_physically_inside") and entity.is_physically_inside()
+		var _oc_player_inside = entity.get_thinks_player_is_inside() if entity.has_method("get_thinks_player_is_inside") else false
+		
+		# ─── OVERCHARGE INSTANT RETREAT (P OUTSIDE + E INSIDE) ───────
+		# Mirror of the instant-FLINCH case: if the PLAYER is outside and
+		# the ENTITY is physically INSIDE (caught by a flashlight through
+		# a window/door breach), the Entity flees IMMEDIATELY into RETREAT —
+		# no 1.5s standoff stagger.
+		if _oc_entity_inside and not _oc_player_inside:
+			entity.is_indoor_retreat = true
+			entity.is_indoor_retreat_pending = true
+			var oc_conf = entity.get_confidence_module()
+			if oc_conf:
+				oc_conf.set_confidence(20.0)
+			print("[Director] OVERCHARGE P-OUTSIDE/E-INSIDE: TRIGGERING INSTANT RETREAT!")
+			return EntityAI.State.RETREAT
+		
+		# ─── OVERCHARGE INSTANT FLINCH (P INSIDE + E OUTSIDE) ────────
+		if not _oc_entity_inside and _oc_player_inside:
+			_apply_flinch_confidence_penalty(entity)
+			_flinch_approach_cooldown = FLINCH_REAPPROACH_COOLDOWN
+			_state_entry_confidence = -1.0
+			print("[Director] OVERCHARGE P-INSIDE/E-OUTSIDE: TRIGGERING INSTANT FLINCH!")
+			return EntityAI.State.FLINCH
+		
 		if stare_time >= 1.5:
 			# ─── STANDOFF COMPLETE → ESCAPE ─────────────────────────
 			if entity.has_method("is_physically_inside") and entity.is_physically_inside():
@@ -938,7 +993,6 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 				var conf_mod = entity.get_confidence_module()
 				if conf_mod:
 					conf_mod.set_confidence(20.0)
-				_play_indoor_retreat_scream(entity)
 				print("[Director] OVERCHARGE >= 1.5s INDOOR: TRIGGERING RETREAT!")
 				return EntityAI.State.RETREAT
 			# ─── OUTDOOR: FLINCH (fast escape sprint) ───────────────
@@ -948,6 +1002,15 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 			print("[Director] OVERCHARGE >= 1.5s OUTDOOR: TRIGGERING FLINCH!")
 			return EntityAI.State.FLINCH
 		# ─── STAGGER IN PLACE (identical indoors & outdoors) ─────────
+		# Play the pained scream ONCE when the overcharge standoff begins —
+		# the Entity resists the beam with a pained reaction, then flees
+		# when the 1.5s threshold is crossed. Previously this sound only
+		# played on RETREAT (the moment of fleeing); the design intent is
+		# that the player HEARS the Entity's discomfort at the START of
+		# the standoff, making the overcharge feel effective immediately.
+		if not _standoff_scream_played:
+			_play_indoor_retreat_scream(entity)
+			_standoff_scream_played = true
 		return EntityAI.State.STANDOFF
 	
 	# ─── INDOOR STANDARD-BEAM HANDLING (checked BEFORE anti-flap) ──────────
