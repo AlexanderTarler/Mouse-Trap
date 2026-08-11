@@ -136,7 +136,8 @@ var day1_onboarding_complete: bool = false
 ## Set to true when the bed triggers the car alarm sequence (current_night 1→2).
 ## Used by HorrorSoundManager to suppress the distant monster scream, and by
 ## EnvironmentController to force unnaturally dark lighting.
-## Cleared when the player investigates the van (trigger_first_chase()).
+## Cleared when the Entity's van-sequence FLINCH resolves (the Director's
+## Tier 5 DORMANT gate), or defensively when a new night >= 3 starts.
 var is_van_sequence_active: bool = false
 
 
@@ -234,10 +235,16 @@ func _set_initial_time() -> void:
 		gt._elapsed = gt.cycle_progress * gt.cycle_duration
 		gt.is_day = true
 		gt._was_day = true
-		gt.is_time_paused = false
-		gt.is_running = true
+		# ─── TIME STAYS FROZEN AT BOOT ─────────────────────────────────
+		# NightManager is an autoload, so _ready() runs while the main menu
+		# is still on screen. The clock must NOT start ticking until the
+		# player presses Play and the game scene actually loads. _start_time_running()
+		# (called from _process() when the player node appears) unfreezes it
+		# the moment gameplay begins.
+		gt.is_time_paused = true
+		gt.is_running = false
 		gt.time_changed.emit(gt.cycle_progress)
-		print("[NightManager] Dev=%s: Initial time set to progress=%.4f. Time is RUNNING." % [is_dev_mode, gt.cycle_progress])
+		print("[NightManager] Dev=%s: Initial time set to progress=%.4f. Time is FROZEN until the game scene loads." % [is_dev_mode, gt.cycle_progress])
 		
 		# ─── DEBUG: Log the UI day display ─────────────────────────────
 		var rm = get_node_or_null("/root/RoutineManager")
@@ -246,10 +253,26 @@ func _set_initial_time() -> void:
 		else:
 			print("[NightManager] UI Day Label: RoutineManager not available (cycle_progress=%.4f)" % gt.cycle_progress)
 	
-	# Also set our own is_time_paused flag — time starts UNFROZEN
+	# Keep our own flag in sync with GameTime — time starts FROZEN at boot.
+	is_time_paused = true
+
+
+
+
+## ─── TIME START (GAME LOADED) ──────────────────────────────────────────────
+## Called when the player node first appears — which only happens after the
+## main menu transitions to the game scene (cottage_horror.tscn). This is the
+## true "start" of gameplay, so the day/night clock begins ticking here.
+func _start_time_running() -> void:
+	var gt = get_node_or_null("/root/GameTime")
+	if gt:
+		gt.is_time_paused = false
+		gt.is_running = true
+		gt.time_changed.emit(gt.cycle_progress)
+		print("[NightManager] Game scene loaded. GameTime clock is now RUNNING (progress=%.4f)." % gt.cycle_progress)
+	
+	# Keep NightManager in sync with GameTime
 	is_time_paused = false
-
-
 
 
 ## ─── DEV MODE SETTINGS ─────────────────────────────────────────────────────
@@ -356,8 +379,9 @@ func _apply_dev_mode_settings() -> void:
 		generator_state_changed.emit(false)
 		print("[NightManager] Normal Mode: Generator at 0% fuel.")
 		
-		# Time is RUNNING (set by _set_initial_time).
-		# The clock ticks immediately on scene load — no door interaction required.
+		# Time was started by _start_time_running() when the player spawned
+		# (called from _process() just before this method). The clock ticks
+		# immediately on scene load — no door interaction required.
 		print("[NightManager] Normal Mode: Time is RUNNING. Clock ticks immediately on scene load.")
 
 
@@ -507,6 +531,7 @@ func _process(delta: float) -> void:
 		var player = get_tree().get_first_node_in_group("player")
 		if player:
 			_spawn_setup_done = true
+			_start_time_running()
 			setup_player_spawn()
 			_apply_dev_mode_settings()
 			start_onboarding_sequence()
@@ -668,6 +693,15 @@ func start_night(night: int) -> void:
 		_force_game_time_to_night()
 	else:
 		print("[NightManager] VAN SEQUENCE ACTIVE: Skipping time unpause & GameTime sync. Bed script owns the clock.")
+	
+	# ─── DEFENSE-IN-DEPTH: RESET VAN FLAG FOR NIGHT 3+ ──────────────
+	# If the van sequence flag somehow survived into Night 3+ (e.g., a
+	# scene reload between Night 2 and Night 3 reset _night_2_van_sequence_resolved
+	# but not is_van_sequence_active), force-clear it. The van narrative
+	# is ONLY for Night 2.2 — it must never leak into late-game nights.
+	if night >= 3:
+		is_van_sequence_active = false
+		print("[NightManager] Defense-in-depth: is_van_sequence_active forced false for Night %d." % night)
 	
 	night_started.emit(night)
 	
@@ -868,6 +902,20 @@ func unpause_time() -> void:
 func trigger_first_chase() -> void:
 	print("[NightManager] First chase triggered! Entity is arriving.")
 	
+	# ─── VAN SEQUENCE FLAG LIFECYCLE (CORRECTED) ─────────────────────
+	# NOTE: We deliberately do NOT clear is_van_sequence_active here.
+	# The flag must remain true THROUGH the cabin-entry FLINCH so the
+	# Director's Tier 5 gate (FLINCH completion → DORMANT) can detect
+	# the end of the van narrative and force the Entity dormant.
+	# If we cleared it here (as the old documentation implied), the
+	# flag would be false by the time the player enters the cabin and
+	# the FLINCH finishes — the Tier 5 DORMANT gate would never fire,
+	# and the Entity would oscillate between OBSERVE/STALK/FINCH.
+	#
+	# The flag is cleared by:
+	#   1. The Director's Tier 5 DORMANT gate (primary, at cabin entry
+	#      + FLINCH resolution)
+	#   2. start_night() for night >= 3 (defense-in-depth)
 	var hsm = get_node_or_null("/root/HorrorSoundManager")
 	if hsm and hsm.has_method("play_distant_monster"):
 		hsm.play_distant_monster()

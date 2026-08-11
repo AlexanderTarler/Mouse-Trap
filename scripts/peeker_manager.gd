@@ -52,7 +52,24 @@ func _process(delta: float) -> void:
 		_heartbeat_timer = 0.0
 		_heartbeat()
 	
-	# ─── CABIN-EXIT CHECK ─────────────────────────────────────────---
+	# ─── NIGHT 2.2+ CLEANUP CHECK ────────────────────────────────────
+	# The peeker must NEVER remain visible from Night 2.2 (car alarm
+	# sequence) onwards. If a peeker was spawned during Night 2.1 and is
+	# still active when the player goes to bed (which sets
+	# is_van_sequence_active = true), it must be force-deleted here.
+	# Also covers Night 3+ nights where current_night >= 3 — the peeker
+	# should never appear again.
+	var nm_cleanup = get_node_or_null("/root/NightManager")
+	if _active_peeker and is_instance_valid(_active_peeker):
+		if nm_cleanup:
+			if nm_cleanup.get("is_van_sequence_active") == true:
+				print("[PeekerManager] Van sequence active with lingering peeker. Removing peeker.")
+				remove_active_peeker()
+			elif nm_cleanup.get("current_night") != null and int(nm_cleanup.current_night) >= 3:
+				print("[PeekerManager] Night %s — peeker disabled. Removing lingering peeker." % str(nm_cleanup.current_night))
+				remove_active_peeker()
+	
+	# ─── CABIN-EXIT CHECK ────────────────────────────────────────────
 	# If the peeker is active but the player has left the cabin,
 	# immediately remove it. This prevents the peeker from being visible
 	# while the player is outside (where it shouldn't appear).
@@ -62,12 +79,33 @@ func _process(delta: float) -> void:
 			remove_active_peeker()
 
 
-## Returns true if Night 1 is currently active.
+## Returns true if the peeker is allowed to appear this night.
+##
+## BUG 9 FIX: The peeker is allowed on Night 1 AND Night 2.1 (Day 2 before
+## the van sequence), but NOT Night 2.2 (car alarm sequence) or onwards.
+## Night 2.2 is detected via the NightManager's is_van_sequence_active flag,
+## which the bed sets to true when the Nest Data upload sleep triggers the
+## car alarm. Nights 3+ are excluded by the current_night <= 2 gate.
 func _is_night_1_active() -> bool:
 	var nm = get_node_or_null("/root/NightManager")
 	if not nm:
 		return false
-	return nm.current_night == 1 and nm.is_night_active
+	
+	# Night 1: normal peeker behavior (active night, current_night == 1)
+	if nm.current_night == 1 and nm.is_night_active:
+		return true
+	
+	# Night 2.1: ONLY active when a NIGHT is actually in progress.
+	# Previously this returned true for all of Day 2 daytime because
+	# is_night_active was NOT checked → the peeker spawned during Day 2
+	# daytime (playtest bug). The peeker is a NIGHT-ONLY visual event.
+	# Excluded when is_van_sequence_active (Night 2.2) — the peeker must
+	# never appear during the car-alarm chase narrative.
+	if nm.current_night == 2 and nm.is_night_active and not nm.is_van_sequence_active:
+		return true
+	
+	# Night 2.2+ and everything onwards: peeker disabled.
+	return false
 
 
 ## Called every HEARTBEAT_INTERVAL seconds.
@@ -134,6 +172,13 @@ func _spawn_peeker() -> void:
 ## Picks a random valid window that:
 ##   - The player is not currently looking at
 ##   - Is not the window where the peeker was last seen
+##   - Is NOT in a room with the cabin light ON (Bug 8: lika lit rooms)
+##   - Is NOT fully boarded up (the peeker cannot peek through a sealed wall)
+##
+## BUG 8 FIX: Prioritises unboarded windows in unlit rooms. Boarded windows
+## are only used as a fallback if no unboarded+unlit options exist. Windows
+## in lit rooms are never selected since the peeker cannot appear where the
+## player can clearly see the window.
 ## Returns null if no valid windows are available.
 func _pick_valid_window() -> Node3D:
 	var windows: Array[Node] = get_tree().get_nodes_in_group("WindowMarkers")
@@ -141,7 +186,9 @@ func _pick_valid_window() -> Node3D:
 		print("[PeekerManager] No windows found in 'WindowMarkers' group.")
 		return null
 	
-	var valid_windows: Array[Node3D] = []
+	var unlit_unboarded: Array[Node3D] = []
+	var unlit_boarded: Array[Node3D] = []
+	
 	for w in windows:
 		var window_node = w as Node3D
 		if not window_node or not (window_node is CabinWindow):
@@ -151,13 +198,47 @@ func _pick_valid_window() -> Node3D:
 		var wid = window_node.get("window_id") if "window_id" in window_node else window_node.name
 		if wid == _last_peeker_window_id:
 			continue
-		valid_windows.append(window_node)
+		
+		# ─── BUG 8: SKIP LIT ROOMS ────────────────────────────────
+		# If the window belongs to a room whose cabin light is actually
+		# emitting (room_light is set AND is_room_lit()), the peeker must
+		# NOT appear there — the player could see it clearly.
+		var room_lit: bool = false
+		if "room_light" in window_node and window_node.room_light:
+			if window_node.room_light.has_method("is_room_lit"):
+				room_lit = window_node.room_light.is_room_lit()
+			elif "is_switched_on" in window_node.room_light:
+				room_lit = window_node.room_light.is_switched_on
+		if room_lit:
+			continue
+		
+		# ─── BUG 8: SKIP FULLY BOARDED WINDOWS ───────────────────
+		# A fully boarded/sealed window (3 planks) cannot be peeked through.
+		var fully_boarded: bool = false
+		if "is_boarded" in window_node and window_node.is_boarded:
+			if "planks_remaining" in window_node and window_node.planks_remaining >= 3:
+				fully_boarded = true
+		if fully_boarded:
+			continue
+		
+		# ─── PRIORITY SORTING: Unboarded first, then partially boarded ──
+		# All surviving windows are unlit. Split into unboarded (priority)
+		# and partially-or-fully boarded (fallback).
+		var is_boarded_state: bool = "is_boarded" in window_node and window_node.is_boarded
+		if is_boarded_state:
+			unlit_boarded.append(window_node)
+		else:
+			unlit_unboarded.append(window_node)
 	
-	if valid_windows.is_empty():
-		print("[PeekerManager] No valid windows available.")
-		return null
+	# ─── SELECTION: Prioritise unboarded windows in unlit rooms ──
+	if not unlit_unboarded.is_empty():
+		return unlit_unboarded.pick_random()
+	if not unlit_boarded.is_empty():
+		print("[PeekerManager] No unboarded unlit windows. Falling back to partially-boarded unlit windows.")
+		return unlit_boarded.pick_random()
 	
-	return valid_windows.pick_random()
+	print("[PeekerManager] No valid windows available (all lit or fully boarded).")
+	return null
 
 
 ## Instantiates a WindowPeeker and positions it below ground at the window.

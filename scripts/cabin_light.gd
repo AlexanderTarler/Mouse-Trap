@@ -19,6 +19,12 @@ class_name CabinLight
 @export var start_on: bool = false
 @export var energy_drain_rate: float = 1.0  # Fuel units consumed per second
 
+## Whether this light casts shadows. Defaults to true so the porch light's
+## OmniLight3D occludes against cabin wall meshes, preventing light bleed
+## through thin wall seams (the "porch light shining inside the cabin" bug).
+## Set false per-fixture in the Inspector for performance-critical lights.
+@export var cast_shadows: bool = true
+
 ## If true, this light is short-circuited and cannot be toggled off by any switch.
 ## The light is permanently stuck ON whenever the generator has power.
 @export var is_faulty: bool = false
@@ -47,6 +53,13 @@ var _flicker_tween: Tween = null
 
 func _ready() -> void:
 	add_to_group("CabinLights")
+
+	# ─── SHADOW ENABLE (Bug: porch light bleeding into cabin) ─────────
+	# Shadows let the OmniLight3D be occluded by the cabin wall meshes.
+	# Without shadows, the light illuminates through thin seam gaps.
+	# Disable per-fixture via the inspector cast_shadows = false.
+	if light_node and light_node is Light3D:
+		light_node.shadow_enabled = cast_shadows
 
 	is_switched_on = start_on
 	_update_light_state()
@@ -80,13 +93,17 @@ func toggle_light() -> void:
 		nm.recalculate_fuel_drain()
 	
 	# ─── DAY 1 ONBOARDING: PHASE 3 — LIGHT TOGGLED OFF ────────────────
-	# Notify RoutineManager that a light was toggled off.
-	# RoutineManager will check if all lights are off and advance the
-	# bedtime routine if conditions are met.
+	# Notify RoutineManager that a light was toggled off, passing this
+	# light's display name so the manager can gate the "Turn off the light
+	# in the hall" objective to the hall fixture specifically.
 	if not is_switched_on:
 		var rm = get_node_or_null("/root/RoutineManager")
 		if rm and rm.has_method("on_light_toggled_off"):
-			rm.on_light_toggled_off()
+			# Pass the node path so RoutineManager can reliably identify the
+			# hall fixture (path contains "Hall", e.g. .../CabinLightHall).
+			# The scene's hall lamp still uses the default "Room Light" name,
+			# so the display name alone is NOT enough to gate the objective.
+			rm.on_light_toggled_off(light_name, get_path())
 
 
 

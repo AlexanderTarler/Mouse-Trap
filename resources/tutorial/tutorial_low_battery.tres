@@ -1,0 +1,12 @@
+[gd_resource type="Resource" format=3 uid="uid://c6js3fsxruww2"]
+
+[ext_resource type="Script" path="res://resources/tutorial/tutorial_data.gd" id="1_lowbat"]
+
+[resource]
+script = ExtResource("1_lowbat")
+mechanic_id = "low_battery"
+prompt_text = "The flashlight is running low on energy. Open your inventory and press [Use] on a spare battery to swap in a fresh one."
+trigger_moment = ""
+prerequisite = ""
+one_shot = true
+day_one_only = false

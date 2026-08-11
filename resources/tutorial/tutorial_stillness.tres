@@ -1,0 +1,10 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+[ext_resource type="Script" path="res://resources/tutorial/tutorial_data.gd" id="1_stillness"]
+[resource]
+script = ExtResource("1_stillness")
+mechanic_id = "stillness"
+prompt_text = "Stand completely still to listen."
+trigger_moment = ""
+prerequisite = ""
+one_shot = true
+day_one_only = false

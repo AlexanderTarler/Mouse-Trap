@@ -73,6 +73,7 @@ const ARVID_DECRYPTION_KEY: String = "STENBERG_1996"
 @onready var _desktop_recycle_btn: Button = $DesktopView/RecycleBinIcon
 @onready var _desktop_logoff_btn: Button = $DesktopView/LogOffIcon
 @onready var _desktop_shutdown_btn: Button = $DesktopView/ShutDownIcon
+@onready var _desktop_previous_reports_btn: Button = $DesktopView/PreviousReportsIcon
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ONREADY NODES — Main Window
@@ -120,11 +121,25 @@ const NEST_ANSWER_KEY: Dictionary = {
 	"Nest Gamma":  { "pop": "3",      "anomaly": "Audio-Specific Abnormalities" },
 }
 
+## Behavioral/anomaly options for the FIELD_LOG.EXE correlation form.
+## These are framed as scientific field-survey categories — ways of
+## recording abnormal or potentially supernatural behaviour without
+## labelling it as such. The first four entries match the classic
+## baseline; they are kept (with "Standard Biological Behavior" as the
+## no-symptom baseline) and expanded with additional survey categories.
 const ANOMALY_OPTIONS: Array[String] = [
 	"Standard Biological Behavior",
 	"Photophobia",
 	"Covert Observation",
 	"Audio-Specific Abnormalities",
+	"Unseasonal Circadian Inversion",
+	"Spatial Displacement Patterns",
+	"Thermal Anomaly Signature",
+	"Electrostatic Field Distortion",
+	"Mirror-Image Stimulus Response",
+	"Geotactic Bypass Behavior",
+	"Irregular Vocalization Rhythms",
+	"Territorial Threshold Transgression",
 ]
 
 const TACTICAL_LOG_REWARDS: Dictionary = {
@@ -146,6 +161,30 @@ const TACTICAL_LOG_REWARDS: Dictionary = {
 		)
 	},
 }
+
+## Previous researcher's nest reports — the Day 2 Step 1 document the player
+## must read on the computer before heading out to document the nests.
+const PREVIOUS_NEST_REPORTS: String = (
+	"[b]PREVIOUS NEST REPORTS — FIELD ARCHIVE[/b]\n"
+	+ "[color=gray]Log Date: MARCH 14 — Seasonal Baseline Survey[/color]\n\n"
+	+ "[color=red]WARNING: Restricted survey data. Do not redistribute.[/color]\n\n"
+	+ "Three primary hazel mouse colonies have been charted in the surrounding "
+	+ "forest. Each exhibits abnormal behaviour inconsistent with standard "
+	+ "Muscardinus avellanarius patterns.\n\n"
+	+ "[b]NEST ALPHA — Hollow Stump, West Ridge[/b]\n"
+	+ "Population estimate: 6. Subjects display violent photophobia. They "
+	+ "retreat from focused high-intensity light and respond aggressively to "
+	+ "beam exposure.\n\n"
+	+ "[b]NEST BETA — Hollow Stump, North Clearing[/b]\n"
+	+ "Population estimate: Unknown. Subjects are hyper-vigilant. They track "
+	+ "observers and reposition to remain hidden. Direct movement within the "
+	+ "colony's sightline triggers a defensive lockdown.\n\n"
+	+ "[b]NEST GAMMA — Hollow Stump, East Gorge[/b]\n"
+	+ "Population estimate: 3. Subjects emit unnatural, rhythmic vocalizations. "
+	+ "They respond to sustained silence — remaining perfectly still is the "
+	+ "only way to observe them without breaking their fixation.\n\n"
+	+ "[color=gray]— Previous Researcher, Ecologist Field Survey Program[/color]"
+)
 
 const ARVID_LOG_01_SURVEY: String = (
 	"[b]SYSTEM RECOVERY: SECTOR 0x4F RESTORED[/b]\n"
@@ -198,6 +237,22 @@ func _ready() -> void:
 	add_to_group("computer_ui")
 	always_pass_correlation = false
 	
+	# ─── FIELD_LOG.EXE FORM INIT: ANOMALY OPTIONS + POPULATION HINTS ──
+	# The anomaly dropdowns and population placeholders are configured in
+	# the scene, but ANOMALY_OPTIONS is the single source of truth. Refresh
+	# each dropdown from it at runtime so newly added survey categories are
+	# always present, and set the population prompt text.
+	for dropdown in [_dropdown_anomaly_a, _dropdown_anomaly_b, _dropdown_anomaly_c]:
+		if not dropdown:
+			continue
+		dropdown.clear()
+		for i in ANOMALY_OPTIONS.size():
+			dropdown.add_item(ANOMALY_OPTIONS[i], i)
+		dropdown.selected = 0
+	for pop_input in [_pop_input_a, _pop_input_b, _pop_input_c]:
+		if pop_input:
+			pop_input.placeholder_text = "Enter number of specimens here..."
+	
 	if _close_button:   _close_button.pressed.connect(_on_close_app_window)
 	if _minimize_button: _minimize_button.pressed.connect(_on_minimize)
 	if _maximize_button: _maximize_button.pressed.connect(_on_maximize)
@@ -209,6 +264,7 @@ func _ready() -> void:
 	if _desktop_field_log_btn: _desktop_field_log_btn.pressed.connect(_on_field_log_open)
 	if _desktop_recycle_btn:   _desktop_recycle_btn.pressed.connect(_on_trash)
 	if _desktop_logoff_btn:    _desktop_logoff_btn.pressed.connect(_on_log_off)
+	if _desktop_previous_reports_btn: _desktop_previous_reports_btn.pressed.connect(_on_previous_reports_open)
 	if _power_off_btn:         _power_off_btn.pressed.connect(_on_exit_computer)
 	if _desktop_shutdown_btn:  _desktop_shutdown_btn.pressed.connect(_on_exit_computer)
 	
@@ -308,7 +364,10 @@ func _show_login_screen() -> void:
 
 func _on_login_submit() -> void:
 	var user = _username_input.text.strip_edges().to_upper()
-	var pw = _password_input.text.strip_edges()
+	# ─── BUG 5 FIX: CASE-INSENSITIVE PASSWORD ──────────────────────
+	# Passwords are now normalized to UPPERCASE before comparison, so
+	# "passkey1", "PassKey1", and "PASSKEY1" all work.
+	var pw = _password_input.text.strip_edges().to_upper()
 	
 	if not VALID_CREDENTIALS.has(user):
 		_login_error.text = "INVALID USERNAME"
@@ -341,10 +400,49 @@ func _on_login_submit() -> void:
 # DESKTOP
 # ─────────────────────────────────────────────────────────────────────────────
 
+## Whether the Day 2 previous-reports file has been fully read (opened once).
+## When true, RoutineManager.on_previous_reports_read() has been fired and the
+## desktop icon can be hidden so the player cannot re-read it accidentally.
+var _previous_reports_read: bool = false
+
+## Opens the NEST_REPORTS.TXT archive containing the previous researcher's
+## nest survey data. Reading this file completes Day 2 Step 1.
+func _on_previous_reports_open() -> void:
+	_desktop_view.visible = false
+	_main_window.visible = true
+	_main_window.find_child("TitleLabel", true, false).text = "NEST_REPORTS.TXT"
+	_status_label.text = "Opening: NEST_REPORTS.TXT — Previous Survey Archive..."
+	_data_entry_panel.visible = false
+	_recovery_panel.visible = false
+	$MainWindow/HBoxContainer/ContentPanel.visible = true
+	_content_display.text = PREVIOUS_NEST_REPORTS
+
+	# ─── DAY 2 STEP 1 COMPLETION ──────────────────────────────────
+	# Opening the report is the "read all" trigger for the first Day 2
+	# objective. Notify the RoutineManager so it can unlock the cabin
+	# door and transition to the Nest Alpha objective.
+	if not _previous_reports_read:
+		_previous_reports_read = true
+		var rm := get_node_or_null("/root/RoutineManager")
+		if rm and rm.has_method("on_previous_reports_read"):
+			rm.on_previous_reports_read()
+			print("[ComputerUI] Previous nest reports read. Day 2 Step 1 notified to RoutineManager.")
+
+
 func _show_desktop() -> void:
 	_login_screen.visible = false
 	_main_window.visible = false
 	_desktop_view.visible = true
+	
+	# ─── PREVIOUS NEST REPORTS (Day 2 Step 1 gate) ──────────────────
+	# The NEST_REPORTS.TXT icon is only available to the LUND profile and
+	# only while the Day 2 report-reading objective is still pending.
+	var show_reports := false
+	if current_user == "LUND":
+		var rm := get_node_or_null("/root/RoutineManager")
+		if rm and "day2_step" in rm and rm.day2_step == 1:
+			show_reports = true
+	_desktop_previous_reports_btn.visible = show_reports
 	
 	_desktop_field_log_btn.visible = (current_user == "LUND")
 	_desktop_recycle_btn.visible = (current_user == "STENBERG")
@@ -451,6 +549,16 @@ func _on_field_log_open() -> void:
 	_data_entry_panel.visible = true
 	_recovery_panel.visible = false
 	
+	# ─── SHUFFLE ANOMALY OPTIONS (Issue 7) ────────────────────────
+	# The three correct answers (Photophobia, Covert Observation,
+	# Audio-Specific Abnormalities) previously sat at indices 1-3 —
+	# clustered right after the default "Standard Biological Behavior".
+	# Each form open now randomizes the non-baseline options so the
+	# correct answers are never all grouped at the top, making the
+	# puzzle harder to brute-force. Validation uses text (not index),
+	# so shuffling is safe.
+	_populate_shuffled_anomaly_dropdowns()
+	
 	# Reset all dropdowns to index 0 and clear all population inputs
 	if _dropdown_anomaly_a: _dropdown_anomaly_a.selected = 0
 	if _pop_input_a: _pop_input_a.text = ""
@@ -471,6 +579,39 @@ func _on_field_log_open() -> void:
 	_data_entry_panel.visible = true
 	$MainWindow/HBoxContainer/ContentPanel.visible = false
 	print("[ComputerUI] FIELD_LOG.EXE opened with nest correlation form.")
+
+
+## ─── ANOMALY OPTION SHUFFLING (Issue 7) ───────────────────────────────
+## Repopulates all three anomaly dropdowns with "Standard Biological
+## Behavior" pinned at index 0 (the no-symptom baseline) and the remaining
+## 11 survey categories in a RANDOM order. Called every time FIELD_LOG.EXE
+## is opened so the correct answers (Photophobia, Covert Observation,
+## Audio-Specific Abnormalities) are never clustered at the top.
+## Validation in _validate_nest_correlation() matches by TEXT, not index,
+## so shuffling is safe.
+func _populate_shuffled_anomaly_dropdowns() -> void:
+	# Build a pool of all non-baseline options
+	var baseline: String = ANOMALY_OPTIONS[0]
+	var shuffled: Array[String] = []
+	for i in range(1, ANOMALY_OPTIONS.size()):
+		shuffled.append(ANOMALY_OPTIONS[i])
+	
+	# Fisher-Yates shuffle
+	for i in range(shuffled.size() - 1, 0, -1):
+		var j: int = randi_range(0, i)
+		var tmp: String = shuffled[i]
+		shuffled[i] = shuffled[j]
+		shuffled[j] = tmp
+	
+	# Rebuild each dropdown: baseline at index 0, shuffled after
+	for dropdown in [_dropdown_anomaly_a, _dropdown_anomaly_b, _dropdown_anomaly_c]:
+		if not dropdown:
+			continue
+		dropdown.clear()
+		dropdown.add_item(baseline, 0)
+		for i in shuffled.size():
+			dropdown.add_item(shuffled[i], i + 1)
+		dropdown.selected = 0
 
 
 func _show_access_denied(reason: String) -> void:
@@ -570,19 +711,179 @@ func _nest_correlation_check() -> void:
 		_on_nest_correlation_failure()
 
 
+## Determines whether the current correlation is the Day 2 nest-data upload
+## (the trigger for the cinematic loading → fade → Night 2 time-skip).
+## Returns true only while the linear Day 2 sequence is active (main_objective
+## >= 99 via RoutineManager), the sandbox mode has NOT started, and no night
+## is currently active.
+func _is_day2_nest_upload_trigger() -> bool:
+	var rm := get_node_or_null("/root/RoutineManager")
+	if rm and "is_day3_sandbox" in rm and rm.is_day3_sandbox:
+		return false
+	if not rm or "main_objective" not in rm or rm.main_objective < 99:
+		return false
+	var nm := get_node_or_null("/root/NightManager")
+	if nm and nm.is_night_active:
+		return false
+	return true
+
+
+## Runs the Day 2 cinematic time-skip from the black screen: snaps the
+## loading bar to 100%, swaps the text to "Data processed.", fast-forwards
+## to Night 2.1, holds in darkness for 3 seconds, then fades back over 3s.
+## The skip only executes if it is currently Day 2 — otherwise it no-ops.
+func _run_day2_night_skip_sequence(load_bar: ProgressBar = null, loading_label: Label = null) -> void:
+	var nm := get_node_or_null("/root/NightManager")
+	
+	# ─── 1. SNAP BAR TO 100% + SWAP TEXT DURING BLACK HOLD ────────────
+	# The screen is fully black at this point. The loading bar jumps to
+	# 100% and the label reads "Data processed." while the player cannot
+	# see it — matching the requested "3 seconds of completely dark screen"
+	# phase. When the screen fades back in, the completed state is shown.
+	if load_bar and is_instance_valid(load_bar):
+		load_bar.value = 100.0
+	if loading_label and is_instance_valid(loading_label):
+		loading_label.text = "Data processed."
+	
+	# ─── 2. WHILE BLACK: FAST-FORWARD TIME TO NIGHT 2.1 ───────────────
+	# Guard: only skip if we are still on Day 2 (night NOT yet active).
+	# start_night(2) sets current_night=2, is_night_active=true, and calls
+	# _force_game_time_to_night() which moves GameTime to dusk (0.5) and
+	# emits night_started — the full transition into Night 2.
+	if nm and not nm.is_night_active:
+		if nm.has_method("start_night"):
+			nm.start_night(2)
+			print("[ComputerUI] Day 2 nest data uploaded — time fast-forwarded to Night 2.")
+		else:
+			print("[ComputerUI] NightManager has no start_night() — time-skip skipped.")
+	else:
+		print("[ComputerUI] Skipping Night 2 time-skip — it is no longer Day 2.")
+	
+	# ─── 3. HOLD IN BLACK FOR 3 SECONDS ────────────────────────────────
+	# This starts AFTER start_night(2) so the time transition itself is
+	# hidden behind the black screen. The bar/text change above is also
+	# invisible during this hold — the player sees it only after the
+	# fade-back begins.
+	await get_tree().create_timer(3.0).timeout
+	
+	# ─── 4. FADE BACK OVER 3 SECONDS ─────────────────────────────────
+	var hud := get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("fade_from_black"):
+		await hud.fade_from_black(3.0)
+	else:
+		await get_tree().create_timer(3.0).timeout
+
+
 func _on_nest_correlation_success() -> void:
 	_play_success_sound()
 	_nest_data_uploaded = true
 	nest_data_uploaded = true
 	_status_label.text = "CORRELATION ACCEPTED"
 	
-	var rm = get_node_or_null("/root/RoutineManager")
+	# ─── CINEMATIC LOADING + TIME-SKIP SEQUENCE ──────────────────────
+	# On the Day 2 nest-data upload, run the full loading-bar cinematic
+	# (progress bar → fade to black → Night 2.1 time skip → fade back →
+	# "Analysis complete"). The RoutineManager advance (which unlocks the
+	# "Lock the door" step) is deferred until the sequence finishes so the
+	# objective doesn't flip mid-transition.
+	var is_day2_upload := _is_day2_nest_upload_trigger()
+	
+	if is_day2_upload:
+		# Hide the correlation form and show the loading screen.
+		_data_entry_panel.visible = false
+		$MainWindow/HBoxContainer/ContentPanel.visible = false
+		
+		# ─── CINEMATIC LOADING + FADE-TO-BLACK TIMELINE ─────────────
+		# EXACT desired sequence:
+		#   0.0s   Loading screen appears: "Processing data, please wait..."
+		#          above a loading bar (before any fade).
+		#   0.0→3s Loading bar fills slowly (~0.5%/s = 1% every 2s) WHILE
+		#          the whole screen fades to black over 3s (as if falling
+		#          asleep). Bar reaches ~1.5% by full black.
+		#   3.0→6s Complete black screen. During these 3 seconds the bar
+		#          jumps to 100%, the text changes to "Data processed.",
+		#          and Day 2 advances to Night 2.1.
+		#   6.0→9s Fade back from black over 3s. Player now sees the
+		#          "Data processed." screen and night has fallen.
+		
+		# ─── 0. SHOW LOADING SCREEN (visible before the fade starts) ─
+		var loading_label := Label.new()
+		loading_label.name = "LoadingLabel"
+		loading_label.text = "Processing data, please wait..."
+		loading_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		loading_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+		loading_label.offset_top = 70.0
+		loading_label.offset_bottom = 100.0
+		_main_window.add_child(loading_label)
+		
+		var load_bar := ProgressBar.new()
+		load_bar.name = "LoadingBar"
+		load_bar.min_value = 0.0
+		load_bar.max_value = 100.0
+		load_bar.value = 0.0
+		load_bar.show_percentage = true
+		load_bar.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+		load_bar.offset_left = -140.0
+		load_bar.offset_top = -10.0
+		load_bar.offset_right = 140.0
+		load_bar.offset_bottom = 10.0
+		_main_window.add_child(load_bar)
+		
+		# ─── PHASE 1: SLOW BAR FILL + FADE TO BLACK OVER 3s ─────────
+		# The bar fills at 0.5%/s (1% every 2 seconds) → 1.5% by the time
+		# the screen reaches full black. The slow-fill tween runs in
+		# parallel with the fade-to-black.
+		# ─── FADE-OVERLAY VISIBILITY FIX ─────────────────────────────
+		# open_computer() sets every node in the "hud" group to
+		# visible=false (so the game UI doesn't cover the computer screen).
+		# The HUD's _fade_overlay is a CHILD of the HUD CanvasLayer, so
+		# it is also hidden. When fade_to_black() tweened the overlay's
+		# alpha below, nothing rendered — the screen never went black.
+		# Temporarily re-show the HUD during the cinematic so the fade
+		# overlay is visible, then re-hide it once the sequence completes.
+		var hud := get_tree().get_first_node_in_group("hud")
+		var hud_nodes_before_fade: Array[Node] = get_tree().get_nodes_in_group("hud")
+		for h in hud_nodes_before_fade:
+			h.visible = true
+		
+		var slow_fill := create_tween()
+		slow_fill.tween_property(load_bar, "value", 1.5, 3.0)
+		
+		if hud and hud.has_method("fade_to_black"):
+			await hud.fade_to_black(3.0)
+		else:
+			await get_tree().create_timer(3.0).timeout
+		
+		# Kill the slow-fill tween (should already be near 1.5%) — the
+		# black-screen phase will snap it to 100%.
+		if slow_fill and slow_fill.is_valid():
+			slow_fill.kill()
+		
+		# ─── PHASE 2-3: BLACK HOLD + NIGHT TRANSITION + FADE BACK ────
+		await _run_day2_night_skip_sequence(load_bar, loading_label)
+		
+		# ─── RE-HIDE THE HUD ─────────────────────────────────────────
+		# The computer UI is still open, so the game HUD must be hidden
+		# again now that the fade sequence has completed.
+		for h in hud_nodes_before_fade:
+			if is_instance_valid(h):
+				h.visible = false
+		
+		# Cleanup loading nodes (safe no-ops if already freed)
+		if is_instance_valid(loading_label):
+			loading_label.queue_free()
+		if is_instance_valid(load_bar):
+			load_bar.queue_free()
+	
+	# ─── 5. COMPLETE: Notify RoutineManager + show "Analysis complete" ──
+	var rm := get_node_or_null("/root/RoutineManager")
 	if rm and rm.has_method("on_nest_data_uploaded"):
 		rm.on_nest_data_uploaded()
 	
+	_status_label.text = "ANALYSIS COMPLETE"
 	_data_entry_panel.visible = false
 	$MainWindow/HBoxContainer/ContentPanel.visible = true
-	_content_display.text = "[b]NEST DOCUMENTATION CORRELATION COMPLETE[/b]\n\n"
+	_content_display.text = "[b]ANALYSIS COMPLETE — NEST DOCUMENTATION CORRELATION SUCCESSFUL[/b]\n\n"
 	_content_display.text += "Nest Alpha → Photophobia ✓ (Pop: 6)\n"
 	_content_display.text += "Nest Beta → Covert Observation ✓ (Pop: Unknown)\n"
 	_content_display.text += "Nest Gamma → Audio-Specific Abnormalities ✓ (Pop: 3)\n\n"
@@ -734,8 +1035,13 @@ func _show_overload_button() -> void:
 func _on_execute_overload() -> void:
 	print("[ComputerUI] EXECUTE OVERLOAD button pressed!")
 	
-	# Find the portable lamp via the "portable_lamp" group
+	# ─── ISSUE 1 FIX: FIND THE LAMP IN BOTH GROUPS ────────────────
+	# The portable lamp registers itself in the "portable_trap" group
+	# (portable_lamp.gd _ready()), NOT "portable_lamp". Search both
+	# groups so the overload button always finds the deployed lamp.
 	var lamp = get_tree().get_first_node_in_group("portable_lamp")
+	if not lamp:
+		lamp = get_tree().get_first_node_in_group("portable_trap")
 	if not lamp:
 		_show_access_denied("ERROR: No portable light source detected in the grid.")
 		return
@@ -743,6 +1049,14 @@ func _on_execute_overload() -> void:
 	# Check if the lamp is deployed
 	if not lamp.has_method("is_deployed") or not lamp.is_deployed():
 		_show_access_denied("ERROR: Portable light source is not deployed. Place it on the ground first.")
+		return
+	
+	# ─── ISSUE 1 FIX: VERIFY THE LAMP IS POWERED ─────────────────
+	# The portable light must be physically connected to the generator
+	# via the PowerCable for the overload to actually drain fuel. If it
+	# isn't powered, the overload would "succeed" silently but do nothing.
+	if "is_powered" in lamp and not lamp.is_powered:
+		_show_access_denied("ERROR: Portable light source is not connected to the generator grid. Connect the cable first.")
 		return
 	
 	# Check if the lamp is already overloaded

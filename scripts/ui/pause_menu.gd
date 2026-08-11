@@ -27,6 +27,22 @@ func _ready() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause_menu"):
+		# ─── STASH UI PRIORITY ────────────────────────────────────────────
+		# If the stash UI (scrap heap looting) is open, pressing Escape
+		# closes it instead of toggling the pause menu. The stash UI's own
+		# _input() handler already marks the event as handled, but this is
+		# a defensive backstop in case the scene tree order differs.
+		if _close_stash_ui():
+			get_viewport().set_input_as_handled()
+			return
+		# ─── INVENTORY UI PRIORITY ───────────────────────────────────────
+		# If the player inventory is open, pressing Escape closes it instead
+		# of toggling the pause menu. The inventory closes itself via
+		# hardware-polling in _process() and cannot consume the event, so
+		# without this guard ESC would open the pause menu on top of it.
+		if _close_inventory_ui():
+			get_viewport().set_input_as_handled()
+			return
 		# ─── COMPUTER UI PRIORITY ─────────────────────────────────────────
 		# If the computer UI is open, pressing Escape closes it instead of
 		# toggling the pause menu. This prevents the player from accidentally
@@ -73,6 +89,36 @@ func _find_debug_console_recursive(node: Node) -> Node:
 		if result:
 			return result
 	return null
+
+## Finds and closes the stash UI if it is open.
+## Returns true if the stash was found and closed, false otherwise.
+func _close_stash_ui() -> bool:
+	var stash_ui = get_node_or_null("/root/CottageHorror/StashUI")
+	if not stash_ui:
+		stash_ui = get_node_or_null("/root/Main/StashUI")
+	if not stash_ui:
+		stash_ui = get_tree().get_first_node_in_group("stash_ui")
+	if stash_ui and stash_ui.get("_is_open"):
+		if stash_ui.has_method("_close_stash"):
+			stash_ui._close_stash()
+			print("[PauseMenu] Stash UI closed via Escape key.")
+			return true
+	return false
+
+
+## Finds and closes the inventory UI if it is open.
+## Returns true if the inventory was found and closed, false otherwise.
+func _close_inventory_ui() -> bool:
+	var inv_ui = get_node_or_null("/root/CottageHorror/InventoryUI")
+	if not inv_ui:
+		inv_ui = get_node_or_null("/root/Main/InventoryUI")
+	if inv_ui and inv_ui.get("_is_open"):
+		if inv_ui.has_method("_close_inventory"):
+			inv_ui._close_inventory()
+			print("[PauseMenu] Inventory UI closed via Escape key.")
+			return true
+	return false
+
 
 ## Finds and closes the computer UI if it's open.
 ## Returns true if the computer was found and closed, false otherwise.

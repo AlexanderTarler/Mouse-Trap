@@ -110,6 +110,7 @@ func toggle_switch() -> void:
 	if is_switched_on:
 		is_switched_on = false; nm.is_generator_on = false
 		if nm.has_signal("generator_state_changed"): nm.generator_state_changed.emit(false)
+		if nm.has_method("recalculate_fuel_drain"): nm.recalculate_fuel_drain()
 		_play_sfx(generator_switch_sfx)
 		_show_hud_msg("Generator stopped.")
 	else:
@@ -124,11 +125,38 @@ func toggle_switch() -> void:
 		if fuel_pct < MIN_START_FUEL_PERCENT: _show_hud_msg("Not enough fuel to start (need > 10%%)..."); return
 		is_switched_on = true; nm.is_generator_on = true
 		if nm.has_signal("generator_state_changed"): nm.generator_state_changed.emit(true)
+		if nm.has_method("recalculate_fuel_drain"): nm.recalculate_fuel_drain()
 		_play_sfx(generator_switch_sfx)
 		_show_hud_msg("Generator started.")
+		# ─── ROUTINE MANAGER: Generator turned ON ─────────────────────
+		# The Day 1 "Turn on the generator" objective completes the moment
+		# the switch is flipped. This is the post-refuel step before the
+		# player can log into the computer.
+		var rm := get_node_or_null("/root/RoutineManager")
+		if rm and rm.has_method("on_generator_turned_on"):
+			rm.on_generator_turned_on()
 
 func get_interact_text() -> String:
-	return "[E] Turn Generator Off" if is_switched_on else "[E] Turn Generator On"
+	if is_switched_on:
+		return "[E] Turn Generator Off"
+	# ─── EXPLAIN WHY THE GENERATOR CAN'T START (FIX) ──────────────────
+	# Previously the prompt said only "[E] Turn Generator On". Now the
+	# player gets actionable feedback when the switch won't work, so a
+	# blocked toggle no longer looks like a dead input.
+	var nm := get_node_or_null("/root/NightManager")
+	if nm:
+		var fuse_box = get_tree().get_first_node_in_group("FuseBox")
+		if not fuse_box:
+			for node in get_tree().get_nodes_in_group("interactable"):
+				if node is FuseBox: fuse_box = node; break
+		if not fuse_box or not fuse_box.has_method("is_powered") or not fuse_box.is_powered():
+			return "[E] Turn Generator On (Repair Fuse Box First)"
+		if nm.generator_fuel <= 0.0:
+			return "[E] Turn Generator On (No Fuel)"
+		var fuel_pct: float = (nm.generator_fuel / nm.max_fuel) * 100.0
+		if fuel_pct < MIN_START_FUEL_PERCENT:
+			return "[E] Turn Generator On (Need > 10% Fuel)"
+	return "[E] Turn Generator On"
 
 func _show_hud_msg(msg: String) -> void:
 	var hud = get_tree().get_first_node_in_group("hud")

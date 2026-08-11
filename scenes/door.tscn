@@ -6,6 +6,8 @@
 [ext_resource type="AudioStream" uid="uid://cxx8sprnojsjg" path="res://assets/audio/objects/lock_door.ogg" id="4_83dcw"]
 [ext_resource type="AudioStream" uid="uid://ogcrhanypkfn" path="res://assets/audio/objects/unlock_door.ogg" id="5_83dcw"]
 [ext_resource type="PackedScene" uid="uid://xkwv1osx47ps" path="res://assets/PSX Bunkers/Models/other-formats/GLB/sign_3.glb" id="6_q5w8r"]
+[ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0c6" path="res://scenes/note.tscn" id="7_ju5n0"]
+[ext_resource type="Resource" uid="uid://2smk72yvpklq" path="res://resources/porch_light_note.tres" id="8_kgbum"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_uvdjg"]
 size = Vector3(1, 2.1, 0.07)
@@ -28,3 +30,7 @@ volume_db = -16.657
 
 [node name="sign_32" parent="." unique_id=1057421651 instance=ExtResource("6_q5w8r")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.526429, 1.651418, 0.056000017)
+
+[node name="PorchLightNote" parent="." unique_id=784638091 instance=ExtResource("7_ju5n0")]
+transform = Transform3D(1.9106855e-15, 4.371139e-08, 1, 1, -4.371139e-08, 0, 4.371139e-08, 1, -4.371139e-08, 0.77577996, 1.3975861, -0.054730058)
+item_data = ExtResource("8_kgbum")

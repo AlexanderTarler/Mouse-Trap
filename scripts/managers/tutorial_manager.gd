@@ -26,6 +26,13 @@ const TUTORIAL_PATHS: Array[String] = [
 	"res://resources/tutorial/tutorial_inventory.tres",
 	"res://resources/tutorial/tutorial_pc_login.tres",
 	"res://resources/tutorial/tutorial_pickup_drop.tres",
+	"res://resources/tutorial/tutorial_low_battery.tres",
+	# ─── DAY 2 NEST TUTORIALS ────────────────────────────────────────
+	# These teach the survival mechanics required to document the nests:
+	#   overcharge → Nest Alpha, stealth → Nest Beta, stillness → Nest Gamma.
+	"res://resources/tutorial/tutorial_overcharge.tres",
+	"res://resources/tutorial/tutorial_stealth.tres",
+	"res://resources/tutorial/tutorial_stillness.tres",
 ]
 
 ## Loaded TutorialData resources.

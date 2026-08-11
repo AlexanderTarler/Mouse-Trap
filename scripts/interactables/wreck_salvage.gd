@@ -34,6 +34,17 @@ func _ready() -> void:
 func interact(player: Node3D = null) -> void:
 	print("[Wreck] interact() CALLED — is_looted=", is_looted, " | item_resource=", item_resource)
 	
+	# ─── TASK 2.1: EXHAUSTED GATE ────────────────────────────────
+	# When the player is exhausted (Day 3+), they are too tired to salvage
+	# car wrecks. The interaction is blocked with a greyed-out message.
+	# Standard doors/locks remain interactable — only resource-gathering
+	# interactions are disabled while exhausted.
+	var player_ref = player if player else get_tree().get_first_node_in_group("player")
+	if player_ref and "is_exhausted" in player_ref and player_ref.is_exhausted:
+		_show_hud_message("I am too tired to do this...")
+		print("[Wreck] BLOCKED: Player is exhausted.")
+		return
+	
 	# ─── ALREADY LOOTED ─────────────────────────────────────────
 	if is_looted:
 		_show_hud_message("It's completely stripped. Nothing useful left.")
@@ -166,6 +177,12 @@ func _spawn_salvage_spark_particles() -> void:
 func get_interact_text() -> String:
 	if is_looted:
 		return ""
+	# ─── TASK 2.1: EXHAUSTED INTERACTION PROMPT ──────────────────
+	# When exhausted, grey out the interaction prompt instead of
+	# showing the normal "Press E" text. The player is too tired.
+	var player_ref = get_tree().get_first_node_in_group("player")
+	if player_ref and "is_exhausted" in player_ref and player_ref.is_exhausted:
+		return "[color=gray]I am too tired to do this[/color]"
 	var item_name := _get_item_name()
 	if _is_before_day_3():
 		var nm = get_node_or_null("/root/NightManager")

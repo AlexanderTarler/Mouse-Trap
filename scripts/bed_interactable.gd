@@ -4,7 +4,7 @@ extends Node3D # Or Area3D / StaticBody3D depending on your interaction setup
 const INTRO_OBJECTIVE: String = "Investigate the car alarm outside."
 
 ## Objective string for Day 2 after the first sleep transition.
-const DAY2_OBJECTIVE: String = "Document the nests."
+const DAY2_OBJECTIVE: String = "Read the earlier nest data logs in the computer."
 
 @onready var _night_manager = get_node_or_null("/root/NightManager")
 @onready var _game_time = get_node_or_null("/root/GameTime")
@@ -119,6 +119,29 @@ func interact(player: Node3D = null) -> void:
 	var phase2_done: bool = rm and rm.phase2_computer_used if rm else false
 	var phase3_done: bool = rm and rm.phase3_bed_used if rm else false
 	
+	# ─── PRIORITY FIX: BLOCK BED DURING INCOMPLETE DAY 2 ─────────
+	# If the Day 2 nest-tutorial sequence is active (main_objective >= 99)
+	# but NOT yet fully complete (day2_step < 8), the player MUST NOT be
+	# able to sleep. Previously, when current_night advanced to 2 during
+	# Day 2 daytime, the dawn check below treated the daytime as "dawn"
+	# and advanced to the next night immediately — skipping all Day 2
+	# objectives. This guard runs BEFORE Conditioning 3/4 to hard-block.
+	var day2_nests_documented: int = rm.nests_documented if rm else 0
+	var day2_sequence_active: bool = rm and rm.main_objective >= 99 if rm else false
+	# ─── BUG 6 FIX: Allow day2_step == 7 through the gate ───────────
+	# Previously this checked `day2_step >= 8` (sequence COMPLETE). But step 7
+	# IS "Go to bed" — the very interaction this handler is supposed to
+	# perform. Blocking everything below step 8 created a deadlock: the player
+	# could never reach step 8 because step 7 (going to bed) was blocked by
+	# the "not complete" guard. Now the gate only blocks steps 1–6.
+	var day2_bed_step_reached: bool = rm and rm.day2_step >= 7 if rm else false
+	if day2_sequence_active and not day2_bed_step_reached:
+		if day2_nests_documented < 3:
+			_show_hud_message("I should document all the nests first before going to bed.")
+		else:
+			_show_hud_message("I still have work to do before I can sleep.")
+		return
+	
 	# ─── GUARD B (checked FIRST): Nest tasks on Day 2+ ──────────
 	# Uses `nests_documented >= 1` instead of `current_night >= 1` because
 	# the natural day/night cycle can advance current_night to 1 BEFORE
@@ -129,8 +152,7 @@ func interact(player: Node3D = null) -> void:
 	# found and documented at least one nest.
 	# The is_van_sequence_active guard prevents re-entering after the
 	# van sequence has already been triggered.
-	var nests_documented: int = rm.nests_documented if rm else 0
-	if nests_documented >= 1 and not _night_manager.is_van_sequence_active:
+	if day2_nests_documented >= 1 and not _night_manager.is_van_sequence_active:
 		var nests_done: bool = rm and rm.nests_documented >= 3 if rm else false
 		var data_uploaded: bool = rm and rm.nests_uploaded if rm else false
 		
@@ -141,6 +163,19 @@ func interact(player: Node3D = null) -> void:
 		if not data_uploaded:
 			_show_hud_message("I should upload the nest data on the computer first before going to bed.")
 			return
+		
+		# ─── DAY 2 STEP 6 GATE: LOCK THE DOOR ─────────────────────
+		# After uploading the nest data, the Day 2 sequence advances to
+		# step 6 ("Lock the door"). The bed refuses until the player has
+		# locked the door (which advances to step 7, "Go to bed").
+		var day2_step: int = rm.day2_step if rm else 0
+		if day2_step == 6:
+			_show_hud_message("I should lock the door first.")
+			return
+		
+		if day2_step == 7:
+			rm.day2_step = 8
+			print("[Bed Scene] Day 2 Step 7 COMPLETE: Player went to bed. Day 2 sequence finished.")
 		
 		# ─── NESTS DOCUMENTED + UPLOADED → VAN SEQUENCE SLEEP ───
 		if player.has_method("set_physics_process"):

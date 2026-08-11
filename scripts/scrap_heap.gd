@@ -62,6 +62,12 @@ func _ready() -> void:
 func get_interact_text() -> String:
 	if is_spent:
 		return "[E] Search Scrap Heap (spent)"
+	# ─── TASK 2.1: EXHAUSTED INTERACTION PROMPT ──────────────────
+	# When exhausted, grey out the interaction prompt instead of
+	# showing the normal "Press E" text. The player is too tired.
+	var player_ref = get_tree().get_first_node_in_group("player")
+	if player_ref and "is_exhausted" in player_ref and player_ref.is_exhausted:
+		return "[color=gray]I am too tired to do this[/color]"
 	return "[E] Search Scrap Heap"
 
 
@@ -90,24 +96,22 @@ func interact(player: Node3D = null) -> void:
 		return
 
 	# ─── EXHAUSTION GUARD (Day 3+) ────────────────────────────
-	# When exhausted, the player is too weak to tinker with scrap.
+	# When exhausted, the player is too tired to scavenge scrap heaps.
 	if player and "is_exhausted" in player and player.is_exhausted:
-		_show_hud_message("I'm too weak to tinker with this right now.")
+		_show_hud_message("I am too tired to do this...")
 		return
 
-	# ─── NIGHT CHECK ───────────────────────────────────────
-	# Block scavenging during night hours. The player must wait
-	# until dawn to search through scrap piles.
-	var is_night: bool = false
+	# ─── LOCKED BEFORE DAY 3 ───────────────────────────────────
+	# Scrap heaps unlock from Day/Night 3 onward. Before that the
+	# debris is sealed / not worth searching. From Night 3+ the
+	# player can loot heaps at ANY time (day or night).
+	if not _night_manager or "current_night" not in _night_manager:
+		print("[ScrapHeap] %s: ERROR — NightManager unavailable. Blocking scavenge." % scrap_heap_id)
+		return
 
-	if _night_manager and _night_manager.is_night_active:
-		is_night = true
-	elif _game_time and not _game_time.is_day:
-		is_night = true
-
-	if is_night:
-		_show_hud_message("It's too dark to look through scrap right now...")
-		print("[ScrapHeap] %s: Blocked — night time." % scrap_heap_id)
+	if _night_manager.current_night < 3:
+		_show_hud_message("The scrap heap is sealed up tight. Maybe you'll have better luck in a few days...")
+		print("[ScrapHeap] %s: Blocked — Day %d (unlocked on Night 3)." % [scrap_heap_id, _night_manager.current_night])
 		return
 
 	# ─── FREEZE PLAYER ─────────────────────────────────────

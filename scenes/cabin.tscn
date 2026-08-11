@@ -11,7 +11,7 @@ size = Vector3(6.419824, 3, 6.2)
 size = Vector3(6.333496, 2.75, 6.057617)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_0hoql"]
-size = Vector3(6.1220703, 3, 6.3789063)
+size = Vector3(7.45, 2.46, 6.97)
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_ixm0y"]
 geometry_source_geometry_mode = 1

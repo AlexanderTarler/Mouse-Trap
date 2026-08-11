@@ -159,15 +159,37 @@ func attempt_fuse_insertion() -> void:
 ## Throws the switch immediately after fuse insertion — restores generator
 ## power via NightManager. No longer called from interact() as a separate
 ## step; it fires automatically when the fuse is inserted.
+##
+## ORDER OF OPERATIONS FIX (Generator restart bug):
+## The old implementation set `current_state = POWER_ON` BEFORE starting
+## the generator. When the generator had 0 fuel, _set_generator_state()
+## silently returned, but is_powered() then reported true anyway — so the
+## GeneratorSwitch's fuel check ("The generator is out of fuel...") blocked
+## the player FOREVER: fuse box said "repaired" yet the generator could
+## never start. The fuse box now only enters POWER_ON after the generator
+## actually starts successfully.
 func _throw_switch() -> void:
+	# ─── FIX: FUSE INSERTION REPAIRS THE BOX — GENERATOR START IS SEPARATE ──
+	# Previously this auto-started the generator via _set_generator_state(true).
+	# If the generator had no fuel, that returned false and the fuse box STAYED
+	# BROKEN while the fuse was consumed — the player was then hard-locked:
+	# GeneratorSwitch's fuse check ("The fuse box needs to be repaired first...")
+	# never passed, so pressing E on the switch appeared to do nothing.
+	#
+	# The repair is now DECOUPLED from generator start:
+	#   1. Insert fuse  → fuse box POWER_ON (repaired), generator stays OFF
+	#   2. Refuel       → if needed
+	#   3. Toggle GeneratorSwitch → generator ON (gated by fuel in generator.gd)
+	# This matches the intended design: after sabotage the generator is OFF,
+	# and the player restarts it via the switch.
 	current_state = BoxState.POWER_ON
-	_set_generator_state(true)
 	power_restored.emit()
 	
 	# ─── REPAIR SOUND ──────────────────────────────────────────────
 	_play_sfx(repair_fusebox_sfx)
 	
-	print("[FuseBox] Fuse inserted! Power restored automatically.")
+	_show_hud_msg("Fuse repaired! Turn on the generator to restore power.")
+	print("[FuseBox] Fuse inserted! Fuse box repaired (POWER_ON). Start the generator at the switch.")
 	
 	# ─── DAY 1 ONBOARDING: PHASE 2 — FUSE FIXED ────────────────────────
 	# Notify RoutineManager that the fuse box has been fixed.
@@ -179,11 +201,13 @@ func _throw_switch() -> void:
 
 ## Sets the NightManager generator state and emits the state change signal
 ## so all CabinLight nodes update their visibility automatically.
-func _set_generator_state(enabled: bool) -> void:
+## Returns true if the state was applied successfully, false if the
+## request was blocked (e.g., no fuel).
+func _set_generator_state(enabled: bool) -> bool:
 	var nm = get_node_or_null("/root/NightManager")
 	if not nm:
 		print("[FuseBox] Warning: NightManager not found at /root/NightManager")
-		return
+		return false
 	
 	# ─── FUEL GUARD (Bug 3 Fix) ──────────────────────────────────────────
 	# Power can ONLY be restored if BOTH conditions are met:
@@ -194,15 +218,29 @@ func _set_generator_state(enabled: bool) -> void:
 	# — the power still won't work because the generator can't run without fuel.
 	# This fixes the bug where inserting the fuse restores power even when
 	# the generator has 0.0% fuel.
+	#
+	# RETURN FALSE (new): The caller (e.g. _throw_switch) uses the return
+	# value to decide whether the fuse box repair actually succeeded. If
+	# this returns false, the FuseBox stays BROKEN and the player is told
+	# to refuel, instead of the FuseBox lying that it is repaired.
 	if enabled and nm.generator_fuel <= 0.0:
 		print("[FuseBox] Cannot enable generator — fuel is at 0.0. Refuel the generator first.")
-		return
+		return false
 	
 	nm.is_generator_on = enabled
 	nm.generator_state_changed.emit(enabled)
 	if enabled:
 		nm.recalculate_fuel_drain()
 	print("[FuseBox] Generator state set to: ", enabled)
+	return true
+
+## Shows a transient HUD message via the hud group, or prints if unavailable.
+func _show_hud_msg(msg: String) -> void:
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("show_message"):
+		hud.show_message(msg)
+	else:
+		print("[FuseBox HUD]: ", msg)
 
 
 ## Iterates the Inventory autoload's items array looking for an item
@@ -241,8 +279,16 @@ func _play_sfx(stream: AudioStream) -> void:
 ## Returns whether the fuse box is currently powered (generator ON).
 ## Used by the Entity Director to check if the porch light is active,
 ## which prevents door approach until the fuse box is sabotaged.
+##
+## ─── FIX: Any non-BROKEN state counts as "power-capable" ─────────
+## The fuse box is repaired as long as it isn't BROKEN (sabotaged).
+## Whether the generator actually RUNS is governed by fuel + the
+## GeneratorSwitch toggle in generator.gd. This lets the player repair
+## the box even with an empty tank, then refuel and start the generator
+## from the switch (previously the empty-tank case deadlocked the box
+## in BROKEN with the fuse consumed).
 func is_powered() -> bool:
-	return current_state == BoxState.POWER_ON
+	return current_state != BoxState.BROKEN
 
 
 ## Breaks the fuse box — sets state to BROKEN and shuts down the generator.

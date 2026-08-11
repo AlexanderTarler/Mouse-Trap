@@ -52,6 +52,17 @@ var _muted: bool = false
 var _distant_monster_player: AudioStreamPlayer = null
 var _distant_monster_streams: Array[AudioStream] = []
 
+# ─── TASK 2: STALK CHASE AUDIO ──────────────────────────────────────────
+# Dedicated 2D chase track that plays while the Entity is in the STALK state
+# AND the player is within 30m. Uses tween-based fade so re-entry near the
+# player resumes the track cleanly instead of restarting from the beginning.
+var _stalk_chase_player: AudioStreamPlayer = null
+var _stalk_chase_streams: Array[AudioStream] = []
+var _stalk_chase_playing: bool = false
+var _stalk_chase_fade_tween: Tween = null
+const STALK_CHASE_PATH: String = "res://assets/audio/Entity/monster_stalk_mx.ogg"
+const STALK_CHASE_FADE_TIME: float = 0.5
+
 # Day/Night forest ambience players
 var _day_ambience_player: AudioStreamPlayer = null
 var _night_ambience_player: AudioStreamPlayer = null
@@ -268,12 +279,12 @@ func _on_night_started(night: int) -> void:
 	_play_ambient()
 	# Switch to night forest ambience
 	_play_night_ambience()
-	# Night 1 exception: The distant monster sound is suppressed so the car
-	# alarm narrative event plays without the Entity's audio telegraphing.
-	# The howl will play when trigger_first_chase() fires instead.
-	# Night 2 van sequence: Also suppressed — the car alarm is the dominant audio.
-	if night == 1:
-		print("HorrorSoundManager: Night 1 — suppressing distant monster sound for car alarm narrative.")
+	# Night 1 & Night 2 exceptions: The distant monster sound is suppressed
+	# for Night 1 (car alarm narrative), Night 2.1 (nest-upload cinematic
+	# time-skip), and Night 2.2 (van car-alarm narrative). The howl will
+	# play when the corresponding chase sequence fires instead.
+	if night <= 2:
+		print("HorrorSoundManager: Night %d — suppressing distant monster sound." % night)
 	else:
 		var nm_check = get_node_or_null("/root/NightManager")
 		if nm_check and nm_check.get("is_van_sequence_active") == true:
@@ -286,6 +297,7 @@ func _on_night_ended(_night: int) -> void:
 	_stop_ambient()
 	_stop_entity_sounds()
 	_stop_distant_monster()
+	_stop_stalk_chase()
 	# Switch back to day forest ambience
 	_play_day_ambience()
 
@@ -438,6 +450,85 @@ func set_watched_intensity(level: float) -> void:
 	# At high intensity, play a monster growl as a one-shot event
 	if level > 0.7 and _monster_growl_streams.size() > 0:
 		_play_event_sound_3d(_get_random_stream(_monster_growl_streams), Vector3(0, 1, -4))
+
+## ─── TASK 2: STALK CHASE AUDIO SETUP ────────────────────────────────────
+## Creates a dedicated 2D AudioStreamPlayer for the STALK chase track.
+## Tries to load a dedicated `monster_stalk_mx.ogg`; falls back to the
+## distant monster stream if the dedicated file is missing.
+func _setup_stalk_chase_sounds() -> void:
+	# Try to load a dedicated stalk/music track for the chase.
+	if FileAccess.file_exists(STALK_CHASE_PATH):
+		var stream = load(STALK_CHASE_PATH) as AudioStream
+		if stream:
+			if stream is AudioStreamOggVorbis:
+				stream.loop = true
+			_stalk_chase_streams.append(stream)
+			print("HorrorSoundManager: Loaded STALK chase audio: " + STALK_CHASE_PATH)
+	
+	# Create a 2D audio player for the chase track (always audible).
+	_stalk_chase_player = AudioStreamPlayer.new()
+	_stalk_chase_player.bus = "Entity"
+	_stalk_chase_player.volume_db = -20.0
+	add_child(_stalk_chase_player)
+
+
+## Public API: Plays (or resumes) the STALK chase audio. The call is a
+## no-op if the track is already playing — the position is preserved so the
+## track never restarts from the beginning when the player re-enters the
+## 30m proximity boundary. If a previous fade-out was in progress, it is
+## cancelled and the volume lerps back up.
+func play_stalk_chase() -> void:
+	if not _stalk_chase_player:
+		return
+	if _stalk_chase_player.stream == null:
+		# Assign a stream on first play (dedicated track, then distant fallback).
+		if not _stalk_chase_streams.is_empty():
+			_stalk_chase_player.stream = _stalk_chase_streams[0]
+		elif not _distant_monster_streams.is_empty():
+			_stalk_chase_player.stream = _distant_monster_streams[0]
+			if _stalk_chase_player.stream is AudioStreamOggVorbis:
+				_stalk_chase_player.stream.loop = true
+		else:
+			return
+	if _stalk_chase_playing:
+		return  # Track already active — keep the current playback position.
+	_stalk_chase_playing = true
+	# Cancel any in-progress fade-out tween so the volume lerp isn't fought.
+	if _stalk_chase_fade_tween and _stalk_chase_fade_tween.is_valid():
+		_stalk_chase_fade_tween.kill()
+		_stalk_chase_fade_tween = null
+	_stalk_chase_player.volume_db = -20.0
+	_stalk_chase_player.play()
+	print("HorrorSoundManager: STALK chase audio playing.")
+
+
+## Public API: Fades out and stops the STALK chase audio over 0.5s.
+## This prevents an abrupt cutoff and allows clean resume on the next
+## proximity entry without restarting the track.
+func stop_stalk_chase() -> void:
+	if not _stalk_chase_player:
+		return
+	if not _stalk_chase_playing:
+		return
+	_stalk_chase_playing = false
+	if _stalk_chase_fade_tween and _stalk_chase_fade_tween.is_valid():
+		_stalk_chase_fade_tween.kill()
+	_stalk_chase_fade_tween = create_tween()
+	_stalk_chase_fade_tween.tween_property(_stalk_chase_player, "volume_db", -80.0, STALK_CHASE_FADE_TIME)
+	_stalk_chase_fade_tween.tween_callback(_stalk_chase_player.stop)
+	print("HorrorSoundManager: STALK chase audio fading out.")
+
+
+## Internal helper: stops the STALK chase audio immediately (no fade).
+## Used on night-end cleanup where a hard stop is acceptable.
+func _stop_stalk_chase() -> void:
+	if _stalk_chase_fade_tween and _stalk_chase_fade_tween.is_valid():
+		_stalk_chase_fade_tween.kill()
+		_stalk_chase_fade_tween = null
+	_stalk_chase_playing = false
+	if _stalk_chase_player and _stalk_chase_player.playing:
+		_stalk_chase_player.stop()
+
 
 ## Sets up the distant monster audio player and preloads the audio files.
 ## Uses FileAccess.file_exists() to silently skip missing files without

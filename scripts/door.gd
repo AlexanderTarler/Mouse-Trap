@@ -354,6 +354,27 @@ func close_and_lock() -> void:
 	is_locked = true
 
 
+## Public API: Unlocks the door WITHOUT opening it. The door stays closed
+## and the player must physically interact to open it.
+## Used by RoutineManager on Day 2 Step 1 completion (notebook review).
+func unlock() -> void:
+	if is_locked:
+		is_locked = false
+		_play_lock_unlock_sound(false)  # false = unlock sound
+		print("[Door] Door unlocked via unlock() — stays closed. Tap E to open.")
+	# Ensure the door can be opened even if it was already unlocked
+	set_collision_layer_value(1, true)
+
+
+## Public API: Locks the door. Used by RoutineManager at the start of
+## Day 2 to keep the player inside until they review the Nest Logs.
+func lock() -> void:
+	if not is_locked:
+		is_locked = true
+		_play_lock_unlock_sound(true)  # true = lock sound
+		print("[Door] Door locked via lock().")
+
+
 ## Forces the door open (used by the Entity AI during WINDOW_PEEK breach).
 ## This is the door equivalent of CabinWindow.shatter_window().
 ## The Entity smashes through the door, unlocking and flinging it open.

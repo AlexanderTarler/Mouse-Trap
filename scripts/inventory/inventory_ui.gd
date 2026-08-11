@@ -64,6 +64,20 @@ func _find_note_ui() -> void:
 		call_deferred("_find_note_ui")
 
 
+func _input(event: InputEvent) -> void:
+	# ─── ESC CLOSE WITH INPUT CONSUMPTION ─────────────────────────
+	# When the inventory is open, pressing Escape closes it and marks
+	# the input event as handled via get_viewport().set_input_as_handled().
+	# This prevents the event from bubbling up to PauseMenu's
+	# _unhandled_input(), which would otherwise open the pause menu
+	# on top of the inventory — exactly like computer_ui.gd / stash_ui.gd.
+	if not _is_open:
+		return
+	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		_close_inventory()
+		get_viewport().set_input_as_handled()
+
+
 func _process(_delta: float) -> void:
 	# ─── STASH UI GUARD ────────────────────────────────────
 	# Prevent TAB from opening the inventory while the stash UI
@@ -229,6 +243,25 @@ func _create_slot_style(item_type: int, selected: bool = false) -> StyleBoxFlat:
 	return s
 
 
+## Returns a StyleBoxFlat for an EMPTY inventory slot.
+## Empty slots are tinted slightly DARKER than the surrounding UI panel
+## background (a dark yellow/brown) so the available capacity reads as
+## recessed, non-interactive cells instead of blank space.
+func _create_empty_slot_style() -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = Color(0.035, 0.016, 0.008, 1)
+	s.border_width_left = 1
+	s.border_width_top = 1
+	s.border_width_right = 1
+	s.border_width_bottom = 1
+	s.border_color = Color(0.16, 0.08, 0.035, 0.6)
+	s.corner_radius_top_left = 2
+	s.corner_radius_top_right = 2
+	s.corner_radius_bottom_right = 2
+	s.corner_radius_bottom_left = 2
+	return s
+
+
 func _refresh_grid() -> void:
 	# Clear existing buttons
 	for child in grid_container.get_children():
@@ -236,27 +269,45 @@ func _refresh_grid() -> void:
 		child.queue_free()
 	_item_buttons.clear()
 	
-	print("[InventoryUI] Refreshing grid, items count: ", Inventory.items.size())
+	print("[InventoryUI] Refreshing grid, items count: ", Inventory.items.size(), "/", Inventory.MAX_ITEMS)
 	
-	for i in range(Inventory.items.size()):
-		var item = Inventory.items[i]
+	# ─── DYNAMIC SLOT COUNT ─────────────────────────────────────────
+	# Render one button for EVERY possible inventory slot (based on
+	# Inventory.MAX_ITEMS), not just the filled ones. Empty slots get a
+	# darker, non-interactive style so the player can see their capacity.
+	var max_slots: int = Inventory.MAX_ITEMS
+	
+	for i in range(max_slots):
+		var item = Inventory.items[i] if i < Inventory.items.size() else null
 		
-		# Create a Button for the slot with icon + type-colored border
+		# Create a Button for the slot (72x72) — filled or empty
 		var btn := Button.new()
 		btn.custom_minimum_size = Vector2(72, 72)
 		btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		
-		if item.item_icon:
-			btn.icon = item.item_icon
-			btn.expand_icon = true
+		if item:
+			if item.item_icon:
+				btn.icon = item.item_icon
+				btn.expand_icon = true
+			else:
+				btn.text = item.item_name.left(2)
+			
+			# Apply the type-colored slot style
+			var slot_style = _create_slot_style(item.item_type, false)
+			btn.add_theme_stylebox_override("normal", slot_style)
+			
+			btn.pressed.connect(_on_item_selected.bind(i))
 		else:
-			btn.text = item.item_name.left(2)
+			# ─── EMPTY SLOT ─────────────────────────────────────────
+			# Disabled + darker than the surrounding panel background so
+			# unfilled capacity reads as recessed dead cells.
+			btn.disabled = true
+			var empty_style := _create_empty_slot_style()
+			btn.add_theme_stylebox_override("normal", empty_style)
+			btn.add_theme_stylebox_override("hover", empty_style)
+			btn.add_theme_stylebox_override("pressed", empty_style)
+			btn.add_theme_stylebox_override("disabled", empty_style)
 		
-		# Apply the type-colored slot style
-		var slot_style = _create_slot_style(item.item_type, false)
-		btn.add_theme_stylebox_override("normal", slot_style)
-		
-		btn.pressed.connect(_on_item_selected.bind(i))
 		grid_container.add_child(btn)
 		_item_buttons.append(btn)
 	
@@ -269,12 +320,26 @@ func _on_item_selected(index: int) -> void:
 
 
 func _update_selection() -> void:
-	# Update slot styles based on selection state
+	# If the previously selected index no longer holds an item, clear it
+	if _selected_index >= Inventory.items.size():
+		_selected_index = -1
+	
+	# Update slot styles based on selection/empty state
 	for i in range(_item_buttons.size()):
 		var btn = _item_buttons[i]
+		
+		if i >= Inventory.items.size():
+			# Empty slot — always keep the dark recessed style
+			var empty_style := _create_empty_slot_style()
+			btn.add_theme_stylebox_override("normal", empty_style)
+			btn.add_theme_stylebox_override("hover", empty_style)
+			btn.add_theme_stylebox_override("pressed", empty_style)
+			btn.add_theme_stylebox_override("disabled", empty_style)
+			continue
+		
 		var is_selected = (i == _selected_index)
 		btn.add_theme_stylebox_override("normal", _create_slot_style(
-			Inventory.items[i].item_type if i < Inventory.items.size() else 0,
+			Inventory.items[i].item_type,
 			is_selected
 		))
 	

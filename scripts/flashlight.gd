@@ -21,7 +21,9 @@ signal overcharge_deactivated
 
 ## ─── OVERCHARGE TUNING ─────────────────────────────────────────────────────
 ## Multiplier applied to drain_rate while the overcharge beam is active.
-@export var overcharge_drain_multiplier: float = 6.0
+## Reduced from 6.0 → 3.0 (exactly 50% less overcharge drain), so the
+## battery lasts twice as long in overcharge mode.
+@export var overcharge_drain_multiplier: float = 3.0
 
 ## Standard beam energy (SpotLight3D light_energy) when not overcharged.
 @export var standard_energy: float = 2.0
@@ -61,6 +63,28 @@ var _is_flickering: bool = false
 ## overcharge is active.
 var _hum_player: AudioStreamPlayer = null
 
+## ─── OVERCHARGE TUTORIAL HOLD TRACKING ────────────────────────────────────
+## Accumulated time (seconds) the player has continuously held the F key in
+## overcharge mode. The "Hold F to overcharge" tutorial hint only dismisses
+## once this reaches OVERCHARGE_TUTORIAL_HOLD_REQUIRED (3.0s). Resets if the
+## player releases F or overcharge deactivates early.
+var _overcharge_tutorial_hold_time: float = 0.0
+
+## Total continuous hold time (seconds) required before the overcharge
+## tutorial ("Hold [F] to OVERCHARGE...") is dismissed via mark_learned().
+const OVERCHARGE_TUTORIAL_HOLD_REQUIRED: float = 3.0
+
+## ─── LOW BATTERY TUTORIAL ──────────────────────────────────────────────
+## The percentage threshold (0-100) at which the "flashlight is low on
+## energy" tutorial hint fires. Set to 30% per design. This is a SEPARATE
+## threshold from low_battery_threshold (15%) which controls visual flicker.
+const LOW_BATTERY_HINT_PERCENT: float = 30.0
+
+## One-shot guard so the low-battery hint only shows once. Set to true the
+## first time battery drops below LOW_BATTERY_HINT_PERCENT. Persists for
+## the lifetime of the flashlight (per-session, not cross-save).
+var _low_battery_hint_shown: bool = false
+
 
 func _ready() -> void:
 	battery_level = max_battery
@@ -97,12 +121,38 @@ func _process(delta: float) -> void:
 			_turn_off()
 			return
 		
+		# ─── OVERCHARGE TUTORIAL HOLD TRACKING ────────────────────────
+		# Only accumulate while the overcharge beam is active AND the
+		# mechanic has not yet been learned. The hint stays on screen
+		# until the player has continuously held F for at least the
+		# required duration (3.0s). Once satisfied, dismiss it.
+		if is_overcharged and not _is_overcharge_tutorial_learned():
+			_overcharge_tutorial_hold_time += delta
+			if _overcharge_tutorial_hold_time >= OVERCHARGE_TUTORIAL_HOLD_REQUIRED:
+				_overcharge_tutorial_hold_time = 0.0
+				_mark_overcharge_tutorial_learned()
+		elif not is_overcharged:
+			# Overcharge not active — reset the cumulative hold timer so
+			# the player must hold continuously for the full 3 seconds.
+			_overcharge_tutorial_hold_time = 0.0
+		
 		# ─── BEAM LERP (energy + cone) ────────────────────────────────
 		_update_beam_lerp(delta)
 		
 		# ─── LOW BATTERY FLICKER ───────────────────────────────────────
 		# The flicker applies on top of the lerped energy, making the beam
 		# visually struggle without changing the is_overcharged gameplay flag.
+		# ─── LOW BATTERY TUTORIAL HINT (below 30%) ───────────────
+		# Shows once the first time battery drops below 30%. The tutorial
+		# system handles the one-shot persistence via mark_learned(), but
+		# we guard here too so the call is not spammed every frame.
+		if not _low_battery_hint_shown and get_battery_percent() <= LOW_BATTERY_HINT_PERCENT:
+			_low_battery_hint_shown = true
+			var tm := get_node_or_null("/root/TutorialManager")
+			if tm and tm.has_method("trigger"):
+				tm.trigger("low_battery")
+				print("[Flashlight] Battery low — triggered 'low_battery' tutorial hint.")
+		
 		if battery_level <= low_battery_threshold:
 			_update_flicker(delta)
 		elif _is_flickering:
@@ -159,6 +209,9 @@ func deactivate_overcharge() -> void:
 	if not is_overcharged:
 		return
 	is_overcharged = false
+	# Reset the tutorial hold accumulator — the player must hold
+	# continuously to satisfy the 3-second requirement.
+	_overcharge_tutorial_hold_time = 0.0
 	_stop_hum()
 	overcharge_deactivated.emit()
 
@@ -222,6 +275,24 @@ func get_battery_percent() -> float:
 
 func is_low_battery() -> bool:
 	return battery_level <= low_battery_threshold
+
+
+## Returns true if the "overcharge" tutorial mechanic has already been learned
+## (i.e. the hint was previously dismissed via mark_learned).
+func _is_overcharge_tutorial_learned() -> bool:
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("is_learned"):
+		return tm.is_learned("overcharge")
+	return true  # If TutorialManager unavailable, assume learned to avoid stuck hints
+
+
+## Dismisses the "Hold F to overcharge" tutorial hint via TutorialManager.
+## Called once the player has continuously held overcharge for 3.0 seconds.
+func _mark_overcharge_tutorial_learned() -> void:
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("mark_learned"):
+		tm.mark_learned("overcharge")
+		print("[Flashlight] Overcharge tutorial complete — player held overcharge for %.1fs." % OVERCHARGE_TUTORIAL_HOLD_REQUIRED)
 
 
 ## ─── OVERCHARGE HUM AUDIO ──────────────────────────────────────────────────

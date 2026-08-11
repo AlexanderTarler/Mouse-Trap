@@ -25,6 +25,26 @@ extends Area3D
 ## How many fuel units one fuel can contains (matches NightManager's fuel scale).
 const FUEL_PER_CAN: float = 50.0
 
+## ─── REFUEL SOUND EFFECT ─────────────────────────────────────────────
+## Looping audio stream played while the player holds E to refill the
+## generator. Assign "res://assets/audio/Generator/refuel_generator.ogg"
+## (or equivalent) in the Inspector on generator_interaction.tscn.
+## Falls back to a hardcoded path if left null.
+@export var refuel_sound_stream: AudioStream = null
+
+## Fallback path used if refuel_sound_stream is not assigned in the Inspector.
+## NOTE: The actual asset lives in assets/audio/objects/ (not assets/audio/Generator/).
+const REFUEL_SOUND_DEFAULT_PATH: String = "res://assets/audio/objects/refuel_generator.ogg"
+
+## Volume (dB) for the refuel loop while playing.
+@export var refuel_sound_volume_db: float = -8.0
+
+## Lazily-created AudioStreamPlayer3D for the refuel loop.
+var _refuel_audio: AudioStreamPlayer3D = null
+
+## Cache whether the refuel audio stream was successfully loaded.
+var _refuel_audio_loaded: bool = false
+
 ## Cached reference to the NightManager.
 var _nm: Node = null
 
@@ -58,6 +78,7 @@ func _ready() -> void:
 	add_to_group("xray_generator")
 	_nm = get_node_or_null("/root/NightManager")
 	collision_layer = 1
+	_setup_refuel_audio()
 
 
 func _process(delta: float) -> void:
@@ -147,6 +168,57 @@ func _process(delta: float) -> void:
 		stop_refuel()
 
 
+## ─── REFUEL AUDIO SETUP ─────────────────────────────────────────────
+## Lazy-creates an AudioStreamPlayer3D for the refuel loop. Uses the
+## exported refuel_sound_stream if assigned, otherwise falls back to the
+## hardcoded REFUEL_SOUND_DEFAULT_PATH. The stream is set to loop.
+func _setup_refuel_audio() -> void:
+	if _refuel_audio:
+		return
+	_refuel_audio = get_node_or_null("RefuelAudio")
+	if not _refuel_audio:
+		_refuel_audio = AudioStreamPlayer3D.new()
+		_refuel_audio.name = "RefuelAudio"
+		add_child(_refuel_audio)
+	if not _refuel_audio:
+		push_warning("[Generator] Could not create refuel audio player.")
+		return
+	_refuel_audio.bus = "SFX"
+	_refuel_audio.volume_db = refuel_sound_volume_db
+	_refuel_audio.max_db = 0.0
+	_refuel_audio.unit_size = 8.0  # Audible from a few meters away
+	
+	var stream := refuel_sound_stream
+	if not stream:
+		stream = load(REFUEL_SOUND_DEFAULT_PATH) as AudioStream
+	if not stream:
+		push_warning("[Generator] Could not load refuel sound from '%s'." % REFUEL_SOUND_DEFAULT_PATH)
+		return
+	_refuel_audio.stream = stream
+	if stream is AudioStreamOggVorbis:
+		stream.loop = true
+	_refuel_audio_loaded = true
+	print("[Generator] Refuel audio ready.")
+
+
+## Starts the looping refuel sound. No-op if the stream failed to load.
+func _start_refuel_audio() -> void:
+	if not _refuel_audio:
+		return
+	if not _refuel_audio.stream:
+		return
+	if not _refuel_audio.playing:
+		_refuel_audio.play()
+		print("[Generator] Refuel sound loop started.")
+
+
+## Stops the looping refuel sound immediately. No-op if not playing.
+func _stop_refuel_audio() -> void:
+	if _refuel_audio and _refuel_audio.playing:
+		_refuel_audio.stop()
+		print("[Generator] Refuel sound loop stopped.")
+
+
 ## Called by PhysicalGrab when the player presses E while looking at this generator.
 ## Starts the continuous fuel transfer. Does NOT check inventory — if no fuel can
 ## is available, _process() does nothing and returns harmlessly.
@@ -175,9 +247,20 @@ func start_refuel() -> void:
 		print("[Generator] I need a Fuel Can to refill the generator.")
 		return
 	
+	# ─── BUG 2 FIX: CLEAR X-RAY HIGHLIGHT ON E PRESS ──────────────
+	# As soon as the player commits to refueling (holds E), the x-ray
+	# highlight on the generator (and its switch) should vanish so the
+	# player can see the physical interaction. Previously the highlight
+	# persisted until the refuel completed (or the player stopped).
+	var rm_highlight = get_node_or_null("/root/RoutineManager")
+	if rm_highlight and rm_highlight.has_method("clear_highlight"):
+		rm_highlight.clear_highlight("xray_generator")
+		rm_highlight.clear_highlight("xray_generator_switch")
+	
 	_is_refueling = true
 	_hold_time = 0.0
 	_can_progress = 0.0
+	_start_refuel_audio()
 	print("[Generator] Refuel started. Rate: %.1f units/sec (%.1fs per can)." % [FUEL_PER_CAN / refuel_duration_per_can, refuel_duration_per_can])
 
 
@@ -277,6 +360,7 @@ func stop_refuel() -> void:
 	_active_fuel_can = null
 	_hold_time = 0.0
 	_can_progress = 0.0
+	_stop_refuel_audio()
 	print("[Generator] Refuel stopped. Partial can preserved in inventory.")
 
 
@@ -300,8 +384,12 @@ func get_interact_text() -> String:
 	if _nm and _nm.generator_fuel >= _nm.max_fuel:
 		return "[E] Generator (Full)"
 	if _is_refueling:
-		var pct: int = int(_can_progress * 100.0)
-		return "[E] Refueling... %d%%" % pct
+		# ─── BUG 3 FIX: SHOW GENERATOR'S TOTAL FUEL PERCENTAGE ────────
+		# Previously this used _can_progress (per-can progress) which
+		# restarted from 0% every time a new fuel can was selected or the
+		# player stopped and resumed. Now it shows the generator's actual
+		# fuel percentage so the number always reflects the real fill level.
+		return "[E] Refueling... Generator %d%%" % fuel_pct
 	if not _find_fuel_can_in_inventory():
 		return "[E] Refill Generator (No Fuel Can — %d%% Remaining)" % fuel_pct
 	return "[E] Hold to Refill Generator (%d%% Fuel Remaining)" % fuel_pct

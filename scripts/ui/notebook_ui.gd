@@ -95,6 +95,10 @@ var _current_day: int = 0
 var _completed_objectives: Array[String] = []
 var _current_objective: String = ""
 
+## Dynamic hint text from RoutineManager for the active Day 2 step.
+## Rendered in italics beneath the current objective in the To-Do list.
+var _day2_hint_text: String = ""
+
 # ============================================================
 # Lifecycle
 # ============================================================
@@ -121,6 +125,11 @@ func _connect_to_managers() -> void:
 	if rm:
 		if rm.has_signal("routine_step_changed"):
 			rm.routine_step_changed.connect(_on_routine_step_changed)
+		# ─── DAY 2 HINT SIGNAL ───────────────────────────────────────
+		# The RoutineManager emits a dynamic hint string when the active
+		# Day 2 step changes (e.g. "I may need a high-intensity beam...").
+		if rm.has_signal("objective_hint_changed"):
+			rm.objective_hint_changed.connect(_on_objective_hint_changed)
 		# ─── DAY 3+ SIGNALS ──────────────────────────────────────────
 		if rm.has_signal("van_checklist_changed"):
 			rm.van_checklist_changed.connect(_refresh_van_checklist)
@@ -183,7 +192,20 @@ func _on_routine_step_changed(_step: int, objective_text: String) -> void:
 		bbcode += "[s]  [x] %s[/s]\n" % obj
 	if not _current_objective.is_empty():
 		bbcode += "\n[b]  [ ] %s[/b]" % _current_objective
+	# ─── DAY 2 DYNAMIC HINT ──────────────────────────────────────
+	# The RoutineManager injects a lore-friendly hint for the active
+	# nest documentation step (Alpha/Beta/Gamma). Rendered in italics.
+	if not _day2_hint_text.is_empty():
+		bbcode += "\n[i][color=gray]%s[/color][/i]" % _day2_hint_text
 	_todo_label.text = bbcode
+
+
+## Called when RoutineManager emits objective_hint_changed.
+## Stores the new hint text and refreshes the To-Do list so the
+## hint appears beneath the current objective.
+func _on_objective_hint_changed(hint_text: String) -> void:
+	_day2_hint_text = hint_text
+	_on_routine_step_changed(0, _current_objective)
 
 
 func _on_evidence_collected(evidence_id: String) -> void:
@@ -301,6 +323,13 @@ func _input(event: InputEvent) -> void:
 			var tm := get_node_or_null("/root/TutorialManager")
 			if tm and tm.has_method("mark_learned"):
 				tm.mark_learned("notebook")
+			# ─── DAY 2 STEP 1 GATE ─────────────────────────────────
+			# Opening the notebook on Day 2 completes Step 1
+			# ("Review the previous researcher's Nest Logs") and
+			# unlocks the cabin door via RoutineManager.
+			var rm := get_node_or_null("/root/RoutineManager")
+			if rm and rm.has_method("on_notebook_opened"):
+				rm.on_notebook_opened()
 		get_viewport().set_input_as_handled()
 		return
 
@@ -471,10 +500,21 @@ func _refresh_van_checklist() -> void:
 	var radiator_done = rm.van_radiator_installed
 	var wiring_done = rm.van_wiring_installed
 	
-	# Also check if part is in inventory (collected but not yet installed)
-	var battery_collected = rm.has_car_part_in_inventory("Car Battery")
-	var radiator_collected = rm.has_car_part_in_inventory("Radiator")
-	var wiring_collected = rm.has_car_part_in_inventory("Ignition Wiring")
+	# Check if part has been COLLECTED (picked up from a scrap heap).
+	# These flags are set by RoutineManager.on_car_part_collected() when the
+	# player picks up the part — they render [X] as soon as the pickup
+	# happens, even before the part is installed in the van. Fall back to
+	# the inventory check for robustness (a part in the backpack is also
+	# considered collected).
+	var battery_collected = rm.van_battery_collected if "van_battery_collected" in rm else false
+	var radiator_collected = rm.van_radiator_collected if "van_radiator_collected" in rm else false
+	var wiring_collected = rm.van_wiring_collected if "van_wiring_collected" in rm else false
+	if not battery_collected:
+		battery_collected = rm.has_car_part_in_inventory("Car Battery")
+	if not radiator_collected:
+		radiator_collected = rm.has_car_part_in_inventory("Radiator")
+	if not wiring_collected:
+		wiring_collected = rm.has_car_part_in_inventory("Ignition Wiring")
 	
 	# Render checkboxes: [X] if installed, [/] if collected but not installed, [ ] otherwise
 	bbcode += "  %s Battery (0/1)\n" % _checkbox_char(battery_done, battery_collected)
@@ -547,11 +587,29 @@ func set_documentation(text: String) -> void:
 		_refresh_spread_1()
 
 
+## Lore-friendly hint lines for each nest, mirroring RoutineManager's
+## DAY2_NEST_HINTS. Shown permanently at the top of each nest's dedicated
+## page in the Notebook, even before the documentation data is collected.
+## Data populates below the hint once the nest is documented.
+const NEST_HINTS: Dictionary = {
+	"Nest Alpha": "I may need a high-intensity beam to provoke them.",
+	"Nest Beta": "I should approach in silence and keep a low profile.",
+	"Nest Gamma": "I must remain perfectly still to hear them.",
+}
+
+const NEST_ORDER: Array[String] = ["Nest Alpha", "Nest Beta", "Nest Gamma"]
+
+
 ## ─── STATE-DRIVEN REBUILD ──────────────────────────────────────
 ## Completely clears and rebuilds _all_pages from the two backend
 ## dictionaries (_unlocked_nests, _unlocked_notes). This guarantees
 ## mathematical ordering: Chapter 2 (Credentials) → Chapter 3 (Nest
 ## Data) → Chapter 4 (Notes), regardless of pickup order.
+##
+## NEST DEDICATED PAGES:
+## Every nest gets its own dedicated page (in fixed Alpha → Beta → Gamma
+## order). The header + hint line is ALWAYS present. Once a nest is
+## documented, the collected data populates below the hint.
 func _rebuild_all_pages() -> void:
 	_all_pages.clear()
 	
@@ -560,11 +618,13 @@ func _rebuild_all_pages() -> void:
 	
 	_nest_data_start_page = 1
 	
-	# Chapter 3: Nest Data — insert all unlocked nests in order
-	for nest_key in _unlocked_nests.keys():
-		var lore_text = NEST_LORE.get(nest_key, "")
-		if not lore_text.is_empty():
-			_append_page_content(lore_text)
+	# Chapter 3: Nest Data — one dedicated page per nest, in fixed order.
+	# The hint is permanent; the documented data populates below it once
+	# the nest has been documented in the field.
+	for nest_key in NEST_ORDER:
+		var page_text := _build_nest_page(nest_key)
+		if not page_text.is_empty():
+			_append_page_content(page_text)
 	
 	# Chapter 4: Notes — insert all unlocked notes
 	_notes_start_page = _all_pages.size()
@@ -572,6 +632,32 @@ func _rebuild_all_pages() -> void:
 		_append_page_content(note_text)
 	
 	_rebuild_index()
+
+
+## Builds the BBCode content for a single nest's dedicated page:
+## header + permanent hint at the top, then the collected documentation
+## data below it (or a "not yet documented" placeholder).
+func _build_nest_page(nest_key: String) -> String:
+	var hint: String = NEST_HINTS.get(nest_key, "")
+	var header := "[b]Subject: %s[/b]" % nest_key
+	var page := header + "\n"
+	if not hint.is_empty():
+		page += "[i][color=gray]Hint: %s[/color][/i]\n\n" % hint
+	
+	if _unlocked_nests.has(nest_key):
+		var lore_text: String = NEST_LORE.get(nest_key, "")
+		if not lore_text.is_empty():
+			# Strip the leading "Subject:" header from the lore (the hint
+			# already carries it) so the data populates cleanly below.
+			var data_body := lore_text
+			if data_body.begins_with("[b]Subject:"):
+				var header_end := data_body.find("\n")
+				if header_end >= 0:
+					data_body = data_body.substr(header_end + 1)
+			page += data_body.strip_edges()
+	else:
+		page += "[color=gray][i]No data recorded yet. Observations will be written here once the nest is documented.[/i][/color]"
+	return page
 
 
 ## Appends a text block to _all_pages, splitting across page boundaries

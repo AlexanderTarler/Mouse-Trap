@@ -49,6 +49,20 @@ var is_being_purged: bool = false
 ## Reference to the Entity controller (used for the defeat sequence).
 var _entity: Node = null
 
+## ─── TOTEM DEFENSE (Night 3+) ──────────────────────────────────────────
+## One-shot guard for the totem defense: when the player approaches within
+## 5m on Night 3+, the Entity is teleported to the EntityTotemWaypoint and
+## forced into CHARGE. This guard prevents the teleport/CHARGE from firing
+## every frame (60fps) while the player stays near the totem — the Entity
+## is teleported and forced into CHARGE exactly ONCE per approach. The guard
+## resets when the player moves more than 5m away from the totem.
+var _totem_defending: bool = false
+
+## Distance (meters) at which the Entity begins aggressively defending the
+## totem on Night 3+. Player entering this radius triggers the teleport +
+## CHARGE defense unless the Entity is already FLINCHing or STUNNED.
+const TOTEM_DEFENSE_RADIUS: float = 5.0
+
 ## Audio player for the destruction sound effect.
 var _destroy_audio: AudioStreamPlayer3D = null
 
@@ -64,23 +78,24 @@ const INTERACT_PROMPT: String = "[E] Destroy Totem Anchor"
 const MAX_PURGE_DISTANCE: float = 8.0
 
 ## ─── DAY/NIGHT ANIMATION ──────────────────────────────────────────────────
-## The original Y position of the totem (set in _ready).
-var _original_y: float = 0.0
+## The original Y position of the totem where it rests on the ground.
+## Captured at _ready() from the totem's actual scene placement.
+## This is the CANONICAL "raised" position — at night the totem rises to
+## exactly this height. No hardcoded raised_y/buried_y magic numbers
+## (which previously drifted the totem 2-3m above its planted position
+## every night because the night tween targeted original_y + 3.0).
+##
+## BUG FIX: The old code tweened night to `_original_y + raised_y` (3.0m
+## above ground). The correct behavior is: night → rise to `_original_y`
+## (its planted, correct height), day → sink 5.0m below to `_original_y - 5.0`.
+@onready var _original_y: float = global_position.y
 
-## How high the totem rises above its original position during the night.
-## Total vertical travel from buried_y to raised_y = 5.0 meters
-## (raised_y=3.0 - buried_y=-2.0 = 5.0m).
-@export var raised_y: float = 3.0
-
-## How low the totem descends below its original position during the day.
-## The willow tree model extends ~6.9m above its origin point. With the
-## original Y at ~0.45m (set by scene placement), buried_y must be at least
-## -8.0 to fully submerge the tree's canopy beneath the ground plane (y=0,
-## leaving the top at roughly 0.45 + (-8.0) + 6.9 ≈ -0.65m, safely under).
-## Total vertical travel from buried_y to raised_y = 11.0 meters
-## (raised_y=3.0 - buried_y=-8.0 = 11.0m). The night_started tween takes it
-## from -8.0 to 3.0 over 10 seconds; night_ended goes from 3.0 to -8.0.
-@export var buried_y: float = -8.0
+## How far below the original Y the totem sinks during the day.
+## The willow tree model extends ~6.9m above its origin point, so burying
+## 7.0m below + the tree's height fully submerges the canopy underground.
+## TASK 3.4: Changed from 5.0 → 7.0 to lower the totem anchor an extra
+## 2 meters into the ground during the daytime.
+const BURIED_OFFSET: float = 7.0
 
 ## Duration (seconds) of the rise/descent tweens.
 @export var animation_duration: float = 10.0
@@ -98,9 +113,6 @@ var _night_manager: Node = null
 func _ready() -> void:
 	add_to_group("interactable")
 	add_to_group("totem_anchor")
-	
-	# Store original Y position
-	_original_y = position.y
 	
 	# Find the Entity in the scene tree
 	_entity = get_tree().get_first_node_in_group("entity")
@@ -167,7 +179,7 @@ func _on_night_started(night: int) -> void:
 		return
 	
 	_is_night = true
-	print("[TotemAnchor] Night %d started. Raising totem from y=%.2f to y=%.2f over %.1fs..." % [night, _original_y + buried_y, _original_y + raised_y, animation_duration])
+	print("[TotemAnchor] Night %d started. Raising totem to its original position y=%.2f over %.1fs..." % [night, _original_y, animation_duration])
 	
 	# Kill any existing tweens to prevent conflicts
 	if has_node("_rise_tween"):
@@ -178,8 +190,10 @@ func _on_night_started(night: int) -> void:
 	tween.set_ease(Tween.EASE_OUT)
 	tween.set_parallel(false)
 	
-	# Tween position.y UP over 10 seconds
-	tween.tween_property(self, "position:y", _original_y + raised_y, animation_duration)
+	# Tween UP to the ORIGINAL planted position (no relative addition).
+	# Previously this targeted _original_y + raised_y (3.0m above ground),
+	# which caused the totem to float 2-3m above its correct position.
+	tween.tween_property(self, "global_position:y", _original_y, animation_duration)
 	
 	# Enable collision shape when the tween completes (totem is fully risen)
 	tween.tween_callback(_enable_collision)
@@ -193,7 +207,7 @@ func _on_night_ended(night: int) -> void:
 		return
 	
 	_is_night = false
-	print("[TotemAnchor] Night %d ended. Lowering totem from y=%.2f to y=%.2f over %.1fs..." % [night, _original_y + raised_y, _original_y + buried_y, animation_duration])
+	print("[TotemAnchor] Night %d ended. Lowering totem to y=%.2f over %.1fs..." % [night, _original_y - BURIED_OFFSET, animation_duration])
 	
 	# Disable collision immediately — totem is starting to descend
 	_disable_collision()
@@ -207,8 +221,9 @@ func _on_night_ended(night: int) -> void:
 	tween.set_ease(Tween.EASE_IN)
 	tween.set_parallel(false)
 	
-	# Tween position.y DOWN over 10 seconds
-	tween.tween_property(self, "position:y", _original_y + buried_y, animation_duration)
+	# Tween DOWN 5.0m below the original planted position so the tree's
+	# canopy is fully submerged underground (no relative math, no drift).
+	tween.tween_property(self, "global_position:y", _original_y - BURIED_OFFSET, animation_duration)
 
 
 ## Enables the collision shape so the player can interact with the totem.
@@ -229,6 +244,13 @@ func _disable_collision() -> void:
 func get_interact_text() -> String:
 	if is_purged:
 		return ""  # No prompt if already destroyed
+	
+	# ─── TASK 2.1: EXHAUSTED INTERACTION PROMPT ──────────────────
+	# When exhausted, grey out the interaction prompt instead of
+	# showing the normal "Press E" text. The player is too tired.
+	var player_ref = get_tree().get_first_node_in_group("player")
+	if player_ref and "is_exhausted" in player_ref and player_ref.is_exhausted:
+		return "[color=gray]I am too tired to do this[/color]"
 	
 	# ─── PROGRESSION LOCK CHECK ─────────────────────────────────────
 	if not _has_arvid_note_2():
@@ -254,6 +276,38 @@ func _has_arvid_note_2() -> bool:
 func _process(delta: float) -> void:
 	if is_purged:
 		return
+
+	# ─── TOTEM DEFENSE (Night 3+) ──────────────────────────────────────
+	# From Night 3 onward, if the player gets within 5 meters of the totem,
+	# the Entity aggressively defends it — UNLESS the Entity is currently
+	# stunned/flinching from the flashlight. The defense teleports the
+	# Entity to the EntityTotemWaypoint and forces it into CHARGE state
+	# (which is immune to the flashlight overcharge per the Director's
+	# CHARGE IGNORES FLASHLIGHT rule).
+	#
+	# ONE-SHOT GUARD: _totem_defending prevents the teleport + CHARGE from
+	# re-firing every frame (60fps) while the player stays in range. The
+	# Entity is teleported and forced into CHARGE exactly once per approach;
+	# the guard resets when the player leaves the defense radius.
+	if _night_manager and "current_night" in _night_manager and _night_manager.current_night >= 3:
+		var near_player = get_tree().get_first_node_in_group("player")
+		if near_player:
+			var dist_to_near_player = global_position.distance_to(near_player.global_position)
+			if dist_to_near_player <= TOTEM_DEFENSE_RADIUS:
+				if _entity and is_instance_valid(_entity) and not _totem_defending:
+					# ─── ONLY DEFEND IF NOT FLINCHING / STUNNED ──────────
+					# If the Entity is currently flinching from the flashlight
+					# or stunned by the overcharge trap, it cannot defend.
+					var ent_state = _entity.get_state() if "get_state" in _entity else -1
+					var is_flinching: bool = ent_state == EntityAI.State.FLINCH
+					var is_stunned: bool = (ent_state == EntityAI.State.STUNNED) or (ent_state == EntityAI.State.ENRAGED)
+					if not is_flinching and not is_stunned:
+						_totem_defending = true
+						_defend_totem_with_entity()
+			else:
+				# Player left the defense radius — re-arm the guard so the
+				# next approach triggers the defense again.
+				_totem_defending = false
 	
 	# ─── PROGRESSION LOCK ──────────────────────────────────────────────
 	# Player cannot interact with the totem unless they have Arvid's Note 2.
@@ -263,6 +317,17 @@ func _process(delta: float) -> void:
 			var player = get_tree().get_first_node_in_group("player")
 			if player and global_position.distance_to(player.global_position) <= 5.0:
 				_show_hud_message("I don't know what to do with this yet.")
+		if is_being_purged:
+			_abort_purge()
+		return
+	
+	# ─── TASK 2.1: EXHAUSTED GATE ──────────────────────────────────────
+	# When the player is exhausted (Day 3+), they are too tired to destroy
+	# the totem anchor. Show a greyed-out message and abort any purge.
+	var exhausted_player = get_tree().get_first_node_in_group("player")
+	if exhausted_player and "is_exhausted" in exhausted_player and exhausted_player.is_exhausted:
+		if Input.is_physical_key_pressed(KEY_E) and global_position.distance_to(exhausted_player.global_position) <= 5.0:
+			_show_hud_message("I am too tired to do this...")
 		if is_being_purged:
 			_abort_purge()
 		return
@@ -297,6 +362,77 @@ func _process(delta: float) -> void:
 	# If we drop down here, 'E' is released, player walked away, or looked away.
 	if is_being_purged:
 		_abort_purge()
+
+
+## Teleports the Entity to the EntityTotemWaypoint and forces it into an
+## aggressive CHARGE state to defend the totem. Called by _process() when
+## the player enters the 5m defense radius on Night 3+.
+##
+## The EntityTotemWaypoint is a Marker3D node located under EntityWaypoints
+## in the scene. If it does not exist yet, the Entity is teleported to a
+## position directly adjacent to the totem as a safe fallback so the defense
+## still functions.
+func _defend_totem_with_entity() -> void:
+	if not _entity or not is_instance_valid(_entity):
+		return
+	
+	# ─── FIND THE ENTITY TOTEM WAYPOINT ────────────────────────────────
+	var totem_waypoint: Node3D = null
+	var waypoint_groups = get_tree().get_nodes_in_group("EntityTotemWaypoint")
+	if not waypoint_groups.is_empty():
+		totem_waypoint = waypoint_groups[0] as Node3D
+	else:
+		var waypoints = get_tree().get_nodes_in_group("EntityWaypoints")
+		for wp in waypoints:
+			if wp.name == "EntityTotemWaypoint":
+				totem_waypoint = wp
+				break
+	
+	var target_pos: Vector3
+	if totem_waypoint:
+		target_pos = totem_waypoint.global_position
+		print("[TotemAnchor] EntityTotemWaypoint found at (%.2f, %.2f, %.2f)." % [target_pos.x, target_pos.y, target_pos.z])
+	else:
+		# ─── SAFE FALLBACK: Adjacent to the totem ──────────────────────
+		# If the waypoint isn't placed in the scene yet, teleport the Entity
+		# to a position 4m in front of the totem so the defense still works.
+		var fallback_offset = (global_position - _entity.global_position)
+		fallback_offset.y = 0.0
+		if fallback_offset.length() < 0.1:
+			fallback_offset = Vector3(0, 0, 1)
+		target_pos = global_position + fallback_offset.normalized() * 4.0
+		print("[TotemAnchor] WARNING: EntityTotemWaypoint not found in scene. Using fallback position adjacent to totem.")
+	
+	# ─── SNAP TO NAVMESH FLOOR ────────────────────────────────────────
+	# Project the target onto the NavMesh floor (preserving XZ) so the
+	# Entity lands on solid ground instead of floating.
+	var nav_map = _entity.get_world_3d().navigation_map
+	var snapped_pos = NavigationServer3D.map_get_closest_point(nav_map, target_pos)
+	snapped_pos.x = target_pos.x
+	snapped_pos.z = target_pos.z
+	
+	# ─── TELEPORT THE ENTITY ──────────────────────────────────────────
+	_entity.global_position = snapped_pos
+	_entity.velocity = Vector3.ZERO
+	
+	# ─── FORCE CHARGE STATE ───────────────────────────────────────────
+	# Force the Entity into CHARGE — this state is immune to the flashlight
+	# overcharge (the Director's CHARGE IGNORES FLASHLIGHT rule), so the
+	# Entity will aggressively pursue the player even if they shine the beam.
+	if _entity.has_method("set_state"):
+		_entity.set_state(EntityAI.State.CHARGE)
+	if "state_locked" in _entity:
+		_entity.state_locked = true  # Lock so the Director doesn't override mid-charge
+	
+	# ─── RE-TARGET THE PLAYER ─────────────────────────────────────────
+	var near_player = get_tree().get_first_node_in_group("player")
+	if near_player and _entity.has_method("get_nav_agent"):
+		var nav_agent = _entity.get_nav_agent()
+		if nav_agent:
+			nav_agent.target_position = near_player.global_position
+	
+	print("[TotemAnchor] TOTEM DEFENSE: Entity teleported to waypoint and forced into CHARGE to defend the totem!")
+	_show_hud_message("The Entity guards the totem with violent ferocity!")
 
 
 ## Maintains the purge state. Called every frame from _process() while all

@@ -39,7 +39,9 @@ extends Node3D
 @export var max_ray_distance: float = 50.0
 
 ## Volume when audio is playing (linear, 0.0–1.0).
-@export var audio_volume: float = 0.8
+## TASK 3: Reduced by 30% (0.8 → 0.56) so the Entity whispers are quieter
+## and the amplified camera shake carries more of the staring feedback.
+@export var audio_volume: float = 0.56
 
 ## Pitch scale when audio is playing.
 @export var audio_pitch: float = 1.3

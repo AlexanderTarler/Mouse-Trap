@@ -1,0 +1,6 @@
+[gd_resource type="Resource" load_steps=2 format=3] [ext_resource type="Script"
+path="res://resources/tutorial/tutorial_data.gd" id="1_stealth"] [resource]
+script = ExtResource("1_stealth") mechanic_id = "stealth" prompt_text = "Press
+[F] to turn off your flashlight. Hold [CTRL] to crouch. Approach in complete
+darkness." trigger_moment = "" prerequisite = "" one_shot = true day_one_only =
+false

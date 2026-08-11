@@ -35,6 +35,15 @@ var attack_strikes: int = 0
 ## Set to true when the player connects the cable to this lamp's base.
 var is_powered: bool = false
 
+## Whether the lamp's light is actively shining.
+## Derives from the OmniLight3D visibility, which is toggled by the
+## computer terminal / wall switch via toggle_power().
+## The Entity ONLY targets the lamp when this is true — a deployed but
+## unlit lamp does not draw aggro.
+var is_on: bool:
+	get:
+		return lamp_light != null and lamp_light.visible
+
 ## Whether the player is currently carrying this lamp.
 var is_being_carried: bool = false
 

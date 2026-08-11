@@ -125,6 +125,9 @@ func _refresh_container_grid(contents: Array) -> void:
 
 
 ## Creates a styled button for an item in either grid.
+## The slot uses the scrap-heap theme: dark rusty-brown background with
+## metallic grey-brown borders, matching stash_ui.tscn's StyleBoxFlat
+## palette. Text/icon colors are kept warm and bright for readability.
 func _create_item_button(item_data) -> Button:
 	var btn = Button.new()
 	btn.custom_minimum_size = Vector2(64, 64)
@@ -136,6 +139,41 @@ func _create_item_button(item_data) -> Button:
 		btn.text = item_data.item_name.left(2)
 
 	btn.tooltip_text = item_data.item_name
+
+	# ─── SCRAP-HEAP SLOT STYLE (normal) ─────────────────────────────
+	var slot_style := StyleBoxFlat.new()
+	slot_style.bg_color = Color(0.16, 0.1, 0.055, 1)
+	slot_style.border_width_left = 1
+	slot_style.border_width_top = 1
+	slot_style.border_width_right = 1
+	slot_style.border_width_bottom = 1
+	slot_style.border_color = Color(0.42, 0.28, 0.15, 0.8)
+	slot_style.corner_radius_top_left = 3
+	slot_style.corner_radius_top_right = 3
+	slot_style.corner_radius_bottom_right = 3
+	slot_style.corner_radius_bottom_left = 3
+	btn.add_theme_stylebox_override("normal", slot_style)
+
+	# ─── SCRAP-HEAP SLOT STYLE (hover / pressed) ────────────────────
+	var hover_style := StyleBoxFlat.new()
+	hover_style.bg_color = Color(0.28, 0.18, 0.1, 1)
+	hover_style.border_width_left = 1
+	hover_style.border_width_top = 1
+	hover_style.border_width_right = 1
+	hover_style.border_width_bottom = 1
+	hover_style.border_color = Color(0.72, 0.5, 0.28, 1)
+	hover_style.corner_radius_top_left = 3
+	hover_style.corner_radius_top_right = 3
+	hover_style.corner_radius_bottom_right = 3
+	hover_style.corner_radius_bottom_left = 3
+	btn.add_theme_stylebox_override("hover", hover_style)
+	btn.add_theme_stylebox_override("pressed", hover_style)
+
+	# Ensure text/icons stay readable on the dark rusty background
+	btn.add_theme_color_override("font_color", Color(1, 0.9, 0.72, 1))
+	btn.add_theme_color_override("font_hover_color", Color(1, 0.96, 0.85, 1))
+	btn.add_theme_color_override("font_pressed_color", Color(1, 0.96, 0.85, 1))
+
 	return btn
 
 
@@ -348,6 +386,13 @@ func _input(event: InputEvent) -> void:
 		match event.keycode:
 			KEY_E, KEY_TAB, KEY_ESCAPE:
 				_close_stash()
+				# ─── ESC INPUT HANDLING ─────────────────────────────
+				# Mark the Escape press as handled so it does NOT bubble
+				# up to PauseMenu's _unhandled_input (which would open
+				# the pause menu on top of the stash). E/Tab cause no
+				# conflicting global handlers, so they are left alone.
+				if event.keycode == KEY_ESCAPE:
+					get_viewport().set_input_as_handled()
 
 
 # ─── UI HELPERS ────────────────────────────────────────────

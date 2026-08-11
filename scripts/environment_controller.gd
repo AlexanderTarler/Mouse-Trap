@@ -30,7 +30,7 @@ extends Node
 
 ## --- Night darkness tuning (Inspector-editable) ---
 ## Ambient light energy at full night. Lower = darker.
-@export var night_ambient_energy: float = 0.025
+@export var night_ambient_energy: float = 0.01
 ## Ambient light color at full night.
 @export var night_ambient_color: Color = Color(0.02, 0.02, 0.04)
 ## Moon light energy multiplier at full night. Lower = darker.
@@ -384,7 +384,16 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 			_environment.fog_enabled = fog_enabled
 			_cached_fog_enabled = fog_enabled
 		
-		var fog_density: float = night_fog_density * fog_factor * fog_fluctuation * _night_fog_base
+		# ─── BUG 6 FIX: NIGHT 3+ FOG INCREASE (+50%) ────────────────
+		# From Night 3 onward, every night has 50% more atmospheric fog
+		# than current. Night 1–2 keep the original density. This creates
+		# a progressive dread as the nights get later.
+		var night_multiplier: float = 1.0
+		var fog_nm = get_node_or_null("/root/NightManager")
+		if fog_nm and "current_night" in fog_nm and fog_nm.current_night >= 3:
+			night_multiplier = 1.5
+		
+		var fog_density: float = night_fog_density * fog_factor * fog_fluctuation * _night_fog_base * night_multiplier
 		if not is_equal_approx(fog_density, _cached_fog_density):
 			_environment.fog_density = fog_density
 			_cached_fog_density = fog_density
@@ -394,7 +403,7 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 			_environment.volumetric_fog_enabled = vfog_enabled
 			_cached_vfog_enabled = vfog_enabled
 		
-		var vfog_density: float = night_vfog_density * fog_factor * fog_fluctuation * _night_fog_base
+		var vfog_density: float = night_vfog_density * fog_factor * fog_fluctuation * _night_fog_base * night_multiplier
 		if not is_equal_approx(vfog_density, _cached_vfog_density):
 			_environment.volumetric_fog_density = vfog_density
 			_cached_vfog_density = vfog_density

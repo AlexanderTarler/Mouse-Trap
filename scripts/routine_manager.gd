@@ -22,11 +22,12 @@ extends Node
 ##   2  — Log into the computer (first try — fails, auto-advances)
 ##   3  — Find the flashlight
 ##   4  — Replace the broken fuse in the fuse box
-##   5  — Refuel the generator
+##   5  — Refuel the generator, then turn it on
 ##   6  — Log into the computer (successfully)
 ##   7  — Board up the broken window
 ##   8  — Lock the front door
-##   9  — Go to bed
+##   9  — Turn off the lights
+##   10 — Go to bed
 ##
 ## Mains 4 and 5 can be done in either order. Once BOTH are done,
 ## the system advances to main 6.
@@ -49,6 +50,37 @@ signal side_track_changed
 var main_objective: int = 0
 
 # ═══════════════════════════════════════════════════════════════════════
+# DAY 2 SEQUENTIAL NEST TUTORIAL
+# ═══════════════════════════════════════════════════════════════════════
+
+## Day 2 step index (0 = not started, 1–5 = active sequential steps).
+## 1: Read the previous nest reports on the computer.
+## 2: Locate and document Nest Alpha.
+## 3: Locate and document Nest Beta.
+## 4: Locate and document Nest Gamma.
+## 5: Log the collected nest data into the cabin's computer terminal.
+var day2_step: int = 0
+
+## Whether the player has opened the notebook on Day 2 (Step 1 gate).
+var day2_notebook_opened: bool = false
+
+## Whether the cabin front door has been unlocked for Day 2 (Step 1 reward).
+var day2_door_unlocked: bool = false
+
+## Dynamic hint injected into the Notebook To-Do list for the active Day 2 step.
+var day2_hint_text: String = ""
+
+## Lore-friendly hints for each Day 2 nest step, keyed by nest label.
+const DAY2_NEST_HINTS: Dictionary = {
+	"Nest Alpha": "I may need a high-intensity beam to provoke them.",
+	"Nest Beta": "I should sneak while approaching the nest.",
+	"Nest Gamma": "I must remain perfectly still to hear them.",
+}
+
+## Emitted when the active Day 2 hint text changes (for NotebookUI To-Do display).
+signal objective_hint_changed(hint_text: String)
+
+# ═══════════════════════════════════════════════════════════════════════
 # DAY 3+ SANDBOX MODE
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -61,6 +93,16 @@ var is_day3_sandbox: bool = false
 ## Whether the player has inspected the stranded van (activates the
 ## van checklist objective).
 var van_inspected: bool = false
+
+## ─── CAR PART COLLECTION TRACKING (Battery / Radiator / Wiring) ──
+## Set to true by on_car_part_collected() when the player PICK UP the
+## part from a scrap heap. The notebook renders a collected part as [X]
+## (objective complete). These are distinct from the van_X_installed flags,
+## which only become true once the part is physically installed in the van
+## (escape_van.gd → on_van_part_installed()).
+var van_battery_collected: bool = false
+var van_radiator_collected: bool = false
+var van_wiring_collected: bool = false
 
 ## Individual part installation tracking for notebook display.
 var van_battery_installed: bool = false
@@ -122,6 +164,7 @@ var phase2_fuse_inserted: bool = false            # Fuse inserted into box (swit
 var phase2_fuse_fixed: bool = false               # Fuse inserted + switch thrown
 var phase2_fuel_can_picked_up: bool = false       # Picked up a fuel can (generic)
 var phase2_gen_refilled: bool = false             # Generator refueled
+var phase2_gen_turned_on: bool = false            # Generator switch flipped ON (post-refuel step)
 var phase2_computer_used: bool = false            # Logged into computer
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -143,6 +186,7 @@ var phase2b_window_patched: bool = false     # Barricaded the broken window
 # ═══════════════════════════════════════════════════════════════════════
 
 var phase3_door_locked: bool = false         # Front door locked
+var phase3_hall_light_off: bool = false      # Hall light switched off (post-door-lock step)
 var phase3_bed_used: bool = false            # Went to bed
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -240,8 +284,24 @@ func _on_xray_timer_timeout(group_name: String) -> void:
 	_do_highlight_target(group_name)
 
 
+## ─── TASK 2.4: OBJECT HIGHLIGHT GLOBAL TOGGLE ──────────────────────────
+## Static global setting controlling whether interactable objects receive
+## the x-ray highlight material overlay. When false, the highlight is not
+## applied — players with visual sensitivities (or those who prefer no
+## highlighting) can disable it. Toggle this from the Options menu.
+static var enable_object_highlights: bool = true
+
+
 ## Internal: applies the x-ray highlight immediately to all nodes in the group.
 func _do_highlight_target(group_name: String) -> void:
+	# ─── TASK 2.4: HIGHLIGHT DISABLED GUARD ─────────────────────
+	# If the player disabled object highlights in Settings, skip applying
+	# the x-ray material entirely. Clear_highlight() still works normally
+	# (it's a no-op when nothing is highlighted), so no other logic breaks.
+	if not enable_object_highlights:
+		print("[RoutineManager] TASK 2.4: Object highlights disabled. Skipping highlight for group '%s'." % group_name)
+		return
+	
 	var mat := _get_xray_material()
 	if mat == null:
 		push_error("[RoutineManager] X-ray material not available!")
@@ -254,13 +314,15 @@ func _do_highlight_target(group_name: String) -> void:
 	
 	for node in nodes:
 		if node is MeshInstance3D:
-			_apply_xray_to_mesh(node, mat)
+			if _should_highlight_mesh(node, group_name):
+				_apply_xray_to_mesh(node, mat)
 			node.extra_cull_margin = 100.0
 			if "custom_aabb" in node:
 				node.custom_aabb = AABB(Vector3(-200, -200, -200), Vector3(400, 400, 400))
 			var internal_meshes := node.find_children("*", "MeshInstance3D", true)
 			for im in internal_meshes:
-				_apply_xray_to_mesh(im, mat)
+				if _should_highlight_mesh(im, group_name):
+					_apply_xray_to_mesh(im, mat)
 				im.extra_cull_margin = 100.0
 				im.custom_aabb = AABB(Vector3(-200, -200, -200), Vector3(400, 400, 400))
 			print("[RoutineManager] X-ray highlight applied via next_pass to '%s' (group: %s)" % [node.name, group_name])
@@ -268,7 +330,8 @@ func _do_highlight_target(group_name: String) -> void:
 			var mesh_children := node.find_children("*", "MeshInstance3D", true)
 			var applied_count := 0
 			for mesh_child in mesh_children:
-				_apply_xray_to_mesh(mesh_child, mat)
+				if _should_highlight_mesh(mesh_child, group_name):
+					_apply_xray_to_mesh(mesh_child, mat)
 				mesh_child.extra_cull_margin = 100.0
 				if "custom_aabb" in mesh_child:
 					mesh_child.custom_aabb = AABB(Vector3(-200, -200, -200), Vector3(400, 400, 400))
@@ -279,6 +342,26 @@ func _do_highlight_target(group_name: String) -> void:
 				# ─── NEST DEBUG: Log when a nest node was found but had NO mesh children ──
 				var scene_path: String = node.scene_file_path if node.has_method("get_scene_file_path") else node.scene_file_path if "scene_file_path" in node else "?"
 				push_warning("[RoutineManager] NEST HIGHLIGHT FAILED: node '%s' (type=%s, scene='%s') has 0 MeshInstance3D children. find_children recursive found %d total descendants." % [node.name, node.get_class(), scene_path, node.get_child_count(true)])
+
+
+## ─── TASK 3.2: HIGHLIGHT TARGET FILTER ──────────────────────────────
+## For the generator's xray_generator group, the interaction highlight must
+## apply ONLY to the button box mesh (button_12), not the generator pipe
+## (generator_1). This filter returns false for any mesh whose name matches
+## the pipe / non-interactive parts, so the highlight never bleeds onto them.
+## All other groups are highlighted normally (returns true).
+func _should_highlight_mesh(mesh: MeshInstance3D, group_name: String) -> bool:
+	if group_name == "xray_generator":
+		var n := str(mesh.name).to_lower()
+		# The button box is the actual interactable — highlight it.
+		if "button" in n or "switch" in n:
+			return true
+		# The pipe / body / exhaust must NOT be highlighted.
+		if "generator_1" in n or "pipe" in n or "exhaust" in n or "body" in n:
+			return false
+		# Default: highlight (covers the InteractionArea subtree button).
+		return true
+	return true
 
 
 ## Applies x-ray next_pass material to a specific MeshInstance3D.
@@ -368,8 +451,8 @@ func _advance_main_objective(target: int) -> void:
 		print("[RoutineManager] Main objective advanced to %d." % main_objective)
 
 func _check_power_restored() -> void:
-	if phase2_fuse_fixed and phase2_gen_refilled:
-		print("[RoutineManager] Power restored! Both fuse and generator are done.")
+	if phase2_fuse_fixed and phase2_gen_refilled and phase2_gen_turned_on:
+		print("[RoutineManager] Power restored! Fuse fixed, generator refueled and running.")
 		_advance_main_objective(6)
 		_update_hud()
 
@@ -377,14 +460,64 @@ func _check_power_restored() -> void:
 ## ─── OBJECTIVE TEXT ─────────────────────────────────────────────────
 
 func get_current_objective() -> String:
+	# ─── DAY 3+ SANDBOX MODE OVERRIDE ─────────────────────────────
+	# Sandbox mode takes priority over the Night 2.2 car-alarm van
+	# sequence. Once Day 3 begins, the objective must read
+	# "Investigate the car again." — never the stale night-time text.
 	if is_day3_sandbox:
 		if not van_inspected:
 			return "Investigate the car again."
 		if van_fully_repaired:
 			return "Start the van and escape."
-		if van_parts_installed_count > 0:
-			return "Repair the van (%d/3 parts)" % van_parts_installed_count
+		# ─── COLLECTION vs INSTALLATION PROGRESS ─────────────────────
+		# Show the combined collection/installation progress so picking up
+		# a part immediately updates the objective. Parts that are both
+		# collected AND installed count once toward the total.
+		var _combined_count := 0
+		if van_battery_collected or van_battery_installed:
+			_combined_count += 1
+		if van_radiator_collected or van_radiator_installed:
+			_combined_count += 1
+		if van_wiring_collected or van_wiring_installed:
+			_combined_count += 1
+		if _combined_count > 0:
+			return "Repair the van (%d/3 parts)" % _combined_count
 		return "Find parts to repair the van."
+
+	# ─── VAN SEQUENCE (Night 2.2) OVERRIDE ─────────────────────────
+	# While the car-alarm van sequence is active, the van sequence OWNS
+	# the objective ("Investigate the car alarm outside."). The Day 2
+	# routine state is already complete (day2_step >= 8), so without this
+	# guard any HUD refresh (e.g. the player tapping E on the locked door)
+	# would overwrite the car-alarm objective with the stale
+	# "Lock the door and go to bed." text.
+	var nm_van: Node = _night_manager if is_instance_valid(_night_manager) else get_node_or_null("/root/NightManager")
+	if nm_van and "is_van_sequence_active" in nm_van and nm_van.is_van_sequence_active:
+		return "Investigate the car alarm outside."
+	
+	# ─── DAY 2 SEQUENTIAL NEST TUTORIAL (main_objective >= 99) ──────────
+	# When the Day 1 objective history is reset, the player enters the
+	# Day 2 nest documentation sequence. This replaces the old single
+	# "Document the nests" objective with 5 sequential steps.
+	if main_objective >= 99:
+		if _is_day2_complete():
+			return "Lock the door and go to bed."
+		match day2_step:
+			0, 1:
+				return "Read the previous nest reports on the computer."
+			2:
+				return "Locate and document Nest Alpha."
+			3:
+				return "Locate and document Nest Beta."
+			4:
+				return "Locate and document Nest Gamma."
+			5:
+				return "Log the collected nest data into the cabin's computer terminal."
+			6:
+				return "Lock the door."
+			7:
+				return "Go to bed."
+		return "Read the earlier nest data logs in the computer."
 	
 	if nests_uploaded:
 		return "Lock the door and go to bed."
@@ -432,9 +565,11 @@ func get_current_objective() -> String:
 				return "Check the fuse box. It's always the god damn fuse box."
 			return "Check the fuse box. It's always the god damn fuse box."
 		5:
-			if phase2_gen_refilled:
-				_check_power_restored()
+			if phase2_gen_turned_on:
+				_advance_main_objective(6)
 				return get_current_objective()
+			if phase2_gen_refilled:
+				return "Turn on the generator."
 			if _player_has_item("Fuel Can"):
 				return "Refill the generator."
 			return "Find a fuel can to refill the generator."
@@ -447,17 +582,20 @@ func get_current_objective() -> String:
 			if phase2b_window_patched:
 				_advance_main_objective(8)
 				return get_current_objective()
-			if _player_has_item("Wooden Plank"):
+			if phase2b_plank_count >= 3:
 				return "Patch the window as well as you can."
-			if phase2b_plank_picked_up:
-				return "Patch the window as well as you can."
-			return "Get some planks to patch the broken window."
+			return "Find 3 planks"
 		8:
 			if phase3_door_locked:
 				_advance_main_objective(9)
 				return get_current_objective()
 			return "Lock the front door."
 		9:
+			if phase3_hall_light_off:
+				_advance_main_objective(10)
+				return get_current_objective()
+			return "Turn off the lights."
+		10:
 			if phase3_bed_used:
 				return "Day 1 complete. Rest well."
 			return "Go to bed."
@@ -476,6 +614,9 @@ func _update_hud() -> void:
 			step = 20 + van_parts_installed_count
 		else:
 			step = 20
+	elif main_objective >= 99:
+		# Day 2 sequential nest tutorial steps (17-22)
+		step = 16 + day2_step  # day2_step 1..6 → HUD steps 17..22
 	elif nests_uploaded:
 		step = 19
 	elif nests_documented >= 3:
@@ -503,10 +644,11 @@ func _update_hud() -> void:
 				else: step = 9
 			6: step = 12
 			7:
-				if _player_has_item("Wooden Plank") or phase2b_plank_picked_up: step = 14
+				if phase2b_plank_count >= 3: step = 14
 				else: step = 13
 			8: step = 15
 			9: step = 16
+			10: step = 17
 	
 	routine_step_changed.emit(step, text)
 	print("[RoutineManager] HUD updated: Step %d — '%s'" % [step, text])
@@ -517,8 +659,52 @@ func _update_hud() -> void:
 # ═══════════════════════════════════════════════════════════════════════
 
 func on_car_part_collected(part_name: String) -> void:
-	print("[RoutineManager] Car part collected: %s" % part_name)
-	van_checklist_changed.emit()
+	# ─── MARK THE OBJECTIVE COMPLETE ON PICKUP ─────────────────────
+	# Previously this function was a stub — it only printed and emitted
+	# van_checklist_changed without setting any state. The notebook reads
+	# van_battery_collected / van_radiator_collected / van_wiring_collected
+	# to render the "[X]" checkbox, so without this the UI never showed
+	# the part objective as completed, blocking the player's perception
+	# of endgame progression toward the van repair.
+	var changed: bool = false
+	match part_name:
+		"Car Battery":
+			if not van_battery_collected:
+				van_battery_collected = true
+				changed = true
+		"Radiator":
+			if not van_radiator_collected:
+				van_radiator_collected = true
+				changed = true
+		"Ignition Wiring":
+			if not van_wiring_collected:
+				van_wiring_collected = true
+				changed = true
+		_:
+			print("[RoutineManager] Car part collected with unknown name: '%s'" % part_name)
+	
+	if changed:
+		print("[RoutineManager] Car part collected: %s (objective marked complete)" % part_name)
+		# Refresh the HUD objective text so "Find parts to repair the van."
+		# progresses as parts are collected.
+		_update_hud()
+		van_checklist_changed.emit()
+	else:
+		# Duplicate signal (same part picked up twice) — still refresh UI.
+		van_checklist_changed.emit()
+
+## Returns the number of car parts the player has COLLECTED (0–3),
+## regardless of whether they have been installed in the van yet.
+## Used by the HUD objective text to show collection progress.
+func get_collected_parts_count() -> int:
+	var count: int = 0
+	if van_battery_collected:
+		count += 1
+	if van_radiator_collected:
+		count += 1
+	if van_wiring_collected:
+		count += 1
+	return count
 
 func on_van_inspected() -> void:
 	if van_inspected:
@@ -729,6 +915,23 @@ func on_door_unlocked() -> void:
 func on_player_entered_cabin() -> void:
 	if phase1_entered_cabin:
 		return
+	
+	# ─── PHASE 1 GATING FIX ─────────────────────────────────────────────
+	# The room-check fallback (player_controller.gd) fires whenever the
+	# player crosses from "Outside" into a cabin interior room. On Day 1
+	# that can happen while the player is still looking for the key (e.g.
+	# room areas overlapping the doorway/porch, or stepping back inside
+	# while searching). Without this gate, the objective would skip the
+	# "find the key" → "unlock the door" sequence and jump straight to
+	# "Log into the computer."
+	#
+	# The authoritative Phase 1 completion is on_door_unlocked() (fired by
+	# the door's toggle_lock()). This room-check is ONLY a safety net for
+	# when that signal doesn't fire — and it must not bypass the key gate.
+	if not phase1_found_key:
+		print("[RoutineManager] Cabin entry detected, but key not found yet. Phase 1 NOT complete — player must find the key and unlock the door.")
+		return
+	
 	phase1_entered_cabin = true
 	_advance_main_objective(2)
 	print("[RoutineManager] Phase 1 COMPLETE! Player entered the cabin (detected by room check).")
@@ -798,8 +1001,22 @@ func on_generator_refilled() -> void:
 	print("[RoutineManager] Phase 2: Generator refilled.")
 	_update_hud()
 	_check_power_restored()
-	# ─── X-RAY HIGHLIGHT: Clear generator highlight ──
+	# ─── X-RAY HIGHLIGHT: Clear generator highlight, highlight the switch ──
 	clear_highlight("xray_generator")
+	highlight_target("xray_generator_switch", 3.0)
+
+
+## Called by generator.gd when the player successfully flips the generator
+## switch ON. Completes the "Turn on the generator" sub-step that follows
+## refueling (the generator can only start once the fuse box is repaired).
+func on_generator_turned_on() -> void:
+	if phase2_gen_turned_on:
+		return
+	phase2_gen_turned_on = true
+	print("[RoutineManager] Phase 2: Generator turned on!")
+	clear_highlight("xray_generator_switch")
+	_check_power_restored()
+	_update_hud()
 
 func on_computer_tried_no_power() -> void:
 	if phase2_computer_tried_no_power:
@@ -889,12 +1106,76 @@ func on_window_patched() -> void:
 # ═══════════════════════════════════════════════════════════════════════
 
 func on_door_locked() -> void:
-	if phase3_door_locked:
+	# ─── DAY 2 STEP 6 → 7: Lock the door ───────────────────────────
+	# On Day 2, after the nest data is uploaded, the player must lock
+	# the door before going to bed. door.gd calls this whenever the
+	# player locks any door. Only completes when step 6 is active.
+	if main_objective >= 99 and day2_step == 6:
+		day2_step = 7
+		print("[RoutineManager] Day 2 Step 6 COMPLETE: Door locked. Step 7: Go to bed.")
+		_sync_day2_hint()
+		_update_hud()
 		return
+	
+	# ─── DAY 1 GATE: ONLY complete "Lock the front door" (step 8)
+	# while it is the ACTIVE objective ───────────────────────────────
+	# Locking the door early (e.g. while on the fuse/generator/plank
+	# objectives) must NOT skip ahead. We record the physical locked
+	# state so the objective auto-completes when the player genuinely
+	# reaches step 8, but the step is never advanced out-of-order.
 	phase3_door_locked = true
-	_advance_main_objective(9)
+	if main_objective != 8:
+		print("[RoutineManager] Front door locked early (main_objective=%d) — state recorded, objective NOT advanced." % main_objective)
+		return
+	
 	print("[RoutineManager] Phase 3: Front door locked.")
+	_advance_main_objective(9)
+	# ─── DEFENSIVE AUTO-COMPLETE: All cabin lights already OFF ──────
+	# If the player turned off every cabin light BEFORE reaching the
+	# "Turn off the lights" objective (e.g. while the door step was
+	# still active), that earlier toggle could not have fired
+	# on_light_toggled_off() (it checks main_objective == 9). Check the
+	# current cabin light states now so the player is never soft-locked.
+	if not phase3_hall_light_off and _are_all_cabin_lights_off():
+		phase3_hall_light_off = true
+		print("[RoutineManager] Phase 3: All cabin lights were already off before the objective — auto-completed.")
 	_update_hud()
+
+
+## Called by cabin_light.gd whenever a light switch is toggled OFF.
+## Completes the "Turn off the lights" sub-step (main objective 9) but
+## only when EVERY cabin light in the "CabinLights" group has been
+## switched off. Any single remaining light keeps the objective pending.
+func on_light_toggled_off(light_name: String = "", node_path: NodePath = NodePath()) -> void:
+	if main_objective != 9 or phase3_hall_light_off:
+		return
+	if not _are_all_cabin_lights_off():
+		return
+	phase3_hall_light_off = true
+	_advance_main_objective(10)
+	_update_hud()
+
+
+## Returns true when every light in the "CabinLights" group is switched off.
+## Used by the Day 1 "Turn off the lights" objective (main objective 9).
+## The group contains all cabin light fixtures (hall, bedroom, porch, etc.),
+## registered by cabin_light.gd on _ready().
+##
+## FAULTY LIGHTS: Fixtures with is_faulty == true are physically stuck ON
+## (their toggle_light() refuses to switch them off — the faulty porch
+## light is a permanent wiring hazard). They are excluded from the check
+## so the objective remains completable. The objective requires every
+## *toggleable* cabin light to be switched off.
+func _are_all_cabin_lights_off() -> bool:
+	var lights := get_tree().get_nodes_in_group("CabinLights")
+	if lights.is_empty():
+		return false
+	for light in lights:
+		if "is_faulty" in light and light.is_faulty:
+			continue
+		if "is_switched_on" in light and light.is_switched_on:
+			return false
+	return true
 
 func on_bed_interacted() -> bool:
 	if not phase2b_window_patched:
@@ -923,13 +1204,145 @@ func on_bed_interacted() -> bool:
 # NEST DOCUMENTATION (Day 2)
 # ═══════════════════════════════════════════════════════════════════════
 
-## Called when NightManager advances to Day 2.
-## Starts the nest highlighting sequence: Nest Alpha after 20s.
-func on_day2_started() -> void:
-	print("[RoutineManager] Day 2 started. Scheduling Nest Alpha highlight in 20 seconds.")
-	highlight_target("xray_nest_alpha", 20.0)
+## Returns true when the full Day 2 nest sequence is complete
+## (step 7 finished — the player has locked the door and gone to bed).
+func _is_day2_complete() -> bool:
+	return day2_step >= 8
 
+
+## Resets Day 2 state for a fresh Day 2 start.
+func _reset_day2_state() -> void:
+	day2_step = 1
+	day2_notebook_opened = false
+	day2_door_unlocked = false
+	nests_documented = 0
+	nests_uploaded = false
+	day2_hint_text = ""
+	print("[RoutineManager] Day 2 sequence reset. Step 1: Read the previous nest reports on the computer.")
+
+
+## Updates the active hint for the current Day 2 step and emits it to the
+## Notebook To-Do list. Called whenever the step advances or changes.
+func _sync_day2_hint() -> void:
+	var new_hint: String = ""
+	match day2_step:
+		2:
+			new_hint = DAY2_NEST_HINTS.get("Nest Alpha", "")
+		3:
+			new_hint = DAY2_NEST_HINTS.get("Nest Beta", "")
+		4:
+			new_hint = DAY2_NEST_HINTS.get("Nest Gamma", "")
+	if new_hint != day2_hint_text:
+		day2_hint_text = new_hint
+		objective_hint_changed.emit(day2_hint_text)
+		print("[RoutineManager] Day 2 hint updated: '%s'" % day2_hint_text)
+
+
+## Called when NightManager advances to Day 2.
+## Initializes the Day 2 sequential tutorial (Step 1: open the notebook)
+## and starts the Nest Alpha highlight once the notebook has been opened.
+func on_day2_started() -> void:
+	print("[RoutineManager] Day 2 started.")
+	# Force main_objective to the Day 2 sentinel (99) so the sequential
+	# nest tutorial activates regardless of which night transitions path
+	# fired (advance_night() vs the natural time-based day_started).
+	if main_objective < 99 and not is_day3_sandbox:
+		main_objective = 99
+		print("[RoutineManager] Day 2 sentinel set: main_objective = 99.")
+	_reset_day2_state()
+	# Lock the cabin door until the player reads the Nest Logs in the notebook.
+	_lock_cabin_door()
+	_update_hud()
+
+
+## Locks the cabin front door at the start of Day 2 (Step 1 gate).
+## The door unlocks once the player opens the notebook and reads the logs.
+func _lock_cabin_door() -> void:
+	for door in get_tree().get_nodes_in_group("Door"):
+		if door.has_method("is_cabin_front_door") and door.is_cabin_front_door():
+			if door.has_method("lock"):
+				door.lock()
+				print("[RoutineManager] Cabin front door LOCKED for Day 2 Step 1.")
+				return
+	# Fallback: try to find the door with a matching meta/name
+	for door in get_tree().get_nodes_in_group("Door"):
+		var door_name: String = str(door.name).to_lower()
+		if "front" in door_name or "cabin_door" in door_name:
+			if door.has_method("lock"):
+				door.lock()
+				print("[RoutineManager] Cabin front door LOCKED for Day 2 Step 1 (fallback).")
+				return
+
+
+## Unlocks the cabin front door once the player opens the notebook (Step 1 reward).
+func _unlock_cabin_door() -> void:
+	day2_door_unlocked = true
+	for door in get_tree().get_nodes_in_group("Door"):
+		if door.has_method("is_cabin_front_door") and door.is_cabin_front_door():
+			if door.has_method("unlock"):
+				door.unlock()
+				print("[RoutineManager] Cabin front door UNLOCKED for Day 2 Step 1.")
+				return
+	for door in get_tree().get_nodes_in_group("Door"):
+		var door_name: String = str(door.name).to_lower()
+		if "front" in door_name or "cabin_door" in door_name:
+			if door.has_method("unlock"):
+				door.unlock()
+				print("[RoutineManager] Cabin front door UNLOCKED for Day 2 Step 1 (fallback).")
+				return
+
+
+## Called by ComputerUI when the player reads the previous nest reports on
+## the lab terminal. Completes Day 2 Step 1 and unlocks the cabin door so
+## the player can leave to document the nests.
+func on_previous_reports_read() -> void:
+	if main_objective < 99:
+		return  # Only applies to Day 2+
+	if day2_step == 1:
+		print("[RoutineManager] Day 2 Step 1 COMPLETE: Player read the previous nest reports.")
+		day2_notebook_opened = true
+		day2_step = 2
+		_unlock_cabin_door()
+		_sync_day2_hint()
+		_update_hud()
+		# Start the Nest Alpha highlight once the player steps outside.
+		highlight_target("xray_nest_alpha", 5.0)
+
+
+## Called by NotebookUI when the player opens the notebook on Day 2.
+##
+## Intentional NO-OP for Day 2 Step 1: the previous researcher's nest
+## reports live on the lab computer (NEST_REPORTS.TXT), NOT in the
+## player's notebook. Step 1 can only be completed by reading the
+## reports on the terminal via on_previous_reports_read().
+func on_notebook_opened() -> void:
+	if main_objective < 99:
+		return  # Only applies to Day 2+
+	if day2_step == 1:
+		print("[RoutineManager] Notebook opened on Day 2 Step 1 — Step 1 remains gated behind the computer terminal (NEST_REPORTS.TXT).")
+	return
+
+
+## Called by HasselmusNest when the player documents a nest.
+## Advances the Day 2 sequential steps (2 → 3 → 4) and schedules the
+## next nest's x-ray highlight.
 func document_nest(nest_id: String) -> void:
+	# ─── SEQUENTIAL VALIDATION GATE ──────────────────────────────────
+	# The nests must be documented in order: Alpha → Beta → Gamma.
+	# If the player attempts an out-of-order nest, refuse and surface
+	# a HUD message pointing them to the correct nest.
+	if main_objective >= 99:
+		var expected: String = ""
+		match day2_step:
+			2: expected = "Nest Alpha"
+			3: expected = "Nest Beta"
+			4: expected = "Nest Gamma"
+		if not expected.is_empty() and nest_id != expected:
+			var hud := get_tree().get_first_node_in_group("hud")
+			if hud and hud.has_method("show_message"):
+				hud.show_message("I should document %s first." % expected)
+			print("[RoutineManager] Nest '%s' REJECTED — expected '%s' first (day2_step=%d)." % [nest_id, expected, day2_step])
+			return
 	nests_documented += 1
 	print("[RoutineManager] Nest '%s' documented! (%d/3)" % [nest_id, nests_documented])
 	
@@ -948,6 +1361,33 @@ func document_nest(nest_id: String) -> void:
 		"Nest Gamma":
 			clear_highlight("xray_nest_gamma")
 	
+	# ─── DAY 2 STEP ADVANCEMENT ──────────────────────────────────────
+	# Advance the sequential objectives: Alpha → Beta → Gamma → Upload.
+	# IMPORTANT: _update_hud() MUST be called on EVERY step advancement so
+	# the HUD immediately pushes the next objective string to the player.
+	# Previously the HUD only refreshed at nests_documented >= 3, which left
+	# the UI frozen on the same text while multiple nests were documented.
+	if main_objective >= 99:
+		match nest_id:
+			"Nest Alpha":
+				if day2_step == 2:
+					day2_step = 3
+					print("[RoutineManager] Day 2 Step 2 COMPLETE: Nest Alpha documented. Step 3: Nest Beta.")
+					_sync_day2_hint()
+					_update_hud()
+			"Nest Beta":
+				if day2_step == 3:
+					day2_step = 4
+					print("[RoutineManager] Day 2 Step 3 COMPLETE: Nest Beta documented. Step 4: Nest Gamma.")
+					_sync_day2_hint()
+					_update_hud()
+			"Nest Gamma":
+				if day2_step == 4:
+					day2_step = 5
+					print("[RoutineManager] Day 2 Step 4 COMPLETE: Nest Gamma documented. Step 5: Log data on computer.")
+					_sync_day2_hint()
+					_update_hud()
+	
 	if nests_documented >= 3:
 		print("[RoutineManager] All 3 nests documented! Player should upload data on the computer.")
 		_update_hud()
@@ -956,8 +1396,20 @@ func document_nest(nest_id: String) -> void:
 func on_nest_data_uploaded() -> void:
 	if nests_uploaded:
 		return
-	nests_uploaded = true
-	print("[RoutineManager] Nest data uploaded on computer! Player should go to bed.")
+	# ─── DAY 2 STEP 5 COMPLETION ─────────────────────────────────────
+	# The FIELD_LOG.EXE correlation success triggers this. It only counts
+	# if all 3 nests have been documented first. Setting nests_uploaded
+	# prematurely (before all nests are documented) would lock the player
+	# out of Step 5 — so we gate the flag behind the step check.
+	if main_objective >= 99 and nests_documented >= 3 and day2_step == 5:
+		nests_uploaded = true
+		day2_step = 6
+		print("[RoutineManager] Day 2 Step 5 COMPLETE: Nest data uploaded to terminal!")
+	else:
+		# Player attempted to upload before documenting all nests.
+		# Keep the flag false so they can retry after documenting.
+		print("[RoutineManager] Nest data upload BLOCKED: Not all nests documented (count=%d, step=%d)." % [nests_documented, day2_step])
+		return
 	_update_hud()
 
 
@@ -989,6 +1441,11 @@ func is_mechanic_learned(mechanic_id: String) -> bool:
 func reset_objective_history() -> void:
 	main_objective = 99
 	
+	# ─── DAY 2 SEQUENTIAL NEST TUTORIAL ────────────────────────────
+	# Ensure the Day 2 step machine is initialized even if this is called
+	# independently (e.g. not through on_day2_started()).
+	_reset_day2_state()
+	
 	phase1_approached_cabin = false
 	phase1_tried_door = false
 	phase1_found_key = false
@@ -1001,6 +1458,7 @@ func reset_objective_history() -> void:
 	phase2_fuse_fixed = false
 	phase2_fuel_can_picked_up = false
 	phase2_gen_refilled = false
+	phase2_gen_turned_on = false
 	phase2_computer_used = false
 	
 	phase2b_plank_picked_up = false
@@ -1008,6 +1466,7 @@ func reset_objective_history() -> void:
 	phase2b_window_patched = false
 	
 	phase3_door_locked = false
+	phase3_hall_light_off = false
 	phase3_bed_used = false
 	
 	print("[RoutineManager] Objective history reset. Day 1 gating state cleared for new day.")
@@ -1019,6 +1478,9 @@ func reset_all_phases() -> void:
 	
 	is_day3_sandbox = false
 	van_inspected = false
+	van_battery_collected = false
+	van_radiator_collected = false
+	van_wiring_collected = false
 	van_battery_installed = false
 	van_radiator_installed = false
 	van_wiring_installed = false
@@ -1050,6 +1512,7 @@ func reset_all_phases() -> void:
 	phase2_fuse_fixed = false
 	phase2_fuel_can_picked_up = false
 	phase2_gen_refilled = false
+	phase2_gen_turned_on = false
 	phase2_computer_used = false
 	
 	phase2b_plank_picked_up = false
@@ -1057,6 +1520,7 @@ func reset_all_phases() -> void:
 	phase2b_window_patched = false
 	
 	phase3_door_locked = false
+	phase3_hall_light_off = false
 	phase3_bed_used = false
 	
 	print("[RoutineManager] All phases reset.")

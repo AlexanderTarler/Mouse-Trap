@@ -8,5 +8,15 @@ script = ExtResource("1_item_data")
 item_name = "Arvid's Note"
 item_description = "Another note from Arvid, which ends abruptly."
 item_type = 1
-note_text = "\"Log Note — 22:14\\n\\nLeft the computer terminal active.\\n\\nGoing down to the old tunnel (gamla tunneln) past the eastern thicket to pull a manual audio sample. There’s a persistent acoustic feedback looping out of the concrete structure. From the porch, it just sounds like standard low-frequency wind resonance, but the frequency shifts are perfectly matching the interval patterns I logged at Nest Gamma earlier today.\\n\\nIt's highly likely a structural fluke—the acoustics of the hollow corridor mimicking the local wildlife distribution—but I need to rule out equipment interference before finalizing the report for the regional office.\\n\\nIf anyone from administration calls before I get back, tell them the data migration is still on schedule. Taking the spare battery cells.\\n\\n— Arvid\""
+note_text = "\"Log Note — 22:14
+
+Left the computer terminal active.
+
+Going down to the old tunnel (gamla tunneln) past the eastern thicket to pull a manual audio sample. There’s a persistent acoustic feedback looping out of the concrete structure. From the porch, it just sounds like standard low-frequency wind resonance, but the frequency shifts are perfectly matching the interval patterns I logged at Nest Gamma earlier today.
+
+It's highly likely a structural fluke—the acoustics of the hollow corridor mimicking the local wildlife distribution—but I need to rule out equipment interference before finalizing the report for the regional office.
+
+If anyone from administration calls before I get back, tell them the data migration is still on schedule. Taking the spare battery cells.
+
+— Arvid\""
 scene_to_spawn = ExtResource("2_note_scene")

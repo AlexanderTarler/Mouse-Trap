@@ -32,22 +32,22 @@ const WATCHED_AUDIO_VOLUME_DB: float = -6.0
 
 
 func _ready() -> void:
-	# Set up the shader material
-	material = ShaderMaterial.new()
-	_shader_material = material as ShaderMaterial
-	_shader_material.shader = preload("res://shaders/distortion.gdshader")
+	# ─── TASK 3: DARKNESS/BLINDNESS OVERLAY REMOVED ─────────────────────
+	# The visual darkness/blindness screen effect has been COMPLETELY removed.
+	# Previously this applied a distortion.gdshader (vignette darkening,
+	# chromatic aberration, pixelation) and a full-screen BlindnessRect that
+	# faded to black. Both mechanisms are now disabled — the player instead
+	# gets an increasingly violent camera shake (handled by player_controller.gd).
+	_effect_time = 0.0
 	
-	# Make this cover the full screen
+	# Make this cover the full screen (kept for layout, render disabled)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	
-	# Initialize shader parameters
-	_shader_material.set_shader_parameter("watched_intensity", 0.0)
-	_shader_material.set_shader_parameter("effect_time", 0.0)
-	
-	# Set up blindness rect
+	# Set up blindness rect — fully hidden and transparent (no black fade)
 	if _blindness_rect:
 		_blindness_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_blindness_rect.color = Color(0, 0, 0, 0)
+		_blindness_rect.visible = false
 	
 	# Set up watched audio player (2D, non-positional)
 	_watched_audio_player = AudioStreamPlayer.new()
@@ -79,14 +79,16 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	_effect_time += delta
-	if _shader_material:
-		_shader_material.set_shader_parameter("effect_time", _effect_time)
+	# TASK 3: The shader-based darkness overlay is completely removed.
+	# No shader material is created/assigned, so _shader_material is null
+	# and no darkness/vignette effect can render. Kept as a no-op.
+	pass
 
 
 func _on_watched_intensity_changed(intensity: float) -> void:
-	if _shader_material:
-		_shader_material.set_shader_parameter("watched_intensity", intensity)
+	# TASK 3: Do NOT feed watched_intensity into any darkness shader.
+	# The visual darkness overlay is gone — intensity is still used below
+	# to drive the watched/whisper audio cue.
 	
 	# Play "sfx cinematic 53" when the player starts looking at the Entity.
 	# Once playing, the audio loops continuously until the player looks away
@@ -103,16 +105,14 @@ func _on_watched_intensity_changed(intensity: float) -> void:
 
 
 func _on_blindness_started() -> void:
-	_is_blind = true
-	if _blindness_rect:
-		# Fade to black over 0.3 seconds
-		var tween = create_tween()
-		tween.tween_property(_blindness_rect, "color", Color(0, 0, 0, 1), 0.3)
+	# TASK 3: Blindness (full-screen black) COMPLETELY REMOVED.
+	# No-op — the player should NOT see the screen fade to black.
+	_is_blind = false
+	return
 
 
 func _on_blindness_ended() -> void:
+	# TASK 3: Blindness (full-screen black) COMPLETELY REMOVED.
+	# No-op — the player should NOT see the screen fade back from black.
 	_is_blind = false
-	if _blindness_rect:
-		# Fade back from black over 0.5 seconds
-		var tween = create_tween()
-		tween.tween_property(_blindness_rect, "color", Color(0, 0, 0, 0), 0.5)
+	return

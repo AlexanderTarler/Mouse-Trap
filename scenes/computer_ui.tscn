@@ -72,8 +72,8 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 11.0
-offset_right = -520.565
+offset_left = 44.0
+offset_right = -487.565
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 12
@@ -134,10 +134,12 @@ theme_override_font_sizes/font_size = 14
 text = "LOGIN"
 
 [node name="ErrorLabel" type="Label" parent="LoginScreen/LoginVBox" unique_id=600000011]
+custom_minimum_size = Vector2(340, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
 theme_override_font_sizes/font_size = 12
 horizontal_alignment = 1
+autowrap_mode = 2
 
 [node name="PowerOffButton" type="Button" parent="LoginScreen" unique_id=600000012]
 layout_mode = 0
@@ -185,7 +187,7 @@ offset_bottom = 200.0
 theme_override_font_sizes/font_size = 11
 text = "Recycle Bin"
 
-[node name="RecoverDataIcon" type="Button" parent="DesktopView"]
+[node name="RecoverDataIcon" type="Button" parent="DesktopView" unique_id=2113029102]
 layout_mode = 0
 offset_left = 160.0
 offset_top = 60.0
@@ -213,7 +215,17 @@ theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
 theme_override_font_sizes/font_size = 11
 text = "SHUT DOWN"
 
+[node name="PreviousReportsIcon" type="Button" parent="DesktopView" unique_id=227934619]
+layout_mode = 0
+offset_left = 300.0
+offset_top = 60.0
+offset_right = 440.0
+offset_bottom = 120.0
+theme_override_font_sizes/font_size = 11
+text = "NEST_REPORTS.TXT"
+
 [node name="MainWindow" type="Panel" parent="." unique_id=106868408]
+visible = false
 material = SubResource("ShaderMaterial_25mte")
 offset_left = 572.0
 offset_top = 122.0

@@ -42,11 +42,14 @@ func interact() -> void:
 		if rm and rm.has_method("on_flashlight_picked_up"):
 			rm.on_flashlight_picked_up()
 		
-		# ─── FLASHLIGHT TUTORIAL ──────────────────────────────────
-		# Show the "Press F to toggle flashlight" hint.
-		var tm = get_node_or_null("/root/TutorialManager")
-		if tm and tm.has_method("trigger"):
-			tm.trigger("flashlight")
+		# ─── FLASHLIGHT TUTORIAL (REMOVED HERE) ───────────────────
+		# The "Press [F] to turn the flashlight on and off." hint does NOT
+		# fire on Day 1 pickup anymore. It must only appear when Night 1
+		# starts (TutorialManager._on_night_started → trigger("flashlight")).
+		# Previously this early trigger consumed the one_shot tutorial and
+		# the very first F press marked the mechanic as learned — so by the
+		# time Night 1 began, _can_show() returned false and the hint never
+		# appeared. The night-start trigger is now the single source.
 		
 		queue_free()
 	else:

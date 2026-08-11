@@ -13,11 +13,15 @@ is_faulty = true
 
 [node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=888084408]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2023832, 0)
-light_energy = 2.0
-light_indirect_energy = 2.0
-light_size = 1.0
+light_energy = 1.5
+light_indirect_energy = 0.0
+light_size = 0.2
 light_specular = 0.0
 shadow_enabled = true
+shadow_bias = 0.01
+shadow_normal_bias = 1.0
+shadow_blur = 0.0
+volumetric_fog_energy = 0.0
 
 [node name="LightMeshOn" parent="." unique_id=1929942958 instance=ExtResource("2_5egqy")]
 

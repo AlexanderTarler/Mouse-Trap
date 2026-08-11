@@ -37,9 +37,32 @@ var glass_shatter_impact_delay: float = 1.5
 
 # Approach
 var approach_min_duration: float = 2.0
-var approach_failsafe_timeout: float = 15.0
+var approach_failsafe_timeout: float = 8.0
 var approach_debug_interval: float = 2.0
-var approach_arrival_distance: float = 2.5
+var approach_arrival_distance: float = 4.0
+
+# ─── TASK 1.1: STUN-LOCK FIX STATE ─────────────────────────────────────
+## Cooldown (in seconds) after FLINCH completion during which the Entity
+## cannot re-enter APPROACH_WINDOW. Prevents the 1-frame approach → flinch
+## oscillation caused by stale is_illuminated / is_overcharged booleans that
+## are never cleared by the FLINCH handler.
+var _flinch_exit_cooldown: float = 0.0
+
+## Duration (in seconds) of the post-flinch re-entry cooldown.
+## ISSUE 3 FIX: Raised from 3 frames (50ms) to 0.5s so the perception system
+## has ample time to re-detect the player's overcharge beam before the Entity
+## is allowed to re-enter APPROACH_WINDOW. The old 50ms window was shorter
+## than the perception update interval, causing the Entity to occasionally
+## "ignore" the overcharge beam on re-entry.
+const FLINCH_EXIT_COOLDOWN_DURATION: float = 0.5
+
+# ─── TASK 1.2: INTERRUPTED WINDOW BAN ─────────────────────────────────────
+## Room ID of the window the Entity was interrupted at by an overcharged
+## flashlight (FLINCH entry during APPROACH_WINDOW / WINDOW_PEEK). While set,
+## windows belonging to this room are heavily penalized by pick_tactical_window()
+## so the Entity cannot re-target the same room. Cleared when a window in a
+## different room is successfully targeted.
+var _banned_room: String = ""
 
 # Door
 var door_phase_2_arrival_distance: float = 0.5
@@ -107,11 +130,19 @@ var stare_confidence_drain: float = 2.0
 # STALK behavior
 var stalk_min_distance: float = 3.0
 var stalk_max_distance: float = 10.0
-var stalk_close_speed_mult: float = 0.3
+## TUNED: Raised from 0.3 to 0.85. At close range (0-3m) the Entity now moves
+## at ~85% speed (5.1 m/s at the 6.0 base) — still slightly faster than the
+## player's 3.5 m/s walk, so the player can no longer casually walk away.
+## The old 0.3 dropped the Entity to 1.8 m/s (half the player's walk), which
+## let players escape without sprinting.
+var stalk_close_speed_mult: float = 0.85
 var flanking_enabled: bool = true
 var flank_interval: float = 8.0
 var flank_offset_distance: float = 8.0
-var stalk_search_speed_mult: float = 0.5
+## TUNED: Raised from 0.5 to 0.9. When LOS breaks for 1s+, the Entity drops
+## to 90% speed (5.4 m/s) instead of 50% (2.4 m/s — below the player's walk).
+## This keeps the search slowdown meaningful without letting a walk-away escape.
+var stalk_search_speed_mult: float = 0.9
 
 # Utility scorer
 var window_recency_penalty: float = 30.0
@@ -331,6 +362,19 @@ const GLASS_SHATTER_IMPACT_DELAY: float = 0.5
 ## still at a single waypoint. Reset to Vector3.ZERO when a new waypoint is needed.
 var _current_patrol_waypoint: Vector3 = Vector3.ZERO
 
+## The total duration of the current FLINCH sprint (randomized 6-8s).
+## Set when the flinch timer is initialized. Used to compute elapsed time
+## for the early-abort guard — a hardcoded 8.0 would incorrectly report
+## elapsed > 1.5s on frame 1 when the duration was rolled as 6.0s.
+var _flinch_total_duration: float = 0.0
+
+## ─── NIGHT 2.2 VAN SEQUENCE FLINCH → DORMANT ─────────────────────────────
+## Armed by _evaluate_night_rules() when the car-alarm sequence is active and
+## the player is inside the cabin. When the current FLINCH completes, the
+## handler checks this flag and hard-overrides the state to DORMANT (hiding
+## the Entity completely). Reset to false once consumed.
+var _van_sequence_flinch_armed: bool = false
+
 ## Whether a retreat target has been set for physical RETREAT pathfinding.
 ## Reset after the Entity reaches the exit point and fades out.
 var _retreat_target_set: bool = false
@@ -377,6 +421,55 @@ const STALK_LOS_BREAK_THRESHOLD: float = 1.0
 
 ## STALK state: current speed multiplier (computed each frame from distance + LOS state).
 var _stalk_current_speed_mult: float = 1.0
+
+## ─── TASK 4: STALK TIME-BASED ACCELERATION ──────────────────────────────
+## Tracks how long the Entity has been continuously STALKing. Resets to 0.0
+## when the Entity exits STALK for any reason. After the grace period (10s),
+## the Entity's movement speed begins ramping toward the 200% cap.
+var _stalk_duration_timer: float = 0.0
+
+## Current acceleration multiplier applied to STALK speed (1.0 = base,
+## 2.0 = 200% cap). Ramps linearly from 1.0 to 2.0 over
+## STALK_ACCEL_RAMP_TIME seconds after the grace period expires.
+var _stalk_accel_mult: float = 1.0
+
+## Seconds of continuous STALK before acceleration begins.
+## TUNED: Reduced from 10.0 to 3.0 — acceleration now kicks in quickly.
+const STALK_ACCEL_GRACE_PERIOD: float = 3.0
+
+## Seconds from the grace-period end to the 200% speed cap.
+## TUNED: Reduced from 15.0 to 10.0 — the Entity ramps to 200% in 10 seconds
+## (reaching the cap at 13s of continuous STALK), then holds 200% until exit.
+const STALK_ACCEL_RAMP_TIME: float = 10.0
+
+## Hard cap for the acceleration multiplier (200% of base speed).
+const STALK_ACCEL_CAP: float = 2.0
+
+## ─── TASK 5: STALK RUBBERBAND COOLDOWN ─────────────────────────────────
+## Minimum seconds between rubberband teleports. Prevents the Entity from
+## teleporting every frame while the player stays beyond 40m.
+const STALK_RUBBERBAND_COOLDOWN: float = 3.0
+var _stalk_rubberband_cooldown_timer: float = 0.0
+
+## ─── STALK FREEZE FIX: RUBBERBAND NAV GRACE PERIOD ─────────────────────
+## Godot's NavigationAgent3D computes paths asynchronously. After a
+## rubberband teleport we re-target the NavAgent; is_navigation_finished()
+## returns TRUE for a few frames until the new path is computed, which
+## zeroes the velocity and causes a micro-freeze. This grace timer prevents
+## is_navigation_finished() from being evaluated for 0.3s after a teleport.
+var _stalk_rubberband_nav_grace: float = 0.0
+const STALK_RUBBERBAND_NAV_GRACE_TIME: float = 0.3
+
+## ─── STALK FREEZE FIX: STALK NAV GRACE PERIOD (async path) ─────────────
+## The SAME async problem as rubberbanding also affects EVERY path update
+## in STALK. When target_position is (re)assigned, the NavAgent computes
+## paths asynchronously and is_navigation_finished() returns true for a
+## few frames until the route is ready. The movement block interprets
+## "no path yet" as "arrived" and zeroes the velocity — freezing the
+## Entity in place during pursuit. Armed to STALK_NAV_GRACE on STALK
+## entry (target distance set) and on every path-update tick.
+var _stalk_nav_grace: float = 0.0
+const STALK_NAV_GRACE_TIME: float = 0.35
 
 ## Debug frame counter for INDOOR_SEARCH Phase B logging.
 ## Incremented each frame in _indoor_search_state(). Used to throttle debug
@@ -548,6 +641,19 @@ var _sabotage_last_dist: float = 0.0          # distance at last check interval
 var _sabotage_dist_check_timer: float = 0.0   # accumulates toward the check interval
 var _sabotage_elapsed: float = 0.0            # total time spent in SABOTAGE_FUSE
 
+## ─── FIX 5: SELF-CONTAINED FRESH-ENTRY SNAPSHOT ─────────────────────────
+## The state value that last (successfully) called _sabotage_fuse_state().
+## Previously this handler relied on entity.get_previous_state() to detect
+## a fresh entry — but _last_state in entity_controller.gd was NEVER updated
+## by set_state(), so get_previous_state() returned DORMANT for the entire
+## game lifetime and the `if entity.get_state() != entity.get_previous_state()`
+## check evaluated TRUE every frame, resetting the stuck trackers to 0.0
+## every frame. Neither the 4s stuck timeout NOR the 15s global failsafe
+## could ever fire → a NavAgent that couldn't path deadlocked the Entity
+## forever (total paralysis). This snapshot is self-contained inside the AI
+## module and does not depend on external state tracking at all.
+var _last_sabotage_call_state: int = -1
+
 ## How often (seconds) to compare the current distance to the latched
 ## distance for progress detection.
 const SABOTAGE_PROGRESS_CHECK_INTERVAL: float = 2.0
@@ -561,6 +667,23 @@ const SABOTAGE_PROGRESS_EPSILON: float = 0.5
 ## fuse box. Covers ALL branches (including the no-waypoint fallback that
 ## previously had no stuck timeout at all).
 const SABOTAGE_GLOBAL_FAILSAFE: float = 15.0
+
+## ─── FIX 3: NAVAGENT FRAME-1 GRACE PERIOD ──────────────────────────────
+## Godot 4's NavigationAgent3D computes paths ASYNCHRONOUSLY on the physics
+## frame. On the very first frame after setting target_position, the agent
+## has no path loaded and is_navigation_finished() returns true — which the
+## movement code interprets as "arrived" and zeroes the velocity. Combined
+## with the (previously unconditional) state_locked = true, this deadlocked
+## the Entity in place: velocity zeroed every frame, and neither the stuck
+## timeout nor the global failsafe could fire. This grace timer prevents
+## is_navigation_finished() from being evaluated for the first few frames
+## after a target update, giving the agent time to compute its path.
+var _sabotage_nav_grace_timer: float = 0.0
+
+## How long (seconds) to keep the grace period active after setting a new
+## NavigationAgent3D target. Slightly longer than one physics frame to
+## accommodate async path computation on slower machines.
+const SABOTAGE_NAV_GRACE: float = 0.35
 
 ## Minimum interval (in seconds) between NavigationAgent3D target_position updates.
 ## Setting target_position triggers a path recalculation which is expensive.
@@ -953,9 +1076,11 @@ func process_state_logic(delta: float) -> void:
 	# flashlight beam is currently on the Entity.
 	#
 	# STUN RULES:
-	#   - If state is CHARGE, RETREAT, or FLINCH, the Entity is immune to
-	#     the stun (it's already committed to an action — the post-retreat
-	#     FLINCH sprint must play out so the Entity flees the window).
+	#   - If state is CHARGE, RETREAT, FLINCH, SABOTAGE_FUSE, or
+	#     FUSE_SABOTAGE, the Entity is immune to the stun (it's already
+	#     committed to an action — the post-retreat FLINCH sprint must
+	#     play out so the Entity flees the window, and the sabotage
+	#     walk-in must not be interrupted by a flashlight beam).
 	#   - If state is any other state AND the player is staring, force
 	#     velocity to zero and play the Idle animation.
 	#   - The _stare_timer accumulates while the player stares. If the
@@ -971,8 +1096,20 @@ func process_state_logic(delta: float) -> void:
 		_stalk_target_distance_set = false
 		entity.get_nav_agent().target_desired_distance = 1.5
 		entity.get_nav_agent().path_desired_distance = 1.0
+		# ─── TASK 4: RESET ACCELERATION ON STALK EXIT ────────────────
+		# The speed multiplier must be COMPLETELY reset whenever the Entity
+		# leaves STALK for any reason (Director override, player entered the
+		# cabin, flashlight reaction, etc.).
+		_stalk_duration_timer = 0.0
+		_stalk_accel_mult = 1.0
+		# ─── TASK 2: STOP CHASE AUDIO ON STALK EXIT ───────────────────
+		# Cleanly fade out and stop the chase music whenever the Entity
+		# leaves STALK for any reason.
+		var stalk_exit_audio = get_node_or_null("/root/HorrorSoundManager")
+		if stalk_exit_audio and stalk_exit_audio.has_method("stop_stalk_chase"):
+			stalk_exit_audio.stop_stalk_chase()
 	
-	if _is_being_stared_at and current_state != State.CHARGE and current_state != State.RETREAT and current_state != State.FLINCH:
+	if _is_being_stared_at and current_state != State.CHARGE and current_state != State.RETREAT and current_state != State.FLINCH and current_state != State.SABOTAGE_FUSE and current_state != State.FUSE_SABOTAGE:
 		# ─── FREEZE VELOCITY ────────────────────────────────────────────────
 		# Override the calculated velocity to zero, preventing the Entity
 		# from moving while being stared at.
@@ -1445,7 +1582,11 @@ func _observe_from_treeline_state(delta: float) -> void:
 func _attack_lamp_state(delta: float) -> void:
 	var trap = entity.get_portable_trap()
 	
-	if not trap or not trap.is_deployed or not trap.is_powered:
+	# TASK 1: The `is_on` gate ensures the Entity also aborts ATTACK_LAMP
+	# mid-approach if the lamp's light is switched off (e.g. via the computer
+	# terminal or wall switch). The Director only re-enters ATTACK_LAMP when
+	# the lamp is deployed, powered, AND actively shining.
+	if not trap or not trap.is_deployed or not trap.is_powered or not trap.is_on:
 		# The Director will handle the transition out of ATTACK_LAMP
 		# when the trap is no longer valid (Tier 3 check fails).
 		# Just reset the attack timer and stop moving.
@@ -1577,19 +1718,34 @@ func _fuse_sabotage_state(delta: float) -> void:
 ## The EntityFuseWaypoint is a Marker3D node tagged with the "EntityFuseWaypoint"
 ## group, placed near the Fuse Box so the Entity can pathfind to it.
 func _sabotage_fuse_state(delta: float) -> void:
-	# Lock the state — the Director must not override while we're mid-sabotage
-	entity.state_locked = true
+	# NOTE: The Fuse Box (and its EntityFuseWaypoint) sit OUTSIDE the cabin.
+	# The Entity must NOT clip through cabin walls — it keeps the FULL
+	# outdoor collision mask (Cabin/Player/Trees/Rocks) and pathfinds
+	# AROUND the cabin via the NavigationAgent. No collision-mask change.
 	
-	# ─── RESET SABOTAGE TRACKERS ON FRESH ENTRY (BUG 3 FIX) ─────────────
-	# If this is the first frame of SABOTAGE_FUSE (transitioned from another
-	# state), reset the distance-latch, stuck timer, and elapsed failsafe so
-	# a previous interrupted sabotage session doesn't carry stale values
-	# into a new attempt.
-	if entity.get_state() != entity.get_previous_state():
+	# ─── FIX 5: ROBUST FRESH-ENTRY DETECTION (self-contained snapshot) ──
+	# Compares the current state against the state that LAST called this
+	# handler. Does NOT depend on entity.get_previous_state() (which was
+	# broken — see _last_sabotage_call_state docs) or any external state
+	# tracking. Fires exactly once per SABOTAGE_FUSE entry, resetting all
+	# distance-latch trackers, the elapsed failsafe, AND the nav grace timer.
+	if entity.get_state() != _last_sabotage_call_state:
+		_last_sabotage_call_state = entity.get_state()
 		_sabotage_last_dist = 0.0
 		_sabotage_dist_check_timer = 0.0
 		_sabotage_stuck_timer = 0.0
 		_sabotage_elapsed = 0.0
+		_sabotage_nav_grace_timer = SABOTAGE_NAV_GRACE
+		print("[SABOTAGE_FUSE] Fresh entry detected. Trackers + nav grace reset.")
+	
+	# ─── FIX 1: LOCK ONLY AFTER NULL-CHECKS PASS ────────────────────────
+	# Previously `entity.state_locked = true` was set unconditionally on the
+	# FIRST line. If fuse_box was null/invalid/already broken, the early-exit
+	# branches had to manually unlock. Worse, the unconditional lock combined
+	# with the frame-1 NavAgent deadlock meant the Director could not rescue
+	# the Entity for the entire state duration — total paralysis. The lock is
+	# now set AFTER all early-exit guard clauses pass, so an invalid target
+	# aborts and returns to OBSERVE without ever locking.
 	
 	# Use the cached @export fuse_box_node reference (resolved once in
 	# _initialize_entity()). This avoids the expensive scene tree traversal
@@ -1599,7 +1755,6 @@ func _sabotage_fuse_state(delta: float) -> void:
 	if not fuse_box or not is_instance_valid(fuse_box):
 		# Fuse Box doesn't exist or was destroyed — signal completion
 		entity.is_fuse_sabotaged = true
-		entity.state_locked = false
 		_calculated_velocity = Vector3.ZERO
 		return
 	
@@ -1609,10 +1764,13 @@ func _sabotage_fuse_state(delta: float) -> void:
 	if not fuse_box.is_powered():
 		# Already broken — signal completion
 		entity.is_fuse_sabotaged = true
-		entity.state_locked = false
 		_calculated_velocity = Vector3.ZERO
 		print("[SABOTAGE_FUSE] Fuse Box already broken. Signaling completion.")
 		return
+	
+	# All guard clauses passed — this is a legitimate sabotage attempt.
+	# Lock the state NOW so the Director doesn't override mid-sabotage.
+	entity.state_locked = true
 	
 	# ─── GET THE CACHED FUSE WAYPOINT ────────────────────────────────────
 	# Use the cached @export fuse_waypoint reference (set in Inspector or
@@ -1635,11 +1793,12 @@ func _sabotage_fuse_state(delta: float) -> void:
 			fuse_box.break_fuse()
 			entity.is_fuse_sabotaged = true
 			entity.state_locked = false
+			_sabotage_nav_grace_timer = 0.0
 			_calculated_velocity = Vector3.ZERO
 			print("[SABOTAGE_FUSE] Fuse Box broken! Signaling completion.")
 			return
 		
-		# Pathfinding toward the Fuse Box
+		# Pathfinding toward the Fuse Box (NavAgent routes around the cabin)
 		if entity.get_nav_agent().is_navigation_finished():
 			_calculated_velocity.x = 0.0
 			_calculated_velocity.z = 0.0
@@ -1666,6 +1825,7 @@ func _sabotage_fuse_state(delta: float) -> void:
 		_sabotage_stuck_timer = 0.0
 		_sabotage_dist_check_timer = 0.0
 		_sabotage_elapsed = 0.0
+		_sabotage_nav_grace_timer = 0.0
 		fuse_box.break_fuse()
 		entity.is_fuse_sabotaged = true
 		entity.state_locked = false
@@ -1679,6 +1839,12 @@ func _sabotage_fuse_state(delta: float) -> void:
 	if _path_timer <= 0.0:
 		_path_timer = PATH_UPDATE_INTERVAL
 		entity.get_nav_agent().target_position = fuse_waypoint.global_position
+		# ─── FIX 3: ARM NAV GRACE PERIOD ────────────────────────────────
+		# A fresh target_position was just set. Godot's NavAgent computes
+		# the path asynchronously; is_navigation_finished() returns true
+		# until the path is ready. Arm the grace timer so the movement
+		# block does not treat "no path yet" as "arrived."
+		_sabotage_nav_grace_timer = SABOTAGE_NAV_GRACE
 	
 	var dist_to_wp = entity.global_position.distance_to(fuse_waypoint.global_position)
 	
@@ -1726,6 +1892,7 @@ func _sabotage_fuse_state(delta: float) -> void:
 			_sabotage_stuck_timer = 0.0
 			_sabotage_dist_check_timer = 0.0
 			_sabotage_elapsed = 0.0
+			_sabotage_nav_grace_timer = 0.0
 			# Now check arrival immediately
 			fuse_box.break_fuse()
 			entity.is_fuse_sabotaged = true
@@ -1747,6 +1914,7 @@ func _sabotage_fuse_state(delta: float) -> void:
 		_sabotage_dist_check_timer = 0.0
 		_sabotage_last_dist = 0.0
 		_sabotage_elapsed = 0.0
+		_sabotage_nav_grace_timer = 0.0
 		fuse_box.break_fuse()
 		entity.is_fuse_sabotaged = true
 		entity.state_locked = false
@@ -1759,8 +1927,24 @@ func _sabotage_fuse_state(delta: float) -> void:
 		print("[SABOTAGE_FUSE] Arrived at EntityFuseWaypoint (dist=%.2f). Fuse Box broken! Relocated to treeline. Signaling completion." % dist_to_wp)
 		return
 	
-	# ─── MOVEMENT TOWARD WAYPOINT ──────────────────────────────────────
-	if entity.get_nav_agent().is_navigation_finished():
+	# ─── MOVEMENT TOWARD WAYPOINT (NavAgent — routes around the cabin) ──
+	# The Fuse Box and its EntityFuseWaypoint are OUTSIDE the cabin,
+	# reachable via the NavMesh. The Entity MUST NOT clip through cabin
+	# walls, so it follows the NavigationAgent's path — which naturally
+	# routes AROUND the cabin exterior — instead of a blind straight
+	# line that could cut through the interior.
+	if _sabotage_nav_grace_timer > 0.0:
+		# ─── FIX 3: NAV GRACE PERIOD ACTIVE ─────────────────────────────
+		# The NavAgent just received a new target_position and has not yet
+		# computed a path. is_navigation_finished() currently returns TRUE
+		# (async path computation), so evaluating it now would zero the
+		# velocity and deadlock the Entity. Hold at zero velocity and count
+		# down the grace timer; when it expires, the NavAgent has a path
+		# and the normal branch below takes over.
+		_sabotage_nav_grace_timer -= delta
+		_calculated_velocity.x = 0.0
+		_calculated_velocity.z = 0.0
+	elif entity.get_nav_agent().is_navigation_finished():
 		_calculated_velocity.x = 0.0
 		_calculated_velocity.z = 0.0
 	else:
@@ -1782,6 +1966,10 @@ func _sabotage_fuse_state(delta: float) -> void:
 ## This function relocates the Entity to a random treeline vantage point so
 ## the next APPROACH_WINDOW starts from a valid NavMesh position.
 func _relocate_to_treeline_after_sabotage() -> void:
+	# The Fuse Box (and its EntityFuseWaypoint) sit OUTSIDE the cabin, so
+	# SABOTAGE_FUSE never alters the collision mask — the Entity stays on
+	# the full outdoor mask and pathfinds AROUND the cabin walls via the
+	# NavMesh. No mask manipulation is needed here.
 	var nav = entity.get_navigation_module()
 	if nav and nav.has_method("pick_next_vantage_point"):
 		nav.pick_next_vantage_point()
@@ -1828,6 +2016,20 @@ func _relocate_to_treeline_after_sabotage() -> void:
 # STATE: STALK (CHASE / PATROL) — Enhanced with distance-range, LOS speed, and flanking
 # ---------------------------------------------------------------------------
 
+## ─── STALK FREEZE FIX: NAVMESH Y-FLATTEN HELPER ─────────────────────
+## Projects a world-space target onto the NavMesh floor (preserve XZ,
+## use NavMesh Y). The player's Y can dip below the NavMesh surface
+## (e.g. walking on slightly-lower terrain); targets below the NavMesh
+## are unreachable — is_navigation_finished() returns true permanently
+## and the Entity freezes forever. Refactored as a class-level method
+## because GDScript does not support nested func declarations.
+func _snap_to_navmesh(target: Vector3) -> Vector3:
+	var nav_map = entity.get_world_3d().navigation_map
+	var snapped = NavigationServer3D.map_get_closest_point(nav_map, target)
+	snapped.x = target.x
+	snapped.z = target.z
+	return snapped
+
 func _stalk_state(delta: float) -> void:
 	# ─── TIGHTEN NAV TARGET DISTANCE (ONCE ON ENTRY) ─────────────────
 	var nav_agent = entity.get_nav_agent()
@@ -1840,6 +2042,11 @@ func _stalk_state(delta: float) -> void:
 		_stalk_is_flanking = false
 		_stalk_los_break_timer = 0.0
 		_stalk_current_speed_mult = 1.0
+		# ─── STALK FREEZE FIX: ARM NAV GRACE ON ENTRY ──────────────────
+		# The NavAgent has no path yet on fresh STALK entry and reports
+		# is_navigation_finished() == true. Without a grace period the
+		# movement block zeroes the velocity and freezes the Entity.
+		_stalk_nav_grace = STALK_NAV_GRACE_TIME
 	
 	# ─── HALLROOM / INDOOR EXIT GUARD ──────────────────────────
 	var nav = entity.get_navigation_module()
@@ -1848,6 +2055,13 @@ func _stalk_state(delta: float) -> void:
 		if player_room != "Outside" and player_room != "":
 			if player_room == "Hallroom":
 				print("[Entity AI] STALK: Player entered Hallroom. Force-exiting STALK.")
+				# ─── TASK 12: SILENCE STALK-INTERRUPT SOUND ──────────────
+				# Instantly stop the spatial voice so no audio cue plays
+				# when the player entering the cabin interrupts STALK.
+				var stalk_voice = entity.get_voice_player()
+				if stalk_voice and stalk_voice.playing:
+					stalk_voice.stop()
+					stalk_voice.stream = null
 				entity.is_observe_finished = true
 				entity.state_locked = false
 				entity.request_state(EntityAI.State.OBSERVE_FROM_TREELINE)
@@ -1857,6 +2071,13 @@ func _stalk_state(delta: float) -> void:
 				pass
 			else:
 				print("[Entity AI] STALK: Player entered '%s'. Force-exiting STALK." % player_room)
+				# ─── TASK 12: SILENCE STALK-INTERRUPT SOUND ──────────────
+				# Instantly stop the spatial voice so no audio cue plays
+				# when the player entering the cabin interrupts STALK.
+				var stalk_voice2 = entity.get_voice_player()
+				if stalk_voice2 and stalk_voice2.playing:
+					stalk_voice2.stop()
+					stalk_voice2.stream = null
 				entity.is_observe_finished = true
 				entity.state_locked = false
 				entity.request_state(EntityAI.State.OBSERVE_FROM_TREELINE)
@@ -1879,6 +2100,84 @@ func _stalk_state(delta: float) -> void:
 	if dist_to_player <= entity.catch_distance:
 		entity._on_caught_player()
 		return
+	
+	# ─── TASK 2: STALK CHASE AUDIO (distance-gated, 30m) ────────
+	# The chase music only plays while the Entity is STALKing AND the player
+	# is within 30 meters. If the player outruns that distance, the track
+	# fades out cleanly; re-entering the 30m boundary resumes it without
+	# restarting from the beginning (play_stalk_chase is a no-op while the
+	# track is already active, and stop_stalk_chase uses a 0.5s tween).
+	var stalk_audio = get_node_or_null("/root/HorrorSoundManager")
+	if stalk_audio and stalk_audio.has_method("play_stalk_chase"):
+		if dist_to_player < 30.0:
+			stalk_audio.play_stalk_chase()
+		else:
+			stalk_audio.stop_stalk_chase()
+	
+	# ─── TASK 5: STALK RUBBERBANDING (40m max distance) ─────────────────
+	# If the player manages to outrun the Entity by more than 40 meters
+	# while it is STALKing, teleport the Entity to the closest StalkWaypoint
+	# to the player and immediately resume pursuit. This maintains tension
+	# and bypasses the Director's Tier evaluations entirely (the Entity
+	# stays in STALK — only its position changes).
+	#
+	# The waypoints are in the "StalkWaypoints" group (a node that sits as
+	# a child under "EntityWaypoints"). The original STALK rubberband logic
+	# searched this group correctly, but was later diagnosed incorrectly as
+	# "EntityStalkWaypoints" — this version uses the canonical group name.
+	# It adds a 3-second cooldown to prevent per-frame teleport spam, forces
+	# the NavigationAgent to discard its stale pre-teleport path, and resets
+	# any active flank maneuver so the Entity resumes a clean direct pursuit.
+	_stalk_rubberband_cooldown_timer -= delta
+	if dist_to_player > 40.0 and _stalk_rubberband_cooldown_timer <= 0.0:
+		_stalk_rubberband_cooldown_timer = STALK_RUBBERBAND_COOLDOWN
+		
+		# The canonical group for the stalk waypoints.
+		var stalk_wps := get_tree().get_nodes_in_group("StalkWaypoints")
+		
+		var best_wp: Node3D = null
+		var best_wp_dist: float = INF
+		for wp in stalk_wps:
+			if wp is Marker3D:
+				var wp_d = player.global_position.distance_to(wp.global_position)
+				if wp_d < best_wp_dist:
+					best_wp_dist = wp_d
+					best_wp = wp
+		if best_wp:
+			# Snap to NavMesh floor (preserve XZ, use NavMesh Y) to avoid
+			# floating mid-air after the teleport. Also prevents spawning
+			# inside geometry — map_get_closest_point returns the nearest
+			# walkable NavMesh point to the marker.
+			var rb_nav_map = entity.get_world_3d().navigation_map
+			var rb_snapped = NavigationServer3D.map_get_closest_point(rb_nav_map, best_wp.global_position)
+			rb_snapped.x = best_wp.global_position.x
+			rb_snapped.z = best_wp.global_position.z
+			entity.global_position = rb_snapped
+			entity.velocity = Vector3.ZERO
+			
+			# ─── FORCE NAV PATH RESET ──────────────────────────────────────
+			# Setting target_position to the Entity's CURRENT position first
+			# forces the NavigationAgent to discard its stale pre-teleport
+			# path and recompute from scratch. Then immediately re-target
+			# the player so pursuit resumes on the next frame.
+			entity.get_nav_agent().target_position = entity.global_position
+			entity.get_nav_agent().target_position = player.global_position
+			
+			# ─── ARM NAV GRACE PERIOD (STALK FREEZE FIX) ─────────────
+			# The NavAgent computes paths asynchronously — is_navigation_finished()
+			# returns TRUE until the new path is ready. Arm the grace timer so
+			# the movement block does not interpret "no path yet" as "arrived"
+			# and zero the velocity (the micro-freeze after each teleport).
+			_stalk_rubberband_nav_grace = STALK_RUBBERBAND_NAV_GRACE_TIME
+			
+			# ─── RESET FLANK STATE ─────────────────────────────────────────
+			# A teleport invalidates any in-progress flank maneuver — the
+			# Entity's new position may be on the wrong side of the flank
+			# offset. Reset to a clean direct pursuit.
+			_stalk_is_flanking = false
+			_stalk_flank_target = Vector3.ZERO
+			
+			print("[STALK RUBBERBAND] Player exceeded 40m (dist=%.1f). Teleported Entity to closest StalkWaypoint (%.2f, %.2f, %.2f)." % [dist_to_player, rb_snapped.x, rb_snapped.y, rb_snapped.z])
 	
 	# ─── FEATURE 3B: LOS-AWARE SPEED MODULATION ────────────────
 	# Check if the Entity can see the player via sensory module.
@@ -1917,6 +2216,18 @@ func _stalk_state(delta: float) -> void:
 	# Combine both multipliers (LOS takes priority when active)
 	_stalk_current_speed_mult = dist_speed_mult * los_speed_mult
 	
+	# ─── TASK 4: TIME-BASED ACCELERATION ─────────────────────────
+	# Accumulate the STALK duration timer. After the 10-second grace
+	# period, ramp the acceleration multiplier from 1.0x toward the
+	# 200% cap over STALK_ACCEL_RAMP_TIME seconds. The Entity becomes
+	# increasingly aggressive during a long chase.
+	_stalk_duration_timer += delta
+	if _stalk_duration_timer > STALK_ACCEL_GRACE_PERIOD:
+		var accel_elapsed := _stalk_duration_timer - STALK_ACCEL_GRACE_PERIOD
+		_stalk_accel_mult = lerpf(1.0, STALK_ACCEL_CAP, minf(accel_elapsed / STALK_ACCEL_RAMP_TIME, 1.0))
+	else:
+		_stalk_accel_mult = 1.0
+	
 	# ─── FEATURE 3C: FLANKING BEHAVIOR ─────────────────────────
 	# Periodically navigate to a flanking offset position instead of
 	# pathing directly toward the player.
@@ -1945,6 +2256,14 @@ func _stalk_state(delta: float) -> void:
 	if _path_timer <= 0.0:
 		_path_timer = PATH_UPDATE_INTERVAL
 		
+		# ─── STALK FREEZE FIX: ARM NAV GRACE ON PATH UPDATE ──────────
+		# Every target_position assignment triggers an async path
+		# computation. During that window is_navigation_finished()
+		# returns true, which would zero the velocity. The grace timer
+		# prevents the movement block from misinterpreting "no path yet"
+		# as "arrived" after every 0.3s path refresh.
+		_stalk_nav_grace = STALK_NAV_GRACE_TIME
+		
 		if _stalk_is_flanking:
 			# Navigate toward the flank target
 			var dist_to_flank = entity.global_position.distance_to(_stalk_flank_target)
@@ -1952,15 +2271,16 @@ func _stalk_state(delta: float) -> void:
 				# Reached flank point — resume direct chase
 				_stalk_is_flanking = false
 				_stalk_flank_target = Vector3.ZERO
-				# Set nav target to player
+				# Set nav target to player (flattened to NavMesh Y)
 				var jitter = Vector3(randf_range(-0.1, 0.1), 0.0, randf_range(-0.1, 0.1))
-				entity.get_nav_agent().target_position = player.global_position + jitter
+				entity.get_nav_agent().target_position = _snap_to_navmesh(player.global_position + jitter)
 			else:
-				entity.get_nav_agent().target_position = _stalk_flank_target
+				# Flatten the flank target Y to the NavMesh surface too.
+				entity.get_nav_agent().target_position = _snap_to_navmesh(_stalk_flank_target)
 		else:
-			# Normal chase: direct pursuit with jitter
+			# Normal chase: direct pursuit with jitter (flattened to NavMesh Y)
 			var jitter_offset = Vector3(randf_range(-0.1, 0.1), 0.0, randf_range(-0.1, 0.1))
-			entity.get_nav_agent().target_position = player.global_position + jitter_offset
+			entity.get_nav_agent().target_position = _snap_to_navmesh(player.global_position + jitter_offset)
 	
 	# ─── INVESTIGATION CONFUSION ────────────────────────────────
 	if _is_investigating:
@@ -1988,21 +2308,57 @@ func _stalk_state(delta: float) -> void:
 	var dist_to_lkp = entity.global_position.distance_to(lkp)
 	var nav_finished = entity.get_nav_agent().is_navigation_finished()
 	
-	if (nav_finished or dist_to_lkp <= 3.0) and not _is_investigating:
+	# ─── STALK FREEZE FIX: STALE LKP + LIVE-PURSUIT GUARD ──────────
+	# If last_known_position is Vector3.ZERO (the default), the Entity never
+	# actually heard or saw the player — it was pathfinding toward world
+	# origin. The nav agent reports "finished" immediately, and the check
+	# below would enter the 4-second Investigation freeze while the player
+	# is still being chased. Skip investigation for a default position so
+	# the Entity keeps pursuing the player's live position instead.
+	#
+	# GRASS PATCH PARALYSIS ROOT CAUSE (diagnosed via STALK_DIAG logs):
+	# The LKP is the last KNOWN position, but in STALK the NavAgent's
+	# target_position is the PLAYER'S LIVE position (refreshed every 0.3s).
+	# Getting within 3m of the stale LKP mid-pursuit + losing LOS for one
+	# frame entered the 4-second Investigation freeze. After the 4s expired
+	# the condition was still true, so it re-entered forever — paralysis.
+	# Investigation must ONLY fire when the player has genuinely escaped:
+	#   a) NavAgent finished / within 3m of the LKP
+	#   b) Player not visible
+	#   c) Player BEYOND the stalk chase radius (escaped the pursuit)
+	#   d) NavAgent is NOT still aimed at the player's live position
+	if (nav_finished or dist_to_lkp <= 3.0) and not _is_investigating and lkp != Vector3.ZERO:
 		var can_see_player = false
 		if sensory and sensory.has_method("can_entity_see_player"):
 			can_see_player = sensory.can_entity_see_player()
 		
-		if not can_see_player:
+		# The NavAgent target is refreshed to the player's live position
+		# every PATH_UPDATE_INTERVAL. If it is still aimed near the player,
+		# the Entity is mid-chase — never freeze.
+		var chase_target_pos: Vector3 = entity.get_nav_agent().target_position
+		var player_live_pos: Vector3 = player.global_position
+		var still_chasing_player: bool = chase_target_pos.distance_to(player_live_pos) < 2.0
+		var player_escaped_chase: bool = dist_to_player > (stalk_max_distance + 4.0)
+		
+		if not can_see_player and player_escaped_chase and not still_chasing_player:
 			_is_investigating = true
 			_investigation_timer = 4.0
 			_calculated_velocity = Vector3.ZERO
 			return
 	
 	# ─── APPLY SPEED WITH ALL MULTIPLIERS ───────────────────────
-	var final_speed = entity.current_stalk_speed * _stalk_current_speed_mult
+	# TASK 4: Multiply by the time-based acceleration multiplier so a long
+	# chase makes the Entity progressively faster (capped at 200% base).
+	var final_speed = entity.current_stalk_speed * _stalk_current_speed_mult * _stalk_accel_mult
 	
-	if entity.get_nav_agent().is_navigation_finished():
+	# ─── STALK FREEZE FIX: NAV GRACE GATING ─────────────────────────
+	# Decay the rubberband grace timer each frame. While it is active
+	# (0.3s after a teleport), do NOT trust is_navigation_finished() —
+	# the async path computation hasn't delivered a route yet, and
+	# treating "no path" as "arrived" zeroes the velocity.
+	_stalk_rubberband_nav_grace = maxf(_stalk_rubberband_nav_grace - delta, 0.0)
+	_stalk_nav_grace = maxf(_stalk_nav_grace - delta, 0.0)
+	if entity.get_nav_agent().is_navigation_finished() and _stalk_rubberband_nav_grace <= 0.0 and _stalk_nav_grace <= 0.0:
 		_calculated_velocity.x = 0.0
 		_calculated_velocity.z = 0.0
 	else:
@@ -2169,11 +2525,11 @@ func _evaluate_night_rules(delta: float) -> void:
 	# night the player is on (1-5). The debug console sets the night via
 	# NightManager.start_night(night), so reading from NightManager ensures
 	# the debug override is respected.
-	var night_manager = night_manager
-	if not night_manager:
+	var night_manager_ref = night_manager
+	if not night_manager_ref:
 		return
 	
-	var current_night: int = night_manager.current_night if "current_night" in night_manager else 1
+	var current_night: int = night_manager_ref.current_night if "current_night" in night_manager_ref else 1
 	
 	# Night 1: Restrict to OBSERVE_FROM_TREELINE only
 	# The Director handles the Night 1 restriction (Tier 0).
@@ -2189,6 +2545,39 @@ func _evaluate_night_rules(delta: float) -> void:
 	
 	# Night 3+: Full aggression unlocked (no restrictions)
 	# The confidence system and individual state handlers manage the rest.
+	
+	# ─── NIGHT 2.2 VAN SEQUENCE: CABIN ENTRY FORCE FLINCH ────────────────
+	# When the car-alarm sequence is active AND the player is inside the cabin
+	# (escaping from the van chase), hard-override the Entity into FLINCH.
+	# The FLINCH completion handler then immediately transitions to DORMANT
+	# and hides the mesh (see _flinch_state). This hard-override only applies
+	# during the Night 2.2 van sequence — never during normal gameplay.
+	if night_manager_ref and "is_van_sequence_active" in night_manager_ref and night_manager_ref.is_van_sequence_active:
+		# ─── PLAYER-INSIDE DETECTION (BUG FIX) ──────────────────────────
+		# Previously this only armed FLINCH when entity.thinks_player_is_inside
+		# was true. But when the player reaches the cabin from outside while the
+		# Entity is STALKing them, that flag is false (the Entity still thinks
+		# the player is outside). This caused the van-sequence override to never
+		# fire, leaving the Entity stuck in a STALK/transition switching loop.
+		# Now we also detect the player's actual room via the navigation module,
+		# so the FLINCH → DORMANT sequence triggers the moment the player is
+		# anywhere inside the cabin during the van sequence.
+		var player_is_inside_cabin: bool = entity.thinks_player_is_inside
+		var nav_mod = entity.get_navigation_module() if entity.has_method("get_navigation_module") else null
+		if nav_mod and nav_mod.has_method("get_player_room"):
+			var van_player_room = nav_mod.get_player_room()
+			if van_player_room != "Outside" and van_player_room != "":
+				player_is_inside_cabin = true
+		
+		var entity_in_van_state: int = entity.get_state()
+		if entity_in_van_state != State.FLINCH and entity_in_van_state != State.DORMANT:
+			if player_is_inside_cabin:
+				entity.thinks_player_is_inside = true
+				_van_sequence_flinch_armed = true
+				entity.set_state(State.FLINCH)
+				entity.state_locked = true
+				_calculated_velocity = Vector3.ZERO
+				print("[VAN SEQ] Player inside cabin during Night 2.2. Forcing Entity into FLINCH → DORMANT.")
 	
 	# Note: Night-specific speed multipliers and confidence drift are
 	# handled in entity_controller.gd and entity_confidence.gd respectively.
@@ -2599,7 +2988,69 @@ var _approach_failsafe_timer: float = 0.0
 var _approach_debug_timer: float = 0.0
 const APPROACH_DEBUG_INTERVAL: float = 2.0
 
+## ─── FRESH-ENTRY SNAPSHOT (self-contained state change detection) ──────
+## The state value that last (successfully) called _approach_window_state().
+## Used to detect a FRESH ENTRY into APPROACH_WINDOW so the failsafe and
+## minimum timers are reset to 0.0. Without this, if the Entity was in
+## APPROACH_WINDOW for 7 seconds, got interrupted by FLINCH (via the
+## flashlight), and later re-entered APPROACH_WINDOW, the stale
+## _approach_failsafe_timer (7.0s) would trigger the now-shortened 8s
+## failsafe after just 1 more second — causing an instant WINDOW_PEEK or
+## OBSERVE transition on a legitimate fresh approach. Does NOT depend on
+## entity.get_previous_state() (which is unreliable — see the SABOTAGE_FUSE
+## _last_sabotage_call_state pattern).
+var _last_approach_call_state: int = -1
+
 func _approach_window_state(delta: float) -> void:
+	# ─── FRESH-ENTRY TIMER RESET ──────────────────────────────────────
+	# If the state changed since the last call to this handler, this is a
+	# fresh APPROACH_WINDOW entry. Reset both the minimum-approach timer and
+	# the failsafe timer so stale values from a previous interrupted session
+	# cannot fire prematurely. The timers are NOT reset on every frame —
+	# only when the state actually changes.
+	if entity.get_state() != _last_approach_call_state:
+		_last_approach_call_state = entity.get_state()
+		_approach_min_timer = 0.0
+		_approach_failsafe_timer = 0.0
+		_approach_debug_timer = 0.0
+		_consecutive_door_failsafe_count = 0
+	
+	# ─── TASK 1.1: POST-FLINCH RE-ENTRY COOLDOWN ─────────────────────
+	# After a FLINCH completes, the stale is_illuminated / is_overcharged
+	# booleans may persist for a frame or two (they are cleared by the FLINCH
+	# handler, but the Director's throttled evaluation could re-enter
+	# APPROACH_WINDOW before the perception system recomputes them). This
+	# 3-frame cooldown prevents the 1-frame approach → flinch oscillation
+	# that consumed the failsafe timers and made the Entity appear "stuck."
+	# ─── ISSUE 3 FIX: DIRECT OVERCHARGE QUERY ─────────────────────────
+	# The entity.is_overcharged blackboard bool is written by on_player_stare()
+	# only when the player's LOS raycast actually hits the Entity. During the
+	# post-flinch window there can be a gap where the bool is stale (false)
+	# even though the player is still holding the overcharge beam. Query the
+	# player controller's LIVE overcharge state directly and OR it in, so the
+	# FLINCH OVERRIDE GATE can never "ignore" a held overcharge beam.
+	var _direct_overcharge: bool = entity.is_overcharged
+	var _player_ref_gate = entity.get_player()
+	if _player_ref_gate and "is_flashlight_overcharged" in _player_ref_gate:
+		_direct_overcharge = _direct_overcharge or _player_ref_gate.is_flashlight_overcharged()
+	
+	# ─── ISSUE 3 FIX: POST-FLINCH RE-ENTRY COOLDOWN (OVERRIDE IMMUNE) ─────
+	# This 0.5s cooldown delays NORMAL APPROACH_WINDOW re-entry after a
+	# FLINCH so the perception system can catch up, preventing the 1-frame
+	# approach → flinch oscillation (Task 1.1). CRITICAL: the cooldown must
+	# NEVER block an ACTIVE overcharge beam. If _direct_overcharge is true
+	# (player still holding the overcharge), the gate below must re-flinch
+	# the Entity immediately rather than let it stand ignoring the light.
+	if _flinch_exit_cooldown > 0.0 and not _direct_overcharge:
+		_flinch_exit_cooldown -= delta
+		_calculated_velocity = Vector3.ZERO
+		entity.state_locked = false
+		return
+	elif _flinch_exit_cooldown > 0.0:
+		# Overcharge active during cooldown — keep ticking so it still
+		# expires normally for the NEXT re-entry, but do NOT early-return.
+		_flinch_exit_cooldown -= delta
+	
 	# ─── FLINCH OVERRIDE GATE (direct force-transition) ─────────────────
 	# If the Entity is illuminated by the player's flashlight while the player
 	# is inside, force FLINCH directly instead of waiting for the throttled
@@ -2616,8 +3067,15 @@ func _approach_window_state(delta: float) -> void:
 	# DO NOT use has_method("get_thinks_player_is_inside") — plain GDScript
 	# vars do NOT auto-generate get_*() methods, so has_method always
 	# returns false, silently preventing the FLINCH transition.
+	#
+	# ISSUE 3 FIX: The OVERRIDE GATE runs BEFORE the post-flinch cooldown
+	# check below. The cooldown is meant to delay normal APPROACH_WINDOW
+	# re-entry (so the perception system catches up), but it must NEVER
+	# block the overcharge reaction — if the player is still holding the
+	# overcharge beam when the flinch finishes, the Entity MUST re-flinch
+	# immediately rather than stand there ignoring the light.
 	
-	if entity.is_illuminated and entity.thinks_player_is_inside and entity.is_overcharged:
+	if entity.is_illuminated and entity.thinks_player_is_inside and _direct_overcharge:
 		# ─── INDOOR RETREAT GATE ─────────────────────────────────────
 		# The FLINCH OVERRIDE is intended for the Entity approaching a WINDOW
 		# from OUTSIDE. If the Entity is physically INSIDE the cabin, this
@@ -2630,6 +3088,24 @@ func _approach_window_state(delta: float) -> void:
 		# flashlight beam may force a FLINCH. The standard beam is IGNORED
 		# so the Entity keeps approaching the window.
 		if not (entity.has_method("is_physically_inside") and entity.is_physically_inside()):
+			# ─── TASK 1.2: BAN THE INTERRUPTED ROOM ───────────────────
+			# The Entity is being interrupted at this window by an overcharged
+			# flashlight. Ban the room this window belongs to so the Entity
+			# cannot immediately re-target another window in the same room.
+			# The ban is cleared once a window in a DIFFERENT room is
+			# successfully targeted (handled in the window selection flow).
+			var interrupt_win = entity.get_current_window_target()
+			if interrupt_win and _banned_room.is_empty():
+				if interrupt_win.has_method("get_room_id"):
+					_banned_room = str(interrupt_win.get_room_id())
+					print("[TASK 1.2] Window interrupted! Banning room '%s' from window selection." % _banned_room)
+				elif "room_id" in interrupt_win:
+					_banned_room = str(interrupt_win.room_id)
+					print("[TASK 1.2] Window interrupted! Banning room '%s' from window selection." % _banned_room)
+				elif interrupt_win.has_method("get_room_name"):
+					_banned_room = str(interrupt_win.get_room_name())
+					print("[TASK 1.2] Window interrupted! Banning room '%s' from window selection." % _banned_room)
+			
 			entity.set_state(EntityAI.State.FLINCH)
 			entity.state_locked = true  # Lock the new FLINCH state
 			_calculated_velocity = Vector3.ZERO
@@ -2856,6 +3332,22 @@ func _approach_window_state(delta: float) -> void:
 		if best_window:
 			print("[DIAG] WINDOW SELECTION: pick_tactical_window() returned '%s' (ID=%s)" % [best_window.name, best_window.get_window_id() if best_window.has_method("get_window_id") else "?"])
 			entity.set_current_window_target(best_window)
+			
+			# ─── TASK 1.2: CLEAR ROOM BAN ON NEW ROOM TARGET ──────────
+			# A new window was successfully targeted. If this window belongs
+			# to a DIFFERENT room than the currently banned room, the ban is
+			# lifted — the Entity has moved on to a new room.
+			if not _banned_room.is_empty():
+				var new_room_id: String = ""
+				if best_window.has_method("get_room_id"):
+					new_room_id = str(best_window.get_room_id())
+				elif "room_id" in best_window:
+					new_room_id = str(best_window.room_id)
+				elif best_window.has_method("get_room_name"):
+					new_room_id = str(best_window.get_room_name())
+				if new_room_id != _banned_room and not new_room_id.is_empty():
+					print("[TASK 1.2] New window in room '%s' differs from banned room '%s'. Ban lifted." % [new_room_id, _banned_room])
+					_banned_room = ""
 			# ─── RESOLVE WINDOW MARKER ────────────────────────────────────────
 			# The CabinWindow node is at the window frame (inside the wall).
 			# The WindowMarker child is offset outside the window and is the
@@ -3280,6 +3772,26 @@ func _approach_window_state(delta: float) -> void:
 						entity._door_phase_2_timer = 0.0
 						_approach_min_timer = 0.0
 						_approach_failsafe_timer = 0.0
+						_calculated_velocity = Vector3.ZERO
+						return
+		else:
+			# ─── WINDOW ARRIVAL: Signal completion IMMEDIATELY ─────────────
+			# CRITICAL FIX: The arrival block previously had NO completion
+			# path for WINDOW targets — only the door branch existed. When
+			# the Entity reached the window (dist <= 2.5m, or nav finished
+			# within 5m), it fell through to the end of the function with
+			# is_approach_finished = false. It stood still in APPROACH_WINDOW
+			# (velocity zeroed by the nav-finished branch) until the 15-second
+			# failsafe finally fired — the visible 3-5 second "time lapse".
+			# Now window arrival immediately signals completion so the
+			# Director transitions to WINDOW_PEEK on the next evaluation.
+			entity.is_approach_finished = true
+			entity.state_locked = false
+			_approach_min_timer = 0.0
+			_approach_failsafe_timer = 0.0
+			_calculated_velocity = Vector3.ZERO
+			print("[Entity AI] APPROACH_WINDOW: Window arrival (dist_2d=%.2f). Signaling completion → WINDOW_PEEK." % dist_2d)
+			return
 
 
 
@@ -3320,8 +3832,27 @@ func _window_peek_state(delta: float) -> void:
 	# Without this reset, if the Entity aborted a previous peek (e.g., room
 	# was lit) and later re-enters WINDOW_PEEK at a different window, the
 	# stale _peek_assessment_done = true would prevent re-evaluation.
+	#
+	# ─── SNAP ROTATION ON FRESH ENTRY (Facing-the-cabin fix) ─────────────
+	# Previously the model rotated toward the window via lerp_angle at a
+	# rate of only 0.1 per frame — an extremely slow turn that could take
+	# seconds to face the cabin interior. On fresh entry, snap the model
+	# to the correct facing angle instantly so the Entity is looking inside
+	# the cabin the moment WINDOW_PEEK begins. The existing lerp below then
+	# maintains the facing direction smoothly.
 	if _siege_duration_timer <= 0.0:
 		_peek_assessment_done = false
+		var snap_target = entity.get_current_window_target()
+		if snap_target:
+			var snap_peek_target: Node3D = snap_target
+			if snap_target.has_node("WindowMarker"):
+				snap_peek_target = snap_target.get_node("WindowMarker") as Node3D
+			var snap_dir = (snap_peek_target.global_position - entity.global_position).normalized()
+			var snap_angle = atan2(snap_dir.x, snap_dir.z)
+			var snap_model = entity.get_monster_model()
+			if snap_model:
+				snap_model.rotation.y = snap_angle
+				print("[WINDOW_PEEK] Fresh entry: Snapped model rotation to face window (angle=%.2f)." % snap_angle)
 	
 	_siege_duration_timer += delta
 	
@@ -3722,14 +4253,64 @@ func _window_peek_state(delta: float) -> void:
 # ---------------------------------------------------------------------------
 # STATE: FLINCH — Lateral sprint to evade flashlight beam
 # ---------------------------------------------------------------------------
-## The Entity sprints laterally (perpendicular to the player's camera view)
-## for 1.5 seconds to evade the flashlight beam. After the sprint completes,
-## it signals completion to the Director.
+## The Entity sprints away from the cabin toward a NavMesh-projected forest
+## point over a randomized 6-8 second escape sprint. After the sprint
+## completes, it signals completion to the Director.
 ##
-## The flinch target position is calculated as a point 8 meters to the left
-## or right of the Entity's current position, perpendicular to the player's
-## camera forward vector. This creates a natural-looking dodge rather than
-## a random teleport.
+## The flinch target position is calculated as a point 15 meters away from
+## the cabin center, blended with the window's outward normal, then projected
+## onto the NavMesh (avoiding the "face plant into a tree" edge trap).
+
+# ─── TASK 1.1: SHARED FLINCH EXIT CLEANUP ────────────────────────────────
+## Called by EVERY FLINCH exit path (early abort + timer expiry). Clears the
+## stale illumination/overcharge booleans that otherwise remain true after
+## FLINCH completes, resets the NavigationAgent's target to prevent the
+## Entity from pathfinding to the previous window marker, and arms the
+## 3-frame post-flinch re-entry cooldown. Without this cleanup, the Entity
+## re-enters APPROACH_WINDOW with stale is_illuminated=true and instantly
+## re-triggers FLINCH — the 1-frame oscillation that degraded the AI and
+## made the Entity appear stuck/ignoring the flashlight on Night 3+.
+func _cleanup_after_flinch() -> void:
+	# ─── ISSUE 3 FIX: DO NOT CLEAR BLACKBOARD BOOLEANS ───────────────
+	# Previously this cleared entity.is_illuminated / is_overcharged /
+	# thinks_player_is_inside. Those booleans are OWNED by the perception
+	# system (perception_manager.gd / entity_controller.gd on_player_stare)
+	# which updates them every frame. Clearing them here created a stale-read
+	# gap: the FLINCH OVERRIDE GATE would read is_overcharged=false for a few
+	# frames even while the player still held the overcharge beam, letting the
+	# Entity "ignore" the flashlight and continue APPROACH_WINDOW. The
+	# extended 0.5s FLINCH_EXIT_COOLDOWN below is the correct mechanism —
+	# it simply delays re-entry long enough for perception to catch up,
+	# without trampling the perception system's authoritative state.
+	
+	# ─── RESET NAVIGATION STATE ────────────────────────────────────────
+	# The NavigationAgent still holds the flinch escape target. If we
+	# don't reset it, the next APPROACH_WINDOW entry could pathfind to
+	# the old forest escape point instead of the new window marker.
+	var nav_agent_cleanup = entity.get_nav_agent()
+	if nav_agent_cleanup:
+		nav_agent_cleanup.target_position = entity.global_position
+		nav_agent_cleanup.target_desired_distance = 1.5
+	
+	# ─── CLEAR WINDOW TARGET ──────────────────────────────────────────
+	# The flinch escape used the current window's outward normal. Clear
+	# the target so the next APPROACH_WINDOW cycle re-selects via
+	# pick_tactical_window() (which now respects _banned_room).
+	entity.set_current_window_target(null)
+	
+	# ─── ARM POST-FLINCH RE-ENTRY COOLDOWN ─────────────────────────────
+	# Give the perception system a few frames to recompute the true
+	# illumination state before allowing APPROACH_WINDOW re-entry.
+	_flinch_exit_cooldown = FLINCH_EXIT_COOLDOWN_DURATION
+	
+	# ─── RESET FLINCH SYSTEM STATE ─────────────────────────────────────
+	_flinch_total_duration = 0.0
+	entity.set_flinched_timer(0.0)
+	entity.set_flinch_target_pos(entity.global_position)
+	
+	print("[FLINCH] Cleanup complete. Stale booleans cleared, nav target reset, cooldown armed (%.3fs)." % _flinch_exit_cooldown)
+
+
 func _flinch_state(delta: float) -> void:
 	# Lock the state — the Director must not override while we're mid-flinch
 	entity.state_locked = true
@@ -3737,7 +4318,7 @@ func _flinch_state(delta: float) -> void:
 	# ─── INITIALIZE FLINCH ON FIRST FRAME ──────────────────────────────
 	# If the flinch timer is 0.0 (or less), this is the first frame of the
 	# flinch. Calculate the escape target (away from cabin) and set the timer
-	# to exactly 5.0 seconds.
+	# to a randomized 6-8 second duration.
 	#
 	# ESCAPE FROM CABIN (NEW):
 	#   Instead of the old lateral sprint perpendicular to the player's camera,
@@ -3745,8 +4326,10 @@ func _flinch_state(delta: float) -> void:
 	#   point in the forest. This makes FLINCH feel like a real retreat rather
 	#   than a combat sidestep.
 	if entity.get_flinched_timer() <= 0.0:
-		# Fixed 5.0-second escape sprint duration
-		entity.set_flinched_timer(5.0)
+		# Randomized 6-8 second escape sprint duration
+		_flinch_total_duration = randf_range(6.0, 8.0)
+		entity.set_flinched_timer(_flinch_total_duration)
+		print("[FLINCH] Duration set to %.1fs." % _flinch_total_duration)
 		
 		# ─── CALCULATE ESCAPE VECTOR: Away from cabin center + window outward ──
 		# Bug Fix: Combining cabin-center direction with the window's outward-facing
@@ -3816,20 +4399,20 @@ func _flinch_state(delta: float) -> void:
 			nav_agent.target_position = snapped_target
 			nav_agent.target_desired_distance = 0.5
 		
-		print("[FLINCH] ESCAPE INITIALIZED! Duration=5.0s, EscapeDir=(%.2f, %.2f), NavTarget=(%.2f, %.2f, %.2f)" % [escape_dir.x, escape_dir.z, snapped_target.x, snapped_target.y, snapped_target.z])
+		print("[FLINCH] ESCAPE INITIALIZED! Duration=%.1fs, EscapeDir=(%.2f, %.2f), NavTarget=(%.2f, %.2f, %.2f)" % [entity.get_flinched_timer(), escape_dir.x, escape_dir.z, snapped_target.x, snapped_target.y, snapped_target.z])
 	
 	# ─── EARLY ABORT GUARD (Correction 1: NavMesh Edge Trap + Min Duration) ─
 	# If the Entity has reached the escape target (navigation finished OR
-	# distance < 0.5m) BEFORE the 5.0s timer expires, abort early. The Entity
+	# distance < 0.5m) BEFORE the flinch timer expires, abort early. The Entity
 	# would otherwise stand still facing a tree for the remaining seconds.
 	#
 	# MINIMUM DURATION (Bug 3 Fix): The Entity must sprint for at least 1.5
 	# seconds before the early abort can trigger. Without this, map_get_closest_point
 	# at the NavMesh edge returns a point very close to the Entity, causing
-	# immediate "arrival" on frame 2 → Entity sits still for 5s.
+	# immediate "arrival" on frame 2 → Entity sits still for the full flinch.
 	var nav_agent = entity.get_nav_agent()
 	var reached_target: bool = false
-	var elapsed_time: float = 5.0 - entity.get_flinched_timer()
+	var elapsed_time: float = _flinch_total_duration - entity.get_flinched_timer()
 	if nav_agent and elapsed_time >= 1.5:
 		var dist_to_target = entity.global_position.distance_to(entity.get_flinch_target_pos())
 		if nav_agent.is_navigation_finished() or dist_to_target < 0.5:
@@ -3840,6 +4423,10 @@ func _flinch_state(delta: float) -> void:
 		entity.is_flinch_finished = true
 		entity.state_locked = false
 		_calculated_velocity = Vector3.ZERO
+		# ─── TASK 1.1: SHARED EXIT CLEANUP ────────────────────────────
+		# Prevents stale booleans / nav targets from poisoning the next
+		# APPROACH_WINDOW entry after an early-abort flinch.
+		_cleanup_after_flinch()
 		return
 	
 	# ─── SPRINT TOWARD TARGET ──────────────────────────────────────────
@@ -3870,7 +4457,34 @@ func _flinch_state(delta: float) -> void:
 		entity.is_flinch_finished = true
 		entity.state_locked = false
 		_calculated_velocity = Vector3.ZERO
-		print("[FLINCH] Timer expired (5.0s). Signaling completion to Director.")
+		print("[FLINCH] Timer expired (%.1fs). Signaling completion to Director." % _flinch_total_duration)
+		_flinch_total_duration = 0.0
+		
+		# ─── NIGHT 2.2 VAN SEQUENCE: FLINCH → DORMANT (HARD-OVERRIDE) ──
+		# When the player escapes into the cabin during the car-alarm
+		# sequence, the Entity flinches and must immediately vanish into
+		# DORMANT (completely invisible). The flag is armed by
+		# _evaluate_night_rules() once and consumed here, so the override
+		# only fires once — subsequent normal flitches behave normally.
+		if _van_sequence_flinch_armed and night_manager and "is_van_sequence_active" in night_manager and night_manager.is_van_sequence_active:
+			_van_sequence_flinch_armed = false
+			# ─── TASK 1.1: SHARED EXIT CLEANUP ────────────────────────
+			# Even for the van-sequence DORMANT transition, the stale
+			# booleans must be cleared so the next night phase starts clean.
+			_cleanup_after_flinch()
+			entity.set_state(EntityAI.State.DORMANT)
+			entity.visible = false
+			var van_model = entity.get_monster_model()
+			if van_model:
+				van_model.visible = false
+			print("[FLINCH → DORMANT] Night 2.2 van sequence complete. Entity vanished into DORMANT.")
+			return
+		
+		# ─── TASK 1.1: SHARED EXIT CLEANUP ────────────────────────────
+		# The primary stun-lock fix: clear stale booleans, reset the
+		# NavigationAgent target, and arm the post-flinch cooldown so
+		# the next APPROACH_WINDOW entry cannot instantly re-flinch.
+		_cleanup_after_flinch()
 		return
 
 

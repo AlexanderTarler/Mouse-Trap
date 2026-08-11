@@ -330,6 +330,22 @@ func _update_nav_blocker() -> void:
 		_nav_blocker.visible = not is_open
 
 
+## Returns true if the player is currently allowed to board THIS window.
+##
+## DAY 1 / NIGHT 1 GATE: On Day 1 (current_night == 0) and Night 1
+## (current_night == 1), only the tutorial window (start_broken == true)
+## may be boarded. From Night 2 onward, all windows are boardable.
+func _can_board_this_window() -> bool:
+	var nm := get_node_or_null("/root/NightManager")
+	if not nm:
+		return true
+	# Night 2+ (or sandbox/van sequence): boarding unlocked on all windows.
+	if int(nm.current_night) >= 2:
+		return true
+	# Day 1 / Night 1: only the tutorial window is boardable.
+	return start_broken
+
+
 ## Returns true if this window is secure against the Entity.
 ## A window is secure if:
 ##   - The room light is lit (light sanctuary — Entity avoids it), OR
@@ -366,6 +382,10 @@ func start_hold_interact() -> void:
 	# If already fully boarded, nothing to do
 	if is_boarded and planks_remaining >= 3:
 		return
+	# ─── DAY 1 / NIGHT 1 BOARDING RESTRICTION ──────────────────────────
+	# Only the tutorial window can be boarded during the first night cycle.
+	if not _can_board_this_window():
+		return
 	# Check if player has planks in inventory
 	if not _has_planks():
 		return
@@ -380,9 +400,21 @@ func start_hold_interact() -> void:
 	_update_plank_visuals()
 	
 	# ─── START LOOPING HAMMER SOUND ────────────────────────────────────
-	# Play the hammer sound continuously while the player holds E.
-	# The sound is set to loop and stopped on release.
+	# Play the hammer sound CONTINUOUSLY while the player holds E.
+	# BUG 7 FIX: The stream is duplicated and set to loop=true so the
+	# hammering sound keeps playing throughout the ENTIRE board-up hold
+	# (previously it played once and ended before the last plank was
+	# placed). The stop() call in stop_hold_interact() / _process_hold_interact()
+	# ends the loop when the player releases E or the window is fully boarded.
 	if _hammer_sound and _hammer_sound.stream:
+		# Duplicate the stream so we don't mutate the shared resource,
+		# then force looping so it sustains across the whole hold.
+		var hammer_stream = _hammer_sound.stream.duplicate()
+		if hammer_stream is AudioStreamOggVorbis:
+			hammer_stream.loop = true
+		elif "loop_mode" in hammer_stream and hammer_stream.has_method("set"):
+			hammer_stream.loop_mode = 1  # AudioStreamWAV.LOOP_FORWARD
+		_hammer_sound.stream = hammer_stream
 		_hammer_sound.play()
 	
 	print("[Window Boarding] Start boarding at progress %.1f/%.1fs" % [_boarding_progress, BOARD_PER_PLANK_TIME])
@@ -398,11 +430,37 @@ func stop_hold_interact() -> void:
 	_show_preview_plank = false
 	_update_plank_visuals()
 	
-	# ─── STOP LOOPING HAMMER SOUND ─────────────────────────────────────
-	if _hammer_sound and _hammer_sound.playing:
-		_hammer_sound.stop()
+	# ─── STOP LOOPING HAMMER SOUND (TASK 3.3: Fadeout to prevent pop) ──
+	_fadeout_hammer_sound()
 	
 	print("[Window Boarding] Released at progress %.1f/%.1fs" % [_boarding_progress, BOARD_PER_PLANK_TIME])
+
+
+## ─── TASK 3.3: HAMMER SOUND FADEOUT HELPER ─────────────────────────────
+## Replaces all hard _hammer_sound.stop() calls. A hard stop() on a looping
+## audio stream cuts the waveform mid-cycle, producing a distorted pop/buzz
+## at the tail end. This helper tweens the volume to -80dB over 0.1 seconds,
+## THEN calls stop() — eliminating the audio glitch while sounding nearly
+## instantaneous to the player.
+func _fadeout_hammer_sound() -> void:
+	if not _hammer_sound or not _hammer_sound.playing:
+		return
+	# Kill any existing fade tween on this sound to avoid tween conflicts.
+	if _hammer_sound.has_meta("fade_tween"):
+		var old_tween: Tween = _hammer_sound.get_meta("fade_tween")
+		if old_tween and old_tween.is_valid():
+			old_tween.kill()
+	var fade := create_tween()
+	# Store the tween on the audio player so rapid start/stop cycles don't stack.
+	_hammer_sound.set_meta("fade_tween", fade)
+	fade.tween_property(_hammer_sound, "volume_db", -80.0, 0.1).set_trans(Tween.TRANS_LINEAR)
+	fade.tween_callback(_hammer_sound.stop)
+	# Restore the volume for the NEXT play() call — the player's volume_db
+	# must be reset or the next boarding cycle starts inaudible.
+	fade.tween_callback(func() -> void:
+		if _hammer_sound:
+			_hammer_sound.volume_db = 0.0
+	)
 
 
 ## Called by PhysicalGrab every frame while E is held and the player is
@@ -431,8 +489,8 @@ func _process_hold_interact(delta: float) -> void:
 				_is_boarding = false
 				_boarding_progress = 0.0
 				_show_preview_plank = false
-				if _hammer_sound and _hammer_sound.playing:
-					_hammer_sound.stop()
+				# ─── TASK 3.3: Fadeout instead of hard stop ──────────
+				_fadeout_hammer_sound()
 				print("[Window Boarding] Window fully boarded!")
 				
 				# ─── TUTORIAL: Mark boarding as learned ──────────────
@@ -453,8 +511,8 @@ func _process_hold_interact(delta: float) -> void:
 					_boarding_progress = 0.0
 					_show_preview_plank = false
 					_update_plank_visuals()
-					if _hammer_sound and _hammer_sound.playing:
-						_hammer_sound.stop()
+					# ─── TASK 3.3: Fadeout instead of hard stop ──────────
+					_fadeout_hammer_sound()
 				else:
 					# Has more planks — show preview for the next one
 					_show_preview_plank = true
@@ -489,6 +547,13 @@ func get_interact_text() -> String:
 	if _is_boarding:
 		var pct = int((_boarding_progress / BOARD_PER_PLANK_TIME) * 100.0)
 		return "[E] Boarding... %d%%" % pct
+	# ─── DAY 1 / NIGHT 1 GATE ──────────────────────────────────────────
+	# While boarding is restricted to the tutorial window, non-tutorial
+	# windows show a "not yet" message instead of the boarding prompt.
+	if not _can_board_this_window():
+		if is_boarded and planks_remaining >= 3:
+			return "[E] Window (Secured)"
+		return "[E] Can't board this window yet"
 	# NOTE: No is_glass_shattered guard here — boarding works on ALL windows
 	# regardless of glass state. The prompt should always show when the player
 	# has planks, so they know they can board any window.

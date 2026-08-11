@@ -43,7 +43,7 @@ _surfaces = [{
 blend_shape_mode = 0
 shadow_mesh = SubResource("ArrayMesh_2oq2b")
 
-[node name="SM_EC_House_Kitchen_Cupboard_Static_00" type="Node3D" unique_id=1599931340]
+[node name="SM_EC_House_Kitchen_Cupboard_Static_00" type="StaticBody3D" unique_id=1599931340]
 
 [node name="SM_EC_House_Kitchen_Cupboard_Static_00" type="MeshInstance3D" parent="." unique_id=316681280]
 mesh = SubResource("ArrayMesh_024ab")

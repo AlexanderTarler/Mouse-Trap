@@ -61,6 +61,13 @@ var _fade_overlay: ColorRect = null
 var _room_label: Label = null
 var _room_label_visible: bool = false
 
+# ─── ITEM PICKUP FEEDBACK LABEL ────────────────────────────────────────
+# A dynamic label at the bottom-center of the HUD that pops up whenever an
+# item or car part is added to the inventory ("Added [Item Name] to
+# inventory"), fades in, holds briefly, then fades out.
+var _pickup_label: Label = null
+var _pickup_tween: Tween = null
+
 
 func _ready() -> void:
 	add_to_group("hud")
@@ -72,6 +79,39 @@ func _ready() -> void:
 	_fade_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_fade_overlay.z_index = 100  # Render above everything
 	add_child(_fade_overlay)
+
+	# ─── ITEM PICKUP FEEDBACK LABEL ──────────────────────────────
+	# Created programmatically (like _fade_overlay / _room_label) so no
+	# scene changes are needed. Positioned at the bottom-center of the
+	# screen, just above the bottom edge, with warm text + shadow for
+	# readability over any background.
+	_pickup_label = Label.new()
+	_pickup_label.name = "PickupLabel"
+	_pickup_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_pickup_label.anchor_left = 0.5
+	_pickup_label.anchor_right = 0.5
+	_pickup_label.anchor_top = 0.85
+	_pickup_label.anchor_bottom = 0.85
+	_pickup_label.offset_left = -300.0
+	_pickup_label.offset_top = 40.0
+	_pickup_label.offset_right = 300.0
+	_pickup_label.offset_bottom = 70.0
+	_pickup_label.add_theme_font_size_override("font_size", 18)
+	_pickup_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.8, 1.0))
+	_pickup_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
+	_pickup_label.add_theme_constant_override("shadow_offset_x", 2)
+	_pickup_label.add_theme_constant_override("shadow_offset_y", 2)
+	_pickup_label.z_index = 5
+	_pickup_label.modulate.a = 0.0
+	add_child(_pickup_label)
+	
+	# ─── CONNECT INVENTORY ITEM-ADDED SIGNAL ─────────────────────
+	# Whenever an item is added to the player's inventory (pickups,
+	# stash transfers, car parts, starting items), show the
+	# "Added ... to inventory" feedback label.
+	var inv := get_node_or_null("/root/Inventory")
+	if inv and inv.has_signal("item_added"):
+		inv.item_added.connect(_on_item_added)
 
 	# ─── IMMEDIATE DATA SYNC ───────────────────────────────────
 	# GameTime starts paused (no signals emitted), so we must
@@ -601,6 +641,41 @@ func _update_room_label() -> void:
 func show_message(msg: String) -> void:
 	# Event messages removed per design direction
 	pass
+
+
+## ─── ITEM PICKUP FEEDBACK ──────────────────────────────────────────────
+## Called whenever an item is added to the player's inventory (Inventory
+## autoload emits item_added). Pops up "Added [Item Name] to inventory"
+## at the bottom-center of the HUD.
+func _on_item_added(item) -> void:
+	if not is_instance_valid(_pickup_label):
+		return
+	if not item:
+		return
+	var item_name: String = item.item_name if "item_name" in item else "Item"
+	show_pickup_message("Added %s to inventory" % item_name)
+
+
+## Displays a pickup-feedback message: fades in over 0.3s, holds for 2.5s,
+## then fades out over 0.5s. Any previous in-progress pickup tween is killed
+## so rapid successive pickups don't cause competing fade animations.
+func show_pickup_message(msg: String) -> void:
+	if not is_instance_valid(_pickup_label):
+		return
+	
+	if is_instance_valid(_pickup_tween):
+		_pickup_tween.kill()
+	
+	_pickup_label.text = msg
+	_pickup_label.modulate.a = 0.0
+	
+	# Fade in quickly
+	_pickup_tween = create_tween()
+	_pickup_tween.tween_property(_pickup_label, "modulate:a", 1.0, 0.3)
+	# Hold for 2.5 seconds
+	_pickup_tween.tween_interval(2.5)
+	# Fade back out over 0.5 seconds
+	_pickup_tween.tween_property(_pickup_label, "modulate:a", 0.0, 0.5)
 
 
 var _hint_tween: Tween = null

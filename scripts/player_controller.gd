@@ -530,9 +530,32 @@ func _toggle_flashlight() -> void:
 	if not _flashlight: return
 	
 	# ─── TUTORIAL: Flashlight learned ──────────────────────────────────
+	# Only mark the mechanic as learned while a NIGHT is active. During
+	# Day 1 daytime the player may pick up the flashlight and toggle it
+	# before the "Press [F] to turn the flashlight on and off." hint has
+	# been shown (it fires when Night 1 starts). Marking it learned during
+	# the day consumed the one_shot tutorial, so `_can_show()` returned
+	# false at the Night 1 trigger and the hint never appeared.
+	#
+	# TASK 2.3 FIX: SKIP mark_learned("flashlight") while the OVERCHARGE
+	# tutorial is still active. Previously, pressing F at Nest Alpha (which
+	# calls _toggle_flashlight → mark_learned("flashlight") → hide_hint())
+	# instantly dismissed the "Hold [F] to OVERCHARGE" hint before the
+	# 3-second hold completed. The overcharge hint must ONLY dismiss after
+	# the player successfully holds F for the full duration.
 	var tm := get_node_or_null("/root/TutorialManager")
+	var nm := get_node_or_null("/root/NightManager")
 	if tm and tm.has_method("mark_learned"):
-		tm.mark_learned("flashlight")
+		if nm and "is_night_active" in nm and nm.is_night_active:
+			# ─── TASK 2.3: DO NOT dismiss the overcharge hint ──────────
+			# If the player hasn't yet completed the overcharge tutorial
+			# (3s continuous hold), skip the flashlight mark_learned so the
+			# overcharge prompt stays visible. The overcharge hint can only
+			# be dismissed by flashlight.gd's _mark_overcharge_tutorial_learned().
+			if tm.has_method("is_learned") and not tm.is_learned("overcharge"):
+				print("[Player] TASK 2.3: Overcharge tutorial still active. Skipping mark_learned('flashlight') to preserve the hold hint.")
+			else:
+				tm.mark_learned("flashlight")
 	if _flashlight.has_method("toggle"):
 		_flashlight.toggle()
 	else:
@@ -900,31 +923,20 @@ func _process(delta: float) -> void:
 	# hold detection is smooth and independent of physics tick rate.
 	_update_flashlight_overcharge(delta)
 	
-	# ─── EXHAUSTION SPEED PENALTY (Day 3+) ────────────────────────────
-	# When the player is exhausted AND outside the cabin, apply a 65%
-	# movement speed reduction and lock sprinting. This creates a heavy,
-	# sluggish struggle back to the cabin after surviving a night.
-	# Once inside, normal speeds are restored — the player reached safety.
+	# ─── EXHAUSTION SPEED PENALTY REMOVED (TASK 2.1) ────────────────────
+	# The Day 3+ exhaustion mechanic no longer slows the player down.
+	# This felt bad — the player was already punished enough by the night.
+	# Instead, exhaustion now DISABLES interaction with scrap heaps, car
+	# wrecks, the totem anchor, and notes (handled in each interactable's
+	# get_interact_text() / interact() methods). Standard doors/locks
+	# remain fully interactable.
+	#
+	# The original speed penalty has been completely removed. Movement
+	# speed is never modified by exhaustion. The is_exhausted flag is
+	# still tracked (set by NightManager, cleared by the Bed) so the
+	# interactables can check it.
 	if is_exhausted:
-		# Cache original speeds on the first frame of exhaustion
-		if _exhausted_walk_speed == 0.0:
-			_exhausted_walk_speed = walk_speed
-			_exhausted_run_speed = run_speed
-		
-		# PERFORMANCE: Throttle room checks to 5Hz (every 6 frames at 60fps)
-		# This avoids calling get_player_room() which iterates all Cabin_Interior
-		# areas + performs overlaps_body() physics queries every frame.
-		_room_check_timer += delta
-		if _room_check_timer >= 0.2:
-			_room_check_timer = 0.0
-			var room = get_player_room()
-			if room == "Outside":
-				walk_speed = _exhausted_walk_speed * 0.35
-				run_speed = _exhausted_run_speed * 0.35
-				sprint_unlocked = false
-			else:
-				walk_speed = _exhausted_walk_speed
-				run_speed = _exhausted_run_speed
+		pass  # No speed penalty — exhaustion blocks interactions instead
 
 	# ─── CABIN ENTRY DETECTION ──────────────────────────────────────────
 	# Check if the player has entered the cabin (fallback detection).
@@ -1026,16 +1038,40 @@ func _process(delta: float) -> void:
 			if _entity_node and _entity_node.has_method("on_player_stare"):
 				_entity_node.on_player_stare(look_timer, is_flashlight_overcharged())
 	
-	# ─── COMBINED CAMERA SHAKE ───────────────────────────────────
+	# ─── COMBINED CAMERA SHAKE (TASK 3 AMPLIFIED) ────────────────
 	# Takes the MAX of flashlight stare intensity and sanity gaze
 	# intensity, so both systems contribute independently.
+	# TASK 3: The shake now RAMP-UPS the longer the player stares at
+	# the Entity (up to 1.6x after 3 seconds) and adds a low-frequency
+	# rumble (~4Hz) for an increasingly violent feel. The darkness
+	# overlay was removed, so this camera shake is the primary visual
+	# feedback for staring.
 	var flashlight_intensity := look_timer / 1.5  # 0.0→1.0 at 1.5s
 	var shake_intensity := maxf(flashlight_intensity, gaze_norm)
 	
 	if shake_intensity > 0.05:
-		var shake = shake_intensity * 0.04  # Max 0.04 radians (~2.3°)
+		# ─── RAMP-UP FACTOR ─────────────────────────────────────────
+		# Intensity ramps from 1.0x to 1.6x over 3 seconds of continuous
+		# staring. The longer the player holds the gaze, the more violent
+		# the shake becomes — no hard cutoff, just escalating dread.
+		var stare_ramp := minf(look_timer / 3.0, 1.0)
+		var ramped_intensity := shake_intensity * (1.0 + 0.6 * stare_ramp)
+		
+		# ─── AMPLIFIED HIGH-FREQUENCY SHAKE ─────────────────────────
+		# Increased from 0.04 to 0.07 radians (~4.0° max) so the shake
+		# is visibly more aggressive at peak.
+		var shake := ramped_intensity * 0.07
 		_camera.h_offset = randf_range(-shake, shake)
 		_camera.v_offset = randf_range(-shake, shake)
+		
+		# ─── LOW-FREQUENCY RUMBLE (≈4Hz) ────────────────────────────
+		# A slow rolling sine wave that grows with gaze duration, layered
+		# on top of the high-frequency jitter. This feels like the camera
+		# is physically being disturbed rather than just twitching.
+		var rumble_t := Time.get_ticks_msec() / 1000.0
+		var rumble := sin(rumble_t * TAU * 4.0) * 0.02 * shake_intensity
+		_camera.h_offset += rumble
+		_camera.v_offset += rumble * 0.7
 	else:
 		_camera.h_offset = 0.0
 		_camera.v_offset = 0.0

@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://c83w5oahgle2v" path="res://scripts/generator_interaction.gd" id="2_w5vnv"]
 [ext_resource type="Script" uid="uid://dcskrxu6772q2" path="res://scripts/generator_outlet.gd" id="3_outlet"]
 [ext_resource type="PackedScene" uid="uid://ywtg3yf5ct6s" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/button_12.glb" id="5_4pjfl"]
+[ext_resource type="AudioStream" uid="uid://7lhq87cfe0a5" path="res://assets/audio/objects/refuel_generator.ogg" id="6_ionxw"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_5yxne"]
 size = Vector3(2.8676758, 2.046411, 1.2)
@@ -53,10 +54,11 @@ light_energy = 0.5
 omni_range = 1.5
 
 [node name="GeneratorAudio" type="AudioStreamPlayer3D" parent="." unique_id=1865201560]
+stream = ExtResource("6_ionxw")
 volume_db = -12.0
 max_distance = 20.0
 
-[node name="GeneratorSwitch" parent="." unique_id=1158213921 instance=ExtResource("5_4pjfl")]
+[node name="GeneratorSwitch" parent="." unique_id=1158213921 groups=["xray_generator_switch"] instance=ExtResource("5_4pjfl")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.1974615, 1.0647137, 0.40391856)
 
 [node name="StaticBody3D" type="StaticBody3D" parent="GeneratorSwitch" unique_id=1034666623]

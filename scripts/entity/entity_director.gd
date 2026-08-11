@@ -337,6 +337,46 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 	# get_node_or_null("/root/NightManager") up to 6 times per frame.
 	_cached_night_manager = entity.get_night_manager() if entity.has_method("get_night_manager") else null
 	
+	# ─── DORMANT VAN-SEQUENCE PRESERVATION (TOP PRIORITY) ──────────────
+	# During the Night 2.2 van sequence, once the Entity is in DORMANT it
+	# MUST STAY in DORMANT for the remainder of the night — invisible and
+	# inactive until Night 3 begins.
+	#
+	# WHY THIS IS REQUIRED:
+	#   entity_ai.gd's _evaluate_night_rules() arms _van_sequence_flinch_armed
+	#   when the player enters the cabin during the van sequence. The FLINCH
+	#   handler then hard-overrides to DORMANT via set_state() directly and
+	#   hides the mesh — WITHOUT setting is_flinch_finished. This means the
+	#   normal Tier 5 completion path never fires, so the AI's DORMANT state
+	#   is immediately vulnerable to the tiers below:
+	#
+	#     1. Tier 2 Night Rules forces DORMANT → STALK (is_van_sequence_active
+	#        is still true, _night_2_van_sequence_resolved still false)
+	#     2. entity_ai.gd _evaluate_night_rules() sees STALK + player inside +
+	#        van active → forces FLINCH + re-arms the flag
+	#     3. FLINCH completes → hard-override back to DORMANT
+	#     4. Director pulls it out to STALK again...
+	#     → 60fps STALK ↔ FLINCH ↔ DORMANT oscillation
+	#
+	# This guard runs BEFORE all tiers (including Tier 0) so that once the
+	# Entity reaches DORMANT during the van sequence, NOTHING can pull it out.
+	# It also clears is_van_sequence_active so _evaluate_night_rules() stops
+	# forcing FLINCH on subsequent nights.
+	#
+	# IMPORTANT: We call entity.deactivate() (not just return DORMANT) so
+	# that _is_active = false. With _is_active false, entity_ai.gd's
+	# process_state_logic() returns early and never evaluates the Director
+	# again — making the DORMANT lock permanent until Night 3's activate()
+	# (via _on_night_started()) re-enables the Entity. A bare `return DORMANT`
+	# would only hold for ONE frame (the frame that clears the flag) before
+	# Tier 3/4/7/8 could pull the Entity back out.
+	if state == EntityAI.State.DORMANT and _cached_night_manager and _cached_night_manager.is_van_sequence_active:
+		_cached_night_manager.is_van_sequence_active = false
+		if entity.has_method("deactivate"):
+			entity.deactivate()
+		print("[Director] DORMANT preservation during van sequence. Entity locked in DORMANT (deactivated). Van flag cleared.")
+		return EntityAI.State.DORMANT
+	
 	# ─── INDOOR SEARCH PERSISTENCE TIMER DECAY ──────────────────────────
 	# Decrement the indoor search persistence timer each frame so it counts
 	# down from 30.0 to 0.0 while the Entity is in INDOOR_SEARCH.
@@ -724,19 +764,21 @@ func _tier_0_pending_override(entity: CharacterBody3D) -> int:
 # ═══════════════════════════════════════════════════════════════════════════════
 # TIER 0: CRITICAL SURVIVAL & REACTIONS (Flashlight + Light Switch)
 # ═══════════════════════════════════════════════════════════════════════════════
-## Applies the flashlight-confirmed confidence penalty (-15.0) to the Entity.
-## Called by _tier_0_flashlight_reaction() when transitioning to FLINCH.
-## The penalty is applied only once per FLINCH transition, gated by
-## _last_completed_state != FLINCH. This prevents the penalty from
-## stacking every frame while is_illuminated is true.
+## Resets the Entity's confidence to exactly 0% immediately after a FLINCH
+## completes. Called by _tier_0_flashlight_reaction() when transitioning to
+## FLINCH. The absolute reset is applied only once per FLINCH transition,
+## gated by _last_completed_state != FLINCH. This prevents the reset from
+## re-firing every frame while is_illuminated is true, and guarantees the
+## Entity is completely pacified after every flinch regardless of how
+## confident it had become.
 func _apply_flinch_confidence_penalty(entity: CharacterBody3D) -> void:
 	if _last_completed_state != EntityAI.State.FLINCH:
 		var confidence_module = entity.get_confidence_module()
 		if confidence_module:
 			var current_conf = confidence_module.get_confidence()
-			var new_conf = maxf(0.0, current_conf - 15.0)
+			var new_conf := 0.0  # Hard reset to exactly 0%
 			confidence_module.set_confidence(new_conf)
-			print("[Director] FLINCH confidence penalty applied: %.1f → %.1f (Δ-15.0)" % [current_conf, new_conf])
+			print("[Director] FLINCH confidence RESET: %.1f → 0.0 (absolute reset)" % current_conf)
 
 ## Captures the current window target's ID to the flinch blacklist.
 ## Called by _tier_0_flashlight_reaction() when transitioning to FLINCH
@@ -960,7 +1002,15 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 		#   P outside + E inside = RETREAT → FLINCH (instant RETREAT)
 		#   P outside + E outside = STANDOFF → FLINCH
 		var _oc_entity_inside = entity.has_method("is_physically_inside") and entity.is_physically_inside()
-		var _oc_player_inside = entity.get_thinks_player_is_inside() if entity.has_method("get_thinks_player_is_inside") else false
+		# ─── DIRECT VAR ACCESS (has_method BUG FIX) ────────────────────────
+		# `thinks_player_is_inside` is a plain public var on entity_controller.gd.
+		# Plain GDScript vars do NOT auto-generate get_*() methods, so
+		# has_method("get_thinks_player_is_inside") ALWAYS returns false,
+		# silently making _oc_player_inside false forever. That prevented the
+		# "Player inside + Entity outside = instant FLINCH" overcharge path
+		# from ever firing while the Entity approached a window. Access the
+		# var directly (same as entity_ai.gd does in its FLINCH Override Gate).
+		var _oc_player_inside = entity.thinks_player_is_inside
 		
 		# ─── OVERCHARGE INSTANT RETREAT (P OUTSIDE + E INSIDE) ───────
 		# Mirror of the instant-FLINCH case: if the PLAYER is outside and
@@ -1054,7 +1104,12 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 	# ─── ANTI-FLAP GUARD ──────────────────────────────────────────
 	# If the anti-flap cooldown is active, skip the flashlight reaction
 	# entirely and fall through to STANDOFF/CHARGE logic below.
-	var is_player_inside = entity.get_thinks_player_is_inside() if entity.has_method("get_thinks_player_is_inside") else false
+	# ─── DIRECT VAR ACCESS (has_method BUG FIX) ────────────────────────
+	# Same bug as the Unified Overcharge Dispatch above: has_method() for
+	# get_thinks_player_is_inside() ALWAYS returns false (plain var, no
+	# auto-generated getter). Read the public var directly so the matrix
+	# correctly detects "Player inside + Entity outside" → FLINCH.
+	var is_player_inside = entity.thinks_player_is_inside
 	
 	if entity.is_illuminated and _anti_flap_cooldown > 0.0 and state != EntityAI.State.CHARGE:
 		# Anti-flap active — skip FLINCH/RETREAT reactions but still
@@ -1280,10 +1335,18 @@ func _tier_1_sabotage(entity: CharacterBody3D, state: int) -> int:
 				is_door_target = true
 			
 			if is_door_target:
-				# Check if the Fuse Box is powered (generator ON → porch light ON)
-				var fuse_box = entity.get_fuse_box_node()
-				if fuse_box and fuse_box.has_method("is_powered") and fuse_box.is_powered():
-					print("[Director] TIER 1 SABOTAGE: Door target detected but Fuse Box is powered! Interrupting APPROACH_WINDOW to sabotage Fuse Box first.")
+				# ─── GENERATOR-RUNNING GATE (NOT fuse_box.is_powered()) ─────
+				# The door is protected by the PORCH LIGHT, which only burns
+				# while the generator is actually RUNNING (NightManager
+				# is_generator_on). A repaired-but-not-started fuse box must
+				# NOT trigger sabotage — the player just fixed it and can now
+				# start the generator from the switch. Using
+				# fuse_box.is_powered() here would order a re-sabotage of a
+				# freshly repaired box every frame until the generator starts.
+				var nm_gate = _cached_night_manager
+				var generator_running: bool = nm_gate != null and "is_generator_on" in nm_gate and nm_gate.is_generator_on
+				if generator_running:
+					print("[Director] TIER 1 SABOTAGE: Door target detected but generator is ON (porch light protecting the door)! Interrupting APPROACH_WINDOW to sabotage Fuse Box first.")
 					
 					# Reset all completion flags to prevent stale state
 					entity.state_locked = false
@@ -1318,17 +1381,26 @@ func _tier_1_sabotage(entity: CharacterBody3D, state: int) -> int:
 	# The semantic check breaks this loop: "all windows lit" is a BOOLEAN
 	# truth, not a threshold, so it fires on the first cycle.
 	#
-	# SCOPE: Only outdoor approach states (OBSERVE, APPROACH_WINDOW,
-	# WINDOW_PEEK). If the Entity is already inside hunting (INDOOR_SEARCH),
-	# it should continue, not run outside to sabotage.
+	# SCOPE: ONLY APPROACH_WINDOW. The direct "all windows lit" semantic
+	# trigger fires ONLY when the Entity is actively selecting/reaching a
+	# window during APPROACH_WINDOW and discovers that every window is lit.
+	#
+	# OBSERVE_FROM_TREELINE and WINDOW_PEEK are deliberately EXCLUDED:
+	#   - OBSERVE_FROM_TREELINE: From observation, the Entity must escalate
+	#     through the slow frustration mechanic (_all_lit_frustration in
+	#     entity_ai.gd progressively builds → FUSE_SABOTAGE) rather than
+	#     instantly breaking the fuse box the moment all lights come on.
+	#   - WINDOW_PEEK: The Entity has already committed to a reachable
+	#     window; if that room becomes lit mid-peek, the LIT ROOM REACTIVE
+	#     EXIT (FLINCH) handles it.
 	#
 	# NO ONE-SHOT GUARD NEEDED: After the fuse box is destroyed, all
 	# generator-powered lights die, are_all_windows_lit() returns false,
 	# and this check naturally self-clears.
-	if state == EntityAI.State.OBSERVE_FROM_TREELINE or state == EntityAI.State.APPROACH_WINDOW or state == EntityAI.State.WINDOW_PEEK:
+	if state == EntityAI.State.APPROACH_WINDOW:
 		var nav_sem = entity.get_navigation_module()
 		if nav_sem and nav_sem.has_method("are_all_windows_lit") and nav_sem.are_all_windows_lit():
-			print("[Director] TIER 1 SABOTAGE: ALL WINDOWS LIT! Direct semantic trigger → SABOTAGE_FUSE.")
+			print("[Director] TIER 1 SABOTAGE: ALL WINDOWS LIT during APPROACH_WINDOW! Direct semantic trigger → SABOTAGE_FUSE.")
 			# Reset all completion flags to prevent stale state
 			entity.state_locked = false
 			entity.is_approach_finished = false
@@ -2054,6 +2126,38 @@ func _tier_5_completion_flags(entity: CharacterBody3D, state: int) -> int:
 			# Entity has a chance to relocate to a valid treeline position.
 			_flinch_approach_cooldown = FLINCH_REAPPROACH_COOLDOWN
 			
+			# ─── NIGHT 2.2 VAN SEQUENCE RESOLUTION GATE ────────────────
+			# After the van chase FLINCH completes (the player entered the
+			# cabin and the Entity flinched as the scare reaction), the
+			# Entity must go DORMANT for the remainder of the night — it
+			# is invisible/inactive until Night 3 begins.
+			#
+			# WHY THIS IS REQUIRED:
+			# Without this gate, the FLINCH → OBSERVE_FROM_TREELINE
+			# transition fires, but the Director resumes evaluating every
+			# frame. Tier 2 Night Rules (van sequence override) and Tier 3
+			# Active Aggression then see is_van_sequence_active still true
+			# and rapidly flip between STALK / OBSERVE / APPROACH_WINDOW /
+			# FLINCH — a 60fps oscillation.
+			#
+			# The van sequence is a narrative event: cabin entry + FLINCH
+			# is its terminal resolution. After that, the Entity is done
+			# for the night and MUST NOT resume standard AI evaluation.
+			# This gate also clears is_van_sequence_active (which was
+			# previously NEVER cleared, leaking into Night 3+ and causing
+			# the Dormancy Trap where start_night() skipped the GameTime
+			# sync because the flag was still stuck true).
+			if _cached_night_manager and _cached_night_manager.is_van_sequence_active:
+				_cached_night_manager.is_van_sequence_active = false
+				# Same permanent lock rationale as the top-level DORMANT
+				# preservation guard: calling deactivate() sets _is_active
+				# = false so the AI stops evaluating the Director, keeping
+				# the Entity invisible/inactive until Night 3's activate().
+				if entity.has_method("deactivate"):
+					entity.deactivate()
+				print("[Director] FLINCH complete during van sequence. Entity locked in DORMANT (deactivated) until Night 3.")
+				return EntityAI.State.DORMANT
+			
 			# ─── FIX 3: RELOCATE TO TREELINE ────────────────────────
 			# After FLINCH, the Entity is 15m deep in the forest at the
 			# escape endpoint. This position may be unreachable from the
@@ -2128,13 +2232,19 @@ func _tier_5_completion_flags(entity: CharacterBody3D, state: int) -> int:
 # ═══════════════════════════════════════════════════════════════════════════════
 # TIER 6: PORTABLE TRAP ATTRACTION
 # ═══════════════════════════════════════════════════════════════════════════════
-## If a powered, deployed portable lamp exists, the Entity abandons its
-## treeline observation and physically stalks toward the lamp to attack it.
+## If a powered, deployed, and ACTIVELY SHINING portable lamp exists, the
+## Entity abandons its treeline observation and physically stalks toward the
+## lamp to attack it.
+##
+## TASK 1: The `is_on` gate ensures the Entity only targets the lamp while
+## its light is actively turned on. A deployed but unlit lamp does NOT draw
+## aggro — the light must be shining for the Entity to perceive it as a
+## threat worth attacking.
 ##
 ## Returns: The target state, or -1 if no trap attraction applies.
 func _tier_6_trap_attraction(entity: CharacterBody3D) -> int:
 	var trap = entity.get_portable_trap()
-	if trap and trap.is_deployed and trap.is_powered:
+	if trap and trap.is_deployed and trap.is_powered and trap.is_on:
 		return EntityAI.State.ATTACK_LAMP
 	return -1
 

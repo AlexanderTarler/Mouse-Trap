@@ -1,0 +1,12 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://resources/tutorial/tutorial_data.gd" id="1_overcharge"]
+
+[resource]
+script = ExtResource("1_overcharge")
+mechanic_id = "overcharge"
+prompt_text = "Hold [F] to OVERCHARGE your flashlight. The high-intensity beam may provoke them."
+trigger_moment = ""
+prerequisite = ""
+one_shot = true
+day_one_only = false

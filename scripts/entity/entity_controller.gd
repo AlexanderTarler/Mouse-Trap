@@ -18,7 +18,12 @@ extends CharacterBody3D
 # Initialized in _ready() since const can't call methods at compile-time.
 var STATE_KEYS: Array = []
 
-@export var speed: float = 4.0
+## MASTER SPEED KNOB — the Entity's base chase pace in m/s.
+## This is the SINGLE variable to tweak: change it in the Inspector to make
+## the Entity faster or slower. For reference, the player walks at 3.5 m/s
+## and sprints at 6.5 m/s. current_stalk_speed is synced from this value in
+## activate() (and the enrage system in on_generator_blackout multiplies it).
+@export var speed: float = 6.0
 ## Distance (in meters) the Entity must be from the player to catch them.
 ## Reduced from 2.5 to 0.5 so the Entity physically closes to melee range
 ## before attacking. The STALK state now has a direct approach override
@@ -427,7 +432,13 @@ var _relocate_target_set: bool = false
 # --- NIGHT DIFFICULTY (set by entity_ai.gd) ---
 var current_night: int = 1
 var window_peek_chance: float = 0.60
-var current_stalk_speed: float = 4.0
+## The Entity's active locomotion speed in m/s (synced from the @export
+## "speed" knob in activate()). The player walks at 3.5 m/s and sprints at
+## 6.5 m/s; 6.0 outpaces walking while sprinting briefly escapes, until the
+## STALK 200% ramp (13s) catches up. The enrage system multiplies this by 1.5x.
+## BASE_STALK_SPEED is ONLY for animation speed matching — not a pace knob.
+const BASE_STALK_SPEED: float = 4.0
+var current_stalk_speed: float = 6.0
 var current_relocate_cooldown: float = 2.5
 
 # --- FLINCH STATE (Flashlight Evasion) ---
@@ -1421,6 +1432,12 @@ func _find_player() -> void:
 
 
 func activate() -> void:
+	# ─── SYNC BASE SPEED FROM @EXPORT "speed" ────────────────────────
+	# The @export `speed` variable is the SINGLE tuning knob for the Entity's
+	# chase pace. Re-sync current_stalk_speed on every activation so Inspector
+	# edits take effect and the enrage multiplier resets cleanly between nights.
+	current_stalk_speed = speed
+	
 	# ─── CLEAR STALE PENDING STATE ────────────────────────────────────
 	# When deactivate() was called, request_state(DORMANT) was set but the
 	# Director never consumed it (the Entity froze before the next frame).
@@ -2072,20 +2089,13 @@ func _physics_process(delta: float) -> void:
 		# Leaving chase — begin fade out
 		_chase_music_was_playing = false
 	
-	# --- CHASE EXIT GRUNT ---
-	# Play the Entity_grunt_long.ogg sound when the Entity leaves CHASE state.
-	# This provides an audio cue that the chase has ended.
-	#
-	# COOLDOWN GUARD:
-	# The _chase_exit_grunt_cooldown prevents the grunt from repeating every
-	# time the Entity rapidly enters/exits CHASE (e.g., when the player runs
-	# between lit and dark rooms). The cooldown is set to 5 seconds each time
-	# the grunt plays, ensuring it can only play once every 5 seconds at most.
-	if _was_chasing and not is_chasing and _chase_exit_grunt_cooldown <= 0.0:
-		if _chase_exit_grunt_player and _chase_exit_grunt_player.stream:
-			_chase_exit_grunt_player.play()
-			_chase_exit_grunt_cooldown = CHASE_EXIT_GRUNT_COOLDOWN_DURATION
-			print("[Entity] Playing chase exit grunt. _state=", _state, " is_player_outside=", _navigation.is_player_outside() if _navigation else "NO_NAV")
+	# --- CHASE EXIT GRUNT (REMOVED) ---
+	# The chase exit grunt was previously played when the Entity left STALK/CHARGE.
+	# This produced an unwanted audio cue the moment the player reached the cabin
+	# (which force-exits STALK), especially during the Night 2.2 car-alarm chase.
+	# The sound has been removed per design direction — no audio cue should play
+	# when the Entity exits STALK. The cooldown tracking is retained so the
+	# _was_chasing state machine stays intact for the chase music fade logic.
 	_was_chasing = is_chasing
 	
 	# Smooth volume interpolation for chase music
@@ -2520,7 +2530,12 @@ func get_night_manager() -> Node:
 ## Returns the cached portable trap reference.
 ## Sub-modules MUST use this instead of calling
 ## get_tree().get_first_node_in_group("portable_trap") every frame.
+## ISSUE 2 FIX: LIVE-LOOKUP FALLBACK.
+## If the cached reference is null/invalid/stale (e.g. the player deployed
+## the portable lamp AFTER the Entity spawned), refresh the cache on demand.
 func get_portable_trap() -> Node:
+	if not is_instance_valid(_portable_trap):
+		_portable_trap = get_tree().get_first_node_in_group("portable_trap")
 	return _portable_trap
 
 ## Returns the cached array of CabinLight nodes.
@@ -2593,6 +2608,19 @@ func set_state(new_state: EntityAI.State) -> void:
 		
 		var trigger_str = ", ".join(triggers) if triggers else "director_evaluation"
 		print("[STATE TRANSITION] %s → %s | trigger: %s" % [old_name, new_name, trigger_str])
+		# ─── UPDATE PREVIOUS STATE TRACKER (FIX 5 ROOT CAUSE) ──────────
+		# _last_state was NEVER assigned in set_state() — it always held
+		# DORMANT (its initial value). Consequently, get_previous_state()
+		# returned DORMANT for the entire game lifetime, which made
+		# entity_ai.gd's fresh-entry detection
+		# (`if entity.get_state() != entity.get_previous_state()`)
+		# evaluate TRUE every single frame. In _sabotage_fuse_state(), that
+		# meant the stuck trackers (_sabotage_elapsed, _sabotage_stuck_timer,
+		# etc.) were reset to 0.0 every frame, so neither the distance-latched
+		# stuck timeout NOR the 15s global failsafe could ever fire — a
+		# NavAgent that couldn't path deadlocked the Entity forever
+		# (total paralysis).
+		_last_state = _state
 	
 	_state = new_state
 
@@ -4249,6 +4277,26 @@ func _update_animations(_delta: float) -> void:
 	if _monster_model:
 		_monster_model.position = Vector3(0.0, -0.95, 0.0)
 	
+	# ─── ANIMATION SPEED SYNC ─────────────────────────────────────────────
+	# Scale the AnimationPlayer's speed_scale with the Entity's actual
+	# horizontal speed so the walk/run cycle matches true locomotion. The
+	# "Stalk" animation was authored for BASE_STALK_SPEED (4.0 m/s); at the
+	# new 20% faster default (4.8 m/s) it plays at 1.2x, and during the STALK
+	# acceleration ramp (up to 200% of base) it scales to ~2.4x. Idle and
+	# slow movement keep normal 1.0x playback (speed_scale is floored at 1.0).
+	#
+	# NOTE: AnimationTree.anim_player is a NODE PATH to the AnimationPlayer,
+	# not a direct reference — resolve it with get_node().
+	var real_vel := get_real_velocity()
+	var horz_speed := Vector2(real_vel.x, real_vel.z).length()
+	var anim_player: AnimationPlayer = null
+	if _anim_tree:
+		var anim_player_path: NodePath = _anim_tree.anim_player
+		if anim_player_path and _anim_tree.has_node(anim_player_path):
+			anim_player = _anim_tree.get_node(anim_player_path) as AnimationPlayer
+	if anim_player:
+		anim_player.speed_scale = clampf(maxf(1.0, horz_speed / BASE_STALK_SPEED), 1.0, 3.5)
+	
 	# Indoor Retreat Phase 1 Sprint (running_crawl)
 	# The Entity sprints toward the escape window/door during the indoor
 	# retreat pathfinding phase. It must visibly RUN — not glide with an
@@ -4288,9 +4336,6 @@ func _update_animations(_delta: float) -> void:
 	if _state == EntityAI.State.RETREAT or _state == EntityAI.State.DORMANT or _state == EntityAI.State.STANDOFF:
 		_anim_state_machine.travel("Idle")
 		return
-	
-	var real_vel := get_real_velocity()
-	var horz_speed := Vector2(real_vel.x, real_vel.z).length()
 	
 	# ─── ACTION-LOCK OVERRIDES (non-movement animations) ─────────────
 	# These are distinct action animations that must play regardless of

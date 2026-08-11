@@ -29,6 +29,46 @@ func _ready() -> void:
 		item_data.item_description = "A handwritten note."
 		item_data.item_type = ItemData.ItemType.NOTE
 		item_data.note_text = "It's watching..."
+	
+	# ─── BUG 4 FIX: APPLY DIAGONAL LIGHT-WAVE PICKUP HIGHLIGHT ──────
+	# Adds the pickup_highlight.gdshader as a next_pass on the note's
+	# MeshInstance3D (or any child meshes), so a subtle diagonal wave of
+	# light periodically sweeps across the note to catch the player's eye.
+	# The shader runs on top of the existing material via next_pass, so the
+	# base texture/shading is preserved. Brightness is intentionally subtle.
+	call_deferred("_apply_pickup_highlight")
+
+
+## Applies the diagonal light-wave shader as a next_pass on the note mesh.
+## Runs deferred so child MeshInstance3D nodes exist when called.
+func _apply_pickup_highlight() -> void:
+	var shader := load("res://shaders/pickup_highlight.gdshader") as Shader
+	if not shader:
+		push_warning("[NotePickup] Could not load pickup_highlight.gdshader!")
+		return
+	
+	var highlight_mat := ShaderMaterial.new()
+	highlight_mat.shader = shader
+	
+	# NotePickup extends StaticBody3D — the actual visual mesh is always a
+	# child MeshInstance3D, so find_children is the only source needed.
+	var mesh_nodes: Array[Node] = find_children("*", "MeshInstance3D", true, false)
+	
+	for mesh_node in mesh_nodes:
+		var mi := mesh_node as MeshInstance3D
+		if not mi or not mi.mesh:
+			continue
+		# Apply via next_pass on the surface material so the base texture stays.
+		var surf_mat := mi.get_surface_override_material(0)
+		if not surf_mat and mi.mesh:
+			surf_mat = mi.mesh.surface_get_material(0)
+		if surf_mat:
+			var clone := surf_mat.duplicate()
+			clone.next_pass = highlight_mat
+			mi.set_surface_override_material(0, clone)
+		else:
+			mi.material_override = highlight_mat
+		print("[NotePickup] Applied pickup light-wave highlight to '%s'." % mi.name)
 
 
 func set_item_data(data: ItemData) -> void:
@@ -38,6 +78,15 @@ func set_item_data(data: ItemData) -> void:
 func interact() -> void:
 	if _already_collected:
 		print("[NotePickup] Already collected! Ignoring duplicate interact.")
+		return
+	
+	# ─── TASK 2.1: EXHAUSTED GATE ────────────────────────────────
+	# When the player is exhausted (Day 3+), they are too tired to read
+	# notes. The interaction is blocked with a greyed-out message.
+	var player_ref = get_tree().get_first_node_in_group("player")
+	if player_ref and "is_exhausted" in player_ref and player_ref.is_exhausted:
+		_show_hud_message("I am too tired to read this right now...")
+		print("[NotePickup] BLOCKED: Player is exhausted.")
 		return
 	
 	if not item_data or item_data.note_text.is_empty():
@@ -226,4 +275,10 @@ func _show_hud_message(msg: String) -> void:
 func get_interact_text() -> String:
 	if _already_collected:
 		return ""
+	# ─── TASK 2.1: EXHAUSTED INTERACTION PROMPT ──────────────────
+	# When exhausted, grey out the interaction prompt instead of
+	# showing the normal "Press E" text. The player is too tired.
+	var player_ref = get_tree().get_first_node_in_group("player")
+	if player_ref and "is_exhausted" in player_ref and player_ref.is_exhausted:
+		return "[color=gray]I am too tired to do this[/color]"
 	return "[E] Read " + (item_data.item_name if item_data else "Note")

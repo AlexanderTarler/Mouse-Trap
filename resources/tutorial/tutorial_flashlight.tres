@@ -5,8 +5,8 @@
 [resource]
 script = ExtResource("1_f9h2k")
 mechanic_id = "flashlight"
-prompt_text = "Press [F] to toggle your flashlight when it gets dark."
+prompt_text = "Press [F] to turn the flashlight on and off."
 trigger_moment = "first_night"
-prerequisite = "interact"
+prerequisite = ""
 one_shot = true
 day_one_only = false

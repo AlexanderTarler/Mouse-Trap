@@ -793,6 +793,19 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 		rooms.erase(last_heard_room)
 		print("[Navigation] Room '%s' excluded: player was last heard here. Flanking to a different room." % last_heard_room)
 	
+	# ─── STEP 2.5: TASK 1.2 — REMOVE BANNED ROOM ──────────────────────
+	# If the Entity was interrupted at a window in this room by an
+	# overcharged flashlight (FLINCH entry), the room is banned until the
+	# Entity successfully targets a window in a DIFFERENT room. The banned
+	# room is stored on the EntityAI module as _banned_room and cleared by
+	# _approach_window_state() when a new room is targeted.
+	var ai_module = entity.get_node_or_null("EntityAI")
+	if ai_module and "_banned_room" in ai_module:
+		var banned_room: String = str(ai_module._banned_room)
+		if not banned_room.is_empty() and rooms.has(banned_room):
+			rooms.erase(banned_room)
+			print("[Navigation] Room '%s' excluded: banned after interrupted window (overcharged FLINCH)." % banned_room)
+	
 	# ─── STEP 3: PICK ROOM WITH FEWEST BOARDED WINDOWS ─────────────────
 	# Count boarded windows per remaining room. Pick the room with the
 	# lowest count. If equal, pick randomly.
