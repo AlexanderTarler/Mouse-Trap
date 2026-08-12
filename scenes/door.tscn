@@ -12,6 +12,9 @@
 [sub_resource type="BoxShape3D" id="BoxShape3D_uvdjg"]
 size = Vector3(1, 2.1, 0.07)
 
+[sub_resource type="BoxShape3D" id="BoxShape3D_Interaction"]
+size = Vector3(1.2, 2.5, 2)
+
 [node name="Door" type="AnimatableBody3D" unique_id=187910433]
 script = ExtResource("1_uvdjg")
 unlock_sound = ExtResource("5_83dcw")
@@ -34,3 +37,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.526429, 1.651418, 0.0560000
 [node name="PorchLightNote" parent="." unique_id=784638091 instance=ExtResource("7_ju5n0")]
 transform = Transform3D(1.9106855e-15, 4.371139e-08, 1, 1, -4.371139e-08, 0, 4.371139e-08, 1, -4.371139e-08, 0.77577996, 1.3975861, -0.054730058)
 item_data = ExtResource("8_kgbum")
+
+[node name="InteractionArea" type="Area3D" parent="." unique_id=1208780335]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5253602, 1.068, 0.021)
+collision_mask = 0
+monitoring = false
+
+[node name="InteractionCollision" type="CollisionShape3D" parent="InteractionArea" unique_id=1208780336]
+shape = SubResource("BoxShape3D_Interaction")

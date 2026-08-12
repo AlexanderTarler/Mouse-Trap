@@ -244,6 +244,12 @@ func start_hold_interact() -> void:
 	if _pending_part_index < 0:
 		return
 	_is_installing = true
+	
+	# TASK 8: Start the repair sound the MOMENT the player holds E.
+	# Previously the audio only played when the part reached 100% installation.
+	if _repair_audio:
+		_repair_audio.pitch_scale = 1.0
+		_repair_audio.play()
 	print("[Van Install] Start installing %s at progress %.1f/%.1fs" % [_pending_part_name, _install_progress, INSTALL_TIME])
 
 
@@ -253,6 +259,10 @@ func stop_hold_interact() -> void:
 	if not _is_installing:
 		return
 	_is_installing = false
+	
+	# TASK 8: Stop the repair sound if the player releases E before finishing.
+	if _repair_audio:
+		_repair_audio.stop()
 	print("[Van Install] Released at progress %.1f/%.1fs" % [_install_progress, INSTALL_TIME])
 
 
@@ -287,13 +297,11 @@ func _process_hold_interact(delta: float) -> void:
 		print("[EscapeVan] Component installed via hold: %s (%d/%d)" % [_pending_part_name, components_collected, COMPONENTS_NEEDED])
 		_show_hud_message("%s installed! (%d/%d parts)" % [_pending_part_name, components_collected, COMPONENTS_NEEDED])
 		
+		# TASK 8: The repair audio is already playing from start_hold_interact() —
+		# do NOT restart it here at completion.
 		var rm = get_node_or_null("/root/RoutineManager")
 		if rm and rm.has_method("on_van_part_installed"):
 			rm.on_van_part_installed(_pending_part_name)
-		
-		if _repair_audio:
-			_repair_audio.pitch_scale = 1.0
-			_repair_audio.play()
 		
 		if components_collected >= COMPONENTS_NEEDED:
 			_is_installing = false
@@ -433,7 +441,7 @@ func _find_objective_label() -> Label:
 
 
 # ─── NOTE: get_interact_text() is now defined in the HOLD-TO-INTERACT section
-# ─── near the @export variables (line ~308). The old version was removed
+# ─── near the @export variables. The old version was removed
 # ─── to fix duplicate function error.
 
 # ─── ENVIRONMENT & ENTITY HELPERS ──────────────────────────

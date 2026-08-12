@@ -604,6 +604,13 @@ var _saved_tree_ghost_mask: int = 0
 ## When it reaches 0.0, the Entity is released from the stun.
 var _stun_timer: float = 0.0
 
+## Whether the totem defense teleport safeguard is currently disabled.
+## Set to true when the overload stun begins; reset to false when the stun
+## expires (or the entity is released by a blackout). While true, the totem
+## anchor's "Totem Defense" (teleport + CHARGE when the player gets within
+## 5m) is skipped, giving the player a window to reach and destroy the totem.
+var _totem_defense_disabled: bool = false
+
 ## ─── MOTOR LOCK ──────────────────────────────────────────────────────────────
 ## When true, the motor is locked and set_motor_velocity() will NOT apply
 ## velocity changes. Used by the STUNNED state to freeze the Entity in place.
@@ -2259,6 +2266,32 @@ func _physics_process(delta: float) -> void:
 	# NOTE: RELOCATE is NOT included here — it is a safe initialization state only
 	# and is never used during active runtime transitions.
 	if _state == EntityAI.State.RETREAT or _state == EntityAI.State.STANDOFF or _state == EntityAI.State.STUNNED:
+		# ─── STUN TIMER COUNTDOWN (BUG FIX) ─────────────────────────────
+		# The _stun_timer was NEVER decremented anywhere, so the STUNNED
+		# state had no natural end — and without state_locked/unlock the
+		# Director could override STUNNED into STALK mid-stun (the playtest
+		# bug). Now: count down while STUNNED, and when the timer hits 0,
+		# release the locks and clear the totem-defense disable so the
+		# Director can evaluate the next state normally.
+		if _state == EntityAI.State.STUNNED:
+			_stun_timer -= delta
+			if _stun_timer <= 0.0:
+				_stun_timer = 0.0
+				if state_locked:
+					state_locked = false
+				if _is_motor_locked:
+					unlock_motor()
+				_totem_defense_disabled = false
+				# ─── STUN RECOVERY MARKER ─────────────────────────────
+				# Set a one-shot meta flag the Director consumes on its next
+				# evaluation. It routes the Entity toward the player post-stun
+				# (CHARGE outside / SABOTAGE_FUSE inside) BEFORE the Tier 0
+				# lamp priority can re-route it back to ATTACK_LAMP (the lamp
+				# is still lit during overload). The Director removes this
+				# meta when consumed.
+				set_meta("stun_recovery", true)
+				print("[Entity] STUN EXPIRED. Locks released — entering stun recovery.")
+		
 		velocity = Vector3.ZERO
 		if _ai and _ai.has_method("process_state_logic"):
 			_ai.process_state_logic(delta)
@@ -4026,6 +4059,21 @@ func trigger_overload_stun(trap_position: Vector3, duration: float = 30.0) -> vo
 	request_state(EntityAI.State.STUNNED)
 	_stun_timer = duration
 	
+	# ─── STUN LOCK (BUG FIX) ─────────────────────────────────────────
+	# The Director's evaluate_master_state() can override any state that
+	# isn't locked. Previously STUNNED was never locked, so the Director
+	# could transition the Entity into STALK/OBSERVE mid-stun (the playtest
+	# bug where the Entity wandered off a few seconds after being stunned).
+	# Lock the state + motor so NOTHING can override STUNNED while the
+	# timer is active. The timer block in _physics_process() releases both
+	# locks when _stun_timer reaches 0.0.
+	state_locked = true
+	lock_motor_for_stun()
+	
+	# Disable the totem defense so the player can reach the totem anchor
+	# during the stun window (set flag read by totem_anchor.gd).
+	_totem_defense_disabled = true
+	
 	# Freeze all movement immediately
 	velocity = Vector3.ZERO
 	_nav_agent.target_position = global_position
@@ -4071,6 +4119,17 @@ func on_generator_blackout() -> void:
 	# Release from stun — immediately begin hunting the player
 	request_state(EntityAI.State.STALK)
 	_stun_timer = 0.0
+	
+	# ─── RELEASE STUN LOCKS (BUG FIX) ───────────────────────────────
+	# on_generator_blackout() forcibly ends the stun early. Without
+	# unlocking, state_locked/motor lock would keep the Entity frozen
+	# even after the blackout enrage hands control back to the Director.
+	if state_locked:
+		state_locked = false
+	if _is_motor_locked:
+		unlock_motor()
+	_totem_defense_disabled = false
+	print("[Entity] Blackout release: stun locks cleared.")
 	
 	# Update nav target to the player's current position
 	if _player:
@@ -4329,6 +4388,16 @@ func _update_animations(_delta: float) -> void:
 		_anim_state_machine.travel("entity_in_light")
 		return
 	
+	# ─── STUNNED (Overload Trap): entity_in_light (writhing/stagger) ─────
+	# When the Entity is paralyzed by the portable lamp's overload, play
+	# the same "entity_in_light" stagger/twitch animation used for the
+	# overcharge beam — the Entity visibly writhes in the blinding light.
+	# The animation holds while STUNNED; when the stun expires the Director
+	# routes to CHARGE/SABOTAGE_FUSE and normal locomotion resumes.
+	if _state == EntityAI.State.STUNNED:
+		_anim_state_machine.travel("entity_in_light")
+		return
+	
 	# Hard clamp animations to Idle if we are retreating, dormant, or in a
 	# frozen standoff. This prevents the animation state machine from caching
 	# and continuously looping the previous sprinting animation during
@@ -4378,7 +4447,19 @@ func _update_animations(_delta: float) -> void:
 	if not is_crawling and _state == EntityAI.State.INDOOR_SEARCH:
 		is_crawling = _ai and _ai.get("_has_arrived_indoor") == true
 	
+	# ─── STALK ACCELERATION RUN ANIMATION ────────────────────────────
+	# When the STALK time-based acceleration ramps up (after the 3s grace
+	# period), switch the locomotion pose from the slow "Stalk" creep to the
+	# frantic "entity_running" animation so the visual matches the escalating
+	# chase speed. _stalk_accel_mult goes from 1.0 (base) to 2.0 (200% cap)
+	# over STALK_ACCEL_RAMP_TIME (10s) then holds until STALK exits.
 	if horz_speed > 0.2:
-		_anim_state_machine.travel("running_crawl" if is_crawling else "Stalk")
+		var stalk_accel_active: bool = _state == EntityAI.State.STALK and _ai and _ai.get("_stalk_accel_mult") > 1.0
+		if is_crawling:
+			_anim_state_machine.travel("running_crawl")
+		elif stalk_accel_active:
+			_anim_state_machine.travel("entity_running")
+		else:
+			_anim_state_machine.travel("Stalk")
 	else:
 		_anim_state_machine.travel("Idle")

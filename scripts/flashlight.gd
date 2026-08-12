@@ -16,7 +16,7 @@ signal overcharge_activated
 signal overcharge_deactivated
 
 @export var max_battery: float = 100.0
-@export var drain_rate: float = 1.0  # per second when on (50% slower)
+@export var drain_rate: float = 0.5  # per second when on (halved from 1.0)
 @export var low_battery_threshold: float = 15.0
 
 ## ─── OVERCHARGE TUNING ─────────────────────────────────────────────────────

@@ -76,9 +76,6 @@ var _blindness_tween: Tween = null
 ## Throttle timer for periodic debug logging
 var _debug_timer: float = 0.0
 
-## Current shader intensity (0.0–1.0). Interpolated smoothly via entity_seen.
-var _shader_intensity: float = 0.0
-
 ## Whether the entity was seen on the previous frame.
 var _prev_entity_seen: bool = false
 
@@ -88,8 +85,10 @@ var _prev_entity_seen: bool = false
 
 @onready var _raycast: RayCast3D = $SanityRayCast
 @onready var _audio: AudioStreamPlayer = $SanityAudio
+## The tendril/darkness overlay ColorRect. TASK: The shader-based tendril
+## effect has been REMOVED — the overlay is hidden so it can never render.
+## Only the player_controller camera shake remains as the visual feedback.
 @onready var _overlay: ColorRect = $OverlayLayer/SanityOverlay
-var _overlay_material: ShaderMaterial
 
 # ============================================================
 # Lifecycle
@@ -112,12 +111,13 @@ func _ready() -> void:
 		_audio.stream.loop = true
 	print("[Sanity] Audio loop enabled. Loaded: Entity_Seen.ogg on bus SFX")
 
-	# Create the ShaderMaterial dynamically and attach to the ColorRect
-	_overlay_material = ShaderMaterial.new()
-	_overlay_material.shader = load("res://shaders/sanity_overlay.gdshader")
-	_overlay_material.set_shader_parameter("corruption_intensity", 0.0)
-	_overlay.material = _overlay_material
-	print("[Sanity] ShaderMaterial created and attached to SanityOverlay")
+	# ─── TENDRILL/OVERLAY REMOVED ─────────────────────────────────────
+	# The full-screen "darkness tendrils" shader effect has been removed.
+	# The SanityOverlay ColorRect is hidden so it can never render, even if
+	# a stale material/color reference lingers in the scene. The player's
+	# camera shake (handled in player_controller.gd) is now the ONLY visual.
+	_overlay.visible = false
+	print("[Sanity] Tendril overlay removed — SanityOverlay hidden.")
 
 
 func _physics_process(delta: float) -> void:
@@ -130,9 +130,6 @@ func _physics_process(delta: float) -> void:
 	var nm = get_node_or_null("/root/NightManager")
 	if nm and "current_night" in nm and nm.current_night < 2:
 		# Before Night 2 — suppress all hallucination effects
-		if _shader_intensity > 0.0:
-			_shader_intensity = move_toward(_shader_intensity, 0.0, shader_fall_speed * delta)
-			_overlay_material.set_shader_parameter("corruption_intensity", _shader_intensity)
 		if _prev_entity_seen:
 			_audio.stop()
 			_prev_entity_seen = false
@@ -183,17 +180,13 @@ func _physics_process(delta: float) -> void:
 	_debug_timer += delta
 	if _debug_timer >= 2.0:
 		_debug_timer = 0.0
-		print("[Sanity] entity_seen=%s gaze=%.1f shader=%.2f" % [entity_seen, gaze_meter, _shader_intensity])
+		print("[Sanity] entity_seen=%s gaze=%.1f" % [entity_seen, gaze_meter])
 
 	# --------------------------------------------------------
-	# SHADER — driven SOLELY by entity_seen (not by gaze meter)
+	# TENDRILL SHADER REMOVED — no shader interpolation. The
+	# SanityOverlay is hidden; only the camera shake (in
+	# player_controller.gd) provides visual feedback now.
 	# --------------------------------------------------------
-	if entity_seen:
-		_shader_intensity = move_toward(_shader_intensity, 1.0, shader_rise_speed * delta)
-		_overlay_material.set_shader_parameter("corruption_intensity", _shader_intensity)
-	else:
-		_shader_intensity = move_toward(_shader_intensity, 0.0, shader_fall_speed * delta)
-		_overlay_material.set_shader_parameter("corruption_intensity", _shader_intensity)
 
 	# --------------------------------------------------------
 	# AUDIO — driven SOLELY by entity_seen (edge-detected to

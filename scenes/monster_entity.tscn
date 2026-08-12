@@ -48,6 +48,7 @@
 [ext_resource type="AudioStream" uid="uid://bftl2t04nrp61" path="res://assets/audio/Footsteps Grass/step12.wav" id="34_c7lww"]
 [ext_resource type="Animation" uid="uid://dvjfu5fxn0qeu" path="res://assets/animations/entity_attack_window.anim" id="42_t7mjj"]
 [ext_resource type="Animation" uid="uid://fnrc0f1m0g3a" path="res://assets/animations/entity_in_light.anim" id="43_k5t6u"]
+[ext_resource type="Animation" uid="uid://diumf8gkd1pt0" path="res://assets/animations/entity_running.anim" id="44_k5t6u"]
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_dk27q"]
 _data = {
@@ -56,6 +57,7 @@ _data = {
 &"climb_up": ExtResource("4_dk27q"),
 &"entity_attack_window": ExtResource("42_t7mjj"),
 &"entity_in_light": ExtResource("43_k5t6u"),
+&"entity_running": ExtResource("44_k5t6u"),
 &"entry": ExtResource("9_uf1s8"),
 &"idle": ExtResource("5_yani8"),
 &"running_crawl": ExtResource("9_c7dvl"),
@@ -82,6 +84,9 @@ animation = &"locomotion/walk"
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_t7mjj"]
 animation = &"locomotion/entity_in_light"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_k5t6u"]
+animation = &"locomotion/entity_running"
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_lkk1l"]
 animation = &"locomotion/running_crawl"
@@ -153,6 +158,14 @@ advance_mode = 0
 xfade_time = 0.3
 advance_mode = 0
 
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_jg31c"]
+xfade_time = 0.3
+advance_mode = 0
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="AnimationNodeStateMachineTransition_at8y2"]
+xfade_time = 0.3
+advance_mode = 0
+
 [sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_lkk1l"]
 states/AttackWindow/node = SubResource("AnimationNodeAnimation_wa7gp")
 states/AttackWindow/position = Vector2(180, 44)
@@ -163,15 +176,17 @@ states/ClimbUp/position = Vector2(688, 100)
 states/EnterWindow/node = SubResource("AnimationNodeAnimation_1abce")
 states/EnterWindow/position = Vector2(793, 22)
 states/Idle/node = SubResource("AnimationNodeAnimation_0ftpn")
-states/Idle/position = Vector2(555, 37)
+states/Idle/position = Vector2(554, 44)
 states/Stalk/node = SubResource("AnimationNodeAnimation_uf1s8")
 states/Stalk/position = Vector2(397, 111)
 states/Start/position = Vector2(70, 185)
 states/entity_in_light/node = SubResource("AnimationNodeAnimation_t7mjj")
 states/entity_in_light/position = Vector2(106, 111)
+states/entity_running/node = SubResource("AnimationNodeAnimation_k5t6u")
+states/entity_running/position = Vector2(291, 196)
 states/running_crawl/node = SubResource("AnimationNodeAnimation_lkk1l")
 states/running_crawl/position = Vector2(865, 178)
-transitions = ["Start", "Idle", SubResource("AnimationNodeStateMachineTransition_jxk6m"), "Idle", "Stalk", SubResource("AnimationNodeStateMachineTransition_dk27q"), "Stalk", "Idle", SubResource("AnimationNodeStateMachineTransition_yani8"), "Idle", "ClimbUp", SubResource("AnimationNodeStateMachineTransition_8epmc"), "ClimbUp", "ClimbDown", SubResource("AnimationNodeStateMachineTransition_8x07o"), "ClimbDown", "Idle", SubResource("AnimationNodeStateMachineTransition_c7dvl"), "Idle", "ClimbDown", SubResource("AnimationNodeStateMachineTransition_ncm4g"), "ClimbUp", "Idle", SubResource("AnimationNodeStateMachineTransition_0ftpn"), "Idle", "running_crawl", SubResource("AnimationNodeStateMachineTransition_ujlah"), "running_crawl", "Idle", SubResource("AnimationNodeStateMachineTransition_1abce"), "Stalk", "running_crawl", SubResource("AnimationNodeStateMachineTransition_uf1s8"), "running_crawl", "Stalk", SubResource("AnimationNodeStateMachineTransition_lkk1l"), "Idle", "EnterWindow", SubResource("AnimationNodeStateMachineTransition_ctfmw"), "EnterWindow", "Idle", SubResource("AnimationNodeStateMachineTransition_g3gb8"), "Idle", "AttackWindow", SubResource("AnimationNodeStateMachineTransition_hplt3"), "AttackWindow", "Idle", SubResource("AnimationNodeStateMachineTransition_7515g"), "Idle", "entity_in_light", SubResource("AnimationNodeStateMachineTransition_k5t6u"), "entity_in_light", "Idle", SubResource("AnimationNodeStateMachineTransition_wa7gp")]
+transitions = ["Start", "Idle", SubResource("AnimationNodeStateMachineTransition_jxk6m"), "Idle", "Stalk", SubResource("AnimationNodeStateMachineTransition_dk27q"), "Stalk", "Idle", SubResource("AnimationNodeStateMachineTransition_yani8"), "Idle", "ClimbUp", SubResource("AnimationNodeStateMachineTransition_8epmc"), "ClimbUp", "ClimbDown", SubResource("AnimationNodeStateMachineTransition_8x07o"), "ClimbDown", "Idle", SubResource("AnimationNodeStateMachineTransition_c7dvl"), "Idle", "ClimbDown", SubResource("AnimationNodeStateMachineTransition_ncm4g"), "ClimbUp", "Idle", SubResource("AnimationNodeStateMachineTransition_0ftpn"), "Idle", "running_crawl", SubResource("AnimationNodeStateMachineTransition_ujlah"), "running_crawl", "Idle", SubResource("AnimationNodeStateMachineTransition_1abce"), "Stalk", "running_crawl", SubResource("AnimationNodeStateMachineTransition_uf1s8"), "running_crawl", "Stalk", SubResource("AnimationNodeStateMachineTransition_lkk1l"), "Idle", "EnterWindow", SubResource("AnimationNodeStateMachineTransition_ctfmw"), "EnterWindow", "Idle", SubResource("AnimationNodeStateMachineTransition_g3gb8"), "Idle", "AttackWindow", SubResource("AnimationNodeStateMachineTransition_hplt3"), "AttackWindow", "Idle", SubResource("AnimationNodeStateMachineTransition_7515g"), "Idle", "entity_in_light", SubResource("AnimationNodeStateMachineTransition_k5t6u"), "entity_in_light", "Idle", SubResource("AnimationNodeStateMachineTransition_wa7gp"), "Stalk", "entity_running", SubResource("AnimationNodeStateMachineTransition_jg31c"), "entity_running", "Stalk", SubResource("AnimationNodeStateMachineTransition_at8y2")]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_t0r4h"]
 radius = 0.22
@@ -216,28 +231,28 @@ script = ExtResource("1_entity_navigation")
 transform = Transform3D(3.5, 0, 0, 0, 3.5, 0, 0, 0, 3.5, 0, -0.57255733, 0)
 
 [node name="GeneralSkeleton" parent="MonsterModel/Armature" parent_id_path=PackedInt32Array(1066769687, 719992929) index="0" unique_id=519438561]
-bones/1/rotation = Quaternion(0.09894055, -0.17604853, -0.017318476, 0.9792435)
-bones/3/rotation = Quaternion(0.14821057, 0.35265008, 0.9090701, -0.16511613)
-bones/4/rotation = Quaternion(-0.038335036, 0.9210161, -0.38188955, 0.06648579)
-bones/5/rotation = Quaternion(-0.10705463, 0.64366525, -0.7482702, 0.11969148)
-bones/7/rotation = Quaternion(7.164593e-08, 0.9999648, 0.008396465, -7.486939e-08)
-bones/18/rotation = Quaternion(-0.13669695, 0.2949208, 0.93947315, 0.10828673)
-bones/21/rotation = Quaternion(0.038532477, 0.9343017, -0.34907398, -0.0611808)
-bones/22/rotation = Quaternion(0.099824585, 0.63647866, -0.7566874, -0.11114936)
-bones/23/rotation = Quaternion(-5.5046748e-08, 0.99999905, 0.0014032094, -7.290574e-08)
-bones/33/rotation = Quaternion(0.02133853, -0.0044289483, 0.015873624, 0.9996365)
-bones/34/rotation = Quaternion(0.06628515, -0.009528443, 0.010396066, 0.99770105)
-bones/35/rotation = Quaternion(0.066365294, -0.008518086, 0.010771529, 0.9977009)
-bones/36/rotation = Quaternion(-0.05240056, 0.027704867, -0.01896786, 0.99806154)
-bones/38/rotation = Quaternion(-0.19772986, 0.12218833, -0.030625202, 0.97212917)
-bones/49/rotation = Quaternion(0.56226265, 0.43120334, 0.52477443, -0.4717374)
-bones/50/rotation = Quaternion(0.18041064, 0.875422, -0.44725636, -0.032406006)
-bones/51/rotation = Quaternion(0.47566044, -0.5232082, 0.47566122, 0.5232081)
-bones/55/rotation = Quaternion(-0.14886428, 0.7997304, 0.1893928, 0.54991007)
-bones/58/rotation = Quaternion(0.5184886, -0.45596886, -0.57538986, -0.43839312)
-bones/59/rotation = Quaternion(-0.20365874, 0.8401704, -0.5002142, -0.04921985)
-bones/62/rotation = Quaternion(0.4939846, 0.50594366, -0.49398538, 0.5059434)
-bones/66/rotation = Quaternion(0.06263887, -0.8509678, -0.021798242, 0.5210135)
+bones/1/rotation = Quaternion(0.26040038, -0.10779974, 0.022444468, 0.9592013)
+bones/3/rotation = Quaternion(0.04314871, 0.47664443, 0.87735194, -0.03466829)
+bones/4/rotation = Quaternion(-0.025705703, 0.9955056, -0.08267613, 0.038374484)
+bones/5/rotation = Quaternion(0.020124169, 0.5679615, -0.81536937, 0.11039671)
+bones/7/rotation = Quaternion(-1.879463e-05, 0.9981581, 0.059538335, -0.011651264)
+bones/18/rotation = Quaternion(-0.095364526, 0.14893556, 0.9797797, 0.09357133)
+bones/21/rotation = Quaternion(-0.11285694, 0.897812, -0.38631374, 0.17876954)
+bones/22/rotation = Quaternion(0.085778184, 0.71518123, -0.69182813, -0.050317578)
+bones/23/rotation = Quaternion(0.0032727055, 0.9953786, 0.07738735, -0.05676247)
+bones/33/rotation = Quaternion(0.13252626, 0.12484819, -0.08886394, 0.97926146)
+bones/34/rotation = Quaternion(0.09289029, 0.032619353, -0.006056103, 0.9951235)
+bones/35/rotation = Quaternion(0.093026266, 0.03247448, -0.0054107658, 0.9951193)
+bones/36/rotation = Quaternion(-0.27349287, 0.023601215, 0.04348168, 0.96060085)
+bones/38/rotation = Quaternion(-0.20027238, -0.11024676, -0.04710203, 0.9723775)
+bones/49/rotation = Quaternion(0.40435606, 0.5323333, 0.52696484, -0.5248099)
+bones/50/rotation = Quaternion(-0.0058765286, 0.86225677, -0.5031297, -0.05778735)
+bones/51/rotation = Quaternion(0.36422235, -0.606086, 0.3642335, 0.6060823)
+bones/55/rotation = Quaternion(0.050645694, 0.27451533, 0.1972635, 0.9397678)
+bones/58/rotation = Quaternion(0.46440458, -0.5237545, -0.4976132, -0.512241)
+bones/59/rotation = Quaternion(-0.2821145, 0.9071907, -0.22995135, -0.21104251)
+bones/62/rotation = Quaternion(0.31519073, 0.6329717, -0.31520265, 0.63296837)
+bones/66/rotation = Quaternion(0.12267737, -0.5839984, -0.09163699, 0.79718184)
 
 [node name="AnimationPlayer" parent="MonsterModel" index="1" unique_id=1808314749]
 libraries/locomotion = SubResource("AnimationLibrary_dk27q")

@@ -61,12 +61,14 @@ func setup_ending(ending_type: int) -> void:
 			subtitle_label.text = "The Entity caught you.\nThe darkness claims another soul."
 		
 		1:  # Ending.ESCAPE_MEDIOCRE
-			title_label.text = "ESCAPED... BARELY"
-			subtitle_label.text = "You repaired the van and got out alive.\nBut the Entity is still out there... waiting."
+			# TASK 4: Exact required placeholder text for the Mediocre Ending.
+			title_label.text = "MEDIOCRE ENDING"
+			subtitle_label.text = "The player escaped the cabin, but the Entity remained - and it followed the player home. The player disappeared after a few days and were never seen again."
 		
 		2:  # Ending.ESCAPE_GOOD
-			title_label.text = "VICTORY"
-			subtitle_label.text = "You destroyed the Totem and escaped!\nThe Entity is banished forever."
+			# TASK 4: Exact required placeholder text for the Good Ending.
+			title_label.text = "GOOD ENDING"
+			subtitle_label.text = "The player managed to banish the Entity from this world, and were able to return home to a safe haven, knowing there are things out there that they do not want to meet."
 		
 		_:
 			title_label.text = "GAME OVER"

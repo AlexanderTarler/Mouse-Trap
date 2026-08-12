@@ -100,6 +100,14 @@ func calculate_total_drain() -> float:
 	for light in get_tree().get_nodes_in_group("CabinLights"):
 		if not "is_switched_on" in light or not light.is_switched_on: continue
 		total += porch_light_drain_rate if ("is_faulty" in light and light.is_faulty) else cabin_light_drain_rate
+	# PORTABLE LAMP CONTRIBUTION
+	# The portable lamp (PortableLamp) contributes its own energy_drain_rate
+	# while powered on (matches a cabin light's 0.5/s). During overload the
+	# lamp spikes its rate to drain the generator's full tank over 30 seconds.
+	var lamps = get_tree().get_nodes_in_group("portable_trap")
+	for lamp in lamps:
+		if lamp and "energy_drain_rate" in lamp and lamp.is_powered:
+			total += lamp.energy_drain_rate
 	return total
 
 func interact() -> void: toggle_switch()

@@ -1046,8 +1046,21 @@ func _on_execute_overload() -> void:
 		_show_access_denied("ERROR: No portable light source detected in the grid.")
 		return
 	
+	# ─── DIAGNOSTIC: Log lamp state before guards ────────────────
+	# Helpful for tracing which property causes a rejection. Shows the
+	# exact lamp node found and its connection state.
+	var lamp_has_deployed: bool = "is_deployed" in lamp
+	var lamp_deployed: bool = lamp_has_deployed and lamp.is_deployed
+	var lamp_has_powered: bool = "is_powered" in lamp
+	var lamp_powered: bool = lamp_has_powered and lamp.is_powered
+	print("[ComputerUI] Overload guard: lamp_name=%s | has_deployed=%s deployed=%s | has_powered=%s powered=%s" % [
+		lamp.name, lamp_has_deployed, lamp_deployed, lamp_has_powered, lamp_powered])
+	
 	# Check if the lamp is deployed
-	if not lamp.has_method("is_deployed") or not lamp.is_deployed():
+	# FIX: Use the property-in-object check (Godot 4) instead of
+	# has_method() — is_deployed is a plain bool var, not a method.
+	# Also drop the invalid () call (a bool is a value, not a function).
+	if not lamp_has_deployed or not lamp_deployed:
 		_show_access_denied("ERROR: Portable light source is not deployed. Place it on the ground first.")
 		return
 	
@@ -1055,7 +1068,7 @@ func _on_execute_overload() -> void:
 	# The portable light must be physically connected to the generator
 	# via the PowerCable for the overload to actually drain fuel. If it
 	# isn't powered, the overload would "succeed" silently but do nothing.
-	if "is_powered" in lamp and not lamp.is_powered:
+	if lamp_has_powered and not lamp_powered:
 		_show_access_denied("ERROR: Portable light source is not connected to the generator grid. Connect the cable first.")
 		return
 	

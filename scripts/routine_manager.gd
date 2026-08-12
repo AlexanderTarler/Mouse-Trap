@@ -1130,6 +1130,15 @@ func on_door_locked() -> void:
 	
 	print("[RoutineManager] Phase 3: Front door locked.")
 	_advance_main_objective(9)
+	
+	# ─── TASK 6: NIGHT 1 PEEKER FORCED SPAWN ──────────────────────────
+	# The moment the Day 1 "Lock the door" objective completes, force the
+	# Peeker to appear at the LivingRoom window. If it's already there, the
+	# PeekerManager does nothing; if it's at another window it relocates.
+	var pm = get_node_or_null("/root/PeekerManager")
+	if pm and pm.has_method("force_spawn_at_window"):
+		pm.force_spawn_at_window("LivingRoom")
+		print("[RoutineManager] Night 1 Peeker forced to LivingRoom window.")
 	# ─── DEFENSIVE AUTO-COMPLETE: All cabin lights already OFF ──────
 	# If the player turned off every cabin light BEFORE reaching the
 	# "Turn off the lights" objective (e.g. while the door step was

@@ -35,6 +35,11 @@ class_name ScrapHeap
 ## Only checked once during _spawn_initial_contents().
 @export var fuse_spawn_chance: float = 0.3
 
+## Whether this heap already received its cable spool share.
+## Guard used by _maybe_add_cable_spool() so the assignment only
+## happens once and cannot re-fire on deferred re-entry.
+var _cable_spool_assigned: bool = false
+
 # ─── STATE ─────────────────────────────────────────────────
 
 ## Whether this scrap heap has been completely emptied.
@@ -54,6 +59,13 @@ func _ready() -> void:
 	# Spawn initial contents if the heap is empty (first time loading)
 	if contents.is_empty():
 		_spawn_initial_contents()
+	
+	# Register in the scrap_heap group so the cable-spool coordinator
+	# can count all heaps and assign exactly 1 spool per 2 heaps.
+	add_to_group("scrap_heap")
+	
+	# Deferred so all heaps have registered in the group before counting.
+	call_deferred("_maybe_add_cable_spool")
 
 
 # ─── INTERACTION PROMPT ────────────────────────────────────
@@ -223,6 +235,57 @@ func _spawn_initial_contents() -> void:
 
 	print("[ScrapHeap] %s: Initial contents spawned with %d item types." % [scrap_heap_id, contents.size()])
 
+
+# ─── CABLE SPOOL COORDINATOR ───────────────────────────────
+
+## Assigns exactly floor(total_heaps/2) cable spools across all scrap
+## heaps (1 spool per 2 heaps). Runs deferred after every heap has
+## registered in the "scrap_heap" group, then deterministically gives
+## the first N heaps (sorted by node path) a single cable spool.
+## This gives the player enough spools to connect the portable light.
+func _maybe_add_cable_spool() -> void:
+	if _cable_spool_assigned:
+		return
+	_cable_spool_assigned = true
+
+	var heaps := get_tree().get_nodes_in_group("scrap_heap")
+	if heaps.is_empty():
+		return
+
+	# Sort by scrap_heap_id (String) for a stable, deterministic
+	# "first N" selection. NodePath cannot be compared with "<".
+	heaps.sort_custom(func(a, b): return a.scrap_heap_id < b.scrap_heap_id)
+
+	var total_heaps: int = heaps.size()
+	# Use float division + floori so odd heap counts round DOWN
+	# (3 heaps -> 1 spool, 4 -> 2) and avoid the integer-division warning.
+	var spool_count: int = floori(total_heaps / 2.0)
+
+	if spool_count <= 0:
+		return
+
+	var my_index: int = heaps.find(self)
+	if my_index < 0 or my_index >= spool_count:
+		return  # This heap is not in the first N - no spool for it.
+
+	var spool_data = _try_load_resource("res://resources/cable_spool_resource.tres")
+	if not spool_data:
+		print("[ScrapHeap] %s: Cable spool resource not found, skipping." % scrap_heap_id)
+		return
+
+	# Guard: avoid duplicating if the spool somehow already exists.
+	for entry in contents:
+		if entry and "item_data" in entry and entry.item_data == spool_data:
+			return
+
+	contents.append({
+		"item_data": spool_data,
+		"quantity": 1
+	})
+	print("[ScrapHeap] %s: Cable spool added (heap %d/%d, %d spools total)." % [scrap_heap_id, my_index + 1, total_heaps, spool_count])
+
+
+# ─── LOOT HELPERS ──────────────────────────────────────────
 
 ## Returns a random ItemData resource from a predefined pool.
 ## Uses try_load to gracefully handle missing resource files.

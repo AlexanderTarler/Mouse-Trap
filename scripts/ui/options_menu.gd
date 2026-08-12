@@ -18,6 +18,7 @@ const DISPLAY_NAMES: Dictionary = {
 
 @onready var _slider_container: VBoxContainer = %SliderContainer
 @onready var _back_button: Button = %BackButton
+@onready var _highlight_toggle: CheckButton = $PanelContainer/VBoxContainer/ObjectiveHighlightsToggle
 
 var _bus_sliders: Dictionary = {}
 
@@ -29,7 +30,18 @@ func _ready() -> void:
 	if _back_button:
 		_back_button.pressed.connect(_on_back_pressed)
 	
+	# ─── TASK 5: OBJECTIVE HIGHLIGHT TOGGLE ─────────────────────────
+	# Wire the CheckButton to RoutineManager.enable_object_highlights.
+	# Since RoutineManager is a static var, we can reference it directly.
+	if _highlight_toggle:
+		# Sync the button state with the current setting on boot.
+		_highlight_toggle.button_pressed = RoutineManager.enable_object_highlights
+		_highlight_toggle.toggled.connect(_on_highlight_toggle_changed)
+	
 	_build_sliders()
+func _on_highlight_toggle_changed(pressed: bool) -> void:
+	RoutineManager.enable_object_highlights = pressed
+	print("[OptionsMenu] Objective highlights %s." % ("ENABLED" if pressed else "DISABLED"))
 
 
 func _unhandled_input(event: InputEvent) -> void:

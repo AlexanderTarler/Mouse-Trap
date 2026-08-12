@@ -395,8 +395,8 @@ night_fog_color = Color(0.14379594, 0.14383659, 0.20962843, 1)
 
 [node name="Player" parent="." unique_id=92687399 instance=ExtResource("1_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.5, 15.2)
-start_with_key = true
-start_in_dev_mode = true
+start_with_sprint = false
+start_with_flashlight = false
 starting_items = Array[ExtResource("17_pee2b")]([ExtResource("26_battery_res"), ExtResource("26_battery_res"), ExtResource("56_plank_res"), ExtResource("6_frym3"), ExtResource("26_battery_res"), ExtResource("7_a2wau"), ExtResource("8_npxpa"), ExtResource("9_21nt7")])
 
 [node name="HUD" parent="." unique_id=1086543120 instance=ExtResource("4_hud")]
@@ -417,28 +417,28 @@ fuse_waypoint = NodePath("../EntityWaypoints/EntityFuseWaypoint")
 door_waypoint_marker = NodePath("../NavigationRegion3D/Cabin/Door/EntityDoorWaypoint")
 
 [node name="GeneralSkeleton" parent="TheEntity/MonsterModel/Armature" parent_id_path=PackedInt32Array(133456140, 1066769687, 719992929) index="0" unique_id=519438561]
-bones/1/rotation = Quaternion(0.10045717, -0.16927786, -0.013537689, 0.9803419)
-bones/3/rotation = Quaternion(0.1471603, 0.35238734, 0.90936834, -0.16497357)
-bones/4/rotation = Quaternion(-0.0368455, 0.9279357, -0.3660354, 0.059965964)
-bones/5/rotation = Quaternion(-0.11126682, 0.65137583, -0.7401727, 0.12439379)
-bones/7/rotation = Quaternion(-2.8276728e-09, 0.99998516, 0.005463461, -3.7479328e-08)
-bones/18/rotation = Quaternion(-0.13398144, 0.29903182, 0.9389623, 0.10478068)
-bones/21/rotation = Quaternion(0.038096845, 0.9319465, -0.35446638, -0.06616758)
-bones/22/rotation = Quaternion(0.10137224, 0.62912744, -0.76237005, -0.11275764)
-bones/23/rotation = Quaternion(1.9888966e-09, 1, 6.915351e-05, -2.3309537e-08)
-bones/33/rotation = Quaternion(0.02035052, -0.0053278077, 0.015498342, 0.99965864)
-bones/34/rotation = Quaternion(0.06409481, -0.011264173, 0.01327156, 0.99779207)
-bones/35/rotation = Quaternion(0.064206444, -0.01018127, 0.013580779, 0.99779236)
-bones/36/rotation = Quaternion(-0.050808687, 0.02808475, -0.022177618, 0.99806714)
-bones/38/rotation = Quaternion(-0.19509587, 0.12123004, -0.03557955, 0.97261256)
-bones/49/rotation = Quaternion(0.5691312, 0.42430013, 0.5246368, -0.46990985)
-bones/50/rotation = Quaternion(0.1888394, 0.8759384, -0.44180518, -0.04335596)
-bones/51/rotation = Quaternion(0.47396103, -0.5247482, 0.4739618, 0.52474797)
-bones/55/rotation = Quaternion(-0.13685322, 0.80342686, 0.18651608, 0.54862404)
-bones/58/rotation = Quaternion(0.5153007, -0.46103585, -0.57194114, -0.44135547)
-bones/59/rotation = Quaternion(-0.20345968, 0.841174, -0.49954408, -0.0385518)
-bones/62/rotation = Quaternion(0.4916017, 0.50825936, -0.4916026, 0.508259)
-bones/66/rotation = Quaternion(0.0630327, -0.8431599, -0.024745677, 0.5333816)
+bones/1/rotation = Quaternion(0.09567479, -0.17152362, -0.015404419, 0.9804024)
+bones/3/rotation = Quaternion(0.14826484, 0.3511499, 0.9095829, -0.16544002)
+bones/4/rotation = Quaternion(-0.037760053, 0.9244213, -0.37513497, 0.057386957)
+bones/5/rotation = Quaternion(-0.11064484, 0.64574677, -0.74525636, 0.123943396)
+bones/7/rotation = Quaternion(8.286994e-09, 0.999981, 0.0061687464, 2.2024714e-08)
+bones/18/rotation = Quaternion(-0.135326, 0.29474202, 0.93986905, 0.107052855)
+bones/21/rotation = Quaternion(0.03879408, 0.9314555, -0.35572034, -0.065946534)
+bones/22/rotation = Quaternion(0.09824436, 0.62731224, -0.7647745, -0.10930396)
+bones/23/rotation = Quaternion(-4.921222e-08, 0.9999993, 0.0012667406, -6.7832254e-08)
+bones/33/rotation = Quaternion(0.021165943, -0.004442658, 0.015482156, 0.99964625)
+bones/34/rotation = Quaternion(0.06590927, -0.010806923, 0.012231859, 0.9976922)
+bones/35/rotation = Quaternion(0.06599718, -0.009743509, 0.01267232, 0.99769187)
+bones/36/rotation = Quaternion(-0.053355716, 0.028206557, -0.021802025, 0.997939)
+bones/38/rotation = Quaternion(-0.19762404, 0.12243549, -0.030281816, 0.9721303)
+bones/49/rotation = Quaternion(0.56623536, 0.4274904, 0.5244257, -0.47075182)
+bones/50/rotation = Quaternion(0.18211867, 0.87427914, -0.4484806, -0.036523826)
+bones/51/rotation = Quaternion(0.4743878, -0.52436227, 0.4743888, 0.52436227)
+bones/55/rotation = Quaternion(-0.14086494, 0.80596364, 0.1887176, 0.5431072)
+bones/58/rotation = Quaternion(0.5165365, -0.45904553, -0.5733179, -0.4401977)
+bones/59/rotation = Quaternion(-0.2047629, 0.8410991, -0.4987965, -0.042738646)
+bones/62/rotation = Quaternion(0.490981, 0.5088588, -0.49098203, 0.50885856)
+bones/66/rotation = Quaternion(0.06409245, -0.85123104, -0.025586853, 0.5202338)
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1000000002]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.015592637, 0, -0.084306605)
@@ -2294,7 +2294,7 @@ item_data = ExtResource("25_hearth_fragment")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23.313791, 1.9121863, 15.132953)
 
 [node name="CableSpool" parent="." unique_id=429603078 instance=ExtResource("78_3o631")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37.737255, 0.5948738, -79.05308)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.9664264, 1.4166669, 9.717647)
 
 [node name="LightSwitch" parent="." unique_id=422318108 instance=ExtResource("79_q46gv")]
 transform = Transform3D(-0.01305464, 0, -0.99991477, 0, 1, 0, 0.99991477, 0, -0.01305464, 15.260162, 2.6549559, 17.225714)

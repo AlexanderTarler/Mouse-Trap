@@ -128,9 +128,41 @@ func _ready() -> void:
 ##
 ## To pick up the lamp, the player must hold E (0.5s) — the PhysicalGrab
 ## hold path will grab it as a RigidBody3D (or via the portable_trap group).
+## Preload the Portable Light inventory resource.
+const PORTABLE_LIGHT_RESOURCE: Resource = preload("res://resources/portable_light_resource.tres")
+
 func interact() -> void:
 	# Don't interact if already being carried (shouldn't happen, but guard)
 	if is_being_carried:
+		return
+	
+	# ─── REQUEST 3: PICK UP INTO INVENTORY ────────────────────────────
+	# If the lamp is NOT deployed (still sitting in the world un-placed),
+	# a quick-tap E picks it up into the player's inventory. The 3D node
+	# is hidden/removed from the portable_trap group and the "Portable
+	# Light" ItemData resource is added to the inventory. The player can
+	# then take it to the GeneratorOutlet to auto-connect.
+	if not is_deployed:
+		# Add the item to the inventory (via the autoload singleton).
+		if PORTABLE_LIGHT_RESOURCE:
+			Inventory.add_item(PORTABLE_LIGHT_RESOURCE)
+			print("[PortableLamp] Picked up Portable Light into inventory!")
+		else:
+			print("[PortableLamp] ERROR: Could not load portable_light_resource.tres!")
+			return
+		
+		# Remove from the portable_trap group so the Entity stops targeting it.
+		remove_from_group("portable_trap")
+		
+		# Hide the lamp — it now lives in the player's inventory.
+		visible = false
+		if lamp_light:
+			lamp_light.visible = false
+		# Disable physics so it cannot be collided with.
+		freeze = true
+		# Set a deferred queue_free so the Inventory has a moment to process.
+		queue_free()
+		print("[PortableLamp] Lamp removed from world and stored in inventory.")
 		return
 	
 	# ─── DROP/PICKUP TUTORIAL TRIGGER ─────────────────────────────────
@@ -405,8 +437,12 @@ func toggle_power(enabled: bool) -> void:
 			lamp_light.light_energy = 5.0
 			lamp_light.omni_range = 8.0
 		
-		# Set the drain rate to a modest baseline while powered on
-		energy_drain_rate = 2.0
+		# Set the drain rate to match a cabin light (0.5/s).
+		# Previously 2.0 (4x a cabin light) made the lamp burn fuel far
+		# too fast while simply ON. The generator's calculate_total_drain()
+		# reads energy_drain_rate from the portable_trap group, so this
+		# exact value is what contributes per-second while the light is on.
+		energy_drain_rate = 0.5
 		
 		print("[PortableLamp] Power toggled ON via terminal.")
 	else:
@@ -494,9 +530,18 @@ func trigger_overload() -> void:
 	# 1. Set the overload flag
 	is_overloaded = true
 	
-	# 2. Save original drain rate and spike it to catastrophic levels
+	# 2. Save original drain rate and spike it to drain ALL fuel over 30s.
+	# The lamp's per-second rate = max_fuel / 30.0, so it alone completely
+	# empties the generator tank in ~30 seconds (the target stun window).
+	# Added to the generator's base drain, the tank empties slightly faster.
+	var nm = get_node_or_null("/root/NightManager")
+	# TASK 1: Aggressive overload drain — exactly 3% of the generator's
+	# max fuel per second. With max_fuel = 100.0, energy_drain_rate = 3.0
+	# means the generator loses 3 fuel units every second, emptying the
+	# tank in ~33 seconds. The overload stays active until fuel hits 0.
 	_original_drain_rate = energy_drain_rate
-	energy_drain_rate = 50.0  # Drains generator fuel in ~seconds
+	energy_drain_rate = 3.0
+	print("[PortableLamp] Overload drain rate set to 3.0/s (3%% of max fuel per second).")
 	
 	# 3. Boost the OmniLight3D to blinding intensity
 	if lamp_light:
@@ -505,27 +550,44 @@ func trigger_overload() -> void:
 		lamp_light.visible = true
 	
 	# 4. Recalculate fuel drain so the generator immediately feels the load
-	var nm: Node = get_node_or_null("/root/NightManager")
+	# NOTE: nm was already declared at step 2 (function-scoped in GDScript).
 	if nm and nm.has_method("recalculate_fuel_drain"):
 		nm.recalculate_fuel_drain()
 	
 	# 5. Trigger the Entity stun — locate the Entity and call trigger_overload_stun()
-	#    with this lamp's position and a 30-second stun duration.
-	#    The Entity's trigger_overload_stun() will check distance internally
-	#    (must be within 25 units) and only stun if close enough.
+	#    with this lamp's position and an INDEFINITE stun duration.
+	#    The Entity remains paralyzed until the generator fuel hits 0, at which
+	#    point NightManager calls entity.on_generator_blackout() which releases
+	#    the stun (enrage). The huge duration (9999s) is effectively infinite for
+	#    gameplay — it only ends via the blackout release path.
+	var stun_seconds: float = 9999.0
 	var entity: Node = get_tree().get_first_node_in_group("entity")
 	if entity and entity.has_method("trigger_overload_stun"):
-		entity.trigger_overload_stun(global_position, 30.0)
-		print("[PortableLamp] Overload stun triggered on Entity at distance %.1f units." % global_position.distance_to(entity.global_position))
+		entity.trigger_overload_stun(global_position, stun_seconds)
+		print("[PortableLamp] Overload stun triggered on Entity at distance %.1f units. (Indefinite — released on fuel=0)" % global_position.distance_to(entity.global_position))
 	else:
 		print("[PortableLamp] WARNING: Entity not found or missing trigger_overload_stun method!")
 	
 	print("[PortableLamp] Overload active! Drain rate: %.1f | Light energy: %.1f" % [energy_drain_rate, lamp_light.light_energy if lamp_light else 0.0])
 
 
+## Auto-monitors the overload state. While overloaded, if the generator
+## fuel reaches 0 (blackout), the overload is automatically seized/shut off.
+## The overload CANNOT be manually disabled by the player — this is the
+## ONLY exit path (fuel exhaustion), matching Task 1 requirements.
+func _process(_delta: float) -> void:
+	if not is_overloaded:
+		return
+	var nm: Node = get_node_or_null("/root/NightManager")
+	if nm and nm.generator_fuel <= 0.0:
+		print("[PortableLamp] Generator fuel depleted! Overload automatically shut down.")
+		reset_overload()
+
+
 ## Resets the Overload state, restoring the original drain rate and light
-## intensity. Called when the generator dies (blackout) or if the trap
-## is manually disarmed.
+## intensity. Called automatically when the generator dies (blackout / fuel=0).
+## This is the ONLY mechanism that terminates the overload — there is no
+## manual "turn off overload" path, per Task 1 requirements.
 func reset_overload() -> void:
 	if not is_overloaded:
 		return

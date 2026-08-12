@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://bscle6o23cc4g"]
+
+[ext_resource type="Script" uid="uid://baixx1fs8cosb" path="res://scripts/items/item_data.gd" id="1_4k3a"]
+
+[resource]
+script = ExtResource("1_4k3a")
+item_name = "Portable Light"
+item_description = "A heavy-duty portable lamp on a stand. Combine with a Cable Spool at the Generator Outlet to set up a light trap."
+item_type = 8

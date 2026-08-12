@@ -415,6 +415,41 @@ func evaluate_master_state(entity: CharacterBody3D) -> int:
 			print("[TRACE_DIRECTOR] TIER 0 FLASHLIGHT returning %d (interrupting INDOOR_SEARCH!)" % flashlight_state)
 		return flashlight_state
 	
+	# ─── TIER 0: PORTABLE LAMP PRIORITY OVERRIDE ────────────────────
+	# When the portable light is deployed, powered, AND lit (is_on), the
+	# Entity MUST drop everything and attack it — regardless of confidence,
+	# state, or any other behavior. The ONLY exception is FLINCH (the Entity
+	# is mid-evasion sprint and must finish it).
+	#
+	# This is a TOP-PRIORITY override: it runs at Tier 0 (before all tiers),
+	# so even locked states (APPROACH_WINDOW breach, INDOOR_SEARCH patrol,
+	# WINDOW_PEEK siege) are interrupted to go smash the lamp.
+	#
+	# WHY FLINCH IS EXEMPT:
+	#   FLINCH is a physical evasion sprint (3-5s lateral dash). Cancelling
+	#   it mid-flight would freeze the Entity's velocity and leave it stuck
+	#   in an animation lock. The lamp will still be there in a few seconds.
+	var trap = entity.get_portable_trap() if entity.has_method("get_portable_trap") else null
+	# STUN RECOVERY EXEMPTION (one frame):
+	# When the overload stun expires, entity_controller.gd sets the one-shot
+	# recovery meta. During that single frame the lamp override is suppressed
+	# so Tier 5 recovery routing can win (CHARGE outside / SABOTAGE_FUSE
+	# inside). After the recovery frame the meta is consumed and the Entity
+	# resumes lamp-priority behavior.
+	if trap and trap.is_deployed and trap.is_powered and trap.is_on and not entity.has_meta("stun_recovery"):
+		# If the Entity is currently flinching, do NOT interrupt — let the
+		# evasion sprint complete. Return the current state (FLINCH stays).
+		if state == EntityAI.State.FLINCH:
+			if state == EntityAI.State.INDOOR_SEARCH:
+				print("[TRACE_DIRECTOR] TIER 0 LAMP: FLINCH exempt — preserving FLINCH.")
+			return state
+		# Any other state (STALK, CHARGE, APPROACH_WINDOW, INDOOR_SEARCH,
+		# OBSERVE, WINDOW_PEEK, STANDOFF, SABOTAGE, etc.) is overridden
+		# to ATTACK_LAMP.
+		if state == EntityAI.State.INDOOR_SEARCH:
+			print("[TRACE_DIRECTOR] TIER 0 LAMP OVERRIDE! Returning ATTACK_LAMP (interrupting INDOOR_SEARCH!)")
+		return EntityAI.State.ATTACK_LAMP
+	
 	# ─── TIER 1: SABOTAGE OVERRIDE ──────────────────────────────────
 	# Checked BEFORE state_locked so frustration-based fuse box sabotage
 	# can interrupt locked states (approach, climb, indoor search, etc.).
@@ -2221,7 +2256,28 @@ func _tier_5_completion_flags(entity: CharacterBody3D, state: int) -> int:
 		return EntityAI.State.ATTACK_LAMP
 	
 	if state == EntityAI.State.STUNNED:
-		return EntityAI.State.STUNNED
+		# The overload stun holds ONLY while the stun timer is active.
+		# Previously STUNNED was a permanent persistent state — once the
+		# timer expired and state_locked was released, the Director
+		# re-returned STUNNED on the very next frame, freezing the Entity.
+		if "stun_timer" in entity and entity.stun_timer > 0.0:
+			return EntityAI.State.STUNNED
+		# Stun timer expired: consume the one-shot recovery marker set by
+		# entity_controller.gd and route the Entity toward the player.
+		if entity.has_meta("stun_recovery"):
+			entity.remove_meta("stun_recovery")
+			print("[Director] STUN RECOVERY: Stun expired. Routing Entity.")
+			var nav_route = entity.get_navigation_module()
+			var player_room_route: String = "Outside"
+			if nav_route and nav_route.has_method("get_player_room"):
+				player_room_route = nav_route.get_player_room()
+			if player_room_route == "Outside":
+				print("[Director] STUN RECOVERY: Player outside. CHARGE!")
+				return EntityAI.State.CHARGE
+			else:
+				print("[Director] STUN RECOVERY: Player inside. SABOTAGE_FUSE!")
+				return EntityAI.State.SABOTAGE_FUSE
+		return -1
 	
 	if state == EntityAI.State.HARASS:
 		return EntityAI.State.HARASS

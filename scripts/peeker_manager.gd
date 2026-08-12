@@ -150,6 +150,64 @@ func remove_active_peeker() -> void:
 	_heartbeat_timer = 0.0
 
 
+## ─── TASK 6: FORCED SPAWN AT A SPECIFIC WINDOW ──────────────────────────
+## Forces the peeker to appear at the given window by ID (e.g. "LivingRoom").
+## Called when the Day 1 "Lock the door" objective completes — the peeker
+## must always be visible at the LivingRoom window at that moment.
+##
+## Behavior:
+##   - If a peeker is ALREADY at the target window, do nothing.
+##   - If a peeker exists at a DIFFERENT window, despawn it and relocate it
+##     to the target window.
+##   - If no peeker is active, spawn one at the target window immediately.
+func force_spawn_at_window(window_id: String) -> void:
+	# Find the target window by ID (window_id property or node name).
+	var target_window: Node3D = _find_window_by_id(window_id)
+	if not target_window:
+		print("[PeekerManager] force_spawn_at_window: No window found with ID '%s'." % window_id)
+		return
+	
+	# If a peeker is already active, check which window it is at.
+	if _active_peeker and is_instance_valid(_active_peeker):
+		var current_peeker_at_target: bool = _is_peeker_at_window(target_window)
+		if current_peeker_at_target:
+			print("[PeekerManager] force_spawn_at_window: Peeker already at '%s'. Doing nothing." % window_id)
+			return
+		# Peeker is at a different window — despawn it and relocate.
+		print("[PeekerManager] force_spawn_at_window: Peeker at another window. Relocating to '%s'." % window_id)
+		remove_active_peeker()
+	
+	# Spawn the peeker directly at the target window.
+	var peeker: WindowPeeker = _instantiate_peeker(target_window)
+	if not peeker:
+		return
+	
+	_active_peeker = peeker
+	peeker.peeker_vanish_finished.connect(_on_peeker_vanish_finished)
+	_last_peeker_window_id = window_id
+	print("[PeekerManager] Forced Night 1 Peeker spawn at window: %s" % target_window.name)
+
+
+## Finds a window node in the "WindowMarkers" group by its window_id or name.
+func _find_window_by_id(window_id: String) -> Node3D:
+	var windows: Array[Node] = get_tree().get_nodes_in_group("WindowMarkers")
+	for w in windows:
+		var window_node = w as Node3D
+		if not window_node:
+			continue
+		var wid: String = window_node.get("window_id") if "window_id" in window_node else str(window_node.name)
+		if wid == window_id or window_node.name == window_id:
+			return window_node
+	return null
+
+
+## Returns true if the active peeker is currently at (or near) the given window.
+func _is_peeker_at_window(window: Node3D) -> bool:
+	if not _active_peeker or not is_instance_valid(_active_peeker) or not window:
+		return false
+	return _active_peeker.global_position.distance_to(window.global_position) < 1.0
+
+
 ## Internal spawn logic.
 func _spawn_peeker() -> void:
 	var target_window = _pick_valid_window()

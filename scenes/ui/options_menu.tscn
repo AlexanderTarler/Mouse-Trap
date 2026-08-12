@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://b0pt1menu0001"]
 
-[ext_resource type="Script" path="res://scripts/ui/options_menu.gd" id="1_opt"]
+[ext_resource type="Script" uid="uid://dfydrk3c5tx3r" path="res://scripts/ui/options_menu.gd" id="1_opt"]
 
-[node name="OptionsMenu" type="Control"]
+[node name="OptionsMenu" type="Control" unique_id=1936285986]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -11,7 +11,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_opt")
 
-[node name="Overlay" type="ColorRect" parent="."]
+[node name="Overlay" type="ColorRect" parent="." unique_id=1841957536]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -19,9 +19,8 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0.7)
-mouse_filter = 0
 
-[node name="PanelContainer" type="PanelContainer" parent="."]
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=278308338]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -35,25 +34,30 @@ offset_bottom = 200.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer" unique_id=1477051053]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="TitleLabel" type="Label" parent="PanelContainer/VBoxContainer"]
+[node name="TitleLabel" type="Label" parent="PanelContainer/VBoxContainer" unique_id=1674476923]
 layout_mode = 2
 text = "Settings"
 horizontal_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="PanelContainer/VBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="PanelContainer/VBoxContainer" unique_id=190396498]
 layout_mode = 2
 
-[node name="SliderContainer" type="VBoxContainer" parent="PanelContainer/VBoxContainer"]
+[node name="SliderContainer" type="VBoxContainer" parent="PanelContainer/VBoxContainer" unique_id=45154830]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 8
 
-[node name="BackButton" type="Button" parent="PanelContainer/VBoxContainer"]
+[node name="BackButton" type="Button" parent="PanelContainer/VBoxContainer" unique_id=136241701]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Back"
+
+[node name="ObjectiveHighlightsToggle" type="CheckButton" parent="PanelContainer/VBoxContainer" unique_id=866052003]
+layout_mode = 2
+button_pressed = true
+text = "Objective Highlights"

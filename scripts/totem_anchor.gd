@@ -277,6 +277,20 @@ func _process(delta: float) -> void:
 	if is_purged:
 		return
 
+	# ─── NIGHT-STATE COLLISION DEFENSE (Bug Fix) ────────────────────────
+	# If the NightManager reports an active Night 3+ but the totem's
+	# collision shape is still disabled (e.g., the player approaches during
+	# the 10-second rise tween, or the totem was spawned after the night
+	# started and missed the signal), force-enable the collision so the
+	# hold-E purge can work immediately. This prevents the "I can't destroy
+	# the totem on Night 3+" bug where the collision gate silently blocked
+	# interaction.
+	if _night_manager and _night_manager.is_night_active:
+		if _collision_shape and _collision_shape.disabled:
+			_collision_shape.disabled = false
+			if "current_night" in _night_manager and _night_manager.current_night >= 3:
+				print("[TotemAnchor] NIGHT DEFENSE: Collision force-enabled during active Night %d." % _night_manager.current_night)
+
 	# ─── TOTEM DEFENSE (Night 3+) ──────────────────────────────────────
 	# From Night 3 onward, if the player gets within 5 meters of the totem,
 	# the Entity aggressively defends it — UNLESS the Entity is currently
@@ -301,7 +315,19 @@ func _process(delta: float) -> void:
 					var ent_state = _entity.get_state() if "get_state" in _entity else -1
 					var is_flinching: bool = ent_state == EntityAI.State.FLINCH
 					var is_stunned: bool = (ent_state == EntityAI.State.STUNNED) or (ent_state == EntityAI.State.ENRAGED)
-					if not is_flinching and not is_stunned:
+					# ─── TOTEM DEFENSE DISABLE FLAG (Overload Stun) ─────
+					# The controller sets `_totem_defense_disabled = true`
+					# the moment the overload stun begins and clears it on
+					# stun expiry/blackout release. This is a belt-and-
+					# suspenders guard alongside the state check above: even
+					# if the Director's state sync hiccups, the flag itself
+					# guarantees the player can reach the totem during the
+					# 30-second stun window without the Entity teleporting
+					# to defend it.
+					var totem_defense_disabled: bool = false
+					if "_totem_defense_disabled" in _entity and _entity._totem_defense_disabled:
+						totem_defense_disabled = true
+					if not is_flinching and not is_stunned and not totem_defense_disabled:
 						_totem_defending = true
 						_defend_totem_with_entity()
 			else:
@@ -494,13 +520,17 @@ func _complete_purge() -> void:
 	# ─── DEFEAT THE ENTITY ──────────────────────────────────────────
 	_defeat_entity()
 	
-	# Advance the RoutineManager step to unlock the escape van
+	# Advance the RoutineManager side-track to mark the anchor as destroyed.
+	# BUG FIX (Task 3): advance_step() is deprecated and does NOT set
+	# is_anchor_destroyed, which caused the Good Ending to never trigger.
+	# on_anchor_destroyed() sets is_anchor_destroyed = true (the flag
+	# EscapeVan reads when deciding between Good/Mediocre endings).
 	var rm = get_node_or_null("/root/RoutineManager")
-	if rm and rm.has_method("advance_step"):
-		rm.advance_step()
-		print("[TotemAnchor] RoutineManager step advanced! Escape van should now be unlocked.")
+	if rm and rm.has_method("on_anchor_destroyed"):
+		rm.on_anchor_destroyed()
+		print("[TotemAnchor] RoutineManager informed: anchor destroyed! Good Ending flag set.")
 	else:
-		print("[TotemAnchor] WARNING: RoutineManager not found or missing advance_step method!")
+		print("[TotemAnchor] WARNING: RoutineManager not found or missing on_anchor_destroyed method!")
 	
 	# Make the totem visually disappear (fade out)
 	var tween = create_tween()
