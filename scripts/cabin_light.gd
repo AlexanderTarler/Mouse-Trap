@@ -39,7 +39,25 @@ class_name CabinLight
 @export var light_switch_sfx: AudioStream = null
 
 
-@onready var light_node: Light3D = $OmniLight3D
+## The physical light emitter child (OmniLight3D or SpotLight3D).
+## Resolved by _find_light_node() — see that function for why the `or`-based
+## expression is avoided.
+@onready var light_node: Light3D = _find_light_node()
+
+## Resolves the Light3D emitter child. GDScript's `or` operator ALWAYS yields a
+## boolean regardless of operand types, so the previous one-liner
+##   $OmniLight3D or $SpotLight3D if ... else null
+## — and even the parenthesized get_node_or_null() variant — produced a BOOL,
+## failing the `Light3D` type of light_node (the error that appeared when the
+## porch light was converted from OmniLight3D to SpotLight3D). It also required
+## `$OmniLight3D` unconditionally, throwing "Node not found" for Spot-only
+## scenes. An explicit null-check chain returns the existing Light3D type-safely.
+func _find_light_node() -> Light3D:
+	if has_node("OmniLight3D"):
+		return get_node("OmniLight3D") as Light3D
+	if has_node("SpotLight3D"):
+		return get_node("SpotLight3D") as Light3D
+	return null
 @onready var mesh_on: Node3D = $LightMeshOn if has_node("LightMeshOn") else null
 @onready var mesh_off: Node3D = $LightMeshOff if has_node("LightMeshOff") else null
 

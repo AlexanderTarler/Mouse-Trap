@@ -247,28 +247,24 @@ func _initialize_pages() -> void:
 
 
 func _rebuild_index() -> void:
-	# Determine Notes page number (1-based for display)
-	var notes_page: int = _notes_start_page + 1  # Convert 0-based to 1-based
-	if _notes_start_page >= 999999:
-		notes_page = _all_pages.size() + 1  # Approximate: next available page
-	
-	var nest_page: int = _nest_data_start_page + 1  # 1-based
-	
+	# UI 1 FIX: Page numbers (and the dotted leaders/"[i]Page N[/i]" suffixes)
+	# removed from the index. The index now cleanly lists only the chapter /
+	# section titles. No page-number computation is needed any more.
 	_index_label.text = """[center][font_size=22][b]FIELD NOTEBOOK[/b][/font_size][/center]
 [center][i]Svea Naturinstitut Ecological Survey[/i][/center]
 
 [font_size=16][b]INDEX[/b][/font_size]
 
-  [b]1.[/b]  To-do .................... [i]Current objectives[/i]
+  [b]1.[/b]  To-do
 
-  [b]2.[/b]  Personnel Credentials ..... [i]Page 1[/i]
+  [b]2.[/b]  Personnel Credentials
 
-  [b]3.[/b]  Nest Data ................ [i]Page %d[/i]
+  [b]3.[/b]  Nest Data
 
-  [b]4.[/b]  Field Notes .............. [i]Page %d[/i]
+  [b]4.[/b]  Field Notes
 
 [center]---
-Press [b][J][/b] to close[/center]""" % [nest_page, notes_page]
+Press [b][J][/b] to close[/center]"""
 
 
 func _apply_styles() -> void:

@@ -11,7 +11,9 @@ func _ready() -> void:
 	add_to_group("xray_flashlight")
 	
 	# Ensure this RigidBody3D can be detected by the interaction manager's raycast
-	collision_layer = 1
+	# BUG 1 FIX: Layer 2 ("Interactable") added — the interaction ray only
+	# raycasts against layer 2, so every pickup must opt in (1|2 = 3).
+	collision_layer = 1 | 2
 	
 	# Make the item glow slightly so it's noticeable
 	var mesh = get_node_or_null("MeshInstance3D")

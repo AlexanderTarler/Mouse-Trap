@@ -35,6 +35,7 @@ is_upstairs_window = null
 start_broken = null
 
 [node name="InteractionArea" type="Area3D" parent="." unique_id=2017977008]
+collision_layer = 2
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionArea" unique_id=1527222803]
 shape = SubResource("BoxShape3D_xje28")

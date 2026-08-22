@@ -16,6 +16,7 @@ var is_looted: bool = false
 var _monologue_shown: bool = false
 
 
+
 func _ready() -> void:
 	# Add to x-ray highlight group for the car part finding objective.
 	add_to_group("xray_car_wreck")
@@ -26,11 +27,15 @@ func _ready() -> void:
 			add_to_group("xray_wreck_1")
 		"car_wreck_2", "carwreck2", "wreck_2":
 			add_to_group("xray_wreck_2")
-		"car_wreck_3", "carwreck3", "wreck_3":
-			add_to_group("xray_wreck_3")
+		"car_wreck_3", "carwreck3", "wreck_3":	add_to_group("xray_wreck_3")
 
 
 ## Triggered when the player looks at the car and presses the interact key.
+	# BUG 1 FIX: Ensure Layer 2 ("Interactable") is active — must run AFTER any
+	# bare 'collision_layer = N' assignment in _ready so it cannot be overwritten.
+	set_collision_layer_value(1, true)
+	set_collision_layer_value(2, true)
+
 func interact(player: Node3D = null) -> void:
 	print("[Wreck] interact() CALLED — is_looted=", is_looted, " | item_resource=", item_resource)
 	

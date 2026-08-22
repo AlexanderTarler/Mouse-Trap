@@ -13,6 +13,7 @@ func _ready():
 	# Ensure the CollisionShape3D is set up for the raycast to detect.
 	pass
 
+
 func interact():
 	## Called by physical_grab.gd when the player quick-taps E while looking
 	## at this object. Forces the world to night via GameTime autoload.

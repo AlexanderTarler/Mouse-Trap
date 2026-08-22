@@ -74,12 +74,18 @@ func _ready() -> void:
 		_set_generator_state(true)
 		print("[FuseBox] Starting POWER_ON (start_broken=false). Generator is ON.")
 	
+
 	print("[FuseBox] _ready() complete. State: ", BoxState.keys()[current_state])
 
 
 # ─── HOLD-TO-INTERACT: Fuse Repair ────────────────────────────────────────
 ## Called by PhysicalGrab when the player presses E while looking at the fuse box.
 ## Starts accumulating hold progress for inserting a fuse.
+	# BUG 1 FIX: Ensure Layer 2 ("Interactable") is active — must run AFTER any
+	# bare 'collision_layer = N' assignment in _ready so it cannot be overwritten.
+	set_collision_layer_value(1, true)
+	set_collision_layer_value(2, true)
+
 func start_hold_interact() -> void:
 	if current_state != BoxState.BROKEN:
 		return

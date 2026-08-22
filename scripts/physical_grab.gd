@@ -16,6 +16,15 @@ extends Node3D
 @export var hold_distance: float = 1.5
 @export var max_grab_mass: float = 20.0
 
+# ─── INTERACTABLE COLLISION LAYER ─────────────────────────────────
+# Layer 2 ("Interactable") is dedicated to interactable targets. All
+# raycasts in this script mask to layer 2 only, so invisible environment
+# geometry (porch roof overhang, stairs, cabin bounding bodies) on the
+# default layer 1 can never absorb a hold/grab ray before it reaches the
+# door, generator, or grabbable item. Kept in sync with
+# interaction_manager.gd's INTERACTABLE_LAYER_MASK.
+const INTERACTABLE_LAYER_MASK: int = 2  # Layer 2 (name: "Interactable")
+
 # How long E must be held before entering grab mode (seconds)
 @export var hold_threshold: float = 0.5
 
@@ -301,6 +310,10 @@ func _try_grab() -> void:
 	var query = PhysicsRayQueryParameters3D.create(from, to)
 	query.collide_with_areas = false
 	query.collide_with_bodies = true
+	# BUG 1 FIX: Raycast only against the dedicated "Interactable" layer
+	# (Layer 2) so environment geometry can never block the grab ray.
+	# Grabbable pickups opt into layer 2 in their own scripts.
+	query.collision_mask = INTERACTABLE_LAYER_MASK
 	
 	# Exclude the player
 	var player = _find_player()
@@ -439,6 +452,9 @@ func _find_door_target() -> Node:
 	var query = PhysicsRayQueryParameters3D.create(from, to)
 	query.collide_with_areas = true
 	query.collide_with_bodies = true
+	# BUG 1 FIX: Raycast only against the dedicated "Interactable" layer
+	# (Layer 2) so environment geometry can never block the hold ray.
+	query.collision_mask = INTERACTABLE_LAYER_MASK
 	
 	var player = _find_player()
 	if player:
@@ -481,6 +497,9 @@ func _find_generator_target() -> Node:
 	var query = PhysicsRayQueryParameters3D.create(from, to)
 	query.collide_with_areas = true
 	query.collide_with_bodies = true
+	# BUG 1 FIX: Raycast only against the dedicated "Interactable" layer
+	# (Layer 2) so environment geometry can never block the refuel ray.
+	query.collision_mask = INTERACTABLE_LAYER_MASK
 	
 	var player = _find_player()
 	if player:
@@ -549,6 +568,9 @@ func _find_grabbable_target() -> Node:
 	var query = PhysicsRayQueryParameters3D.create(from, to)
 	query.collide_with_areas = false
 	query.collide_with_bodies = true
+	# BUG 1 FIX: Raycast only against the dedicated "Interactable" layer
+	# (Layer 2) so environment geometry can never block the grab prompt ray.
+	query.collision_mask = INTERACTABLE_LAYER_MASK
 	
 	var player = _find_player()
 	if player:

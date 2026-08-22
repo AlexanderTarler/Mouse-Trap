@@ -18,8 +18,15 @@ var is_collected: bool = false
 
 
 func _ready() -> void:
+
+
 	add_to_group("claw_gouges")
 
+
+	# BUG 1 FIX: Ensure Layer 2 ("Interactable") is active — must run AFTER any
+	# bare 'collision_layer = N' assignment in _ready so it cannot be overwritten.
+	set_collision_layer_value(1, true)
+	set_collision_layer_value(2, true)
 
 func interact() -> void:
 	if is_collected:

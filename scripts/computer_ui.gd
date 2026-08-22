@@ -263,6 +263,13 @@ func _ready() -> void:
 		_password_input.text_submitted.connect(func(_text): _on_login_submit())
 	if _desktop_field_log_btn: _desktop_field_log_btn.pressed.connect(_on_field_log_open)
 	if _desktop_recycle_btn:   _desktop_recycle_btn.pressed.connect(_on_trash)
+	# ─── TASK 4 FIX: ENTER SUBMITS THE DECRYPTION KEY ──────────────
+	# The RECOVER_DATA.EXE key input must accept the Enter key to
+	# confirm, matching the login screen's LineEdit behavior.
+	# NOTE: _submit_key_btn.pressed is connected further below (avoid
+	# a duplicate connection that would double-fire on press).
+	if _key_input:
+		_key_input.text_submitted.connect(func(_text): _on_submit_decryption_key())
 	if _desktop_logoff_btn:    _desktop_logoff_btn.pressed.connect(_on_log_off)
 	if _desktop_previous_reports_btn: _desktop_previous_reports_btn.pressed.connect(_on_previous_reports_open)
 	if _power_off_btn:         _power_off_btn.pressed.connect(_on_exit_computer)
@@ -288,6 +295,10 @@ func _ready() -> void:
 		_player = get_tree().get_first_node_in_group("player")
 	if _player and not _camera_holder:
 		_camera_holder = _player.get_node_or_null("CameraHolder")
+	
+	# ─── TASK: GLOBAL BUTTON CLICK SOUND ─────────────────────────
+	# Wire every Button under the computer UI to play ui_click_mx_3.ogg.
+	_connect_ui_click_sounds()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -385,6 +396,10 @@ func _on_login_submit() -> void:
 	_login_error.text = ""
 	print("[ComputerUI] LOGIN SUCCESS: user='%s'" % current_user)
 	
+	# ─── TASK: LOGIN SUCCESS SOUND ─────────────────────────────
+	# Plays login_successful.ogg only on valid credentials.
+	_play_login_success_sound()
+	
 	if user == "LUND":
 		var rm = get_node_or_null("/root/RoutineManager")
 		if rm and rm.has_method("on_computer_used"):
@@ -392,6 +407,16 @@ func _on_login_submit() -> void:
 		if not _eco_survey_completed:
 			_eco_survey_completed = true
 			print("[ComputerUI] Eco-survey marked as completed on LUND login.")
+	elif user == "STENBERG":
+		# ─── ISSUE 3 FIX: UNSANCTIONED DISCOVERIES SIDE-TRACK ──────────
+		# Logging in with Arvid's credentials must advance the side-track
+		# objective "Log in with Arvid's credentials". RoutineManager's
+		# on_arvid_logged_in() handler exists but was never called, so the
+		# objective stayed permanently unchecked. Fire it now.
+		var rm_arvid = get_node_or_null("/root/RoutineManager")
+		if rm_arvid and rm_arvid.has_method("on_arvid_logged_in"):
+			rm_arvid.on_arvid_logged_in()
+			print("[ComputerUI] STENBERG login notified to RoutineManager (side-track step unlocked).")
 	
 	_show_desktop()
 
@@ -457,6 +482,14 @@ func _show_desktop() -> void:
 	var overload_btn = _desktop_view.find_child("OverloadExec", true, false)
 	if overload_btn:
 		overload_btn.visible = (current_user == "STENBERG" and is_arvid_log_2_unlocked)
+	
+	# ─── TASK 5: SHOW RESTORED_DATA.TXT IF LOGS WERE RESTORED ──────
+	# Once Arvid's logs have been successfully restored, the persistent
+	# restored_data.txt icon stays on the STENBERG desktop so the player
+	# can re-read the notes without re-entering the password.
+	var restored_icon := _desktop_view.find_child("RestoredDataIcon", true, false) as Button
+	if restored_icon:
+		restored_icon.visible = (current_user == "STENBERG" and is_arvid_log_1_unlocked)
 
 
 func _on_exit_computer() -> void:
@@ -628,6 +661,8 @@ func _show_access_denied(reason: String) -> void:
 # RECYCLE BIN
 # ─────────────────────────────────────────────────────────────────────────────
 
+var _arvid_recycle_bin_read: bool = false
+
 func _on_trash() -> void:
 	_desktop_view.visible = false
 	_main_window.visible = true
@@ -636,6 +671,19 @@ func _on_trash() -> void:
 	_data_entry_panel.visible = false
 	_recovery_panel.visible = false
 	$MainWindow/HBoxContainer/ContentPanel.visible = true
+	
+	# ─── ISSUE 3 FIX: MARK ARVID'S LOGS AS READ ────────────────────
+	# Opening the Recycle Bin (Arvid's recovered log entries) is the
+	# "Read logs" trigger for the Unsanctioned Discoveries side-track.
+	# RoutineManager's on_arvid_logs_read() handler exists but was never
+	# wired to this UI action, so the objective stayed permanently
+	# unchecked. Fire it on first open only.
+	if not _arvid_recycle_bin_read:
+		_arvid_recycle_bin_read = true
+		var rm_logs = get_node_or_null("/root/RoutineManager")
+		if rm_logs and rm_logs.has_method("on_arvid_logs_read"):
+			rm_logs.on_arvid_logs_read()
+			print("[ComputerUI] Arvid's Recycle Bin logs read — notified RoutineManager (side-track step unlocked).")
 	
 	_content_display.text = ""
 	_content_display.text += "[b]RECOVERED DELETED LOG ENTRY[/b]\n"
@@ -862,6 +910,11 @@ func _on_nest_correlation_success() -> void:
 		# ─── PHASE 2-3: BLACK HOLD + NIGHT TRANSITION + FADE BACK ────
 		await _run_day2_night_skip_sequence(load_bar, loading_label)
 		
+		# ─── TASK: LOGGING COMPLETE SOUND ─────────────────────────────
+		# The loading bar hit 100%, the data was processed, and Night 2
+		# has fallen. Play logging_complete.ogg at this exact moment.
+		_play_logging_complete_sound()
+		
 		# ─── RE-HIDE THE HUD ─────────────────────────────────────────
 		# The computer UI is still open, so the game HUD must be hidden
 		# again now that the fade sequence has completed.
@@ -958,6 +1011,35 @@ func _play_error_sound() -> void:
 		var p = AudioStreamPlayer.new(); p.bus = "SFX"; p.stream = stream; add_child(p)
 		p.play(); p.finished.connect(p.queue_free)
 
+## Plays login_successful.ogg when credentials are accepted.
+func _play_login_success_sound() -> void:
+	var stream = load("res://assets/audio/objects/login_successful.ogg")
+	if stream:
+		var p = AudioStreamPlayer.new(); p.bus = "SFX"; p.stream = stream; add_child(p)
+		p.play(); p.finished.connect(p.queue_free)
+
+## Plays logging_complete.ogg when the nest-data loading bar reaches 100%.
+func _play_logging_complete_sound() -> void:
+	var stream = load("res://assets/audio/objects/logging_complete.ogg")
+	if stream:
+		var p = AudioStreamPlayer.new(); p.bus = "SFX"; p.stream = stream; add_child(p)
+		p.play(); p.finished.connect(p.queue_free)
+
+## Plays ui_click_mx_3.ogg for any computer UI button press.
+func _play_ui_click() -> void:
+	var stream = load("res://assets/audio/computer/ui_click_mx_3.ogg")
+	if stream:
+		var p = AudioStreamPlayer.new(); p.bus = "SFX"; p.stream = stream; add_child(p)
+		p.play(); p.finished.connect(p.queue_free)
+
+## Connects _play_ui_click to every Button under this CanvasLayer.
+## Idempotent via a per-button meta flag. Called at the end of _ready().
+func _connect_ui_click_sounds() -> void:
+	for btn in find_children("*", "Button", true, false):
+		if btn is Button and not btn.has_meta("_ui_click_connected"):
+			btn.set_meta("_ui_click_connected", true)
+			btn.pressed.connect(_play_ui_click)
+
 
 func _trigger_phone_drop_event() -> void:
 	# Kept for compatibility with _on_correlation_success.
@@ -992,14 +1074,22 @@ func _on_recover_data_open() -> void:
 	_recovery_status.text = ""
 
 func _on_submit_decryption_key() -> void:
-	var key = _key_input.text.strip_edges()
-	if key == ARVID_DECRYPTION_KEY:
+	# ─── TASK 4 FIX: CASE-INSENSITIVE DECRYPTION KEY ────────────────
+	# The password is normalized to lowercase on both sides, so
+	# "stenberg_1996", "Stenberg_1996", and "STENBERG_1996" all work.
+	var key = _key_input.text.strip_edges().to_lower()
+	if key == ARVID_DECRYPTION_KEY.to_lower():
 		_recovery_status.text = "DECRYPTION SUCCESSFUL. Arvid Stenberg's logs restored."
 		is_arvid_log_1_unlocked = true
 		is_arvid_log_2_unlocked = true
-		_content_display.text = ARVID_LOG_01_SURVEY + "\n---\n\n" + ARVID_LOG_02_CRITICAL
-		$MainWindow/HBoxContainer/ContentPanel.visible = true
-		_recovery_panel.visible = false
+		# ─── TASKS 5 & 6: SHARE THE RESTORED-NOTES DISPLAY ──────────
+		# The restored notes are now rendered through the shared
+		# _show_arvid_restored_notes() helper, which:
+		#   - Displays ARVID_LOG_01 + ARVID_LOG_02 (Task 5 persistence)
+		#   - Creates the persistent restored_data.txt desktop icon
+		#   - Fires RoutineManager.on_arvid_logs_read() to complete the
+		#     "Read logs" objective (Task 6)
+		_show_arvid_restored_notes()
 		_play_success_sound()
 		
 		# ─── SHOW EXECUTE OVERLOAD BUTTON ON DESKTOP ────────────────
@@ -1010,6 +1100,71 @@ func _on_submit_decryption_key() -> void:
 	else:
 		_recovery_status.text = "INVALID KEY — Access Denied"
 		_play_error_sound()
+
+
+## ─── TASKS 5 & 6: SHARED RESTORED-NOTES DISPLAY ─────────────────────
+## Displays Arvid's restored logs in the content panel and creates the
+## persistent restored_data.txt desktop icon. Once the data is restored
+## the player does NOT need to re-enter the password — clicking the
+## restored_data.txt icon calls this same helper directly.
+##
+## Also fires RoutineManager.on_arvid_logs_read() (Task 6) so the
+## "Unsanctioned Discoveries" side-track objective "Read logs" officially
+## clears. RoutineManager's internal arvid_logs_read guard prevents
+## double-firing if the player views the notes multiple times.
+func _show_arvid_restored_notes() -> void:
+	_content_display.text = ARVID_LOG_01_SURVEY + "\n---\n\n" + ARVID_LOG_02_CRITICAL
+	$MainWindow/HBoxContainer/ContentPanel.visible = true
+	_recovery_panel.visible = false
+	_main_window.visible = true
+	_desktop_view.visible = false
+	_status_label.text = "RESTORED_DATA.TXT — Arvid Stenberg's recovered logs"
+	
+	# ─── TASK 5: CREATE PERSISTENT RESTORED_DATA.TXT DESKTOP ICON ──
+	# Only create the icon once (guarded by is_arvid_log_1_unlocked).
+	_show_restored_data_icon()
+	
+	# ─── TASK 6: ADVANCE THE "READ LOGS" OBJECTIVE ──────────────────
+	# This is the exact point where the restored notes are displayed to
+	# the player — the official "read" moment for the Unsanctioned
+	# Discoveries side-track. RoutineManager's on_arvid_logs_read()
+	# handler is idempotent (its arvid_logs_read flag prevents re-fire).
+	var rm := get_node_or_null("/root/RoutineManager")
+	if rm and rm.has_method("on_arvid_logs_read"):
+		rm.on_arvid_logs_read()
+		print("[ComputerUI] TASK 6: Restored Arvid logs read — RoutineManager notified on_arvid_logs_read().")
+
+
+## Creates the restored_data.txt desktop button (idempotent).
+## The button is only visible to the STENBERG user after the logs have
+## been restored at least once. Clicking it re-opens the notes directly
+## without requiring the password sequence again.
+func _show_restored_data_icon() -> void:
+	if not is_arvid_log_1_unlocked:
+		return
+	var icon := _desktop_view.find_child("RestoredDataIcon", true, false) as Button
+	if not icon:
+		icon = Button.new()
+		icon.name = "RestoredDataIcon"
+		icon.text = "restored_data.txt"
+		icon.size.x = 140
+		icon.add_theme_font_size_override("font_size", 11)
+		# Position below RECOVER_DATA.EXE (160, 60) and EXECUTE OVERLOAD (160, 140)
+		icon.position = Vector2(160, 220)
+		icon.pressed.connect(_on_restored_data_open)
+		if not icon.has_meta("_ui_click_connected"):
+			icon.set_meta("_ui_click_connected", true)
+			icon.pressed.connect(_play_ui_click)
+		_desktop_view.add_child(icon)
+		print("[ComputerUI] TASK 5: restored_data.txt desktop icon created.")
+
+
+## Opens the restored data directly (skips the password sequence entirely).
+## Called when the player clicks the restored_data.txt desktop icon.
+func _on_restored_data_open() -> void:
+	_desktop_view.visible = false
+	_main_window.visible = true
+	_show_arvid_restored_notes()
 
 
 ## Shows the EXECUTE OVERLOAD button on the desktop after Arvid's logs are decrypted.
@@ -1023,6 +1178,9 @@ func _show_overload_button() -> void:
 	# Position next to RECOVER_DATA.EXE icon
 	overload_btn.position = Vector2(160, 140)
 	overload_btn.pressed.connect(_on_execute_overload)
+	if not overload_btn.has_meta("_ui_click_connected"):
+		overload_btn.set_meta("_ui_click_connected", true)
+		overload_btn.pressed.connect(_play_ui_click)
 	_desktop_view.add_child(overload_btn)
 	
 	_status_label.text = "New executable available: EXECUTE OVERLOAD"
@@ -1082,6 +1240,15 @@ func _on_execute_overload() -> void:
 		lamp.trigger_overload()
 		_play_success_sound()
 		_status_label.text = "OVERLOAD INITIATED — Grid at catastrophic draw."
+		
+		# ─── TASK 4: "TRIGGER TRAP" OBJECTIVE ─────────────────────────
+		# The side-track's "Trigger trap" completes exactly when the
+		# EXECUTE OVERLOAD button is successfully clicked. Notify
+		# RoutineManager now that the grid override has been executed.
+		var rm_trap = get_node_or_null("/root/RoutineManager")
+		if rm_trap and rm_trap.has_method("on_trap_triggered"):
+			rm_trap.on_trap_triggered()
+			print("[ComputerUI] TASK 4: 'Trigger trap' objective fired.")
 		
 		# Show status in content display
 		_desktop_view.visible = false

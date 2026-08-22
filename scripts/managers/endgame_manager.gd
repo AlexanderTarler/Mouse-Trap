@@ -108,6 +108,11 @@ const FADE_DURATION: float = 1.5
 ## Reference to the instantiated ending screen (if any).
 var _ending_screen_instance: Node = null
 
+## The fade-to-black CanvasLayer created by _fade_screen_to_black().
+## Stored so it can be freed once the ending screen (layer 129) is shown,
+## otherwise this opaque overlay (layer 128) would cover the UI forever.
+var _fade_canvas_layer: CanvasLayer = null
+
 
 ## Plays the ending sequence for the given ending type.
 ##
@@ -157,6 +162,16 @@ func _play_ending_sequence(ending: Ending) -> void:
 	# Create a full-screen ColorRect, fade it in, then show the ending UI.
 	await _fade_screen_to_black()
 	
+	# ─── 4.5. REMOVE THE FADE OVERLAY ─────────────────────────────
+	# TASK 6: The fade-to-black CanvasLayer (layer 128) must be REMOVED
+	# now that the fade is complete. Previously it was left in the tree
+	# permanently, rendering an opaque black rect ABOVE the ending screen
+	# (which lives in the default canvas, layer 0) — the Mediocre/Good
+	# screens appeared after the fade but were invisible behind the black.
+	if _fade_canvas_layer and is_instance_valid(_fade_canvas_layer):
+		_fade_canvas_layer.queue_free()
+		_fade_canvas_layer = null
+	
 	# ─── 4. INSTANTIATE ENDING SCREEN ───────────────────────────────
 	# Load and instance the ending screen overlay.
 	var ending_scene = load(ENDING_SCREEN_PATH)
@@ -171,9 +186,20 @@ func _play_ending_sequence(ending: Ending) -> void:
 		_complete_ending_sequence(ending)
 		return
 	
-	# Add it to the scene tree (as a sibling of the current scene root so it
-	# renders on top of everything, including the HUD CanvasLayer).
-	get_tree().current_scene.add_child(_ending_screen_instance)
+	# ─── TASK 6: PARENT UNDER HIGH-LAYER CANVAS (129) ──────────────
+	# The ending screen is a plain Control node (default canvas layer 0).
+	# Adding it directly to current_scene would render BELOW the game
+	# HUD (and below the fading overlay). Parent it under its own
+	# CanvasLayer at layer 129 — JUST above the now-freed fade overlay
+	# (128) and the game HUD — guaranteeing the text screen renders on
+	# top of everything.
+	# NOTE: ending_screen.tscn already sets process_mode = PROCESS_MODE_ALWAYS,
+	# so it stays interactive while get_tree().paused = true (Task 6 dir).
+	var ending_canvas := CanvasLayer.new()
+	ending_canvas.name = "_EndgameUILayer"
+	ending_canvas.layer = 129
+	get_tree().current_scene.add_child(ending_canvas)
+	ending_canvas.add_child(_ending_screen_instance)
 	
 	# Configure the ending screen with the correct title/subtitle
 	if _ending_screen_instance.has_method("setup_ending"):
@@ -309,10 +335,13 @@ func _set_master_volume(volume_db: float, bus_idx: int) -> void:
 func _fade_screen_to_black() -> void:
 	# Create a full-screen black overlay as a CanvasLayer child so it
 	# renders above the 3D world and the HUD.
+	# TASK 6: Store the reference on _fade_canvas_layer so the caller can
+	# free it after the fade completes.
 	var canvas_layer = CanvasLayer.new()
 	canvas_layer.name = "_EndgameFadeCanvas"
 	canvas_layer.layer = 128  # High layer index to be on top of everything
 	get_tree().current_scene.add_child(canvas_layer)
+	_fade_canvas_layer = canvas_layer
 	
 	var fade_rect = ColorRect.new()
 	fade_rect.name = "FadeRect"

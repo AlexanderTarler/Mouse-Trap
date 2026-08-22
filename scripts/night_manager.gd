@@ -192,6 +192,14 @@ func _ready() -> void:
 ## Used by _process() to poll for the player node once per frame.
 var _spawn_setup_done: bool = false
 
+# ─── TASK 3: INVENTORY CHECKPOINT GUARD ────────────────────────────────
+## When true, the inventory checkpoint snapshot has already been captured
+## for the current night cycle. Set in start_night() on first entry; cleared
+## in end_current_night()/advance_night() so the next cycle re-snapshots.
+## This prevents restart_night() (which re-calls start_night()) from
+## overwriting the original snapshot with the post-consumption state.
+var _checkpoint_saved: bool = false
+
 
 ## Called one frame after _ready() to ensure the scene tree is fully loaded.
 ## Sets up the player spawn position and starts the Day 1 onboarding sequence.
@@ -572,7 +580,32 @@ func _process(delta: float) -> void:
 	
 	if is_night_active:
 		if is_generator_on:
-			generator_fuel -= current_drain_rate * delta
+			# ─── TASK 2: OVERLOAD EXACT 3.0/s DRAIN ─────────────────────
+			# This _process() block is throttled to 5 Hz (0.2s ticks, see
+			# _night_tick_timer above). `delta` here is still the raw per-frame
+			# delta (~0.016s), so draining `rate * delta` once per 0.2s tick
+			# would run at only ~8% of the intended rate. We therefore scale
+			# by the throttle interval (0.2s) so the math is exact:
+			#   overload: 3.0 units/sec → 0.6 units per 0.2s tick
+			#   baseline: current_drain_rate /sec → rate * 0.2 per tick
+			const THROTTLE_INTERVAL: float = 0.2
+			
+			# While an overloaded portable trap lamp is active, the drain
+			# rate is FORCED to exactly 3.0 units/sec (3% of max_fuel per
+			# second → full tank in ~33.3s). The accumulated
+			# current_drain_rate (base + lights + lamp 3.0) is bypassed so
+			# baseline drains never stack on top, which previously emptied
+			# the tank faster than the intended 3%/s.
+			var overload_active: bool = false
+			for lamp in get_tree().get_nodes_in_group("portable_trap"):
+				if lamp and "is_overloaded" in lamp and lamp.is_overloaded:
+					overload_active = true
+					break
+			
+			if overload_active:
+				generator_fuel -= 3.0 * THROTTLE_INTERVAL
+			else:
+				generator_fuel -= current_drain_rate * THROTTLE_INTERVAL
 			generator_fuel = clampf(generator_fuel, 0.0, max_fuel)
 			fuel_changed.emit(generator_fuel)
 			
@@ -593,11 +626,14 @@ func _process(delta: float) -> void:
 			_event_timer = 0.0
 			_check_time_events()
 	
-	if is_night_active and current_night == 1 and not _peeker_spawned:
-		_peeker_timer += delta
-		if _peeker_timer >= PEEKER_SPAWN_DELAY:
-			_peeker_spawned = true
-			_trigger_night_1_peeker()
+	# ─── TASK 5: NIGHT 1 PEEKER FORCED SPAWN ─────────────────────────
+	# The Night 1 Peeker is now a SCRIPTED, ONE-OFF event. The automatic
+	# timer-based spawn (previously firing 5s into Night 1) has been
+	# COMPLETELY REMOVED so the peeker can NEVER appear randomly during
+	# Night 1. The ONLY trigger is RoutineManager.on_door_locked() when
+	# the Day 1 "Lock the door" objective completes, which forces the
+	# peeker specifically to the LivingRoom window via
+	# PeekerManager.force_spawn_at_window("LivingRoom").
 
 
 
@@ -703,6 +739,19 @@ func start_night(night: int) -> void:
 		is_van_sequence_active = false
 		print("[NightManager] Defense-in-depth: is_van_sequence_active forced false for Night %d." % night)
 	
+	# ─── TASK 3: CAPTURE INVENTORY CHECKPOINT (once per night) ─────
+	# Snapshot the player's inventory at the TRUE start of the night.
+	# The _checkpoint_saved guard ensures restart_night() (which re-enters
+	# start_night()) does NOT overwrite the original snapshot with the
+	# post-consumption state. The guard is cleared in end_current_night()
+	# so the next genuine night cycle captures a fresh snapshot.
+	if not _checkpoint_saved:
+		var inv_snapshot: Node = get_node_or_null("/root/Inventory")
+		if inv_snapshot and inv_snapshot.has_method("save_checkpoint"):
+			inv_snapshot.save_checkpoint()
+			_checkpoint_saved = true
+			print("[NightManager] TASK 3: Inventory checkpoint captured for Night %d." % night)
+	
 	night_started.emit(night)
 	
 	recalculate_fuel_drain()
@@ -727,6 +776,13 @@ func end_current_night() -> void:
 	night_ended.emit(current_night)
 	
 	get_tree().call_group("entity", "deactivate")
+	
+	# ─── TASK 3: CLEAR CHECKPOINT GUARD FOR NEXT NIGHT CYCLE ────────
+	# The night genuinely ended (not a death restart). Clear the guard so
+	# start_night() captures a FRESH inventory snapshot when the next
+	# night begins — the previous snapshot is no longer relevant to the
+	# upcoming cycle's restart checkpoint.
+	_checkpoint_saved = false
 	
 	# ─── CLEAN UP PEEKER ────────────────────────────────────────────
 	# If a Night 1 peeker is still active when the night ends (e.g. the
@@ -1007,11 +1063,106 @@ func restart_night() -> void:
 	fuel_changed.emit(generator_fuel)
 	generator_state_changed.emit(true)
 	
+	# ─── TASK 3: RESTORE INVENTORY TO CHECKPOINT ─────────────────────
+	# The player died during the night — restore the inventory to the exact
+	# state captured at night start (Inventory.save_checkpoint()). This
+	# reverts any consumed items (e.g. the Cable Spool connected to the
+	# generator) so nothing is permanently lost. The _checkpoint_saved
+	# guard in start_night() prevents this restore from being overwritten
+	# by a fresh (post-consumption) snapshot.
+	var inv_restore: Node = get_node_or_null("/root/Inventory")
+	if inv_restore and inv_restore.has_method("reset_to_checkpoint"):
+		inv_restore.reset_to_checkpoint()
+		print("[NightManager] TASK 3: Inventory restored to checkpoint snapshot.")
+	
+	# ─── TASK 3: RESET ENTITY CONFIDENCE ─────────────────────────────
+	# The Entity's confidence must return to its baseline after a defeat.
+	# EntityConfidence.reset() zeroes confidence and clears all modifiers,
+	# so the restarted night begins from the default state instead of the
+	# escalated value the Entity had accumulated when it caught the player.
+	_reset_entity_confidence()
+	
 	var gt = get_node_or_null("/root/GameTime")
 	if gt and gt.has_method("reset_to_night_start"):
 		gt.reset_to_night_start()
 	
 	start_night(current_night)
+
+
+## ─── TASK 3: RESET ENTITY CONFIDENCE ────────────────────────────────
+## Finds the Entity (group "entity") and resets its confidence module to
+## the default baseline. EntityConfidence.reset() zeroes the current value
+## AND clears all active continuous modifiers, so the Entity's boldness is
+## fully restored on restart rather than carrying over from the failed night.
+func _reset_entity_confidence() -> void:
+	var entity_nodes: Array[Node] = get_tree().get_nodes_in_group("entity")
+	for entity_node in entity_nodes:
+		if not entity_node:
+			continue
+		var conf = null
+		if entity_node.has_method("get_confidence_module"):
+			conf = entity_node.get_confidence_module()
+		elif entity_node.has_node("EntityConfidence"):
+			conf = entity_node.get_node("EntityConfidence")
+		if conf and conf.has_method("reset"):
+			conf.reset()
+			print("[NightManager] TASK 3: Entity confidence reset to baseline (%s)." % entity_node.name)
+		else:
+			print("[NightManager] TASK 3: Entity confidence module not found on '%s'." % (entity_node.name if entity_node else "null"))
+
+
+## FEATURE 1 — "Restart from Checkpoint" death-menu option.
+## Branch on the current phase:
+##   - Night active → reset to the EXACT start of the current night
+##     (GameTime back to dusk + start_night(current_night), restoring the
+##     state/time the night began).
+##   - Day active → reset to the beginning of the current day
+##     (morning baseline, player in bed, world reset).
+func restart_from_checkpoint() -> void:
+	if is_night_active:
+		print("[NightManager] Restart from checkpoint: NIGHT %d active — resetting to night start." % current_night)
+		restart_night()
+	else:
+		print("[NightManager] Restart from checkpoint: Day active — resetting to day start.")
+		restart_from_morning()
+	
+	# FOLLOW-UP 1: Always place the player on PlayerSpawnDev after a defeat/
+	# restart, regardless of whether the checkpoint branch reset the night or
+	# the day. This guarantees a consistent, clean-facing spawn with a fully
+	# reset camera.
+	_spawn_player_at("PlayerSpawnDev")
+
+
+## Teleports the player to a named PlayerSpawnpoints marker (with recursive
+## fallback), then fully resets the camera so the player is not left facing
+## a stale direction. Returns true on success.
+func _spawn_player_at(marker_name: String) -> bool:
+	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
+	if not player:
+		player = get_tree().get_first_node_in_group("Player") as Node3D
+	if not player:
+		print("[NightManager] _spawn_player_at(): Player not found in groups 'player'/'Player'.")
+		return false
+	
+	var spawn_marker: Marker3D = null
+	var scene_root: Node = get_tree().current_scene
+	if scene_root:
+		spawn_marker = scene_root.get_node_or_null("PlayerSpawnpoints/" + marker_name) as Marker3D
+		if not spawn_marker:
+			spawn_marker = _find_marker_recursive(scene_root, marker_name)
+	
+	if spawn_marker:
+		player.global_transform = spawn_marker.global_transform
+		if player.has_method("reset_camera"):
+			player.reset_camera()
+		print("[NightManager] Player spawned at '%s': %s" % [marker_name, spawn_marker.global_position])
+		return true
+	
+	print("[NightManager] Marker '%s' not found in current scene. Using fallback position." % marker_name)
+	player.global_position = Vector3(9.0, 1.0, 0.4)
+	if player.has_method("reset_camera"):
+		player.reset_camera()
+	return false
 
 
 func restart_from_morning() -> void:
@@ -1122,6 +1273,11 @@ func restart_from_morning() -> void:
 			entity_node._state = 0
 			entity_node._is_active = false
 	
+	# ─── TASK 3: RESET ENTITY CONFIDENCE ON MORNING RESTART ────────
+	# The morning baseline path must also reset the Entity's confidence so
+	# a failed night doesn't leak escalated boldness into the next cycle.
+	_reset_entity_confidence()
+	
 	is_night_active = false
 	is_day_active = true
 	night_progress = 0.0
@@ -1181,21 +1337,17 @@ func reset_to_daybreak() -> void:
 			print("[NightManager] Flashlight battery restored to 100%.")
 		
 		# ─── CAMERA RESET: Fix jumpscare-tainted rotation ────────────
-		# After a jumpscare death, the camera holder may have residual
-		# roll or yaw from the entity's grab animation. Apply the same
-		# deep matrix alignment used by ComputerUI._restore_player_controls()
-		# to flatten the camera and transfer yaw to the body capsule.
-		var camera_holder = player.get_node_or_null("CameraHolder") as Node3D
-		if camera_holder:
-			var cam_euler = camera_holder.global_transform.basis.get_euler()
-			# Transfer yaw to body capsule, zero pitch/roll on body
-			player.global_rotation.y = cam_euler.y
-			player.global_rotation.x = 0.0
-			player.global_rotation.z = 0.0
-			# Camera child handles pitch only — zero yaw and roll
-			camera_holder.rotation = Vector3(cam_euler.x, 0.0, 0.0)
-			camera_holder.global_transform.basis = camera_holder.global_transform.basis.orthonormalized()
-			print("[NightManager] Camera reset: yaw transferred to body, camera pitch isolated.")
+		# BUG 4 FIX: Delegate to player_controller.reset_camera() instead of
+		# independently re-writing the camera basis/rotation here. The old
+		# inline block transferred yaw into the body capsule and re-set the
+		# holder basis, which fought with (and duplicated) the player's own
+		# reset_camera() logic and could leave body/holder yaw inconsistent
+		# (camera facing wrong way after restart, then spinning out).
+		# reset_camera() now zeroes BOTH the body yaw AND the camera holder
+		# local rotation so body + camera are perfectly aligned on respawn.
+		if player.has_method("reset_camera"):
+			player.reset_camera()
+			print("[NightManager] Camera reset delegated to player.reset_camera().")
 		
 		# Re-enable player input and capture mouse
 		if player.has_method("set_process_input"):

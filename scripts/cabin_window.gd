@@ -332,17 +332,29 @@ func _update_nav_blocker() -> void:
 
 ## Returns true if the player is currently allowed to board THIS window.
 ##
-## DAY 1 / NIGHT 1 GATE: On Day 1 (current_night == 0) and Night 1
-## (current_night == 1), only the tutorial window (start_broken == true)
-## may be boarded. From Night 2 onward, all windows are boardable.
+## TASK 3 STRICT PROGRESSION GATE: Boarding can ONLY begin when the
+## RoutineManager explicitly flags windows as unlocked for boarding
+## (windows_unlocked_for_boarding). This flag is set when the Day 1
+## "Board up the broken window" objective begins (after the computer
+## login) and stays true from Day 2 onward. If RoutineManager is missing,
+## fall back to the old behavior (Night 1 = tutorial window only).
+##
+## DEV MODE BYPASS: When NightManager.is_dev_mode is true, the story lock
+## is completely disabled — ALL windows are boardable on ANY day/night.
+## This lets designers jump to Night 3+ (or any state) for testing without
+## being barred by the Day 1 progression gate.
 func _can_board_this_window() -> bool:
 	var nm := get_node_or_null("/root/NightManager")
+	if nm and "is_dev_mode" in nm and nm.is_dev_mode:
+		return true
+	var rm := get_node_or_null("/root/RoutineManager")
+	if rm and "windows_unlocked_for_boarding" in rm:
+		return rm.windows_unlocked_for_boarding
+	# Fallback (no RoutineManager): tutorial window only on Day 1 / Night 1.
 	if not nm:
 		return true
-	# Night 2+ (or sandbox/van sequence): boarding unlocked on all windows.
 	if int(nm.current_night) >= 2:
 		return true
-	# Day 1 / Night 1: only the tutorial window is boardable.
 	return start_broken
 
 
@@ -738,67 +750,15 @@ func _shatter_barricade() -> void:
 ## but the glass and crossbars are gone forever. ShatteredVisuals remains
 ## visible behind/between the planks.
 func interact() -> void:
-	# If already boarded, show a different message
-	if is_boarded:
-		
-		return
-	
-	# Check if the player has a Wooden Plank in their inventory
-	var inventory = get_node_or_null("/root/Inventory")
-	if not inventory:
-		
-		return
-	
-	# Find a plank item in the inventory
-	var plank_item = null
-	for item in inventory.items:
-		if item != null and item.item_type == ItemData.ItemType.PLANK:
-			plank_item = item
-			break
-	
-	if not plank_item:
-		
-		return
-	
-	# Consume one plank
-	inventory.remove_item(plank_item)
-	
-	# Board up the window
-	is_boarded = true
-	planks_remaining = 3
-	hits_on_current_plank = 0
-	
-	# NOTE: is_glass_shattered stays true if it was already shattered.
-	# The core window remains hollow — planks just cover the opening.
-	# _update_window_visuals() is NOT called — shattered state persists.
-	
-	# Show all three planks
-	_update_plank_visuals()
-	
-	# Play hammer sound
-	if _hammer_sound:
-		_hammer_sound.play()
-	
-	# ─── TUTORIAL: Persist the "fixed" flag ──────────────────────────────
-	# If this is the tutorial broken window (start_broken), set the
-	# NightManager's tutorial_window_fixed flag to true. This ensures the
-	# window stays boarded across scene reloads (death → restart, save/load).
-	#
-	# The flag is checked in _ready() — if already fixed, the window skips
-	# the broken initialization and keeps its boarded state.
-	if start_broken:
-		var nm = get_node_or_null("/root/NightManager")
-		if nm:
-			nm.tutorial_window_fixed = true
-			
-		
-		# ─── DAY 1 ONBOARDING: PHASE 2B — WINDOW PATCHED ────────────────
-		# Notify RoutineManager that the player has patched the broken
-		# tutorial window. This advances the objective to "Lock the front
-		# door and go to bed."
-		var rm = get_node_or_null("/root/RoutineManager")
-		if rm and rm.has_method("on_window_patched"):
-			rm.on_window_patched()
+	# ─── TASK 3: INSTANT-PLANK EXPLOIT REMOVED ─────────────────────────
+	# Legacy debug code previously consumed 1 plank and instantly set
+	# is_boarded = true with planks_remaining = 3, bypassing the inventory
+	# hold-to-interact pipeline AND the story unlock gate. Boarding now
+	# goes strictly through start_hold_interact() → _process_hold_interact()
+	# (4s per plank, one Wooden Plank deducted per stage, gated by
+	# RoutineManager.windows_unlocked_for_boarding). This quick-tap entry
+	# is intentionally a no-op.
+	print("[Window Boarding] Quick-tap E ignored — hold E to board planks (Task 3 exploit lock).")
 	
 	
 

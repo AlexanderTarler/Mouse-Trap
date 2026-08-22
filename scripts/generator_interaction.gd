@@ -22,6 +22,15 @@ extends Area3D
 ## Default: 10.0 seconds (2s hold = 20% of a can = 10 fuel units).
 @export var refuel_duration_per_can: float = 10.0
 
+## BUG 2 FIX: The `highlight_target` export was REMOVED (was
+## NodePath("../GeneratorSwitch")). The refill objective highlights the whole
+## `xray_generator` group (generator body), so this refill Area must NOT
+## redirect the highlight to the switch subtree — that collapsed every
+## "Refill the generator" highlight onto only the GeneratorSwitch button box.
+## The post-refill "Turn on the generator" step highlights the switch via its
+## own dedicated `xray_generator_switch` group, so no switch redirect is
+## needed here.
+
 ## How many fuel units one fuel can contains (matches NightManager's fuel scale).
 const FUEL_PER_CAN: float = 50.0
 
@@ -77,7 +86,9 @@ var _refuel_notified: bool = false
 func _ready() -> void:
 	add_to_group("xray_generator")
 	_nm = get_node_or_null("/root/NightManager")
-	collision_layer = 1
+	# BUG 1 FIX: Layer 2 ("Interactable") — the interaction ray only raycasts
+	# against layer 2, so this Area must be ON layer 2 to be reachable.
+	collision_layer = 2
 	_setup_refuel_audio()
 
 
@@ -94,60 +105,54 @@ func _process(delta: float) -> void:
 		stop_refuel()
 		return
 	
-	# ─── CALCULATE FUEL TRANSFER FOR THIS FRAME ───────────────────────
-	# Bug 2 Fix: Track how much of the can has been consumed via hold_time
-	# and use EXACT values when the can is fully drained. Per-frame float
-	# accumulation drifts by ~1% due to the minf() clamp on every frame.
-	# When the can is fully consumed, we add exactly FUEL_PER_CAN (50.0)
-	# to the generator instead of relying on per-frame deltas.
+	# ─── TASK 1: PROPORTIONAL FUEL CAN DEPLETION ─────────────────────
+	# The generator consumes exactly `fuel_to_add` generator units this
+	# frame (clamped so it never exceeds the tank's remaining space OR
+	# the can's remaining fuel). For every 1 unit of generator fuel, the
+	# can loses 2 can-units (2% of its 100-unit capacity). The can's
+	# per-instance fuel_amount is decremented in place; when it reaches
+	# 0 the can is consumed from inventory and the next can (if any)
+	# is auto-selected. Stopping mid-can now correctly preserves the
+	# partially-depleted can (fuel_amount persists on the instance).
 	var transfer_rate: float = FUEL_PER_CAN / refuel_duration_per_can
-	var new_hold_time: float = _hold_time + delta
-	var new_can_progress: float = new_hold_time / refuel_duration_per_can
 	
-	# Check if this frame finishes draining the current can
-	if new_can_progress >= 1.0:
-		# ─── CAN FULLY CONSUMED: Add only the remaining fuel ──────────
-		# The per-frame loop already added ~49.x units via transfer_rate * delta.
-		# We only add the remainder to reach exactly FUEL_PER_CAN (50.0),
-		# preventing the double-count that would fill 100% from one can.
-		var remaining: float = FUEL_PER_CAN - (_hold_time * transfer_rate)
-		_nm.generator_fuel = minf(_nm.generator_fuel + remaining, _nm.max_fuel)
-		_nm.fuel_changed.emit(_nm.generator_fuel)
-		
+	# Raw transfer this frame (generator units)
+	var fuel_to_add: float = transfer_rate * delta
+	
+	# Clamp to remaining generator capacity
+	var gen_space: float = _nm.max_fuel - _nm.generator_fuel
+	fuel_to_add = minf(fuel_to_add, gen_space)
+	
+	# Clamp to remaining fuel in the current can
+	# (1 generator unit = 2 can-units, so max transfer = fuel_amount / 2.0)
+	var can_max_transfer: float = _active_fuel_can.fuel_amount / 2.0
+	fuel_to_add = minf(fuel_to_add, can_max_transfer)
+	
+	if fuel_to_add <= 0.0:
+		if gen_space <= 0.0:
+			print("[Generator] Generator is full. Refuel complete.")
+			stop_refuel()
+		return
+	
+	_nm.generator_fuel = minf(_nm.generator_fuel + fuel_to_add, _nm.max_fuel)
+	_nm.fuel_changed.emit(_nm.generator_fuel)
+	
+	# ─── DEPLETE THE CAN: 2 can-units per 1 generator unit ──────────
+	_active_fuel_can.fuel_amount -= fuel_to_add * 2.0
+	
+	# ─── CAN EMPTY: CONSUME AND SELECT NEXT ─────────────────────────
+	if _active_fuel_can.fuel_amount <= 0.0:
+		print("[Generator] Fuel can fully drained (%.1f generator units transferred)." % fuel_to_add)
 		Inventory.remove_item(_active_fuel_can)
-		print("[Generator] One fuel can fully consumed (%.1f units transferred)." % FUEL_PER_CAN)
 		
-		# Look for another can to continue
+		# Look for another can with fuel to continue
 		_active_fuel_can = _find_fuel_can_in_inventory()
 		if _active_fuel_can:
-			_hold_time = 0.0
-			_can_progress = 0.0
 			print("[Generator] Found another fuel can. Continuing refuel...")
 		else:
-			print("[Generator] No more fuel cans. Refuel stopped.")
+			print("[Generator] No more fuel cans with fuel. Refuel stopped.")
 			stop_refuel()
 			return
-	else:
-		# Normal per-frame transfer (can not yet fully consumed)
-		var fuel_to_add: float = transfer_rate * delta
-		
-		# Clamp to remaining generator capacity
-		var gen_space: float = _nm.max_fuel - _nm.generator_fuel
-		fuel_to_add = minf(fuel_to_add, gen_space)
-		
-		# Clamp to remaining fuel in the current can
-		var can_remaining: float = FUEL_PER_CAN - (_hold_time * transfer_rate)
-		fuel_to_add = minf(fuel_to_add, can_remaining)
-		
-		if fuel_to_add <= 0.0:
-			_hold_time = new_hold_time
-			_can_progress = new_can_progress
-			return
-		
-		_nm.generator_fuel = minf(_nm.generator_fuel + fuel_to_add, _nm.max_fuel)
-		_nm.fuel_changed.emit(_nm.generator_fuel)
-		_hold_time = new_hold_time
-		_can_progress = new_can_progress
 	
 	# ─── NOTIFY ROUTINE MANAGER AT 40% FUEL ──────────────────────────
 	# The objective "Refuel the generator" should complete when the
@@ -399,8 +404,11 @@ func get_interact_text() -> String:
 
 
 ## Searches the player's inventory for a Fuel Can item.
+## TASK 1: Skips cans that have been fully drained (fuel_amount <= 0),
+## so only cans with remaining fuel are eligible for refueling.
 func _find_fuel_can_in_inventory():
 	for item in Inventory.items:
 		if item != null and "item_name" in item and item.item_name == "Fuel Can":
-			return item
+			if "fuel_amount" in item and item.fuel_amount > 0.0:
+				return item
 	return null

@@ -27,6 +27,8 @@ var is_switch_on: bool = false
 
 
 func _ready() -> void:
+	collision_layer = 2
+
 	# Add the local audio player so we can play the click sound
 	# even if the generator is dead or HorrorSoundManager is unavailable.
 	add_child(_audio_player)

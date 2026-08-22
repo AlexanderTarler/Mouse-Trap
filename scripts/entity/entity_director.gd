@@ -61,6 +61,22 @@ var _last_completed_state: int = -1
 var _flinch_approach_cooldown: float = 0.0
 const FLINCH_REAPPROACH_COOLDOWN: float = 5.0
 
+## ─── FLINCH CONFIDENCE PENALTY RE-ARM ──────────────────────────────────
+## Timestamp (seconds) of the last -15.0 flinch confidence penalty.
+## Used by _apply_flinch_confidence_penalty() to ensure the penalty fires
+## on EVERY new FLINCH transition but not repeatedly during the entry
+## frames of a single FLINCH (while the overcharge beam is still held and
+## the state lock hasn't engaged yet). Re-arms instantly for the next
+## FLINCH transition (which can only occur after the 2-3s anti-flap
+## cooldown has elapsed).
+var _last_flinch_penalty_time: float = -999.0
+
+## Minimum interval (seconds) between confidence penalty applications.
+## 0.5s is a safe re-arm window: FLINCH transitions are always separated
+## by the anti-flap cooldown (2-3s), so this still guarantees exactly one
+## penalty per FLINCH transition while preventing mid-FLINCH frame spam.
+const FLINCH_PENALTY_MIN_INTERVAL: float = 0.5
+
 ## ─── SPATIAL HYSTERESIS BAND (Distance-Based Oscillation Prevention) ──
 ## Tracks the 2D distance at which the last distance-based state transition
 ## occurred. When the Entity oscillates between two states at a threshold
@@ -807,13 +823,32 @@ func _tier_0_pending_override(entity: CharacterBody3D) -> int:
 ## Entity is completely pacified after every flinch regardless of how
 ## confident it had become.
 func _apply_flinch_confidence_penalty(entity: CharacterBody3D) -> void:
-	if _last_completed_state != EntityAI.State.FLINCH:
-		var confidence_module = entity.get_confidence_module()
-		if confidence_module:
-			var current_conf = confidence_module.get_confidence()
-			var new_conf := 0.0  # Hard reset to exactly 0%
-			confidence_module.set_confidence(new_conf)
-			print("[Director] FLINCH confidence RESET: %.1f → 0.0 (absolute reset)" % current_conf)
+	# ─── PER-TRANSITION RE-ARM GUARD ───────────────────────────────
+	# The penalty must fire on EVERY new FLINCH transition (not just the
+	# first per session). Previously this was gated on
+	# `_last_completed_state != FLINCH`, but _last_completed_state stays
+	# equal to FLINCH forever after the first flinch completes (it is never
+	# reset), so all subsequent flinches never applied their confidence
+	# penalty — leaving the Entity confident enough to re-approach the
+	# cabin instantly (the FLINCH → OBSERVE → APPROACH oscillation).
+	#
+	# A timestamp re-arm is used instead: it still prevents the penalty
+	# from re-firing every frame while the overcharge beam keeps the
+	# Entity in FLINCH-state entry frames (state_locked not yet engaged),
+	# but re-arms instantly for the next FLINCH transition.
+	var now_penalty = Time.get_ticks_msec() / 1000.0
+	if now_penalty - _last_flinch_penalty_time < FLINCH_PENALTY_MIN_INTERVAL:
+		return
+	_last_flinch_penalty_time = now_penalty
+	var confidence_module = entity.get_confidence_module()
+	if confidence_module:
+		# ISSUE 2 FIX: Use a -15.0 penalty via modify() (the documented
+		# per-transition confidence damage) instead of a hard reset to 0.0.
+		# This drops the Entity below the 40.0 APPROACH_WINDOW threshold so
+		# it cannot courageously re-approach the cabin the instant FLINCH
+		# completes.
+		confidence_module.modify(-15.0, "flinch_flashlight")
+		print("[Director] FLINCH confidence penalty: -15.0 applied (now %.1f)." % confidence_module.get_confidence())
 
 ## Captures the current window target's ID to the flinch blacklist.
 ## Called by _tier_0_flashlight_reaction() when transitioning to FLINCH
@@ -821,7 +856,26 @@ func _apply_flinch_confidence_penalty(entity: CharacterBody3D) -> void:
 ## re-selecting the same window on the next approach cycle (Correction 3).
 func _capture_flinch_window_id(entity: CharacterBody3D) -> void:
 	var window_target = entity.get_current_window_target()
-	if window_target and entity.has_method("add_flinch_blacklisted_window"):
+	# ─── FIRST-FLINCH FALLBACK: No target selected yet ─────────────
+	# If the Entity is flinched on the very FIRST APPROACH_WINDOW frame,
+	# _current_window_target is still null — the state handler selects the
+	# window LATER in the same function, but the flashlight reaction (this
+	# function) runs first. In that case, determine the imminent window via
+	# pick_tactical_window() (the same call the selection code will make)
+	# and capture IT instead. Without this, the FIRST flinch bans nothing,
+	# the exact same window is re-selected on the next approach, and the
+	# ban only lands on the SECOND flinch (the observed A→A→B sequence).
+	if window_target == null:
+		var nav_flinch = entity.get_navigation_module()
+		if nav_flinch and nav_flinch.has_method("pick_tactical_window"):
+			window_target = nav_flinch.pick_tactical_window(entity.get_player())
+	if window_target:
+		# ─── ID STRING FALLBACK (property read) ─────────────────────
+		# CabinWindow.window_id is a plain @export var — there is no
+		# get_window_id() method. Without the property fallback the id stays
+		# "" and pick_tactical_window()'s `blacklisted.has(wid)` filter can
+		# never match (the playtest log showed "Window '' selected" while the
+		# blacklist contained 'Computer_Left'). Read the property directly.
 		var window_id: String = ""
 		if window_target.has_method("get_window_id"):
 			window_id = window_target.get_window_id()
@@ -830,6 +884,17 @@ func _capture_flinch_window_id(entity: CharacterBody3D) -> void:
 		
 		if not window_id.is_empty():
 			entity.add_flinch_blacklisted_window(window_id)
+		
+		# ─── NODE-LEVEL BAN (belt-and-suspenders) ────────────────────
+		# Sync the exact interrupted node onto the EntityAI module so the
+		# node-instance filter in pick_tactical_window() and the
+		# [APPROACH TARGET] / [FLINCH BAN] diagnostics see it, and so the
+		# ban is lifted only when a DIFFERENT window is selected in
+		# _approach_window_state().
+		var ai_module = entity.get_node_or_null("EntityAI")
+		if ai_module and "_flinch_banned_window" in ai_module:
+			ai_module._flinch_banned_window = window_target
+			print("[FLINCH BAN] Director captured banned window node: %s" % window_target.name)
 
 ## Plays a high-pitched pained scream when the indoor overcharge standoff
 ## completes and the Entity RETREATs. Raises the growl pitch to 1.8 to
@@ -1063,6 +1128,14 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 		
 		# ─── OVERCHARGE INSTANT FLINCH (P INSIDE + E OUTSIDE) ────────
 		if not _oc_entity_inside and _oc_player_inside:
+			# ─── ISSUE 5 FIX: CACHE THE ABORTED WINDOW ─────────────────
+			# The window the Entity was repelled from (APPROACH_WINDOW or
+			# WINDOW_PEEK) must be added to the flinch blacklist so the next
+			# APPROACH_WINDOW cycle cannot re-select the exact same window.
+			# Previously only the lit-room exit path captured the window ID,
+			# leaving this overcharge path free to re-target the same window
+			# and produce a boring monotony loop.
+			_capture_flinch_window_id(entity)
 			_apply_flinch_confidence_penalty(entity)
 			_flinch_approach_cooldown = FLINCH_REAPPROACH_COOLDOWN
 			_state_entry_confidence = -1.0
@@ -1081,6 +1154,11 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 				print("[Director] OVERCHARGE >= 1.5s INDOOR: TRIGGERING RETREAT!")
 				return EntityAI.State.RETREAT
 			# ─── OUTDOOR: FLINCH (fast escape sprint) ───────────────
+			# ─── ISSUE 5 FIX: CACHE THE ABORTED WINDOW ─────────────────
+			# Mirror of the instant-FLINCH fix above: the 1.5s outdoor
+			# overcharge FLINCH must also blacklist the current window so
+			# the Entity picks a different window when it recovers.
+			_capture_flinch_window_id(entity)
 			_apply_flinch_confidence_penalty(entity)
 			_flinch_approach_cooldown = FLINCH_REAPPROACH_COOLDOWN
 			_state_entry_confidence = -1.0
@@ -1287,9 +1365,17 @@ func _tier_0_flashlight_reaction(entity: CharacterBody3D, state: int) -> int:
 	# into FLINCH state — it sprints away from the cabin for 5.0 seconds.
 	#
 	# ONE-SHOT GUARD: The confidence penalty is applied once per FLINCH
-	# transition. We use _apply_flinch_confidence_penalty() which checks
-	# _last_completed_state != FLINCH to prevent double-application.
+	# transition. We use _apply_flinch_confidence_penalty() which re-arms
+	# per transition to prevent double-application within the same FLINCH.
 	if is_player_inside and entity.is_overcharged:
+		# ─── ISSUE 1 FIX: CACHE THE ABORTED WINDOW ─────────────────
+		# The window the Entity was repelled from must be added to the
+		# flinch blacklist so the next APPROACH_WINDOW cycle cannot
+		# re-select the exact same window it was just repelled from.
+		# Mirrors the capture already present in the other FLINCH
+		# transition paths (lit-room exit, overcharge dispatch,
+		# WINDOW_PEEK, APPROACH_WINDOW).
+		_capture_flinch_window_id(entity)
 		# Apply -15.0 confidence penalty (Correction 2)
 		_apply_flinch_confidence_penalty(entity)
 		# Set flinch approach cooldown to prevent immediate re-entry
@@ -1942,6 +2028,29 @@ func _tier_4_confidence_escalation(entity: CharacterBody3D, state: int) -> int:
 	
 	var confidence = entity.get_confidence_module().get_confidence()
 	
+	# ─── FLINCH RE-APPROACH COOLDOWN GATE (Guard 4 — FIRST) ─────
+	# After a FLINCH transition from APPROACH_WINDOW, the stale
+	# _state_entry_confidence from the interrupted approach can cause
+	# Tier 4 to immediately re-enter APPROACH_WINDOW, even though
+	# confidence is well below threshold. This 5-second cooldown
+	# prevents the "FLINCH → OBSERVE → APPROACH_WINDOW" ping-pong
+	# by giving the Entity time to settle into a passive state before
+	# the Director can escalate again.
+	#
+	# ORDERING FIX (APPROACH↔OBSERVE oscillation): This gate MUST run
+	# BEFORE the de-escalation hysteresis hold below. Previously the
+	# hold (`if _state_entry_confidence >= 40.0 and confidence >= 35.0:
+	# return APPROACH_WINDOW`) ran first and returned APPROACH_WINDOW
+	# every frame for as long as confidence stayed above the hysteresis
+	# floor — so the 5s cooldown set by the Tier 5 null-target guard
+	# (when pick_tactical_window() returned null, e.g. the only window
+	# was flinch-blacklisted) was NEVER consulted and the Entity flapped
+	# APPROACH_WINDOW → OBSERVE → APPROACH_WINDOW at ~60fps with zero
+	# time spent settling. Moving the cooldown check ahead of the hold
+	# makes it a true hard gate for every re-escalation path.
+	if _flinch_approach_cooldown > 0.0:
+		return -1
+	
 	# ─── DE-ESCALATION HYSTERESIS (Guard 1) ──────────────────────────
 	# If we are still above the hysteresis floor (35.0), preserve the
 	# current state. Only de-escalate when confidence has meaningfully
@@ -1981,17 +2090,6 @@ func _tier_4_confidence_escalation(entity: CharacterBody3D, state: int) -> int:
 		_last_de_escalated_from_state = -1  # Reset for next cycle
 		return -1
 	
-	# ─── FLINCH RE-APPROACH COOLDOWN GATE (Guard 4) ─────────────
-	# After a FLINCH transition from APPROACH_WINDOW, the stale
-	# _state_entry_confidence from the interrupted approach can cause
-	# Tier 4 to immediately re-enter APPROACH_WINDOW, even though
-	# confidence is well below threshold. This 5-second cooldown
-	# prevents the "FLINCH → OBSERVE → APPROACH_WINDOW" ping-pong
-	# by giving the Entity time to settle into a passive state before
-	# the Director can escalate again.
-	if _flinch_approach_cooldown > 0.0:
-		return -1
-	
 	# ─── STANDARD ESCALATION ───────────────────────────────────────
 	if confidence >= 40.0:
 		# Record the escalation for hysteresis guards
@@ -2023,7 +2121,27 @@ func _tier_5_completion_flags(entity: CharacterBody3D, state: int) -> int:
 			# Detect this: if the Entity has no current window target AND is
 			# not a door target, set a 5-second cooldown and return OBSERVE
 			# so the Entity pauses before Tier 4 can re-escalate.
+			#
+			# ─── SABOTAGE ESCALATION (FIX) ─────────────────────────────
+			# _approach_window_state() sets no_viable_window = true when
+			# pick_tactical_window() could not find a SINGLE viable window
+			# (all rooms lit / all windows flinch-banned / all on breach
+			# cooldown). In that case the Entity must NOT bounce
+			# APPROACH_WINDOW ↔ OBSERVE_FROM_TREELINE with a 5s cooldown
+			# forever — it should escalate to SABOTAGE_FUSE, which breaks
+			# the generator (killing ALL cabin lights) and makes previously-
+			# lit rooms approachable again. This matches the design:
+			# "HallRoom + ComputerRoom lit + the LivingRoom's only window
+			# banned = no viable window → sabotage."
+			#
+			# Only when a window genuinely failed to be selected (e.g. the
+			# NAV failsafe cleared the target without a null selection) do
+			# we keep the old 5s OBSERVE cooldown fallback.
 			if not entity.get_current_window_target() and not entity.is_door_target:
+				if entity.no_viable_window:
+					entity.no_viable_window = false
+					print("[Director] APPROACH_WINDOW null target guard: No viable window exists (all lit/banned/cooldown). Escalating to SABOTAGE_FUSE!")
+					return EntityAI.State.SABOTAGE_FUSE
 				print("[Director] APPROACH_WINDOW null target guard: No window selected. Cooling down for 5s.")
 				_flinch_approach_cooldown = FLINCH_REAPPROACH_COOLDOWN
 				return EntityAI.State.OBSERVE_FROM_TREELINE
@@ -2149,8 +2267,24 @@ func _tier_5_completion_flags(entity: CharacterBody3D, state: int) -> int:
 			# guard to expire and Tier 0 to re-trigger FLINCH again.
 			# 2.0 seconds gives the Entity enough time to physically sprint
 			# out of the beam (and for the player to lose tracking).
-			_anti_flap_cooldown = 2.0
 			_last_completed_state = EntityAI.State.FLINCH
+			
+			# ─── ISSUE 2 FIX: CONFIDENCE-CONDITIONAL COOLDOWN EXTENSION ──
+			# If the Entity STILL has high confidence (>= 40.0) after the
+			# FLINCH, Tier 4 would immediately re-escalate to APPROACH_WINDOW
+			# the moment the cooldown lapses — recreating the
+			# FLINCH → OBSERVE → APPROACH_WINDOW loop at 60fps. Extend the
+			# cooldown to 3.0s when confidence is still >= 40.0 so the Entity
+			# stays pacified in OBSERVE_FROM_TREELINE long enough for the
+			# -15.0 flinch penalty and passive confidence decay to bring it
+			# below the 40.0 re-approach threshold. Otherwise keep the
+			# standard 2.0s.
+			var _post_flinch_confidence: float = entity.get_confidence_module().get_confidence() if entity.get_confidence_module() else 0.0
+			if _post_flinch_confidence >= 40.0:
+				_anti_flap_cooldown = 3.0
+				print("[Director] FLINCH completed with confidence %.1f >= 40.0! Anti-flap cooldown extended to 3.0s (blocks immediate APPROACH_WINDOW re-escalation)." % _post_flinch_confidence)
+			else:
+				_anti_flap_cooldown = 2.0
 			
 			# ─── FIX 1: FLINCH RE-APPROACH COOLDOWN ─────────────────
 			# Re-set the flinch approach cooldown to 5.0 seconds so Tier 4
@@ -2215,13 +2349,17 @@ func _tier_5_completion_flags(entity: CharacterBody3D, state: int) -> int:
 		if entity.is_observe_finished:
 			entity.is_observe_finished = false
 			
-			# ─── CLEAR FLINCH BLACKLIST ON RELOCATION CYCLE ────────────────
-			# The Entity is completing an OBSERVE observation cycle and
-			# relocating to a new vantage point. Clear the flinch blacklist
-			# so all windows are available for selection on the next approach.
-			# This is the primary clear condition (Correction 3).
-			if entity.has_method("clear_flinch_blacklist"):
-				entity.clear_flinch_blacklist()
+			# ─── FLINCH BLACKLIST PRESERVED ACROSS RELOCATION ────────────
+			# FLINCH MONOTONY FIX: The blacklist was previously cleared here
+			# at the end of every observation cycle. FLINCH → relocate →
+			# OBSERVE means the freshly-repelled window was unlocked on the
+			# very first observation (~2-8s later), before confidence can
+			# re-escalate to APPROACH_WINDOW — so the utility scorer
+			# immediately re-selected the exact same window the player just
+			# repelled. The blacklist now persists until the Entity either
+			# breaches a DIFFERENT window (cleared in entity_ai.gd) or
+			# deactivates into DORMANT (cleared in entity_controller.gd),
+			# guaranteeing a different window is picked on the next approach.
 			
 			entity.fade_and_relocate()
 			return EntityAI.State.OBSERVE_FROM_TREELINE
@@ -2351,6 +2489,18 @@ func _tier_7_fallback_confidence(entity: CharacterBody3D) -> int:
 	
 	# Safely check if player is inside (BELIEF SYSTEM) — default to false
 	var is_player_inside = entity.get_thinks_player_is_inside() if entity.has_method("get_thinks_player_is_inside") else false
+	
+	# ─── TASK: RE-APPROACH COOLDOWN GUARD (Oscillation Fix) ─────────────
+	# The null-target guard in _tier_5_completion_flags() sets
+	# _flinch_approach_cooldown = FLINCH_REAPPROACH_COOLDOWN (5s) when the
+	# Approach-Window failsafe clears the window target (still far from any
+	# window). This tier MUST honor that cooldown before re-entering
+	# APPROACH_WINDOW. Without this guard, the log showed an instant
+	# APPROACH_WINDOW -> OBSERVE_FROM_TREELINE -> APPROACH_WINDOW flap on
+	# the same frame — the Entity re-picking an unreachable window every
+	# cycle instead of cooling down and relocating.
+	if _flinch_approach_cooldown > 0.0:
+		return -1
 	
 	if confidence >= 40.0:
 		return EntityAI.State.APPROACH_WINDOW

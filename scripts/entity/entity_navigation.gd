@@ -678,14 +678,17 @@ func is_player_lit_by_static_lights() -> bool:
 ##   2. REMOVE rooms where the cabin light is ON (lit rooms = unsafe).
 ##   3. If ALL rooms are lit, return null (triggers frustration → SABOTAGE_FUSE).
 ##   4. REMOVE the room where the player was last heard acoustically.
-##   5. Among remaining rooms, pick the one with the FEWEST boarded windows.
-##      If equal → random.
-##   6. Within the chosen room, pick an unboarded window. If all boarded,
-##      pick the one with the least barricade health remaining (closest to break).
-##      If equal → random.
-##   7. Apply breach cooldown and flinch blacklist as final safety filters.
-##      If ALL windows in the chosen room are filtered, fall back to the
-##      next-best room.
+##   5. Flatten ALL remaining rooms into one candidate pool. Banned windows
+##      are NOT erased — every window stays a potential option.
+##   6. Filter to VIABLE windows: skip breach-cooldown, flinch-blacklisted
+##      (string ID), and node-level flinch-banned instances. Banned windows
+##      are skipped ONLY while the ban is active, so the NEXT-most-attractive
+##      viable window (e.g., the boarded window in the same room) is chosen.
+##   7. Among viable windows, prefer unboarded. If all boarded, pick the one
+##      with the least barricade health remaining (closest to break). Random
+##      among ties.
+##   8. If NO window is viable (all lit / all banned / all on cooldown),
+##      return null → the Director routes to SABOTAGE_FUSE.
 ##
 ## Parameters:
 ##   player: The player Node3D (unused in the new logic but kept for API compatibility).
@@ -732,6 +735,15 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 		var window_id: String = ""
 		if cabin_window.has_method("get_window_id"):
 			window_id = cabin_window.get_window_id()
+		# PROPERTY FALLBACK: CabinWindow.window_id is a plain @export var —
+		# there is NO get_window_id() method on the script. has_method() returns
+		# false, so without this fallback window_id stays "" and the flinch
+		# blacklist filter (`blacklisted.has(wid)`) never matches the repelled
+		# window (e.g. 'Computer_Left') — the Entity re-selected the exact same
+		# window it was just repelled from. Read the property when the method
+		# is absent.
+		if window_id.is_empty() and "window_id" in cabin_window:
+			window_id = str(cabin_window.window_id)
 		
 		# Determine approach marker (WindowMarker child or the marker itself)
 		var approach_marker: Node3D = w
@@ -786,67 +798,66 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 		print("[Navigation] ALL ROOMS ARE LIT! Returning null: Entity cannot approach any window. Frustration will trigger SABOTAGE_FUSE.")
 		return null
 	
-	# ─── STEP 2: REMOVE LAST-HEARD ROOM ────────────────────────────────
-	# If the Entity heard the player in a specific room, exclude that
-	# room's windows. The Entity flanks to a different room.
-	if last_heard_room != "" and rooms.has(last_heard_room):
-		rooms.erase(last_heard_room)
-		print("[Navigation] Room '%s' excluded: player was last heard here. Flanking to a different room." % last_heard_room)
-	
-	# ─── STEP 2.5: TASK 1.2 — REMOVE BANNED ROOM ──────────────────────
-	# If the Entity was interrupted at a window in this room by an
-	# overcharged flashlight (FLINCH entry), the room is banned until the
-	# Entity successfully targets a window in a DIFFERENT room. The banned
-	# room is stored on the EntityAI module as _banned_room and cleared by
-	# _approach_window_state() when a new room is targeted.
-	var ai_module = entity.get_node_or_null("EntityAI")
-	if ai_module and "_banned_room" in ai_module:
-		var banned_room: String = str(ai_module._banned_room)
-		if not banned_room.is_empty() and rooms.has(banned_room):
-			rooms.erase(banned_room)
-			print("[Navigation] Room '%s' excluded: banned after interrupted window (overcharged FLINCH)." % banned_room)
-	
-	# ─── STEP 3: PICK ROOM WITH FEWEST BOARDED WINDOWS ─────────────────
-	# Count boarded windows per remaining room. Pick the room with the
-	# lowest count. If equal, pick randomly.
-	var candidate_rooms: Array[String] = []
-	var lowest_boarded_count: int = 999
-	for room_name in rooms.keys():
-		var windows = rooms[room_name] as Array
-		var boarded_count: int = 0
-		for entry in windows:
-			if entry["is_boarded"]:
-				boarded_count += 1
-		
-		if boarded_count < lowest_boarded_count:
-			lowest_boarded_count = boarded_count
-			candidate_rooms = [room_name]
-		elif boarded_count == lowest_boarded_count:
-			candidate_rooms.append(room_name)
-	
-	if candidate_rooms.is_empty():
-		return null
-	
-	# Pick randomly among tied rooms
-	var chosen_room: String = candidate_rooms[randi() % candidate_rooms.size()]
-	var room_windows: Array = rooms[chosen_room] as Array
-	print("[Navigation] Room '%s' selected (%d/%d windows boarded)." % [chosen_room, lowest_boarded_count, room_windows.size()])
-	
-	# ─── STEP 4: PICK SPECIFIC WINDOW IN CHOSEN ROOM ──────────────────
-	# Apply final safety filters (breach cooldown, flinch blacklist),
-	# then pick: unboarded > least barricade health > random.
+	# ─── STEP 2: SOFT PENALTY for last-heard room (never erase!) ──────
+	# Previously this ERASED the entire room where the player was last heard.
+	# If that room was the only non-lit room (and contained the banned window
+	# PLUS a boarded sibling), the whole room vanished → pick_tactical_window()
+	# returned null → APPROACH_WINDOW → OBSERVE → APPROACH loop, with the
+	# viable boarded window never considered.
 	#
-	# Build a filtered list that passes safety checks.
+	# Now windows are NEVER removed from the pool: a `_in_last_heard_room` flag
+	# is stamped on each window so the ranking step can prefer OTHER rooms ONLY
+	# when equally-attractive unboarded candidates exist. The last-heard room's
+	# windows remain fully selectable when they are the only option.
+	var last_heard_room_lc: String = last_heard_room.to_lower()
+	for room_name in rooms.keys():
+		var room_match: bool = room_name.to_lower() == last_heard_room_lc
+		for entry in rooms[room_name] as Array:
+			entry["_in_last_heard_room"] = room_match
+	
+	# ─── STEP 3: FLATTEN ALL REMAINING ROOMS INTO ONE CANDIDATE POOL ──
+	# Collect EVERY window from every remaining (non-lit) room. The old
+	# code picked a single room (fewest boarded windows) and only rolled
+	# to rooms TIED at that same boarded count — so when the most
+	# attractive unboarded window in a room was flinch-banned, the boardED
+	# second window in that same room was never offered (the room lost the
+	# "fewest boarded" comparison and was dropped entirely). The Entity
+	# deadlocked: banned window → null → OBSERVE → APPROACH forever.
+	#
+	# New behavior (matches design):
+	#   - Flinch-banned / breach-cooldown windows are SKIPPED (not erased).
+	#   - Every remaining window across all rooms is a candidate.
+	#   - If the most-attractive window is banned, the SECOND-most
+	#     attractive viable window is chosen (e.g., the boarded window in
+	#     the same room).
+	#   - Only when NO window is viable (all lit / all banned / all on
+	#     cooldown) is null returned → the Director routes to SABOTAGE_FUSE.
+	var all_windows: Array[Dictionary] = []
+	for room_name in rooms.keys():
+		for entry in rooms[room_name] as Array:
+			all_windows.append(entry)
+	
+	# ─── STEP 4: FILTER TO VIABLE WINDOWS, THEN RANK ───────────────────
+	# Viability filters:
+	#   1. Breach cooldown — hard skip (recently breached, truly unavailable).
+	#   2. Flinch blacklist (string ID) — skip while banned (time-bounded,
+	#      self-pruning on every read; the SINGLE source of truth for the
+	#      interrupted-window ban).
+	#
+	# The old node-level flinch ban (_flinch_banned_window) is intentionally
+	# NOT filtered here. Its "lift on a different selection" logic in
+	# entity_ai.gd was what made the banned window re-selectable after a
+	# single OBSERVE→APPROACH cycle. The time-limited string blacklist is
+	# authoritative and cannot be accidentally cleared.
 	var filtered_windows: Array[Dictionary] = []
-	for entry in room_windows:
-		var cw = entry["cabin_window"] as CabinWindow
+	for entry in all_windows:
 		var wid = entry["window_id"] as String
 		
 		# Breach cooldown filter
 		if _breach_cooldowns.has(wid) and _breach_cooldowns[wid] > 0.0:
 			continue
 		
-		# Flinch blacklist filter
+		# Flinch blacklist (string ID) filter
 		if entity and entity.has_method("get_flinch_blacklisted_windows"):
 			var blacklisted = entity.get_flinch_blacklisted_windows()
 			if not blacklisted.is_empty() and blacklisted.has(wid):
@@ -854,10 +865,9 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 		
 		filtered_windows.append(entry)
 	
-	# If ALL windows were filtered out, fall back to the unfiltered list
-	# (the Entity must approach something, even if it's on cooldown).
 	if filtered_windows.is_empty():
-		filtered_windows = room_windows
+		print("[Navigation] No viable windows remain (all lit, on breach cooldown, or flinch-banned). Returning null → SABOTAGE_FUSE.")
+		return null
 	
 	# Prefer unboarded windows
 	var unboarded: Array[Dictionary] = []
@@ -868,11 +878,26 @@ func pick_tactical_window(player: Node3D) -> Node3D:
 		else:
 			unboarded.append(entry)
 	
+	# ─── FLANKING PREFERENCE (soft): Among UNBOARDED windows, prefer those
+	# NOT in the last-heard room (the Entity flanks away from the player's
+	# known room). If ALL unboarded windows are in the last-heard room (or
+	# there are none), fall back to ALL unboarded — so a banned unboarded
+	# window + boarded sibling in the player's own room still yields a
+	# selectable window instead of null.
+	var unboarded_other: Array[Dictionary] = []
+	var unboarded_heard: Array[Dictionary] = []
+	for entry in unboarded:
+		if entry.get("_in_last_heard_room", false):
+			unboarded_heard.append(entry)
+		else:
+			unboarded_other.append(entry)
+	
 	var chosen_entry: Dictionary = {}
 	if not unboarded.is_empty():
-		# Pick randomly among unboarded windows
-		chosen_entry = unboarded[randi() % unboarded.size()]
-		print("[Navigation] Window '%s' selected (unboarded)." % chosen_entry["window_id"])
+		var unboarded_pool: Array[Dictionary] = unboarded_other if not unboarded_other.is_empty() else unboarded_heard
+		# Pick randomly among the preferred unboarded windows
+		chosen_entry = unboarded_pool[randi() % unboarded_pool.size()]
+		print("[Navigation] Window '%s' selected (unboarded%s)." % [chosen_entry["window_id"], ", last-heard room" if chosen_entry.get("_in_last_heard_room", false) else ""])
 	else:
 		# All boarded — pick the one with least barricade health.
 		# barricade health = (planks_remaining * HITS_PER_PLANK) - hits_on_current_plank
@@ -944,9 +969,20 @@ func pick_next_vantage_point() -> void:
 	# cabin mid-action. Only callers in passive states (OBSERVE, FLINCH,
 	# RETREAT arrival, etc.) should legitimately set a new vantage point.
 	var entity_state = entity.get_state()
-	if entity_state == EntityAI.State.APPROACH_WINDOW \
-			or entity_state == EntityAI.State.WINDOW_PEEK \
-			or entity_state == EntityAI.State.INDOOR_SEARCH:
+	# ─── APPROACH_WINDOW ABANDON BYPASS (Stuck-Loop Fix) ────────────────
+	# fade_and_relocate() clears the window/door target BEFORE calling
+	# pick_next_vantage_point(). If we are still in APPROACH_WINDOW but
+	# no target remains (set_current_window_target(null) + is_door_target
+	# false), the approach has been abandoned — allow relocation to break
+	# the stuck loop that previously repeated every 1.5 seconds.
+	var has_live_approach_target: bool = false
+	if entity_state == EntityAI.State.APPROACH_WINDOW:
+		var wp = entity.get_current_window_target()
+		var door_target: bool = entity.get("is_door_target") == true
+		has_live_approach_target = (wp != null) or door_target
+	if entity_state == EntityAI.State.WINDOW_PEEK \
+			or entity_state == EntityAI.State.INDOOR_SEARCH \
+			or (entity_state == EntityAI.State.APPROACH_WINDOW and has_live_approach_target):
 		print("[NAV_GUARD] pick_next_vantage_point() BLOCKED — Entity is in %s. Preserving current nav target." % EntityAI.State.keys()[entity_state])
 		return
 	

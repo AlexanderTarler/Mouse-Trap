@@ -9,4 +9,9 @@ prompt_text = "Hold [SHIFT] to sprint. Sprinting makes noise — be careful."
 trigger_moment = ""
 prerequisite = "interact"
 one_shot = true
-day_one_only = true
+# ─── TASK 8 FIX: day_one_only REMOVED ────────────────────────────────
+# Previously this flag blocked the sprint hint from appearing during the
+# Night 2.2 car-alarm sequence (TutorialManager._can_show() rejects prompts
+# when NightManager.current_night != 0). The sprint hint is narrative-driven
+# (van interaction → Entity STALK), so it must be allowed to show on Night 2.
+# day_one_only is intentionally NOT set (defaults to false).

@@ -93,9 +93,14 @@ var _saved_collision_layer: int = 0
 func _ready() -> void:
 	add_to_group("portable_trap")
 	
-	# Save the original collision mask/layer so we can restore them on drop
+	# Save the original collision mask/layer (WITH layer 2 added below) so we
+	# can restore them on drop. Note: the interaction ray only raycasts against
+	# layer 2 ("Interactable"), so the lamp must opt in or it can never be
+	# grabbed / picked up with E.
 	_saved_collision_mask = collision_mask
 	_saved_collision_layer = collision_layer
+	set_collision_layer_value(1, true)
+	set_collision_layer_value(2, true)
 	
 	# Start with the light off — it only turns on when deployed
 	if lamp_light:
@@ -179,6 +184,16 @@ func interact() -> void:
 		if cable and cable.has_method("connect_to_lamp"):
 			cable.connect_to_lamp(self)
 			print("[PortableLamp] Cable connected to lamp!")
+			
+			# ─── TASK 4: "SET TRAP" — LAMP END CONNECTED ──────────────
+			# The side-track's "Set trap" objective completes once BOTH
+			# cable ends are plugged (generator via generator_outlet.gd,
+			# lamp here). Notify RoutineManager when the free end snaps
+			# into the deployed lamp.
+			var rm_lamp = get_node_or_null("/root/RoutineManager")
+			if rm_lamp and rm_lamp.has_method("on_cable_connected_to_light"):
+				rm_lamp.on_cable_connected_to_light()
+				print("[PortableLamp] TASK 4: 'Set trap' lamp end notified to RoutineManager.")
 			return
 
 

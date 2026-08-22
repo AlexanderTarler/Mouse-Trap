@@ -68,6 +68,8 @@ const SCREEN_SURFACE_INDEX: int = 1
 
 
 func _ready() -> void:
+	collision_layer = 2
+
 	add_to_group("interactable")
 
 	# --- POWER GRID SETUP ---

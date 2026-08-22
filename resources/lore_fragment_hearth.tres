@@ -1,12 +1,11 @@
 [gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://d0uq0x2m2q0cb"]
 
-[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1_item_data"]
+[ext_resource type="Script" uid="uid://baixx1fs8cosb" path="res://scripts/items/item_data.gd" id="1_item_data"]
 [ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0c6" path="res://scenes/note.tscn" id="2_note_scene"]
-
 
 [resource]
 script = ExtResource("1_item_data")
-item_name = "Lore Fragment (Hearth)"
+item_name = "Half-withered note"
 item_description = "A torn scrap of paper, yellowed with age. The ink is smudged but legible."
 item_type = 1
 note_text = "...the horn-crowned watcher does not tread where the flames dance. It stalks the dark borders where the pine needles turn black. Keep the oil burning, keep the hearth bright. If the room falls to shadow, it will claim what belongs to the wood. It has watched this cabin since my grandfather laid the logs..."

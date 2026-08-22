@@ -74,7 +74,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3963885, 0.91389287)
 shape = SubResource("BoxShape3D_4dgml")
 
 [node name="InteractionArea" type="Area3D" parent="." index="2" unique_id=381473358]
-collision_layer = 0
+collision_layer = 2
 collision_mask = 0
 
 [node name="InteractionShape" type="CollisionShape3D" parent="InteractionArea" index="0" unique_id=864565658]

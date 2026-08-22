@@ -18,6 +18,7 @@ light_indirect_energy = 0.0
 omni_range = 0.5
 
 [node name="InteractionArea" type="Area3D" parent="." unique_id=1106359011]
+collision_layer = 2
 script = ExtResource("2_e7wg2")
 switch_click_sound = ExtResource("3_h4oh8")
 

@@ -22,6 +22,7 @@ script = ExtResource("1_ywdun")
 shape = SubResource("ConcavePolygonShape3D_ywdun")
 
 [node name="InteractionArea" type="Area3D" parent="." unique_id=1299091452]
+collision_layer = 2
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionArea" unique_id=19522352]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4228547, 0)

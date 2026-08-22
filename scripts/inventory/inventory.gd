@@ -19,6 +19,18 @@ var items: Array = []
 ## starting items that get immediately removed.
 var _initialization_done: bool = false
 
+## ─── TASK 3: CHECKPOINT SNAPSHOT ──────────────────────────────────────
+## Deep-duplicated snapshot of `items` taken at the start of each night
+## cycle (see NightManager.start_night() → Inventory.save_checkpoint()).
+## When the player dies and restarts from the checkpoint, NightManager
+## calls Inventory.reset_to_checkpoint() to restore the exact item state,
+## reverting any consumed items (e.g. the Cable Spool connected to the
+## generator) so nothing is permanently lost.
+## Snapshots are deep-duplicates of each ItemData resource so restoring
+## produces fully independent instances (mutating one never corrupts the
+## other or the original .tres).
+var _checkpoint_items: Array = []
+
 const MAX_ITEMS: int = 10
 
 
@@ -32,6 +44,17 @@ func add_item(item) -> bool:
 	if items.size() >= MAX_ITEMS:
 		
 		return false
+	
+	# ─── TASK 1: FUEL CAN INSTANCE ISOLATION ──────────────────────────
+	# Fuel cans carry a per-instance fuel_amount that drains proportionally
+	# with the generator (2 can-units per 1 generator fuel unit). The shared
+	# fuel_can_resource.tres must NEVER be mutated in place, or every can in
+	# the session would drain together. Duplicate the resource when a fuel
+	# can enters the inventory so each can is an independent instance.
+	# Non-fuel items pass through untouched (fuel_amount default is ignored).
+	if item.item_name == "Fuel Can" and item is Resource:
+		item = item.duplicate(false)
+	
 	items.append(item)
 	
 	item_added.emit(item)
@@ -83,7 +106,7 @@ func add_item(item) -> bool:
 			rm_side.on_portable_light_found()
 		if item.item_name == "Cable Spool" and rm_side.has_method("on_cable_spool_found"):
 			rm_side.on_cable_spool_found()
-		if item.item_name == "Jerrycan" and rm_side.has_method("on_fuel_can_found"):
+		if item.item_name == "Fuel Can" and rm_side.has_method("on_fuel_can_found"):
 			rm_side.on_fuel_can_found()
 	
 	# ─── TUTORIAL: Inventory prompt on first real pickup ──────────────────
@@ -94,7 +117,28 @@ func add_item(item) -> bool:
 	# clear still get silently dropped.
 	call_deferred("_trigger_inventory_tutorial")
 	
+	# ─── TASK: INVENTORY ADD SOUND ──────────────────────────────────────
+	# Play add_to_inventory.ogg for REAL player pickups. Guarded by
+	# _initialization_done so the temporary starting items (which
+	# NightManager immediately clears at boot) do NOT trigger the sound.
+	if _initialization_done:
+		call_deferred("_play_add_to_inventory_sound")
+	
 	return true
+
+
+## Plays the add_to_inventory.ogg sound via a transient AudioStreamPlayer.
+## The player is auto-freed when the sound finishes.
+func _play_add_to_inventory_sound() -> void:
+	var stream := load("res://assets/audio/player/add_to_inventory.ogg") as AudioStream
+	if not stream:
+		return
+	var p := AudioStreamPlayer.new()
+	p.bus = "SFX"
+	p.stream = stream
+	add_child(p)
+	p.play()
+	p.finished.connect(p.queue_free)
 
 
 ## Deferred inventory tutorial trigger — runs after TutorialManager is fully loaded.
@@ -157,3 +201,40 @@ func clear() -> void:
 	items.clear()
 	_initialization_done = true
 	inventory_changed.emit()
+
+
+## ─── TASK 3: CHECKPOINT SNAPSHOT API ───────────────────────────────────
+## Captures a deep-duplicate snapshot of the current inventory.
+## Called by NightManager.start_night() once per night cycle, so the
+## exact item state (including quest items like the Cable Spool) can be
+## restored if the player dies and restarts from the checkpoint.
+func save_checkpoint() -> void:
+	var snapshot: Array = []
+	for item in items:
+		if item == null:
+			snapshot.append(null)
+			continue
+		# Deep-duplicate Resource-backed ItemData so the snapshot is fully
+		# independent of the live inventory and the original .tres file.
+		var dup = item.duplicate(true) if item is Resource else item
+		snapshot.append(dup)
+	_checkpoint_items = snapshot
+	print("[Inventory] Checkpoint snapshot saved (%d items)." % _checkpoint_items.size())
+
+
+## Restores the inventory to the exact state captured by save_checkpoint().
+## Called by NightManager.restart_night() when the player restarts from
+## the checkpoint after a death. Any items consumed during the night
+## (e.g. the Cable Spool) are restored, and any items picked up since the
+## snapshot was taken are discarded.
+func reset_to_checkpoint() -> void:
+	items.clear()
+	for item in _checkpoint_items:
+		if item == null:
+			items.append(null)
+			continue
+		var dup = item.duplicate(true) if item is Resource else item
+		items.append(dup)
+	_initialization_done = true
+	inventory_changed.emit()
+	print("[Inventory] Reset to checkpoint snapshot (%d items restored)." % items.size())

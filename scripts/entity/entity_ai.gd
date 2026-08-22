@@ -39,7 +39,10 @@ var glass_shatter_impact_delay: float = 1.5
 var approach_min_duration: float = 2.0
 var approach_failsafe_timeout: float = 8.0
 var approach_debug_interval: float = 2.0
-var approach_arrival_distance: float = 4.0
+## ISSUE 3/7 FIX: Tightened from 4.0 → 2.5 to match the canonical config
+## value (entity_config.gd approach_arrival_distance = 2.5). A 4.0m arrival
+## band let the Entity declare "reached window" from meters away (Bug 3).
+var approach_arrival_distance: float = 2.5
 
 # ─── TASK 1.1: STUN-LOCK FIX STATE ─────────────────────────────────────
 ## Cooldown (in seconds) after FLINCH completion during which the Entity
@@ -63,6 +66,17 @@ const FLINCH_EXIT_COOLDOWN_DURATION: float = 0.5
 ## so the Entity cannot re-target the same room. Cleared when a window in a
 ## different room is successfully targeted.
 var _banned_room: String = ""
+
+## NODE-LEVEL FLINCH WINDOW BAN.
+## The exact CabinWindow the Entity was interrupted at when FLINCH was forced
+## during APPROACH_WINDOW / WINDOW_PEEK. pick_tactical_window() excludes this
+## node INSTANCE (belt-and-suspenders on top of the string-ID flinch blacklist,
+## which is only reliable when the interrupted node exposes a non-empty
+## get_window_id()). The ban is cleared ONLY when a DIFFERENT window is
+## successfully selected in _approach_window_state() — which also clears the
+## string blacklist — so the interrupted window cannot be re-targeted on the
+## next APPROACH cycle.
+var _flinch_banned_window: Node3D = null
 
 # Door
 var door_phase_2_arrival_distance: float = 0.5
@@ -282,17 +296,26 @@ const ENTER_WINDOW_ANIM_DURATION: float = 1.5
 ## ─── INDOOR ROOM GRAPH (single-story, flat layout) ───────────────────────
 ## Adjacency graph of all cabin rooms. Used by BFS pathfinding to compute the
 ## shortest room-to-room path during INDOOR_SEARCH Phase B.
+## Keys/values are LOWERCASE to match RoomLightDetector.get_room_name()
+## output ("hallroom", "livingroom", "computerroom" — the scene nodes are
+## named "Hallroom"/"Livingroom" with lowercase "r", and get_room_name()
+## returns the node name). Previously the graph used capitalized aliases
+## ("HallRoom", "LivingRoom") that never matched, so BFS routing between
+## rooms silently returned empty paths.
 const INDOOR_ROOM_GRAPH: Dictionary = {
-	"HallRoom": ["LivingRoom"],
-	"LivingRoom": ["HallRoom", "ComputerRoom"],
-	"ComputerRoom": ["LivingRoom"],
+	"hallroom": ["livingroom"],
+	"livingroom": ["hallroom", "computerroom"],
+	"computerroom": ["livingroom"],
 }
 
-## ─── VALID INDOOR CABIN ROOMS ──────────────────────────────────────────────
+## ─── VALID INDOOR CABIN ROOMS (LOWERCASE) ─────────────────────────────────
 ## The set of room names that count as "inside the cabin" for breach validation.
 ## The Entity is only considered to have successfully breached if it ends up
 ## in one of these rooms after the door/window breach sequence completes.
-const VALID_INDOOR_ROOMS: Array[String] = ["HallRoom", "LivingRoom", "ComputerRoom"]
+## Stored LOWERCASE so `room_name.to_lower() in VALID_INDOOR_ROOMS` works —
+## the previous capitalized entries made every lowercase room lookup return
+## false, breaking both breach validation and the containment guard.
+const VALID_INDOOR_ROOMS: Array[String] = ["hallroom", "livingroom", "computerroom"]
 
 ## Returns true if the given world position is inside a valid cabin room
 ## (HallRoom, LivingRoom, or ComputerRoom) as determined by the
@@ -300,7 +323,11 @@ const VALID_INDOOR_ROOMS: Array[String] = ["HallRoom", "LivingRoom", "ComputerRo
 ## Returns false if the position is outside or in an unrecognized room.
 func _is_position_inside_cabin(pos: Vector3) -> bool:
 	var room_name = RoomLightDetector.get_room_name_at(pos)
-	return room_name in VALID_INDOOR_ROOMS
+	# CASE-INSENSITIVE MATCH: RoomLightDetector returns lowercase room names
+	# (e.g. "hallroom", "livingroom"). VALID_INDOOR_ROOMS now stores lowercase
+	# entries to match. Lowercase the detector result before comparing so a
+	# valid interior landing is always recognized.
+	return room_name.to_lower() in VALID_INDOOR_ROOMS
 
 ## Returns a known-safe interior fallback position for the Entity to teleport to
 ## when a breach failsafe fires and the Entity is still outside. Returns the
@@ -367,6 +394,24 @@ var _current_patrol_waypoint: Vector3 = Vector3.ZERO
 ## for the early-abort guard — a hardcoded 8.0 would incorrectly report
 ## elapsed > 1.5s on frame 1 when the duration was rolled as 6.0s.
 var _flinch_total_duration: float = 0.0
+
+## ─── FLINCH UNSTICK GHOST BURST (SHED/GENERATOR AVOIDANCE BACKSTOP) ──
+## The baked NavigationMesh does NOT carve the shed/generator footprint, so
+## the FLINCH path can plow straight into them and the body freezes against
+## the StaticBody3D. When the Entity is stuck (velocity ~0 while the flinch
+## still has time remaining), we drop ONLY the Cabin collision layer (bit 0)
+## for a short burst so the Entity slides around/past the obstacle. The
+## floor is unaffected — the controller's _floor_ray (independent mask) keeps
+## snapping Y — and the mask is restored by _restore_flinch_collision()
+## (called from every FLINCH exit path via _cleanup_after_flinch, when the
+## burst timer expires, or when movement resumes).
+const FLINCH_STUCK_BURST_DELAY: float = 1.2
+const FLINCH_GHOST_DURATION: float = 2.0
+var _flinch_stuck_timer: float = 0.0
+var _flinch_ghost_active: bool = false
+var _flinch_ghost_timer: float = 0.0
+var _saved_flinch_mask: int = 0
+var _flinch_last_pos: Vector3 = Vector3.ZERO
 
 ## ─── NIGHT 2.2 VAN SEQUENCE FLINCH → DORMANT ─────────────────────────────
 ## Armed by _evaluate_night_rules() when the car-alarm sequence is active and
@@ -445,6 +490,30 @@ const STALK_ACCEL_RAMP_TIME: float = 10.0
 ## Hard cap for the acceleration multiplier (200% of base speed).
 const STALK_ACCEL_CAP: float = 2.0
 
+# ─── NIGHT 2.2 VAN CHASE: STALK SPEED BALANCE ──────────────────────────
+## During the Night 2.2 car-alarm chase the Entity's STALK speed is
+## referenced against the PLAYER'S SPRINT speed (default 6.5 m/s) instead
+## of the standard 200%-of-base ramp. The Entity starts at 82% of the
+## player's sprint and climbs to a 93% hard cap, so it stays right on the
+## player's heels without overtaking a sprinting player before the porch.
+## The standard _stalk_accel_mult curve (up to 200%) never applies here.
+## A full tank of standard STALK acceleration never applies during 2.2.
+
+## Initial STALK speed ratio (of player sprint) when the van chase begins.
+const NIGHT22_STALK_INITIAL_RATIO: float = 0.82
+
+## Maximum STALK speed ratio (of player sprint) — hard cap for the chase.
+const NIGHT22_STALK_MAX_RATIO: float = 0.93
+
+## Delayed grace period (seconds) before the Night 2.2 ramp begins.
+const NIGHT22_STALK_GRACE_PERIOD: float = 6.0
+
+## Softened ramp duration (seconds) from initial ratio to the max cap.
+const NIGHT22_STALK_RAMP_TIME: float = 16.0
+
+## Fallback sprint reference if the player node / run_speed is unavailable.
+const NIGHT22_SPRINT_FALLBACK: float = 6.5
+
 ## ─── TASK 5: STALK RUBBERBAND COOLDOWN ─────────────────────────────────
 ## Minimum seconds between rubberband teleports. Prevents the Entity from
 ## teleporting every frame while the player stays beyond 40m.
@@ -475,6 +544,17 @@ const STALK_NAV_GRACE_TIME: float = 0.35
 ## Incremented each frame in _indoor_search_state(). Used to throttle debug
 ## prints to every 30 frames (~0.5s at 60fps) to avoid console flooding.
 var _indoor_search_debug_counter: int = 0
+
+## ─── INDOOR CONTAINMENT SUSPECT TIMER ─────────────────────────────────
+## Accumulates delta while the Entity is detected OUTSIDE a valid cabin room
+## during INDOOR_SEARCH Phase B patrol (with the Player-only mask active).
+## Room-boundary crossings between HallRoom ↔ LivingRoom ↔ ComputerRoom
+## produce 1-2 frame gaps where get_room_name_at() reads "Outside"/"" —
+## the timer resets to 0.0 the instant a valid room is re-detected, so only
+## a SUSTAINED outside reading (a genuine phase-through-wall escape) crosses
+## the INDOOR_CONTAINMENT_SNAP_DELAY threshold and triggers the snap-back.
+const INDOOR_CONTAINMENT_SNAP_DELAY: float = 0.1
+var _indoor_containment_suspect_timer: float = 0.0
 
 ## Timer for Y-coordinate comparison debugging during INDOOR_SEARCH.
 ## Decremented by delta each frame. When <= 0.0, prints Entity Y vs Player Y
@@ -1309,6 +1389,25 @@ func _observe_from_treeline_state(delta: float) -> void:
 	# The Director handles the ATTACK_LAMP transition (Tier 3).
 	# This function only handles movement and pathfinding.
 	
+	# ─── OUTDOOR CONTAINMENT GUARD (Anti-Clip) ──────────────────────
+	# OBSERVE_FROM_TREELINE is a strictly OUTDOOR state. If a stale
+	# ghost mask (FLINCH ghost burst, door Phase-2 ghost, approach
+	# cabin-ghost burst) leaked the cabin layer off, the Entity could
+	# phase into the cabin interior. Restore full solid collision and
+	# snap back outside — entry is breach-only.
+	if entity.has_method("is_physically_inside") and entity.is_physically_inside():
+		entity.restore_solid_collision()
+		var cabin_ob = entity.cabin_center
+		var outward_ob = (entity.global_position - cabin_ob)
+		outward_ob.y = 0.0
+		if outward_ob.length() < 0.5:
+			outward_ob = Vector3(0.0, 0.0, -4.0)
+		var snap_ob = cabin_ob + outward_ob.normalized() * 8.0
+		snap_ob.y = entity.global_position.y
+		entity.global_position = snap_ob
+		entity.velocity = Vector3.ZERO
+		print("[OBSERVE] CONTAINMENT GUARD: Entity clipped inside cabin! Snapped back outside.")
+	
 	# ─── ALL WINDOWS LIT LOOP GUARD ─────────────────────────────────────
 	# Check if ALL ground-floor windows are secured by light sanctuary.
 	# If so, the Entity cannot approach any window and must wait in
@@ -2030,6 +2129,17 @@ func _snap_to_navmesh(target: Vector3) -> Vector3:
 	snapped.z = target.z
 	return snapped
 
+## Returns true while the Night 2.2 car-alarm (van) chase sequence is
+## active. Gated on NightManager.is_van_sequence_active — the canonical
+## Night 2.2 marker (set by the bed/car-alarm narrative, cleared when the
+## van sequence resolves or Night 3+ begins). The STALK speed cap applies
+## ONLY while this returns true; all other nights use the standard ramp.
+func _is_night22_chase() -> bool:
+	if night_manager == null:
+		return false
+	return night_manager.get("is_van_sequence_active") == true
+
+
 func _stalk_state(delta: float) -> void:
 	# ─── TIGHTEN NAV TARGET DISTANCE (ONCE ON ENTRY) ─────────────────
 	var nav_agent = entity.get_nav_agent()
@@ -2349,7 +2459,31 @@ func _stalk_state(delta: float) -> void:
 	# ─── APPLY SPEED WITH ALL MULTIPLIERS ───────────────────────
 	# TASK 4: Multiply by the time-based acceleration multiplier so a long
 	# chase makes the Entity progressively faster (capped at 200% base).
-	var final_speed = entity.current_stalk_speed * _stalk_current_speed_mult * _stalk_accel_mult
+	# ─── NIGHT 2.2 VAN CHASE: PLAYER-REFERENCED SPEED CAP ──────────────
+	# During the Night 2.2 car-alarm chase, the Entity's STALK speed is
+	# derived from the PLAYER'S SPRINT speed (run_speed, default 6.5) and
+	# ramps from 82% → 93% of it over a delayed, softened curve (6s grace +
+	# 16s ramp). Because the 93% cap is below the player's sprint, a player
+	# holding sprint and running straight for the cabin can never be
+	# overtaken before the porch. The standard 200%-of-base acceleration
+	# ramp is bypassed so the Entity never hits max acceleration early.
+	# All other nights (Night 3+) keep the original uncapped curve.
+	var final_speed: float
+	if _is_night22_chase():
+		var sprint_ref: float = NIGHT22_SPRINT_FALLBACK
+		var player_ref = entity.get_player() if entity.has_method("get_player") else null
+		if player_ref and "run_speed" in player_ref:
+			sprint_ref = float(player_ref.run_speed)
+		var night22_t: float = 0.0
+		if _stalk_duration_timer > NIGHT22_STALK_GRACE_PERIOD:
+			var accel_elapsed_22 := _stalk_duration_timer - NIGHT22_STALK_GRACE_PERIOD
+			night22_t = minf(accel_elapsed_22 / NIGHT22_STALK_RAMP_TIME, 1.0)
+		var night22_min: float = sprint_ref * NIGHT22_STALK_INITIAL_RATIO
+		var night22_max: float = sprint_ref * NIGHT22_STALK_MAX_RATIO
+		final_speed = lerpf(night22_min, night22_max, night22_t)
+		final_speed *= _stalk_current_speed_mult
+	else:
+		final_speed = entity.current_stalk_speed * _stalk_current_speed_mult * _stalk_accel_mult
 	
 	# ─── STALK FREEZE FIX: NAV GRACE GATING ─────────────────────────
 	# Decay the rubberband grace timer each frame. While it is active
@@ -3015,6 +3149,30 @@ func _approach_window_state(delta: float) -> void:
 		_approach_debug_timer = 0.0
 		_consecutive_door_failsafe_count = 0
 	
+	# ─── OUTDOOR CONTAINMENT GUARD (Anti-Clip) ──────────────────────
+	# The Entity must NEVER be physically inside the cabin during
+	# APPROACH_WINDOW — interior entry is exclusively the breach
+	# mechanic's job (WINDOW_PEEK → INDOOR_SEARCH). If a stale ghost
+	# mask, the approach cabin-ghost burst, or a navmesh shortcut let
+	# the body slip inside, restore full solid collision and snap the
+	# Entity back outside to the cabin perimeter.
+	if entity.has_method("is_physically_inside") and entity.is_physically_inside():
+		entity.restore_solid_collision()
+		var cabin_guard = entity.cabin_center
+		var outward_guard = (entity.global_position - cabin_guard)
+		outward_guard.y = 0.0
+		if outward_guard.length() < 0.5:
+			outward_guard = Vector3(0.0, 0.0, -4.0)
+		var snap_guard = cabin_guard + outward_guard.normalized() * 8.0
+		snap_guard.y = entity.global_position.y
+		entity.global_position = snap_guard
+		entity.velocity = Vector3.ZERO
+		entity.set_current_window_target(null)
+		entity.is_approach_finished = false
+		entity.state_locked = false
+		_calculated_velocity = Vector3.ZERO
+		print("[APPROACH] CONTAINMENT GUARD: Entity clipped inside cabin! Snapped back outside.")
+	
 	# ─── TASK 1.1: POST-FLINCH RE-ENTRY COOLDOWN ─────────────────────
 	# After a FLINCH completes, the stale is_illuminated / is_overcharged
 	# booleans may persist for a frame or two (they are cleared by the FLINCH
@@ -3095,6 +3253,20 @@ func _approach_window_state(delta: float) -> void:
 			# The ban is cleared once a window in a DIFFERENT room is
 			# successfully targeted (handled in the window selection flow).
 			var interrupt_win = entity.get_current_window_target()
+			# ─── FIRST-FLINCH FALLBACK: No target selected yet ─────────
+			# The OVERRIDE GATE runs at the TOP of _approach_window_state(),
+			# BEFORE the window-selection code. On the very first APPROACH
+			# frame (e.g. the player's overcharge beam is already on the
+			# Entity as it transitions in), _current_window_target is still
+			# null — so the gate flinches without banning anything, and the
+			# exact same window is re-selected on the next approach (the
+			# observed A→A→B sequence). Determine the imminent window via
+			# pick_tactical_window() (the same call the selection code will
+			# make later in this function) and ban IT instead.
+			if interrupt_win == null:
+				var _nav_igate = entity.get_navigation_module()
+				if _nav_igate and _nav_igate.has_method("pick_tactical_window"):
+					interrupt_win = _nav_igate.pick_tactical_window(entity.get_player())
 			if interrupt_win and _banned_room.is_empty():
 				if interrupt_win.has_method("get_room_id"):
 					_banned_room = str(interrupt_win.get_room_id())
@@ -3105,6 +3277,45 @@ func _approach_window_state(delta: float) -> void:
 				elif interrupt_win.has_method("get_room_name"):
 					_banned_room = str(interrupt_win.get_room_name())
 					print("[TASK 1.2] Window interrupted! Banning room '%s' from window selection." % _banned_room)
+			
+			# ─── INTERRUPTED WINDOW BLACKLIST (FLINCH MONOTONY FIX) ──
+			# This direct FLINCH override bypasses the Director's flashlight
+			# reaction tier, so the Director's _capture_flinch_window_id() is
+			# never invoked here. Capture the current window ID into the
+			# entity-controller flinch blacklist manually so the utility
+			# scorer (pick_tactical_window) excludes it on the next approach
+			# and the Entity is forced to pick a DIFFERENT window.
+			#
+			# NODE-LEVEL BAN: Also record the exact interrupted node. This
+			# guarantees the ban even when the window exposes an empty ID
+			# (filtered in entity_navigation.pick_tactical_window() by
+			# instance) and persists until a different window is selected.
+			_flinch_banned_window = interrupt_win
+			
+			# ─── FLINCH BAN DIAGNOSTIC PRINT ─────────────────────────────
+			# Logs exactly which window was banned when the Entity was
+			# repelled from APPROACH_WINDOW / WINDOW_PEEK into FLINCH.
+			var diag_win_id: String = "NONE"
+			if interrupt_win:
+				if interrupt_win.has_method("get_window_id"):
+					diag_win_id = interrupt_win.get_window_id()
+				elif "window_id" in interrupt_win:
+					diag_win_id = str(interrupt_win.window_id)
+				if diag_win_id == "" or diag_win_id == "NONE":
+					diag_win_id = interrupt_win.name
+			print("[FLINCH BAN] WINDOW BANNED: ID='%s' (node: %s) | Banned room: '%s'" % [
+				diag_win_id, interrupt_win.name if interrupt_win else "NULL", _banned_room])
+			if interrupt_win and entity.has_method("add_flinch_blacklisted_window"):
+				var _interrupt_win_id: String = ""
+				if interrupt_win.has_method("get_window_id"):
+					_interrupt_win_id = interrupt_win.get_window_id()
+				elif "window_id" in interrupt_win:
+					_interrupt_win_id = str(interrupt_win.window_id)
+				if not _interrupt_win_id.is_empty():
+					entity.add_flinch_blacklisted_window(_interrupt_win_id)
+					print("[FLINCH OVERRIDE GATE] Repelled from window '%s'! Added to flinch blacklist (monotony fix)." % _interrupt_win_id)
+				else:
+					print("[FLINCH OVERRIDE GATE] Repelled from window '%s' (no ID) — banned by node instance." % interrupt_win.name)
 			
 			entity.set_state(EntityAI.State.FLINCH)
 			entity.state_locked = true  # Lock the new FLINCH state
@@ -3330,6 +3541,36 @@ func _approach_window_state(delta: float) -> void:
 			best_window = nav_module.pick_tactical_window(entity.get_player())
 		
 		if best_window:
+			# ─── NO-VIABLE-WINDOW FLAG CLEAR ──────────────────────────
+			# A window was successfully selected — clear the flag set on
+			# the previous null selection so the Director does NOT route
+			# to SABOTAGE_FUSE on the next evaluation.
+			if entity.no_viable_window:
+				entity.no_viable_window = false
+			
+			# ─── TARGET + BAN DIAGNOSTIC PRINT ──────────────────────────
+			# Logs which window the Entity is targeting for APPROACH_WINDOW
+			# AND what window(s)/room(s) are currently banned so we can
+			# verify the flinch window ban is actually preventing re-selection.
+			var diag_target_id: String = ""
+			if best_window.has_method("get_window_id"):
+				diag_target_id = best_window.get_window_id()
+			elif "window_id" in best_window:
+				diag_target_id = str(best_window.window_id)
+			var diag_banned_id: String = "NONE"
+			# Node-level flinch ban
+			if _flinch_banned_window:
+				if _flinch_banned_window.has_method("get_window_id") :
+					diag_banned_id = _flinch_banned_window.get_window_id()
+				elif "window_id" in _flinch_banned_window:
+					diag_banned_id = str(_flinch_banned_window.window_id)
+				if diag_banned_id == "" or diag_banned_id == "NONE":
+					diag_banned_id = _flinch_banned_window.name
+				# Re-append the node name so the banned instance is clear
+				diag_banned_id = "%s (node: %s)" % [diag_banned_id, _flinch_banned_window.name]
+			print("[APPROACH TARGET] Targeting window ID='%s' (node: %s) | FLINCH-BANNED window: %s | Banned room: '%s'" % [
+				diag_target_id, best_window.name, diag_banned_id, _banned_room])
+			
 			print("[DIAG] WINDOW SELECTION: pick_tactical_window() returned '%s' (ID=%s)" % [best_window.name, best_window.get_window_id() if best_window.has_method("get_window_id") else "?"])
 			entity.set_current_window_target(best_window)
 			
@@ -3348,6 +3589,15 @@ func _approach_window_state(delta: float) -> void:
 				if new_room_id != _banned_room and not new_room_id.is_empty():
 					print("[TASK 1.2] New window in room '%s' differs from banned room '%s'. Ban lifted." % [new_room_id, _banned_room])
 					_banned_room = ""
+			
+			# ─── FLINCH BAN: PERSISTS, NOT LIFTED HERE ─────────────────
+			# The interrupted-window ban is the SINGLE string blacklist in
+			# entity_controller.gd. It is intentionally NOT lifted when a
+			# different window is selected — it persists until the Entity
+			# breaches a different window or deactivates into DORMANT. If no
+			# other window is viable, pick_tactical_window() returns null →
+			# the Director routes to SABOTAGE_FUSE instead of re-selecting
+			# the banned window after a waiting period.
 			# ─── RESOLVE WINDOW MARKER ────────────────────────────────────────
 			# The CabinWindow node is at the window frame (inside the wall).
 			# The WindowMarker child is offset outside the window and is the
@@ -3383,6 +3633,16 @@ func _approach_window_state(delta: float) -> void:
 			# so it can transition to OBSERVE_FROM_TREELINE. Without this, the
 			# Director would re-enter APPROACH_WINDOW on the next frame because
 			# confidence >= 40, creating a 60fps oscillation loop.
+			#
+			# ─── SABOTAGE ESCALATION FLAG (FIX) ──────────────────────────
+			# Set the no_viable_window blackboard flag so the Director's Tier 5
+			# null-target guard routes to SABOTAGE_FUSE (kills the generator,
+			# turning off ALL lights → previously-lit rooms become approachable)
+			# instead of bouncing APPROACH_WINDOW ↔ OBSERVE_FROM_TREELINE with
+			# a 5s cooldown forever. This matches the design: HallRoom +
+			# ComputerRoom lit + the LivingRoom's only window flinch-banned =
+			# no viable window → sabotage.
+			entity.no_viable_window = true
 			_calculated_velocity = Vector3.ZERO
 			entity.is_approach_finished = true
 			entity.state_locked = false
@@ -3652,7 +3912,13 @@ func _approach_window_state(delta: float) -> void:
 		# if the NavMesh is completely blocked early (e.g., at 10m), it would
 		# fire falsely. The 5m gate ensures the Entity is actually close enough
 		# to transition into WINDOW_PEEK.
-		if dist_2d <= approach_arrival_distance or (nav_finished and dist_2d <= 5.0):
+		# ─── ISSUE 3/7 FIX: Tightened the nav-finished fallback band from
+		# 5.0m → 2.5m so a prematurely-finished NavAgent path can no longer
+		# trigger a false "arrival" from across the yard (Bug 3). Combined
+		# with the target_desired_distance = 0.5 restoration in the flinch
+		# cleanup, the Entity only enters WINDOW_PEEK when it is genuinely
+		# at the window.
+		if dist_2d <= approach_arrival_distance or (nav_finished and dist_2d <= 2.5):
 			# ─── DETECT IF TARGET IS A DOOR ─────────────────────────────────
 			# Use the cached @export door_waypoint_marker reference to check if
 			# the current window target IS the door waypoint. If the cached
@@ -4118,30 +4384,46 @@ func _window_peek_state(delta: float) -> void:
 					entity.set_indoor_landing_position(fallback_landing)
 					print("[WINDOW_PEEK] Breach: No IndoorBreachWaypoint. Using fallback landing position: (%.2f, %.2f, %.2f)" % [fallback_landing.x, fallback_landing.y, fallback_landing.z])
 				
-				# ─── NAVMESH LANDING VALIDATION (BUG 1 FIX) ───────────────
-				# The landing position from get_indoor_landing_position() may
-				# clip just outside the NavMesh boundary (e.g. inside a wall
-				# collider). When INDOOR_SEARCH teleports the Entity there,
-				# the NavigationAgent cannot find a direct path to patrol
-				# waypoints and routes OUT through the only valid NavMesh
-				# exit — the front door — producing the "doorway detour" bug.
+				# ─── INDOOR LANDING VALIDATION (HALLROOM FALLBACK FIX) ──
+				# The previous validation projected the window's interior
+				# landing onto the NavMesh with map_get_closest_point(). The
+				# cabin interior is OFF-NavMesh (documented limitation), so
+				# the snap pulled the XZ to an outdoor point, which then
+				# failed _is_position_inside_cabin() and substituted the
+				# door's IndoorBreachWaypoint — teleporting the Entity into
+				# the HallRoom regardless of which window it actually broke.
 				#
-				# Fix: project the landing XZ onto the NavMesh floor and
-				# verify the snapped point is inside a VALID_INDOOR_ROOM. If
-				# it is NOT, fall back to the IndoorBreachWaypoint (the
-				# known-safe door entry point) for the landing position.
+				# Fix: keep the SPECIFIC window's own IndoorBreachWaypoint XZ
+				# (already captured above via get_indoor_landing_position())
+				# and only snap the Y to the floor beneath it with a downward
+				# physics ray against Cabin geometry (Layer 1). No door /
+				# HallRoom substitution is ever performed here.
 				var landing_check = entity.get_indoor_landing_position()
 				if landing_check != Vector3.ZERO:
-					var nav_map_v = entity.get_world_3d().navigation_map
-					var snapped_v = NavigationServer3D.map_get_closest_point(nav_map_v, landing_check)
-					var check_pos_v = landing_check
-					check_pos_v.y = snapped_v.y
-					if not _is_position_inside_cabin(check_pos_v):
-						var fallback_wp = entity.get_door_breach_waypoint()
-						if fallback_wp:
-							var wp_landing = fallback_wp.global_position
-							entity.set_indoor_landing_position(wp_landing)
-							print("[WINDOW_PEEK] Breach: Landing (%.2f, %.2f, %.2f) is OUTSIDE valid cabin rooms! Falling back to IndoorBreachWaypoint (%.2f, %.2f, %.2f)." % [landing_check.x, landing_check.y, landing_check.z, wp_landing.x, wp_landing.y, wp_landing.z])
+					var space_v = entity.get_world_3d().direct_space_state
+					var ray_from_v = landing_check + Vector3(0, 1.0, 0)
+					var ray_to_v = landing_check + Vector3(0, -6.0, 0)
+					var q_v = PhysicsRayQueryParameters3D.create(ray_from_v, ray_to_v)
+					q_v.collision_mask = 0
+					q_v.collision_mask |= (1 << (1 - 1))  # Layer 1: Cabin
+					q_v.collision_mask |= (1 << (2 - 1))  # Layer 2: Player
+					q_v.collision_mask |= (1 << (3 - 1))  # Layer 3: Trees
+					q_v.collision_mask |= (1 << (4 - 1))  # Layer 4: Rocks
+					var hit_v = space_v.intersect_ray(q_v)
+					if hit_v:
+						# Snap to the real floor beneath THE WINDOW'S OWN
+						# landing marker, +0.6 hover to match the player.
+						landing_check.y = hit_v.position.y + 0.6
+						entity.set_indoor_landing_position(landing_check)
+						print("[WINDOW_PEEK] Breach: Landing Y snapped to floor beneath window marker (Y=%.2f)." % landing_check.y)
+					else:
+						# Ray missed — fall back to NavMesh Y at the window's
+						# own XZ. NEVER fall back to the door/HallRoom point.
+						var nav_map_v = entity.get_world_3d().navigation_map
+						var snapped_v = NavigationServer3D.map_get_closest_point(nav_map_v, landing_check)
+						landing_check.y = snapped_v.y
+						entity.set_indoor_landing_position(landing_check)
+						print("[WINDOW_PEEK] Breach: Floor ray missed. Keeping window's own landing XZ, NavMesh Y=%.2f." % snapped_v.y)
 				
 				# ─── SIGNAL COMPLETION ──────────────────────────────────
 				# The glass has shattered. Signal the Director to transition
@@ -4290,7 +4572,15 @@ func _cleanup_after_flinch() -> void:
 	var nav_agent_cleanup = entity.get_nav_agent()
 	if nav_agent_cleanup:
 		nav_agent_cleanup.target_position = entity.global_position
-		nav_agent_cleanup.target_desired_distance = 1.5
+		# ─── ISSUE 3/7 FIX: RESTORE CANONICAL ARRIVAL RADIUS ─────────────
+		# _flinch_state() sets target_desired_distance = 0.5 for its escape
+		# sprint, and _cleanup_after_flinch() previously left a value of 1.5
+		# on the agent. Once 1.5 persisted, NavigationAgent3D declared
+		# "arrived" far too early — the Entity stood still in APPROACH_WINDOW
+		# because it believed the path was finished (Bug 7). It must be
+		# reset to the controller's canonical 0.5m radius so the Entity only
+		# registers arrival when it has actually reached the window.
+		nav_agent_cleanup.target_desired_distance = 0.5
 	
 	# ─── CLEAR WINDOW TARGET ──────────────────────────────────────────
 	# The flinch escape used the current window's outward normal. Clear
@@ -4308,7 +4598,44 @@ func _cleanup_after_flinch() -> void:
 	entity.set_flinched_timer(0.0)
 	entity.set_flinch_target_pos(entity.global_position)
 	
-	print("[FLINCH] Cleanup complete. Stale booleans cleared, nav target reset, cooldown armed (%.3fs)." % _flinch_exit_cooldown)
+	# ─── RESTORE FLINCH COLLISION (UNSTICK GHOST BURST) ──────────────
+	# Every FLINCH exit path passes through this cleanup, so any active
+	# cabin-layer ghost burst is reverted here — the Entity never leaks a
+	# de-collided body into the next state.
+	_restore_flinch_collision()
+	_flinch_stuck_timer = 0.0
+	_flinch_ghost_timer = 0.0
+	
+	# ─── ISSUE 6 FIX: RESET OVERCHARGE STARE STATE (WALL-CLOCK SAMPLES) ─
+	# overcharge_stare_timer is the 1.5s threshold value the Director's
+	# Unified Overcharge Dispatch reads. It is ONLY reset in the beam-break
+	# `else` path inside entity_controller.on_player_stare(), so after a
+	# FLINCH the timer stays >= 1.5 and the wall-clock samples
+	# (_last_overcharge_time_sample / _overcharge_break_since) remain stale.
+	# This made the Entity "ignore" the overcharged flashlight on subsequent
+	# FLINCH cycles (Bug 6). Reset all three values here so the next
+	# overcharge acquisition starts from a clean slate.
+	if "overcharge_stare_timer" in entity:
+		entity.overcharge_stare_timer = 0.0
+	if "_last_overcharge_time_sample" in entity:
+		entity._last_overcharge_time_sample = -1.0
+	if "_overcharge_break_since" in entity:
+		entity._overcharge_break_since = -1.0
+	
+	print("[FLINCH] Cleanup complete. Stale booleans cleared, nav target reset, overcharge stare timer zeroed, cooldown armed (%.3fs)." % _flinch_exit_cooldown)
+
+
+## Restores the Entity's collision mask after a FLINCH unstuck ghost burst.
+## Safe to call at any point: no-op when no burst is active or the mask was
+## never saved. Called from _cleanup_after_flinch(), when the burst timer
+## expires, and when movement resumes mid-burst.
+func _restore_flinch_collision() -> void:
+	if _saved_flinch_mask != 0:
+		entity.collision_mask = _saved_flinch_mask
+		_saved_flinch_mask = 0
+	if _flinch_ghost_active:
+		_flinch_ghost_active = false
+		_flinch_ghost_timer = 0.0
 
 
 func _flinch_state(delta: float) -> void:
@@ -4331,13 +4658,14 @@ func _flinch_state(delta: float) -> void:
 		entity.set_flinched_timer(_flinch_total_duration)
 		print("[FLINCH] Duration set to %.1fs." % _flinch_total_duration)
 		
-		# ─── CALCULATE ESCAPE VECTOR: Away from cabin center + window outward ──
-		# Bug Fix: Combining cabin-center direction with the window's outward-facing
-		# normal (-Z basis) prevents the Entity from hugging the cabin wall.
-		# When the Entity is pressed against the cabin (from APPROACH_WINDOW/
-		# WINDOW_PEEK), the cabin-center vector points *along* the wall rather
-		# than outward. Adding the window's outward normal ensures a clean
-		# perpendicular escape into the forest.
+		# ─── CALCULATE ESCAPE VECTOR: AWAY FROM THE LIGHT SOURCE ──────
+		# FLINCH is triggered by the player's flashlight, so the Entity must
+		# flee roughly OPPOSITE to the player (the light origin). The old code
+		# blended cabin-center + window-outward, which ignored the beam
+		# direction entirely and produced a predictable straight-line that was
+		# easy to catch. Direction is weighted 80% away-from-player + 20%
+		# cabin-away so an approach pressed against the cabin still escapes
+		# perpendicular to the wall rather than hugging it.
 		var cabin_center = entity.cabin_center if "cabin_center" in entity else Vector3(0.0, 0.0, 14.88)
 		var away_from_cabin = (entity.global_position - cabin_center)
 		away_from_cabin.y = 0.0
@@ -4347,59 +4675,94 @@ func _flinch_state(delta: float) -> void:
 		else:
 			away_from_cabin = Vector3(0.0, 0.0, -1.0)
 		
-		# Blend with window outward direction if available
-		var window_target_escape = entity.get_current_window_target()
-		var window_outward = Vector3.ZERO
-		if window_target_escape:
-			# The window's -Z basis points outward from the glass
-			window_outward = -window_target_escape.global_transform.basis.z
-			window_outward.y = 0.0
-			var w_len = window_outward.length()
-			if w_len > 0.01:
-				window_outward = window_outward / w_len
+		# AWAY FROM PLAYER / LIGHT SOURCE: The player is the origin of the
+		# flashlight beam that caused the FLINCH. Escaping in the -player
+		# direction puts the most distance between the beam and the Entity.
+		var player_escape = entity.get_player()
+		var away_from_light = Vector3(0.0, 0.0, -1.0)
+		if player_escape:
+			away_from_light = (entity.global_position - player_escape.global_position)
+			away_from_light.y = 0.0
+			var light_len = away_from_light.length()
+			if light_len > 0.01:
+				away_from_light = away_from_light / light_len
 		
-		# Blend: 60% cabin-away + 40% window-outward. This ensures the Entity
-		# flees both away from the cabin structure AND away from the specific
-		# window it was at, preventing wall-hugging.
-		var escape_dir_raw = away_from_cabin * 0.6
-		if window_outward.length_squared() > 0.01:
-			escape_dir_raw += window_outward * 0.4
+		var escape_dir_raw = away_from_light * 0.8 + away_from_cabin * 0.2
 		escape_dir_raw.y = 0.0
 		var escape_len = escape_dir_raw.length()
-		var escape_dir = escape_dir_raw / escape_len if escape_len > 0.01 else Vector3(0.0, 0.0, -1.0)
+		var escape_dir = escape_dir_raw / escape_len if escape_len > 0.01 else away_from_light
 		
-		# Add a random perturbation (±30 degrees) to avoid predictable
-		# straight-line escape paths. The Entity should not run the exact
-		# same direction every time.
+		# Add a random perturbation (±30 degrees) so the escape never follows
+		# an identical, predictable line on repeated FLINCHs.
 		var random_angle = deg_to_rad(randf_range(-30.0, 30.0))
 		escape_dir = escape_dir.rotated(Vector3.UP, random_angle)
 		
-		# ─── NAVMESH-PROJECTED ESCAPE TARGET ────────────────────────────
+		# ─── NAVMESH-PROJECTED ESCAPE TARGET + SHED CLEARANCE LOOP ──────
 		# Project the escape vector endpoint onto the NavMesh so the Entity
-		# sprints to a reachable position in the forest. This prevents the
-		# "face plant into a tree" problem where a straight-line escape would
-		# intersect with impassable foliage (Correction 1: NavMesh Edge Trap).
+		# sprints to a reachable forest position. The baked NavigationMesh
+		# does NOT carve the shed/generator footprint (they are StaticBody3D
+		# outside the navmesh_source bake), so following the raw path can run
+		# the Entity straight into the shed. The base direction for the
+		# ComputerRoom windows points east — directly into the shed.
+		#
+		# CLEARANCE RAYCAST: cast a straight-line ray from the Entity to each
+		# candidate NavMesh target. If any obstacle (shed = Cabin layer 1,
+		# tree layer 3, rock layer 4) blocks the line, rotate the escape
+		# direction in ±30° steps up to ±90° until a direction has a clear
+		# line of sight, then use that as the NavAgent target. This makes the
+		# Entity's path genuinely route around the shed even though the baked
+		# mesh surface passes through it.
 		var escape_distance: float = 15.0  # 15m escape into the forest
-		var raw_target = entity.global_position + escape_dir * escape_distance
-		
-		# Use NavigationServer3D to snap the target to the nearest valid
-		# point on the NavMesh surface
 		var nav_map = entity.get_world_3d().navigation_map
-		var snapped_target = NavigationServer3D.map_get_closest_point(nav_map, raw_target)
-		# Preserve the source XZ but use the NavMesh-snapped Y
-		snapped_target.x = raw_target.x
-		snapped_target.z = raw_target.z
+		var space_f = entity.get_world_3d().direct_space_state
+		var from_f = entity.global_position
+		from_f.y += 1.0  # Eye height for the clearance ray
 		
-		entity.set_flinch_target_pos(snapped_target)
+		var chosen_target: Vector3 = Vector3.ZERO
+		var found_clear := false
+		var attempt_angles := [0.0, 30.0, -30.0, 60.0, -60.0, 90.0, -90.0]
+		for ang in attempt_angles:
+			var candidate_dir = escape_dir.rotated(Vector3.UP, deg_to_rad(ang))
+			var candidate_raw = entity.global_position + candidate_dir * escape_distance
+			candidate_raw.y = 0.0
+			var snapped_candidate = NavigationServer3D.map_get_closest_point(nav_map, candidate_raw)
+			snapped_candidate.x = candidate_raw.x
+			snapped_candidate.z = candidate_raw.z
+			
+			# LOS check from the Entity to the candidate target.
+			var q_f = PhysicsRayQueryParameters3D.create(from_f, snapped_candidate)
+			q_f.collision_mask = 0
+			q_f.collision_mask |= (1 << (1 - 1))  # Layer 1: Cabin (Shed/Generator walls)
+			q_f.collision_mask |= (1 << (2 - 1))  # Layer 2: Player
+			q_f.collision_mask |= (1 << (3 - 1))  # Layer 3: Trees
+			q_f.collision_mask |= (1 << (4 - 1))  # Layer 4: Rocks
+			q_f.exclude = [entity.get_rid()]  # Ignore the Entity's own body
+			var hit_f = space_f.intersect_ray(q_f)
+			if hit_f.is_empty():
+				chosen_target = snapped_candidate
+				found_clear = true
+				break
+		
+		# Fallback: if no rotated direction cleared the shed, keep the raw
+		# snapped target so the sprint still runs and the ghost-burst
+		# backstop unsticks any collision.
+		if not found_clear:
+			var raw_target_fb = entity.global_position + escape_dir * escape_distance
+			raw_target_fb.y = 0.0
+			chosen_target = NavigationServer3D.map_get_closest_point(nav_map, raw_target_fb)
+			chosen_target.x = raw_target_fb.x
+			chosen_target.z = raw_target_fb.z
+		
+		entity.set_flinch_target_pos(chosen_target)
 		
 		# Set the NavigationAgent's target so the Entity actually nav-pathfinds
-		# toward the escape point, rather than blindly sprinting in world-space.
+		# to the escape point, running around obstacles rather than through them.
 		var nav_agent = entity.get_nav_agent()
 		if nav_agent:
-			nav_agent.target_position = snapped_target
+			nav_agent.target_position = chosen_target
 			nav_agent.target_desired_distance = 0.5
 		
-		print("[FLINCH] ESCAPE INITIALIZED! Duration=%.1fs, EscapeDir=(%.2f, %.2f), NavTarget=(%.2f, %.2f, %.2f)" % [entity.get_flinched_timer(), escape_dir.x, escape_dir.z, snapped_target.x, snapped_target.y, snapped_target.z])
+		print("[FLINCH] ESCAPE INITIALIZED! Duration=%.1fs, EscapeDir=(%.2f, %.2f) [away from light source], ClearLOS=%s, NavTarget=(%.2f, %.2f, %.2f)" % [entity.get_flinched_timer(), escape_dir.x, escape_dir.z, found_clear, chosen_target.x, chosen_target.y, chosen_target.z])
 	
 	# ─── EARLY ABORT GUARD (Correction 1: NavMesh Edge Trap + Min Duration) ─
 	# If the Entity has reached the escape target (navigation finished OR
@@ -4429,25 +4792,82 @@ func _flinch_state(delta: float) -> void:
 		_cleanup_after_flinch()
 		return
 	
-	# ─── SPRINT TOWARD TARGET ──────────────────────────────────────────
-	# Use speed-limited sprint toward the escape target. The flinch speed
-	# multiplier (1.5x default) makes the Entity sprint significantly faster
-	# than normal stalk speed, creating the feeling of desperate retreat.
+	# ─── SPRINT TOWARD TARGET (NAV-PATH FOLLOWING) ────────────────────
+	# Follow the NavigationAgent's path with the sprint speed multiplier,
+	# so the Entity runs AROUND trees/rocks instead of a straight line into
+	# them. Direct beeline movement is only used as a last resort when the
+	# NavAgent has no path yet (async path computation) but the target is
+	# still far.
+	var flinch_speed = entity.current_stalk_speed * flinch_sprint_multiplier
 	var target = entity.get_flinch_target_pos()
-	var dir_to_target_flat = (target - entity.global_position)
-	dir_to_target_flat.y = 0.0
-	var flat_dist = dir_to_target_flat.length()
 	
-	if flat_dist > 0.1:
-		var move_dir = dir_to_target_flat.normalized()
-		var flinch_speed = entity.current_stalk_speed * flinch_sprint_multiplier
-		_calculated_velocity.x = move_dir.x * flinch_speed
-		_calculated_velocity.z = move_dir.z * flinch_speed
+	if not entity.get_nav_agent().is_navigation_finished():
+		var next_pos = entity.get_nav_agent().get_next_path_position()
+		var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
+		if dir_2d.length() > 0.01:
+			var move_dir_2d = dir_2d.normalized()
+			_calculated_velocity.x = move_dir_2d.x * flinch_speed
+			_calculated_velocity.z = move_dir_2d.y * flinch_speed
+			# ─── FACE MOVEMENT DIRECTION ─────────────────────────────
+			# Rotate the model toward the path's next waypoint so the
+			# entity looks where it is sprinting, not at the last target.
+			var flinch_model = entity.get_monster_model()
+			if flinch_model:
+				var flinch_angle = atan2(move_dir_2d.x, move_dir_2d.y)
+				flinch_model.rotation.y = lerp_angle(flinch_model.rotation.y, flinch_angle, 0.2)
+		else:
+			_calculated_velocity.x = 0.0
+			_calculated_velocity.z = 0.0
 	else:
-		# At the exact target — this shouldn't happen due to the early abort
-		# guard above, but just in case, stop movement.
-		_calculated_velocity.x = 0.0
-		_calculated_velocity.z = 0.0
+		# No path loaded — fall back to a direct sprint toward the target
+		# (keeps the flee working during the brief async path window).
+		var dir_to_target_flat = (target - entity.global_position)
+		dir_to_target_flat.y = 0.0
+		var flat_dist = dir_to_target_flat.length()
+		if flat_dist > 0.1:
+			var move_dir = dir_to_target_flat.normalized()
+			_calculated_velocity.x = move_dir.x * flinch_speed
+			_calculated_velocity.z = move_dir.z * flinch_speed
+		else:
+			_calculated_velocity.x = 0.0
+			_calculated_velocity.z = 0.0
+	
+	# ─── UNSTICK GHOST BURST (SHED/GENERATOR BACKSTOP) ──────────────
+	# Detect a collision stall during the escape sprint via ACTUAL POSITION
+	# PROGRESS (not _calculated_velocity — that reflects the intended sprint
+	# direction, which stays non-zero while pressing into a wall, so the old
+	# check never armed when jammed against the shed). When the Entity stops
+	# advancing for FLINCH_STUCK_BURST_DELAY, drop ONLY the Cabin layer for
+	# FLINCH_GHOST_DURATION so it slides around/past the shed/generator. The
+	# burst ends early when progress resumes, when its timer expires, or on
+	# any FLINCH exit (via _cleanup_after_flinch → _restore_flinch_collision).
+	const FLINCH_PROGRESS_EPSILON: float = 0.1
+	if _flinch_last_pos == Vector3.ZERO:
+		_flinch_last_pos = entity.global_position
+	var flinch_dist_moved = entity.global_position.distance_to(_flinch_last_pos)
+	_flinch_last_pos = entity.global_position
+	
+	if flinch_dist_moved > FLINCH_PROGRESS_EPSILON:
+		_flinch_stuck_timer = 0.0
+		if _flinch_ghost_active:
+			# Slid through/past the obstacle — end the burst early.
+			_flinch_ghost_timer = 0.0
+			_restore_flinch_collision()
+	elif _flinch_ghost_active:
+		_flinch_ghost_timer -= delta
+		if _flinch_ghost_timer <= 0.0:
+			_restore_flinch_collision()
+	else:
+		_flinch_stuck_timer += delta
+		if _flinch_stuck_timer >= FLINCH_STUCK_BURST_DELAY:
+			_flinch_stuck_timer = 0.0
+			_flinch_ghost_active = true
+			_flinch_ghost_timer = FLINCH_GHOST_DURATION
+			_saved_flinch_mask = entity.collision_mask
+			# Drop ONLY the Cabin layer — the Entity can still collide with
+			# trees/rocks and the floor Y stays grounded via _floor_ray.
+			entity.collision_mask = entity.collision_mask & ~(1 << (1 - 1))
+			print("[FLINCH] UNSTICK GHOST BURST: Dropped cabin layer for %.1fs to slide around shed/generator." % FLINCH_GHOST_DURATION)
 	
 	# ─── DECREMENT TIMER ───────────────────────────────────────────────
 	entity.set_flinched_timer(entity.get_flinched_timer() - delta)
@@ -4575,16 +4995,83 @@ func _indoor_search_state(delta: float) -> void:
 	var _lw = entity.last_breached_window
 	print("[INDOOR_SEARCH ENTRY] was_door_entry=%s | last_breached_window=%s | _has_arrived_indoor=%s" % [entity.was_door_entry, _lw.name if _lw else "NULL", _has_arrived_indoor])
 	
-	# ─── FORCE INDOOR_SEARCH COLLISION MASK (HOT-RELOAD SAFETY) ────
-	# During INDOOR_SEARCH the Entity must NOT collide with Cabin geometry
-	# (Layer 1) — the baked NavMesh confines it to walkable interior spaces,
-	# and the doorframe lip colliders ("lister") would otherwise snag the
-	# capsule. _update_collision_layers() normally applies this on state
-	# transition, but a hot-reload while ALREADY in INDOOR_SEARCH skips the
-	# transition path, leaving the full mask (including Layer 1) active.
-	# Force the correct mask every frame here as a safety net.
-	entity.collision_mask = 0
-	entity.collision_mask |= (1 << (2 - 1))  # Layer 2: Player only
+	# ─── FORCE INDOOR_SEARCH SOLID BODY (HOT-RELOAD SAFETY) ────────
+	# REGRESSION FIX (wall-clipping while "ghosting" indoors):
+	# The breach sequence (APPROACH_WINDOW Phase 2 ghost motor) strips the
+	# cabin mask and disables the CollisionShape3D so the Entity can
+	# traverse the doorway threshold. This block forcibly re-syncs the
+	# Entity's body every frame so NO ghost state can leak into indoor
+	# patrol: collision_layer = Layer 5 (Entity), CollisionShape3D enabled,
+	# and the proven indoor locomotion mask (Player-only — Layer 1 cabin
+	# collision would jam the capsule on interior doorframe lips, tripping
+	# the stuck detector and cascading into the APPROACH_WINDOW stuck loop).
+	entity.restore_indoor_collision()
+	
+	# ─── INDOOR CONTAINMENT GUARD (Phase B patrol) ──────────────────
+	# Physical wall-clipping is prevented WITHOUT Layer-1 physics (which
+	# jams doorways). If the Entity is detected OUTSIDE a valid cabin room
+	# during Phase B patrol, snap it back to the indoor interior.
+	#
+	# HYSTERESIS: Room-boundary crossings (Hallroom ↔ Livingroom ↔
+	# ComputerRoom) and the off-NavMesh landing-height offset produce
+	# 1-2 frame gaps where get_room_name_at() returns "Outside"/"".
+	# The suspect timer only triggers a snap when the outside reading
+	# persists for INDOOR_CONTAINMENT_SNAP_DELAY (0.1s) — a genuine
+	# phase-through-wall escape — while transient crossings reset it.
+	#
+	# Phase A (door/window entry) is exempt — the Entity is legitimately
+	# traversing the threshold, and the window-vault landing Y is resolved
+	# off-NavMesh before this guard runs.
+	if _has_arrived_indoor and not _room_path.is_empty():
+		var _guard_valid_room: bool = false
+		# Sample at the Entity's position first, then retry at the
+		# NavMesh-aware / floor-ray height (room volumes align with the
+		# NavMesh floor, not the Entity's resting Y after teleports).
+		var _guard_room: String = RoomLightDetector.get_room_name_at(entity.global_position)
+		if _guard_room.to_lower() in ["hallroom", "livingroom", "computerroom"]:
+			_guard_valid_room = true
+		else:
+			var _guard_check: Vector3 = entity.global_position
+			var _nav_map_g = entity.get_world_3d().navigation_map
+			if _nav_map_g.is_valid():
+				var _nav_pos_g = NavigationServer3D.map_get_closest_point(_nav_map_g, _guard_check)
+				if _nav_pos_g.y > _guard_check.y:
+					_guard_check.y = _nav_pos_g.y
+			var _guard_room_nav: String = RoomLightDetector.get_room_name_at(_guard_check)
+			if _guard_room_nav.to_lower() in ["hallroom", "livingroom", "computerroom"]:
+				_guard_valid_room = true
+			else:
+				var _guard_check_f: Vector3 = entity.global_position
+				if entity._floor_ray and entity._floor_ray.is_colliding():
+					_guard_check_f.y = entity._floor_ray.get_collision_point().y + 0.5
+				var _guard_room_floor: String = RoomLightDetector.get_room_name_at(_guard_check_f)
+				if _guard_room_floor.to_lower() in ["hallroom", "livingroom", "computerroom"]:
+					_guard_valid_room = true
+		
+		if _guard_valid_room:
+			_indoor_containment_suspect_timer = 0.0
+		else:
+			_indoor_containment_suspect_timer += delta
+			if _indoor_containment_suspect_timer >= INDOOR_CONTAINMENT_SNAP_DELAY:
+				# Genuinely outside the cabin interior (phase-through-wall
+				# escape). Snap back to the current patrol room center if
+				# available; otherwise the door breach waypoint / fallback.
+				_indoor_containment_suspect_timer = 0.0
+				var _guard_fallback: Vector3 = Vector3.ZERO
+				# PREFER the breached window's own landing waypoint so the
+				# Guard never teleports the Entity to the front door/HallRoom.
+				var _guard_landing = entity.get_indoor_landing_position()
+				if _guard_landing != Vector3.ZERO:
+					_guard_fallback = _guard_landing
+				if _guard_fallback == Vector3.ZERO and not _room_path.is_empty() and _current_room_index < _room_path.size():
+					_guard_fallback = _get_room_center_position(_room_path[_current_room_index])
+				if _guard_fallback == Vector3.ZERO:
+					var _guard_wp = entity.get_door_breach_waypoint()
+					_guard_fallback = _guard_wp.global_position if _guard_wp else _get_fallback_indoor_position()
+				print("[INDOOR_SEARCH] CONTAINMENT GUARD: Entity outside valid room ('%s', %.3fs)! Snapping to indoor position." % [_guard_room, _indoor_containment_suspect_timer])
+				entity.global_position = _guard_fallback
+				entity.velocity = Vector3.ZERO
+				_indoor_direct_target = Vector3.ZERO
 	
 	# ─── LIGHT SWITCH RETREAT CHECK ──────────────────────────────────
 	# If the Entity is inside a lit room, immediately set the indoor
@@ -4771,7 +5258,7 @@ func _indoor_search_state(delta: float) -> void:
 						# landing to +0.6 so it rests at the same height the
 						# controller's hover-snap uses (floor_y + 0.6), matching the
 						# player's resting height and clearing the floor mesh.
-						landing_pos.y = hit.position.y + 0.6
+						landing_pos.y = hit.position.y + entity.get_physics_bottom_offset()
 						print("[INDOOR_SEARCH] Phase A: Floor ray hit at Y=%.2f. Landing on real floor (Y=%.2f)." % [hit.position.y, landing_pos.y])
 					else:
 						print("[INDOOR_SEARCH] Phase A: Floor ray missed. Keeping NavMesh Y=%.2f." % snapped.y)
@@ -5026,6 +5513,14 @@ func _indoor_search_state(delta: float) -> void:
 	# so the straight line to the target is always valid and never detours
 	# to the door. NavAgent following is kept only when no direct target
 	# is set (e.g., stale empty room path) as a last-resort safeguard.
+	# INDOOR MOVEMENT: ALWAYS A DIRECT BEELINE to the indoor move target.
+	# With the Player-only indoor mask (restore_indoor_collision) the
+	# capsule does NOT collide with interior walls/doorframe lips, so the
+	# straight line from the Entity to the room center / player position is
+	# always valid and cannot jam. The previous cross-room NavMesh fallback
+	# was fragile (off-NavMesh interior → doorway-detour/freeze) and is no
+	# longer needed. Exterior-wall clipping remains guarded by the indoor
+	# containment guard above (snap back inside when outside a valid room).
 	if _indoor_direct_target != Vector3.ZERO:
 		var direct_dir = (_indoor_direct_target - entity.global_position)
 		direct_dir.y = 0.0
@@ -5036,16 +5531,19 @@ func _indoor_search_state(delta: float) -> void:
 		else:
 			_calculated_velocity.x = 0.0
 			_calculated_velocity.z = 0.0
-	elif entity.get_nav_agent().is_navigation_finished():
-		_calculated_velocity.x = 0.0
-		_calculated_velocity.z = 0.0
 	else:
-		var next_pos = entity.get_nav_agent().get_next_path_position()
-		var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
-		if dir_2d.length() > 0.01:
-			var move_dir_2d = dir_2d.normalized()
-			_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
-			_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
+		# No direct target set (empty/stale room path) — fall back to the
+		# NavAgent as a last-resort safeguard.
+		if entity.get_nav_agent().is_navigation_finished():
+			_calculated_velocity.x = 0.0
+			_calculated_velocity.z = 0.0
+		else:
+			var next_pos = entity.get_nav_agent().get_next_path_position()
+			var dir_2d := Vector2(next_pos.x - entity.global_position.x, next_pos.z - entity.global_position.z)
+			if dir_2d.length() > 0.01:
+				var move_dir_2d = dir_2d.normalized()
+				_calculated_velocity.x = move_dir_2d.x * entity.current_stalk_speed
+				_calculated_velocity.z = move_dir_2d.y * entity.current_stalk_speed
 
 
 ## ─── INDOOR ROOM NAVIGATION HELPERS ──────────────────────────────────────
@@ -5086,12 +5584,33 @@ func _get_entity_current_room() -> String:
 
 
 ## Returns the world-space position of a room's center node.
-## Looks for a CabinRoom node with the matching room name in the scene tree.
+## Looks at the "Cabin_Interior" group Area3D nodes (the rooms the
+## RoomLightDetector registers). Matches case-insensitively via
+## get_room_name() — the previous query used the non-existent "CabinRooms"
+## group plus a "room_name" property that no node has, so it always returned
+## Vector3.ZERO and Phase B patrol never resolved a room center.
 func _get_room_center_position(room_name: String) -> Vector3:
-	var rooms = entity.get_tree().get_nodes_in_group("CabinRooms")
+	var rooms = entity.get_tree().get_nodes_in_group("Cabin_Interior")
+	var target = room_name.to_lower()
 	for room in rooms:
-		if "room_name" in room and room.room_name == room_name:
-			return room.global_position
+		var room_key: String = ""
+		if room.has_method("get_room_name"):
+			room_key = room.get_room_name()
+		else:
+			room_key = room.name
+		if room_key.to_lower() == target:
+			var center = room.global_position
+			# FLOOR-LEVEL ROOM CENTER: The Cabin_Interior Area3D origin sits at
+			# ~2.7m above the floor (the volume extends DOWN into the room). The
+			# Entity walks on the floor and sees targets at its own height, so
+			# snap the center Y to the floor beneath it. The movement code
+			# flattens Y anyway, but the 3D arrival check below (now 2D) and any
+			# consumer that uses the raw position must see a ground-level point.
+			if entity._floor_ray and entity._floor_ray.is_colliding():
+				center.y = entity._floor_ray.get_collision_point().y
+			else:
+				center.y = entity.global_position.y
+			return center
 	return Vector3.ZERO
 
 
@@ -5107,13 +5626,26 @@ func _arrived_at_indoor_target() -> bool:
 	var room_center = _get_room_center_position(_room_path[_current_room_index])
 	if room_center == Vector3.ZERO:
 		return false
-	return entity.global_position.distance_to(room_center) <= 1.5
+	# 2D XZ ARRIVAL: The room center is now floor-snapped, but comparing full
+	# 3D distance is still fragile if the Entity's resting Y differs from the
+	# floor ray's hit Y (e.g. doorframe gravity differences). Arrival should
+	# be judged horizontally — navigating the room graph is an XZ problem.
+	return Vector2(entity.global_position.x, entity.global_position.z).distance_to(
+		Vector2(room_center.x, room_center.z)) <= 1.5
 
 
 ## Computes a BFS path from start_room to end_room using INDOOR_ROOM_GRAPH.
 ## Returns an array of room names representing the shortest path.
 ## Returns an empty array if no path exists.
 func _compute_room_path(start_room: String, end_room: String) -> Array[String]:
+	# NORMALIZE CASE: INDOOR_ROOM_GRAPH stores LOWERCASE keys. RoomLightDetector
+	# returns real node names ("Hallroom", "Livingroom", "ComputerRoom") whose
+	# casing varies, so both endpoints MUST be lowercased before any comparison
+	# against the graph. Without this, BFS silently returns empty paths and the
+	# Entity never routes between rooms.
+	start_room = start_room.to_lower()
+	end_room = end_room.to_lower()
+	
 	if start_room == "" or end_room == "":
 		return []
 	if start_room == end_room:
@@ -5150,7 +5682,7 @@ func _compute_room_path(start_room: String, end_room: String) -> Array[String]:
 ## Computes a random patrol route for the Entity to follow during indoor search.
 ## Picks a random room from the graph and computes a BFS path to it.
 func _compute_random_patrol_route() -> Array[String]:
-	var current_room = _get_entity_current_room()
+	var current_room = _get_entity_current_room().to_lower()
 	if current_room == "":
 		return []
 	

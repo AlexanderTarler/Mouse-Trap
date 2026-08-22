@@ -106,13 +106,36 @@ func _execute_jumpscare() -> void:
 		_audio_sting_player.play()
 	
 	if cam_holder:
+		# ─── TASK 1 FIX: PROPER LOOK_AT CAMERA LOCK ─────────────────
+		# The old math computed the look direction from player.global_position
+		# (the body's FEET, y≈0) to a target at head height (1.8). That produced
+		# a wildly upward pitch (atan2(1.8, dist)) — the camera ended up looking
+		# away / slightly upward instead of locking onto the Entity's face.
+		#
+		# Fix: compute the look vector from the CAMERA EYE position
+		# (cam_holder.global_position, ~1.7m standing height) to the Entity's
+		# head/chest height (1.5m). This gives a correct look_at that snaps
+		# directly to the Entity's face.
+		#
+		# We decompose the look direction into body yaw + holder pitch (the same
+		# split used by mouse-look) instead of baking a full Basis.looking_at()
+		# into the holder. Baking yaw into the holder's LOCAL axes would corrupt
+		# the basis and cause a spin-out/gimbal-lock on the next mouse move —
+		# the exact bug fixed by Task 2. This decomposition is mathematically
+		# equivalent to look_at() for a yaw-on-body / pitch-on-holder hierarchy.
 		var face_marker = entity.get_node_or_null("FaceTarget")
-		var target_pos = face_marker.global_position if face_marker else entity.global_position + Vector3(0, 1.8, 0)
+		var target_pos: Vector3 = face_marker.global_position if face_marker else entity.global_position + Vector3(0, 1.5, 0)
 		
-		var target_look = cam_holder.global_transform.looking_at(target_pos, Vector3.UP)
-		var tween = create_tween()
-		tween.tween_property(cam_holder, "global_transform:basis", target_look.basis, 0.1)
-		tween.parallel().tween_property(camera, "fov", 40.0, 0.1)
+		var look_from: Vector3 = cam_holder.global_position
+		var to_entity: Vector3 = target_pos - look_from
+		var horizontal: float = Vector2(to_entity.x, to_entity.z).length()
+		if horizontal > 0.001:
+			var yaw: float = atan2(-to_entity.x, -to_entity.z)
+			var pitch: float = clampf(atan2(to_entity.y, horizontal), -1.4, 1.4)
+			var tween = create_tween()
+			tween.tween_property(player, "rotation:y", yaw, 0.1)
+			tween.parallel().tween_property(cam_holder, "rotation:x", pitch, 0.1)
+			tween.parallel().tween_property(camera, "fov", 40.0, 0.1)
 		
 		# --- DYNAMIC CAMERA SHAKE ---
 		var shake_tween = create_tween().set_loops(12)
@@ -234,7 +257,7 @@ func _trigger_game_over() -> void:
 
 
 func _on_restart_night(death_canvas: CanvasLayer) -> void:
-	print("[JumpscareManager] _on_restart_night() called — \"Restart from morning\" button was clicked.")
+	print("[JumpscareManager] _on_restart_night() called — \"Restart from Checkpoint\" button was clicked.")
 	
 	# Fade the jumpscare overlay back to transparent so the player can see
 	if _fade_rect:
@@ -253,13 +276,17 @@ func _on_restart_night(death_canvas: CanvasLayer) -> void:
 	# Remove the death screen
 	death_canvas.queue_free()
 	
-	# Restart from the morning of the current day via NightManager.
-	# This fully resets the player, inventory, world state, and time
-	# to the morning baseline, then waits for the natural day/night
-	# cycle to reach night again.
+	# FEATURE 1: Restart from the CURRENT CHECKPOINT via NightManager.
+	# restart_from_checkpoint() branches on the active phase:
+	#   - Night active → resets time/state to the exact start of the
+	#     current night (GameTime dusk + start_night(current_night)).
+	#   - Day active → falls back to the morning/day baseline.
 	var nm = get_node_or_null("/root/NightManager")
-	if nm and nm.has_method("restart_from_morning"):
-		print("[JumpscareManager] Calling NightManager.restart_from_morning()...")
+	if nm and nm.has_method("restart_from_checkpoint"):
+		print("[JumpscareManager] Calling NightManager.restart_from_checkpoint()...")
+		nm.restart_from_checkpoint()
+	elif nm and nm.has_method("restart_from_morning"):
+		print("[JumpscareManager] WARNING: restart_from_checkpoint() missing. Falling back to restart_from_morning().")
 		nm.restart_from_morning()
 	else:
-		print("[JumpscareManager] ERROR: NightManager not found or restart_from_morning() method missing!")
+		print("[JumpscareManager] ERROR: NightManager not found or restart methods missing!")

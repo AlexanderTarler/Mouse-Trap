@@ -133,6 +133,12 @@ var _cached_flashlight_on_entity: bool = false
 # Sprint unlock — enabled by default for development convenience
 var sprint_unlocked: bool = true
 
+# ─── SPRINT TUTORIAL LEARNED GUARD (BUG 3 FIX) ────────────────────
+# Tracks whether the sprint tutorial has been dismissed by actual use.
+# Prevents calling mark_learned("sprint") every physics frame while
+# running. Learning is only marked once the player genuinely sprints.
+var _sprint_tutorial_marked: bool = false
+
 
 # --- STANDOFF / CHARGE MECHANIC ---
 ## How long the player has been staring at the Entity with the flashlight on.
@@ -172,6 +178,16 @@ signal stamina_changed(stamina_percent: float)
 var _breathing_audio: AudioStreamPlayer3D = null
 var _breathing_audio_loaded: bool = false
 var _breathing_fade_tween: Tween = null
+
+## Looping audio player for slow breathing when stamina < 50% and NOT
+## running. Plays at the same volume as the fast track.
+var _breathing_slow_audio: AudioStreamPlayer3D = null
+var _breathing_slow_loaded: bool = false
+var _breathing_slow_fade_tween: Tween = null
+
+## Looping audio stream for slow breathing when stamina < 50% and NOT running.
+## Assign Breathing_slow.wav from res://assets/audio/player/ here.
+@export var breathing_slow_sfx: AudioStream = null
 
 # Noise system
 var _noise_timer: float = 0.0
@@ -215,12 +231,42 @@ func _ready() -> void:
 			breathing_sfx.loop = true
 		_breathing_audio.stream = breathing_sfx
 		_breathing_audio.bus = "SFX"
-		_breathing_audio.volume_db = -10.0
+		# ─── TASK: FAST BREATHING −6 dB (50% amplitude reduction) ──────
+		# Was −10.0 dB. Halving the amplitude is a −6 dB cut, so the heavy
+		# exhaustion breathing now plays at −16.0 dB (same as the slow track
+		# so both sound consistent).
+		_breathing_audio.volume_db = -16.0
 		_breathing_audio.pitch_scale = 0.7
 		_breathing_audio.max_db = 0.0
 		add_child(_breathing_audio)
 		_breathing_audio_loaded = true
-		print("[Player] Breathing audio loaded (pitch=%s, vol=%s)." % [0.7, -10.0])
+		print("[Player] Breathing audio loaded (pitch=%s, vol=%s)." % [0.7, -16.0])
+	
+	# ─── SLOW BREATHING AUDIO (stamina < 50%, NOT running) ─────────────────
+	# Loops while the player is low on stamina but recovering (walking or
+	# idle). Plays at the SAME volume (−16.0 dB) and pitch (0.7) as the fast
+	# track, so the two mix seamlessly when the player crosses the
+	# run/not-run threshold.
+	_breathing_slow_audio = AudioStreamPlayer3D.new()
+	_breathing_slow_audio.name = "BreathingSlowAudio"
+	var slow_stream: AudioStream = null
+	if breathing_slow_sfx:
+		slow_stream = breathing_slow_sfx
+	else:
+		slow_stream = load("res://assets/audio/player/Breathing_slow.wav") as AudioStream
+	if slow_stream:
+		if slow_stream is AudioStreamOggVorbis or "loop" in slow_stream:
+			slow_stream.loop = true
+		_breathing_slow_audio.stream = slow_stream
+		_breathing_slow_audio.bus = "SFX"
+		_breathing_slow_audio.volume_db = -16.0
+		_breathing_slow_audio.pitch_scale = 0.7
+		_breathing_slow_audio.max_db = 0.0
+		add_child(_breathing_slow_audio)
+		_breathing_slow_loaded = true
+		print("[Player] Slow breathing audio loaded (pitch=%s, vol=%s)." % [0.7, -16.0])
+	else:
+		print("[Player] WARNING: Breathing_slow.wav not found. Slow breathing disabled.")
 	
 	# ─── FLASHLIGHT INIT ─────────────────────────────────────────────
 	# If start_with_flashlight is true (default), the player can toggle the
@@ -486,40 +532,76 @@ func unlock_sprint() -> void:
 		sprint_unlocked = true
 		print("[Player] Sprint UNLOCKED! You can now hold SHIFT to run.")
 		# ─── TUTORIAL: Sprint prompt ─────────────────────────────────
+		# BUG 3 FIX: Do NOT call mark_learned("sprint") here. Marking it
+		# learned consumes the one-shot tutorial before the Night 2.2
+		# escape_van.gd trigger("sprint") at the entity-spawn moment can
+		# display the hint. Learning is now only marked when the player
+		# actually sprints (see _physics_process).
 		if tm and tm.has_method("trigger"):
 			tm.trigger("sprint")
 	else:
 		print("[Player] Sprint is already unlocked.")
-	
-	# Always mark sprint as learned (even if already unlocked)
-	if tm and tm.has_method("mark_learned"):
-		tm.mark_learned("sprint")
 
 
 ## Resets the camera holder rotation and camera offsets to zero.
 ## Called by JumpscareManager after the jumpscare completes to fix
 ## the tilted camera issue on respawn.
+##
+## BUG 4 FIX: The old implementation set `_camera_holder.global_transform.basis
+## = Basis.IDENTITY`, which decoupled the camera holder from the player body's
+## yaw — leaving the camera facing the wrong way after respawn, then causing
+## upside-down/spin-out camera movement (gimbal lock) once the mouse moved.
+## The body uses yaw (CharacterBody3D.rotation.y) and the holder uses ONLY
+## pitch. We reset BOTH fully and consistently:
+##   - Camera holder local rotation → ZERO (pitch/roll/yaw all cleared).
+##   - Body yaw → ZERO (so holder + body are re-aligned to world -Z).
+##   - All mouse-look/clamp/state variables → cleared so the next mouse
+##     movement starts from a clean basis (no cached/accumulated offsets).
 func reset_camera() -> void:
-	# ─── RESET LOCAL ROTATION ──────────────────────────────────────
-	# Restore the camera holder's local rotation to zero (straight ahead).
+	# ─── RESET BODY YAW ────────────────────────────────────────────
+	# The player body carries yaw (rotate_y in _input). The jumpscare tween
+	# hijacked the camera; after it, body yaw and camera basis disagree. Reset
+	# the body to face world -Z so holder + body are consistent again.
+	rotation = Vector3.ZERO
+
+	# ─── RESET CAMERA HOLDER LOCAL ROTATION ────────────────────────
+	# The holder carries ONLY pitch (rotate_x in _input). Zeroing local
+	# rotation clears pitch/roll/yaw without touching the body transform.
 	_camera_holder.rotation = Vector3.ZERO
-	
-	# ─── RESET GLOBAL TRANSFORM BASIS ──────────────────────────────
-	# The jumpscare tween changes the camera holder's global_transform.basis
-	# to look at the Entity. Setting local rotation alone is not sufficient
-	# to undo this global transform change — we must also reset the global basis.
-	_camera_holder.global_transform.basis = Basis.IDENTITY
-	
+	_camera_holder.rotation_degrees = Vector3.ZERO
+
+	# ─── TASK 2 FIX: HARD RESET OF GLOBAL ROTATION/BASIS ───────────
+	# The jumpscare tween may have written a global rotation on the holder
+	# (via cam_holder.rotation:x). If the player body has a non-zero yaw at
+	# that moment, the holder's GLOBAL basis disagrees with the body's local
+	# yaw — leaving the camera facing the wrong way or upside-down (gimbal
+	# lock / basis corruption) on restart. Zeroing the holder's GLOBAL
+	# rotation too guarantees the body + holder are re-aligned to world -Z
+	# regardless of any global-space tween that ran during the jumpscare.
+	_camera_holder.global_rotation = Vector3.ZERO
+
+	# ─── RESET MOUSE-LOOK STATE ────────────────────────────────────
+	# No cached pitch/yaw accumulators exist today (rotation is applied
+	# directly), but zeroing any related flags prevents a stale state from
+	# surviving into the respawn. The _input() clamp (rot.x in -1.4..1.4)
+	# will re-apply from a clean 0.0 pitch.
+	_head_bob_time = 0.0
+
 	# ─── RESET CAMERA OFFSETS & FOV ───────────────────────────────
 	# The jumpscare shake modifies camera h_offset, v_offset, and FOV.
 	# Restore them all to defaults so the player doesn't see a tilted/zoomed view.
 	if _camera:
+		# ─── TASK 2 FIX: RESET CAMERA LOCAL ROTATION & POSITION ────
+		# The jumpscare tween could have left residual rotation on the Camera3D
+		# node itself (Camera3D is a child of the holder). Zeroing the camera's
+		# local rotation guarantees the view basis is perfectly clean. The head
+		# bob system writes _camera.position each frame — reset it to ZERO so
+		# the camera doesn't start off-center after restart.
+		_camera.rotation = Vector3.ZERO
+		_camera.position = Vector3.ZERO
 		_camera.h_offset = 0.0
 		_camera.v_offset = 0.0
 		_camera.fov = 75.0
-	
-	# ─── RESET HEAD BOB ───────────────────────────────────────────
-	_head_bob_time = 0.0
 
 
 func _toggle_flashlight() -> void:
@@ -676,6 +758,17 @@ func _physics_process(delta: float) -> void:
 	var _is_moving_forward = Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_D)
 	_is_running = Input.is_key_pressed(KEY_SHIFT) and sprint_unlocked and not _is_crouching and _stamina > 0.0 and not _stamina_exhausted and _is_moving_forward
 	
+	# ─── BUG 3 FIX: MARK SPRINT TUTORIAL LEARNED ON ACTUAL USE ──────
+	# The sprint hint (triggered by escape_van.gd during Night 2.2) is now
+	# dismissed only when the player genuinely sprints — NOT when sprint is
+	# merely unlocked (that premature mark consumed the one-shot before the
+	# hint could show). Marking is one-shot via _sprint_tutorial_marked.
+	if _is_running and not _sprint_tutorial_marked:
+		_sprint_tutorial_marked = true
+		var tm_sprint := get_node_or_null("/root/TutorialManager")
+		if tm_sprint and tm_sprint.has_method("mark_learned"):
+			tm_sprint.mark_learned("sprint")
+	
 	if _is_crouching: _current_speed = crouch_speed
 	elif _is_running: _current_speed = run_speed
 	else: _current_speed = walk_speed
@@ -707,23 +800,46 @@ func _physics_process(delta: float) -> void:
 		stamina_changed.emit(_new_stamina_pct)
 	
 	# ─── STAMINA BREATHING AUDIO ──────────────────────────────────────
-	# Play heavy breathing when stamina < 50% AND the player is sprinting.
-	# Fades in over 0.5s on start, fades out over 1.0s on stop.
+	# Two mutually-exclusive tracks when stamina < 50%:
+	#   FAST  — low stamina AND sprinting (heavy exhaustion breathing)
+	#   SLOW  — low stamina AND NOT running (recovery breathing, same volume)
+	# Both fade in over 0.5s and fade out over 1.0s. The FAST track was
+	# lowered −6 dB (−10 → −16 dB) for a 50% amplitude reduction.
+	var low_stamina: bool = _new_stamina_pct < 50.0
+	var should_breathe_fast: bool = low_stamina and _is_running
+	var should_breathe_slow: bool = low_stamina and not _is_running
+	
 	if _breathing_audio_loaded and _breathing_audio:
-		var should_breathe = _new_stamina_pct < 50.0 and _is_running
-		if should_breathe and not _breathing_audio.playing:
+		if should_breathe_fast and not _breathing_audio.playing:
 			_breathing_audio.volume_db = -80.0
 			_breathing_audio.play()
-			# Fade in over 0.5s
+			# Fade in over 0.5s — target is −16.0 dB (50% amplitude cut).
 			if _breathing_fade_tween: _breathing_fade_tween.kill()
 			_breathing_fade_tween = create_tween().set_parallel(true)
-			_breathing_fade_tween.tween_property(_breathing_audio, "volume_db", -10.0, 0.5).set_ease(Tween.EASE_OUT)
-		elif not should_breathe and _breathing_audio.playing:
+			_breathing_fade_tween.tween_property(_breathing_audio, "volume_db", -16.0, 0.5).set_ease(Tween.EASE_OUT)
+		elif not should_breathe_fast and _breathing_audio.playing:
 			# Fade out over 1.0s then stop
 			if _breathing_fade_tween: _breathing_fade_tween.kill()
 			_breathing_fade_tween = create_tween().set_parallel(true)
 			_breathing_fade_tween.tween_property(_breathing_audio, "volume_db", -80.0, 1.0).set_ease(Tween.EASE_IN)
 			_breathing_fade_tween.finished.connect(_on_breathing_fade_out)
+	
+	# ─── SLOW BREATHING (low stamina, NOT running) ──────────────────
+	# Plays at the SAME volume (−16.0 dB) as the fast track, so the two
+	# blend seamlessly when the player crosses the run/not-run threshold.
+	if _breathing_slow_loaded and _breathing_slow_audio:
+		if should_breathe_slow and not _breathing_slow_audio.playing:
+			_breathing_slow_audio.volume_db = -80.0
+			_breathing_slow_audio.play()
+			if _breathing_slow_fade_tween: _breathing_slow_fade_tween.kill()
+			_breathing_slow_fade_tween = create_tween().set_parallel(true)
+			_breathing_slow_fade_tween.tween_property(_breathing_slow_audio, "volume_db", -16.0, 0.5).set_ease(Tween.EASE_OUT)
+		elif not should_breathe_slow and _breathing_slow_audio.playing:
+			# Fade out over 1.0s then stop
+			if _breathing_slow_fade_tween: _breathing_slow_fade_tween.kill()
+			_breathing_slow_fade_tween = create_tween().set_parallel(true)
+			_breathing_slow_fade_tween.tween_property(_breathing_slow_audio, "volume_db", -80.0, 1.0).set_ease(Tween.EASE_IN)
+			_breathing_slow_fade_tween.finished.connect(_on_breathing_slow_fade_out)
 
 	var input_dir := Vector2(
 		-1.0 if Input.is_key_pressed(KEY_A) else (1.0 if Input.is_key_pressed(KEY_D) else 0.0),
@@ -1194,3 +1310,9 @@ func make_noise(radius: float, intensity: float = 1.0) -> void:
 func _on_breathing_fade_out() -> void:
 	if _breathing_audio and _breathing_audio.playing:
 		_breathing_audio.stop()
+
+## Called when the SLOW breathing audio fade-out tween finishes.
+## Stops the slow breathing player after the fade completes.
+func _on_breathing_slow_fade_out() -> void:
+	if _breathing_slow_audio and _breathing_slow_audio.playing:
+		_breathing_slow_audio.stop()

@@ -1,15 +1,17 @@
-[gd_scene format=3 uid="uid://cable_spool_scene"]
+[gd_scene format=3 uid="uid://bxbhpj8qlqrmf"]
 
-[ext_resource type="Script" uid="uid://cable_spool_pickup_script" path="res://scripts/items/cable_spool_pickup.gd" id="1_spool_script"]
-[ext_resource type="PackedScene" uid="uid://electrical_tape_model" path="res://assets/PSX Tech/Models/GLB (recommended)/electrical_tape_etx_1_1.glb" id="2_model"]
+[ext_resource type="Script" uid="uid://baxlhl370a0tl" path="res://scripts/items/cable_spool_pickup.gd" id="1_spool_script"]
+[ext_resource type="PackedScene" uid="uid://bovjx2860iy8q" path="res://assets/PSX Tech/Models/GLB (recommended)/electrical_tape_etx_1_1.glb" id="2_model"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_spool"]
+size = Vector3(0.10345459, 0.031677246, 0.11663818)
 
-[node name="CableSpool" type="RigidBody3D"]
+[node name="CableSpool" type="RigidBody3D" unique_id=1069145844]
 script = ExtResource("1_spool_script")
 
-[node name="SpoolModel" parent="." instance=ExtResource("2_model")]
+[node name="SpoolModel" parent="." unique_id=1540790408 instance=ExtResource("2_model")]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1943335957]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0011291504, 0.004547119, -0.008392334)
 shape = SubResource("BoxShape3D_spool")
 debug_color = Color(0.2, 0.2, 0.2, 0.4)

@@ -6,6 +6,16 @@ extends Node3D
 @export var interaction_distance: float = 3.0
 @export var prompt_text: String = "[E] Interact"
 
+# ─── INTERACTABLE COLLISION LAYER ─────────────────────────────────
+# Layer 2 ("Interactable") is dedicated to interactable targets.
+# The interaction ray ONLY raycasts against layer 2, so invisible
+# environment geometry (porch roof overhang, stairs, cabin bounding
+# bodies) on the default layer 1 can never absorb the ray before it
+# reaches the door/key/switch collider. Bodies that are interactable
+# keep layer 1 as well (so the player and Entity still collide with
+# them) and are marked with layer 1|2 = 3 in their own scripts.
+const INTERACTABLE_LAYER_MASK: int = 2  # Layer 2 (name: "Interactable")
+
 # Camera reference is set by the player controller when this node is created
 var _camera: Camera3D = null
 var _current_target: Node = null
@@ -65,6 +75,13 @@ func _process(delta: float) -> void:
 	# Without this, Area3D-based interactables will never be detected by the raycast.
 	query.collide_with_areas = true
 	query.collide_with_bodies = true
+	# BUG 1 FIX: Restrict the interaction ray to the dedicated "Interactable"
+	# layer (Layer 2) only. Previously the ray hit EVERYTHING (default mask
+	# 0xFFFFFFFF), so invisible environment geometry on the porch (roof
+	# overhang, stair bodies, cabin bounding colliders) absorbed the ray
+	# before it could reach the door or key. Now only layer-2 colliders are
+	# considered, and interactables opt into layer 2 in their own scripts.
+	query.collision_mask = INTERACTABLE_LAYER_MASK
 	# Exclude the player (CharacterBody3D) from the raycast
 	# InteractionManager is at: Player > CameraHolder > InteractionManager
 	# So get_parent() = CameraHolder, get_parent().get_parent() = Player

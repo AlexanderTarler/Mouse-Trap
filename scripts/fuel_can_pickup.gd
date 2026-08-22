@@ -17,7 +17,7 @@ func _ready() -> void:
 	add_to_group("xray_fuel_can")
 	
 	# Ensure this Area3D can be detected by the interaction manager's raycast
-	collision_layer = 1
+	collision_layer = 2
 	
 	# If no item_data assigned, create a default one inline (self-contained, no external resource dependency)
 	if not item_data:

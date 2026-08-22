@@ -51,6 +51,14 @@ func _ready() -> void:
 	# Save the baseline rotation so we always return to a clean closed state
 	default_rotation_y = rotation_degrees.y
 	
+	# ─── BUG 1 FIX: INTERACTABLE COLLISION LAYER ────────────────────
+	# Layer 2 ("Interactable") is dedicated to interactable targets; the
+	# interaction ray only raycasts against layer 2. This door keeps its
+	# default layer 1 (so the player/Entity still collide with it) AND adds
+	# layer 2 (1|2 = 3) so the interaction ray can reach it from outside
+	# without being blocked by porch/environment geometry.
+	set_collision_layer_value(2, true)
+	
 	# ─── START LOCKED TOGGLE ───────────────────────────────────────
 	# If start_locked is true and a required_key_name is set, initialize
 	# the door as locked. This allows the level designer to toggle whether
@@ -80,9 +88,15 @@ func _ready() -> void:
 		_unlock_sound_programmatic = load(UNLOCK_SOUND_PATH) as AudioStream
 
 
+
 ## Quick tap E — opens/closes the door.
 ## If the door is locked, always plays the rattle sound (even with key).
 ## Lock/unlock is ONLY done via hold E for 2 seconds (toggle_lock).
+	# BUG 1 FIX: Ensure Layer 2 ("Interactable") is active — must run AFTER any
+	# bare 'collision_layer = N' assignment in _ready so it cannot be overwritten.
+	set_collision_layer_value(1, true)
+	set_collision_layer_value(2, true)
+
 func interact() -> void:
 	if is_animating:
 		return # Prevent input spam while the door is mid-swing

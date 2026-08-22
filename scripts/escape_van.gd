@@ -49,6 +49,12 @@ var alarm_active: bool = false
 ## night restart. This prevents the alarm sequence from playing twice.
 var van_investigated: bool = false
 
+# ─── TASK 8: SPRINT TUTORIAL ONE-SHOT GUARD ─────────────────────────
+## True once the "Hold SHIFT to run" hint has been fired at the STALK
+## transition (during the Night 2.2 van sequence). Prevents re-triggering
+## if the chase sequence is ever re-run (e.g. scene reload).
+var _sprint_tutorial_fired: bool = false
+
 # ─── HOLD-TO-INTERACT: Car Part Installation ──────────────────────────────
 ## Whether the player is currently holding E to install a car part.
 ## Set by start_hold_interact(), cleared by stop_hold_interact().
@@ -388,12 +394,6 @@ func _trigger_first_chase() -> void:
 	if player and player.has_method("unlock_sprint"):
 		player.unlock_sprint()
 	
-	# ─── SPRINT TUTORIAL (1 second after van interaction) ─────────────
-	await get_tree().create_timer(1.0).timeout
-	var tm := get_node_or_null("/root/TutorialManager")
-	if tm and tm.has_method("trigger"):
-		tm.trigger("sprint")
-	
 	var objective_label = _find_objective_label()
 	if objective_label:
 		objective_label.text = "JOIN HIM"
@@ -525,6 +525,21 @@ func _teleport_entity_to_van() -> void:
 		if "_state" in entity:
 			entity._state = 2
 			entity._pending_state = 2
+	
+	# ─── TASK 8 FIX: SPRINT TUTORIAL AT STALK TRANSITION ──────────────
+	# The "Hold SHIFT to run" hint must appear EXACTLY when the Entity
+	# transitions into the STALK state after the van interaction. This is
+	# the narrative moment the player first needs sprinting. The old code
+	# triggered it on a 1-second timer (and the resource was blocked by its
+	# day_one_only flag), so the hint never showed during Night 2.2.
+	# The one-shot guard prevents re-triggering if the sequence ever
+	# re-runs (e.g., scene reload).
+	if not _sprint_tutorial_fired:
+		_sprint_tutorial_fired = true
+		var tm_sprint := get_node_or_null("/root/TutorialManager")
+		if tm_sprint and tm_sprint.has_method("trigger"):
+			tm_sprint.trigger("sprint")
+			print("[EscapeVan] TASK 8: Sprint tutorial triggered at STALK transition.")
 	
 	if "thinks_player_is_inside" in entity:
 		entity.thinks_player_is_inside = false

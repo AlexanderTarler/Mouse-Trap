@@ -79,10 +79,13 @@ func _process(delta: float) -> void:
 			remove_active_peeker()
 
 
-## Returns true if the peeker is allowed to appear this night.
+## Returns true if RANDOM heartbeat spawns are allowed this night.
 ##
-## BUG 9 FIX: The peeker is allowed on Night 1 AND Night 2.1 (Day 2 before
-## the van sequence), but NOT Night 2.2 (car alarm sequence) or onwards.
+## TASK 5: Night 1 random spawns are COMPLETELY DISABLED. The Night 1
+## peeker is now a scripted one-off event driven solely by
+## RoutineManager.on_door_locked() → PeekerManager.force_spawn_at_window().
+## Random heartbeat spawns remain active ONLY on Night 2.1 (Day 2 before
+## the van sequence), NOT Night 2.2 (car alarm sequence) or onwards.
 ## Night 2.2 is detected via the NightManager's is_van_sequence_active flag,
 ## which the bed sets to true when the Nest Data upload sleep triggers the
 ## car alarm. Nights 3+ are excluded by the current_night <= 2 gate.
@@ -91,9 +94,12 @@ func _is_night_1_active() -> bool:
 	if not nm:
 		return false
 	
-	# Night 1: normal peeker behavior (active night, current_night == 1)
+	# TASK 5: Night 1 — RANDOM SPAWNS DISABLED (scripted one-off only)
+	# The peeker must NEVER appear randomly during Night 1. Only the
+	# explicit forced spawn at the LivingRoom window (via
+	# force_spawn_at_window) may create a peeker on Night 1.
 	if nm.current_night == 1 and nm.is_night_active:
-		return true
+		return false
 	
 	# Night 2.1: ONLY active when a NIGHT is actually in progress.
 	# Previously this returned true for all of Day 2 daytime because
@@ -123,10 +129,23 @@ func _heartbeat() -> void:
 
 ## Spawns a WindowPeeker at a random cabin window that the player is NOT
 ## currently looking at.
+## TASK 5: Now refuses to run on Night 1 (except dev mode) so the scripted
+## one-off LivingRoom peeker is the ONLY Night 1 spawn path. Any leftover
+## caller (debug console, old triggers) can no longer produce a RANDOM
+## Night 1 peeker.
 func spawn_night_1_peeker() -> void:
 	if _active_peeker and is_instance_valid(_active_peeker):
 		print("[PeekerManager] Peeker already active. Skipping spawn.")
 		return
+	
+	var nm_spawn_guard = get_node_or_null("/root/NightManager")
+	if nm_spawn_guard and nm_spawn_guard.current_night == 1 and nm_spawn_guard.is_night_active:
+		# TASK 5: OPT-IN ONLY on Night 1 — only intended for dev-mode testing.
+		# The scripted forced spawn (force_spawn_at_window) is the ONLY
+		# sanctioned Night 1 path.
+		if not ("is_dev_mode" in nm_spawn_guard and nm_spawn_guard.is_dev_mode):
+			print("[PeekerManager] TASK 5: Random Night 1 peeker spawn blocked. Use force_spawn_at_window().")
+			return
 	
 	if not _is_player_inside_cabin():
 		print("[PeekerManager] Player is outside the cabin. Skipping peeker spawn.")
@@ -189,14 +208,27 @@ func force_spawn_at_window(window_id: String) -> void:
 
 
 ## Finds a window node in the "WindowMarkers" group by its window_id or name.
+## TASK 5: Uses case-insensitive SUBSTRING matching so a generic target like
+## "LivingRoom" matches real window IDs such as "LivingRoom_Right" and node
+## names like "LivingRoomWindow". Exact matches take priority.
 func _find_window_by_id(window_id: String) -> Node3D:
 	var windows: Array[Node] = get_tree().get_nodes_in_group("WindowMarkers")
+	var needle: String = window_id.to_lower()
+	# Pass 1: exact match on window_id property or node name
 	for w in windows:
 		var window_node = w as Node3D
 		if not window_node:
 			continue
 		var wid: String = window_node.get("window_id") if "window_id" in window_node else str(window_node.name)
 		if wid == window_id or window_node.name == window_id:
+			return window_node
+	# Pass 2: case-insensitive substring match (e.g. "livingroom" in "LivingRoom_Right")
+	for w in windows:
+		var window_node = w as Node3D
+		if not window_node:
+			continue
+		var wid: String = window_node.get("window_id") if "window_id" in window_node else str(window_node.name)
+		if wid.to_lower().contains(needle) or str(window_node.name).to_lower().contains(needle):
 			return window_node
 	return null
 

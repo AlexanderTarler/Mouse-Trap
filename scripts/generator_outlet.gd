@@ -36,7 +36,7 @@ var _spawned_lamp: Node = null
 
 func _ready() -> void:
 	# Ensure this Area3D can be detected by the interaction manager's raycast
-	collision_layer = 1
+	collision_layer = 2
 	# Add to the generator_outlet group so PowerCable can auto-find us
 	add_to_group("generator_outlet")
 
@@ -81,6 +81,13 @@ func interact() -> void:
 
 	# Consume the cable spool from inventory
 	_consume_cable_spool()
+
+	# ─── TASK 4: "SET TRAP" — CABLE CONNECTED TO GENERATOR ────────────
+	# The side-track's "Set trap" objective requires both the generator
+	# and lamp cable ends. Notify RoutineManager the generator end is in.
+	var rm_gen = get_node_or_null("/root/RoutineManager")
+	if rm_gen and rm_gen.has_method("on_cable_connected_to_gen"):
+		rm_gen.on_cable_connected_to_gen()
 
 	print("[GeneratorOutlet] Cable plugged in! Drag the free end to a lamp.")
 
@@ -140,6 +147,12 @@ func _try_auto_connect() -> void:
 		cable.plug_to_source(self, hand_marker)
 
 	_active_cable = cable
+
+	# ─── TASK 4: "SET TRAP" — CABLE CONNECTED TO GENERATOR (auto flow) ─
+	var rm_gen2 = get_node_or_null("/root/RoutineManager")
+	if rm_gen2 and rm_gen2.has_method("on_cable_connected_to_gen"):
+		rm_gen2.on_cable_connected_to_gen()
+
 	print("[GeneratorOutlet] Cable plugged in! Free end in player's hand. Carry the lamp and drop it to deploy.")
 
 

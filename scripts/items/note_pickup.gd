@@ -22,6 +22,8 @@ var _already_collected: bool = false
 
 
 func _ready() -> void:
+	# BUG 1 FIX: Interactable Layer 2 (interaction ray only sees layer 2)
+	set_collision_layer_value(2, true)
 	# If no item_data assigned, create a default one
 	if not item_data:
 		item_data = ItemData.new()
@@ -36,11 +38,18 @@ func _ready() -> void:
 	# light periodically sweeps across the note to catch the player's eye.
 	# The shader runs on top of the existing material via next_pass, so the
 	# base texture/shading is preserved. Brightness is intentionally subtle.
+
+
 	call_deferred("_apply_pickup_highlight")
 
 
 ## Applies the diagonal light-wave shader as a next_pass on the note mesh.
 ## Runs deferred so child MeshInstance3D nodes exist when called.
+	# BUG 1 FIX: Ensure Layer 2 ("Interactable") is active — must run AFTER any
+	# bare 'collision_layer = N' assignment in _ready so it cannot be overwritten.
+	set_collision_layer_value(1, true)
+	set_collision_layer_value(2, true)
+
 func _apply_pickup_highlight() -> void:
 	var shader := load("res://shaders/pickup_highlight.gdshader") as Shader
 	if not shader:

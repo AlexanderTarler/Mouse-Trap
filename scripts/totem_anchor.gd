@@ -32,6 +32,11 @@ class_name TotemAnchor
 ## Once true, the totem cannot be interacted with again.
 var is_purged: bool = false
 
+## ─── TASK 4: "FIND THE ANCHOR" ONE-SHOT TRIGGER ──────────────────────
+## When the player approaches within ~5.0 meters, RoutineManager's
+## on_anchor_located() fires exactly once (side-track "Locate anchor").
+var _anchor_located_notified: bool = false
+
 ## Current purge progress in seconds. Accumulates while the player holds the
 ## interact key. Reset to 0.0 if the player releases the key early.
 var purge_progress: float = 0.0
@@ -95,7 +100,9 @@ const MAX_PURGE_DISTANCE: float = 8.0
 ## 7.0m below + the tree's height fully submerges the canopy underground.
 ## TASK 3.4: Changed from 5.0 → 7.0 to lower the totem anchor an extra
 ## 2 meters into the ground during the daytime.
-const BURIED_OFFSET: float = 7.0
+## ISSUE 2 FIX: Raised to 9.0 — the daytime hub was still sitting 2m too
+## high, so the totem must sink an additional 2 meters below ground.
+const BURIED_OFFSET: float = 9.0
 
 ## Duration (seconds) of the rise/descent tweens.
 @export var animation_duration: float = 10.0
@@ -276,6 +283,18 @@ func _has_arvid_note_2() -> bool:
 func _process(delta: float) -> void:
 	if is_purged:
 		return
+
+	# ─── TASK 4: "FIND THE ANCHOR" DISTANCE TRIGGER ────────────────────
+	# If the player approaches within ~5.0 meters, fire the side-track
+	# "Locate anchor" objective exactly once.
+	if not _anchor_located_notified:
+		var locate_player = get_tree().get_first_node_in_group("player")
+		if locate_player and global_position.distance_to(locate_player.global_position) <= 5.0:
+			var rm_locate = get_node_or_null("/root/RoutineManager")
+			if rm_locate and rm_locate.has_method("on_anchor_located"):
+				rm_locate.on_anchor_located()
+				_anchor_located_notified = true
+				print("[TotemAnchor] TASK 4: Player near anchor — 'Locate anchor' objective fired.")
 
 	# ─── NIGHT-STATE COLLISION DEFENSE (Bug Fix) ────────────────────────
 	# If the NightManager reports an active Night 3+ but the totem's

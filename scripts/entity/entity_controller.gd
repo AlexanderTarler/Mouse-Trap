@@ -598,6 +598,35 @@ var _tree_ghost_active: bool = false
 ## The collision mask saved before entering tree ghost mode.
 var _saved_tree_ghost_mask: int = 0
 
+# ─── APPROACH CABIN GHOST (Wall-Wedge Unstick) ─────────────────────────
+## When the Entity is stuck against cabin geometry during APPROACH_WINDOW
+## (velocity zero + nav active + cabin layer colliding with the capsule),
+## this mode temporarily drops ONLY the cabin collision layer (layer 1)
+## for ~1 second so the Entity can slide past the wall/sill lip into the
+## WindowMarker, where the existing arrival check hands off to WINDOW_PEEK.
+## This is a one-shot per approach target — if the Entity is STILL stuck
+## after the ghost burst, the stuck detector falls through to
+## fade_and_relocate() as a terminal backstop.
+var _approach_cabin_ghost_active: bool = false
+
+## Countdown for the approach cabin ghost burst. Decremented each frame in
+## _physics_process(); when it expires the cabin mask is restored.
+var _approach_cabin_ghost_timer: float = 0.0
+
+## One-shot guard per approach target: only ONE ghost burst per window/door
+## target. Reset when get_current_window_target() changes.
+var _approach_cabin_ghost_used: bool = false
+
+## The collision mask saved before the approach cabin ghost burst.
+var _saved_approach_ghost_mask: int = 0
+
+## The last approach target the ghost burst was armed for. Used to detect
+## a fresh window/door selection and re-arm the one-shot.
+var _last_approach_target: Node3D = null
+
+## Duration (seconds) of the approach cabin ghost burst.
+const APPROACH_CABIN_GHOST_DURATION: float = 1.0
+
 # --- OVERLOAD STUN STATE ---
 ## Timer counting down the stun duration (seconds remaining).
 ## Set by trigger_overload_stun() and decremented each frame during STUNNED.
@@ -656,6 +685,15 @@ var _door_approach_cooldown: float = 0.0
 ## transitions to OBSERVE_FROM_TREELINE instead of INDOOR_SEARCH.
 ## Reset to false by the Director after consuming the flag.
 var is_door_locked: bool = false
+
+## ─── NO VIABLE WINDOW FLAG ─────────────────────────────────────────────
+## Set to true by entity_ai.gd's _approach_window_state() when
+## pick_tactical_window() returns null — meaning EVERY window is lit, on
+## breach cooldown, or flinch-banned (no window can be approached at all).
+## Read by the Director's Tier 5 null-target guard, which routes the Entity
+## to SABOTAGE_FUSE instead of bouncing APPROACH_WINDOW ↔ OBSERVE_FROM_TREELINE
+## forever. Cleared when a window is successfully selected.
+var no_viable_window: bool = false
 
 ## ─── DOOR TARGET FLAG ────────────────────────────────────────────────────
 ## Set to true by _approach_window_state() when the current window target
@@ -1608,6 +1646,34 @@ func _physics_process(delta: float) -> void:
 				collision_mask = _saved_tree_ghost_mask
 				_saved_tree_ghost_mask = 0
 				print("[Entity] Tree ghost mode expired. Full collision restored.")
+
+	# ─── APPROACH CABIN GHOST TIMER DECREMENT ──────────────────────────────
+	# When the approach cabin ghost burst is active (APPROACH_WINDOW wall
+	# wedge unstick), decrement the timer. When it expires, restore the
+	# cabin collision layer — but ONLY if still in APPROACH_WINDOW. If the
+	# state changed during the burst (e.g. hand-off to WINDOW_PEEK), let
+	# _update_collision_layers() own the mask for the new state.
+	if _approach_cabin_ghost_active:
+		_approach_cabin_ghost_timer -= delta
+		if _approach_cabin_ghost_timer <= 0.0:
+			_approach_cabin_ghost_active = false
+			_approach_cabin_ghost_timer = 0.0
+			if _state == EntityAI.State.APPROACH_WINDOW and _saved_approach_ghost_mask != 0:
+				collision_mask = _saved_approach_ghost_mask
+				_saved_approach_ghost_mask = 0
+				print("[Entity] Approach cabin ghost burst expired. Cabin collision restored.")
+			else:
+				# State changed mid-burst — discard the saved mask; the state
+				# dispatcher will apply the correct mask for the new state.
+				_saved_approach_ghost_mask = 0
+
+	# ─── APPROACH TARGET CHANGE DETECTION (re-arm one-shot) ─────────────
+	# When the Entity selects a NEW window/door target (including after a
+	# successful relocation), reset the ghost one-shot so the next approach
+	# gets a fresh cabin ghost burst.
+	if _state == EntityAI.State.APPROACH_WINDOW and _current_window_target != _last_approach_target:
+		_last_approach_target = _current_window_target
+		_approach_cabin_ghost_used = false
 	
 	if _relocate_cooldown > 0.0:
 		_relocate_cooldown -= delta
@@ -1911,10 +1977,45 @@ func _physics_process(delta: float) -> void:
 			var effective_timeout = stuck_timeout_near_door if _is_near_door_or_window() else stuck_timeout
 			_stuck_timer += delta
 			if _stuck_timer >= effective_timeout:
+				# ─── APPROACH CABIN GHOST BURST (Wall-Wedge Unstick) ─────────
+				# If the Entity is in APPROACH_WINDOW and wedged against cabin
+				# geometry, do NOT relocate the instant it gets stuck — that
+				# creates a "relocate → re-approach → wedge again" loop that can
+				# prevent the Entity from ever reaching a window. Instead, fire a
+				# ONE-SHOT cabin-ghost burst (1s): drop ONLY the cabin collision
+				# layer so the Entity slides past the wall/sill lip into the
+				# WindowMarker, where the existing arrival check hands off to
+				# WINDOW_PEEK. Only if it is STILL stuck AFTER the burst expires
+				# do we fall through to fade_and_relocate() as a terminal backstop.
 				var real_vel := get_real_velocity()
-				print("[Entity] STUCK DETECTED! No movement for %.1fs while nav is active. real_vel=(%.3f, %.3f, %.3f) len=%.3f. Relocating." % [effective_timeout, real_vel.x, real_vel.y, real_vel.z, real_vel.length()])
-				fade_and_relocate()
-				_stuck_timer = 0.0
+				# ─── ANTI-CLIP GATE: NEVER ghost the cabin layer while physically
+				# inside. Dropping the cabin collision layer during APPROACH_WINDOW
+				# lets the body phase through the wall if the nav target resolves
+				# to an interior point. Cabin interior entry is EXCLUSIVELY the
+				# breach mechanic's job (WINDOW_PEEK → INDOOR_SEARCH) — if the
+				# body is already detected inside, skip the ghost burst entirely.
+				var _ghost_phys_inside: bool = has_method("is_physically_inside") and is_physically_inside()
+				if _state == EntityAI.State.APPROACH_WINDOW and not _approach_cabin_ghost_used and not _ghost_phys_inside:
+					# Set the one-shot guard FIRST so the burst cannot re-fire
+					# every stuck tick on the same target.
+					_approach_cabin_ghost_used = true
+					_saved_approach_ghost_mask = collision_mask
+					# Drop ONLY the cabin layer (bit 0). Player (2), tree (3),
+					# rock (4) stay active — the Entity can still collide with
+					# the player and terrain but cannot be wedged on the cabin.
+					collision_mask = collision_mask & ~(1 << (COLLISION_LAYER_CABIN - 1))
+					_approach_cabin_ghost_active = true
+					_approach_cabin_ghost_timer = APPROACH_CABIN_GHOST_DURATION
+					_stuck_timer = 0.0
+					print("[Entity] APPROACH GHOST: Cabin collision disabled for %.1fs to clear wall wedge. real_vel=(%.3f, %.3f, %.3f)." % [APPROACH_CABIN_GHOST_DURATION, real_vel.x, real_vel.y, real_vel.z])
+				elif _approach_cabin_ghost_active:
+					# Ghost burst still in progress — keep resetting the stuck
+					# timer so we do NOT relocate mid-burst.
+					_stuck_timer = 0.0
+				else:
+					print("[Entity] STUCK DETECTED! No movement for %.1fs while nav is active. real_vel=(%.3f, %.3f, %.3f) len=%.3f. Relocating." % [effective_timeout, real_vel.x, real_vel.y, real_vel.z, real_vel.length()])
+					fade_and_relocate()
+					_stuck_timer = 0.0
 		else:
 			# Reset the stuck timer while waiting at the door
 			_stuck_timer = 0.0
@@ -2376,8 +2477,9 @@ func _physics_process(delta: float) -> void:
 				# not a per-frame lerp, so it does not cause the Y oscillation the
 				# old Floating-Sphere system produced.
 				var floor_y = _floor_ray.get_collision_point().y
-				if global_position.y > floor_y + 0.6:
-					global_position.y = floor_y + 0.6
+				var ground_offset = get_physics_bottom_offset()
+				if global_position.y > floor_y + ground_offset:
+					global_position.y = floor_y + ground_offset
 					velocity.y = 0.0
 		
 		var flat_vel = Vector2(velocity.x, velocity.z)
@@ -2727,6 +2829,25 @@ func get_sensory_module() -> Node:
 ## colliding with doorway geometry while lerping between waypoints.
 func get_collision_shape() -> CollisionShape3D:
 	return _collision_shape
+
+## Returns the vertical distance (in meters) from the physics body's origin
+## down to the BOTTOM of its collision shape. Used to compute the correct
+## hover height so the capsule does NOT clip into the floor.
+##
+## CapsuleShape3D: bottom = height/2 + radius (the caps add radius to the
+## cylinder's half-height). The old hardcoded +0.6 hover left the bottom
+## ~12cm below floor for radius 0.22 / height 1.0, jamming the Entity.
+## Falls back to 0.6 if no shape is available.
+func get_physics_bottom_offset() -> float:
+	if _collision_shape and _collision_shape.shape:
+		var shape = _collision_shape.shape
+		if shape is CapsuleShape3D:
+			return shape.height * 0.5 + shape.radius
+		if shape is SphereShape3D:
+			return shape.radius
+		if shape is BoxShape3D:
+			return shape.size.y * 0.5
+	return 0.6
 
 ## Returns the EntityConfidence sub-module.
 func get_confidence_module() -> Node:
@@ -3172,6 +3293,10 @@ func reset_consecutive_vantage_misses() -> void:
 
 ## ─── FLINCH BLACKLIST ACCESSORS ──────────────────────────────────────────────
 ## Returns the array of window IDs the Entity was repelled from via FLINCH.
+## The ban persists until the Entity breaches a DIFFERENT window
+## (clear_flinch_blacklist) or deactivates into DORMANT. If NO other viable
+## window exists (all lit / all banned / all on cooldown), pick_tactical_window()
+## returns null → no_viable_window → the Director routes to SABOTAGE_FUSE.
 func get_flinch_blacklisted_windows() -> Array[String]:
 	return _flinch_blacklisted_windows
 
@@ -3184,9 +3309,8 @@ func add_flinch_blacklisted_window(window_id: String) -> void:
 		print("[FLINCH BLACKLIST] Added window '%s' to flinch blacklist. Total: %d" % [window_id, _flinch_blacklisted_windows.size()])
 
 ## Clears the entire flinch blacklist. Called when:
-##   1. The Entity completes an OBSERVE relocation cycle (fade_and_relocate).
-##   2. The Entity enters DORMANT state.
-##   3. The Entity successfully breaches a DIFFERENT window.
+##   1. The Entity enters DORMANT state.
+##   2. The Entity successfully breaches a DIFFERENT window.
 func clear_flinch_blacklist() -> void:
 	if not _flinch_blacklisted_windows.is_empty():
 		print("[FLINCH BLACKLIST] Cleared %d blacklisted windows." % _flinch_blacklisted_windows.size())
@@ -3895,6 +4019,24 @@ func fade_and_relocate() -> void:
 	print("[Entity] fade_and_relocate() called! Current state: ", STATE_KEYS[_state])
 	_is_fading = true
 
+	# ─── APPROACH_WINDOW ESCAPE (Stuck-Loop Fix) ────────────────────────
+	# When the stuck detector (or Director) calls fade_and_relocate() while
+	# the Entity is wedged during APPROACH_WINDOW, the nav guard in
+	# entity_navigation.pick_next_vantage_point() refuses to redirect a
+	# mid-approach Entity — so the rescue was a NO-OP and the stuck loop
+	# repeated every 1.5s. Clear the abandoned window/door target and any
+	# in-progress door phase FIRST, so pick_next_vantage_point() sees a
+	# passive state and genuinely relocates the Entity to a treeline point.
+	if _state == EntityAI.State.APPROACH_WINDOW:
+		set_current_window_target(null)
+		is_door_target = false
+		_door_phase = 0
+		_door_phase_timer = 0.0
+		_door_phase_2_timer = 0.0
+		_ghost_door_phase_2 = false
+		is_breach_locked = false
+		print("[Entity] fade_and_relocate(): Cleared APPROACH_WINDOW target before relocation.")
+
 	
 	# Pick a new vantage point via the navigation system.
 	# This sets _nav_agent.target_position to the new coordinate.
@@ -4227,30 +4369,31 @@ func _update_collision_layers() -> void:
 			# NOTE: Layers 3 (Tree) and 4 (Rock) are intentionally excluded.
 			# The Entity phases through foliage while stalking the cabin.
 
-		EntityAI.State.INDOOR_SEARCH, EntityAI.State.RETREAT:
-			# INDOOR_SEARCH: Cabin geometry (Layer 1) removed from the mask.
-			# The Entity is inside the cabin; the baked NavigationMesh already
-			# confines it to walkable interior spaces (walls are baked out of
-			# the navmesh). Keeping Layer 1 in the mask means the physics
-			# capsule catches on interior doorframe lip colliders, jamming
-			# the Entity between rooms (e.g., Hallroom ↔ Livingroom).
-			# The NavMesh routes around walls, so Layer 1 is redundant for
-			# interior navigation and only causes stuck states. Exterior walls
-			# are also Layer 1, but the nav agent never routes through them,
-			# so the Entity cannot phase out of the cabin.
-			#
-			# RETREAT: REUSES the same mask. The Entity must sprint through the
-			# cabin interior to reach the breached window/door exit point. The
-			# NavMesh routes around walls — cabin collision (Layer 1) only
-			# catches the physics capsule on doorframe lips and jams it, so the
-			# Entity never reaches the 2m proximity gate in _indoor_retreat_handler
-			# Phase 1. Excluding Layer 1 lets the sprint-to-exit succeed; the
-			# Phase 2 safety check (is_physically_inside) still guarantees the
-			# Entity exits and doesn't phase through the exterior walls.
+		EntityAI.State.INDOOR_SEARCH:
+			# INDOOR_SEARCH: FORCE SOLID BODY + PROVEN INDOOR MASK.
+			# The Entity body is restored to Layer 5 with the CollisionShape3D
+			# enabled (never phantom), while the mask stays Player-only so the
+			# capsule does NOT jam on interior doorframe lip colliders between
+			# rooms (which trips the stuck detector and cascades into the
+			# "stuck during APPROACH_WINDOW" loop). Exterior-wall clipping is
+			# prevented by the indoor containment guard in entity_ai.gd's
+			# _indoor_search_state() (snap back inside if outside a room).
+			restore_indoor_collision()
+
+		EntityAI.State.RETREAT:
+			# RETREAT: Player-only mask (original indoor/outdoor escape behavior).
+			# The Entity must sprint through the cabin interior to reach the
+			# breached window/door exit point (indoor retreat) OR through the
+			# forest to a treeline vantage point (standard outdoor retreat).
+			# Keeping the Player-only mask preserves the "Creeping Ghost"
+			# foliage phasing and prevents the physics capsule from jamming on
+			# doorframe lips during the escape sprint. The Phase 2 safety check
+			# (is_physically_inside) still guarantees the Entity exits and
+			# doesn't phase through the exterior walls, and the mask is restored
+			# to full collision when the Entity teleports outside.
 			collision_mask = 0
 			collision_mask |= (1 << (COLLISION_LAYER_PLAYER - 1)) # Layer 2: Player
 			# NOTE: Layers 1 (Cabin), 3 (Tree), 4 (Rock) intentionally excluded.
-			# Indoor search is fully NavMesh-confined.
 
 		EntityAI.State.APPROACH_WINDOW:
 			# APPROACH_WINDOW: Tree/rock collision DISABLED. The Entity travels
@@ -4283,6 +4426,49 @@ func _update_collision_layers() -> void:
 			collision_mask |= (1 << (COLLISION_LAYER_PLAYER - 1))
 			collision_mask |= (1 << (COLLISION_LAYER_TREE - 1))
 			collision_mask |= (1 << (COLLISION_LAYER_ROCK - 1))
+
+
+## ─── INDOOR COLLISION RESTORE (PROVEN INDOOR MASK) ──────────────────────────
+## Restores the Entity's SOLID physics body (Layer 5 + CollisionShape3D
+## enabled) with the documented PLAYER-ONLY collision mask for indoor
+## locomotion. Interior walls/furniture/doorframe lips (Cabin layer 1) are
+## intentionally NOT collided with — the floating-sphere capsule glides
+## through the open interior, which is what the design requires (the old
+## full-mask behavior jammed the capsule on doorframe lips and interior
+## geometry, causing the "hard time moving around the cabin" symptom).
+##
+## Exterior-wall clipping is prevented by the indoor containment guard in
+## entity_ai.gd's _indoor_search_state() (snaps back inside if the body is
+## detected outside a valid room), not by cabin physics collision.
+func restore_indoor_collision() -> void:
+	collision_layer = (1 << (COLLISION_LAYER_ENTITY - 1))  # Layer 5: Entity
+	collision_mask = 0
+	collision_mask |= (1 << (COLLISION_LAYER_PLAYER - 1))  # Layer 2: Player only
+	if _collision_shape:
+		_collision_shape.disabled = false
+	print("[Entity] Indoor collision restored: layer=%d mask=%d (Player-only) shape_disabled=%s" % [collision_layer, collision_mask, _collision_shape.disabled if _collision_shape else "N/A"])
+
+## ─── SOLID COLLISION RESTORE (OUTDOOR / BREACH SAFETY) ───────────────
+## Forcibly restores the Entity's full solid physics state after any
+## ghost/breach traversal — used for OUTDOOR states and the door/window
+## breach approach where full cabin collision is required:
+##   - collision_layer = Layer 5 (Entity) — the body is never phantom
+##   - CollisionShape3D.disabled = false — the capsule is always active
+##   - collision_mask  = Layers 1|2|3|4 (Cabin, Player, Tree, Rock) — the
+##     Entity collides with cabin walls so it cannot walk through geometry
+##
+## NOTE: This is deliberately NOT used for INDOOR_SEARCH patrol — see
+## restore_indoor_collision() for the proven Player-only indoor mask.
+func restore_solid_collision() -> void:
+	collision_layer = (1 << (COLLISION_LAYER_ENTITY - 1))  # Layer 5: Entity
+	collision_mask = 0
+	collision_mask |= (1 << (COLLISION_LAYER_CABIN - 1))   # Layer 1: Cabin
+	collision_mask |= (1 << (COLLISION_LAYER_PLAYER - 1))  # Layer 2: Player
+	collision_mask |= (1 << (COLLISION_LAYER_TREE - 1))    # Layer 3: Trees
+	collision_mask |= (1 << (COLLISION_LAYER_ROCK - 1))    # Layer 4: Rocks
+	if _collision_shape:
+		_collision_shape.disabled = false
+	print("[Entity] Solid collision restored: layer=%d mask=%d shape_disabled=%s" % [collision_layer, collision_mask, _collision_shape.disabled if _collision_shape else "N/A"])
 
 
 ## Smoothly fades an AudioStreamPlayer's volume toward a target value.

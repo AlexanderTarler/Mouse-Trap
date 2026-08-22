@@ -65,12 +65,18 @@ func _ready() -> void:
 	add_to_group("scrap_heap")
 	
 	# Deferred so all heaps have registered in the group before counting.
+
 	call_deferred("_maybe_add_cable_spool")
 
 
 # ─── INTERACTION PROMPT ────────────────────────────────────
 
 ## Returns the interaction prompt text shown in the HUD crosshair.
+	# BUG 1 FIX: Ensure Layer 2 ("Interactable") is active — must run AFTER any
+	# bare 'collision_layer = N' assignment in _ready so it cannot be overwritten.
+	set_collision_layer_value(1, true)
+	set_collision_layer_value(2, true)
+
 func get_interact_text() -> String:
 	if is_spent:
 		return "[E] Search Scrap Heap (spent)"

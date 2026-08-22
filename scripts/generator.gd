@@ -31,6 +31,7 @@ var _light_visible: bool = true
 var _audio_was_playing: bool = false
 var _nm_cache: Node = null
 
+
 func _ready() -> void:
 	add_to_group("generator_controller")
 	add_to_group("xray_generator")
@@ -53,8 +54,12 @@ func _ready() -> void:
 	else:
 		push_warning("[Generator] No GeneratorAudio node found.")
 	_fuel_light = get_node_or_null("FuelIndicatorLight")
-	if _fuel_light:
-		_fuel_light.visible = false
+	if _fuel_light:_fuel_light.visible = false
+
+	# BUG 1 FIX: Ensure Layer 2 ("Interactable") is active — must run AFTER any
+	# bare 'collision_layer = N' assignment in _ready so it cannot be overwritten.
+	set_collision_layer_value(1, true)
+	set_collision_layer_value(2, true)
 
 func _process(delta: float) -> void:
 	_update_audio(delta)

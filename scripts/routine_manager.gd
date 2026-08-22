@@ -173,6 +173,15 @@ var phase2_computer_used: bool = false            # Logged into computer
 
 var phase2b_plank_picked_up: bool = false    # Picked up a Wooden Plank
 
+## ─── TASK 3: WINDOW BOARDING PROGRESSION LOCK ──────────────────────────
+## When true, windows are explicitly unlocked for boarding in the story.
+## Set to true when the Day 1 "Board up the broken window" objective begins
+## (on_computer_used()), and kept true from Night 2+ (on_day2_started(),
+## enable_sandbox_mode()) so late-game windows are always boardable.
+## CabinWindow._can_board_this_window() reads this flag — boarding must
+## NEVER bypass it.
+var windows_unlocked_for_boarding: bool = false
+
 ## Counter for how many Wooden Planks the player has picked up during Day 1.
 ## The x-ray highlight for planks persists until the player has collected 3
 ## planks (enough to fully board the broken tutorial window).
@@ -312,6 +321,24 @@ func _do_highlight_target(group_name: String) -> void:
 		push_warning("[RoutineManager] No nodes found in group '%s' for x-ray highlight." % group_name)
 		return
 	
+	# ─── ISSUE 1 FIX: EXPORTED HIGHLIGHT TARGET RESTRICTION ──────────
+	# Some groups (e.g. xray_generator) declare an exported NodePath
+	# `highlight_target` on an interaction node in the group. When present,
+	# the x-ray overlay is restricted to THAT node's subtree only, so the
+	# generator's button box is highlighted instead of the entire pipe/body
+	# mesh. This is more robust than name-based filtering (_should_highlight_mesh).
+	var restricted_target: Node = null
+	for node in nodes:
+		if "highlight_target" in node and node.highlight_target is NodePath and not node.highlight_target.is_empty():
+			var resolved := node.get_node_or_null(node.highlight_target)
+			if resolved:
+				restricted_target = resolved
+				break
+	
+	if restricted_target:
+		_apply_xray_to_subtree(restricted_target, mat, group_name)
+		return
+	
 	for node in nodes:
 		if node is MeshInstance3D:
 			if _should_highlight_mesh(node, group_name):
@@ -342,6 +369,28 @@ func _do_highlight_target(group_name: String) -> void:
 				# ─── NEST DEBUG: Log when a nest node was found but had NO mesh children ──
 				var scene_path: String = node.scene_file_path if node.has_method("get_scene_file_path") else node.scene_file_path if "scene_file_path" in node else "?"
 				push_warning("[RoutineManager] NEST HIGHLIGHT FAILED: node '%s' (type=%s, scene='%s') has 0 MeshInstance3D children. find_children recursive found %d total descendants." % [node.name, node.get_class(), scene_path, node.get_child_count(true)])
+
+
+## Applies the x-ray highlight to a single node and all MeshInstance3D
+## descendants inside it (respecting _should_highlight_mesh filters).
+## This is the restricted-subtree path used when a group declares an
+## exported `highlight_target` NodePath (e.g. xray_generator → button box).
+func _apply_xray_to_subtree(root: Node, mat: Material, group_name: String) -> void:
+	var meshes: Array[MeshInstance3D] = []
+	if root is MeshInstance3D:
+		meshes.append(root)
+	meshes.append_array(root.find_children("*", "MeshInstance3D", true))
+	
+	var applied_count := 0
+	for m in meshes:
+		if _should_highlight_mesh(m, group_name):
+			_apply_xray_to_mesh(m, mat)
+		m.extra_cull_margin = 100.0
+		if "custom_aabb" in m:
+			m.custom_aabb = AABB(Vector3(-200, -200, -200), Vector3(400, 400, 400))
+		applied_count += 1
+	
+	print("[RoutineManager] X-ray highlight restricted to target '%s' (%d meshes in subtree, group: %s)." % [root.name, applied_count, group_name])
 
 
 ## ─── TASK 3.2: HIGHLIGHT TARGET FILTER ──────────────────────────────
@@ -742,7 +791,11 @@ func enable_sandbox_mode() -> void:
 	if is_day3_sandbox:
 		return
 	is_day3_sandbox = true
-	print("[RoutineManager] DAY 3 SANDBOX MODE ACTIVATED!")
+	# ─── TASK 3: SANDBOX UNLOCKS WINDOW BOARDING ──────────────────────
+	# Day 3+ sandbox grants full exploration freedom — all windows must
+	# be boardable regardless of prior progression.
+	windows_unlocked_for_boarding = true
+	print("[RoutineManager] DAY 3 SANDBOX MODE ACTIVATED! Windows unlocked for boarding.")
 	_update_hud()
 
 
@@ -795,6 +848,14 @@ func on_cable_spool_found() -> void:
 	side_track_changed.emit()
 
 func on_fuel_can_found() -> void:
+	# ─── TASK 4: SIDE-TRACK ACTIVE GATE ──────────────────────────────
+	# The side-track's "Find fuel can" objective must only fire after the
+	# Unsanctioned Discoveries track is active (arvid_note_2_found).
+	# Fuel cans are picked up from Day 1 onward — without this gate, the
+	# Day 1 fuel can would silently pre-complete the side-track objective.
+	if not arvid_note_2_found:
+		print("[RoutineManager] Side-track 'Find fuel can' deferred — track not active yet (arvid_note_2_found=false).")
+		return
 	if arvid_fuel_can_found:
 		return
 	arvid_fuel_can_found = true
@@ -992,7 +1053,12 @@ func on_fuel_can_picked_up() -> void:
 	# Without this guard, picking up a fuel can early (before fuse objective)
 	# or during dev mode startup would prematurely highlight the generator.
 	if phase2_fuse_box_interacted:
-		highlight_target("xray_generator", 5.0)
+		# ─── TASK 7 FIX: DELAYED GENERATOR HIGHLIGHT (10 SECONDS) ──
+		# The "Refill the generator" objective highlight should enable AFTER
+		# 10 seconds if the player hasn't interacted with the generator.
+		# Interacting with it prematurely (start_refuel → clear_highlight)
+		# cancels this timer via the RoutineManager _xray_timers system.
+		highlight_target("xray_generator", 10.0)
 
 func on_generator_refilled() -> void:
 	if phase2_gen_refilled:
@@ -1073,6 +1139,15 @@ func on_computer_used() -> void:
 	phase2_computer_used = true
 	_advance_main_objective(7)
 	print("[RoutineManager] Phase 2 COMPLETE! Player logged into the computer.")
+	
+	# ─── TASK 3: UNLOCK WINDOW BOARDING ──────────────────────────────
+	# The "Board up the broken window" objective (main 7) begins the moment
+	# the player logs into the computer. From this point on, windows are
+	# explicitly unlocked for boarding. CabinWindow refuses boarding until
+	# this flag is set — the strict story gate.
+	windows_unlocked_for_boarding = true
+	print("[RoutineManager] TASK 3: Windows unlocked for boarding (objective 7 begins).")
+	
 	_update_hud()
 	# ─── X-RAY HIGHLIGHT: Highlight planks after 10 seconds ──
 	highlight_target("xray_planks", 10.0)
@@ -1258,6 +1333,14 @@ func on_day2_started() -> void:
 	if main_objective < 99 and not is_day3_sandbox:
 		main_objective = 99
 		print("[RoutineManager] Day 2 sentinel set: main_objective = 99.")
+	
+	# ─── TASK 3: KEEP WINDOWS UNLOCKED FROM NIGHT 2+ ─────────────
+	# Once Night 1 has passed, ALL windows are always boardable. If the
+	# player somehow skipped the Day 1 computer step (dev mode / debug),
+	# force the flag here so late-game boarding never soft-locks.
+	windows_unlocked_for_boarding = true
+	print("[RoutineManager] TASK 3: Windows permanently unlocked from Day 2 onward.")
+	
 	_reset_day2_state()
 	# Lock the cabin door until the player reads the Nest Logs in the notebook.
 	_lock_cabin_door()
@@ -1314,8 +1397,12 @@ func on_previous_reports_read() -> void:
 		_unlock_cabin_door()
 		_sync_day2_hint()
 		_update_hud()
-		# Start the Nest Alpha highlight once the player steps outside.
-		highlight_target("xray_nest_alpha", 5.0)
+		# ─── TASK 9: NEST ALPHA HIGHLIGHT TIMER (+15 SECONDS) ─────
+		# Alpha's timer was 5.0s and is now 20.0s. This call fires EXACTLY
+		# when the "Document nest alpha" objective officially starts (Day 2
+		# step advances 1 → 2 after reading the reports), so the countdown
+		# never begins on _ready()/Day 2 start prematurely.
+		highlight_target("xray_nest_alpha", 20.0)
 
 
 ## Called by NotebookUI when the player opens the notebook on Day 2.
@@ -1356,17 +1443,21 @@ func document_nest(nest_id: String) -> void:
 	print("[RoutineManager] Nest '%s' documented! (%d/3)" % [nest_id, nests_documented])
 	
 	# ─── X-RAY HIGHLIGHT: Sequential nest highlighting ──
+	# TASK 9: All nest highlight timers increased by 15 seconds.
+	#   Nest Alpha → 20.0s (was 5.0s, see on_previous_reports_read)
+	#   Nest Beta  → 35.0s (was 20.0s)
+	#   Nest Gamma → 35.0s (was 20.0s)
 	match nest_id:
 		"Nest Alpha":
 			clear_highlight("xray_nest_alpha")
 			if nests_documented < 3:
-				print("[RoutineManager] Scheduling Nest Beta highlight in 20 seconds.")
-				highlight_target("xray_nest_beta", 20.0)
+				print("[RoutineManager] Scheduling Nest Beta highlight in 35 seconds (TASK 9: +15).")
+				highlight_target("xray_nest_beta", 35.0)
 		"Nest Beta":
 			clear_highlight("xray_nest_beta")
 			if nests_documented < 3:
-				print("[RoutineManager] Scheduling Nest Gamma highlight in 20 seconds.")
-				highlight_target("xray_nest_gamma", 20.0)
+				print("[RoutineManager] Scheduling Nest Gamma highlight in 35 seconds (TASK 9: +15).")
+				highlight_target("xray_nest_gamma", 35.0)
 		"Nest Gamma":
 			clear_highlight("xray_nest_gamma")
 	
@@ -1527,6 +1618,7 @@ func reset_all_phases() -> void:
 	phase2b_plank_picked_up = false
 	phase2b_plank_count = 0
 	phase2b_window_patched = false
+	windows_unlocked_for_boarding = false
 	
 	phase3_door_locked = false
 	phase3_hall_light_off = false

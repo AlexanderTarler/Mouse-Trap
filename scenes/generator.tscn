@@ -30,6 +30,7 @@ generator_switch_sfx = ExtResource("2_kgmdj")
 [node name="generator_1" parent="." unique_id=1280159935 instance=ExtResource("1_5yxne")]
 
 [node name="InteractionArea" type="Area3D" parent="." unique_id=1802976700]
+collision_layer = 2
 script = ExtResource("2_w5vnv")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionArea" unique_id=1708067714]
@@ -63,6 +64,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.1974615, 1.0647137, 0.4039
 
 [node name="StaticBody3D" type="StaticBody3D" parent="GeneratorSwitch" unique_id=1034666623]
 transform = Transform3D(0.58, 0, 0, 0, 0.58, 0, 0, 0, 0.58, 0, 0.9102888, 0)
+collision_layer = 3
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="GeneratorSwitch/StaticBody3D" unique_id=667310103]
 shape = SubResource("SphereShape3D_kgmdj")

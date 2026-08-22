@@ -15,6 +15,7 @@ size = Vector3(3, 1.5, 1.5)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9972922, 0.7887755, 0.069096684)
 
 [node name="InteractableArea3D" type="Area3D" parent="." unique_id=1233149055]
+collision_layer = 2
 script = ExtResource("3_raxto")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="InteractableArea3D" unique_id=1190095180]

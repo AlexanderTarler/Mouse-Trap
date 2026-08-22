@@ -7,6 +7,8 @@ class_name LightSwitchTrigger
 @onready var _audio_player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
 
 func _ready() -> void:
+	collision_layer = 2
+
 	# Ensure we can play a local mechanical "click" sound even if the generator is dead
 	add_child(_audio_player)
 	if switch_click_sound:
