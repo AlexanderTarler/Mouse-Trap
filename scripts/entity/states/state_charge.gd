@@ -1,7 +1,9 @@
 class_name EntityStateCharge
 extends EntityState
 
-## A committed lunge at the player: the flashlight no longer stops it.
+## A lunge at the player. Outdoors (and when defending the totem) it is
+## committed and the flashlight can't stop it. Indoors it is slower and the
+## overcharged beam still drives it off; that is the player's defence.
 ## Ends when the player has been out of sight for a moment or after
 ## config.charge_max_time. Indoors it goes back to hunting the cabin (never to
 ## the treeline); outdoors it searches where it last saw them.
@@ -32,7 +34,8 @@ func update(delta: float) -> void:
 	var player := entity.get_player()
 	var tracks_player := _committed or perception.can_see_player or _lost_time < 0.5
 	var target := player.global_position if tracks_player else perception.last_seen_position
-	entity.move_to(target, config.charge_speed)
+	var speed := config.indoor_charge_speed if perception.entity_inside else config.charge_speed
+	entity.move_to(target, speed)
 
 
 func next_state() -> int:
@@ -51,7 +54,7 @@ func can_catch() -> bool:
 
 
 func reacts_to_flashlight() -> bool:
-	return false
+	return perception.entity_inside and not _committed
 
 
 func reacts_to_lamp() -> bool:

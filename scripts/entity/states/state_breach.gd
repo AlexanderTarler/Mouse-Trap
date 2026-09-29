@@ -26,6 +26,7 @@ func update(delta: float) -> void:
 	entity.face(_entry.end_position)
 	if _swing.update(delta, entity):
 		_entry.entry.damage_barricade()
+		entity.traces.scratch_window(_entry)
 		entity.audio.play_grunt(randf_range(0.8, 1.0))
 
 

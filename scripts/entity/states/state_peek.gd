@@ -44,6 +44,7 @@ func enter(_from: int, data: Dictionary) -> void:
 		_entry.entry.interact()   # Locked: plays the rattle.
 	else:
 		_stare_left = randf_range(config.peek_time_min, config.peek_time_max)
+		entity.traces.scratch_window(_entry)
 
 
 func update(delta: float) -> void:

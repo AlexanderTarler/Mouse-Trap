@@ -75,6 +75,7 @@ func _run() -> void:
 	_player.set_process(false)
 	_player.set_physics_process(false)
 	_nm.current_night = 3
+	_entity.can_kill = false   # Catching ends the Entity's run; not what these scenarios test.
 	_entity.brain.state_changed.connect(func(_from, to): _states.append(_entity.State.keys()[to]))
 	for link in get_nodes_in_group("cabin_entry_links"):
 		if link.kind == 0:
@@ -90,6 +91,8 @@ func _run() -> void:
 	await _test_outdoor_stalk_and_standoff()
 	await _test_locked_door_stays_shut()
 	await _test_van_chase()
+	await _test_presence_flicker()
+	await _test_traces_clear_at_night()
 
 	print("[ENTITY TEST] %s" % ("ALL PASSED" if _failures == 0 else "%d FAILED" % _failures))
 	quit(1 if _failures > 0 else 0)
@@ -149,6 +152,10 @@ func _test_break_in() -> void:
 		"APPROACH" in _states and "PEEK" in _states and "BREACH" in _states and "ENTER" in _states, _history())
 	_check("break-in: physically inside the cabin", _entity.perception.entity_inside,
 		"room=%s pos=%s" % [_entity.perception.entity_room, _entity.global_position.snapped(Vector3.ONE * 0.1)])
+	await _frames(120)
+	_check("traces: gouges under the window and claw prints inside",
+		_entity.traces.scratch_count() > 0 and _entity.traces.footprint_count() > 0,
+		"scratches=%d footprints=%d" % [_entity.traces.scratch_count(), _entity.traces.footprint_count()])
 
 
 ## Overcharged beam indoors (both inside): standoff, then it flees out of the
@@ -159,11 +166,16 @@ func _test_overcharge_repels_indoors() -> void:
 		_check("overcharge indoors: precondition (Entity inside)", false, "skipped")
 		return
 	_place_player(_entity.global_position + Vector3(2.0, 0.0, 0.0))
+	await _frames(60)   # it sees the player and charges; the overcharge must still work
 	await _flashlight(true, true, 2.0)
 	_check("overcharge indoors: STANDOFF then FLEE", "STANDOFF" in _states and "FLEE" in _states, _history())
 	var left: bool = await _wait_for_state(["OBSERVE"], 25.0)
 	_check("overcharge indoors: leaves the cabin and returns to OBSERVE", left and not _entity.perception.entity_inside, _history())
 	_check("overcharge indoors: relaxing after being repelled", _entity.confidence.is_relaxing())
+	var guarded := 0.0
+	for link in get_nodes_in_group("cabin_entry_links"):
+		guarded = maxf(guarded, _entity.world.guard_score(link))
+	_check("memory: the window it was driven from is remembered as guarded", guarded > 0.0, "max guard score %.2f" % guarded)
 
 
 ## B3: seeing the player indoors must never end in the treeline teleport.
@@ -176,7 +188,6 @@ func _test_indoor_charge_stays_inside() -> void:
 	if not hall_link:
 		_check("indoor charge: precondition (an open window)", false, "none open")
 		return
-	_entity.can_kill = false
 	_entity._teleport(hall_link.end_position)
 	_place_player(HALL)
 	_entity.request_state(_entity.State.HUNT)
@@ -185,14 +196,14 @@ func _test_indoor_charge_stays_inside() -> void:
 	await _frames(int(_entity.config.charge_max_time * 60.0) + 30)
 	_check("indoor charge: player still inside -> back to HUNT (no treeline teleport)",
 		_entity.perception.entity_inside and not ("OBSERVE" in _states), _history())
-	_entity.can_kill = true
+	_check("memory: remembers where it found the player inside", not _entity.world.hiding_spots().is_empty(),
+		"%d spot(s)" % _entity.world.hiding_spots().size())
 
 
 ## Player outside and in view: it stalks. Standard beam held while both are
 ## outside: standoff, then charge.
 func _test_outdoor_stalk_and_standoff() -> void:
 	_states.clear()
-	_entity.can_kill = false
 	_entity.confidence.reset()
 	_entity.request_state(_entity.State.DORMANT)
 	_entity.activate()
@@ -207,7 +218,6 @@ func _test_outdoor_stalk_and_standoff() -> void:
 	_states.clear()
 	await _flashlight(true, false, _entity.config.charge_stare_time + 0.5)
 	_check("outdoors: standard beam -> STANDOFF -> CHARGE", "STANDOFF" in _states and "CHARGE" in _states, _history())
-	_entity.can_kill = true
 
 
 ## Door locked, windows boarded on Night 2: the interior stays unreachable.
@@ -243,3 +253,42 @@ func _test_van_chase() -> void:
 	_place_player(HALL)
 	var gone: bool = await _wait_for_state(["DORMANT"], 20.0)
 	_check("van chase: player reaches the cabin -> it vanishes", gone and not _entity.is_active() and not _nm.is_van_sequence_active, _history())
+
+
+## Passing close outside a lit window makes that room's light stutter.
+func _test_presence_flicker() -> void:
+	_nm.is_generator_on = true
+	var window_link = null
+	for link in get_nodes_in_group("cabin_entry_links"):
+		if link.kind == 1 and link.entry.room_light != null:
+			window_link = link
+			break
+	if not window_link:
+		_check("presence: precondition (a window with a room light)", false, "none")
+		return
+	var light = window_link.entry.room_light
+	light.is_switched_on = true
+	_entity.activate()
+	_entity._teleport(window_link.start_position)
+	_entity.request_state(_entity.State.DORMANT)   # active but standing still outside the window
+	_entity.world._presence_cooldown.clear()   # earlier scenarios may have used this window's cooldown
+	var flickered := false
+	for i in 60:
+		_nm.is_generator_on = true     # the game's power logic may switch it off
+		light.is_switched_on = true
+		await physics_frame
+		if light._flicker_tween != null:
+			flickered = true
+			break
+	_check("presence: lit window's light stutters as it passes", flickered,
+		"light=%s lit=%s faulty=%s dist=%.2f active=%s inside=%s state=%s" % [light.name, light.is_room_lit(), light.get("is_faulty"),
+		_entity.global_position.distance_to(window_link.start_position), _entity.is_active(), _entity.perception.entity_inside, _entity.get_state_name()])
+	light.is_switched_on = false
+	_nm.is_generator_on = false
+
+
+## A new night clears last night's traces.
+func _test_traces_clear_at_night() -> void:
+	_entity.traces.scratch_window(get_nodes_in_group("cabin_entry_links").filter(func(l): return l.kind == 1)[0])
+	_entity._on_night_started(3)
+	_check("traces: cleared when the next night starts", _entity.traces.scratch_count() == 0 and _entity.traces.footprint_count() == 0)

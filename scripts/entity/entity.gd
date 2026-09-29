@@ -9,6 +9,7 @@ extends CharacterBody3D
 ##   EntityWorld       - where things are (vantage points, entries, light).
 ##   EntityConfidence  - how bold it is.
 ##   EntityAudio       - its sounds.
+##   EntityTraces      - claw prints and gouges it leaves behind.
 ##
 ## Conventions:
 ##   - The BODY turns to face where it looks; the model is a child with no
@@ -68,6 +69,7 @@ var perception: EntityPerception
 var world: EntityWorld
 var confidence: EntityConfidence
 var audio: EntityAudio
+var traces: EntityTraces
 
 var _player: Node3D = null
 var _night_manager: Node = null
@@ -131,6 +133,7 @@ func _ready() -> void:
 	world = _add_module(EntityWorld.new(), "World")
 	confidence = _add_module(EntityConfidence.new(), "EntityConfidence")
 	audio = _add_module(EntityAudio.new(), "Audio")
+	traces = _add_module(EntityTraces.new(), "Traces")
 	brain = _add_module(EntityBrain.new(), "Brain")
 	if OS.is_debug_build():
 		_add_module(EntityDebugOverlay.new(), "DebugOverlay")
@@ -415,6 +418,7 @@ func _physics_process(delta: float) -> void:
 	_update_facing(delta)
 	_update_stuck(delta)
 	_check_catch()
+	traces.update_tracks(is_on_floor())
 	audio.update_footsteps(delta, Vector2(get_real_velocity().x, get_real_velocity().z).length())
 	_update_animation(delta)
 
@@ -584,6 +588,8 @@ func _on_night_started(night: int) -> void:
 	if night <= 2 and not is_dev_mode():
 		deactivate()
 		return
+	# Last night's traces were there to be found during the day.
+	traces.clear_all()
 	if get_meta("debug_disabled", false):
 		return
 	activate()

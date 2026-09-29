@@ -14,8 +14,11 @@ extends Resource
 @export var stalk_speed: float = 3.8
 ## Investigating a sighting or a noise.
 @export var search_speed: float = 2.6
-## Committed lunge at the player.
+## Committed lunge at the player (outdoors).
 @export var charge_speed: float = 9.0
+## Lunge inside the cabin: slower, so the player can bring the overcharge up
+## in the tight rooms.
+@export var indoor_charge_speed: float = 6.0
 ## Running from the light.
 @export var flee_speed: float = 7.0
 ## Prowling the cabin with no fresh lead.

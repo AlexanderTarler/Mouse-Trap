@@ -218,6 +218,22 @@ func entity_sabotage() -> void:
 			toggle_light())
 
 
+## Something passed close outside: the light stutters two or three times and
+## stays on. Ignored while another flicker is running or the room is dark.
+func presence_flicker() -> void:
+	if not is_room_lit() or (_flicker_tween and _flicker_tween.is_valid()):
+		return
+	_flicker_tween = create_tween()
+	for i in randi_range(2, 3):
+		_flicker_tween.tween_callback(_set_light_visible.bind(false))
+		_flicker_tween.tween_interval(randf_range(0.04, 0.12))
+		_flicker_tween.tween_callback(_set_light_visible.bind(true))
+		_flicker_tween.tween_interval(randf_range(0.08, 0.25))
+	_flicker_tween.tween_callback(func():
+		_flicker_tween = null
+		_set_light_visible(_should_be_lit()))
+
+
 ## Called when the power-on flicker sequence finishes.
 ## Cleans up the tween reference and logs the event.
 func _on_flicker_complete() -> void:

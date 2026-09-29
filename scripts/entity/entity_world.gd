@@ -7,6 +7,8 @@ extends Node
 ##   - a light map of the yard, so it keeps to the dark
 ##   - hidden spots near a position (out of the player's view)
 ##   - the fuse box and the portable lamp
+##   - what it has learned: which windows the player guards, and where the
+##     player tends to hide inside (kept across nights; it learns)
 
 var entity: Entity
 var config: EntityConfig
@@ -16,11 +18,25 @@ const LIGHT_HALF_CELLS := 20            ## 80 m x 80 m around the cabin.
 const LIGHT_REBUILD_INTERVAL := 1.5
 const DARK_THRESHOLD := 0.1
 const REPEL_MEMORY := 90.0              ## Seconds a repelled entry is avoided.
+## Long-term "this window is guarded" memory: each repel adds 1, fading with
+## this time constant (seconds). pick_entry() subtracts GUARD_PENALTY per point.
+const GUARD_MEMORY := 600.0
+const GUARD_PENALTY := 1.5
+const MAX_HIDING_SPOTS := 5
+const HIDING_SPOT_MERGE := 2.5
+## Lit-room lights stutter when it passes this close outside their window.
+const PRESENCE_RADIUS := 3.5
+const PRESENCE_COOLDOWN := 20.0
+const PRESENCE_CHECK_INTERVAL := 0.25
 
 var _vantage_points: Array[Node3D] = []
 var _last_vantage: Node3D = null
 var _entries: Array = []                ## Array[CabinEntryLink]
 var _repelled_until: Dictionary = {}    ## CabinEntryLink -> clock time
+var _guard_score: Dictionary = {}       ## CabinEntryLink -> float
+var _hiding_spots: Array[Dictionary] = []   ## {"position": Vector3, "weight": float}
+var _presence_timer := 0.0
+var _presence_cooldown: Dictionary = {} ## CabinEntryLink -> clock time
 var _light_grid := PackedFloat32Array()
 var _light_center := Vector3.ZERO
 var _light_timer := 0.0
@@ -45,6 +61,13 @@ func update(delta: float) -> void:
 	if _light_timer <= 0.0:
 		_light_timer = LIGHT_REBUILD_INTERVAL
 		_rebuild_light_grid()
+	var fade := exp(-delta / GUARD_MEMORY)
+	for link in _guard_score:
+		_guard_score[link] *= fade
+	_presence_timer -= delta
+	if _presence_timer <= 0.0:
+		_presence_timer = PRESENCE_CHECK_INTERVAL
+		_update_presence_flicker()
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -85,6 +108,12 @@ func is_repelled(link: CabinEntryLink) -> bool:
 func mark_repelled(link: CabinEntryLink) -> void:
 	if link:
 		_repelled_until[link] = _clock + REPEL_MEMORY
+		_guard_score[link] = _guard_score.get(link, 0.0) + 1.0
+
+
+## How strongly it remembers being driven off at this entry.
+func guard_score(link: CabinEntryLink) -> float:
+	return _guard_score.get(link, 0.0)
 
 
 ## Whether the Entity would currently consider approaching this entry.
@@ -127,6 +156,7 @@ func pick_entry() -> CabinEntryLink:
 			if window_room == player_room:
 				score += 1.0
 		score -= get_light_at(link.start_position) * 3.0
+		score -= guard_score(link) * GUARD_PENALTY
 		if score > best_score:
 			best_score = score
 			best = link
@@ -158,6 +188,50 @@ func can_sabotage_light() -> bool:
 
 func note_light_sabotaged() -> void:
 	_last_light_sabotage = _clock
+
+
+# ─── Hiding spots ─────────────────────────────────────────────────────────────
+
+## Remembers a place inside where it found the player. Nearby sightings merge
+## into one spot that grows in weight.
+func remember_hiding_spot(pos: Vector3) -> void:
+	for spot in _hiding_spots:
+		if spot.position.distance_to(pos) < HIDING_SPOT_MERGE:
+			spot.position = spot.position.lerp(pos, 0.3)
+			spot.weight += 1.0
+			return
+	_hiding_spots.append({"position": pos, "weight": 1.0})
+	_hiding_spots.sort_custom(func(a, b): return a.weight > b.weight)
+	if _hiding_spots.size() > MAX_HIDING_SPOTS:
+		_hiding_spots.pop_back()
+
+
+## Remembered hiding spots, most used first.
+func hiding_spots() -> Array[Vector3]:
+	_hiding_spots.sort_custom(func(a, b): return a.weight > b.weight)
+	var result: Array[Vector3] = []
+	for spot in _hiding_spots:
+		result.append(spot.position)
+	return result
+
+
+# ─── Presence ────────────────────────────────────────────────────────────────
+
+## Passing close outside a lit window makes that room's light stutter.
+func _update_presence_flicker() -> void:
+	if not entity.is_active() or entity.perception.entity_inside:
+		return
+	for link in entries():
+		if link.kind != CabinEntryLink.Kind.WINDOW:
+			continue
+		if _presence_cooldown.get(link, -INF) > _clock:
+			continue
+		if Entity._flat_distance(entity.global_position, link.start_position) > PRESENCE_RADIUS:
+			continue
+		var light = link.entry.get("room_light")
+		if light and light.has_method("presence_flicker") and light.is_room_lit():
+			light.presence_flicker()
+			_presence_cooldown[link] = _clock + PRESENCE_COOLDOWN
 
 
 ## A point just outside `link`, `distance` meters out from the wall.
