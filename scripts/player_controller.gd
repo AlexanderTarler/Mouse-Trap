@@ -173,6 +173,11 @@ var _stamina_exhausted_delay: float = 1.5  # Seconds before regen starts after e
 signal stamina_changed(stamina_percent: float)
 
 # ─── STAMINA BREATHING AUDIO ─────────────────────────────────────────
+## Unified pitch scale for the low-stamina breathing audio (fast + slow).
+## 0.7 was pitched down too deeply; raised 20% to 0.84. Shared so the fast
+## and slow tracks remain seamlessly matched when crossing run/not-run.
+const BREATHING_PITCH: float = 0.84
+
 ## Looping audio player for heavy breathing when stamina < 50%.
 ## Created programmatically in _ready() to avoid scene node dependency.
 var _breathing_audio: AudioStreamPlayer3D = null
@@ -236,11 +241,11 @@ func _ready() -> void:
 		# exhaustion breathing now plays at −16.0 dB (same as the slow track
 		# so both sound consistent).
 		_breathing_audio.volume_db = -16.0
-		_breathing_audio.pitch_scale = 0.7
+		_breathing_audio.pitch_scale = BREATHING_PITCH
 		_breathing_audio.max_db = 0.0
 		add_child(_breathing_audio)
 		_breathing_audio_loaded = true
-		print("[Player] Breathing audio loaded (pitch=%s, vol=%s)." % [0.7, -16.0])
+		print("[Player] Breathing audio loaded (pitch=%s, vol=%s)." % [BREATHING_PITCH, -16.0])
 	
 	# ─── SLOW BREATHING AUDIO (stamina < 50%, NOT running) ─────────────────
 	# Loops while the player is low on stamina but recovering (walking or
@@ -260,11 +265,11 @@ func _ready() -> void:
 		_breathing_slow_audio.stream = slow_stream
 		_breathing_slow_audio.bus = "SFX"
 		_breathing_slow_audio.volume_db = -16.0
-		_breathing_slow_audio.pitch_scale = 0.7
+		_breathing_slow_audio.pitch_scale = BREATHING_PITCH
 		_breathing_slow_audio.max_db = 0.0
 		add_child(_breathing_slow_audio)
 		_breathing_slow_loaded = true
-		print("[Player] Slow breathing audio loaded (pitch=%s, vol=%s)." % [0.7, -16.0])
+		print("[Player] Slow breathing audio loaded (pitch=%s, vol=%s)." % [BREATHING_PITCH, -16.0])
 	else:
 		print("[Player] WARNING: Breathing_slow.wav not found. Slow breathing disabled.")
 	
@@ -521,6 +526,13 @@ func enable_flashlight() -> void:
 			_flashlight.is_on = false
 	print("[Player] Flashlight acquired! Press F to toggle.")
 
+
+## Returns true if the player has acquired the flashlight item.
+## Used by TutorialManager.try_trigger_flashlight() to gate the flashlight
+## hint behind both "Night 1" and "player has flashlight".
+func has_flashlight() -> bool:
+	return _has_flashlight
+
 ## Public API: Unlocks sprinting for the player.
 ## Called by escape_van.gd when the player investigates the car alarm
 ## during Night 1. This allows the sprint to be gated behind a narrative
@@ -763,7 +775,7 @@ func _physics_process(delta: float) -> void:
 	# dismissed only when the player genuinely sprints — NOT when sprint is
 	# merely unlocked (that premature mark consumed the one-shot before the
 	# hint could show). Marking is one-shot via _sprint_tutorial_marked.
-	if _is_running and not _sprint_tutorial_marked:
+	if _is_running and not _sprint_tutorial_marked and _stamina < 70.0:
 		_sprint_tutorial_marked = true
 		var tm_sprint := get_node_or_null("/root/TutorialManager")
 		if tm_sprint and tm_sprint.has_method("mark_learned"):

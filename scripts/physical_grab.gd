@@ -387,6 +387,13 @@ func _pick_up_lamp(lamp: Node) -> void:
 	print("[PhysicalGrab] PortableLamp picked up.")
 
 
+## Public API: force-grab a PortableLamp as if the player held E.
+## Used by GeneratorOutlet's auto-connect so the lamp is already "held"
+## (PhysicalGrab._carried_lamp is set), letting the player drop it with E.
+func grab_lamp(lamp: Node) -> void:
+	_pick_up_lamp(lamp)
+
+
 
 ## Drops the carried PortableLamp by calling lamp.drop_trap().
 ## The lamp handles its own deployment (enables light, sets drain rate,

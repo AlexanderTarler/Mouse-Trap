@@ -56,7 +56,7 @@ omni_range = 1.5
 
 [node name="GeneratorAudio" type="AudioStreamPlayer3D" parent="." unique_id=1865201560]
 stream = ExtResource("6_ionxw")
-volume_db = -12.0
+volume_db = -20.0
 max_distance = 20.0
 
 [node name="GeneratorSwitch" parent="." unique_id=1158213921 groups=["xray_generator_switch"] instance=ExtResource("5_4pjfl")]

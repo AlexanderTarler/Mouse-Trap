@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_stealth")
 mechanic_id = "stealth"
-prompt_text = "Press [F] to turn off your flashlight. Hold [CTRL] to crouch."
+prompt_text = "Hold [CTRL] to crouch."
 trigger_moment = ""
 prerequisite = ""
 one_shot = true

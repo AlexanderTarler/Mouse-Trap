@@ -27,6 +27,12 @@ extends CanvasLayer
 @onready var fuel_bar: TextureProgressBar = $GeneratorFuelBar
 @onready var fuel_label: Label = $GeneratorFuelBar/FuelLabel
 
+# Ending screen nodes (escape endings)
+@onready var ending_screen: Panel = $EndingScreen
+@onready var mediocre_ending_label: Label = $EndingScreen/MediocreEndingLabel
+@onready var good_ending_label: Label = $EndingScreen/GoodEndingLabel
+@onready var main_menu_button: Button = $EndingScreen/MainMenuButton
+
 ## Reference to the EnvironmentController (set in the scene)
 @export var environment_controller: Node
 
@@ -71,6 +77,12 @@ var _pickup_tween: Tween = null
 
 func _ready() -> void:
 	add_to_group("hud")
+	
+	# Ending screen: wire the Main Menu button and hide the panel by default.
+	if main_menu_button and not main_menu_button.pressed.is_connected(_on_main_menu_pressed):
+		main_menu_button.pressed.connect(_on_main_menu_pressed)
+	if ending_screen:
+		ending_screen.visible = false
 	
 	# Create the fade overlay programmatically
 	_fade_overlay = ColorRect.new()
@@ -826,3 +838,37 @@ func _create_purge_bar_nodes() -> void:
 	_purge_bar_label.offset_bottom = 4.0
 	_purge_bar_label.z_index = 52
 	_purge_bar_bg.add_child(_purge_bar_label)
+
+
+## Shows the escape-ending screen overlay, hiding every other HUD element.
+## Called by EndgameManager for ESCAPE_GOOD (good_ending = true) and
+## ESCAPE_MEDIOCRE (good_ending = false). Toggles the correct label and
+## leaves the MainMenuButton to return to the main menu.
+func show_ending_screen(good_ending: bool) -> void:
+	# Hide all other HUD visuals (Labels, ProgressBars, ColorRects, CanvasLayers).
+	for child in get_children():
+		if child == ending_screen:
+			continue
+		if child is CanvasItem or child is CanvasLayer:
+			child.visible = false
+	
+	# Show the panel and the correct label.
+	if ending_screen:
+		ending_screen.visible = true
+	if mediocre_ending_label:
+		mediocre_ending_label.visible = not good_ending
+	if good_ending_label:
+		good_ending_label.visible = good_ending
+	
+	print("[HorrorHUD] Ending screen shown (good_ending=%s)." % good_ending)
+
+
+## MainMenuButton handler: unpause, reset EndgameManager, return to menu.
+func _on_main_menu_pressed() -> void:
+	print("[HorrorHUD] Main Menu pressed. Returning to main menu.")
+	var em := get_node_or_null("/root/EndgameManager")
+	if em and em.has_method("reset"):
+		em.reset()
+	get_tree().paused = false
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")

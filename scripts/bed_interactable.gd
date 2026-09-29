@@ -152,7 +152,7 @@ func interact(player: Node3D = null) -> void:
 	# found and documented at least one nest.
 	# The is_van_sequence_active guard prevents re-entering after the
 	# van sequence has already been triggered.
-	if day2_nests_documented >= 1 and not _night_manager.is_van_sequence_active:
+	if day2_nests_documented >= 1 and not _night_manager.is_van_sequence_active and not _night_manager.van_sequence_started:
 		var nests_done: bool = rm and rm.nests_documented >= 3 if rm else false
 		var data_uploaded: bool = rm and rm.nests_uploaded if rm else false
 		
@@ -189,6 +189,7 @@ func interact(player: Node3D = null) -> void:
 			await get_tree().create_timer(3.0).timeout
 		
 		_night_manager.is_van_sequence_active = true
+		_night_manager.van_sequence_started = true
 		_night_manager.current_night = 2
 		_night_manager.start_night(2)
 		

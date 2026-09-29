@@ -127,9 +127,13 @@ func _try_auto_connect() -> void:
 	# 4. PHYSICALLY GRAB THE LAMP (as if the player held E).
 	# The PortableLamp.pick_up(hand_marker) call freezes physics, connects
 	# to the hand marker lerp loop, and prepares it for physical carry.
-	if lamp.has_method("pick_up"):
+	var physical_grab := get_tree().get_first_node_in_group("physical_grab")
+	if physical_grab and physical_grab.has_method("grab_lamp"):
+		physical_grab.grab_lamp(lamp)
+		print("[GeneratorOutlet] Portable light auto-grabbed via PhysicalGrab!")
+	elif lamp.has_method("pick_up"):
 		lamp.pick_up(hand_marker)
-		print("[GeneratorOutlet] Portable light auto-grabbed to player's hand!")
+		print("[GeneratorOutlet] Portable light auto-grabbed to player's hand (fallback)!")
 
 	# ─── AUTO-GRAB FALLBACK ─────────────────────────────────────────────
 	# If pick_up isn't available or the player isn't set up for physical
@@ -138,13 +142,16 @@ func _try_auto_connect() -> void:
 		lamp.is_deployed = true
 		print("[GeneratorOutlet] WARNING: pick_up() unavailable. Lamp left deployed at spawn.")
 
-	# 5. SPAWN THE POWER CABLE and plug it into this outlet with the free
-	# end attached to the player's hand.
+	# 5. SPAWN THE POWER CABLE, plug it into this outlet, AND connect the
+	# other end to the spawned lamp so the cable reaches the light too.
 	var cable: Node = POWER_CABLE_SCENE.instantiate()
 	get_tree().current_scene.add_child(cable)
 
 	if cable.has_method("plug_to_source"):
 		cable.plug_to_source(self, hand_marker)
+
+	if cable.has_method("connect_to_lamp"):
+		cable.connect_to_lamp(lamp)
 
 	_active_cable = cable
 

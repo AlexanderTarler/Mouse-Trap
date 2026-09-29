@@ -7,10 +7,21 @@
 [sub_resource type="Theme" id="Theme_hud"]
 default_font_size = 18
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tj6tt"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.08, 0.08, 0.08, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+corner_detail = 5
+
 [node name="HorrorHUD" type="CanvasLayer" unique_id=1729726257]
 layer = 200
 script = ExtResource("1_hud")
-environment_controller = NodePath("../EnvironmentController")
 
 [node name="NightLabel" type="Label" parent="." unique_id=16999964]
 offset_left = 20.0
@@ -234,7 +245,7 @@ text = "HITTA MIG"
 horizontal_alignment = 1
 
 [node name="HintLabel" type="Label" parent="." unique_id=5963946]
-anchors_preset = 8
+anchors_preset = -1
 anchor_left = 0.5
 anchor_top = 0.75
 anchor_right = 0.5
@@ -249,10 +260,77 @@ theme_override_colors/font_color = Color(0.9, 0.9, 0.8, 1)
 theme_override_colors/font_outline_color = Color(1, 1, 1, 0.8)
 theme_override_constants/outline_size = 2
 theme_override_font_sizes/font_size = 22
-text = ""
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="HintTimer" type="Timer" parent="." unique_id=5963947]
 wait_time = 0.5
 one_shot = true
+
+[node name="EndingScreen" type="Panel" parent="." unique_id=643895257]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_tj6tt")
+
+[node name="MediocreEndingLabel" type="Label" parent="EndingScreen" unique_id=1613380862]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -11.5
+offset_right = 20.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+text = "You managed to repair the van and escape - or did you? 
+
+Once the Entity has selected its victim, it does not stop until it brings their target into the forest's embrace.
+
+Two days after coming home, you disappeared. The company reported you missing after two weeks. You were quickly forgotten. 
+
+You are now one with the forest. "
+horizontal_alignment = 1
+
+[node name="GoodEndingLabel" type="Label" parent="EndingScreen" unique_id=95113918]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -11.5
+offset_right = 20.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+text = "After banishing the Entity and repairing the van, you escaped back home. 
+
+Your boss has asked you to come in for an urgent debriefing - they want to know about what you saw. A promotion with a significant pay raise was mentioned, among other things such as an NDA. 
+
+There will be more work for you in the future. "
+horizontal_alignment = 1
+
+[node name="MainMenuButton" type="Button" parent="EndingScreen" unique_id=1234398545]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -48.0
+offset_top = 355.0
+offset_right = 48.0
+offset_bottom = 386.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Main Menu"

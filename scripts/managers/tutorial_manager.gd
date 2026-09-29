@@ -197,5 +197,23 @@ func _show(tutorial: TutorialData) -> void:
 # ─── Signal Handlers ────────────────────────────────────────────────────
 
 func _on_night_started(_night: int) -> void:
-	# Flashlight tutorial triggers on the first night start.
+	# The flashlight hint must only appear when Night 1 starts AND the player
+	# already has the flashlight. If they don't have it yet, the hint will fire
+	# the first time those two conditions coincide (pickup during Night 1).
+	try_trigger_flashlight()
+
+
+## Triggers the flashlight tutorial hint if (and only if) it is Night 1 and the
+## player has already acquired the flashlight. Called on night start and again
+## when the flashlight pickup is collected. The one_shot guard in _show()
+## ensures it is only ever displayed once.
+func try_trigger_flashlight() -> void:
+	var nm := get_node_or_null("/root/NightManager")
+	if not nm or "current_night" not in nm or nm.current_night != 1:
+		return
+	
+	var player: Node = get_tree().get_first_node_in_group("player")
+	if not player or not player.has_method("has_flashlight") or not player.has_flashlight():
+		return
+	
 	trigger("flashlight")

@@ -140,6 +140,13 @@ var day1_onboarding_complete: bool = false
 ## Tier 5 DORMANT gate), or defensively when a new night >= 3 starts.
 var is_van_sequence_active: bool = false
 
+## Persistent guard that the Night 2.2 van sequence has STARTED this playthrough.
+## Unlike is_van_sequence_active (which is CLEARED once the chase resolves), this
+## stays true for the rest of the game so the bed can never re-trigger the
+## Night 2.2 sequence a second time. Reset to false only when a fresh Night 1
+## begins (start_night(1)).
+var van_sequence_started: bool = false
+
 
 # --- NIGHT 1 PEEKER ---
 ## Timer counting up to the peeker spawn delay (5 seconds into Night 1).
@@ -758,7 +765,8 @@ func start_night(night: int) -> void:
 	
 	if night == 1:
 		tutorial_window_fixed = false
-		print("[NightManager] Tutorial window flag reset for Night 1.")
+		van_sequence_started = false
+		print("[NightManager] Tutorial window flag reset for Night 1. van_sequence_started cleared.")
 	
 	if night <= 2 and not is_dev_mode:
 		print("Night %d: Entity remains hidden for the car alarm narrative event." % night)

@@ -551,10 +551,20 @@ func _complete_purge() -> void:
 	else:
 		print("[TotemAnchor] WARNING: RoutineManager not found or missing on_anchor_destroyed method!")
 	
-	# Make the totem visually disappear (fade out)
-	var tween = create_tween()
-	tween.tween_property(self, "scale", Vector3.ZERO, 1.0)
-	tween.tween_callback(hide) # Changed from queue_free
+	# Make the totem visually disappear instantly.
+	# PERF FIX: Do NOT tween the root's scale. This node is a StaticBody3D
+	# whose child carries a huge ConcavePolygonShape3D (the full willow-tree
+	# trimesh). Tweening scale forced the physics server to re-transform and
+	# re-insert that concave shape into the broadphase every frame, collapsing
+	# FPS to ~0.1. Hide + disable both collision shapes in a single frame.
+	visible = false
+	_disable_collision()
+	var willow_body := get_node_or_null("Weeping Willow/Weeping Willow/StaticBody3D") as CollisionObject3D
+	if willow_body:
+		willow_body.collision_layer = 0
+		var willow_shape := willow_body.get_node_or_null("CollisionShape3D") as CollisionShape3D
+		if willow_shape:
+			willow_shape.disabled = true
 
 
 ## Defeats the Entity: plays a death scream, hides it, and disables it

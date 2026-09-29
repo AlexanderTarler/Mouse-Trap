@@ -262,8 +262,8 @@ func highlight_target(group_name: String, delay: float = 0.0) -> void:
 	# ─── DEBUG LOG: Trace every highlight call for nest debugging ─────
 	# Always print when a nest-group highlight is scheduled so we can verify
 	# that the call actually reaches this function. The call chain is:
-	#   NightManager → RoutineManager.on_day2_started()
-	#   → highlight_target("xray_nest_alpha", 20.0)
+	#   RoutineManager.on_previous_reports_read()
+	#   → highlight_target("xray_nest_alpha", 35.0)
 	#   → Timer fires → _on_xray_timer_timeout → _do_highlight_target
 	if "nest" in group_name:
 		print("[RoutineManager] NEST HIGHLIGHT CALLED: group='%s', delay=%.1fs" % [group_name, delay])
@@ -402,13 +402,16 @@ func _apply_xray_to_subtree(root: Node, mat: Material, group_name: String) -> vo
 func _should_highlight_mesh(mesh: MeshInstance3D, group_name: String) -> bool:
 	if group_name == "xray_generator":
 		var n := str(mesh.name).to_lower()
-		# The button box is the actual interactable — highlight it.
+		# ─── BUG FIX: Highlight the generator_1 body, NOT the switch ──
+		# The "Refuel the generator" objective must highlight the physical
+		# generator_1 model. The GeneratorSwitch button box belongs to the
+		# separate "xray_generator_switch" group which is highlighted only
+		# in on_generator_refilled() (post-refuel "Turn on the generator").
+		# So here we EXCLUDE the button/switch meshes so they never bleed
+		# into the refuel highlight, and highlight everything else (the
+		# generator_1 body, pipe, exhaust).
 		if "button" in n or "switch" in n:
-			return true
-		# The pipe / body / exhaust must NOT be highlighted.
-		if "generator_1" in n or "pipe" in n or "exhaust" in n or "body" in n:
 			return false
-		# Default: highlight (covers the InteractionArea subtree button).
 		return true
 	return true
 
@@ -1397,12 +1400,13 @@ func on_previous_reports_read() -> void:
 		_unlock_cabin_door()
 		_sync_day2_hint()
 		_update_hud()
-		# ─── TASK 9: NEST ALPHA HIGHLIGHT TIMER (+15 SECONDS) ─────
-		# Alpha's timer was 5.0s and is now 20.0s. This call fires EXACTLY
-		# when the "Document nest alpha" objective officially starts (Day 2
-		# step advances 1 → 2 after reading the reports), so the countdown
-		# never begins on _ready()/Day 2 start prematurely.
-		highlight_target("xray_nest_alpha", 20.0)
+		# ─── NEST ALPHA HIGHLIGHT TIMER (+15 SECONDS) ─────────────
+		# Alpha's timer is now 35.0s. This call fires EXACTLY when the
+		# "Document nest alpha" objective officially starts (Day 2 step
+		# advances 1 → 2 after reading the reports), so the countdown
+		# begins when Document nest alpha starts — NOT when the earlier
+		# "Read the previous nest reports" objective (step 1) starts.
+		highlight_target("xray_nest_alpha", 35.0)
 
 
 ## Called by NotebookUI when the player opens the notebook on Day 2.
@@ -1443,21 +1447,21 @@ func document_nest(nest_id: String) -> void:
 	print("[RoutineManager] Nest '%s' documented! (%d/3)" % [nest_id, nests_documented])
 	
 	# ─── X-RAY HIGHLIGHT: Sequential nest highlighting ──
-	# TASK 9: All nest highlight timers increased by 15 seconds.
-	#   Nest Alpha → 20.0s (was 5.0s, see on_previous_reports_read)
-	#   Nest Beta  → 35.0s (was 20.0s)
-	#   Nest Gamma → 35.0s (was 20.0s)
+	# All nest highlight timers increased by 15 seconds.
+	#   Nest Alpha → 35.0s (see on_previous_reports_read)
+	#   Nest Beta  → 50.0s
+	#   Nest Gamma → 50.0s
 	match nest_id:
 		"Nest Alpha":
 			clear_highlight("xray_nest_alpha")
 			if nests_documented < 3:
-				print("[RoutineManager] Scheduling Nest Beta highlight in 35 seconds (TASK 9: +15).")
-				highlight_target("xray_nest_beta", 35.0)
+				print("[RoutineManager] Scheduling Nest Beta highlight in 50 seconds (+15).")
+				highlight_target("xray_nest_beta", 50.0)
 		"Nest Beta":
 			clear_highlight("xray_nest_beta")
 			if nests_documented < 3:
-				print("[RoutineManager] Scheduling Nest Gamma highlight in 35 seconds (TASK 9: +15).")
-				highlight_target("xray_nest_gamma", 35.0)
+				print("[RoutineManager] Scheduling Nest Gamma highlight in 50 seconds (+15).")
+				highlight_target("xray_nest_gamma", 50.0)
 		"Nest Gamma":
 			clear_highlight("xray_nest_gamma")
 	

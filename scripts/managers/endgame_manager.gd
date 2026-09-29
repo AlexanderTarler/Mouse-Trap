@@ -173,7 +173,21 @@ func _play_ending_sequence(ending: Ending) -> void:
 		_fade_canvas_layer = null
 	
 	# ─── 4. INSTANTIATE ENDING SCREEN ───────────────────────────────
-	# Load and instance the ending screen overlay.
+	# For the two escape endings we show the HUD's built-in EndingScreen
+	# panel (with Mediocre/Good labels) instead of the standalone overlay,
+	# and skip the rest of the standalone instantiation path below.
+	if ending == Ending.ESCAPE_GOOD or ending == Ending.ESCAPE_MEDIOCRE:
+		var hud := get_tree().get_first_node_in_group("hud")
+		if hud and hud.has_method("show_ending_screen"):
+			hud.show_ending_screen(ending == Ending.ESCAPE_GOOD)
+		else:
+			print("[EndgameManager] WARNING: HUD EndingScreen not found — no ending screen shown.")
+		get_tree().paused = true
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		_complete_ending_sequence(ending)
+		return
+	
+	# Load and instance the ending screen overlay (DEATH ending).
 	var ending_scene = load(ENDING_SCREEN_PATH)
 	if not ending_scene:
 		print("[EndgameManager] ERROR: Could not load ending screen scene: ", ENDING_SCREEN_PATH)

@@ -126,6 +126,16 @@ func _process(_delta: float) -> void:
 		_update_tooltip()
 
 
+## Builds the display string for an inventory item. Fuel cans append their
+## remaining fuel percentage (ItemData.fuel_amount uses 100 = full can):
+##   "Fuel Can (75%)". All other items return their plain name.
+func _build_item_display_name(item) -> String:
+	if item and item.item_name == "Fuel Can" and "fuel_amount" in item:
+		var pct := int(clampf(item.fuel_amount, 0.0, 100.0))
+		return "%s (%d%%)" % [item.item_name, pct]
+	return item.item_name if item else ""
+
+
 ## Updates the hover tooltip: finds the slot under the mouse cursor and
 ## shows its item name next to the cursor.
 func _update_tooltip() -> void:
@@ -143,7 +153,7 @@ func _update_tooltip() -> void:
 			if i < Inventory.items.size():
 				var item = Inventory.items[i]
 				if item:
-					tooltip_label.text = item.item_name
+					tooltip_label.text = _build_item_display_name(item)
 					# Position the tooltip offset from the cursor (16, 16)
 					tooltip_label.global_position = mouse_pos + Vector2(16, 16)
 					tooltip_label.visible = true
@@ -345,7 +355,7 @@ func _update_selection() -> void:
 	
 	if _selected_index >= 0 and _selected_index < Inventory.items.size():
 		var item = Inventory.items[_selected_index]
-		item_name_label.text = item.item_name
+		item_name_label.text = _build_item_display_name(item)
 		item_desc_label.text = item.item_description
 		use_button.disabled = false
 		drop_button.disabled = false

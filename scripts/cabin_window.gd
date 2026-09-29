@@ -61,7 +61,14 @@ class_name CabinWindow
 @export var start_broken: bool = false
 
 ## Whether this window is currently boarded up with planks
-var is_boarded: bool = false
+var is_boarded: bool = false:
+	set(value):
+		is_boarded = value
+		_update_entry_link()
+
+## Navigation link from the WindowMarker (outside) to the indoor landing
+## point. Enabled only while the window is passable (see is_passable()).
+var _entry_link: CabinEntryLink = null
 
 # ─── HOLD-TO-INTERACT: Plank Boarding ─────────────────────────────────────
 ## Whether the player is currently holding E to board this window.
@@ -86,7 +93,10 @@ var _show_preview_plank: bool = false
 ## Whether the glass panes and crossbars have been shattered by the Entity.
 ## Once true, the glass is permanently destroyed and can never be restored.
 ## The player can still board up the opening with planks, but the glass is gone.
-var is_glass_shattered: bool = false
+var is_glass_shattered: bool = false:
+	set(value):
+		is_glass_shattered = value
+		_update_entry_link()
 
 ## Number of planks still intact (3 = fully boarded, 0 = fully breached).
 ## Each plank requires HITS_PER_PLANK hits from the Entity to break.
@@ -199,7 +209,9 @@ func _ready() -> void:
 	
 	# Initialize navigation blocker state
 	_update_nav_blocker()
-	
+
+	_create_entry_link()
+
 	if OS.is_debug_build():
 		# ─── DIAGNOSTIC VISIBILITY LOG ──────────────────────────────────
 		# Logs the initial state of all visual child nodes at startup.
@@ -303,6 +315,28 @@ func _update_window_visuals() -> void:
 		_pristine_visuals.visible = not is_glass_shattered
 	if _shattered_visuals:
 		_shattered_visuals.visible = is_glass_shattered
+
+
+## True when the Entity can climb through: the glass is gone and no planks
+## remain. Upstairs windows are never passable from the ground.
+func is_passable() -> bool:
+	return is_glass_shattered and not is_boarded and not is_upstairs_window
+
+
+func _create_entry_link() -> void:
+	if is_upstairs_window:
+		return
+	var outside := get_node_or_null("WindowMarker") as Node3D
+	var inside := _indoor_breach_waypoint
+	if not outside or not inside:
+		push_warning("CabinWindow '%s': missing WindowMarker or IndoorBreachWaypoint; no navigation link created." % window_id)
+		return
+	_entry_link = CabinEntryLink.create(self, CabinEntryLink.Kind.WINDOW, outside, inside, is_passable())
+
+
+func _update_entry_link() -> void:
+	if _entry_link:
+		_entry_link.enabled = is_passable()
 
 
 ## Updates the navigation blocker based on BOTH glass AND plank state.

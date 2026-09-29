@@ -44,7 +44,17 @@ var is_open: bool = false
 var is_animating: bool = false
 var default_rotation_y: float
 ## Whether this door is currently locked (only used when required_key_name is set).
-var is_locked: bool = false
+## Keeps the door's navigation link in sync, so the Entity can only path through
+## the doorway while the door is unlocked.
+var is_locked: bool = false:
+	set(value):
+		is_locked = value
+		if _entry_link:
+			_entry_link.enabled = not is_locked
+
+## Navigation link from EntityDoorWaypoint (outside) to IndoorBreachWaypoint
+## (inside). Only created for doors that have both markers (the cabin door).
+var _entry_link: CabinEntryLink = null
 
 
 func _ready() -> void:
@@ -68,7 +78,12 @@ func _ready() -> void:
 		print("[Door] Door starts LOCKED (start_locked=true). Key required: ", required_key_name)
 	else:
 		is_locked = false
-	
+
+	var outside_marker := get_node_or_null("EntityDoorWaypoint") as Node3D
+	var inside_marker := get_node_or_null("IndoorBreachWaypoint") as Node3D
+	if outside_marker and inside_marker:
+		_entry_link = CabinEntryLink.create(self, CabinEntryLink.Kind.DOOR, outside_marker, inside_marker, not is_locked)
+
 	# ─── CACHE THE ORIGINAL SCENE STREAM ───────────────────────────
 	# Snapshot the stream that was pre-assigned to the DoorAudio node in the
 	# scene editor. This cached reference is used as the fallback in interact()
