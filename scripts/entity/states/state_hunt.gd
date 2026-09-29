@@ -27,7 +27,7 @@ var _remember_cooldown := 0.0
 func enter(_from: int, _data: Dictionary) -> void:
 	_since_contact = 0.0
 	_scan_left = 0.0
-	_lead = freshest_lead()
+	_lead = _indoor_lead()
 	var rooms := world.room_centers()
 	rooms.shuffle()
 	_patrol = world.hiding_spots()
@@ -41,7 +41,7 @@ func update(delta: float) -> void:
 	var player := entity.get_player()
 	if perception.can_see_player or perception.has_fresh_noise(1.0):
 		_since_contact = 0.0
-		_lead = freshest_lead()
+		_lead = _indoor_lead()
 	else:
 		_since_contact += delta
 	_remember_cooldown -= delta
@@ -96,6 +96,15 @@ func next_state() -> int:
 
 func can_catch() -> bool:
 	return true
+
+
+## The freshest lead, ignoring leads outside the cabin while the player is
+## known to be inside (a stale sighting from the yard shouldn't walk it out).
+func _indoor_lead():
+	var lead = freshest_lead()
+	if lead != null and perception.player_inside and not world.is_inside_cabin(lead):
+		return null
+	return lead
 
 
 static func _player_in_lit_room(player: Node3D) -> bool:

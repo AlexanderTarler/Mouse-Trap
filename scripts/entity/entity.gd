@@ -402,6 +402,7 @@ func _physics_process(delta: float) -> void:
 
 	if not is_traversing():
 		brain.tick(delta)
+		_check_link_crossing()
 
 	if is_traversing():
 		_update_animation(delta)
@@ -485,6 +486,38 @@ func _catch() -> void:
 # ═════════════════════════════════════════════════════════════════════════════
 # LINK TRAVERSAL (windows and the door)
 # ═════════════════════════════════════════════════════════════════════════════
+
+## Crosses `link` now: outside -> inside if `inward`, otherwise back out.
+func traverse_link(link: CabinEntryLink, inward: bool) -> void:
+	if is_traversing() or not link.enabled:
+		return
+	if inward:
+		_traverse(link, link.start_position, link.end_position)
+	else:
+		_traverse(link, link.end_position, link.start_position)
+
+
+## Backup for link_reached: if the path was requested while already standing
+## on a link's end, the agent may skip the signal and head straight for the
+## far end (into the wall). Standing at one end of an open link with the far
+## end as the next waypoint means: cross it.
+const LINK_CROSS_NEAR := 1.2
+const LINK_CROSS_NEXT := 0.8
+
+func _check_link_crossing() -> void:
+	if nav_agent.is_navigation_finished() or _desired_velocity.length_squared() < 0.01:
+		return
+	var next := nav_agent.get_next_path_position()
+	for link in world.entries():
+		if not link.enabled:
+			continue
+		if _flat_distance(global_position, link.start_position) < LINK_CROSS_NEAR 				and _flat_distance(next, link.end_position) < LINK_CROSS_NEXT:
+			_traverse(link, link.start_position, link.end_position)
+			return
+		if _flat_distance(global_position, link.end_position) < LINK_CROSS_NEAR 				and _flat_distance(next, link.start_position) < LINK_CROSS_NEXT:
+			_traverse(link, link.end_position, link.start_position)
+			return
+
 
 func _on_link_reached(details: Dictionary) -> void:
 	var link := details.get("owner") as CabinEntryLink

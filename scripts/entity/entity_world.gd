@@ -328,11 +328,15 @@ func find_flee_point(from: Vector3, threat: Vector3, distance: float) -> Vector3
 
 
 ## Floor-level centers of the cabin rooms (ground floor), for indoor patrols.
+## A room whose nearest navmesh point lies outside the cabin (e.g. a volume
+## with no floor of its own) is skipped, or the patrol would lead outdoors.
 func room_centers() -> Array[Vector3]:
 	var centers: Array[Vector3] = []
 	for area in get_tree().get_nodes_in_group("Cabin_Interior"):
 		if area is Area3D and area.global_position.y < 4.0:
-			centers.append(snap_to_navmesh(area.global_position))
+			var center := snap_to_navmesh(area.global_position)
+			if is_inside_cabin(center):
+				centers.append(center)
 	return centers
 
 

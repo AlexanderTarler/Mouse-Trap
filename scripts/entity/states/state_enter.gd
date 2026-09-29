@@ -2,13 +2,15 @@ class_name EntityStateEnter
 extends EntityState
 
 ## Getting inside through an open entry (data {"entry": CabinEntryLink}).
-## It simply paths to the entry's inside point: the route crosses the entry
-## link, and Entity._traverse() plays the climb (window) or opens the door
-## and walks through it.
+## It paths to the entry's inside point: the route crosses the entry link,
+## and Entity._traverse() plays the climb (window) or opens the door and
+## walks through it. Once standing at the link's outside end it crosses
+## directly, so a spot the navmesh can't route from doesn't strand it.
 
 const S := Entity.State
 const INSIDE_DISTANCE := 2.5
 const GIVE_UP_TIME := 12.0
+const AT_LINK_DISTANCE := 1.2
 
 var _entry: CabinEntryLink = null
 
@@ -19,6 +21,9 @@ func enter(_from: int, data: Dictionary) -> void:
 
 
 func update(_delta: float) -> void:
+	if not perception.entity_inside 			and Entity._flat_distance(entity.global_position, _entry.start_position) < AT_LINK_DISTANCE:
+		entity.traverse_link(_entry, true)
+		return
 	entity.move_to(_entry.end_position, config.approach_speed)
 
 

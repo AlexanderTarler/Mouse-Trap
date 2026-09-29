@@ -75,6 +75,12 @@ func _run() -> void:
 	_player.set_process(false)
 	_player.set_physics_process(false)
 	_nm.current_night = 3
+	# Freeze the game clock so no night starts mid-scenario (a new night
+	# clears traces and relocates the Entity).
+	_nm.is_time_paused = true
+	var game_time := root.get_node_or_null("GameTime")
+	if game_time:
+		game_time.is_time_paused = true
 	_entity.can_kill = false   # Catching ends the Entity's run; not what these scenarios test.
 	_entity.brain.state_changed.connect(func(_from, to): _states.append(_entity.State.keys()[to]))
 	for link in get_nodes_in_group("cabin_entry_links"):
@@ -144,9 +150,16 @@ func _floor_below(pos: Vector3) -> float:
 func _test_break_in() -> void:
 	_states.clear()
 	_place_player(COMPUTER_ROOM)
+	# Deterministic: no bluffing, and confidence stays above the threshold.
+	var bluff_chance: float = _entity.config.bluff_chance
+	var drift: float = _entity.config.confidence_drift
+	_entity.config.bluff_chance = 0.0
+	_entity.config.confidence_drift = 0.0
 	_entity.confidence.set_confidence(80.0)
 	_entity.request_state(_entity.State.OBSERVE)
 	var inside: bool = await _wait_for_state(["HUNT", "CHARGE"], 120.0)
+	_entity.config.bluff_chance = bluff_chance
+	_entity.config.confidence_drift = drift
 	_check("break-in: reaches the interior (HUNT/CHARGE)", inside, _history())
 	_check("break-in: went through APPROACH, PEEK and BREACH",
 		"APPROACH" in _states and "PEEK" in _states and "BREACH" in _states and "ENTER" in _states, _history())
@@ -257,6 +270,10 @@ func _test_van_chase() -> void:
 
 ## Passing close outside a lit window makes that room's light stutter.
 func _test_presence_flicker() -> void:
+	# Pause the game's power logic: it keeps re-evaluating the generator and
+	# cancels light flickers, which would fight this check.
+	_nm.set_process(false)
+	_nm.set_physics_process(false)
 	_nm.is_generator_on = true
 	var window_link = null
 	for link in get_nodes_in_group("cabin_entry_links"):
@@ -273,18 +290,24 @@ func _test_presence_flicker() -> void:
 	_entity.request_state(_entity.State.DORMANT)   # active but standing still outside the window
 	_entity.world._presence_cooldown.clear()   # earlier scenarios may have used this window's cooldown
 	var flickered := false
-	for i in 60:
+	for i in 180:
 		_nm.is_generator_on = true     # the game's power logic may switch it off
 		light.is_switched_on = true
 		await physics_frame
 		if light._flicker_tween != null:
 			flickered = true
 			break
+	if not flickered:
+		var w = _entity.world
+		print("[ENTITY TEST] debug presence: timer=%.2f clock=%.1f cooldowns=%s tween=%s entries=%d link=%s" % [
+			w._presence_timer, w._clock, w._presence_cooldown.values(), light._flicker_tween, w.entries().size(), window_link.entry.name])
 	_check("presence: lit window's light stutters as it passes", flickered,
 		"light=%s lit=%s faulty=%s dist=%.2f active=%s inside=%s state=%s" % [light.name, light.is_room_lit(), light.get("is_faulty"),
 		_entity.global_position.distance_to(window_link.start_position), _entity.is_active(), _entity.perception.entity_inside, _entity.get_state_name()])
 	light.is_switched_on = false
 	_nm.is_generator_on = false
+	_nm.set_process(true)
+	_nm.set_physics_process(true)
 
 
 ## A new night clears last night's traces.
