@@ -714,7 +714,7 @@ func _shatter_glass() -> void:
 	# ─── IMMEDIATE VISUAL SWAP ───────────────────────────────────────────
 	# The visual swap (pristine → shattered), glass shard particles, layered
 	# audio, and nav blocker update are applied IMMEDIATELY — no deferred
-	# timer. The AI's 0.5s impact timer in entity_ai.gd already provides the
+	# timer. The Entity's attack swing (EntitySwing) already provides the
 	# animation sync (the AttackWindow animation plays for 0.5s before this
 	# function is called). Adding another 0.5s deferred swap here would create
 	# a double-delay, causing the Entity to phase through visible glass when

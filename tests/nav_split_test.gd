@@ -9,6 +9,8 @@ extends SceneTree
 ##   - door unlocked                 -> reachable through the door
 ##   - a window breached             -> reachable through that window
 ##   - that window boarded again     -> unreachable
+##   - paths near the cabin don't cut through layer-1 obstacles (the trees
+##     and props the Entity collides with are baked into the navmesh)
 ## Prints "[NAV TEST] PASS"/"FAIL" per scenario and a final "ALL PASSED" or
 ## "N FAILED" line. Read that line: headless shutdown currently segfaults in
 ## game teardown, so the process exit code is not reliable.
@@ -45,6 +47,12 @@ func _run() -> void:
 
 	_outer = scene.get_node("NavigationRegion3D")
 	_inner = scene.get_node("NavigationRegion3D/Cabin/NavigationRegion3D")
+	# Rebuild the map synchronously: with async iterations an in-memory rebake
+	# may not reach the query map in headless runs.
+	var nav_map := _outer.get_navigation_map()
+	NavigationServer3D.map_set_use_async_iterations(nav_map, false)
+	NavigationServer3D.region_set_use_async_iterations(_outer.get_region_rid(), false)
+	NavigationServer3D.region_set_use_async_iterations(_inner.get_region_rid(), false)
 	if "--bake" in OS.get_cmdline_user_args() or _inner.navigation_mesh.get_polygon_count() == 0:
 		_inner.bake_navigation_mesh(false)
 		_outer.bake_navigation_mesh(false)
@@ -82,8 +90,9 @@ func _run() -> void:
 	await _frames(3)
 	_expect(map, "door locked, windows intact", false)
 
+	# Query right away: the game's day routine may lock the door again on the
+	# next frame (the link correctly follows it).
 	door.is_locked = false
-	await _frames(3)
 	_expect(map, "door unlocked", true)
 
 	door.is_locked = true
@@ -96,12 +105,81 @@ func _run() -> void:
 	await _frames(3)
 	_expect(map, "LivingRoom window re-boarded", false)
 
+	_check_obstacle_clearance(scene, map)
+	_check_link_connections(map)
+	_check_each_window_usable(windows, door, map)
+
 	print("[NAV TEST] %s" % ("ALL PASSED" if _failures == 0 else "%d FAILED" % _failures))
 	# Free the level before quitting; tearing it down during engine shutdown
 	# crashes some game scripts in headless mode and masks the exit code.
 	scene.queue_free()
 	await _frames(2)
 	quit(1 if _failures > 0 else 0)
+
+
+## Opening a single window at a time, the yard must connect to the inside of
+## that window (catches links that attach to a cut-off navmesh island).
+func _check_each_window_usable(windows: Array, door, map: RID) -> void:
+	door.is_locked = true
+	for w in windows:
+		for other in windows:
+			other.is_glass_shattered = other == w
+			other.is_boarded = false
+		NavigationServer3D.map_force_update(map)
+		var link = null
+		for l in get_nodes_in_group(LINK_GROUP):
+			if l.entry == w:
+				link = l
+		var path := NavigationServer3D.map_get_path(map, OUTSIDE, link.end_position, true)
+		var end: Vector3 = path[path.size() - 1] if path.size() > 0 else Vector3.INF
+		var ok := end.distance_to(link.end_position) < REACH_TOLERANCE
+		if not ok:
+			_failures += 1
+		print("[NAV TEST] %s  only %-24s open -> yard reaches inside: %s (path ends %.2f m away)" % [
+			"PASS" if ok else "FAIL", w.name, ok, end.distance_to(link.end_position)])
+
+
+## Every entry link must have walkable navmesh within reach of both ends,
+## or paths through that window/door silently fail.
+func _check_link_connections(map: RID) -> void:
+	var radius := NavigationServer3D.map_get_link_connection_radius(map)
+	for link in get_nodes_in_group(LINK_GROUP):
+		var outside := NavigationServer3D.map_get_closest_point(map, link.start_position)
+		var inside := NavigationServer3D.region_get_closest_point(_inner.get_region_rid(), link.end_position)
+		var d_out := outside.distance_to(link.start_position)
+		var d_in := inside.distance_to(link.end_position)
+		var ok := d_out <= radius and d_in <= radius
+		if not ok:
+			_failures += 1
+		print("[NAV TEST] %s  link %-24s outside end %.2f m from navmesh, inside end %.2f m (limit %.2f)" % [
+			"PASS" if ok else "FAIL", link.entry.name, d_out, d_in, radius])
+
+
+## 300 random paths within ~40 m of the cabin must not pass through the
+## trees and props the Entity physically collides with (layer 1).
+func _check_obstacle_clearance(scene: Node, map: RID) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var space := _outer.get_world_3d().direct_space_state
+	var blocked := 0
+	var example := ""
+	for i in 300:
+		var a := Vector3(rng.randf_range(-30.0, 50.0), 0.4, rng.randf_range(-30.0, 50.0))
+		var b := Vector3(rng.randf_range(-30.0, 50.0), 0.4, rng.randf_range(-30.0, 50.0))
+		var path := NavigationServer3D.map_get_path(map, a, b, true)
+		for k in range(1, path.size()):
+			var q := PhysicsRayQueryParameters3D.create(path[k - 1] + Vector3.UP * 0.6, path[k] + Vector3.UP * 0.6, 1)
+			var hit := space.intersect_ray(q)
+			if not hit.is_empty() and str(scene.get_path_to(hit.collider)).begins_with("Details/Outside Cabin"):
+				blocked += 1
+				if example == "":
+					example = str(scene.get_path_to(hit.collider))
+				break
+	var ok := blocked == 0
+	if not ok:
+		_failures += 1
+	print("[NAV TEST] %s  paths clear of layer-1 trees/props: %d of 300 blocked%s" % [
+		"PASS" if ok else "FAIL", blocked, (" (e.g. " + example + ")") if example != "" else ""])
 
 
 ## Rough cabin floor footprint in world space (hall wing + back wing).

@@ -200,6 +200,40 @@ func _play_power_on_flicker() -> void:
 	_flicker_tween.tween_callback(_on_flicker_complete)
 
 
+## The Entity reaches the light from outside: it stutters a few times, then
+## switches off. Faulty lights can't be switched off and ignore this.
+func entity_sabotage() -> void:
+	if is_faulty or not is_room_lit():
+		return
+	_cancel_flicker()
+	_flicker_tween = create_tween()
+	for i in randi_range(3, 5):
+		_flicker_tween.tween_callback(_set_light_visible.bind(false))
+		_flicker_tween.tween_interval(randf_range(0.05, 0.2))
+		_flicker_tween.tween_callback(_set_light_visible.bind(true))
+		_flicker_tween.tween_interval(randf_range(0.1, 0.35))
+	_flicker_tween.tween_callback(func():
+		_flicker_tween = null
+		if is_switched_on:
+			toggle_light())
+
+
+## Something passed close outside: the light stutters two or three times and
+## stays on. Ignored while another flicker is running or the room is dark.
+func presence_flicker() -> void:
+	if not is_room_lit() or (_flicker_tween and _flicker_tween.is_valid()):
+		return
+	_flicker_tween = create_tween()
+	for i in randi_range(2, 3):
+		_flicker_tween.tween_callback(_set_light_visible.bind(false))
+		_flicker_tween.tween_interval(randf_range(0.04, 0.12))
+		_flicker_tween.tween_callback(_set_light_visible.bind(true))
+		_flicker_tween.tween_interval(randf_range(0.08, 0.25))
+	_flicker_tween.tween_callback(func():
+		_flicker_tween = null
+		_set_light_visible(_should_be_lit()))
+
+
 ## Called when the power-on flicker sequence finishes.
 ## Cleans up the tween reference and logs the event.
 func _on_flicker_complete() -> void:

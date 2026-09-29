@@ -23,7 +23,7 @@ extends Node
 const PEEKER_SCENE: PackedScene = preload("res://scenes/window_peeker.tscn")
 
 ## Dot-product threshold for checking if the player is looking at a window.
-## cos(20°) ≈ 0.94 — matches the threshold used in entity_sensory.gd.
+## cos(20°) ≈ 0.94.
 const GAZE_DOT_THRESHOLD: float = 0.94
 
 ## Interval in seconds between heartbeat checks.

@@ -1,9 +1,6 @@
 [gd_scene format=3 uid="uid://dudqc5j4ccimh"]
 
-[ext_resource type="Script" uid="uid://domnyyltcnbax" path="res://scripts/entity/entity_controller.gd" id="1_entity"]
-[ext_resource type="Script" uid="uid://cdagwv557jdcu" path="res://scripts/entity/entity_ai.gd" id="1_entity_ai"]
-[ext_resource type="Script" uid="uid://bkmvrpq07bnob" path="res://scripts/entity/entity_navigation.gd" id="1_entity_navigation"]
-[ext_resource type="Script" uid="uid://ba65vds1sdc5a" path="res://scripts/entity/entity_sensory.gd" id="1_entity_sensory"]
+[ext_resource type="Script" path="res://scripts/entity/entity.gd" id="1_entity"]
 [ext_resource type="PackedScene" uid="uid://bcqrmxmkjwbhc" path="res://assets/character models/elkdemongodot.glb" id="2_krxyj"]
 [ext_resource type="AudioStream" uid="uid://yuiatatc3mdh" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_1.ogg" id="2_t0r4h"]
 [ext_resource type="AudioStream" uid="uid://dqc8ggn4wbd7u" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Player/Footsteps/footstep_wood_a_2.ogg" id="3_ipbhg"]
@@ -200,8 +197,6 @@ floor_snap_length = 1.2
 platform_floor_layers = 2
 safe_margin = 0.08
 script = ExtResource("1_entity")
-speed = 5.5
-relocate_radius = 40.0
 wood_footsteps = Array[AudioStream]([ExtResource("2_t0r4h"), ExtResource("3_ipbhg"), ExtResource("4_t7mjj"), ExtResource("5_k5t6u"), ExtResource("6_wa7gp"), ExtResource("7_hplt3"), ExtResource("8_7515g"), ExtResource("9_jg31c"), ExtResource("10_at8y2"), ExtResource("11_27ttu"), ExtResource("12_ywg1u"), ExtResource("13_sje4p"), ExtResource("14_1undc"), ExtResource("15_goj7v"), ExtResource("16_1lxf4"), ExtResource("17_gkyj3"), ExtResource("18_o1kjt"), ExtResource("19_wlltw"), ExtResource("20_bv2do"), ExtResource("21_g0dvk")])
 grass_footsteps = Array[AudioStream]([ExtResource("22_dy7dj"), ExtResource("23_2iid0"), ExtResource("24_insmk"), ExtResource("25_3xlfs"), ExtResource("26_bidjq"), ExtResource("27_6f4kc"), ExtResource("28_j1l70"), ExtResource("29_chtkg"), ExtResource("30_1sbhw"), ExtResource("31_14cij"), ExtResource("32_ykq56"), ExtResource("33_668lf"), ExtResource("34_c7lww")])
 
@@ -218,17 +213,8 @@ avoidance_enabled = true
 radius = 0.3
 max_speed = 4.0
 
-[node name="EntityAI" type="Node" parent="." unique_id=777413178]
-script = ExtResource("1_entity_ai")
-
-[node name="EntitySensory" type="Node" parent="." unique_id=767496229]
-script = ExtResource("1_entity_sensory")
-
-[node name="EntityNavigation" type="Node" parent="." unique_id=1115453041]
-script = ExtResource("1_entity_navigation")
-
 [node name="MonsterModel" parent="." unique_id=1066769687 instance=ExtResource("2_krxyj")]
-transform = Transform3D(3.5, 0, 0, 0, 3.5, 0, 0, 0, 3.5, 0, -0.57255733, 0)
+transform = Transform3D(3.5, 0, 0, 0, 3.5, 0, 0, 0, 3.5, 0, -0.03, 0)
 
 [node name="GeneralSkeleton" parent="MonsterModel/Armature" parent_id_path=PackedInt32Array(1066769687, 719992929) index="0" unique_id=519438561]
 bones/1/rotation = Quaternion(0.10142822, -0.17019908, -0.020459212, 0.97996235)

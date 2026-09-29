@@ -404,10 +404,8 @@ func lock() -> void:
 		print("[Door] Door locked via lock().")
 
 
-## Forces the door open (used by the Entity AI during WINDOW_PEEK breach).
-## This is the door equivalent of CabinWindow.shatter_window().
-## The Entity smashes through the door, unlocking and flinging it open.
-## Called by entity_ai.gd's _window_peek_state() when the target is a door.
+## Forces the door open, unlocking it. Not used by the Entity, which can only
+## come in through the door while it is unlocked.
 func break_door() -> void:
 	print("[Door] Entity forcing door open via break_door()!")
 	
