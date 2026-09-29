@@ -478,9 +478,9 @@ func _restore_environment_lighting() -> void:
 
 
 func _teleport_entity_to_van() -> void:
-	var entity = get_tree().get_first_node_in_group("entity")
+	var entity := get_tree().get_first_node_in_group("entity") as Entity
 	if not entity:
-		print("[EscapeVan] ERROR: Entity not found in scene! Cannot teleport.")
+		print("[EscapeVan] ERROR: Entity not found in scene! Cannot start the chase.")
 		return
 	
 	var spawn_marker: Marker3D = null
@@ -490,65 +490,24 @@ func _teleport_entity_to_van() -> void:
 		if not spawn_marker:
 			spawn_marker = _find_marker_recursive(scene_root, "EntityVanSpawn")
 	
-	if not spawn_marker:
-		print("[EscapeVan] WARNING: EntityVanSpawn marker not found! Teleporting Entity to van position.")
-		entity.global_transform.origin = global_transform.origin + Vector3(5, 0, -10)
+	var spawn_position := global_position + Vector3(5, 0, -10)
+	if spawn_marker:
+		spawn_position = spawn_marker.global_position
 	else:
-		entity.global_position = spawn_marker.global_position
-		print("[EscapeVan] Entity teleported to EntityVanSpawn: %s" % spawn_marker.global_position)
+		print("[EscapeVan] WARNING: EntityVanSpawn marker not found! Spawning the Entity next to the van.")
 	
-	# ─── ACTIVATE ENTITY FIRST ─────────────────────────────────────────
-	# NightManager.start_night(2) does NOT activate the Entity (night <= 2
-	# guard in the narrative override). Without this call, _is_active stays
-	# false, _physics_process() early-exits, the pending STALK state is never
-	# consumed, and the Entity remains DORMANT (invisible, inactive).
-	if entity.has_method("activate"):
-		entity.activate()
-		print("[EscapeVan] Entity activated for van sequence.")
+	# The Entity appears and pursues the player until they reach the cabin,
+	# then vanishes for the rest of the night.
+	entity.start_van_chase(spawn_position)
 	
-	if entity.has_method("request_state"):
-		entity.request_state(EntityAI.State.STALK)
-		# ─── HARDENING: Belt-and-suspenders ─────────────────────────────
-		# activate() internally calls request_state(OBSERVE_FROM_TREELINE),
-		# setting _pending_state. Our request_state(STALK) above overwrites
-		# it synchronously. However, to completely harden against any
-		# edge-case where the Director consumes the pending state between
-		# the two synchronous calls (e.g., via _pending_state consumption
-		# in a _process or _physics_process callback), we also write the
-		# _pending_state member directly. This guarantees STALK wins
-		# regardless of intermediate frame processing.
-		if "_pending_state" in entity:
-			entity._pending_state = EntityAI.State.STALK
-	elif entity.has_method("change_state"):
-		entity.change_state("STALK")
-	else:
-		if "_state" in entity:
-			entity._state = 2
-			entity._pending_state = 2
-	
-	# ─── TASK 8 FIX: SPRINT TUTORIAL AT STALK TRANSITION ──────────────
-	# The "Hold SHIFT to run" hint must appear EXACTLY when the Entity
-	# transitions into the STALK state after the van interaction. This is
-	# the narrative moment the player first needs sprinting. The old code
-	# triggered it on a 1-second timer (and the resource was blocked by its
-	# day_one_only flag), so the hint never showed during Night 2.2.
-	# The one-shot guard prevents re-triggering if the sequence ever
-	# re-runs (e.g., scene reload).
+	# The "Hold SHIFT to run" hint appears the moment the chase starts: the
+	# first time the player needs to sprint. One-shot in case the sequence
+	# re-runs (e.g. scene reload).
 	if not _sprint_tutorial_fired:
 		_sprint_tutorial_fired = true
 		var tm_sprint := get_node_or_null("/root/TutorialManager")
 		if tm_sprint and tm_sprint.has_method("trigger"):
 			tm_sprint.trigger("sprint")
-			print("[EscapeVan] TASK 8: Sprint tutorial triggered at STALK transition.")
-	
-	if "thinks_player_is_inside" in entity:
-		entity.thinks_player_is_inside = false
-	
-	entity.set_meta("stalk_lock_until_ms", Time.get_ticks_msec() + 5000)
-	
-	if "_stuck_timer" in entity:
-		entity._stuck_timer = -3.0
-	
 
 
 func _find_marker_recursive(root: Node, marker_name: String) -> Marker3D:

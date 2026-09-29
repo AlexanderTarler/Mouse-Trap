@@ -242,7 +242,7 @@ func _set_initial_time() -> void:
 	if gt:
 		# Non-dev mode: Day 1 starts 4 minutes into the 5-minute day phase.
 		# cycle_progress = 0.4 → 4:00 elapsed, 1:00 remaining until night.
-		# Dev mode overrides this to 0.0 (start of day) in entity_controller.gd.
+		# Dev mode overrides this to 0.0 (start of day).
 		var start_progress: float = 0.4
 		if is_dev_mode:
 			start_progress = 0.0
@@ -998,7 +998,7 @@ func advance_night() -> void:
 	
 	# ─── PHASE TRANSITION ──────────────────────────────────────────────
 	# Emit the night_ended signal FIRST so all listeners (RoutineManager,
-	# EntityDirector, etc.) can react to the transition. Only THEN do we
+	# the Entity, etc.) can react to the transition. Only THEN do we
 	# set the authoritative time for the new day. This prevents signal
 	# handlers from clobbering the time reset.
 	
@@ -1277,9 +1277,6 @@ func restart_from_morning() -> void:
 	for entity_node in entity_nodes:
 		if entity_node and entity_node.has_method("deactivate"):
 			entity_node.deactivate()
-		elif "State" in entity_node:
-			entity_node._state = 0
-			entity_node._is_active = false
 	
 	# ─── TASK 3: RESET ENTITY CONFIDENCE ON MORNING RESTART ────────
 	# The morning baseline path must also reset the Entity's confidence so
@@ -1429,10 +1426,6 @@ func reset_to_daybreak() -> void:
 		if entity_node and entity_node.has_method("deactivate"):
 			entity_node.deactivate()
 			print("[NightManager] Entity deactivated to DORMANT.")
-		elif "State" in entity_node:
-			entity_node._state = 0
-			entity_node._is_active = false
-			print("[NightManager] Entity state forced to DORMANT (fallback).")
 	
 	is_night_active = false
 	is_day_active = true

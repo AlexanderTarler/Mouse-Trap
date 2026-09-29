@@ -1142,29 +1142,15 @@ func _process(delta: float) -> void:
 	if _sanity_controller and _sanity_controller.has_method("get_gaze_normalized"):
 		gaze_norm = _sanity_controller.get_gaze_normalized()
 	
+	# Tell the Entity every frame whether the beam is on it. It keeps its own
+	# timers; look_timer below only drives the camera shake.
+	if _entity_node and _entity_node.has_method("on_flashlight"):
+		_entity_node.on_flashlight(is_looking_at_entity, is_flashlight_overcharged())
+	
 	if is_looking_at_entity:
-		# Increase look_timer while staring at the Entity with flashlight
-		look_timer += delta
-		
-		# Clamp to max meaningful value (1.5s triggers charge)
-		if look_timer > 2.0:
-			look_timer = 2.0
-		
-		# Notify the Entity that it's being stared at (triggers STANDOFF state)
-		# Pass is_overcharged so the Director knows whether this is the standard
-		# beam (ignored indoors) or the overcharge beam (drives the standoff).
-		if _entity_node and _entity_node.has_method("on_player_stare"):
-			_entity_node.on_player_stare(look_timer, is_flashlight_overcharged())
-	else:
-		# Not looking at the Entity — decay look_timer
-		if look_timer > 0.0:
-			look_timer -= delta * 2.0  # Decay twice as fast as it builds
-			if look_timer < 0.0:
-				look_timer = 0.0
-			
-			# Notify the Entity that stare is ending — clear overcharge flag
-			if _entity_node and _entity_node.has_method("on_player_stare"):
-				_entity_node.on_player_stare(look_timer, is_flashlight_overcharged())
+		look_timer = minf(look_timer + delta, 2.0)
+	elif look_timer > 0.0:
+		look_timer = maxf(look_timer - delta * 2.0, 0.0)  # Decays twice as fast as it builds
 	
 	# ─── COMBINED CAMERA SHAKE (TASK 3 AMPLIFIED) ────────────────
 	# Takes the MAX of flashlight stare intensity and sanity gaze
@@ -1266,22 +1252,21 @@ func _is_flashlight_on_entity() -> bool:
 
 
 ## Public API: returns true if the player's flashlight is currently on.
-## Called by entity_sensory.gd to check flashlight state without string-based property access.
+## The Entity's perception uses it to pick its vision range.
 func is_flashlight_on() -> bool:
 	return _has_flashlight and _flashlight != null and _flashlight.is_on
 
 
 ## Public API: returns true if the flashlight is currently in overcharge mode.
-## Forwarded to the Entity's on_player_stare() so the Director can distinguish
-## the standard beam (ignored indoors) from the overcharge beam (standoff).
+## Forwarded to the Entity's on_flashlight(): only the overcharged beam
+## repels it.
 func is_flashlight_overcharged() -> bool:
 	return _has_flashlight and _flashlight != null and _flashlight.is_overcharged
 
 
 ## Returns true if the player is currently crouching.
-## Used by the Entity's sensory system (entity_sensory.gd) to apply the
-## crouch visibility multiplier — crouching players are much harder to see
-## in the dark (vision range reduced to 20% of normal).
+## The Entity's perception shrinks its vision range in the dark when the
+## player crouches (EntityConfig.crouch_vision_multiplier).
 func is_crouching() -> bool:
 	return _is_crouching
 

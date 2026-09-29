@@ -7,7 +7,7 @@ signal console_closed
 
 # References to game systems
 var _night_manager: Node = null
-var _entity: Node = null
+var _entity: Entity = null
 var _player: Node = null
 var _is_open: bool = false
 
@@ -123,7 +123,7 @@ func open(player: Node) -> void:
 	
 	# Refresh references
 	_night_manager = get_node_or_null("/root/NightManager")
-	_entity = get_tree().get_first_node_in_group("entity")
+	_entity = get_tree().get_first_node_in_group("entity") as Entity
 	
 	# Clear and update log
 	debug_log.text = ""
@@ -192,44 +192,25 @@ func _refresh_log() -> void:
 	
 	# ─── ENTITY INFO ──────────────────────────────────────────────────
 	if _entity:
-		var state_name = "N/A"
-		if _entity.has_method("get_current_state_name"):
-			state_name = _entity.get_current_state_name()
-		elif "current_night" in _entity:
-			state_name = str(_entity.get("_state"))
-		
-		var pos = _entity.global_position if _entity.has_method("get_global_position") else Vector3.ZERO
+		var state_name: String = _entity.get_state_name()
+		var pos: Vector3 = _entity.global_position
 		var dist = pos.distance_to(_player.global_position) if _player else 0.0
-		
-		# Entity state with color coding
 		var state_color = "white"
-		if state_name.contains("CHASE") or state_name.contains("CHARGE"):
-			state_color = "red"
-		elif state_name.contains("STALK") or state_name.contains("APPROACH"):
-			state_color = "orange"
-		elif state_name.contains("INDOOR"):
-			state_color = "purple"
-		elif state_name.contains("OBSERVE") or state_name.contains("DORMANT"):
-			state_color = "gray"
-		
+		match state_name:
+			"CHARGE", "HUNT", "BREACH", "ENTER":
+				state_color = "red"
+			"STALK", "APPROACH", "PEEK", "SEARCH":
+				state_color = "orange"
+			"OBSERVE", "DORMANT":
+				state_color = "gray"
 		lines.append("[b]Entity:[/b] [color=%s]%s[/color] | Dist=%.1f" % [state_color, state_name, dist])
 		lines.append("  Pos=(%.1f, %.1f, %.1f)" % [pos.x, pos.y, pos.z])
-		
-		# Player visibility
-		var sensory = _entity.get_sensory_module() if _entity.has_method("get_sensory_module") else null
-		var can_see = sensory and sensory.has_method("can_entity_see_player") and sensory.can_entity_see_player()
-		var hears = _entity.is_hunting() if _entity.has_method("is_hunting") else false
-		lines.append("  Sees=%s | Hears=%s | Locked=%s" % [
-			"YES" if can_see else "NO",
-			"YES" if hears else "NO",
-			"YES" if _entity.get("state_locked") else "NO"
-		])
-		
-		# Entity confidence
-		var conf = _entity.get_confidence_module() if _entity.has_method("get_confidence_module") else null
-		if conf and conf.has_method("get_confidence"):
-			var c_val = conf.get_confidence()
-			lines.append("  Confidence: %.0f" % c_val)
+		var perception = _entity.perception
+		lines.append("  Sees=%s | Heard recently=%s" % [
+			"YES" if perception.can_see_player else "NO",
+			"YES" if perception.has_fresh_noise(3.0) else "NO"])
+		lines.append("  Confidence: %.0f%s" % [_entity.confidence.get_confidence(),
+			" (relaxing)" if _entity.confidence.is_relaxing() else ""])
 	
 	# ─── PLAYER INFO ──────────────────────────────────────────────────
 	if _player:
@@ -453,208 +434,58 @@ func _setup_bedroom_state() -> void:
 
 
 func _force_relocate() -> void:
-	print("[Debug Console] Forcing Entity relocate...")
-	if _entity and _entity.has_method("_relocate_behind_player"):
-		_entity._relocate_behind_player()
-		print("[Debug Console] Entity relocated.")
-	else:
-		print("[Debug Console] Entity not found or missing _relocate_behind_player.")
-
-
-func _force_window_peek() -> void:
-	print("[Debug Console] Forcing Entity window peek...")
-	if _entity and _entity.has_method("_start_window_peek"):
-		_entity._start_window_peek()
-		print("[Debug Console] Window peek triggered.")
-	else:
-		print("[Debug Console] Entity not found or missing _start_window_peek.")
-
-
-## Forces the Entity to approach the front door.
-## Sets Entity confidence to 40, finds the front door, sets it as the current
-## window target, and forces the Entity into APPROACH_WINDOW state.
-## This is a development tool for testing the door approach behavior.
-func _force_door_approach() -> void:
-	print("[Debug Console] Forcing Entity door approach...")
 	if not _entity:
 		print("[Debug Console] Entity not found.")
 		return
-	
-	# ─── SET CONFIDENCE TO 40 ───────────────────────────────────────
-	# The Director's Tier 4 confidence escalation checks confidence >= 40
-	# to transition to APPROACH_WINDOW. Setting it to 40 ensures the
-	# Entity will attempt to approach a target.
-	var confidence_module = _entity.get_confidence_module() if _entity.has_method("get_confidence_module") else null
-	if confidence_module:
-		confidence_module.set_confidence(40.0)
-		print("[Debug Console] Entity confidence set to 40.0.")
-	else:
-		print("[Debug Console] WARNING: Could not find confidence module.")
-	
-	# ─── FIND THE FRONT DOOR ────────────────────────────────────────
-	# Look for the EntityDoorWaypoint marker in the EntityWaypoints group.
-	# This is the same marker used by pick_tactical_window() in entity_navigation.gd.
-	var door_wp: Node3D = null
-	var waypoints = get_tree().get_nodes_in_group("EntityWaypoints")
-	for wp in waypoints:
-		if wp.name == "EntityDoorWaypoint":
-			door_wp = wp
-			break
-	
-	if not door_wp:
-		print("[Debug Console] WARNING: EntityDoorWaypoint not found! Trying Door group fallback.")
-		# Fallback: try to find the door via the "Door" group and use its DoorBreachWaypoint marker.
-		var door = get_tree().get_first_node_in_group("Door")
-		if door:
-			# First try to find the DoorBreachWaypoint marker via the group
-			var breach_wps = get_tree().get_nodes_in_group("DoorBreachWaypoint")
-			var door_marker: Node3D = null
-			for wp in breach_wps:
-				if wp.get_parent() == door:
-					door_marker = wp
-					break
-			if door_marker:
-				door_wp = door_marker as Node3D
-				print("[Debug Console] Found door via 'Door' group with DoorBreachWaypoint marker.")
-			else:
-				# Fallback: use the door node itself as the target
-				door_wp = door as Node3D
-				print("[Debug Console] Door found via 'Door' group (no DoorBreachWaypoint marker). Using door node directly.")
+	_entity.debug_relocate()
+	print("[Debug Console] Entity relocated to a treeline vantage point.")
 
-	
-	if not door_wp:
-		print("[Debug Console] ERROR: No door target found! Cannot force door approach.")
+
+## Sends the Entity to a window (preferring dark rooms) to peek in.
+func _force_window_peek() -> void:
+	if not _entity:
+		print("[Debug Console] Entity not found.")
 		return
-	
-	# ─── SET THE DOOR AS THE CURRENT WINDOW TARGET (BEFORE FUSE BOX CHECK) ──
-	# CRITICAL: This must happen BEFORE the Fuse Box power check below.
-	# When the Fuse Box IS powered, the Entity goes through SABOTAGE_FUSE first.
-	# After sabotage completes, the Director transitions to OBSERVE, confidence
-	# triggers APPROACH_WINDOW, and _approach_window_state() checks
-	# get_current_window_target(). If it's the door waypoint and is_door_target
-	# is true, the Entity approaches the door instead of a random window.
-	if _entity.has_method("set_current_window_target"):
-		_entity.set_current_window_target(door_wp)
-		print("[Debug Console] Door set as current window target: %s (class=%s)" % [door_wp.name, door_wp.get_class()])
-		if door_wp.get_parent():
-			print("[Debug Console] Door target parent: %s (class=%s)" % [door_wp.get_parent().name, door_wp.get_parent().get_class()])
-	else:
-		print("[Debug Console] ERROR: Entity missing set_current_window_target method.")
+	var windows: Array = _entity.world.entries().filter(
+		func(link): return link.kind == CabinEntryLink.Kind.WINDOW)
+	if windows.is_empty():
+		print("[Debug Console] No window entry links found.")
 		return
-	
-	# ─── FORCE IS_DOOR_TARGET ON THE BLACKBOARD ─────────────────────
-	# Pre-set the is_door_target flag so the AI's _approach_window_state()
-	# knows this target is a door regardless of the reference comparison.
-	# This bypasses the fragil == comparison between the debug console's
-	# door_wp node and entity.get_door_waypoint_marker().
-	if "is_door_target" in _entity:
-		_entity.is_door_target = true
-		print("[Debug Console] Entity is_door_target set to true (door breach flagged).")
-	
-	# ─── DOOR UNLOCK OVERRIDE (Debug Tool) ──────────────────────────
-	# The "Force Door Approach" is a development tool. If the front door
-	# is locked, unlock it so the Entity can walk through. This bypasses
-	# the normal gameplay gate (player must unlock the door) for testing.
-	var door_node = get_tree().get_first_node_in_group("Door")
-	if door_node and "is_locked" in door_node:
-		if door_node.is_locked:
-			door_node.is_locked = false
-			print("[Debug Console] Door was locked! Unlocked for debug approach.")
-	
-	# ─── FUSE BOX POWER CHECK ───────────────────────────────────────
-	# If the Fuse Box is powered (generator ON → porch light ON), the
-	# Entity must sabotage the Fuse Box FIRST before it can approach the
-	# door. Redirect to SABOTAGE_FUSE state instead of APPROACH_WINDOW.
-	# The door target persists in _current_window_target through the
-	# sabotage → observe → APPROACH_WINDOW cycle.
-	var fuse_box = null
-	if _entity.has_method("get_fuse_box_node"):
-		fuse_box = _entity.get_fuse_box_node()
-	if not fuse_box:
-		var interactables = get_tree().get_nodes_in_group("interactable")
-		for node in interactables:
-			if node is FuseBox:
-				fuse_box = node
-				break
-	if not fuse_box:
-		if get_tree().current_scene:
-			fuse_box = get_tree().current_scene.find_child("FuseBox", true, false)
-	
-	if fuse_box and fuse_box.has_method("is_powered") and fuse_box.is_powered():
-		print("[Debug Console] Fuse Box is powered (porch light ON). Redirecting to SABOTAGE_FUSE (door target preserved).")
-		
-		# Reset stale completion flags
-		if "is_fuse_sabotaged" in _entity:
-			_entity.is_fuse_sabotaged = false
-		if "state_locked" in _entity:
-			_entity.state_locked = false
-		if "is_approach_finished" in _entity:
-			_entity.is_approach_finished = false
-		if "is_observe_finished" in _entity:
-			_entity.is_observe_finished = false
-		if "is_flinch_finished" in _entity:
-			_entity.is_flinch_finished = false
-		if "is_retreat_arrived" in _entity:
-			_entity.is_retreat_arrived = false
-		if "is_window_unbarricaded" in _entity:
-			_entity.is_window_unbarricaded = false
-		if "is_climb_finished" in _entity:
-			_entity.is_climb_finished = false
-		if "is_indoor_retreat" in _entity:
-			_entity.is_indoor_retreat = false
-		
-		if _entity.has_method("request_state"):
-			_entity.request_state(EntityAI.State.SABOTAGE_FUSE)
-			print("[Debug Console] Entity forced into SABOTAGE_FUSE state (door target preserved for after sabotage).")
-		else:
-			print("[Debug Console] ERROR: Entity missing request_state method.")
+	var dark: Array = windows.filter(func(link): return not _entity.world.is_entry_lit(link))
+	var entry = (dark if not dark.is_empty() else windows).pick_random()
+	_entity.request_state(Entity.State.APPROACH, {"entry": entry})
+	print("[Debug Console] Entity approaching window '%s'." % entry.entry.name)
+
+
+## Unlocks the front door and sends the Entity to it.
+func _force_door_approach() -> void:
+	if not _entity:
+		print("[Debug Console] Entity not found.")
 		return
-	
-	# ─── NOT POWERED: Reset stale flags and let Director escalate ────
-	# The confidence is already 40 (set above), the door is set as the
-	# current window target, and is_door_target is true. The Director's
-	# Tier 4 (or Tier 7) will naturally transition to APPROACH_WINDOW
-	# on the next frame without needing a forced request_state().
-	# We just need to clear stale flags.
-	if "is_approach_finished" in _entity:
-		_entity.is_approach_finished = false
-	if "is_observe_finished" in _entity:
-		_entity.is_observe_finished = false
-	if "is_flinch_finished" in _entity:
-		_entity.is_flinch_finished = false
-	if "is_retreat_arrived" in _entity:
-		_entity.is_retreat_arrived = false
-	if "is_window_unbarricaded" in _entity:
-		_entity.is_window_unbarricaded = false
-	if "is_climb_finished" in _entity:
-		_entity.is_climb_finished = false
-	if "state_locked" in _entity:
-		_entity.state_locked = false
-	# Reset door phase to ensure clean start
-	if "_door_phase" in _entity:
-		_entity._door_phase = 0
-	if "_door_phase_timer" in _entity:
-		_entity._door_phase_timer = 0.0
-	if "is_door_locked" in _entity:
-		_entity.is_door_locked = false
-	if "_door_approach_cooldown" in _entity:
-		_entity._door_approach_cooldown = 0.0
-	
-	print("[Debug Console] Fuse Box not powered. Door target set. Waiting for Director to escalate to APPROACH_WINDOW.")
+	var doors: Array = _entity.world.entries().filter(
+		func(link): return link.kind == CabinEntryLink.Kind.DOOR)
+	if doors.is_empty():
+		print("[Debug Console] No door entry link found.")
+		return
+	var entry = doors[0]
+	if entry.entry.is_locked:
+		entry.entry.is_locked = false
+		print("[Debug Console] Door was locked. Unlocked for the debug approach.")
+	_entity.request_state(Entity.State.APPROACH, {"entry": entry})
+	print("[Debug Console] Entity approaching the door.")
 
 
 func _toggle_stalking() -> void:
-	print("[Debug Console] Toggling Entity stalking...")
 	if not _entity:
 		print("[Debug Console] Entity not found.")
 		return
-	
-	if _entity.get("_is_active"):
+	if _entity.is_active():
 		_entity.deactivate()
 		print("[Debug Console] Entity deactivated (DORMANT).")
 	else:
 		_entity.activate()
-		print("[Debug Console] Entity activated (OBSERVE_FROM_TREELINE).")
+		_entity.request_state(Entity.State.OBSERVE)
+		print("[Debug Console] Entity activated (OBSERVE).")
 
 
 ## Toggles the Entity between enabled (active) and disabled (dormant).
@@ -670,6 +501,7 @@ func _toggle_entity_enabled() -> void:
 	
 	if _entity_enabled:
 		_entity.activate()
+		_entity.request_state(Entity.State.OBSERVE)
 		_entity_toggle_btn.text = "Entity: ENABLED"
 		# Reset to default button color
 		_entity_toggle_btn.remove_theme_color_override("font_color")
@@ -698,9 +530,7 @@ func _toggle_can_kill() -> void:
 	
 	_entity_can_kill = not _entity_can_kill
 	
-	# Set the can_kill property on the Entity controller
-	if "can_kill" in _entity:
-		_entity.can_kill = _entity_can_kill
+	_entity.can_kill = _entity_can_kill
 	
 	if _entity_can_kill:
 		_can_kill_toggle_btn.text = "Can Kill: YES"

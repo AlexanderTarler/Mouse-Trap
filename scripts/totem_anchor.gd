@@ -52,7 +52,7 @@ var purge_progress: float = 0.0
 var is_being_purged: bool = false
 
 ## Reference to the Entity controller (used for the defeat sequence).
-var _entity: Node = null
+var _entity: Entity = null
 
 ## ─── TOTEM DEFENSE (Night 3+) ──────────────────────────────────────────
 ## One-shot guard for the totem defense: when the player approaches within
@@ -122,7 +122,7 @@ func _ready() -> void:
 	add_to_group("totem_anchor")
 	
 	# Find the Entity in the scene tree
-	_entity = get_tree().get_first_node_in_group("entity")
+	_entity = get_tree().get_first_node_in_group("entity") as Entity
 	
 	# Set up the destruction audio player
 	_destroy_audio = AudioStreamPlayer3D.new()
@@ -328,25 +328,13 @@ func _process(delta: float) -> void:
 			var dist_to_near_player = global_position.distance_to(near_player.global_position)
 			if dist_to_near_player <= TOTEM_DEFENSE_RADIUS:
 				if _entity and is_instance_valid(_entity) and not _totem_defending:
-					# ─── ONLY DEFEND IF NOT FLINCHING / STUNNED ──────────
-					# If the Entity is currently flinching from the flashlight
-					# or stunned by the overcharge trap, it cannot defend.
-					var ent_state = _entity.get_state() if "get_state" in _entity else -1
-					var is_flinching: bool = ent_state == EntityAI.State.FLINCH
-					var is_stunned: bool = (ent_state == EntityAI.State.STUNNED) or (ent_state == EntityAI.State.ENRAGED)
-					# ─── TOTEM DEFENSE DISABLE FLAG (Overload Stun) ─────
-					# The controller sets `_totem_defense_disabled = true`
-					# the moment the overload stun begins and clears it on
-					# stun expiry/blackout release. This is a belt-and-
-					# suspenders guard alongside the state check above: even
-					# if the Director's state sync hiccups, the flag itself
-					# guarantees the player can reach the totem during the
-					# 30-second stun window without the Entity teleporting
-					# to defend it.
-					var totem_defense_disabled: bool = false
-					if "_totem_defense_disabled" in _entity and _entity._totem_defense_disabled:
-						totem_defense_disabled = true
-					if not is_flinching and not is_stunned and not totem_defense_disabled:
+					# A fleeing or stunned Entity can't defend it, and the
+					# overload stun keeps the defence off for its duration.
+					var ent_state: int = _entity.get_state()
+					var can_defend: bool = ent_state != Entity.State.FLEE \
+						and ent_state != Entity.State.STUNNED \
+						and not _entity.totem_defense_disabled
+					if can_defend:
 						_totem_defending = true
 						_defend_totem_with_entity()
 			else:
@@ -448,34 +436,9 @@ func _defend_totem_with_entity() -> void:
 		target_pos = global_position + fallback_offset.normalized() * 4.0
 		print("[TotemAnchor] WARNING: EntityTotemWaypoint not found in scene. Using fallback position adjacent to totem.")
 	
-	# ─── SNAP TO NAVMESH FLOOR ────────────────────────────────────────
-	# Project the target onto the NavMesh floor (preserving XZ) so the
-	# Entity lands on solid ground instead of floating.
-	var nav_map = _entity.get_world_3d().navigation_map
-	var snapped_pos = NavigationServer3D.map_get_closest_point(nav_map, target_pos)
-	snapped_pos.x = target_pos.x
-	snapped_pos.z = target_pos.z
-	
-	# ─── TELEPORT THE ENTITY ──────────────────────────────────────────
-	_entity.global_position = snapped_pos
-	_entity.velocity = Vector3.ZERO
-	
-	# ─── FORCE CHARGE STATE ───────────────────────────────────────────
-	# Force the Entity into CHARGE — this state is immune to the flashlight
-	# overcharge (the Director's CHARGE IGNORES FLASHLIGHT rule), so the
-	# Entity will aggressively pursue the player even if they shine the beam.
-	if _entity.has_method("set_state"):
-		_entity.set_state(EntityAI.State.CHARGE)
-	if "state_locked" in _entity:
-		_entity.state_locked = true  # Lock so the Director doesn't override mid-charge
-	
-	# ─── RE-TARGET THE PLAYER ─────────────────────────────────────────
-	var near_player = get_tree().get_first_node_in_group("player")
-	if near_player and _entity.has_method("get_nav_agent"):
-		var nav_agent = _entity.get_nav_agent()
-		if nav_agent:
-			nav_agent.target_position = near_player.global_position
-	
+	# Appears at the waypoint and charges; the flashlight can't stop a charge.
+	_entity.defend_totem(target_pos)
+
 	print("[TotemAnchor] TOTEM DEFENSE: Entity teleported to waypoint and forced into CHARGE to defend the totem!")
 	_show_hud_message("The Entity guards the totem with violent ferocity!")
 
