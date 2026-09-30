@@ -24,6 +24,7 @@ var _scratch_texture: ImageTexture
 var _footprints: Array[Decal] = []
 var _scratches: Array[Decal] = []
 var _scratch_count: Dictionary = {}   ## CabinEntryLink -> scratches left there
+var _climb_marked: Dictionary = {}    ## CabinEntryLink -> true once climbed tonight
 var _distance_since_print := 0.0
 var _left_foot := true
 var _last_position := Vector3.INF
@@ -51,6 +52,7 @@ func clear_all() -> void:
 	_footprints.clear()
 	_scratches.clear()
 	_scratch_count.clear()
+	_climb_marked.clear()
 	_last_position = Vector3.INF
 
 
@@ -93,6 +95,30 @@ func scratch_window(link: CabinEntryLink) -> void:
 	decal.global_transform = Transform3D(Basis(x_axis, y_axis, z_axis), pos) \
 		.rotated_local(Vector3.UP, randf_range(-0.25, 0.25))
 	_push(_scratches, decal, MAX_SCRATCHES)
+
+
+## Claw marks up the wall below an upstairs window, from `base` (ground) to
+## `perch` (where it clings). Once per window per night.
+func scratch_climb(link: CabinEntryLink, base: Vector3, perch: Vector3) -> void:
+	if not link or _climb_marked.has(link):
+		return
+	_climb_marked[link] = true
+	var inward := link.end_position - link.start_position
+	inward.y = 0.0
+	inward = inward.normalized()
+	var window: Node3D = link.entry
+	var side := Vector3(-inward.z, 0.0, inward.x)
+	var y_axis := -inward
+	var z_axis := Vector3.DOWN
+	var x_axis := y_axis.cross(z_axis).normalized()
+	for i in 4:
+		var height := lerpf(base.y + 0.8, perch.y + 0.4, i / 3.0)
+		var pos := Vector3(window.global_position.x, height, window.global_position.z) \
+			+ side * randf_range(-0.3, 0.3) - inward * 0.05
+		var decal := _make_decal(_scratch_texture, GOUGE, Vector3(0.8, 0.6, 0.8))
+		decal.global_transform = Transform3D(Basis(x_axis, y_axis, z_axis), pos) \
+			.rotated_local(Vector3.UP, randf_range(-0.3, 0.3))
+		_push(_scratches, decal, MAX_SCRATCHES)
 
 
 func _leave_footprint(pos: Vector3) -> void:

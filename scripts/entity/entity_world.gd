@@ -22,6 +22,10 @@ const REPEL_MEMORY := 90.0              ## Seconds a repelled entry is avoided.
 ## this time constant (seconds). pick_entry() subtracts GUARD_PENALTY per point.
 const GUARD_MEMORY := 600.0
 const GUARD_PENALTY := 1.5
+## Window bonus for the room it believes the player is in (seen or heard there).
+const SUSPECTED_ROOM_BONUS := 2.0
+## Rooms that are passages, not places to search.
+const NOT_PATROLLED_ROOMS := ["Stairs"]
 const MAX_HIDING_SPOTS := 5
 const HIDING_SPOT_MERGE := 2.5
 ## Lit-room lights stutter when it passes this close outside their window.
@@ -120,6 +124,9 @@ func guard_score(link: CabinEntryLink) -> float:
 func is_entry_viable(link: CabinEntryLink) -> bool:
 	if is_repelled(link) or is_entry_lit(link):
 		return false
+	# Upstairs windows mean climbing the wall: not before Night 4.
+	if link.climb and not entity.can_climb():
+		return false
 	if link.kind == CabinEntryLink.Kind.WINDOW:
 		var window = link.entry
 		# Boarded windows are worth approaching only if it can break planks
@@ -130,13 +137,14 @@ func is_entry_viable(link: CabinEntryLink) -> bool:
 
 
 ## Chooses an entry to approach, or null if none is viable. Windows are
-## weighted toward unboarded, dark ones; windows in the player's own room are
-## favoured for the scare. An unlocked door is a strong option; a locked one
-## is occasionally chosen just to rattle its handle.
+## weighted toward unboarded, dark ones; windows of the room it believes the
+## player is in (seen there, or heard there) are favoured for the scare. An
+## unlocked door is a strong option; a locked one is occasionally chosen just
+## to rattle its handle.
 func pick_entry() -> CabinEntryLink:
 	var best: CabinEntryLink = null
 	var best_score := -INF
-	var player_room := entity.perception.player_room.to_lower()
+	var player_room := entity.perception.suspected_player_room().to_lower()
 	for link in entries():
 		if not is_entry_viable(link):
 			continue
@@ -153,14 +161,27 @@ func pick_entry() -> CabinEntryLink:
 			else:
 				score -= window.planks_remaining * 0.5
 			var window_room := RoomLightDetector.get_room_name_at(link.end_position + Vector3.UP).to_lower()
-			if window_room == player_room:
-				score += 1.0
+			if player_room != "" and window_room == player_room:
+				score += SUSPECTED_ROOM_BONUS
+			if link.climb:
+				score -= entity.config.climb_entry_penalty
 		score -= get_light_at(link.start_position) * 3.0
 		score -= guard_score(link) * GUARD_PENALTY
 		if score > best_score:
 			best_score = score
 			best = link
 	return best
+
+
+## Where it clings outside an upstairs window: feet config.perch_head_height
+## below the window's centre and config.perch_wall_offset out from it, so its
+## head is at the glass (standing on the ledge where there is one).
+func perch_position(link: CabinEntryLink) -> Vector3:
+	var outward := link.start_position - link.end_position
+	outward.y = 0.0
+	outward = outward.normalized()
+	return link.entry.global_position + outward * entity.config.perch_wall_offset \
+		+ Vector3.DOWN * entity.config.perch_head_height
 
 
 ## The passable entry closest (by path) to the Entity, for leaving the cabin.
@@ -333,10 +354,13 @@ func find_flee_point(from: Vector3, threat: Vector3, distance: float) -> Vector3
 func room_centers() -> Array[Vector3]:
 	var centers: Array[Vector3] = []
 	for area in get_tree().get_nodes_in_group("Cabin_Interior"):
-		if area is Area3D:
-			var center := snap_to_navmesh(area.global_position)
-			if is_inside_cabin(center):
-				centers.append(center)
+		if not area is Area3D or str(area.name) in NOT_PATROLLED_ROOMS:
+			continue
+		# The room's main box, not the area's origin (they can differ).
+		var box := area.get_node_or_null("CollisionShape3D") as Node3D
+		var center := snap_to_navmesh(box.global_position if box else area.global_position)
+		if is_inside_cabin(center):
+			centers.append(center)
 	return centers
 
 

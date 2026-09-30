@@ -91,7 +91,16 @@ func get_state(id: int) -> EntityState:
 	return _states[id]
 
 
+## States that keep it on the wall outside an upstairs window.
+const PERCH_STATES := [S.PEEK, S.BREACH, S.ENTER]
+
 func _transition(to: int, data: Dictionary) -> void:
+	# Leaving the window from the wall: climb down, or drop off if driven
+	# away. A standoff while hanging on the wall is always a drop.
+	if entity.is_clinging() and not (to in PERCH_STATES):
+		if to == S.STANDOFF:
+			to = S.FLEE
+		entity.leave_perch(to == S.FLEE or to == S.CHARGE)
 	var from := state_id
 	current.exit(to)
 	previous_state_id = from

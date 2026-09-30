@@ -434,6 +434,8 @@ func _drop_object() -> void:
 	_grabbed_body.freeze = false
 	_grabbed_body.gravity_scale = _saved_gravity_scale
 	
+	NoiseEvent.emit(self, _grabbed_body.global_position, &"drop")
+	
 	# Give it a tiny nudge forward so it doesn't just drop straight down
 	var camera_forward = -_camera.global_transform.basis.z if _camera else Vector3.FORWARD
 	_grabbed_body.linear_velocity = camera_forward * 0.5

@@ -50,8 +50,8 @@ class_name CabinWindow
 ## Level designers should explicitly tag second-floor windows rather than
 ## relying on Y-coordinate math, which can be unreliable with varying
 ## terrain heights and foundation elevations.
-## When true, the Entity will pathfind to the wall base, climb vertically
-## (CLIMB_TO_WINDOW state), and then transition to WINDOW_PEEK to breach.
+## When true, the Entity (from Night 4) climbs the wall to cling outside it,
+## peeks and breaks in from there (see CabinEntryLink.climb).
 @export var is_upstairs_window: bool = false
 
 ## ─── TUTORIAL: Broken Window ────────────────────────────────────────────────
@@ -82,6 +82,10 @@ var _boarding_progress: float = 0.0
 
 ## How long the player must hold E to add one plank to this window.
 const BOARD_PER_PLANK_TIME: float = 4.0
+
+## Seconds between hammer-blow noises while boarding (see NoiseEvent.emit).
+const HAMMER_NOISE_INTERVAL: float = 1.0
+var _hammer_noise_timer: float = 0.0
 
 ## Whether to show an extra visual plank while the player is holding E.
 ## Set to true when start_hold_interact() begins, set to false in
@@ -318,20 +322,21 @@ func _update_window_visuals() -> void:
 
 
 ## True when the Entity can climb through: the glass is gone and no planks
-## remain. Upstairs windows are never passable from the ground.
+## remain. (Upstairs it has to climb the wall to get there, from Night 4.)
 func is_passable() -> bool:
-	return is_glass_shattered and not is_boarded and not is_upstairs_window
+	return is_glass_shattered and not is_boarded
 
 
+## Upstairs windows get a climbing link: from the ground below (WindowMarker)
+## up the wall and in (see CabinEntryLink.climb).
 func _create_entry_link() -> void:
-	if is_upstairs_window:
-		return
 	var outside := get_node_or_null("WindowMarker") as Node3D
 	var inside := _indoor_breach_waypoint
 	if not outside or not inside:
 		push_warning("CabinWindow '%s': missing WindowMarker or IndoorBreachWaypoint; no navigation link created." % window_id)
 		return
 	_entry_link = CabinEntryLink.create(self, CabinEntryLink.Kind.WINDOW, outside, inside, is_passable())
+	_entry_link.climb = is_upstairs_window
 
 
 func _update_entry_link() -> void:
@@ -516,6 +521,11 @@ func _process_hold_interact(delta: float) -> void:
 		return
 	
 	_boarding_progress += delta
+	# Every hammer blow is a noise the Entity may hear.
+	_hammer_noise_timer += delta
+	if _hammer_noise_timer >= HAMMER_NOISE_INTERVAL:
+		_hammer_noise_timer = 0.0
+		NoiseEvent.emit(self, global_position, &"hammer")
 	
 	# Clamp to avoid overshooting
 	if _boarding_progress >= BOARD_PER_PLANK_TIME:

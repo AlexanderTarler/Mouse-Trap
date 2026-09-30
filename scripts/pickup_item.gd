@@ -24,6 +24,7 @@ func pick_up() -> void:
 
 func drop() -> void:
 	show()
+	NoiseEvent.emit(self, global_position, &"drop")
 
 func interact() -> void:
 	# Called when pressing E on this item (quick interact)

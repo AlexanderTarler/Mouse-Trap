@@ -223,6 +223,7 @@ func toggle() -> void:
 		_turn_off()
 	else:
 		_turn_on()
+	NoiseEvent.emit(self, global_position, &"click")
 
 
 func _turn_on() -> void:

@@ -55,8 +55,35 @@ extends Resource
 @export var memory_time: float = 12.0
 
 @export_group("Hearing")
-## Noise heard through a wall carries this fraction of its radius.
-@export var hearing_wall_multiplier: float = 0.5
+## How far (m) each kind of noise carries in the open (see NoiseEvent.emit).
+@export var noise_radius: Dictionary = {
+	"walk": 18.0,
+	"sprint": 35.0,
+	"crouch": 3.0,
+	"land": 8.0,
+	"hammer": 25.0,
+	"door": 12.0,
+	"drop": 8.0,
+	"click": 3.0,
+}
+## Footsteps on the cabin's wooden floors carry this much farther.
+@export var indoor_footstep_multiplier: float = 1.3
+## Each cabin wall (or closed door / intact window) between the noise and
+## the Entity keeps this fraction of the range.
+@export var hearing_wall_multiplier: float = 0.35
+## Each tree, rock or prop in between keeps this fraction...
+@export var hearing_obstacle_multiplier: float = 0.9
+## ...but together they never cut the range below this fraction.
+@export var hearing_obstacle_floor: float = 0.6
+## Sound escaping through an open door or a broken, unboarded window keeps
+## this fraction of the range (on the path through the opening).
+@export var hearing_opening_multiplier: float = 0.85
+## A noise near the edge of hearing is placed up to this far (m) from where
+## it really was; noises within half the range are exact.
+@export var hearing_max_error: float = 5.0
+## Confidence gained for a noise heard from inside the cabin (full for a
+## clear one, half at the edge of hearing).
+@export var noise_confidence_boost: float = 1.5
 
 @export_group("Flashlight")
 ## Stare pressure (0-1) builds while a standard beam is on it outdoors (both
@@ -163,6 +190,22 @@ extends Resource
 @export var light_sabotage_cooldown: float = 45.0
 ## Time to climb through a broken window.
 @export var vault_time: float = 1.4
+
+@export_group("Climbing")
+## From this night it climbs the walls to the upstairs windows.
+@export var climb_night: int = 4
+## Speed up and down the wall (m/s).
+@export var climb_speed: float = 1.4
+## Seconds to drop off the wall when it is scared off.
+@export var drop_time: float = 0.45
+## Clinging outside a window: its feet this far below the window's centre...
+@export var perch_head_height: float = 1.65
+## ...and this far out from it (on the ledge where there is one).
+@export var perch_wall_offset: float = 0.75
+## Ducking below the sill while peeking from the wall, this far down.
+@export var perch_duck_drop: float = 1.4
+## Upstairs windows score this much lower as entries (the climb is a detour).
+@export var climb_entry_penalty: float = 1.0
 
 @export_group("Indoors")
 ## Leaves the cabin after this long without finding the player.

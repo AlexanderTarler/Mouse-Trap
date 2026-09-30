@@ -51,11 +51,16 @@ func update(delta: float) -> void:
 	_light_kill_left -= delta
 	if _duck_left > 0.0:
 		_duck_left -= delta
-		entity.move_to(_duck_position, config.approach_speed)
+		if _entry.climb:
+			entity.set_perch_duck(true)   # below the sill
+		else:
+			entity.move_to(_duck_position, config.approach_speed)
 		return
+	if _entry.climb:
+		entity.set_perch_duck(false)
 
-	if entity.move_to(_entry.start_position, config.approach_speed) < 0.6:
-		entity.stop()
+	if not hold_at_entry(_entry, config.approach_speed):
+		return   # still walking up to it, or climbing
 	entity.face(_entry.end_position)
 	_stare_left -= delta
 	if _rattle:

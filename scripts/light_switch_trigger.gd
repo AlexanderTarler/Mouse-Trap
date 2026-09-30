@@ -20,6 +20,7 @@ func interact() -> void:
 	# 1. Play local audio feedback
 	if _audio_player.stream:
 		_audio_player.play()
+	NoiseEvent.emit(self, global_position, &"click")
 
 	# 2. Fire the grid toggle command
 	if target_light and target_light.has_method("toggle_light"):

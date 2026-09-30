@@ -169,8 +169,9 @@ func _test_upstairs_windows() -> void:
 	_check("windows: four upstairs windows, flagged and at upper-floor height", windows.size() == 4 and upstairs.size() == 4,
 		"%d in TopFloorWindows, %d flagged upstairs" % [windows.size(), upstairs.size()])
 	var links := get_nodes_in_group(CabinEntryLink.GROUP).filter(func(l): return l.entry in windows)
-	_check("windows: no Entity entry links through upstairs windows (climbing not built yet)", links.is_empty(),
-		"%d links" % links.size())
+	var climbing := links.filter(func(l): return l.climb and not l.enabled)
+	_check("windows: each upstairs window has a climbing link, shut while the window is intact",
+		links.size() == 4 and climbing.size() == 4, "%d links, %d climbing and shut" % [links.size(), climbing.size()])
 
 
 ## Each new switch turns its room's light on and off: the room then counts as

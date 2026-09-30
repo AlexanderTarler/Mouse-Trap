@@ -768,7 +768,6 @@ func _physics_process(delta: float) -> void:
 
 	if Input.is_key_pressed(KEY_SPACE) and is_on_floor():
 		velocity.y = jump_velocity
-		make_noise(15.0, 1.0) # Jumping is loud!
 
 	if Input.is_key_pressed(KEY_CTRL) or Input.is_key_pressed(KEY_C):
 		if not _is_crouching: _is_crouching = true
@@ -880,25 +879,17 @@ func _physics_process(delta: float) -> void:
 		velocity.z = direction.z * _current_speed
 		_head_bob_active = true
 		
-		# ─── ACOUSTIC DETECTION: Movement Noise ──────────────────────────
-		# The Entity can hear the player based on movement state:
-		#   Sprinting: 20m radius, every 0.5s (loud, fast footsteps)
-		#   Walking:   10m radius, every 0.6s (moderate, periodic footsteps)
-		#   Crouching: Silent (0m) — no noise emitted
-		#
-		# Each noise call updates the Entity's last_known_position if the
-		# Entity is within the noise radius. This is the core stealth mechanic:
-		# crouching = invisible to sound, walking = risky, sprinting = beacon.
-		if _is_running and is_on_floor():
+		# ─── ACOUSTIC DETECTION: Footsteps ─────────────────────────────
+		# Each footstep is a noise the Entity may hear (ranges in the Entity
+		# config's Hearing group; louder on the cabin's wooden floors):
+		#   sprint (every 0.5 s) > walk (every 0.6 s) > crouch (every 0.8 s,
+		#   only audible up close). Stealth is a choice of speed.
+		if is_on_floor():
+			var step_kind := &"sprint" if _is_running else (&"crouch" if _is_crouching else &"walk")
+			var step_interval := 0.5 if _is_running else (0.8 if _is_crouching else 0.6)
 			_noise_timer += delta
-			if _noise_timer >= 0.5:
-				make_noise(20.0, 0.5)  # Sprint: 20m radius
-				_noise_timer = 0.0
-		elif not _is_running and not _is_crouching and is_on_floor() and direction:
-			# Walking noise — periodic footsteps at 10m radius
-			_noise_timer += delta
-			if _noise_timer >= 0.6:
-				make_noise(10.0, 0.3)  # Walk: 10m radius
+			if _noise_timer >= step_interval:
+				make_noise(step_kind)
 				_noise_timer = 0.0
 
 	else:
@@ -918,7 +909,7 @@ func _physics_process(delta: float) -> void:
 			_try_step_up(direction)
 
 	var landed = not _was_on_floor and is_on_floor()
-	if landed: make_noise(15.0, 1.0) # Thud on landing
+	if landed: make_noise(&"land") # Thud on landing
 
 	move_and_slide()
 	_was_on_floor = is_on_floor()
@@ -1313,10 +1304,9 @@ func get_player_room() -> String:
 
 
 # --- NEW NOISE SYSTEM EMITTER ---
-func make_noise(radius: float, intensity: float = 1.0) -> void:
-	var entity = get_tree().get_first_node_in_group("entity")
-	if entity and entity.has_method("hear_noise"):
-		entity.hear_noise(global_position, radius, intensity)
+## A noise of `kind` at the player's position (see NoiseEvent.emit).
+func make_noise(kind: StringName) -> void:
+	NoiseEvent.emit(self, global_position, kind)
 
 
 ## Called when the breathing audio fade-out tween finishes.

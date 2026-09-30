@@ -140,6 +140,7 @@ func interact() -> void:
 	
 	# Normal door toggle (open/close)
 	is_open = not is_open
+	NoiseEvent.emit(self, global_position, &"door")
 	is_animating = true
 	
 	# ─── ENTITY DOOR OPEN DEBUG LOG ─────────────────────────────────
@@ -266,6 +267,7 @@ func _unlock_door() -> void:
 	# Unlock and open the door
 	is_locked = false
 	is_open = true
+	NoiseEvent.emit(self, global_position, &"door")
 	is_animating = true
 	
 	var target_angle = default_rotation_y + open_angle

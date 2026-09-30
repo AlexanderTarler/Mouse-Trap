@@ -31,6 +31,9 @@ const FLOOR_PROBE_DOWN := 4.0
 const FLOOR_OFFSET := 0.1
 
 var kind: Kind = Kind.WINDOW
+## An upstairs window: the Entity climbs the wall from start_position (the
+## ground below) to cling outside it, then vaults in to end_position.
+var climb := false
 ## The Door or CabinWindow that owns this link.
 var entry: Node3D = null
 
