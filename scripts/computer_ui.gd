@@ -1000,13 +1000,13 @@ func _get_current_night() -> int:
 	return 1
 
 func _play_success_sound() -> void:
-	var stream = load("res://assets/audio/UI/ui_click_success.ogg")
+	var stream = load("res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Electronics/computer_beep_1.ogg")
 	if stream:
 		var p = AudioStreamPlayer.new(); p.bus = "SFX"; p.stream = stream; add_child(p)
 		p.play(); p.finished.connect(p.queue_free)
 
 func _play_error_sound() -> void:
-	var stream = load("res://assets/audio/UI/win98_error.ogg")
+	var stream = load("res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Electronics/analog_computer_beep_3.ogg")
 	if stream:
 		var p = AudioStreamPlayer.new(); p.bus = "SFX"; p.stream = stream; add_child(p)
 		p.play(); p.finished.connect(p.queue_free)

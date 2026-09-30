@@ -35,6 +35,15 @@ extends CharacterBody3D
 
 @export var wood_footsteps: Array[AudioStream] = []
 @export var grass_footsteps: Array[AudioStream] = []
+## Footsteps on the stairs (the Stairs room). Left empty, the horror pack's
+## wooden stair steps are used.
+@export var stairs_footsteps: Array[AudioStream] = []
+## Footstep loudness relative to walking (dB): crouching is hushed, sprinting
+## thuds.
+@export var crouch_footstep_db: float = -9.0
+@export var sprint_footstep_db: float = 3.0
+const DEFAULT_STAIRS_FOOTSTEPS := "res://assets/audio/horror_sfx_vol_1/Stairs Footsteps/Stair Footsteps (%d).mp3"
+var _footstep_base_db := 0.0
 
 var _current_speed: float
 var _step_timer: float = 0.0
@@ -222,6 +231,7 @@ var _noise_timer: float = 0.0
 @export var breathing_sfx: AudioStream = null
 
 func _ready() -> void:
+	_load_default_stairs_footsteps()
 	# Add starting items to the Inventory autoload
 	for item in starting_items:
 		if item:
@@ -986,13 +996,29 @@ func _play_surface_footstep() -> void:
 	
 	if room == "Outside":
 		array = grass_footsteps
+	elif room == "Stairs" and not stairs_footsteps.is_empty():
+		array = stairs_footsteps
 	else:
 		array = wood_footsteps
-	
+
 	if array.size() > 0:
 		footstep_audio.stream = array.pick_random()
-		footstep_audio.pitch_scale = randf_range(0.85, 1.15)
+		footstep_audio.pitch_scale = randf_range(0.85, 1.15) * (0.9 if _is_crouching else 1.0)
+		footstep_audio.volume_db = _footstep_base_db \
+			+ (crouch_footstep_db if _is_crouching else (sprint_footstep_db if _is_running else 0.0))
 		footstep_audio.play()
+
+
+## Stair footsteps default to the horror pack's wooden stairs.
+func _load_default_stairs_footsteps() -> void:
+	if footstep_audio:
+		_footstep_base_db = footstep_audio.volume_db
+	if not stairs_footsteps.is_empty():
+		return
+	for i in range(1, 9):
+		var path := DEFAULT_STAIRS_FOOTSTEPS % i
+		if ResourceLoader.exists(path):
+			stairs_footsteps.append(load(path) as AudioStream)
 
 func _update_crouch(delta: float) -> void:
 	var target_height = crouching_height if _is_crouching else standing_height

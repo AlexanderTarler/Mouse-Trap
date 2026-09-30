@@ -36,7 +36,7 @@ const FUEL_PER_CAN: float = 50.0
 
 ## ─── REFUEL SOUND EFFECT ─────────────────────────────────────────────
 ## Looping audio stream played while the player holds E to refill the
-## generator. Assign "res://assets/audio/Generator/refuel_generator.ogg"
+## generator. Assign "res://assets/audio/objects/refuel_generator.ogg"
 ## (or equivalent) in the Inspector on generator_interaction.tscn.
 ## Falls back to a hardcoded path if left null.
 @export var refuel_sound_stream: AudioStream = null

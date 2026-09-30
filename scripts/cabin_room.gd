@@ -33,6 +33,10 @@ class_name CabinRoom
 ## scene tree into this export field.
 @export var room_light: CabinLight = null
 
+## How much of the sound made in this room goes to the "Interior" reverb bus
+## (a small wooden room, set up by HorrorSoundManager). 0 turns it off.
+@export_range(0.0, 1.0) var reverb_amount: float = 0.35
+
 ## Optional: Override the room name. If left empty, the node's name in the
 ## scene tree is used. Set this if you want a display name different from
 ## the node name (e.g., node name "Area3D_Livingroom" → room name "Livingroom").
@@ -43,6 +47,12 @@ func _ready() -> void:
 	# Auto-register in the Cabin_Interior group if not already added
 	if not is_in_group("Cabin_Interior"):
 		add_to_group("Cabin_Interior")
+	# 3D sounds made in the room (footsteps, doors, the Entity) ring a little.
+	if reverb_amount > 0.0 and AudioServer.get_bus_index("Interior") >= 0:
+		reverb_bus_enabled = true
+		reverb_bus_name = &"Interior"
+		reverb_bus_amount = reverb_amount
+		reverb_bus_uniformity = 0.3
 
 
 ## Returns the human-readable name of this room.

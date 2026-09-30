@@ -738,7 +738,7 @@ func _play_scribble_sfx() -> void:
 	var stream := load("res://assets/audio/notebook_writing.ogg")
 	if not stream:
 		# Fallback: try UI click sound if notebook writing sound is missing
-		stream = load("res://assets/audio/UI/ui_click_success.ogg")
+		stream = load("res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/GUI/gui_click_1.ogg")
 	if not stream:
 		return
 	var player := AudioStreamPlayer.new()
