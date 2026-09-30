@@ -35,14 +35,17 @@ extends CharacterBody3D
 
 @export var wood_footsteps: Array[AudioStream] = []
 @export var grass_footsteps: Array[AudioStream] = []
-## Footsteps on the stairs (the Stairs room). Left empty, the horror pack's
-## wooden stair steps are used.
+## Footsteps on the stairs (the Stairs room). Left empty, single wooden stair
+## steps cut from the horror pack's stair recordings are used (the recordings
+## themselves are 8 s runs of steps: restarted every step, only their quiet
+## first half-second ever played).
 @export var stairs_footsteps: Array[AudioStream] = []
 ## Footstep loudness relative to walking (dB): crouching is hushed, sprinting
 ## thuds.
 @export var crouch_footstep_db: float = -9.0
 @export var sprint_footstep_db: float = 3.0
-const DEFAULT_STAIRS_FOOTSTEPS := "res://assets/audio/horror_sfx_vol_1/Stairs Footsteps/Stair Footsteps (%d).mp3"
+const DEFAULT_STAIRS_FOOTSTEPS := "res://assets/audio/player/stair_steps/stair_step_%02d.wav"
+const DEFAULT_STAIRS_FOOTSTEP_COUNT := 16
 var _footstep_base_db := 0.0
 
 var _current_speed: float
@@ -101,7 +104,7 @@ const STAIR_STEP_CHECK_INTERVAL: int = 3
 var _flashlight_entity_check_timer: float = 0.0
 
 ## Interval between flashlight-on-entity raycasts in seconds.
-const FLASHLIGHT_ENTITY_CHECK_INTERVAL: float = 0.1  # 10Hz
+const FLASHLIGHT_ENTITY_CHECK_INTERVAL: float = 0.033  # 30Hz: the Entity reacts within a frame or two
 
 ## Cached result of the last flashlight-on-entity check: how strongly the beam
 ## hits the Entity (0-1), or -1 when it doesn't.
@@ -1019,13 +1022,13 @@ func _play_landing_thud() -> void:
 		footstep_audio.pitch_scale = randf_range(0.65, 0.75)
 
 
-## Stair footsteps default to the horror pack's wooden stairs.
+## Stair footsteps default to the single stair steps (DEFAULT_STAIRS_FOOTSTEPS).
 func _load_default_stairs_footsteps() -> void:
 	if footstep_audio:
 		_footstep_base_db = footstep_audio.volume_db
 	if not stairs_footsteps.is_empty():
 		return
-	for i in range(1, 9):
+	for i in range(1, DEFAULT_STAIRS_FOOTSTEP_COUNT + 1):
 		var path := DEFAULT_STAIRS_FOOTSTEPS % i
 		if ResourceLoader.exists(path):
 			stairs_footsteps.append(load(path) as AudioStream)

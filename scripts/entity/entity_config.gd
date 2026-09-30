@@ -106,7 +106,7 @@ extends Resource
 ## After a standoff a standard beam can't freeze it again for this long.
 @export var standoff_cooldown: float = 5.0
 ## Overcharged beam held on it for this long: it flees.
-@export var overcharge_repel_time: float = 1.5
+@export var overcharge_repel_time: float = 0.9
 ## Brief beam drop-outs shorter than this don't reset the overcharge timer.
 @export var overcharge_grace: float = 0.35
 ## A lost beam must stay lost this long before a standoff ends.
@@ -164,6 +164,13 @@ extends Resource
 @export var search_radius: float = 6.0
 @export var search_listen_min: float = 1.5
 @export var search_listen_max: float = 3.0
+## Searching for the player outdoors it grows more frantic: its speed
+## doubles every this many seconds (and its listening pauses shrink to
+## match)...
+@export var search_speed_doubling_time: float = 10.0
+## ...up to this (m/s). Just under the player's sprint (6.5), so running
+## still escapes it.
+@export var search_speed_max: float = 6.0
 
 @export_group("Charge")
 @export var charge_max_time: float = 6.0

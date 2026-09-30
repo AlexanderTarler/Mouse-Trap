@@ -170,6 +170,8 @@ var _seen_tonight := false
 var _settle_left := 45.0
 var _tension_player: AudioStreamPlayer = null
 var _tension := 0.0
+## True while an ending cutscene plays (see enter_cinematic).
+var _in_cinematic := false
 
 # Distant monster music player (plays when night starts)
 var _distant_monster_player: AudioStreamPlayer = null
@@ -825,6 +827,10 @@ func _process(delta: float) -> void:
 		return
 	var inside: bool = player.has_method("get_player_room") and player.get_player_room() != "Outside"
 	var upstairs: bool = inside and player.global_position.y > 2.5
+	if _in_cinematic:
+		# The cutscenes play outdoors, wherever the player's body is.
+		_update_muffle(false, false)
+		return
 	_update_muffle(inside, upstairs)
 	_stinger_cooldown = maxf(_stinger_cooldown - step, 0.0)
 	if _is_night:
@@ -959,6 +965,27 @@ func _stop_whistles() -> void:
 		if is_instance_valid(whistle):
 			whistle.queue_free()
 	_whistles.clear()
+
+
+## An ending cutscene starts: the chase music, the tension drone, the
+## whistles and the scares stop, and nothing sounds muffled. With `dawn`
+## the night is over too: the wind and the night forest give way to the day
+## forest (birdsong).
+func enter_cinematic(dawn: bool = false) -> void:
+	_in_cinematic = true
+	_stop_stalk_chase()
+	_stop_whistles()
+	_tension = 0.0
+	if _tension_player:
+		_tension_player.stop()
+	if dawn:
+		_on_night_ended(_night)
+	_update_muffle(false, false)
+
+
+## The cutscene is over (the death cutscene: the night goes on).
+func exit_cinematic() -> void:
+	_in_cinematic = false
 
 
 ## A short horror stinger, unless one played in the last STINGER_COOLDOWN s.

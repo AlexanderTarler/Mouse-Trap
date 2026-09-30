@@ -32,6 +32,13 @@ const CREAK_COUNT := 12
 ## Knuckles on the door.
 const KNOCK_PATHS: Array[String] = [ECHOES + "SFX/Misc/hit_1.ogg", ECHOES + "SFX/Misc/hit_2.ogg", ECHOES + "SFX/Misc/hit_4.ogg"]
 ## Extra low murmurs for the "murmur" voice.
+## Its charge shriek: monster roars pitched up.
+const SHRIEK_PATHS: Array[String] = [
+	ECHOES + "SFX/Creatures/Monster/monster_roar_1.ogg", ECHOES + "SFX/Creatures/Monster/monster_roar_2.ogg",
+	ECHOES + "SFX/Creatures/Monster/monster_roar_3.ogg", ECHOES + "SFX/Creatures/Monster/monster_roar_4.ogg",
+	ECHOES + "SFX/Creatures/Monster/monster_roar_5.ogg", ECHOES + "SFX/Creatures/Monster/monster_roar_6.ogg",
+	ECHOES + "SFX/Creatures/Monster/monster_roar_7.ogg",
+]
 const MURMUR_PATHS: Array[String] = [
 	ECHOES + "SFX/Creatures/Monster/monster_talking_1.ogg",
 	ECHOES + "SFX/Creatures/Monster/monster_talking_2.ogg",
@@ -65,6 +72,8 @@ var _chase_music_on := false
 var _scrape: AudioStreamPlayer3D
 var _creak: AudioStreamPlayer3D
 var _knock: AudioStreamPlayer3D
+var _shriek: AudioStreamPlayer3D
+var _shriek_streams: Array[AudioStream] = []
 var _growl_streams: Array[AudioStream] = []
 var _scrape_streams: Array[AudioStream] = []
 var _thud_streams: Array[AudioStream] = []
@@ -90,6 +99,9 @@ func setup(owner_entity: Entity) -> void:
 	_creak.top_level = true
 	_knock = _make_player("Knock", 5.0, 35.0, 2.0)
 	_knock.top_level = true
+	# A child of this node (at its eye height), so it moves with it.
+	_shriek = _make_player("Shriek", 8.0, 60.0, 4.0)
+	_shriek_streams = _load_paths(SHRIEK_PATHS)
 	_growl_streams = _load_pattern(GROWL_PATTERN, GROWL_COUNT)
 	_creak_streams = _load_pattern(CREAK_PATTERN, CREAK_COUNT)
 	_scrape_streams = _load_paths(SCRAPE_PATHS)
@@ -146,6 +158,15 @@ func play_roar() -> void:
 	if _growl:
 		_growl.pitch_scale = randf_range(0.85, 1.0)
 		_growl.play()
+
+
+## The shriek as it charges, from its head, wherever it is (indoors too).
+func play_shriek() -> void:
+	if not _shriek or _shriek_streams.is_empty():
+		return
+	_shriek.stream = _shriek_streams.pick_random()
+	_shriek.pitch_scale = randf_range(1.15, 1.3)
+	_shriek.play()
 
 
 ## Pained reaction (overcharge beam, stun).
@@ -285,7 +306,7 @@ func stop_chase_music() -> void:
 
 
 func stop_all() -> void:
-	for player in [_voice, _sfx, _tap, _growl, _footstep, _scrape, _creak, _knock]:
+	for player in [_voice, _sfx, _tap, _growl, _footstep, _scrape, _creak, _knock, _shriek]:
 		if player:
 			player.stop()
 	stop_chase_music()

@@ -200,6 +200,7 @@ func _process(delta: float) -> void:
 	# Advance the fog noise timer every frame so the fog density
 	# fluctuates smoothly even when the cycle is paused.
 	_fog_noise_time += delta
+	_update_fog_reprojection()
 	
 	# If GameTime is NOT available, use our own timer
 	var gt = get_node_or_null("/root/GameTime")
@@ -463,6 +464,18 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 			_set_ground_fog_density(0.0)
 			_cached_vfog_density = 0.0
 		_fog_visibility = INF
+
+
+## Volumetric fog blends every frame with the previous ones (temporal
+## reprojection) to hide its noise. When the camera moves, that drags fog from
+## outside through the walls into the cabin: a haze in the rooms that grew
+## the more the player moved. Indoors it is off, so the FogVolume erasers keep
+## the rooms clear; outdoors it stays on and keeps the fog smooth.
+func _update_fog_reprojection() -> void:
+	var player := get_tree().get_first_node_in_group("player")
+	var inside: bool = player != null and player.has_method("get_player_room") and player.get_player_room() != "Outside"
+	if _environment.volumetric_fog_temporal_reprojection_enabled == inside:
+		_environment.volumetric_fog_temporal_reprojection_enabled = not inside
 
 
 func _set_ground_fog_density(value: float) -> void:

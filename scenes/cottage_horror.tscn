@@ -1,214 +1,214 @@
 [gd_scene format=4 uid="uid://bc5qrh4dx4yi1"]
 
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Mesh_002.res" id="1_nho78"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_FootBall_LOD0.res" id="2_pem31"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_659.res" id="3_jyuip"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_662.res" id="4_mvwlp"]
-[ext_resource type="Script" path="res://scripts/environment_controller.gd" id="5_qra2o"]
-[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="6_6ky15"]
-[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="7_sk1dd"]
-[ext_resource type="Resource" path="res://resources/battery_resource.tres" id="8_e4cs6"]
-[ext_resource type="Resource" path="res://resources/plank_resource.tres" id="9_e8dqn"]
-[ext_resource type="Resource" path="res://resources/fuel_can_resource.tres" id="10_aqgm5"]
-[ext_resource type="Resource" path="res://resources/car_part_battery.tres" id="11_g5wn0"]
-[ext_resource type="Resource" path="res://resources/car_part_radiator.tres" id="12_rsymc"]
-[ext_resource type="Resource" path="res://resources/car_part_wiring.tres" id="13_76fuj"]
-[ext_resource type="PackedScene" path="res://scenes/horror_hud.tscn" id="14_j1dq7"]
-[ext_resource type="PackedScene" path="res://scenes/inventory_ui.tscn" id="15_wgf6o"]
-[ext_resource type="PackedScene" path="res://scenes/note_ui.tscn" id="16_hndby"]
-[ext_resource type="PackedScene" path="res://scenes/computer_ui.tscn" id="17_te6gw"]
-[ext_resource type="PackedScene" path="res://scenes/monster_entity.tscn" id="18_mdnbd"]
+[ext_resource type="ArrayMesh" uid="uid://c111rie3nvner" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Mesh_002.res" id="1_nho78"]
+[ext_resource type="ArrayMesh" uid="uid://bm2yiwwmr8jcd" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_FootBall_LOD0.res" id="2_pem31"]
+[ext_resource type="ArrayMesh" uid="uid://di81thm8h7q0o" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_659.res" id="3_jyuip"]
+[ext_resource type="ArrayMesh" uid="uid://bqk7qoinccfl6" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_662.res" id="4_mvwlp"]
+[ext_resource type="Script" uid="uid://tdjvmawnra6" path="res://scripts/environment_controller.gd" id="5_qra2o"]
+[ext_resource type="PackedScene" uid="uid://671uxsxwdrom" path="res://scenes/player.tscn" id="6_6ky15"]
+[ext_resource type="Script" uid="uid://baixx1fs8cosb" path="res://scripts/items/item_data.gd" id="7_sk1dd"]
+[ext_resource type="Resource" uid="uid://cbj5ujvtj6nrs" path="res://resources/battery_resource.tres" id="8_e4cs6"]
+[ext_resource type="Resource" uid="uid://d0uq0x2m2q0db" path="res://resources/plank_resource.tres" id="9_e8dqn"]
+[ext_resource type="Resource" uid="uid://d0q6l3m5p7k2" path="res://resources/fuel_can_resource.tres" id="10_aqgm5"]
+[ext_resource type="Resource" uid="uid://d2q7k3f1x6p8" path="res://resources/car_part_battery.tres" id="11_g5wn0"]
+[ext_resource type="Resource" uid="uid://b3nan7x2k5r1" path="res://resources/car_part_radiator.tres" id="12_rsymc"]
+[ext_resource type="Resource" uid="uid://c4n8m1x3k7t2" path="res://resources/car_part_wiring.tres" id="13_76fuj"]
+[ext_resource type="PackedScene" uid="uid://bbgosppfttoh5" path="res://scenes/horror_hud.tscn" id="14_j1dq7"]
+[ext_resource type="PackedScene" uid="uid://w2nhpuaugrii" path="res://scenes/inventory_ui.tscn" id="15_wgf6o"]
+[ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0c7" path="res://scenes/note_ui.tscn" id="16_hndby"]
+[ext_resource type="PackedScene" uid="uid://b2lplqj6v4bkj" path="res://scenes/computer_ui.tscn" id="17_te6gw"]
+[ext_resource type="PackedScene" uid="uid://dudqc5j4ccimh" path="res://scenes/monster_entity.tscn" id="18_mdnbd"]
 [ext_resource type="NavigationMesh" path="res://navigation/exterior_navmesh.res" id="19_82dao"]
-[ext_resource type="Texture2D" path="res://assets/Textures/Grass/Grass_03-512x512.png" id="19_vngc7"]
+[ext_resource type="Texture2D" uid="uid://dy3y4yrk61pwv" path="res://assets/Textures/Grass/Grass_03-512x512.png" id="19_vngc7"]
 [ext_resource type="Shape3D" path="res://assets/Three Cabins/cabin_three_collision.res" id="20_remd7"]
-[ext_resource type="Script" path="res://scripts/cabin_room.gd" id="21_eoubo"]
-[ext_resource type="PackedScene" path="res://assets/Three Cabins/Mouse Trap Cabin.glb" id="22_j346f"]
-[ext_resource type="PackedScene" path="res://scenes/door.tscn" id="23_igxyt"]
+[ext_resource type="Script" uid="uid://bl13537l4eohb" path="res://scripts/cabin_room.gd" id="21_eoubo"]
+[ext_resource type="PackedScene" uid="uid://cybvat3v7ygq" path="res://assets/Three Cabins/Mouse Trap Cabin.glb" id="22_j346f"]
+[ext_resource type="PackedScene" uid="uid://dpnaxk3u44vbj" path="res://scenes/door.tscn" id="23_igxyt"]
 [ext_resource type="NavigationMesh" path="res://navigation/cabin_interior_navmesh.res" id="23_p6n3y"]
-[ext_resource type="Script" path="res://scripts/cabin_approach_trigger.gd" id="24_4rtr1"]
-[ext_resource type="Texture2D" path="res://assets/Textures/Grass/Grass_01-512x512.png" id="25_xffuf"]
-[ext_resource type="Texture2D" path="res://assets/Textures/Wood/Wood_08-512x512.png" id="26_dipld"]
-[ext_resource type="ArrayMesh" path="res://assets/grass_mesh/grass_mesh.tres" id="27_q18r1"]
-[ext_resource type="PackedScene" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Grass/Grass.fbx" id="28_ati4s"]
-[ext_resource type="Image" path="res://scenes/CottageHorror/Foliage_0_0_0.res" id="29_u0lux"]
-[ext_resource type="Image" path="res://scenes/CottageHorror/Heightmap_0_0.res" id="30_xituh"]
-[ext_resource type="Image" path="res://scenes/CottageHorror/Object_0_0_0.res" id="31_7yx0e"]
-[ext_resource type="Image" path="res://scenes/CottageHorror/Splatmap_0_0_0.res" id="32_ynd18"]
-[ext_resource type="PackedScene" path="res://assets/PSX Bunkers/Models/other-formats/GLB/beam_6.glb" id="33_5sah8"]
-[ext_resource type="PackedScene" path="res://assets/PSX Bunkers/Models/other-formats/GLB/beam_7.glb" id="34_bc4kq"]
-[ext_resource type="PackedScene" path="res://assets/PSX Bunkers/Models/other-formats/GLB/machinery_2.glb" id="35_unfsv"]
-[ext_resource type="PackedScene" path="res://scenes/trees.tscn" id="36_rlyvi"]
-[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/tree_log_1.glb" id="37_uhsjf"]
-[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/mushroom_n_1_2.glb" id="38_uk3g0"]
-[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/mushroom_n_2.glb" id="39_v70mu"]
-[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/mushroom_n_2_1.glb" id="40_mrg66"]
-[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/mushroom_n_3.glb" id="41_4d03b"]
-[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/mushroom_n_3_1.glb" id="42_56q1t"]
-[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/grass_4.glb" id="43_b6y0i"]
-[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/pine_tree_n_1.glb" id="44_joi0g"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EU_MetalTunnel_1.tscn" id="45_igmlu"]
-[ext_resource type="PackedScene" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Bush/Bush.fbx" id="46_x3xt8"]
-[ext_resource type="PackedScene" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Coral Bells/Coral Bells.fbx" id="47_qc1fo"]
-[ext_resource type="PackedScene" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Flowery Fern/Flowery Fern.fbx" id="48_jxrl1"]
-[ext_resource type="PackedScene" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Rose/Rose.fbx" id="49_3wtrt"]
-[ext_resource type="PackedScene" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Thistles/Thistles.fbx" id="50_uqx0q"]
-[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/fern_3.glb" id="51_bt8k0"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_ConcreteBlock_0_001.tscn" id="52_adhvd"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_ConcreteBlock_1.tscn" id="53_qx5yi"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_FridgeFreezer_0.tscn" id="54_mobas"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_Postbox_0.tscn" id="55_rpxi8"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_ShippingContainer_0.tscn" id="56_wbdjb"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_Traffic_Block_2.tscn" id="57_jlhro"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_Traffic_Pillar_0.tscn" id="58_dp1x1"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_Traffic_RoacClosed_Sign_0.tscn" id="59_ifc5u"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_TV_0.tscn" id="60_mriwd"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_WashingMachine_0.tscn" id="61_ok856"]
-[ext_resource type="PackedScene" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Coreopsis/Coreopsis.fbx" id="62_rpiht"]
-[ext_resource type="PackedScene" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Daisys/Daisys.fbx" id="63_ufjb0"]
-[ext_resource type="PackedScene" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Fern/Fern.fbx" id="64_2ys1q"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Backpack_001.res" id="65_ojh7c"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_basket_002.res" id="66_s16uw"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_586.res" id="67_5nvbu"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_651.res" id="68_4ffa7"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_658.res" id="69_ju1nm"]
-[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/pine_tree_n_1_2.glb" id="70_1gwof"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/sofa_1.glb" id="71_gccaf"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/tv_table_1.glb" id="72_k1f3j"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/tv_mp_1_1.glb" id="73_rct3m"]
-[ext_resource type="PackedScene" path="res://scenes/computer.tscn" id="74_3hlqw"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/pc_keyboard_mp_3.glb" id="75_3mfg6"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/mouse_pad_mp_1.glb" id="76_26f3g"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/pc_mouse_mp_1.glb" id="77_kwie3"]
-[ext_resource type="PackedScene" path="res://scenes/flashlight.tscn" id="78_1f0lu"]
-[ext_resource type="PackedScene" path="res://scenes/fuse.tscn" id="79_3jdxi"]
-[ext_resource type="Script" path="res://scripts/lamp_flicker.gd" id="80_rudo5"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Decals/cobweb_1.glb" id="81_2ykim"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/table_large_2.glb" id="82_xnh1w"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/chair_mp_4_3.glb" id="83_788ck"]
-[ext_resource type="Script" path="res://scripts/debug_computer.gd" id="84_vkvfg"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/pc_mp_1.glb" id="85_e5woc"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/walkie_talkie_2.glb" id="86_ik5fn"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/sofa_1_3.glb" id="87_j4q18"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/cardboard_box_1.glb" id="88_7yplo"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/carpet_mp_1.glb" id="89_8ttrh"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/ashtray_1.glb" id="90_tdsb5"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/book_mp_1.glb" id="91_8ev78"]
-[ext_resource type="PackedScene" path="res://scenes/bed.tscn" id="92_tijv0"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_254.res" id="93_o8m4h"]
-[ext_resource type="PackedScene" path="res://scenes/battery.tscn" id="94_pf7hi"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/table_large_3.glb" id="95_8i6qu"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/chair_mp_4.glb" id="96_1h3fk"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/display_cabinet_mp_2.glb" id="97_fgkcd"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/shelf_mp_5.glb" id="98_2m830"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/canned_food_mp_1.glb" id="99_rfjsp"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/canned_food_mp_3.glb" id="100_fuq4d"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/tv_table_4.glb" id="101_0osmr"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/chair_mp_4_1.glb" id="102_ewqb1"]
-[ext_resource type="PackedScene" path="res://assets/PSX Paintings/Meshes/GLB/painting_5.glb" id="103_jeicy"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/sofa_1_2.glb" id="104_q3ut3"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/coffee_table_1.glb" id="105_eu5cd"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/shelf_mp_4.glb" id="106_g3nbr"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/chair_mp_4_2.glb" id="107_8st7k"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/cardboard_box_2.glb" id="108_bqjj7"]
-[ext_resource type="PackedScene" path="res://assets/PSX Paintings/Meshes/GLB/painting_7.glb" id="109_rw4pm"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/old_mattress_mp_1.glb" id="110_r3kdi"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/wooden_crate_3.glb" id="111_pnbyk"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/wooden_crate_1.glb" id="112_h5e54"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/supply_crate_1_1.glb" id="113_8ryiu"]
-[ext_resource type="PackedScene" path="res://scenes/note.tscn" id="114_cxb50"]
-[ext_resource type="Resource" path="res://resources/lore_fragment_hearth.tres" id="115_5oj0q"]
-[ext_resource type="PackedScene" path="res://scenes/hasselmus_nest.tscn" id="116_xiu16"]
-[ext_resource type="PackedScene" path="res://scenes/cabin_light_source.tscn" id="117_pqoe1"]
-[ext_resource type="PackedScene" path="res://scenes/porch_light.tscn" id="118_p20p6"]
-[ext_resource type="PackedScene" path="res://scenes/light_switch.tscn" id="119_35q84"]
-[ext_resource type="PackedScene" path="res://scenes/generator.tscn" id="120_0o3no"]
-[ext_resource type="PackedScene" path="res://scenes/fuel_can.tscn" id="121_rx4i3"]
-[ext_resource type="PackedScene" path="res://scenes/cabin_window.tscn" id="122_twesu"]
-[ext_resource type="PackedScene" path="res://scenes/car_wreck_2.tscn" id="123_oo4qm"]
-[ext_resource type="PackedScene" path="res://scenes/car_wreck_3.tscn" id="124_dy84f"]
-[ext_resource type="PackedScene" path="res://scenes/escape_van.tscn" id="125_yr3w0"]
-[ext_resource type="PackedScene" path="res://scenes/key.tscn" id="126_wvgby"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/coffee_table_1_2.glb" id="127_a368d"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/display_cabinet_mp_1.glb" id="128_jcvo7"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/coin_mp_1.glb" id="129_do1n8"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/glass_bottle_1.glb" id="130_1jgf1"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/glass_bottle_2.glb" id="131_1xcvp"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/matchbox_1.glb" id="132_77y7p"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/screwdriver_mp_1.glb" id="133_gujg1"]
-[ext_resource type="PackedScene" path="res://scenes/scrap_heap.tscn" id="134_e28y4"]
-[ext_resource type="PackedScene" path="res://scenes/fuse_box.tscn" id="135_mk4gd"]
-[ext_resource type="Resource" path="res://resources/lore_fragment_window.tres" id="136_fln36"]
-[ext_resource type="PackedScene" path="res://scenes/portable_light.tscn" id="137_xa3xc"]
-[ext_resource type="PackedScene" path="res://scenes/cable_spool.tscn" id="138_y4d6c"]
-[ext_resource type="PackedScene" path="res://scenes/light_switch_special.tscn" id="139_88kwl"]
-[ext_resource type="PackedScene" path="res://scenes/totem_anchor.tscn" id="140_gtwur"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_TreeLine_1_002.tscn" id="141_l0bv0"]
-[ext_resource type="PackedScene" path="res://scenes/wooden_plank.tscn" id="142_6hcyw"]
-[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/stone_3.glb" id="143_rln1a"]
-[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/stone_2.glb" id="144_wo6cc"]
-[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/stone_1.glb" id="145_pus02"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Buildings/shed_ax_3.glb" id="146_s6pss"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_Path_Mud_00.tscn" id="147_s6alb"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_Path_Mud_07.tscn" id="148_dhqod"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_Fence_00.tscn" id="149_y0dcg"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_Fence_Gate_0.tscn" id="150_8orax"]
-[ext_resource type="Script" path="res://scripts/endgame_cinematics.gd" id="151_o73mq"]
-[ext_resource type="Script" path="res://scenes/foliage.gd" id="152_qn857"]
-[ext_resource type="PackedScene" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Rocks/Rocks.fbx" id="153_mtrny"]
-[ext_resource type="PackedScene" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Rasberry Bush/Rasberry Bush.fbx" id="154_ougyq"]
-[ext_resource type="PackedScene" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Pine Tree Stumps/Pine Tree Stumps.fbx" id="155_x1x43"]
-[ext_resource type="PackedScene" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Mushrooms/Mushrooms.fbx" id="156_j0al0"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_09.tscn" id="157_ig52i"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_12.tscn" id="158_3t1tr"]
-[ext_resource type="PackedScene" path="res://scenes/hint_area.tscn" id="159_7xr8o"]
-[ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="160_580hs"]
-[ext_resource type="Resource" path="res://resources/arvid_note.tres" id="161_v55xv"]
-[ext_resource type="Resource" path="res://resources/arvid_note_2.tres" id="162_x5blu"]
-[ext_resource type="PackedScene" path="res://assets/PSX Bunkers/Models/other-formats/GLB/bars_metal_4.glb" id="163_0mkoj"]
-[ext_resource type="PackedScene" path="res://assets/PSX Bunkers/Models/other-formats/GLB/chair_wooden_1.glb" id="164_d80v3"]
-[ext_resource type="PackedScene" path="res://assets/PSX Bunkers/Models/other-formats/GLB/sign_3.glb" id="165_47cgt"]
-[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/mushroom_n_2_0.glb" id="166_dshjq"]
-[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/mushroom_n_2_2.glb" id="167_d3tb7"]
-[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/mushroom_n_4.glb" id="168_hnb7m"]
-[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/mushroom_n_4_1.glb" id="169_nk2ib"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Board.res" id="170_3atrq"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Torus_011.res" id="171_3ku5o"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Tray.res" id="172_rrpj0"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Vase_02.res" id="173_d3ann"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Mop_01.res" id="174_3hol8"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_303.res" id="175_sy6xp"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/bedside_table_1_1.glb" id="176_4d2fb"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_bedside_lamp_06.res" id="177_ps3an"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_House_Kitchen_Cupboard_Static_00.tscn" id="178_h4gya"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_KitchenBin_0.tscn" id="179_q4k6p"]
-[ext_resource type="PackedScene" path="res://world_map_border_block.tscn" id="180_jdm5x"]
-[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/mushroom_n_1.glb" id="181_1xqyj"]
-[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/mushroom_n_1_0.glb" id="182_ukteh"]
-[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/mushroom_n_1_1.glb" id="183_xgpin"]
-[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/grass_3.glb" id="184_g6b3s"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_359.res" id="185_5rpi5"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_214.res" id="186_x46r0"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/wardrobe_mp_1.glb" id="187_tqs38"]
-[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/supply_crate_1.glb" id="188_8n5ii"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_Barn_02.tscn" id="189_y8nfw"]
-[ext_resource type="PackedScene" path="res://scenes/car_wreck_1.tscn" id="190_68tk2"]
-[ext_resource type="PackedScene" path="res://assets/PSX Bunkers/Models/FBX/trash_6.fbx" id="191_0j8xt"]
-[ext_resource type="PackedScene" path="res://assets/PSX Bunkers/Models/FBX/trash_4.fbx" id="192_ril42"]
-[ext_resource type="PackedScene" path="res://assets/PSX Bunkers/Models/FBX/trash_5.fbx" id="193_5fpbx"]
-[ext_resource type="PackedScene" path="res://assets/PSX Bunkers/Models/FBX/wood_pallet_2.fbx" id="194_fgj3y"]
-[ext_resource type="PackedScene" path="res://assets/PSX Bunkers/Models/FBX/wood_pallet_1.fbx" id="195_gn4tj"]
-[ext_resource type="PackedScene" path="res://assets/PSX Bunkers/Models/FBX/metal_shelf_1.fbx" id="196_n8gae"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_alarm_clock_002.res" id="197_f5wh8"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Circle_008.res" id="198_o883h"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cone_008.res" id="199_lqumo"]
-[ext_resource type="ArrayMesh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_045.res" id="200_psr66"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_00.tscn" id="201_xk0qx"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_08.tscn" id="202_jip7c"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_14.tscn" id="203_r27kd"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_13.tscn" id="204_kpswk"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_Microwave_0.tscn" id="205_4mffe"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_Rock_08.tscn" id="206_bsgya"]
-[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_Rock_05.tscn" id="207_0g7uu"]
+[ext_resource type="Script" uid="uid://dwjkqjp5uuaqn" path="res://scripts/cabin_approach_trigger.gd" id="24_4rtr1"]
+[ext_resource type="Texture2D" uid="uid://bw8vl22ys1m00" path="res://assets/Textures/Grass/Grass_01-512x512.png" id="25_xffuf"]
+[ext_resource type="Texture2D" uid="uid://dlbvhtgwc4cov" path="res://assets/Textures/Wood/Wood_08-512x512.png" id="26_dipld"]
+[ext_resource type="ArrayMesh" uid="uid://3cbfqdr7kkll" path="res://assets/grass_mesh/grass_mesh.tres" id="27_q18r1"]
+[ext_resource type="PackedScene" uid="uid://bu8lh214x07bh" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Grass/Grass.fbx" id="28_ati4s"]
+[ext_resource type="Image" uid="uid://ysmomlamdrbj" path="res://scenes/CottageHorror/Foliage_0_0_0.res" id="29_u0lux"]
+[ext_resource type="Image" uid="uid://c3ypy8a4sbfe8" path="res://scenes/CottageHorror/Heightmap_0_0.res" id="30_xituh"]
+[ext_resource type="Image" uid="uid://dl3hjgdm8tr3v" path="res://scenes/CottageHorror/Object_0_0_0.res" id="31_7yx0e"]
+[ext_resource type="Image" uid="uid://dboy530q14flx" path="res://scenes/CottageHorror/Splatmap_0_0_0.res" id="32_ynd18"]
+[ext_resource type="PackedScene" uid="uid://cg887s8br1ysp" path="res://assets/PSX Bunkers/Models/other-formats/GLB/beam_6.glb" id="33_5sah8"]
+[ext_resource type="PackedScene" uid="uid://bn7dmpf75txej" path="res://assets/PSX Bunkers/Models/other-formats/GLB/beam_7.glb" id="34_bc4kq"]
+[ext_resource type="PackedScene" uid="uid://djoptysub0pxi" path="res://assets/PSX Bunkers/Models/other-formats/GLB/machinery_2.glb" id="35_unfsv"]
+[ext_resource type="PackedScene" uid="uid://dqnqvwoaib6mc" path="res://scenes/trees.tscn" id="36_rlyvi"]
+[ext_resource type="PackedScene" uid="uid://clq01k102v26p" path="res://assets/PSX Nature/Models/GLB/tree_log_1.glb" id="37_uhsjf"]
+[ext_resource type="PackedScene" uid="uid://dhgrntix8ay6e" path="res://assets/PSX Nature/Models/GLB/mushroom_n_1_2.glb" id="38_uk3g0"]
+[ext_resource type="PackedScene" uid="uid://cg620memb2rct" path="res://assets/PSX Nature/Models/GLB/mushroom_n_2.glb" id="39_v70mu"]
+[ext_resource type="PackedScene" uid="uid://cl13pqutofr1l" path="res://assets/PSX Nature/Models/GLB/mushroom_n_2_1.glb" id="40_mrg66"]
+[ext_resource type="PackedScene" uid="uid://co1pky8s8olk0" path="res://assets/PSX Nature/Models/GLB/mushroom_n_3.glb" id="41_4d03b"]
+[ext_resource type="PackedScene" uid="uid://c0mv5aee1qdtg" path="res://assets/PSX Nature/Models/GLB/mushroom_n_3_1.glb" id="42_56q1t"]
+[ext_resource type="PackedScene" uid="uid://du7tur3ilrj3f" path="res://assets/PSX Nature/Models/GLB/grass_4.glb" id="43_b6y0i"]
+[ext_resource type="PackedScene" uid="uid://cfsq6j2xnoxm" path="res://assets/PSX Nature/Models/GLB/pine_tree_n_1.glb" id="44_joi0g"]
+[ext_resource type="PackedScene" uid="uid://drwajtnp6vl1f" path="res://assets/Fixed .fbx/SM_EU_MetalTunnel_1.tscn" id="45_igmlu"]
+[ext_resource type="PackedScene" uid="uid://qs0syi2k33n1" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Bush/Bush.fbx" id="46_x3xt8"]
+[ext_resource type="PackedScene" uid="uid://c7ic5r84g3upx" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Coral Bells/Coral Bells.fbx" id="47_qc1fo"]
+[ext_resource type="PackedScene" uid="uid://dmxt2yjlcbl7k" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Flowery Fern/Flowery Fern.fbx" id="48_jxrl1"]
+[ext_resource type="PackedScene" uid="uid://b0jc1beov6os" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Rose/Rose.fbx" id="49_3wtrt"]
+[ext_resource type="PackedScene" uid="uid://b1s6vxknolpe0" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Thistles/Thistles.fbx" id="50_uqx0q"]
+[ext_resource type="PackedScene" uid="uid://c2i7dtxuj854o" path="res://assets/PSX Nature/Models/GLB/fern_3.glb" id="51_bt8k0"]
+[ext_resource type="PackedScene" uid="uid://bnhdoqq6jutr1" path="res://assets/Fixed .fbx/SM_EC_ConcreteBlock_0_001.tscn" id="52_adhvd"]
+[ext_resource type="PackedScene" uid="uid://d06r76lhab8r7" path="res://assets/Fixed .fbx/SM_EC_ConcreteBlock_1.tscn" id="53_qx5yi"]
+[ext_resource type="PackedScene" uid="uid://ducowk3hdanpv" path="res://assets/Fixed .fbx/SM_EC_FridgeFreezer_0.tscn" id="54_mobas"]
+[ext_resource type="PackedScene" uid="uid://dh1f7ah6emgui" path="res://assets/Fixed .fbx/SM_EC_Postbox_0.tscn" id="55_rpxi8"]
+[ext_resource type="PackedScene" uid="uid://dkt0ctge4coii" path="res://assets/Fixed .fbx/SM_EC_ShippingContainer_0.tscn" id="56_wbdjb"]
+[ext_resource type="PackedScene" uid="uid://c8eqf0rju03yv" path="res://assets/Fixed .fbx/SM_EC_Traffic_Block_2.tscn" id="57_jlhro"]
+[ext_resource type="PackedScene" uid="uid://dcsiee4k2jy4b" path="res://assets/Fixed .fbx/SM_EC_Traffic_Pillar_0.tscn" id="58_dp1x1"]
+[ext_resource type="PackedScene" uid="uid://cncvu7fej325w" path="res://assets/Fixed .fbx/SM_EC_Traffic_RoacClosed_Sign_0.tscn" id="59_ifc5u"]
+[ext_resource type="PackedScene" uid="uid://d0ddpm465e4vp" path="res://assets/Fixed .fbx/SM_EC_TV_0.tscn" id="60_mriwd"]
+[ext_resource type="PackedScene" uid="uid://bwvwcjqptjom3" path="res://assets/Fixed .fbx/SM_EC_WashingMachine_0.tscn" id="61_ok856"]
+[ext_resource type="PackedScene" uid="uid://djelpwbnfmqo0" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Coreopsis/Coreopsis.fbx" id="62_rpiht"]
+[ext_resource type="PackedScene" uid="uid://6d8nsa7jb0b1" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Daisys/Daisys.fbx" id="63_ufjb0"]
+[ext_resource type="PackedScene" uid="uid://cicj1pkx7sn1u" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Fern/Fern.fbx" id="64_2ys1q"]
+[ext_resource type="ArrayMesh" uid="uid://cuuskxtdsxi3q" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Backpack_001.res" id="65_ojh7c"]
+[ext_resource type="ArrayMesh" uid="uid://ddt5dneeldqkx" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_basket_002.res" id="66_s16uw"]
+[ext_resource type="ArrayMesh" uid="uid://0an16xykgi6t" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_586.res" id="67_5nvbu"]
+[ext_resource type="ArrayMesh" uid="uid://bx3uo73bmlhwg" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_651.res" id="68_4ffa7"]
+[ext_resource type="ArrayMesh" uid="uid://bnhwsb2gsa644" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_658.res" id="69_ju1nm"]
+[ext_resource type="PackedScene" uid="uid://foyjpk5knjsk" path="res://assets/PSX Nature/Models/GLB/pine_tree_n_1_2.glb" id="70_1gwof"]
+[ext_resource type="PackedScene" uid="uid://eteur0n4coyc" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/sofa_1.glb" id="71_gccaf"]
+[ext_resource type="PackedScene" uid="uid://cicq0ubrwge2p" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/tv_table_1.glb" id="72_k1f3j"]
+[ext_resource type="PackedScene" uid="uid://cclt4hjfsubxb" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/tv_mp_1_1.glb" id="73_rct3m"]
+[ext_resource type="PackedScene" uid="uid://cpvhl2k7wl3jq" path="res://scenes/computer.tscn" id="74_3hlqw"]
+[ext_resource type="PackedScene" uid="uid://cfdgpk8w6i41n" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/pc_keyboard_mp_3.glb" id="75_3mfg6"]
+[ext_resource type="PackedScene" uid="uid://dbtf283ugu85g" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/mouse_pad_mp_1.glb" id="76_26f3g"]
+[ext_resource type="PackedScene" uid="uid://c2h48auopeuye" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/pc_mouse_mp_1.glb" id="77_kwie3"]
+[ext_resource type="PackedScene" uid="uid://d2q6b3m7kf7c8" path="res://scenes/flashlight.tscn" id="78_1f0lu"]
+[ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0de" path="res://scenes/fuse.tscn" id="79_3jdxi"]
+[ext_resource type="Script" uid="uid://cvaqel187lqwe" path="res://scripts/lamp_flicker.gd" id="80_rudo5"]
+[ext_resource type="PackedScene" uid="uid://d1nbbsranyayl" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Decals/cobweb_1.glb" id="81_2ykim"]
+[ext_resource type="PackedScene" uid="uid://dqk8cdcsudmp1" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/table_large_2.glb" id="82_xnh1w"]
+[ext_resource type="PackedScene" uid="uid://db6754hgnu8ql" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/chair_mp_4_3.glb" id="83_788ck"]
+[ext_resource type="Script" uid="uid://cy2xdrbwuqogc" path="res://scripts/debug_computer.gd" id="84_vkvfg"]
+[ext_resource type="PackedScene" uid="uid://b35tkexyh5e1r" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/pc_mp_1.glb" id="85_e5woc"]
+[ext_resource type="PackedScene" uid="uid://w56fc53h33lt" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/walkie_talkie_2.glb" id="86_ik5fn"]
+[ext_resource type="PackedScene" uid="uid://djjrpkdlgtc3w" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/sofa_1_3.glb" id="87_j4q18"]
+[ext_resource type="PackedScene" uid="uid://c2wx8r8v7rdcc" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/cardboard_box_1.glb" id="88_7yplo"]
+[ext_resource type="PackedScene" uid="uid://jgdjt1dtob7u" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/carpet_mp_1.glb" id="89_8ttrh"]
+[ext_resource type="PackedScene" uid="uid://dudw1h0vhblbw" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/ashtray_1.glb" id="90_tdsb5"]
+[ext_resource type="PackedScene" uid="uid://bu3d58c70beoj" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/book_mp_1.glb" id="91_8ev78"]
+[ext_resource type="PackedScene" uid="uid://myej0vcgjeoa" path="res://scenes/bed.tscn" id="92_tijv0"]
+[ext_resource type="ArrayMesh" uid="uid://b1u5yt2w1viax" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_254.res" id="93_o8m4h"]
+[ext_resource type="PackedScene" uid="uid://dkc0lfxbh7ef3" path="res://scenes/battery.tscn" id="94_pf7hi"]
+[ext_resource type="PackedScene" uid="uid://cbdrt6kya5tfa" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/table_large_3.glb" id="95_8i6qu"]
+[ext_resource type="PackedScene" uid="uid://dcr27p5udx6rv" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/chair_mp_4.glb" id="96_1h3fk"]
+[ext_resource type="PackedScene" uid="uid://citmkthw2ca0l" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/display_cabinet_mp_2.glb" id="97_fgkcd"]
+[ext_resource type="PackedScene" uid="uid://bkoa1egs0k8wx" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/shelf_mp_5.glb" id="98_2m830"]
+[ext_resource type="PackedScene" uid="uid://b3dhljdisfhcx" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/canned_food_mp_1.glb" id="99_rfjsp"]
+[ext_resource type="PackedScene" uid="uid://cgyuu5q7tkk1w" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/canned_food_mp_3.glb" id="100_fuq4d"]
+[ext_resource type="PackedScene" uid="uid://ddoes3x4su0v" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/tv_table_4.glb" id="101_0osmr"]
+[ext_resource type="PackedScene" uid="uid://bctsowjlgy4oj" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/chair_mp_4_1.glb" id="102_ewqb1"]
+[ext_resource type="PackedScene" uid="uid://byt22vv6fjsfp" path="res://assets/PSX Paintings/Meshes/GLB/painting_5.glb" id="103_jeicy"]
+[ext_resource type="PackedScene" uid="uid://bfqw1d35xnpgn" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/sofa_1_2.glb" id="104_q3ut3"]
+[ext_resource type="PackedScene" uid="uid://qcw15exii6di" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/coffee_table_1.glb" id="105_eu5cd"]
+[ext_resource type="PackedScene" uid="uid://cyp2j4x1l6f6n" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/shelf_mp_4.glb" id="106_g3nbr"]
+[ext_resource type="PackedScene" uid="uid://4f8lnt173up5" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/chair_mp_4_2.glb" id="107_8st7k"]
+[ext_resource type="PackedScene" uid="uid://b3jk7je1hqnnp" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/cardboard_box_2.glb" id="108_bqjj7"]
+[ext_resource type="PackedScene" uid="uid://cpr8rg6d8uhgt" path="res://assets/PSX Paintings/Meshes/GLB/painting_7.glb" id="109_rw4pm"]
+[ext_resource type="PackedScene" uid="uid://mqfvk135r5gl" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/old_mattress_mp_1.glb" id="110_r3kdi"]
+[ext_resource type="PackedScene" uid="uid://bm4o3bgejdquo" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/wooden_crate_3.glb" id="111_pnbyk"]
+[ext_resource type="PackedScene" uid="uid://dpeohe2il1ymh" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/wooden_crate_1.glb" id="112_h5e54"]
+[ext_resource type="PackedScene" uid="uid://qstcsworwlee" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/supply_crate_1_1.glb" id="113_8ryiu"]
+[ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0c6" path="res://scenes/note.tscn" id="114_cxb50"]
+[ext_resource type="Resource" uid="uid://d0uq0x2m2q0cb" path="res://resources/lore_fragment_hearth.tres" id="115_5oj0q"]
+[ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0c8" path="res://scenes/hasselmus_nest.tscn" id="116_xiu16"]
+[ext_resource type="PackedScene" uid="uid://igfruechwph8" path="res://scenes/cabin_light_source.tscn" id="117_pqoe1"]
+[ext_resource type="PackedScene" uid="uid://porchlight01" path="res://scenes/porch_light.tscn" id="118_p20p6"]
+[ext_resource type="PackedScene" uid="uid://cgqts05fxlpn5" path="res://scenes/light_switch.tscn" id="119_35q84"]
+[ext_resource type="PackedScene" uid="uid://ber2ukknc0e3n" path="res://scenes/generator.tscn" id="120_0o3no"]
+[ext_resource type="PackedScene" uid="uid://cd6rau4pn5djq" path="res://scenes/fuel_can.tscn" id="121_rx4i3"]
+[ext_resource type="PackedScene" uid="uid://e8tu43c3ihp0" path="res://scenes/cabin_window.tscn" id="122_twesu"]
+[ext_resource type="PackedScene" uid="uid://bo162yynq2c0j" path="res://scenes/car_wreck_2.tscn" id="123_oo4qm"]
+[ext_resource type="PackedScene" uid="uid://cmxe4fxhwfwvs" path="res://scenes/car_wreck_3.tscn" id="124_dy84f"]
+[ext_resource type="PackedScene" uid="uid://dsgbbun0atwdq" path="res://scenes/escape_van.tscn" id="125_yr3w0"]
+[ext_resource type="PackedScene" uid="uid://l101wfdbbfth" path="res://scenes/key.tscn" id="126_wvgby"]
+[ext_resource type="PackedScene" uid="uid://c1cbq04lfrmh6" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/coffee_table_1_2.glb" id="127_a368d"]
+[ext_resource type="PackedScene" uid="uid://chomp5702sq14" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/display_cabinet_mp_1.glb" id="128_jcvo7"]
+[ext_resource type="PackedScene" uid="uid://c8veqd3spasgi" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/coin_mp_1.glb" id="129_do1n8"]
+[ext_resource type="PackedScene" uid="uid://rhlnj4o8hclw" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/glass_bottle_1.glb" id="130_1jgf1"]
+[ext_resource type="PackedScene" uid="uid://bp604ge3vljoy" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/glass_bottle_2.glb" id="131_1xcvp"]
+[ext_resource type="PackedScene" uid="uid://ctosb4mcp1ff3" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/matchbox_1.glb" id="132_77y7p"]
+[ext_resource type="PackedScene" uid="uid://dyqwf06b45pk7" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/screwdriver_mp_1.glb" id="133_gujg1"]
+[ext_resource type="PackedScene" uid="uid://cwe54kc56vwjr" path="res://scenes/scrap_heap.tscn" id="134_e28y4"]
+[ext_resource type="PackedScene" uid="uid://dev1jyquh31tw" path="res://scenes/fuse_box.tscn" id="135_mk4gd"]
+[ext_resource type="Resource" uid="uid://d0uq0x2m2q0cc" path="res://resources/lore_fragment_window.tres" id="136_fln36"]
+[ext_resource type="PackedScene" uid="uid://bec7ckeg5nn2q" path="res://scenes/portable_light.tscn" id="137_xa3xc"]
+[ext_resource type="PackedScene" uid="uid://bxbhpj8qlqrmf" path="res://scenes/cable_spool.tscn" id="138_y4d6c"]
+[ext_resource type="PackedScene" uid="uid://bpymnhhh56yaj" path="res://scenes/light_switch_special.tscn" id="139_88kwl"]
+[ext_resource type="PackedScene" uid="uid://dr1ny12noe77" path="res://scenes/totem_anchor.tscn" id="140_gtwur"]
+[ext_resource type="PackedScene" uid="uid://bmhnjo7ywr0yn" path="res://assets/Fixed .fbx/SM_EC_TreeLine_1_002.tscn" id="141_l0bv0"]
+[ext_resource type="PackedScene" uid="uid://d2q3b4f5c6e7g" path="res://scenes/wooden_plank.tscn" id="142_6hcyw"]
+[ext_resource type="PackedScene" uid="uid://o2o2sxrn4i67" path="res://assets/PSX Nature/Models/GLB/stone_3.glb" id="143_rln1a"]
+[ext_resource type="PackedScene" uid="uid://bybfenavnbot8" path="res://assets/PSX Nature/Models/GLB/stone_2.glb" id="144_wo6cc"]
+[ext_resource type="PackedScene" uid="uid://dx3gvrbo8csp3" path="res://assets/PSX Nature/Models/GLB/stone_1.glb" id="145_pus02"]
+[ext_resource type="PackedScene" uid="uid://pf3yuqggyh44" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Buildings/shed_ax_3.glb" id="146_s6pss"]
+[ext_resource type="PackedScene" uid="uid://bp0xbjb3u3dlk" path="res://assets/Fixed .fbx/SM_EC_Path_Mud_00.tscn" id="147_s6alb"]
+[ext_resource type="PackedScene" uid="uid://d4hdfe5278114" path="res://assets/Fixed .fbx/SM_EC_Path_Mud_07.tscn" id="148_dhqod"]
+[ext_resource type="PackedScene" uid="uid://tdawh0142ike" path="res://assets/Fixed .fbx/SM_EC_Fence_00.tscn" id="149_y0dcg"]
+[ext_resource type="PackedScene" uid="uid://btkot5ww6ydog" path="res://assets/Fixed .fbx/SM_EC_Fence_Gate_0.tscn" id="150_8orax"]
+[ext_resource type="Script" uid="uid://cstp1kypc2d2o" path="res://scripts/endgame_cinematics.gd" id="151_o73mq"]
+[ext_resource type="Script" uid="uid://b2xn8ggswjbhj" path="res://scenes/foliage.gd" id="152_qn857"]
+[ext_resource type="PackedScene" uid="uid://dw5it7beolnkn" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Rocks/Rocks.fbx" id="153_mtrny"]
+[ext_resource type="PackedScene" uid="uid://dqmksf8e7uqfe" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Rasberry Bush/Rasberry Bush.fbx" id="154_ougyq"]
+[ext_resource type="PackedScene" uid="uid://b6bng06cuxwjk" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Pine Tree Stumps/Pine Tree Stumps.fbx" id="155_x1x43"]
+[ext_resource type="PackedScene" uid="uid://bahc1oovp5b52" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Mushrooms/Mushrooms.fbx" id="156_j0al0"]
+[ext_resource type="PackedScene" uid="uid://bk18n20tg5td5" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_09.tscn" id="157_ig52i"]
+[ext_resource type="PackedScene" uid="uid://cbslwbudhhs60" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_12.tscn" id="158_3t1tr"]
+[ext_resource type="PackedScene" uid="uid://cqrbkhg6og02d" path="res://scenes/hint_area.tscn" id="159_7xr8o"]
+[ext_resource type="PackedScene" uid="uid://dw4lxe3wm0xut" path="res://scenes/ui/pause_menu.tscn" id="160_580hs"]
+[ext_resource type="Resource" uid="uid://d0uq0x2m2q0cd" path="res://resources/arvid_note.tres" id="161_v55xv"]
+[ext_resource type="Resource" uid="uid://cqpqcbmtu8s1y" path="res://resources/arvid_note_2.tres" id="162_x5blu"]
+[ext_resource type="PackedScene" uid="uid://bp23i2j37c3y1" path="res://assets/PSX Bunkers/Models/other-formats/GLB/bars_metal_4.glb" id="163_0mkoj"]
+[ext_resource type="PackedScene" uid="uid://cy1i28r7ok25t" path="res://assets/PSX Bunkers/Models/other-formats/GLB/chair_wooden_1.glb" id="164_d80v3"]
+[ext_resource type="PackedScene" uid="uid://xkwv1osx47ps" path="res://assets/PSX Bunkers/Models/other-formats/GLB/sign_3.glb" id="165_47cgt"]
+[ext_resource type="PackedScene" uid="uid://dpu3sabli0rvv" path="res://assets/PSX Nature/Models/GLB/mushroom_n_2_0.glb" id="166_dshjq"]
+[ext_resource type="PackedScene" uid="uid://b15dxrr25qi68" path="res://assets/PSX Nature/Models/GLB/mushroom_n_2_2.glb" id="167_d3tb7"]
+[ext_resource type="PackedScene" uid="uid://ce7hj3mi8ivtd" path="res://assets/PSX Nature/Models/GLB/mushroom_n_4.glb" id="168_hnb7m"]
+[ext_resource type="PackedScene" uid="uid://88vo1kag080g" path="res://assets/PSX Nature/Models/GLB/mushroom_n_4_1.glb" id="169_nk2ib"]
+[ext_resource type="ArrayMesh" uid="uid://b60vd8dal7gu3" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Board.res" id="170_3atrq"]
+[ext_resource type="ArrayMesh" uid="uid://debnuljo0f3hv" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Torus_011.res" id="171_3ku5o"]
+[ext_resource type="ArrayMesh" uid="uid://b3tueiwoc87ad" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Tray.res" id="172_rrpj0"]
+[ext_resource type="ArrayMesh" uid="uid://dud3ffath5572" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Vase_02.res" id="173_d3ann"]
+[ext_resource type="ArrayMesh" uid="uid://drtnh78u5qdm1" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Mop_01.res" id="174_3hol8"]
+[ext_resource type="ArrayMesh" uid="uid://b3kpyfu48ilnf" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_303.res" id="175_sy6xp"]
+[ext_resource type="PackedScene" uid="uid://bn4akhjb6gw00" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/bedside_table_1_1.glb" id="176_4d2fb"]
+[ext_resource type="ArrayMesh" uid="uid://drkbb22k61oma" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_bedside_lamp_06.res" id="177_ps3an"]
+[ext_resource type="PackedScene" uid="uid://bcjy0rctnxheg" path="res://assets/Fixed .fbx/SM_EC_House_Kitchen_Cupboard_Static_00.tscn" id="178_h4gya"]
+[ext_resource type="PackedScene" uid="uid://dqsqhnj1eauv1" path="res://assets/Fixed .fbx/SM_EC_KitchenBin_0.tscn" id="179_q4k6p"]
+[ext_resource type="PackedScene" uid="uid://c4s5nm5uybn1l" path="res://world_map_border_block.tscn" id="180_jdm5x"]
+[ext_resource type="PackedScene" uid="uid://qvsaj7eewk6b" path="res://assets/PSX Nature/Models/GLB/mushroom_n_1.glb" id="181_1xqyj"]
+[ext_resource type="PackedScene" uid="uid://csna1byx7sv5g" path="res://assets/PSX Nature/Models/GLB/mushroom_n_1_0.glb" id="182_ukteh"]
+[ext_resource type="PackedScene" uid="uid://bqdfltmrtk2vv" path="res://assets/PSX Nature/Models/GLB/mushroom_n_1_1.glb" id="183_xgpin"]
+[ext_resource type="PackedScene" uid="uid://cqxiky5o3tcl6" path="res://assets/PSX Nature/Models/GLB/grass_3.glb" id="184_g6b3s"]
+[ext_resource type="ArrayMesh" uid="uid://b2hcl8o8yl0g4" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_359.res" id="185_5rpi5"]
+[ext_resource type="ArrayMesh" uid="uid://bt1rnqqrm3hbv" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_214.res" id="186_x46r0"]
+[ext_resource type="PackedScene" uid="uid://btv6jrpkldxui" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/wardrobe_mp_1.glb" id="187_tqs38"]
+[ext_resource type="PackedScene" uid="uid://b4x6xdujhoya1" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/supply_crate_1.glb" id="188_8n5ii"]
+[ext_resource type="PackedScene" uid="uid://cknhpchurb4d7" path="res://assets/Fixed .fbx/SM_EC_Barn_02.tscn" id="189_y8nfw"]
+[ext_resource type="PackedScene" uid="uid://jitrui044v4i" path="res://scenes/car_wreck_1.tscn" id="190_68tk2"]
+[ext_resource type="PackedScene" uid="uid://dmn8sxxts78de" path="res://assets/PSX Bunkers/Models/FBX/trash_6.fbx" id="191_0j8xt"]
+[ext_resource type="PackedScene" uid="uid://jobpgjbmc1ss" path="res://assets/PSX Bunkers/Models/FBX/trash_4.fbx" id="192_ril42"]
+[ext_resource type="PackedScene" uid="uid://cx3xuismgdkpc" path="res://assets/PSX Bunkers/Models/FBX/trash_5.fbx" id="193_5fpbx"]
+[ext_resource type="PackedScene" uid="uid://cr7ilpttoyml5" path="res://assets/PSX Bunkers/Models/FBX/wood_pallet_2.fbx" id="194_fgj3y"]
+[ext_resource type="PackedScene" uid="uid://b0sglqm3q1fev" path="res://assets/PSX Bunkers/Models/FBX/wood_pallet_1.fbx" id="195_gn4tj"]
+[ext_resource type="PackedScene" uid="uid://oqutnhf5w38g" path="res://assets/PSX Bunkers/Models/FBX/metal_shelf_1.fbx" id="196_n8gae"]
+[ext_resource type="ArrayMesh" uid="uid://dgjlchmp3evi5" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_alarm_clock_002.res" id="197_f5wh8"]
+[ext_resource type="ArrayMesh" uid="uid://mpecjtdet3sh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Circle_008.res" id="198_o883h"]
+[ext_resource type="ArrayMesh" uid="uid://drn6cei3x0hfg" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cone_008.res" id="199_lqumo"]
+[ext_resource type="ArrayMesh" uid="uid://c86cafjdnlyq3" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_045.res" id="200_psr66"]
+[ext_resource type="PackedScene" uid="uid://bnkjjwvm1t3gr" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_00.tscn" id="201_xk0qx"]
+[ext_resource type="PackedScene" uid="uid://djphm21fevcbq" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_08.tscn" id="202_jip7c"]
+[ext_resource type="PackedScene" uid="uid://bwt3iwlns7esx" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_14.tscn" id="203_r27kd"]
+[ext_resource type="PackedScene" uid="uid://d3b2qraluixda" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_13.tscn" id="204_kpswk"]
+[ext_resource type="PackedScene" uid="uid://b0lpilfht754m" path="res://assets/Fixed .fbx/SM_EC_Microwave_0.tscn" id="205_4mffe"]
+[ext_resource type="PackedScene" uid="uid://4bucm42ypn5" path="res://assets/Fixed .fbx/SM_EC_Rock_08.tscn" id="206_bsgya"]
+[ext_resource type="PackedScene" uid="uid://bwyxv6ythcmin" path="res://assets/Fixed .fbx/SM_EC_Rock_05.tscn" id="207_0g7uu"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_50dpl"]
 sky_top_color = Color(0.4, 0.6, 1, 1)
@@ -236,6 +236,7 @@ glow_levels/3 = 0.01
 glow_levels/4 = 0.0
 fog_enabled = true
 fog_mode = 1
+fog_density = 1.0
 fog_depth_begin = 14.0
 fog_depth_end = 55.0
 volumetric_fog_enabled = true
@@ -243,6 +244,7 @@ volumetric_fog_density = 0.0
 
 [sub_resource type="FogMaterial" id="FogMaterial_i4sg3"]
 density = -10.0
+edge_fade = 0.0
 
 [sub_resource type="FogMaterial" id="FogMaterial_ground"]
 density = 0.0
@@ -280,11 +282,26 @@ size = Vector3(6.333496, 2.75, 6.057617)
 [sub_resource type="BoxShape3D" id="BoxShape3D_0hoql"]
 size = Vector3(5.26, 2.46, 6.97)
 
+[sub_resource type="BoxShape3D" id="BoxShape3D_alcove"]
+size = Vector3(1.49, 1.81, 1.31)
+
 [sub_resource type="SphereShape3D" id="SphereShape3D_ixm0y"]
 radius = 5.0
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_qislg"]
 size = Vector3(1.49, 5.7, 4.69)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_stairs_upper"]
+size = Vector3(1.49, 3.65, 1.61)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_room_upperhall"]
+size = Vector3(4.51, 2.75, 6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_room_landing"]
+size = Vector3(6, 2.75, 6)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_room_bedroom"]
+size = Vector3(6, 2.75, 6)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_bcf24"]
 
@@ -373,14 +390,6 @@ data = PackedVector3Array(2.8, 2.3, 0.78999996, 2.8, 2.1, 1.01, 2.8, 2.3, 1.01, 
 [sub_resource type="BoxShape3D" id="BoxShape3D_dwrs0"]
 size = Vector3(26.544962, 2.3026123, 0.27392578)
 
-[sub_resource type="Animation" id="Animation_k4tl1"]
-resource_name = "death_drag"
-
-[sub_resource type="AnimationLibrary" id="AnimationLibrary_fgfdg"]
-_data = {
-&"death_drag": SubResource("Animation_k4tl1")
-}
-
 [sub_resource type="MultiMesh" id="MultiMesh_24dgb"]
 transform_format = 1
 instance_count = 2000
@@ -441,34 +450,19 @@ size = Vector3(2.456, 3.108, 260)
 [sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_oq0n2"]
 data = PackedVector3Array(0, 0, 0, 0.48, 0, 0.2961, 0.48, 0, 0, 0, 0, 0, 0, 0, 0.2961, 0.48, 0, 0.2961, 0, 0, -0.2961, 0, 0, 0, 0.48, 0, 0, 0, 0, -0.2961, 0.48, 0, 0, 0.48, 0, -0.2961, -0.48, 0, -0.2961, 0, 0, 0, 0, 0, -0.2961, -0.48, 0, -0.2961, -0.48, 0, 0, 0, 0, 0, -0.48, 0, 0, 0, 0, 0.2961, 0, 0, 0, -0.48, 0, 0, -0.48, 0, 0.2961, 0, 0, 0.2961, -0.4606, 0.48, 0, -0.4606, 0.0232, 0.27989998, -0.4606, 0.48, 0.27989998, -0.4606, 0.48, 0, -0.4606, 0.0232, 0, -0.4606, 0.0232, 0.27989998, -0.4606, 0.48, 0, -0.48, 0.48, -0.2961, -0.4606, 0.48, -0.27989998, -0.4606, 0.48, -0.27989998, -0.48, 0.48, -0.2961, 0, 0.48, -0.2961, -0.4606, 0.48, 0, -0.48, 0.48, 0, -0.48, 0.48, -0.2961, -0.4606, 0.48, 0.27989998, -0.48, 0.48, 0, -0.4606, 0.48, 0, -0.4606, 0.48, 0.27989998, -0.48, 0.48, 0.2961, -0.48, 0.48, 0, -0.4606, 0.48, -0.27989998, 0, 0.48, -0.2961, 0, 0.48, -0.27989998, 0, 0.48, -0.27989998, 0, 0.48, -0.2961, 0.48, 0.48, -0.2961, 0, 0.48, -0.27989998, 0.48, 0.48, -0.2961, 0.4606, 0.48, -0.27989998, 0.4606, 0.48, -0.27989998, 0.48, 0.48, -0.2961, 0.48, 0.48, 0, 0.4606, 0.48, -0.27989998, 0.48, 0.48, 0, 0.4606, 0.48, 0, 0.4606, 0.48, 0, 0.48, 0.48, 0, 0.48, 0.48, 0.2961, 0.4606, 0.48, 0, 0.48, 0.48, 0.2961, 0.4606, 0.48, 0.27989998, -0.48, 0, 0, -0.48, 0.48, 0.2961, -0.48, 0, 0.2961, -0.48, 0, 0, -0.48, 0.48, 0, -0.48, 0.48, 0.2961, 0, 0, 0.2961, 0.48, 0.48, 0.2961, 0.48, 0, 0.2961, 0, 0, 0.2961, 0, 0.48, 0.2961, 0.48, 0.48, 0.2961, -0.48, 0, 0.2961, 0, 0.48, 0.2961, 0, 0, 0.2961, -0.48, 0, 0.2961, -0.48, 0.48, 0.2961, 0, 0.48, 0.2961, 0, 0.48, -0.27989998, -0.4606, 0.0232, -0.27989998, -0.4606, 0.48, -0.27989998, 0, 0.48, -0.27989998, 0, 0.0232, -0.27989998, -0.4606, 0.0232, -0.27989998, 0, 0, -0.2961, 0.48, 0.48, -0.2961, 0, 0.48, -0.2961, 0, 0, -0.2961, 0.48, 0, -0.2961, 0.48, 0.48, -0.2961, 0.48, 0.48, 0, 0.48, 0, -0.2961, 0.48, 0, 0, 0.48, 0.48, 0, 0.48, 0.48, -0.2961, 0.48, 0, -0.2961, 0, 0.0232, 0, -0.4606, 0.0232, 0.27989998, -0.4606, 0.0232, 0, 0, 0.0232, 0, 0, 0.0232, 0.27989998, -0.4606, 0.0232, 0.27989998, 0, 0.0232, -0.27989998, 0, 0.0232, 0, -0.4606, 0.0232, 0, 0, 0.0232, -0.27989998, -0.4606, 0.0232, 0, -0.4606, 0.0232, -0.27989998, 0.4606, 0.0232, -0.27989998, 0, 0.0232, 0, 0, 0.0232, -0.27989998, 0.4606, 0.0232, -0.27989998, 0.4606, 0.0232, 0, 0, 0.0232, 0, 0.4606, 0.0232, 0, 0, 0.0232, 0.27989998, 0, 0.0232, 0, 0.4606, 0.0232, 0, 0.4606, 0.0232, 0.27989998, 0, 0.0232, 0.27989998, 0, 0.48, 0.27989998, -0.48, 0.48, 0.2961, -0.4606, 0.48, 0.27989998, 0, 0.48, 0.27989998, 0, 0.48, 0.2961, -0.48, 0.48, 0.2961, 0.4606, 0.48, 0.27989998, 0, 0.48, 0.2961, 0, 0.48, 0.27989998, 0.4606, 0.48, 0.27989998, 0.48, 0.48, 0.2961, 0, 0.48, 0.2961, 0.4606, 0.48, 0, 0.4606, 0.0232, -0.27989998, 0.4606, 0.48, -0.27989998, 0.4606, 0.48, 0, 0.4606, 0.0232, 0, 0.4606, 0.0232, -0.27989998, 0, 0.48, 0.27989998, 0.4606, 0.0232, 0.27989998, 0.4606, 0.48, 0.27989998, 0, 0.48, 0.27989998, 0, 0.0232, 0.27989998, 0.4606, 0.0232, 0.27989998, 0.4606, 0.48, 0.27989998, 0.4606, 0.0232, 0, 0.4606, 0.48, 0, 0.4606, 0.48, 0.27989998, 0.4606, 0.0232, 0.27989998, 0.4606, 0.0232, 0, 0.48, 0.48, 0.2961, 0.48, 0, 0, 0.48, 0, 0.2961, 0.48, 0.48, 0.2961, 0.48, 0.48, 0, 0.48, 0, 0, -0.48, 0, -0.2961, -0.48, 0.48, 0, -0.48, 0, 0, -0.48, 0, -0.2961, -0.48, 0.48, -0.2961, -0.48, 0.48, 0, -0.4606, 0.48, -0.27989998, -0.4606, 0.0232, 0, -0.4606, 0.48, 0, -0.4606, 0.48, -0.27989998, -0.4606, 0.0232, -0.27989998, -0.4606, 0.0232, 0, -0.4606, 0.48, 0.27989998, 0, 0.0232, 0.27989998, 0, 0.48, 0.27989998, -0.4606, 0.48, 0.27989998, -0.4606, 0.0232, 0.27989998, 0, 0.0232, 0.27989998, -0.48, 0, -0.2961, 0, 0.48, -0.2961, -0.48, 0.48, -0.2961, -0.48, 0, -0.2961, 0, 0, -0.2961, 0, 0.48, -0.2961, 0.4606, 0.48, -0.27989998, 0, 0.0232, -0.27989998, 0, 0.48, -0.27989998, 0.4606, 0.48, -0.27989998, 0.4606, 0.0232, -0.27989998, 0, 0.0232, -0.27989998)
 
-[sub_resource type="BoxShape3D" id="BoxShape3D_alcove"]
-size = Vector3(1.49, 1.81, 1.31)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_stairs_upper"]
-size = Vector3(1.49, 3.65, 1.61)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_room_upperhall"]
-size = Vector3(4.51, 2.75, 6)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_room_landing"]
-size = Vector3(6, 2.75, 6)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_room_bedroom"]
-size = Vector3(6, 2.75, 6)
-
 [node name="CottageHorror" type="Node3D" unique_id=110475989]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=715701991]
 environment = SubResource("Env_dark")
 
 [node name="FogVolume" type="FogVolume" parent="WorldEnvironment" unique_id=677530296]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.9, 3.7, 14.3)
-size = Vector3(6.56, 6.4, 12.96)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.3, 3, 14)
+size = Vector3(7.4, 8, 13.8)
 material = SubResource("FogMaterial_i4sg3")
 
 [node name="FogVolume2" type="FogVolume" parent="WorldEnvironment" unique_id=1073365329]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.29, 3.7, 17.4)
-size = Vector3(6.58, 6.4, 6.76)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.35, 3, 17.45)
+size = Vector3(6.7, 8, 6.9)
 material = SubResource("FogMaterial_i4sg3")
 
 [node name="GroundFog" type="FogVolume" parent="WorldEnvironment" unique_id=1873201577]
@@ -541,28 +535,28 @@ fuse_box_node = NodePath("../Fuse Box")
 fuse_waypoint = NodePath("../EntityWaypoints/EntityFuseWaypoint")
 
 [node name="GeneralSkeleton" parent="TheEntity/MonsterModel/Armature" parent_id_path=PackedInt32Array(133456140, 1066769687, 719992929) index="0" unique_id=519438561]
-bones/1/rotation = Quaternion(0.10119492, -0.1756602, -0.015165859, 0.9791186)
-bones/3/rotation = Quaternion(0.14802025, 0.3542189, 0.90847754, -0.16518962)
-bones/4/rotation = Quaternion(-0.038205605, 0.9226662, -0.3773499, 0.06953191)
-bones/5/rotation = Quaternion(-0.11130682, 0.64592636, -0.7449273, 0.12439172)
-bones/7/rotation = Quaternion(-8.233606e-09, 0.9999743, 0.007176489, 1.872466e-08)
-bones/18/rotation = Quaternion(-0.13356242, 0.29889077, 0.938873, 0.106503256)
-bones/21/rotation = Quaternion(0.039818536, 0.93353516, -0.3509721, -0.061198413)
-bones/22/rotation = Quaternion(0.10384233, 0.63402426, -0.7575513, -0.115525305)
-bones/23/rotation = Quaternion(-1.2127116e-09, 1, 0.00014403868, -2.6093545e-08)
-bones/33/rotation = Quaternion(0.019473784, -0.0052181133, 0.015760554, 0.99967253)
-bones/34/rotation = Quaternion(0.06291341, -0.0118777165, 0.01248248, 0.9978703)
-bones/35/rotation = Quaternion(0.06299678, -0.010883647, 0.013144874, 0.9978679)
-bones/36/rotation = Quaternion(-0.05000814, 0.027849177, -0.021336265, 0.9981325)
-bones/38/rotation = Quaternion(-0.19340937, 0.12136134, -0.03519679, 0.9729469)
-bones/49/rotation = Quaternion(0.5679292, 0.42545837, 0.5249025, -0.4700203)
-bones/50/rotation = Quaternion(0.18803813, 0.8756517, -0.4429593, -0.040779766)
-bones/51/rotation = Quaternion(0.473679, -0.5250029, 0.47367972, 0.52500266)
-bones/55/rotation = Quaternion(-0.15506023, 0.79765415, 0.18110925, 0.5539888)
-bones/58/rotation = Quaternion(0.51584554, -0.4602741, -0.572302, -0.44104624)
-bones/59/rotation = Quaternion(-0.20669405, 0.84010655, -0.500075, -0.037730854)
-bones/62/rotation = Quaternion(0.48869854, 0.5110514, -0.48869926, 0.5110512)
-bones/66/rotation = Quaternion(0.065145545, -0.847398, -0.024149371, 0.52639294)
+bones/1/rotation = Quaternion(0.10100154, -0.17992993, -0.017677475, 0.9783207)
+bones/3/rotation = Quaternion(0.14946142, 0.3561048, 0.9073859, -0.1658363)
+bones/4/rotation = Quaternion(-0.03658754, 0.918154, -0.38815814, 0.070624866)
+bones/5/rotation = Quaternion(-0.1060281, 0.6429634, -0.74922216, 0.1184155)
+bones/7/rotation = Quaternion(5.3781164e-08, 0.99993145, 0.011708337, -5.0583882e-08)
+bones/18/rotation = Quaternion(-0.13605702, 0.29482976, 0.93954456, 0.10871988)
+bones/21/rotation = Quaternion(0.039472993, 0.93663216, -0.34375706, -0.054710895)
+bones/22/rotation = Quaternion(0.10501735, 0.63523036, -0.756169, -0.116886)
+bones/23/rotation = Quaternion(-6.608967e-09, 1, 0.00027025637, -3.0785944e-08)
+bones/33/rotation = Quaternion(0.01868823, -0.0041480614, 0.01616718, 0.9996861)
+bones/34/rotation = Quaternion(0.062452473, -0.011431661, 0.009599886, 0.9979363)
+bones/35/rotation = Quaternion(0.06261045, -0.010260761, 0.010341445, 0.9979317)
+bones/36/rotation = Quaternion(-0.04977542, 0.027339526, -0.017314259, 0.9982361)
+bones/38/rotation = Quaternion(-0.19044508, 0.121761486, -0.03466835, 0.97350043)
+bones/49/rotation = Quaternion(0.56371975, 0.42964178, 0.5251188, -0.4710395)
+bones/50/rotation = Quaternion(0.17747916, 0.8794683, -0.43986535, -0.039438408)
+bones/51/rotation = Quaternion(0.47329247, -0.52535135, 0.47329313, 0.5253512)
+bones/55/rotation = Quaternion(-0.15378568, 0.79665166, 0.17749867, 0.5569474)
+bones/58/rotation = Quaternion(0.51940316, -0.45497316, -0.57536274, -0.43838054)
+bones/59/rotation = Quaternion(-0.20711043, 0.83845216, -0.50193185, -0.046560656)
+bones/62/rotation = Quaternion(0.48659638, 0.5130533, -0.4865972, 0.5130532)
+bones/66/rotation = Quaternion(0.06731224, -0.8548455, -0.021294922, 0.5140572)
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1000000002]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.015592637, 0, -0.084306605)
@@ -583,7 +577,7 @@ shape = SubResource("Shape_ground")
 [node name="Cabin" type="Node3D" parent="NavigationRegion3D" unique_id=1282417259 groups=["navmesh_source", "wood"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.009, 0.05, 0.409)
 
-[node name="TwoFloorCollision" type="StaticBody3D" parent="NavigationRegion3D/Cabin" unique_id=123450398 groups=["navmesh_interior", "wood", "cabin_walls"]]
+[node name="TwoFloorCollision" type="StaticBody3D" parent="NavigationRegion3D/Cabin" unique_id=123450398 groups=["cabin_walls", "navmesh_interior", "wood"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 14.88277)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="NavigationRegion3D/Cabin/TwoFloorCollision" unique_id=123450399]
@@ -2643,6 +2637,12 @@ start_broken = false
 [node name="WindowMarker" parent="Windows/BottomFloorWindows/ComputerRoomWindowLeft" index="2" unique_id=1542265065]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.2213926, -1.4486227)
 
+[node name="CarWreck" parent="Windows/BottomFloorWindows" unique_id=680615892 instance=ExtResource("123_oo4qm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.22829, 0.064127624, 64.376396)
+
+[node name="CarWreck2" parent="Windows/BottomFloorWindows" unique_id=1147150879 instance=ExtResource("124_dy84f")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -82.28865, 0.024999619, -18.199963)
+
 [node name="TopFloorWindows" type="Node3D" parent="Windows" unique_id=1313673135]
 
 [node name="UpperHallWindow" parent="Windows/TopFloorWindows" unique_id=1302446916 node_paths=PackedStringArray("room_light") groups=["TopFloorWindows"] instance=ExtResource("122_twesu")]
@@ -2684,12 +2684,6 @@ start_broken = false
 
 [node name="WindowMarker" parent="Windows/TopFloorWindows/BedroomWindowLeft" index="2" unique_id=1542265065]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -5.22139, -1.4486232)
-
-[node name="CarWreck" parent="Windows/BottomFloorWindows" unique_id=680615892 instance=ExtResource("123_oo4qm")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.22829, 0.064127624, 64.376396)
-
-[node name="CarWreck2" parent="Windows/BottomFloorWindows" unique_id=1147150879 instance=ExtResource("124_dy84f")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -82.28865, 0.024999619, -18.199963)
 
 [node name="EscapeVan" parent="." unique_id=433528797 instance=ExtResource("125_yr3w0")]
 transform = Transform3D(0.1322737, 0, -0.9912132, 0, 1, 0, 0.9912132, 0, 0.1322737, -9.001583, 0.007452041, -89.90559)
@@ -3275,16 +3269,12 @@ shape = SubResource("BoxShape3D_dwrs0")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.464138, 0.65130615, -86.91486)
 shape = SubResource("BoxShape3D_dwrs0")
 
-[node name="Cinematics" type="Node3D" parent="." unique_id=1097157188 node_paths=PackedStringArray("animation_player", "death_cam", "mediocre_cam", "good_cam") groups=["cinematics"]]
+[node name="Cinematics" type="Node3D" parent="." unique_id=1097157188 node_paths=PackedStringArray("death_cam", "mediocre_cam", "good_cam") groups=["cinematics"]]
 transform = Transform3D(-0.99980104, 0, 0.019947788, 0, 1, 0, -0.019947788, 0, -0.99980104, 9.009, 2.1229591, 15.193073)
 script = ExtResource("151_o73mq")
-animation_player = NodePath("AnimationPlayer")
 death_cam = NodePath("DeathCam")
 mediocre_cam = NodePath("MediocreCam")
 good_cam = NodePath("GoodCam")
-
-[node name="AnimationPlayer" type="AnimationPlayer" parent="Cinematics" unique_id=1729581435]
-libraries/ = SubResource("AnimationLibrary_fgfdg")
 
 [node name="DeathCam" type="Camera3D" parent="Cinematics" unique_id=922010392]
 
@@ -4290,3 +4280,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45.85206, 0, 0)
 [editable path="SM_EC_House_Kitchen_Cupboard_Static_00"]
 [editable path="SM_EC_House_Kitchen_Cupboard_Static_01"]
 [editable path="SM_EC_KitchenBin_0"]
+[editable path="Lightswitches/LightSwitchUpperHall"]
+[editable path="Lightswitches/LightSwitchLanding"]
+[editable path="Lightswitches/LightSwitchBedroom"]
+[editable path="Lightswitches/LightSwitchStairs"]
+[editable path="Windows/TopFloorWindows/UpperHallWindow"]
+[editable path="Windows/TopFloorWindows/LandingWindow"]
+[editable path="Windows/TopFloorWindows/BedroomWindowRight"]
+[editable path="Windows/TopFloorWindows/BedroomWindowLeft"]

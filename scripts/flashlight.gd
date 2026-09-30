@@ -216,15 +216,6 @@ func deactivate_overcharge() -> void:
 	overcharge_deactivated.emit()
 
 
-## The switch: a click every time it's toggled.
-const CLICK_PATHS: Array[String] = [
-	"res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Buttons & Levers/button_flashlight_1.ogg",
-	"res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Buttons & Levers/button_flashlight_2.ogg",
-	"res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Buttons & Levers/button_flashlight_3.ogg",
-]
-var _click_player: AudioStreamPlayer = null
-
-
 func toggle() -> void:
 	if battery_level <= 0.0:
 		return  # Can't turn on if battery is dead
@@ -232,21 +223,6 @@ func toggle() -> void:
 		_turn_off()
 	else:
 		_turn_on()
-	_play_click()
-
-
-func _play_click() -> void:
-	if not _click_player:
-		_click_player = AudioStreamPlayer.new()
-		_click_player.bus = &"SFX"
-		_click_player.volume_db = -8.0
-		add_child(_click_player)
-	var path: String = CLICK_PATHS.pick_random()
-	if ResourceLoader.exists(path):
-		_click_player.stream = load(path)
-		_click_player.pitch_scale = randf_range(0.95, 1.05)
-		_click_player.play()
-	NoiseEvent.emit(self, global_position, &"click")
 
 
 func _turn_on() -> void:

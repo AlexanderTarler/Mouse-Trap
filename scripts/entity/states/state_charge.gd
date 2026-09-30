@@ -20,8 +20,8 @@ var _lost_time := 0.0
 func enter(_from: int, data: Dictionary) -> void:
 	_committed = data.get("committed", false)
 	_lost_time = 0.0
-	entity.audio.play_voice("angry", true)
-	entity.audio.play_roar()
+	# A shriek from its own head, indoors as well as out.
+	entity.audio.play_shriek()
 	entity.audio.start_chase_music()
 
 

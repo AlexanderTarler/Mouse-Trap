@@ -4,8 +4,7 @@ extends SceneTree
 ## indoor muffling, wind, the forest going quiet near the Entity, distant
 ## sounds, whistling broken windows, events placed around the player, stair
 ## footsteps and the chase music. Plus the Entity's and the house's own
-## sounds: growls, climbing, floor creaks, knocks, plank blows, the flashlight
-## click, stingers, the house settling and the tension drone.
+## sounds: growls, climbing, floor creaks, knocks, plank blows, stingers, the house settling and the tension drone.
 ##
 ## Run: godot --headless --path . --fixed-fps 60 --script res://tests/audio_test.gd
 
@@ -229,8 +228,8 @@ func _test_footsteps() -> void:
 	_player._play_surface_footstep()
 	var crouch_db: float = _player.footstep_audio.volume_db
 	_player._is_crouching = false
-	_check("footsteps: stair steps on the stairs; crouching is quieter than walking",
-		on_stairs and _player.stairs_footsteps.size() == 8 and crouch_db < walk_db - 5.0,
+	_check("footsteps: single stair steps on the stairs; crouching is quieter than walking",
+		on_stairs and _player.stairs_footsteps.size() == 16 and _player.stairs_footsteps.all(func(s): return s.get_length() < 1.0) and crouch_db < walk_db - 5.0,
 		"stairs=%s, walk %.1f dB, crouch %.1f dB" % [on_stairs, walk_db, crouch_db])
 
 
@@ -297,18 +296,6 @@ func _test_house_sounds() -> void:
 	var hit_ok := plank != null and plank.stream != null and plank.playing
 	_check("planks: a blow on a boarded window thuds", hit_ok,
 		plank.stream.resource_path.get_file() if plank and plank.stream else "no sound")
-
-	var flashlight: Node = null
-	for node in _player.find_children("*", "", true, false):
-		if node.has_method("toggle") and "battery_level" in node:
-			flashlight = node
-			break
-	var clicked := false
-	if flashlight:
-		flashlight.toggle()
-		clicked = flashlight._click_player != null and flashlight._click_player.playing
-		flashlight.toggle()
-	_check("flashlight: the switch clicks", clicked, "flashlight found=%s" % (flashlight != null))
 
 
 func _test_stingers_and_settling() -> void:

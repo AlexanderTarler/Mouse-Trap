@@ -155,6 +155,9 @@ func _execute_jumpscare() -> void:
 		fade_tween.tween_property(_fade_rect, "color:a", 1.0, 0.5)
 		await fade_tween.finished
 		
+		# The death cutscene ("The Drag") plays on the black screen.
+		await _play_death_cinematic()
+		
 		# GAME OVER — always trigger the death screen after a jumpscare.
 		# The player must restart the night from the death screen.
 		_trigger_game_over()
@@ -169,6 +172,21 @@ func _execute_jumpscare() -> void:
 		player.set_physics_process(true)
 		player.set_process_input(true)
 		is_jumping = false
+
+## EndgameCinematics.play_death: our black fade steps aside while it plays
+## (it has its own), and is back up when it ends.
+func _play_death_cinematic() -> void:
+	var cinematics = get_tree().get_first_node_in_group("cinematics")
+	if not cinematics or not cinematics.has_method("play_death"):
+		return
+	cinematics.cover()
+	if _fade_rect:
+		_fade_rect.color.a = 0.0
+	await cinematics.play_death()
+	if _fade_rect:
+		_fade_rect.color.a = 1.0
+	cinematics.clear_overlay()
+
 
 func _apply_survival_penalties(player: Node3D) -> void:
 	var nm = get_node_or_null("/root/NightManager")

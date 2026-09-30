@@ -47,6 +47,15 @@ var is_ending_active: bool = false
 ## Whether the ending sequence is currently playing (cinematic, fade, etc.).
 var is_sequence_playing: bool = false
 
+## How many times the death cutscene has played this session: the first
+## plays in full, later ones short (EndgameCinematics.play_death).
+var death_cutscenes_seen: int = 0
+
+## The Master volume before the ending faded it out, put back by reset()
+## (otherwise the next game is silent). NAN while nothing is faded.
+var _master_volume_before_fade: float = NAN
+var _audio_fade_tween: Tween = null
+
 
 func _ready() -> void:
 	print("[EndgameManager] Initialized. Waiting for ending conditions.")
@@ -172,22 +181,14 @@ func _play_ending_sequence(ending: Ending) -> void:
 		_fade_canvas_layer.queue_free()
 		_fade_canvas_layer = null
 	
-	# ─── 4. INSTANTIATE ENDING SCREEN ───────────────────────────────
-	# For the two escape endings we show the HUD's built-in EndingScreen
-	# panel (with Mediocre/Good labels) instead of the standalone overlay,
-	# and skip the rest of the standalone instantiation path below.
-	if ending == Ending.ESCAPE_GOOD or ending == Ending.ESCAPE_MEDIOCRE:
-		var hud := get_tree().get_first_node_in_group("hud")
-		if hud and hud.has_method("show_ending_screen"):
-			hud.show_ending_screen(ending == Ending.ESCAPE_GOOD)
-		else:
-			print("[EndgameManager] WARNING: HUD EndingScreen not found — no ending screen shown.")
-		get_tree().paused = true
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-		_complete_ending_sequence(ending)
-		return
+	# The cutscene's own black screen goes too, now that ours covers it.
+	var cinematics = get_tree().get_first_node_in_group("cinematics")
+	if cinematics and cinematics.has_method("clear_overlay"):
+		cinematics.clear_overlay()
 	
-	# Load and instance the ending screen overlay (DEATH ending).
+	# ─── 4. INSTANTIATE ENDING SCREEN ───────────────────────────────
+	# One EndingScreen for every ending (the HUD's old built-in panel is
+	# no longer used).
 	var ending_scene = load(ENDING_SCREEN_PATH)
 	if not ending_scene:
 		print("[EndgameManager] ERROR: Could not load ending screen scene: ", ENDING_SCREEN_PATH)
@@ -246,11 +247,14 @@ func _disable_entity_for_ending() -> void:
 	
 	print("[EndgameManager] Disabling Entity for escape ending...")
 	
-	# Hide the visual model
-	entity.hide()
-	
-	# Disable processing
-	entity.process_mode = Node.PROCESS_MODE_DISABLED
+	# Out of the game for good (the night can't wake it up again), but still
+	# processing, so the ending cutscene can move and animate it.
+	entity.set_meta("debug_disabled", true)
+	if entity.has_method("deactivate"):
+		entity.deactivate()
+	else:
+		entity.hide()
+		entity.process_mode = Node.PROCESS_MODE_DISABLED
 	
 	# Disable collision
 	var collision_shape = entity.get_node_or_null("CollisionShape3D")
@@ -297,19 +301,16 @@ func _play_cinematic_and_lock_player(ending: Ending) -> void:
 		hud.visible = false
 	
 	# ─── PLAY CINEMATIC & AWAIT ───────────────────────────────────
+	# The cutscene is a coroutine that always finishes (it no longer waits
+	# on an AnimationPlayer that may not have the animation, which froze the
+	# game here).
 	print("[EndgameManager] Starting cinematic for ending: ", ENDING_NAMES.get(ending, "UNKNOWN"))
 	await cinematics.play_ending_cinematic(ending)
 	print("[EndgameManager] Cinematic finished.")
 	
-	# ─── UNLOCK PLAYER ────────────────────────────────────────────
+	# The player stays locked and the HUD hidden: the ending screen follows.
 	if player and is_instance_valid(player):
-		print("[EndgameManager] Restoring player input after cinematic...")
 		player.process_mode = Node.PROCESS_MODE_INHERIT
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	
-	# ─── SHOW HUD ─────────────────────────────────────────────────
-	if hud and is_instance_valid(hud):
-		hud.visible = true
 
 
 ## Fades all audio buses to silence for cinematic impact.
@@ -324,6 +325,8 @@ func _fade_audio_to_silence() -> void:
 	# Capture current volume as the starting point for the tween.
 	# We use a dummy Node to drive the tween since AudioServer isn't a Node.
 	var current_vol = AudioServer.get_bus_volume_db(master_idx)
+	if is_nan(_master_volume_before_fade):
+		_master_volume_before_fade = current_vol
 	var tween_driver = Node.new()
 	tween_driver.name = "_EndgameAudioFadeDriver"
 	add_child(tween_driver)
@@ -332,6 +335,7 @@ func _fade_audio_to_silence() -> void:
 	tween_driver.set_meta("_master_bus_idx", master_idx)
 	
 	var tween = tween_driver.create_tween()
+	_audio_fade_tween = tween
 	tween.tween_method(_set_master_volume.bind(master_idx), current_vol, -80.0, FADE_DURATION)
 	tween.tween_callback(tween_driver.queue_free)
 	
@@ -396,4 +400,19 @@ func reset() -> void:
 	current_ending = Ending.NONE
 	is_ending_active = false
 	is_sequence_playing = false
+	_restore_master_volume()
 	print("[EndgameManager] Reset to initial state.")
+
+
+## Puts the Master volume back to where it was before the ending faded it.
+func _restore_master_volume() -> void:
+	if is_nan(_master_volume_before_fade):
+		return
+	# The fade may still be running.
+	if _audio_fade_tween and _audio_fade_tween.is_valid():
+		_audio_fade_tween.kill()
+	_audio_fade_tween = null
+	var master_idx := AudioServer.get_bus_index("Master")
+	if master_idx >= 0:
+		AudioServer.set_bus_volume_db(master_idx, _master_volume_before_fade)
+	_master_volume_before_fade = NAN

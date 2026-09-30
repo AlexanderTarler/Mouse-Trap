@@ -90,6 +90,13 @@ var _catch_area: Area3D = null
 var _desired_velocity := Vector3.ZERO
 var _look_target = null            ## Vector3 or null: face this instead of the movement direction.
 var _anim_override: StringName = &""
+var _model_base_y := 0.0
+var _model_base_scale := Vector3.ONE
+var _glow_base_y := 0.0
+## Indoors it shrinks a little to fit under the ceiling (1 = full size).
+var _size := 1.0
+var _target_size := 1.0
+var _headroom_check := 0.0
 var _last_nav_target := Vector3.INF
 var _nav_retarget_timer := 0.0
 const NAV_RETARGET_INTERVAL := 0.3
@@ -122,6 +129,11 @@ func _ready() -> void:
 	nav_agent.target_desired_distance = 0.4
 	nav_agent.link_reached.connect(_on_link_reached)
 
+	if model:
+		_model_base_y = model.position.y
+		_model_base_scale = model.scale
+	if _eye_glow:
+		_glow_base_y = _eye_glow.position.y
 	if _anim_tree:
 		_anim_playback = _anim_tree.get("parameters/playback")
 		_anim_player = _anim_tree.get_node_or_null(_anim_tree.anim_player) as AnimationPlayer
@@ -207,6 +219,29 @@ func request_state(state: State, data: Dictionary = {}) -> void:
 	if not _is_active:
 		activate()
 	brain.force(state, data)
+
+
+## Puppets it for an ending cutscene: out of the game (no thinking, moving,
+## catching or sounds of its own), visible at `xform`, playing `anim`. Call it
+## every frame to move it; deactivate() or restore it afterwards.
+func cinematic_pose(xform: Transform3D, anim: StringName, anim_speed: float = 1.0) -> void:
+	if _is_active or is_traversing() or is_clinging():
+		_is_active = false
+		_cancel_traversal()
+		_release_perch()
+		audio.stop_all()
+	velocity = Vector3.ZERO
+	visible = true
+	if collision_shape:
+		collision_shape.disabled = true
+	if _catch_area:
+		_catch_area.monitoring = false
+	# Keep its own scale; `xform` only places and turns it.
+	global_transform = Transform3D(xform.basis.orthonormalized() * Basis.from_scale(scale), xform.origin)
+	if _anim_playback and _anim_playback.get_current_node() != anim:
+		_anim_playback.start(anim)
+	if _anim_player:
+		_anim_player.speed_scale = anim_speed
 
 
 func get_state() -> State:
@@ -474,6 +509,39 @@ func _physics_process(delta: float) -> void:
 	audio.update_floor_creaks(delta, ground_speed)
 	audio.update_murmurs(delta)
 	_update_animation(delta)
+
+
+## Keeps its feet on the ground whatever animation plays (ANIM_GROUND_OFFSET),
+## easing between them as the animations cross-fade; and indoors keeps its
+## head under the ceiling (walking upright it is taller than the ground
+## floor's 2.85 m, and its head poked up through the floor above).
+func _process(delta: float) -> void:
+	if not model or not _anim_playback or not visible:
+		return
+	_headroom_check -= delta
+	if _headroom_check <= 0.0:
+		_headroom_check = HEADROOM_CHECK_INTERVAL
+		_target_size = _fit_under_ceiling()
+	_size = lerpf(_size, _target_size, clampf(delta * 4.0, 0.0, 1.0))
+	model.scale = _model_base_scale * _size
+	if _eye_glow:
+		_eye_glow.position.y = _glow_base_y * _size
+	var target: float = _model_base_y + ANIM_GROUND_OFFSET.get(_anim_playback.get_current_node(), 0.0) * _size
+	model.position.y = lerpf(model.position.y, target, clampf(delta * 8.0, 0.0, 1.0))
+
+
+## Its size under whatever is above it indoors: full size if its head fits
+## (TALLEST plus HEADROOM), smaller if not, never below MIN_SIZE.
+func _fit_under_ceiling() -> float:
+	if not perception or not perception.entity_inside or not is_inside_tree():
+		return 1.0
+	var from := global_position + Vector3.UP * 0.5
+	var query := PhysicsRayQueryParameters3D.create(from, global_position + Vector3.UP * (TALLEST + HEADROOM), LAYER_WORLD)
+	query.exclude = [get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		return 1.0
+	return clampf((hit.position.y - global_position.y - HEADROOM) / TALLEST, MIN_SIZE, 1.0)
 
 
 func _update_facing(delta: float) -> void:
@@ -776,6 +844,22 @@ func _release_perch() -> void:
 
 ## Reference walking speed the "Stalk" animation was authored for.
 const ANIM_WALK_SPEED := 2.5
+## The top of its head at full size, walking upright (m).
+const TALLEST := 2.9
+## Space kept between its head and a ceiling (m).
+const HEADROOM := 0.2
+const MIN_SIZE := 0.7
+const HEADROOM_CHECK_INTERVAL := 0.15
+## Most of its animations hold the body higher than the walk cycle does, so
+## it floated above the ground in them. The model is lowered by this much
+## (measured: each animation's lowest hand/foot against the walk's).
+const ANIM_GROUND_OFFSET := {
+	&"Idle": -0.37,
+	&"running_crawl": -0.43,
+	&"entity_in_light": -0.31,
+	&"AttackWindow": -0.38,
+	&"entity_running": -0.17,
+}
 const ANIM_RUN_SPEED := 6.0
 
 func _update_animation(_delta: float) -> void:
