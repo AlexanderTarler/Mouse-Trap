@@ -412,6 +412,10 @@ func _physics_process(delta: float) -> void:
 	velocity.z = _desired_velocity.z
 	if is_on_floor():
 		velocity.y = 0.0
+		# On a slope (the stair ramp) move along the floor: pushing
+		# horizontally into it stalls the capsule partway up.
+		if get_floor_normal().y < 0.99:
+			velocity = velocity.slide(get_floor_normal()).normalized() * velocity.length()
 	else:
 		velocity += get_gravity() * delta
 	move_and_slide()

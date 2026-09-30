@@ -327,13 +327,13 @@ func find_flee_point(from: Vector3, threat: Vector3, distance: float) -> Vector3
 	return best
 
 
-## Floor-level centers of the cabin rooms (ground floor), for indoor patrols.
+## Floor-level centers of the cabin rooms on both floors, for indoor patrols.
 ## A room whose nearest navmesh point lies outside the cabin (e.g. a volume
 ## with no floor of its own) is skipped, or the patrol would lead outdoors.
 func room_centers() -> Array[Vector3]:
 	var centers: Array[Vector3] = []
 	for area in get_tree().get_nodes_in_group("Cabin_Interior"):
-		if area is Area3D and area.global_position.y < 4.0:
+		if area is Area3D:
 			var center := snap_to_navmesh(area.global_position)
 			if is_inside_cabin(center):
 				centers.append(center)
@@ -341,7 +341,7 @@ func room_centers() -> Array[Vector3]:
 
 
 ## True if `pos` is inside the cabin walls, judged by the cabin footprint
-## (the outline of cabin.tscn's ExteriorNavCarve). Falls back to the room
+## (the outline of the Cabin's ExteriorNavCarve). Falls back to the room
 ## volumes if the footprint can't be found.
 func is_inside_cabin(pos: Vector3) -> bool:
 	if _footprint.is_empty() and not _footprint_searched:

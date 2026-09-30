@@ -39,10 +39,22 @@ extends Node
 @export var night_tonemap_exposure: float = 0.85
 
 ## --- Night fog tuning (Inspector-editable) ---
-## Base fog density at night. Higher = thicker fog.
-@export var night_fog_density: float = 0.025
-## Base volumetric fog density at night. Higher = thicker volumetric fog.
-@export var night_vfog_density: float = 0.012
+## The night fog has two layers:
+##   - Distance fog (depth mode): nothing closer than fog_clear_distance, so it
+##     never shows up inside the cabin, thickening to fully opaque at the
+##     visibility distance.
+##   - Ground fog: the ground_fog FogVolume, densest at ground level and
+##     thinning with height, so upstairs windows see over most of it.
+## Both scale with the night's thickness (random per night, slow swells,
+## +50% from Night 3).
+## Distance (m) at which the night fog is fully opaque at normal thickness.
+@export var night_fog_visibility: float = 55.0
+## No distance fog closer than this (m), so rooms stay clear.
+@export var fog_clear_distance: float = 14.0
+## Ground fog density at ground level at normal thickness.
+@export var night_ground_fog_density: float = 0.04
+## FogVolume carrying the ground fog (its material's density is driven here).
+@export var ground_fog: FogVolume
 ## Minimum fog fluctuation multiplier (0.0-1.0). Higher = fog never fully clears at night.
 @export var night_fog_fluctuation_min: float = 0.6
 ## Maximum fog fluctuation multiplier. Higher = thicker fog peaks.
@@ -108,6 +120,16 @@ var _cached_fog_density: float = 0.0
 var _cached_fog_color: Color = Color()
 var _cached_vfog_enabled: bool = false
 var _cached_vfog_density: float = 0.0
+var _cached_fog_depth_end: float = 0.0
+
+## Current distance at which the fog is fully opaque (INF when there is none).
+var _fog_visibility: float = INF
+
+
+## How far the player can see through the fog right now: the distance at
+## which the distance fog becomes fully opaque, or INF when there is no fog.
+func get_fog_visibility() -> float:
+	return _fog_visibility
 
 
 func _ready() -> void:
@@ -393,19 +415,32 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 		if fog_nm and "current_night" in fog_nm and fog_nm.current_night >= 3:
 			night_multiplier = 1.5
 		
-		var fog_density: float = night_fog_density * fog_factor * fog_fluctuation * _night_fog_base * night_multiplier
-		if not is_equal_approx(fog_density, _cached_fog_density):
-			_environment.fog_density = fog_density
-			_cached_fog_density = fog_density
-		
+		var thickness: float = fog_factor * fog_fluctuation * _night_fog_base * night_multiplier
+
+		# Distance fog: clear up to fog_clear_distance, fully opaque at the
+		# visibility distance (closer when the fog is thicker). In depth mode
+		# fog_density is the opacity reached at fog_depth_end.
+		_environment.fog_mode = Environment.FOG_MODE_DEPTH
+		_environment.fog_depth_begin = fog_clear_distance
+		_fog_visibility = fog_clear_distance + (night_fog_visibility - fog_clear_distance) / maxf(thickness, 0.05)
+		if not is_equal_approx(_fog_visibility, _cached_fog_depth_end):
+			_environment.fog_depth_end = _fog_visibility
+			_cached_fog_depth_end = _fog_visibility
+		if not is_equal_approx(fog_factor, _cached_fog_density):
+			_environment.fog_density = fog_factor
+			_cached_fog_density = fog_factor
+
 		var vfog_enabled: bool = true
 		if _cached_vfog_enabled != vfog_enabled:
 			_environment.volumetric_fog_enabled = vfog_enabled
 			_cached_vfog_enabled = vfog_enabled
-		
-		var vfog_density: float = night_vfog_density * fog_factor * fog_fluctuation * _night_fog_base * night_multiplier
+
+		# Ground fog lives in the ground_fog volume only; the global volumetric
+		# density stays 0 so there is no fog up high or inside the cabin.
+		var vfog_density: float = night_ground_fog_density * thickness
 		if not is_equal_approx(vfog_density, _cached_vfog_density):
-			_environment.volumetric_fog_density = vfog_density
+			_environment.volumetric_fog_density = 0.0
+			_set_ground_fog_density(vfog_density)
 			_cached_vfog_density = vfog_density
 		
 		var day_fog_color: Color = Color(0.7, 0.75, 0.8)
@@ -423,6 +458,15 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 		if _cached_vfog_enabled != false:
 			_environment.volumetric_fog_enabled = false
 			_cached_vfog_enabled = false
+		if not is_equal_approx(_cached_vfog_density, 0.0):
+			_set_ground_fog_density(0.0)
+			_cached_vfog_density = 0.0
+		_fog_visibility = INF
+
+
+func _set_ground_fog_density(value: float) -> void:
+	if ground_fog and ground_fog.material is FogMaterial:
+		(ground_fog.material as FogMaterial).density = value
 
 
 func _update_light_appearance(p_day_factor: float, p_sun_height: float) -> void:

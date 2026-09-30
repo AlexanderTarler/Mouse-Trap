@@ -42,6 +42,9 @@ func _frames(n: int) -> void:
 
 func _run() -> void:
 	var scene: Node = load("res://scenes/cottage_horror.tscn").instantiate()
+	# These checks follow the normal game rules: ignore the level's dev-mode
+	# toggle (dev mode unlocks the door and lifts the Entity's night limits).
+	scene.get_node("Player").start_in_dev_mode = false
 	root.add_child(scene)
 	await _frames(3)
 
