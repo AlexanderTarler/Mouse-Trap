@@ -46,6 +46,13 @@ var illuminated := false
 var overcharged := false
 ## Seconds the beam has been continuously on it.
 var stare_time := 0.0
+## How strongly the beam hits it right now (0-1: closer and more centred is
+## stronger). 0 when no beam is on it.
+var beam_strength := 0.0
+## Builds while a standard beam is on it, drains slowly otherwise; at 1 the
+## standoff winds up to a charge (see EntityConfig.charge_stare_time).
+var stare_pressure := 0.0
+var _beam_strength := 0.0
 ## Seconds of overcharged beam, tolerant of drop-outs shorter than
 ## config.overcharge_grace.
 var overcharge_time := 0.0
@@ -136,15 +143,24 @@ func hear_noise(noise_position: Vector3, radius: float) -> void:
 
 ## Called by the player every frame with the result of its own (occluded)
 ## beam check. This is the only source of flashlight information.
-func on_flashlight(is_hit: bool, is_overcharged: bool) -> void:
+## `strength` (0-1) is how strongly the beam hits: closer and more centred is
+## stronger.
+func on_flashlight(is_hit: bool, is_overcharged: bool, strength: float = 1.0) -> void:
 	_beam_hit = is_hit
 	_beam_overcharged = is_hit and is_overcharged
+	_beam_strength = clampf(strength, 0.0, 1.0) if is_hit else 0.0
 
 
 func _update_flashlight(delta: float) -> void:
 	illuminated = _beam_hit
 	overcharged = _beam_overcharged
+	beam_strength = _beam_strength
 	stare_time = stare_time + delta if _beam_hit else 0.0
+	if _beam_hit and not _beam_overcharged:
+		stare_pressure += delta * lerpf(0.4, 1.0, beam_strength) / config.charge_stare_time
+	elif not _beam_hit:
+		stare_pressure -= delta * config.stare_pressure_decay
+	stare_pressure = clampf(stare_pressure, 0.0, 1.0)
 	if _beam_overcharged:
 		overcharge_time += delta
 		_overcharge_lost_time = 0.0

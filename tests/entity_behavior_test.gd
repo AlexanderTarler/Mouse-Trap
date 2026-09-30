@@ -71,6 +71,7 @@ func _run() -> void:
 	# toggle (dev mode unlocks the door and lifts the Entity's night limits).
 	_scene.get_node("Player").start_in_dev_mode = false
 	root.add_child(_scene)
+	current_scene = _scene   # as in the game: the peeker manager spawns into it
 	await _frames(10)
 	_entity = get_first_node_in_group("entity")
 	_player = get_first_node_in_group("player") as Node3D
@@ -98,6 +99,10 @@ func _run() -> void:
 	await _test_overcharge_repels_indoors()
 	await _test_indoor_charge_stays_inside()
 	await _test_outdoor_stalk_and_standoff()
+	await _test_beam_reach()
+	await _test_windup_look_away()
+	await _test_windup_overcharge()
+	await _test_flicking_cannot_hold_it()
 	await _test_locked_door_stays_shut()
 	await _test_van_chase()
 	await _test_presence_flicker()
@@ -232,8 +237,121 @@ func _test_outdoor_stalk_and_standoff() -> void:
 	var stalking: bool = await _wait_for_state(["STALK", "CHARGE"], 5.0)
 	_check("outdoors: sees the player and stalks", stalking, _history())
 	_states.clear()
-	await _flashlight(true, false, _entity.config.charge_stare_time + 0.5)
-	_check("outdoors: standard beam -> STANDOFF -> CHARGE", "STANDOFF" in _states and "CHARGE" in _states, _history())
+	await _flashlight(true, false, _entity.config.charge_stare_time + _entity.config.charge_windup_time + 0.5)
+	_check("outdoors: standard beam -> STANDOFF -> wind-up -> CHARGE", "STANDOFF" in _states and "CHARGE" in _states, _history())
+
+
+## Outdoors, both outside, 6 m apart and in view, stalking. Returns false if
+## it didn't get there (the scenario is then skipped).
+func _setup_outdoor_face_off() -> bool:
+	_entity.confidence.reset()
+	_entity.request_state(_entity.State.DORMANT)
+	_entity.activate()
+	var spot := _clear_sightline(YARD, 6.0)
+	_entity._teleport(spot)
+	_place_player(spot + Vector3(0.0, 0.0, 6.0))
+	_entity.rotation.y = 0.0
+	_entity.brain.standoff_cooldown = 0.0
+	_entity.perception.stare_pressure = 0.0
+	await _frames(3)
+	_entity.request_state(_entity.State.OBSERVE)
+	await _wait_for_state(["STALK", "CHARGE"], 5.0)
+	return _entity.get_state_name() == "STALK"
+
+
+func _in_windup() -> bool:
+	var state = _entity.brain.current
+	return _entity.get_state_name() == "STANDOFF" and state.has_method("is_winding_up") and state.is_winding_up()
+
+
+## A/B: the player's beam only counts within the flashlight's reach, inside
+## the bright core of its cone, within fog visibility, and with a clear line.
+func _test_beam_reach() -> void:
+	_entity.confidence.reset()
+	_entity.request_state(_entity.State.DORMANT)
+	_entity.activate()
+	_entity.request_state(_entity.State.OBSERVE)
+	var spot := _clear_sightline(YARD, 13.0)
+	_entity._teleport(spot)
+	await _frames(2)
+	var flashlight = _player._flashlight
+	var had_flashlight: bool = _player._has_flashlight
+	_player._has_flashlight = true
+	flashlight.is_on = true
+	flashlight.is_overcharged = false
+	flashlight.spot_angle = flashlight.standard_spot_angle
+	var ec := get_first_node_in_group("environment_controller")
+	var strength := func(distance: float, yaw_deg: float) -> float:
+		# The player stands on the clear line (+Z of the Entity), facing it.
+		_entity.global_position = spot
+		_place_player(spot + Vector3(0.0, 0.0, distance))
+		_player.rotation.y = deg_to_rad(yaw_deg)
+		return _player.flashlight_beam_on_entity()
+	var near: float = strength.call(5.0, 0.0)
+	var edge: float = strength.call(9.0, 0.0)
+	var far: float = strength.call(12.0, 0.0)
+	var off_axis: float = strength.call(5.0, 40.0)
+	ec._fog_visibility = 5.0
+	var fogged: float = strength.call(5.0, 0.0)
+	ec._fog_visibility = INF
+	_check("beam: hits at 5 m, weaker at 9 m, not at 12 m (beyond its 10 m reach)",
+		near > 0.5 and edge >= 0.0 and edge < near and far < 0.0, "5 m %.2f, 9 m %.2f, 12 m %.2f" % [near, edge, far])
+	_check("beam: misses when aimed 40 degrees away", off_axis < 0.0, "%.2f" % off_axis)
+	_check("beam: misses when the fog hides it (visibility 5 m)", fogged < 0.0, "%.2f" % fogged)
+	flashlight.is_on = false
+	_player._has_flashlight = had_flashlight
+	_player.rotation.y = 0.0
+
+
+## D + E: looking away during the wind-up stops the charge; it backs off and
+## a standard beam can't freeze it again straight away.
+func _test_windup_look_away() -> void:
+	_states.clear()
+	if not await _setup_outdoor_face_off():
+		_check("wind-up: precondition (stalking outdoors)", false, _history())
+		return
+	_states.clear()
+	await _flashlight(true, false, _entity.config.charge_stare_time + 0.4)
+	var winding := _in_windup()
+	var start_distance: float = _entity.global_position.distance_to(_player.global_position)
+	await _frames(int(_entity.config.standoff_retreat_time * 60.0) + 30)
+	var distance: float = _entity.global_position.distance_to(_player.global_position)
+	_check("wind-up: looking away stops the charge and it backs off",
+		winding and not ("CHARGE" in _states) and distance > start_distance + 1.5,
+		"%s, %.1f m -> %.1f m" % [_history(), start_distance, distance])
+	_states.clear()
+	await _flashlight(true, false, 0.5)
+	_check("after a standoff: a standard beam doesn't freeze it again straight away",
+		not ("STANDOFF" in _states) and _entity.get_state_name() != "STANDOFF", _history())
+
+
+## D: overcharging during the wind-up repels it.
+func _test_windup_overcharge() -> void:
+	_states.clear()
+	if not await _setup_outdoor_face_off():
+		_check("wind-up overcharge: precondition (stalking outdoors)", false, _history())
+		return
+	_states.clear()
+	await _flashlight(true, false, _entity.config.charge_stare_time + 0.4)
+	var winding := _in_windup()
+	await _flashlight(true, true, 0.3)
+	_check("wind-up: overcharging it makes it flee instead of charging",
+		winding and "FLEE" in _states and not ("CHARGE" in _states), _history())
+
+
+## C + E: flicking the beam on and off can't keep it frozen in place.
+func _test_flicking_cannot_hold_it() -> void:
+	_states.clear()
+	if not await _setup_outdoor_face_off():
+		_check("flicking: precondition (stalking outdoors)", false, _history())
+		return
+	_states.clear()
+	for i in 6:
+		await _flashlight(true, false, 1.0)
+		await _frames(18)
+	var first := _states.find("STANDOFF")
+	var moved_on := first >= 0 and _states.slice(first + 1).any(func(s): return s != "STANDOFF")
+	_check("flicking: the beam can't hold it frozen (the standoff ends)", moved_on, _history())
 
 
 ## Door locked, windows boarded on Night 2: the interior stays unreachable.

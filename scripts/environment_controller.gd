@@ -133,6 +133,7 @@ func get_fog_visibility() -> float:
 
 
 func _ready() -> void:
+	add_to_group("environment_controller")
 	# Get the Environment resource from the WorldEnvironment
 	if world_environment:
 		_environment = world_environment.environment

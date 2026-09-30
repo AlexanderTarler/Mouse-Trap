@@ -59,8 +59,25 @@ extends Resource
 @export var hearing_wall_multiplier: float = 0.5
 
 @export_group("Flashlight")
-## Standard beam held on it outdoors (both outside) for this long: it charges.
+## Stare pressure (0-1) builds while a standard beam is on it outdoors (both
+## outside) and drains slowly when it isn't. At 1 it winds up to charge.
+## A close, centred beam fills it in this many seconds; a weak one (far away
+## or at the edge of the beam) takes up to 2.5x as long.
 @export var charge_stare_time: float = 1.8
+## Stare pressure lost per second while no beam is on it, so flicking the
+## beam on and off doesn't reset it.
+@export var stare_pressure_decay: float = 0.2
+## Seconds it crouches and growls before charging. Looking away (or
+## overcharging) during the wind-up stops the charge.
+@export var charge_windup_time: float = 1.0
+## Beam off it for this long during the wind-up: it backs off instead.
+@export var windup_release_time: float = 0.25
+## When a standoff ends it backs away from the player this far (m)...
+@export var standoff_retreat_distance: float = 5.0
+## ...for at most this long, facing the player, before resuming.
+@export var standoff_retreat_time: float = 2.0
+## After a standoff a standard beam can't freeze it again for this long.
+@export var standoff_cooldown: float = 5.0
 ## Overcharged beam held on it for this long: it flees.
 @export var overcharge_repel_time: float = 1.5
 ## Brief beam drop-outs shorter than this don't reset the overcharge timer.

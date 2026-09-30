@@ -83,6 +83,8 @@ var _is_active: bool = false
 var _anim_playback: AnimationNodeStateMachinePlayback = null
 var _anim_player: AnimationPlayer = null
 var _catch_area: Area3D = null
+@onready var _eye_glow: OmniLight3D = get_node_or_null("ProfileGlow") as OmniLight3D
+@onready var _eye_glow_energy: float = _eye_glow.light_energy if _eye_glow else 0.0
 
 # ─── Movement state (reset every physics frame by the active state) ─────────
 var _desired_velocity := Vector3.ZERO
@@ -218,10 +220,11 @@ func start_van_chase(spawn_position: Vector3) -> void:
 	brain.force(State.STALK)
 
 
-## Called by the player every flashlight check.
-func on_flashlight(is_hit: bool, overcharged: bool) -> void:
+## Called by the player every frame. `strength` (0-1): how strongly the beam
+## hits (closer and more centred is stronger).
+func on_flashlight(is_hit: bool, overcharged: bool, strength: float = 1.0) -> void:
 	if perception:
-		perception.on_flashlight(is_hit, overcharged)
+		perception.on_flashlight(is_hit, overcharged, strength)
 
 
 ## True while an overcharged beam is on the Entity (sanity/perception effects
@@ -352,6 +355,13 @@ func face(target: Vector3) -> void:
 
 func play_anim(anim: StringName) -> void:
 	_anim_override = anim
+
+
+## Scales the glow around its head: 1 is normal, higher flares it (the charge
+## wind-up).
+func set_eye_glow(multiplier: float) -> void:
+	if _eye_glow:
+		_eye_glow.light_energy = _eye_glow_energy * multiplier
 
 
 ## Teleports only if neither the current position nor `target` is in the

@@ -94,8 +94,23 @@ var _flashlight_entity_check_timer: float = 0.0
 ## Interval between flashlight-on-entity raycasts in seconds.
 const FLASHLIGHT_ENTITY_CHECK_INTERVAL: float = 0.1  # 10Hz
 
-## Cached result of the last flashlight-on-entity check.
-var _cached_flashlight_on_entity: bool = false
+## Cached result of the last flashlight-on-entity check: how strongly the beam
+## hits the Entity (0-1), or -1 when it doesn't.
+var _cached_flashlight_strength: float = -1.0
+
+## The beam only counts where it visibly lights things: within the
+## flashlight's range (longer when overcharged, it is brighter) ...
+const OVERCHARGE_REACH_MULTIPLIER: float = 1.4
+## ... inside this fraction of the beam's cone (its bright core) ...
+const BEAM_HIT_CONE_FRACTION: float = 0.6
+## ... and no farther than this fraction of the fog's visibility distance.
+const FOG_VISIBILITY_FRACTION: float = 0.8
+## Points on the Entity (height above its feet) that the beam can catch; any
+## one in the beam and in sight counts, so it can't hide its body behind a
+## trunk while its head is lit.
+const ENTITY_BEAM_SAMPLE_HEIGHTS: Array[float] = [0.4, 1.0, 1.6]
+
+var _environment_controller: Node = null
 
 ## Whether the player starts the game with the ability to sprint (SHIFT).
 ## When true (default), the player can sprint from the start.
@@ -1112,17 +1127,17 @@ func _process(delta: float) -> void:
 		_entity_node = get_tree().get_first_node_in_group("entity")
 	
 	# ─── FLASHLIGHT-ON-ENTITY THROTTLING ──────────────────────────
-	# The _is_flashlight_on_entity() function fires an expensive
-	# intersect_ray from the camera to the Entity every call.
+	# flashlight_beam_on_entity() fires up to three rays from the camera
+	# to the Entity every call.
 	# We only need to check this at ~10Hz (every 0.1s), not 60Hz.
 	# Between checks, we use the cached result.
 	_flashlight_entity_check_timer -= delta
 	if _flashlight_entity_check_timer <= 0.0:
 		_flashlight_entity_check_timer = FLASHLIGHT_ENTITY_CHECK_INTERVAL
-		_cached_flashlight_on_entity = _is_flashlight_on_entity()
-	
+		_cached_flashlight_strength = flashlight_beam_on_entity()
+
 	# Check if the flashlight is ON and we're looking at the Entity
-	var is_looking_at_entity = _cached_flashlight_on_entity
+	var is_looking_at_entity: bool = _cached_flashlight_strength >= 0.0
 	
 	# Throttled debug log every 2 seconds
 	_look_debug_timer += delta
@@ -1145,7 +1160,7 @@ func _process(delta: float) -> void:
 	# Tell the Entity every frame whether the beam is on it. It keeps its own
 	# timers; look_timer below only drives the camera shake.
 	if _entity_node and _entity_node.has_method("on_flashlight"):
-		_entity_node.on_flashlight(is_looking_at_entity, is_flashlight_overcharged())
+		_entity_node.on_flashlight(is_looking_at_entity, is_flashlight_overcharged(), maxf(_cached_flashlight_strength, 0.0))
 	
 	if is_looking_at_entity:
 		look_timer = minf(look_timer + delta, 2.0)
@@ -1201,54 +1216,56 @@ func _process(delta: float) -> void:
 		_standoff_effect.update_overcharge(is_flashlight_overcharged())
 
 
-## Checks if the player's flashlight is currently shining on the Entity.
-## Uses a RayCast3D from the center of the camera to detect the Entity.
-func _is_flashlight_on_entity() -> bool:
-	# Flashlight must be on
-	if not _flashlight or not _has_flashlight:
-		return false
-	if not _flashlight.is_on:
-		return false
-	
-	if not _entity_node or not is_instance_valid(_entity_node):
-		return false
-	
-	var space_state = get_world_3d().direct_space_state
+## How strongly the flashlight beam hits the Entity: 0-1 (closer and more
+## centred is stronger), or -1 when it doesn't hit at all.
+## The beam only counts where it visibly lights things: within the
+## flashlight's range (longer when overcharged), inside the bright core of
+## its cone, no farther than the fog lets the player see, and with a clear
+## line of sight to at least one point on the Entity (feet, chest or head).
+func flashlight_beam_on_entity() -> float:
+	if not _flashlight or not _has_flashlight or not _flashlight.is_on:
+		return -1.0
+	if not _entity_node or not is_instance_valid(_entity_node) or not _entity_node.is_visible_in_tree():
+		return -1.0
+	var space_state := get_world_3d().direct_space_state
 	if not space_state:
-		return false
-	
-	# ─── STEP 1: VISION CONE (dot product) ────────────────────────
-	# The player must be looking roughly at the Entity.
-	# Standard beam: dot > 0.95 = ~18° cone — matches the flashlight beam.
-	# Overcharge beam: dot > 0.985 = ~10° cone — tighter, rewards precision.
-	var cam_forward = -_camera.global_transform.basis.z.normalized()
-	var entity_target = _entity_node.global_position + Vector3(0, 1.0, 0)
-	var dir_to_entity = (entity_target - _camera.global_position).normalized()
-	
-	var cone_dot_threshold: float = 0.95
-	if _flashlight and _flashlight.is_overcharged:
-		cone_dot_threshold = 0.985
-	
-	if cam_forward.dot(dir_to_entity) < cone_dot_threshold:
-		return false
-	
-	# ─── STEP 2: OCCLUSION RAYCAST ────────────────────────────────
-	# Cast from camera toward the Entity's chest.
-	# collision_mask = 17  → Layer 1 (world/cabin) | Layer 5 (entity)
-	# If the ray hits a wall before the Entity, is_player_spotting fails.
-	var query = PhysicsRayQueryParameters3D.create(
-		_camera.global_position,
-		entity_target
-	)
-	query.exclude = [self]
-	query.collision_mask = 17  # Layer 1 (world) | Layer 5 (entity) = 1 | 16
-	
-	var result = space_state.intersect_ray(query)
-	if result.is_empty():
-		return false
-	
-	var collider = result.collider
-	return collider != null and collider.is_in_group("entity")
+		return -1.0
+
+	var overcharged: bool = _flashlight.is_overcharged
+	var reach: float = _flashlight.spot_range * (OVERCHARGE_REACH_MULTIPLIER if overcharged else 1.0)
+	reach = minf(reach, _fog_visibility() * FOG_VISIBILITY_FRACTION)
+	var cone: float = deg_to_rad(_flashlight.spot_angle * BEAM_HIT_CONE_FRACTION)
+	var beam_axis: Vector3 = -_flashlight.global_transform.basis.z
+	var eye: Vector3 = _camera.global_position
+
+	var best := -1.0
+	for height in ENTITY_BEAM_SAMPLE_HEIGHTS:
+		var point: Vector3 = _entity_node.global_position + Vector3.UP * height
+		var to_point := point - eye
+		var distance := to_point.length()
+		if distance > reach or distance < 0.01:
+			continue
+		var angle := beam_axis.angle_to(to_point)
+		if angle > cone:
+			continue
+		# Walls, trees and furniture block the beam; the Entity itself doesn't.
+		var query := PhysicsRayQueryParameters3D.create(eye, point, 1)
+		query.exclude = [get_rid()]
+		if not space_state.intersect_ray(query).is_empty():
+			continue
+		var falloff := 1.0 - pow(distance / reach, 2.0)
+		var centred := lerpf(0.5, 1.0, 1.0 - angle / cone)
+		best = maxf(best, falloff * centred)
+	return best
+
+
+## How far the player can see through the night fog (INF without fog).
+func _fog_visibility() -> float:
+	if not _environment_controller or not is_instance_valid(_environment_controller):
+		_environment_controller = get_tree().get_first_node_in_group("environment_controller")
+	if _environment_controller and _environment_controller.has_method("get_fog_visibility"):
+		return _environment_controller.get_fog_visibility()
+	return INF
 
 
 ## Public API: returns true if the player's flashlight is currently on.

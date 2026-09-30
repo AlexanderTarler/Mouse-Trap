@@ -67,8 +67,8 @@ func _build_text() -> String:
 	lines.append("last seen %.1fs ago   last heard %.1fs ago" % [minf(p.time_since_seen(), 999.0), minf(p.time_since_heard(), 999.0)])
 	lines.append("player room: %s   entity room: %s%s" % [p.player_room, p.entity_room, " (LIT)" if p.entity_in_lit_room else ""])
 	lines.append("on player's screen: %s   watched: %s" % [p.in_player_view, p.player_watching])
-	lines.append("flashlight: %s  overcharged: %s  stare %.1fs  overcharge %.1fs" % [
-		p.illuminated, p.overcharged, p.stare_time, p.overcharge_time])
+	lines.append("flashlight: %s  overcharged: %s  strength %.2f  stare pressure %.2f  overcharge %.1fs  standoff cooldown %.1fs" % [
+		p.illuminated, p.overcharged, p.beam_strength, p.stare_pressure, p.overcharge_time, entity.brain.standoff_cooldown])
 	lines.append("")
 	lines.append("recent transitions:")
 	for entry in entity.brain.history:
