@@ -6,6 +6,9 @@ extends SceneTree
 ##   - Indoors its head stays under the ceiling (it poked through the floor
 ##     above); outdoors it is full size.
 ##   - Charging indoors it shrieks, from its own head.
+##   - Its distortion field (visual distortion + whispers) only works close
+##     by, while the player looks at it AND it sees the player.
+##   - Stalking, being watched slows it but never holds it off.
 ##
 ## Run: godot --headless --path . --fixed-fps 60 --script res://tests/fixes_test.gd
 
@@ -36,6 +39,8 @@ func _run() -> void:
 	await _test_search_speed()
 	await _test_headroom()
 	await _test_indoor_shriek()
+	await _test_distortion_field()
+	await _test_stalk_watched()
 
 	print("[FIXES TEST] %s" % ("ALL PASSED" if _failures == 0 else "%d FAILED" % _failures))
 	scene.queue_free()
@@ -204,3 +209,79 @@ func _test_fog_reprojection() -> void:
 		await physics_frame
 	_check("fog: no fog blending indoors (it smeared fog in through the walls), blending outdoors",
 		not inside and outside, "indoors %s, outdoors %s" % [inside, outside])
+
+
+func _seconds(s: float) -> void:
+	for i in int(s * 60.0):
+		await physics_frame
+
+
+## Player at `at` looking along +Z (facing_entity) or -Z; the Entity `ahead`
+## metres in front, facing the player or turned away (then blind to them).
+func _stage(at: Vector3, ahead: float, player_looks: bool, entity_faces: bool) -> void:
+	var player: Node3D = get_first_node_in_group("player")
+	var entity = get_first_node_in_group("entity")
+	player.global_position = at
+	player.rotation.y = PI if player_looks else 0.0
+	entity.activate()
+	entity.request_state(entity.State.STUNNED)
+	entity._teleport(at + Vector3(0.0, -0.4, ahead))
+	entity.rotation.y = PI if entity_faces else 0.0
+
+
+func _test_distortion_field() -> void:
+	var player: CharacterBody3D = get_first_node_in_group("player")
+	var entity = get_first_node_in_group("entity")
+	var field = player.find_child("SanityController", true, false)
+	var night_manager = root.get_node("NightManager")
+	var night: int = night_manager.current_night
+	night_manager.current_night = 3
+	player.set_physics_process(false)
+	var at := Vector3(30.0, 0.5, 0.0)
+	var results := {}
+	for case in [["near", 8.0, true, true], ["far", 24.0, true, true], ["unseen", 8.0, true, false], ["away", 8.0, false, true]]:
+		_stage(at, case[1], case[2], case[3])
+		await _seconds(2.5)
+		results[case[0]] = [field.level, field._overlay.visible, field._audio.playing, entity.perception.can_see_player]
+	var near: Array = results["near"]
+	_check("field: close, looked at and seeing the player: the view distorts and it whispers",
+		near[0] > 0.4 and near[1] and near[2] and near[3], "strength %.2f, overlay %s, whispers %s, it sees the player %s" % near)
+	var quiet: Array[String] = []
+	for c in ["far", "unseen", "away"]:
+		if results[c][0] > 0.02 or results[c][1] or results[c][2]:
+			quiet.append("%s: %.2f" % [c, results[c][0]])
+	_check("field: nothing when it is far away (24 m), can't see the player, or isn't looked at",
+		quiet.is_empty(), ", ".join(quiet) if not quiet.is_empty() else "far %.2f, unseen %.2f, away %.2f" % [results["far"][0], results["unseen"][0], results["away"][0]])
+	_check("field: the camera shake follows the field", is_equal_approx(field.get_gaze_normalized(), clampf(field.level + field.burst * 0.5, 0.0, 1.0)))
+	entity.deactivate()
+	night_manager.current_night = night
+	player.set_physics_process(true)
+
+
+func _test_stalk_watched() -> void:
+	var player: CharacterBody3D = get_first_node_in_group("player")
+	var entity = get_first_node_in_group("entity")
+	player.set_physics_process(false)
+	var at := Vector3(30.0, 0.5, 0.0)
+	_stage(at, 10.0, true, true)
+	entity.can_kill = false
+	await _seconds(0.3)
+	entity.perception.last_seen_position = player.global_position
+	entity.request_state(entity.State.STALK)
+	var closest := INF
+	var watched := 0
+	var frames := 0
+	for i in 60 * 14:
+		await physics_frame
+		var flat := Vector2(entity.global_position.x - at.x, entity.global_position.z - at.z).length()
+		closest = minf(closest, flat)
+		# Only the approach counts (up close it is below the player's gaze).
+		if flat > 5.0:
+			frames += 1
+			if entity.perception.player_watching:
+				watched += 1
+	_check("stalk: watched the whole way, it still walks right up to the player",
+		closest < 2.0 and watched > frames * 0.8, "closest %.1f m, watched %d%% of the approach, state %s" % [closest, 100 * watched / maxi(frames, 1), entity.get_state_name()])
+	entity.can_kill = true
+	entity.deactivate()
+	player.set_physics_process(true)

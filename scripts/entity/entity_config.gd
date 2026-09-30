@@ -150,10 +150,15 @@ extends Resource
 @export_group("Stalk")
 ## Stalking stops and it goes searching after this long without a sighting.
 @export var stalk_lose_time: float = 6.0
-## Freeze in place while the player is looking straight at it (unless close).
+## Caught being watched (from further than stalk_freeze_min_distance) it
+## stops dead and stares back for stalk_stare_time seconds...
 @export var stalk_freeze_when_watched: bool = true
-## Distance inside which being watched no longer freezes it.
+## Distance inside which being watched no longer stops it at all.
 @export var stalk_freeze_min_distance: float = 5.0
+@export var stalk_stare_time: float = 1.5
+## ...then keeps creeping closer at this fraction of stalk_speed for as long
+## as it is watched. Watching slows it; it never holds it off for good.
+@export var stalk_watched_speed: float = 0.45
 ## Visible, unwatched and this close: it lunges (CHARGE).
 @export var stalk_lunge_distance: float = 3.5
 ## Further than this and out of view: it repositions near the player.

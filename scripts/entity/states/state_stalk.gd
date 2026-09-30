@@ -5,8 +5,10 @@ extends EntityState
 ## line of sight and moving away actually works).
 ##
 ## When the player looks straight at it from a distance it stops dead and
-## stares back, then keeps coming when they look away. Close, visible and
-## unwatched, it lunges (CHARGE). If the player gets far away and it's out of
+## stares back for a moment, then keeps creeping closer, slowly while
+## watched and at full speed when they look away; watching never holds it
+## off for good. Close, visible and unwatched, it lunges (CHARGE); watched
+## all the way, it simply walks up to them. If the player gets far away and it's out of
 ## view, it quietly repositions somewhere near them.
 ##
 ## During the Night 2 van chase this is a scripted, fully aware pursuit paced
@@ -21,11 +23,13 @@ const VAN_SAFE_TIME := 0.5
 var _lost_time := 0.0
 var _reposition_cooldown := 0.0
 var _player_inside_time := 0.0
+var _watched_time := 0.0
 
 
 func enter(_from: int, _data: Dictionary) -> void:
 	_lost_time = 0.0
 	_player_inside_time = 0.0
+	_watched_time = 0.0
 	_reposition_cooldown = REPOSITION_COOLDOWN
 	if entity.van_chase_active:
 		entity.audio.start_chase_music()
@@ -46,11 +50,15 @@ func update(delta: float) -> void:
 	_lost_time = 0.0 if perception.can_see_player else _lost_time + delta
 	_reposition_cooldown -= delta
 
+	var speed := config.stalk_speed
+	_watched_time = _watched_time + delta if perception.player_watching else 0.0
 	if config.stalk_freeze_when_watched and perception.player_watching \
 			and perception.distance_to_player > config.stalk_freeze_min_distance:
-		entity.stop()
-		entity.face(player.global_position)
-		return
+		if _watched_time < config.stalk_stare_time:
+			entity.stop()
+			entity.face(player.global_position)
+			return
+		speed *= config.stalk_watched_speed
 
 	if perception.distance_to_player > config.rubberband_distance and _reposition_cooldown <= 0.0:
 		_reposition_cooldown = REPOSITION_COOLDOWN
@@ -59,7 +67,7 @@ func update(delta: float) -> void:
 			entity.try_teleport(spot)
 
 	var target := perception.last_seen_position
-	var remaining := entity.move_to(target, config.stalk_speed)
+	var remaining := entity.move_to(target, speed)
 	if remaining < 1.0:
 		entity.face(target)
 
