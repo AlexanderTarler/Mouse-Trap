@@ -9,6 +9,12 @@ extends Node
 ##   - Occasional distant sounds around the player: wood cracking, things
 ##     falling, and (from Night 3) far-off roars.
 ##   - Wind whistling at broken, unboarded windows.
+##   - The house settling: now and then an old board creaks near the player
+##     while they are inside.
+##   - A tension drone that rises as the Entity gets closer or bolder (and
+##     steps aside for the chase music).
+##   - Stingers: the first time each night the player sees the Entity, and
+##     when it kills a light (play_stinger, with a cooldown).
 ##   - Indoors, everything outside (the Ambient bus) is muffled: a low-pass
 ##     filter and a volume dip, less so upstairs.
 ## Sounds made inside the cabin get a small wooden-room reverb: every
@@ -60,6 +66,18 @@ const DISTANT_ROAR_PATHS: Array[String] = [
 	ECHOES_DIR + "SFX/Creatures/Monster/monster_roar_distant_7.ogg",
 ]
 
+## Short horror stingers.
+const STINGER_PATHS: Array[String] = [
+	ECHOES_DIR + "Bonus/Pure Horror/One-shots/stinger_ph_1.ogg",
+	ECHOES_DIR + "Bonus/Pure Horror/One-shots/stinger_ph_2.ogg",
+	ECHOES_DIR + "Bonus/Pure Horror/One-shots/stinger_ph_3.ogg",
+	ECHOES_DIR + "Bonus/Pure Horror/One-shots/stinger_ph_4.ogg",
+	ECHOES_DIR + "Bonus/Pure Horror/One-shots/stinger_ph_5.ogg",
+	ECHOES_DIR + "Bonus/Pure Horror/One-shots/stinger_ph_6.ogg",
+]
+## The tension drone (a low sub-tone loop).
+const TENSION_PATH: String = ECHOES_DIR + "Bonus/Pure Horror/Loops/sub_tones_loop_1.ogg"
+
 # ─── Soundscape tuning ──────────────────────────────────────────────────────
 const SOUNDSCAPE_INTERVAL := 0.2
 ## Ambient bus low-pass cutoff (Hz): outdoors, ground floor, upstairs.
@@ -87,6 +105,22 @@ const DISTANT_RANGE_MAX := 45.0
 const DISTANT_ROAR_CHANCE := 0.3
 ## Whistling wind at a broken window.
 const WHISTLE_DB := -10.0
+## Stingers never closer together than this (s).
+const STINGER_COOLDOWN := 40.0
+const STINGER_DB := -4.0
+## The house settling while the player is inside: one creak every so often,
+## this far from the player (m).
+const SETTLE_INTERVAL_MIN := 30.0
+const SETTLE_INTERVAL_MAX := 70.0
+const SETTLE_RANGE_MIN := 3.0
+const SETTLE_RANGE_MAX := 7.0
+## Tension: full within TENSION_NEAR m, nothing beyond TENSION_FAR m; its
+## boldness (confidence) adds up to TENSION_CONFIDENCE_SHARE on its own.
+const TENSION_NEAR := 6.0
+const TENSION_FAR := 30.0
+const TENSION_CONFIDENCE_SHARE := 0.4
+const TENSION_SILENT_DB := -50.0
+const TENSION_FULL_DB := -12.0
 
 # Night wind layers (2D, on the Ambient bus)
 var _ambient_sounds: Array[AudioStreamPlayer] = []
@@ -129,6 +163,13 @@ var _whistles: Dictionary = {}   ## CabinWindow -> AudioStreamPlayer3D
 var _muffle_cutoff := OPEN_CUTOFF
 var _muffle_db := 0.0
 var _silence_db := NIGHT_AMBIENCE_DB
+var _stinger_streams: Array[AudioStream] = []
+var _stinger_player: AudioStreamPlayer = null
+var _stinger_cooldown := 0.0
+var _seen_tonight := false
+var _settle_left := 45.0
+var _tension_player: AudioStreamPlayer = null
+var _tension := 0.0
 
 # Distant monster music player (plays when night starts)
 var _distant_monster_player: AudioStreamPlayer = null
@@ -257,6 +298,7 @@ func _preload_audio_files() -> void:
 	_whisper_streams = _load_paths(WHISPER_PATHS)
 	_distant_forest_streams = _load_paths(DISTANT_FOREST_PATHS)
 	_distant_roar_streams = _load_paths(DISTANT_ROAR_PATHS)
+	_stinger_streams = _load_paths(STINGER_PATHS)
 	
 	print("HorrorSoundManager: Loaded %d ambient wind, %d wooden footsteps, %d grass footsteps, %d door creaks, %d monster growls" % [
 		_ambient_wind_streams.size(),
@@ -327,6 +369,18 @@ func _setup_ambient_sounds() -> void:
 	_distant_player.unit_size = 12.0
 	_distant_player.max_distance = 90.0
 	add_child(_distant_player)
+	_stinger_player = AudioStreamPlayer.new()
+	_stinger_player.bus = "SFX"
+	_stinger_player.volume_db = STINGER_DB
+	add_child(_stinger_player)
+	_tension_player = AudioStreamPlayer.new()
+	_tension_player.bus = "Entity"
+	_tension_player.volume_db = TENSION_SILENT_DB
+	if ResourceLoader.exists(TENSION_PATH):
+		var drone := (load(TENSION_PATH) as AudioStream).duplicate()
+		_set_loop(drone)
+		_tension_player.stream = drone
+	add_child(_tension_player)
 
 func _setup_event_sounds() -> void:
 	for i in 8:
@@ -416,6 +470,8 @@ func _deferred_connect_night_manager() -> void:
 func _on_night_started(night: int) -> void:
 	_is_night = true
 	_night = night
+	_seen_tonight = false
+	_settle_left = randf_range(SETTLE_INTERVAL_MIN, SETTLE_INTERVAL_MAX) * 0.5
 	_distant_left = randf_range(DISTANT_INTERVAL_MIN, DISTANT_INTERVAL_MAX) * 0.5
 	_play_ambient()
 	# Switch to night forest ambience
@@ -437,6 +493,10 @@ func _on_night_started(night: int) -> void:
 func _on_night_ended(_night: int) -> void:
 	_is_night = false
 	_stop_whistles()
+	_tension = 0.0
+	if _tension_player:
+		_tension_player.stop()
+		_tension_player.volume_db = TENSION_SILENT_DB
 	if _distant_player:
 		_distant_player.stop()
 	_silence_db = NIGHT_AMBIENCE_DB
@@ -571,6 +631,7 @@ func play_footstep_at(surface_type: String = "wooden", position: Vector3 = Vecto
 func _get_available_event_player() -> AudioStreamPlayer3D:
 	for player in _event_players:
 		if not player.playing:
+			player.pitch_scale = 1.0
 			return player
 	return null
 
@@ -765,11 +826,15 @@ func _process(delta: float) -> void:
 	var inside: bool = player.has_method("get_player_room") and player.get_player_room() != "Outside"
 	var upstairs: bool = inside and player.global_position.y > 2.5
 	_update_muffle(inside, upstairs)
+	_stinger_cooldown = maxf(_stinger_cooldown - step, 0.0)
 	if _is_night:
 		_update_wind(upstairs)
 		_update_silence(player)
 		_update_distant(step, player)
 		_update_whistles()
+		_update_settling(step, player, inside)
+		_update_tension(player)
+		_update_first_sighting()
 
 
 func _player() -> Node3D:
@@ -894,3 +959,69 @@ func _stop_whistles() -> void:
 		if is_instance_valid(whistle):
 			whistle.queue_free()
 	_whistles.clear()
+
+
+## A short horror stinger, unless one played in the last STINGER_COOLDOWN s.
+## Returns whether it played.
+func play_stinger() -> bool:
+	if _stinger_cooldown > 0.0 or _stinger_streams.is_empty() or not _stinger_player:
+		return false
+	_stinger_cooldown = STINGER_COOLDOWN
+	_stinger_player.stream = _get_random_stream(_stinger_streams)
+	_stinger_player.play()
+	sound_played.emit("stinger")
+	return true
+
+
+## The first time each night the player actually sees the Entity.
+func _update_first_sighting() -> void:
+	if _seen_tonight:
+		return
+	var entity := get_tree().get_first_node_in_group("entity")
+	if entity and entity.has_method("is_active") and entity.is_active() \
+			and entity.get("perception") and entity.perception.in_player_view:
+		_seen_tonight = true
+		play_stinger()
+
+
+## The old house settling around the player while they are inside.
+func _update_settling(step: float, player: Node3D, inside: bool) -> void:
+	_settle_left -= step
+	if _settle_left > 0.0:
+		return
+	_settle_left = randf_range(SETTLE_INTERVAL_MIN, SETTLE_INTERVAL_MAX)
+	if not inside or _creaking_door_streams.is_empty():
+		return
+	var player3d := _get_available_event_player()
+	if not player3d:
+		return
+	var direction := Vector3.FORWARD.rotated(Vector3.UP, randf() * TAU)
+	player3d.stream = _get_random_stream(_creaking_door_streams)
+	player3d.global_position = player.global_position + direction * randf_range(SETTLE_RANGE_MIN, SETTLE_RANGE_MAX) \
+		+ Vector3.UP * randf_range(0.5, 2.5)
+	player3d.pitch_scale = randf_range(0.45, 0.65)   # boards, not hinges
+	player3d.play()
+	sound_played.emit("house_settling")
+
+
+## A low drone that rises as the Entity closes in (or grows bold), and gets
+## out of the way of the chase music.
+func _update_tension(player: Node3D) -> void:
+	if not _tension_player or not _tension_player.stream:
+		return
+	var level := 0.0
+	var entity := get_tree().get_first_node_in_group("entity")
+	if entity and entity.has_method("is_active") and entity.is_active():
+		var distance: float = entity.global_position.distance_to(player.global_position)
+		level = clampf((TENSION_FAR - distance) / (TENSION_FAR - TENSION_NEAR), 0.0, 1.0)
+		var confidence = entity.get("confidence")
+		if confidence and "confidence" in confidence:
+			level = maxf(level, clampf(confidence.confidence / 100.0, 0.0, 1.0) * TENSION_CONFIDENCE_SHARE)
+	if _stalk_chase_playing:
+		level = 0.0
+	_tension = lerpf(_tension, level, 0.1)
+	_tension_player.volume_db = lerpf(TENSION_SILENT_DB, TENSION_FULL_DB, _tension)
+	if _tension > 0.02 and not _tension_player.playing:
+		_tension_player.play()
+	elif _tension <= 0.02 and _tension_player.playing:
+		_tension_player.stop()

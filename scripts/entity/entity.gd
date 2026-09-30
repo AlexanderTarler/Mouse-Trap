@@ -106,7 +106,7 @@ var _traversal_anim: StringName = &""
 var _perch_link: CabinEntryLink = null
 var _perch_offset := Vector3.ZERO
 var _climb_tap_left := 0.0
-const CLIMB_TAP_INTERVAL := 0.55
+const CLIMB_TAP_INTERVAL := 0.8
 
 # ─── Stuck detection ─────────────────────────────────────────────────────────
 var _stuck_timer := 0.0
@@ -469,7 +469,10 @@ func _physics_process(delta: float) -> void:
 	_update_stuck(delta)
 	_check_catch()
 	traces.update_tracks(is_on_floor())
-	audio.update_footsteps(delta, Vector2(get_real_velocity().x, get_real_velocity().z).length())
+	var ground_speed := Vector2(get_real_velocity().x, get_real_velocity().z).length()
+	audio.update_footsteps(delta, ground_speed)
+	audio.update_floor_creaks(delta, ground_speed)
+	audio.update_murmurs(delta)
 	_update_animation(delta)
 
 
@@ -675,7 +678,7 @@ func leave_perch(scared: bool) -> void:
 		_traversal.tween_callback(_set_traversal_anim.bind(&"entity_in_light"))
 		_traversal.tween_property(self, "global_position", base, config.drop_time) \
 			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
-		_traversal.tween_callback(audio.play_grunt.bind(0.55))
+		_traversal.tween_callback(audio.play_drop_thud)
 	else:
 		_tween_climb(global_position, base, &"ClimbDown")
 	_traversal.tween_callback(_set_perch.bind(null))
@@ -751,7 +754,7 @@ func _update_climb_sounds(delta: float) -> void:
 	_climb_tap_left -= delta
 	if _climb_tap_left <= 0.0:
 		_climb_tap_left = CLIMB_TAP_INTERVAL
-		audio.play_tap_at(global_position + Vector3.UP * 1.2)
+		audio.play_climb_scrape(global_position + Vector3.UP * 1.2)
 
 
 func _face_window(link: CabinEntryLink) -> void:

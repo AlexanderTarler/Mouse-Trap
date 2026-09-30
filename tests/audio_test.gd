@@ -3,7 +3,9 @@ extends SceneTree
 ## buses and room reverb are set up, and the night soundscape behaves:
 ## indoor muffling, wind, the forest going quiet near the Entity, distant
 ## sounds, whistling broken windows, events placed around the player, stair
-## footsteps and the chase music.
+## footsteps and the chase music. Plus the Entity's and the house's own
+## sounds: growls, climbing, floor creaks, knocks, plank blows, the flashlight
+## click, stingers, the house settling and the tension drone.
 ##
 ## Run: godot --headless --path . --fixed-fps 60 --script res://tests/audio_test.gd
 
@@ -59,6 +61,11 @@ func _run() -> void:
 	_test_event_positions()
 	await _test_footsteps()
 	_test_chase_music()
+	_test_entity_sound_sets()
+	await _test_floor_creaks()
+	_test_house_sounds()
+	await _test_stingers_and_settling()
+	await _test_tension()
 
 	print("[AUDIO TEST] %s" % ("ALL PASSED" if _failures == 0 else "%d FAILED" % _failures))
 	_scene.queue_free()
@@ -233,3 +240,120 @@ func _test_chase_music() -> void:
 	_check("chase music: the chase loop exists and starts", player != null and player.stream != null,
 		player.stream.resource_path.get_file() if player and player.stream else "no player/stream")
 	_hsm._stop_stalk_chase()
+
+
+# ─── Entity, house and tension ──────────────────────────────────────────────
+
+func _test_entity_sound_sets() -> void:
+	var audio = get_first_node_in_group("entity").audio
+	var expected := {
+		"_growl_streams": 12, "_scrape_streams": 3, "_thud_streams": 3,
+		"_creak_streams": 12, "_knock_streams": 3,
+	}
+	var short: Array[String] = []
+	for set_name in expected:
+		var got: int = audio.get(set_name).size()
+		if got != expected[set_name]:
+			short.append("%s %d/%d" % [set_name, got, expected[set_name]])
+	if audio._murmur_streams.size() < 3:
+		short.append("_murmur_streams %d" % audio._murmur_streams.size())
+	_check("entity sounds: growls, climb scrapes, drop thuds, floor creaks, knocks and murmurs load",
+		short.is_empty(), ", ".join(short))
+
+
+## The Entity walking on the floor above the player makes the boards creak.
+func _test_floor_creaks() -> void:
+	var entity = get_first_node_in_group("entity")
+	_stand(HALL)
+	entity.activate()
+	entity.request_state(entity.State.STUNNED)
+	entity._teleport(LANDING)
+	await _frames(10)
+	var audio = entity.audio
+	audio._creak_left = 0.0
+	audio.update_floor_creaks(0.1, 2.0)
+	var above: bool = audio._creak.playing
+	audio._creak.stop()
+	# On the same floor: no creaks.
+	entity._teleport(HALL + Vector3(3.0, 0.0, 0.0))
+	await _frames(10)
+	audio._creak_left = 0.0
+	audio.update_floor_creaks(0.1, 2.0)
+	var same: bool = audio._creak.playing
+	entity.deactivate()
+	await _frames(5)
+	_check("floor creaks: boards creak under the Entity on the other floor, not on the same one",
+		above and not same, "above=%s, same floor=%s" % [above, same])
+
+
+func _test_house_sounds() -> void:
+	var window: Node = _scene.get_node("Windows/BottomFloorWindows/LivingRoomWindow")
+	window.is_boarded = true
+	window.is_glass_shattered = true
+	window.planks_remaining = 3
+	window.hits_on_current_plank = 0
+	window.damage_barricade()
+	var plank: AudioStreamPlayer3D = window.get_node_or_null("PlankHitSound")
+	var hit_ok := plank != null and plank.stream != null and plank.playing
+	_check("planks: a blow on a boarded window thuds", hit_ok,
+		plank.stream.resource_path.get_file() if plank and plank.stream else "no sound")
+
+	var flashlight: Node = null
+	for node in _player.find_children("*", "", true, false):
+		if node.has_method("toggle") and "battery_level" in node:
+			flashlight = node
+			break
+	var clicked := false
+	if flashlight:
+		flashlight.toggle()
+		clicked = flashlight._click_player != null and flashlight._click_player.playing
+		flashlight.toggle()
+	_check("flashlight: the switch clicks", clicked, "flashlight found=%s" % (flashlight != null))
+
+
+func _test_stingers_and_settling() -> void:
+	_hsm._stinger_cooldown = 0.0
+	var first: bool = _hsm.play_stinger()
+	var second: bool = _hsm.play_stinger()
+	_check("stingers: one plays, and a second right after is held back by the cooldown",
+		first and not second and _hsm._stinger_player.playing)
+
+	_stand(HALL)
+	_hsm._on_night_started(2)
+	await _frames(30)
+	for p in _hsm._event_players:
+		p.stop()
+	_hsm._settle_left = 0.0
+	await _frames(20)
+	var creaks: Array = _hsm._event_players.filter(func(p): return p.playing)
+	var ok := false
+	var detail := "nothing played"
+	if not creaks.is_empty():
+		var c: AudioStreamPlayer3D = creaks[0]
+		var d := Vector2(c.global_position.x - _player.global_position.x, c.global_position.z - _player.global_position.z).length()
+		ok = c.pitch_scale < 0.7 and d >= 2.9 and d <= 7.1
+		detail = "pitch %.2f at %.1f m" % [c.pitch_scale, d]
+	_check("house settling: a low board creak somewhere near the player indoors at night", ok, detail)
+	_hsm._on_night_ended(2)
+
+
+## The drone swells as the Entity closes in, and is gone by day.
+func _test_tension() -> void:
+	var entity = get_first_node_in_group("entity")
+	_stand(YARD)
+	_hsm._on_night_started(3)
+	entity.activate()
+	entity.request_state(entity.State.STUNNED)
+	entity._teleport(_player.global_position + Vector3(40.0, 0.0, 0.0))
+	await _frames(60)
+	var far_db: float = _hsm._tension_player.volume_db
+	entity._teleport(_player.global_position + Vector3(5.0, 0.0, 0.0))
+	await _frames(240)
+	var near_db: float = _hsm._tension_player.volume_db
+	var near_playing: bool = _hsm._tension_player.playing
+	entity.deactivate()
+	_hsm._on_night_ended(3)
+	await _frames(5)
+	_check("tension: the drone swells as the Entity comes close, and stops by day",
+		near_playing and near_db > far_db + 10.0 and near_db > -20.0 and not _hsm._tension_player.playing,
+		"far %.0f dB, near %.0f dB" % [far_db, near_db])

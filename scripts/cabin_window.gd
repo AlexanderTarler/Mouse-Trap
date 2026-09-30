@@ -638,6 +638,30 @@ func get_secure_type() -> String:
 	return ""
 
 
+## Blows on the planks: a dull thud, and a wood crack when one gives way.
+const PLANK_SFX_DIR := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Misc/"
+const PLANK_HIT_PATHS: Array[String] = [
+	PLANK_SFX_DIR + "hit_1.ogg", PLANK_SFX_DIR + "hit_2.ogg", PLANK_SFX_DIR + "hit_5.ogg"]
+const PLANK_CRACK_PATHS: Array[String] = [PLANK_SFX_DIR + "crack_1_wood.ogg", PLANK_SFX_DIR + "crack_2_wood.ogg"]
+var _plank_sound: AudioStreamPlayer3D = null
+
+
+func _play_plank_sound(broken: bool) -> void:
+	if not _plank_sound:
+		_plank_sound = AudioStreamPlayer3D.new()
+		_plank_sound.name = "PlankHitSound"
+		_plank_sound.bus = &"SFX"
+		_plank_sound.unit_size = 4.0
+		_plank_sound.max_distance = 35.0
+		add_child(_plank_sound)
+	var path: String = (PLANK_CRACK_PATHS if broken else PLANK_HIT_PATHS).pick_random()
+	if not ResourceLoader.exists(path):
+		return
+	_plank_sound.stream = load(path)
+	_plank_sound.pitch_scale = randf_range(0.8, 1.0)
+	_plank_sound.play()
+
+
 ## Called by the Entity AI to damage the barricade with a single hit.
 ## STRICTLY SEQUENTIAL TWO-PHASE EXECUTION:
 ##
@@ -673,6 +697,7 @@ func damage_barricade() -> bool:
 	# Glass is already shattered. If planks are present, apply one hit.
 	if is_boarded:
 		hits_on_current_plank += 1
+		_play_plank_sound(hits_on_current_plank >= HITS_PER_PLANK)
 		
 		# Check if the current plank is fully broken
 		if hits_on_current_plank >= HITS_PER_PLANK:

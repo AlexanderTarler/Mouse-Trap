@@ -919,7 +919,9 @@ func _physics_process(delta: float) -> void:
 			_try_step_up(direction)
 
 	var landed = not _was_on_floor and is_on_floor()
-	if landed: make_noise(&"land") # Thud on landing
+	if landed:
+		make_noise(&"land") # Thud on landing
+		_play_landing_thud()
 
 	move_and_slide()
 	_was_on_floor = is_on_floor()
@@ -1007,6 +1009,14 @@ func _play_surface_footstep() -> void:
 		footstep_audio.volume_db = _footstep_base_db \
 			+ (crouch_footstep_db if _is_crouching else (sprint_footstep_db if _is_running else 0.0))
 		footstep_audio.play()
+
+
+## A heavier, lower footstep when landing from a jump or a drop.
+func _play_landing_thud() -> void:
+	_play_surface_footstep()
+	if footstep_audio:
+		footstep_audio.volume_db = _footstep_base_db + 5.0
+		footstep_audio.pitch_scale = randf_range(0.65, 0.75)
 
 
 ## Stair footsteps default to the horror pack's wooden stairs.

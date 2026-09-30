@@ -205,6 +205,9 @@ func _play_power_on_flicker() -> void:
 func entity_sabotage() -> void:
 	if is_faulty or not is_room_lit():
 		return
+	var sound_manager := get_node_or_null("/root/HorrorSoundManager")
+	if sound_manager and sound_manager.has_method("play_stinger"):
+		sound_manager.play_stinger()
 	_cancel_flicker()
 	_flicker_tween = create_tween()
 	for i in randi_range(3, 5):

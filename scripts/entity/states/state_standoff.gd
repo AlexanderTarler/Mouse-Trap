@@ -76,7 +76,7 @@ func next_state() -> int:
 					and perception.stare_pressure >= 1.0:
 				_set_phase(Phase.WINDUP)
 				entity.audio.play_voice("angry", true)
-				entity.audio.play_grunt(0.6)
+				entity.audio.play_growl()
 			elif _lost_time > config.standoff_release_time:
 				_start_back_off()
 		Phase.WINDUP:

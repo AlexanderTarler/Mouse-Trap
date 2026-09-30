@@ -40,8 +40,9 @@ func enter(_from: int, data: Dictionary) -> void:
 	_light_kill_left = 0.0
 	_tap_left = randf_range(config.tap_interval_min, config.tap_interval_max)
 	if _rattle:
-		_stare_left = 2.5
+		_stare_left = 3.5
 		_entry.entry.interact()   # Locked: plays the rattle.
+		entity.audio.play_knocks(_entry.entry.global_position + Vector3.UP * 1.2)
 	else:
 		_stare_left = randf_range(config.peek_time_min, config.peek_time_max)
 		entity.traces.scratch_window(_entry)
@@ -89,7 +90,7 @@ func next_state() -> int:
 	if world.is_entry_lit(_entry):
 		if _light_kill_left > 0.0 or _try_kill_light():
 			return NO_CHANGE
-		entity.audio.play_grunt(1.3)
+		entity.audio.play_growl()
 		return S.OBSERVE
 	if _stare_left > 0.0 or _duck_left > 0.0:
 		return NO_CHANGE
