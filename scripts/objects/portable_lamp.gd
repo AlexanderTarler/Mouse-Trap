@@ -283,10 +283,9 @@ func drop_trap() -> void:
 		query.collision_mask = 1  # Layer 1: World/terrain geometry
 		var result: Dictionary = space_state.intersect_ray(query)
 		if result:
-			# Snap the lamp to the ground surface + half the collision box height
+			# Snap the lamp so its collision box rests on the ground.
 			var ground_y: float = result.position.y
-			var box_half_height: float = 0.2  # BoxShape3D height is 0.4, half is 0.2
-			global_position.y = ground_y + box_half_height
+			global_position.y = ground_y + _box_bottom_offset()
 			print("[PortableLamp] Ground-snapped to Y=%.2f (hit: %s)" % [global_position.y, result.collider.name])
 		else:
 			print("[PortableLamp] WARNING: No ground found beneath lamp! It may fall through.")
@@ -322,6 +321,21 @@ func drop_trap() -> void:
 	var nm: Node = get_node_or_null("/root/NightManager")
 	if nm and nm.has_method("recalculate_fuel_drain"):
 		nm.recalculate_fuel_drain()
+
+
+## How far above its collision box's bottom the lamp's origin sits (the box
+## fits the model, so it rests on the ground instead of hovering).
+func _box_bottom_offset() -> float:
+	var shape_node := get_node_or_null("CollisionShape3D") as CollisionShape3D
+	var box := shape_node.shape as BoxShape3D if shape_node else null
+	if not box:
+		return 0.1
+	return box.size.y * 0.5 - shape_node.position.y
+
+
+## Where the power cable plugs in (the lamp's hook).
+func get_cable_attach_point() -> Vector3:
+	return global_position
 
 
 ## Public API: Called by PowerCable when the cable is connected to this lamp.

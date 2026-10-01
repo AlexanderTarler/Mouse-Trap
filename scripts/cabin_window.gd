@@ -178,7 +178,39 @@ var _deferred_plank_swap: bool = false
 var _deferred_swap_timer: float = 0.0
 
 
+## Copies of the intact glass and crossbars (shattering frees them), so a
+## checkpoint from before the break can put them back.
+var _pristine_templates: Array[Node] = []
+
+
+func _keep_pristine_templates() -> void:
+	var pristine := get_node_or_null("PristineVisuals")
+	if not pristine:
+		return
+	for child in pristine.get_children():
+		_pristine_templates.append(child.duplicate())
+
+
+## Checkpoint restored this window's state: rebuild what it looks like.
+func _on_checkpoint_restored() -> void:
+	var pristine := get_node_or_null("PristineVisuals")
+	if pristine and not is_glass_shattered:
+		# Only the pieces shattering freed (the glass pane, the crossbars).
+		for template in _pristine_templates:
+			if not pristine.has_node(NodePath(template.name)):
+				var piece := template.duplicate()
+				pristine.add_child(piece)
+				piece.visible = true
+	if is_instance_valid(_glass_shards) and "emitting" in _glass_shards:
+		_glass_shards.emitting = false
+	_update_window_visuals()
+	_update_plank_visuals()
+	_update_nav_blocker()
+	_update_entry_link()
+
+
 func _ready() -> void:
+	_keep_pristine_templates()
 	# Add to the WindowMarkers group so the Entity AI can find this window
 	add_to_group("WindowMarkers")
 	

@@ -7,7 +7,7 @@
 radius = 15.0
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_oeyy3"]
-size = Vector3(0.6, 0.4, 0.6)
+size = Vector3(0.34, 0.19, 0.3)
 
 [node name="PortableLight" type="RigidBody3D" unique_id=279815332]
 continuous_cd = true
@@ -27,7 +27,7 @@ omni_range = 8.0
 shape = SubResource("SphereShape3D_6mgel")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1622748981]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.09832627, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.003, 0.103)
 shape = SubResource("BoxShape3D_oeyy3")
 
 [node name="Marker3D" type="Marker3D" parent="." unique_id=1603834589]

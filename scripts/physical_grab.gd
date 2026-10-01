@@ -407,6 +407,7 @@ func _drop_carried_lamp() -> void:
 		print("[PhysicalGrab] PortableLamp dropped.")
 	
 	_carried_lamp = null
+	_learned_pickup_drop()
 
 
 
@@ -442,6 +443,14 @@ func _drop_object() -> void:
 	
 	_grabbed_body = null
 	_is_grabbing = false
+	_learned_pickup_drop()
+
+
+## The pick up / drop hint: done once something was picked up and dropped.
+func _learned_pickup_drop() -> void:
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("mark_learned"):
+		tm.mark_learned("pickup_drop")
 
 
 ## Finds a door target in front of the camera that has toggle_lock() method.

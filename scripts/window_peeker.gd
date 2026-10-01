@@ -40,8 +40,8 @@ const GAZE_DOT_THRESHOLD: float = 0.94
 const GAZE_MAX_DISTANCE: float = 25.0
 
 ## Delay in seconds after the player looks at the peeker before it vanishes.
-## Reduced by 35% from 0.5s to 0.325s for faster, snappier reactions.
-const SPOTTED_VANISH_DELAY: float = 0.325
+## 1.325 s: long enough to be sure of what you saw (it was 0.325 s).
+const SPOTTED_VANISH_DELAY: float = 1.325
 
 ## Timer counting up while the player is looking at this peeker.
 ## Resets to 0 if the player looks away before SPOTTED_VANISH_DELAY elapses.

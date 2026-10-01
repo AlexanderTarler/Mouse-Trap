@@ -379,6 +379,12 @@ func interact() -> void:
 	
 	# Emit signal
 	nest_documented.emit(nest_id)
+
+	# The last nest: a storm breaks for the long walk back to the cabin.
+	if nest_label == "Nest Gamma":
+		var weather := get_node_or_null("/root/Weather")
+		if weather and weather.has_method("start_storm"):
+			weather.start_storm()
 	
 	# Notify RoutineManager
 	var rm = get_node_or_null("/root/RoutineManager")
@@ -491,7 +497,7 @@ func _play_notebook_sfx() -> void:
 
 func get_interact_text() -> String:
 	if is_documented:
-		return "[E] Nest %s - Already Documented" % nest_name
+		return "[E] %s - Already Documented" % nest_label
 	
 	# ─── LOCK STATE PROMPT SWAP ────────────────────────────────────
 	# While the lock is NOT satisfied, show the dimmed contextual clue.

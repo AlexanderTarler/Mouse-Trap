@@ -43,6 +43,13 @@ var fade_in_delay: float = 0.5
 
 ## How long a prompt stays visible before auto-dismiss (seconds). 0 = no auto-dismiss.
 var auto_dismiss_after: float = 0.0
+## Hints that give way when another tutorial is triggered.
+const REPLACEABLE_HINTS := ["inventory"]
+## Doing one thing also does what another hint asks: opening the notebook
+## is what the PC login hint asks for.
+const ALSO_DISMISSES := {"notebook": ["pc_login_hint"]}
+## The mechanic whose hint is currently on screen ("" for none).
+var _visible_id := ""
 
 ## Cached reference to the HorrorHUD.
 var _hud: Node = null
@@ -99,13 +106,21 @@ func _timestamp() -> String:
 
 ## Trigger a tutorial by its mechanic_id. Called by external scripts (player_controller,
 ## inventory, NightManager) when a trigger moment occurs.
-func trigger(mechanic_id: String) -> void:
+## With `force` the hint replaces whatever hint is on screen and skips its
+## prerequisite (a hint the story needs right now, like sprinting from the
+## Entity); it still respects one_shot and being learned.
+func trigger(mechanic_id: String, force: bool = false) -> void:
 	var tutorial := _find_tutorial(mechanic_id)
 	if not tutorial:
 		push_warning("[TutorialManager] T+%s TRIGGER '%s' — NOT FOUND in loaded tutorials" % [_timestamp(), mechanic_id])
 		return
 	print("[TutorialManager] T+%s TRIGGER '%s' — prompt='%s'" % [_timestamp(), mechanic_id, tutorial.prompt_text])
-	_show(tutorial)
+	_show(tutorial, force)
+
+
+## The mechanic whose hint is on screen ("" for none).
+func visible_hint() -> String:
+	return _visible_id
 
 
 ## Mark a mechanic as learned (player performed the action).
@@ -119,9 +134,15 @@ func mark_learned(mechanic_id: String) -> void:
 	# we must dismiss the hint. This handles the race condition where the
 	# player opens the notebook before the tutorial trigger fires, causing
 	# _shown["notebook"] to be false when hide_hint would be needed.
-	var hud := _find_hud()
-	if hud and hud.has_method("hide_hint"):
-		hud.hide_hint()
+	# Only its own hint (matched by what is on screen): learning the
+	# flashlight must not wipe the sprint hint off the screen mid-chase.
+	_dismiss(mechanic_id)
+	for other in ALSO_DISMISSES.get(mechanic_id, []):
+		if _visible_id == other or _is_on_screen(other):
+			_dismiss(other)
+			var routine := get_node_or_null("/root/RoutineManager")
+			if routine and routine.has_method("mark_mechanic_learned"):
+				routine.mark_mechanic_learned(other)
 	
 	# Clear from shown tracking so future triggers respect one_shot
 	_shown.erase(mechanic_id)
@@ -131,6 +152,32 @@ func mark_learned(mechanic_id: String) -> void:
 		rm.mark_mechanic_learned(mechanic_id)
 	
 	print("[TutorialManager] T+%s MARK_LEARNED '%s' — done" % [_timestamp(), mechanic_id])
+
+
+## Whether this mechanic's hint has been shown (and not yet learned).
+func was_shown(mechanic_id: String) -> bool:
+	return _shown.get(mechanic_id, false) or _visible_id == mechanic_id
+
+
+## Hides this mechanic's hint if it is the one on screen (another hint,
+## say the sprint hint mid-chase, stays).
+func _dismiss(mechanic_id: String) -> void:
+	var hud := _find_hud()
+	if not hud or not hud.has_method("hide_hint"):
+		return
+	if _visible_id == mechanic_id or _is_on_screen(mechanic_id):
+		hud.hide_hint()
+		_visible_id = ""
+
+
+## Whether the HUD is showing this mechanic's prompt right now (however it
+## got there).
+func _is_on_screen(mechanic_id: String) -> bool:
+	var hud := _find_hud()
+	var tutorial := _find_tutorial(mechanic_id)
+	if not hud or not tutorial or not hud.has_method("current_hint"):
+		return false
+	return hud.current_hint() == tutorial.prompt_text
 
 
 ## Checks if a mechanic has been learned (via RoutineManager persistence).
@@ -150,7 +197,7 @@ func _find_tutorial(id: String) -> TutorialData:
 	return null
 
 
-func _can_show(tutorial: TutorialData) -> bool:
+func _can_show(tutorial: TutorialData, force: bool = false) -> bool:
 	# Already shown and one_shot?
 	if tutorial.one_shot and _shown.get(tutorial.mechanic_id, false):
 		return false
@@ -166,31 +213,43 @@ func _can_show(tutorial: TutorialData) -> bool:
 			return false
 	
 	# Prerequisite not yet learned?
-	if tutorial.prerequisite and not is_learned(tutorial.prerequisite):
+	if tutorial.prerequisite and not is_learned(tutorial.prerequisite) and not force:
 		return false
 	
 	return true
 
 
-func _show(tutorial: TutorialData) -> void:
-	if not _can_show(tutorial):
+func _show(tutorial: TutorialData, force: bool = false) -> void:
+	if not _can_show(tutorial, force):
 		return
+	# A passing hint gives way to the next one instead of blocking it.
+	if _visible_id in REPLACEABLE_HINTS:
+		force = true
 	
 	var hud := _find_hud()
 	if not hud or not hud.has_method("show_hint"):
 		push_warning("[TutorialManager] Cannot show hint — no HUD with show_hint() found.")
 		return
 	
-	hud.show_hint(tutorial.prompt_text, fade_in_delay)
+	# Only counts as shown if it actually made it onto the screen (a hint
+	# blocked by another one used to be marked shown, so the one_shot rule
+	# then refused it for good).
+	var on_screen = hud.show_hint(tutorial.prompt_text, fade_in_delay, force)
+	if on_screen == false:
+		print("[TutorialManager] '%s' not shown (another hint is up)." % tutorial.mechanic_id)
+		return
 	_shown[tutorial.mechanic_id] = true
+	_visible_id = tutorial.mechanic_id
 	
 	print("[TutorialManager] Showing prompt: '%s' (%s)" % [tutorial.prompt_text, tutorial.mechanic_id])
 	
 	# Auto-dismiss if configured
 	if auto_dismiss_after > 0.0 and hud.has_method("hide_hint"):
+		var shown_id := tutorial.mechanic_id
 		get_tree().create_timer(auto_dismiss_after).timeout.connect(func():
-			if hud and hud.has_method("hide_hint"):
+			if hud and hud.has_method("hide_hint") and _visible_id == shown_id:
 				hud.hide_hint()
+				_visible_id = ""
 		)
 
 

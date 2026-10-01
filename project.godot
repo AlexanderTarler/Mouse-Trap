@@ -34,6 +34,9 @@ EndgameManager="*res://scripts/managers/endgame_manager.gd"
 PeekerManager="*res://scripts/peeker_manager.gd"
 MCPRuntime="*uid://d0d44kj7mgnoo"
 TutorialManager="*res://scripts/managers/tutorial_manager.gd"
+Checkpoint="*res://scripts/managers/checkpoint_manager.gd"
+Weather="*res://scripts/managers/weather.gd"
+Monologue="*res://scripts/managers/monologue.gd"
 
 [debug]
 

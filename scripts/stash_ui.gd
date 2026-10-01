@@ -117,7 +117,8 @@ func _refresh_container_grid(contents: Array) -> void:
 
 		# Show quantity badge if stacked
 		if quantity > 1:
-			btn.text = "%s x%d" % [item_data.item_name.left(2), quantity]
+			btn.text = "%s
+x%d" % [item_data.short_label() if item_data.has_method("short_label") else item_data.item_name.left(2), quantity]
 
 		btn.pressed.connect(_on_container_item_pressed.bind(i))
 		_container_grid.add_child(btn)
@@ -136,9 +137,14 @@ func _create_item_button(item_data) -> Button:
 	if item_data.item_icon:
 		btn.icon = item_data.item_icon
 	else:
-		btn.text = item_data.item_name.left(2)
+		btn.text = item_data.short_label() if item_data.has_method("short_label") else item_data.item_name.left(2)
+		btn.add_theme_font_size_override("font_size", 12)
+	# A fuel can shows how full it is.
+	if item_data.has_method("is_fuel_can") and item_data.is_fuel_can():
+		btn.text = "%s
+%d%%" % [btn.text, item_data.fuel_percent()] if not item_data.item_icon else "%d%%" % item_data.fuel_percent()
 
-	btn.tooltip_text = item_data.item_name
+	btn.tooltip_text = item_data.get_display_name() if item_data.has_method("get_display_name") else item_data.item_name
 
 	# ─── SCRAP-HEAP SLOT STYLE (normal) ─────────────────────────────
 	var slot_style := StyleBoxFlat.new()

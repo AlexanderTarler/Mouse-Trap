@@ -502,13 +502,11 @@ func _input(event: InputEvent) -> void:
 				# Also accept C as alias for Ctrl
 				if keycode == KEY_C and KEY_CTRL in _movement_keys_pressed:
 					_movement_keys_pressed[KEY_CTRL] = true
-				# Check if all keys are now pressed
-				var all_pressed := true
-				for v in _movement_keys_pressed.values():
-					if not v:
-						all_pressed = false
-						break
-				if all_pressed:
+				# Learned once the player has moved (any direction) and
+				# crouched: what the hint asks.
+				var moved: bool = _movement_keys_pressed[KEY_W] or _movement_keys_pressed[KEY_A] \
+					or _movement_keys_pressed[KEY_S] or _movement_keys_pressed[KEY_D]
+				if moved and _movement_keys_pressed[KEY_CTRL]:
 					var tm := get_node_or_null("/root/TutorialManager")
 					if tm and tm.has_method("mark_learned"):
 						tm.mark_learned("movement")
@@ -566,19 +564,15 @@ func has_flashlight() -> bool:
 ## during Night 1. This allows the sprint to be gated behind a narrative
 ## event when start_with_sprint is set to false in the inspector.
 func unlock_sprint() -> void:
-	var tm := get_node_or_null("/root/TutorialManager")
-	
 	if not sprint_unlocked:
 		sprint_unlocked = true
 		print("[Player] Sprint UNLOCKED! You can now hold SHIFT to run.")
 		# ─── TUTORIAL: Sprint prompt ─────────────────────────────────
-		# BUG 3 FIX: Do NOT call mark_learned("sprint") here. Marking it
-		# learned consumes the one-shot tutorial before the Night 2.2
-		# escape_van.gd trigger("sprint") at the entity-spawn moment can
-		# display the hint. Learning is now only marked when the player
-		# actually sprints (see _physics_process).
-		if tm and tm.has_method("trigger"):
-			tm.trigger("sprint")
+		# The sprint hint is shown by escape_van.gd when the chase starts
+		# (two seconds later). Triggering it here too used to use up its
+		# one shot if another hint was on screen, so it never appeared.
+		# Learning is marked when the player has actually run their stamina
+		# down to 70% (see _physics_process).
 	else:
 		print("[Player] Sprint is already unlocked.")
 
@@ -667,17 +661,12 @@ func _toggle_flashlight() -> void:
 	# the player successfully holds F for the full duration.
 	var tm := get_node_or_null("/root/TutorialManager")
 	var nm := get_node_or_null("/root/NightManager")
+	# The overcharge hint is safe: mark_learned only hides the flashlight's
+	# own hint. Learned once its hint has shown (or any time at night).
 	if tm and tm.has_method("mark_learned"):
-		if nm and "is_night_active" in nm and nm.is_night_active:
-			# ─── TASK 2.3: DO NOT dismiss the overcharge hint ──────────
-			# If the player hasn't yet completed the overcharge tutorial
-			# (3s continuous hold), skip the flashlight mark_learned so the
-			# overcharge prompt stays visible. The overcharge hint can only
-			# be dismissed by flashlight.gd's _mark_overcharge_tutorial_learned().
-			if tm.has_method("is_learned") and not tm.is_learned("overcharge"):
-				print("[Player] TASK 2.3: Overcharge tutorial still active. Skipping mark_learned('flashlight') to preserve the hold hint.")
-			else:
-				tm.mark_learned("flashlight")
+		var hint_seen: bool = tm.has_method("was_shown") and tm.was_shown("flashlight")
+		if hint_seen or (nm and "is_night_active" in nm and nm.is_night_active):
+			tm.mark_learned("flashlight")
 	if _flashlight.has_method("toggle"):
 		_flashlight.toggle()
 	else:

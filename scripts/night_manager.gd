@@ -426,6 +426,10 @@ func setup_player_spawn() -> void:
 	else:
 		print("[NightManager] Marker '%s' not found in current scene. Using fallback position." % marker_name)
 		player.global_position = Vector3(9.0, 1.0, 0.4)
+	# The game's first checkpoint: the start of the first day.
+	var first_checkpoint: Node = get_node_or_null("/root/Checkpoint")
+	if first_checkpoint and first_checkpoint.has_method("capture_deferred") and not first_checkpoint.has_checkpoint():
+		first_checkpoint.capture_deferred("night" if is_night_active else "day")
 
 
 ## Recursively searches for a Marker3D with the given name in the node tree.
@@ -639,8 +643,8 @@ func _process(delta: float) -> void:
 	# COMPLETELY REMOVED so the peeker can NEVER appear randomly during
 	# Night 1. The ONLY trigger is RoutineManager.on_door_locked() when
 	# the Day 1 "Lock the door" objective completes, which forces the
-	# peeker specifically to the LivingRoom window via
-	# PeekerManager.force_spawn_at_window("LivingRoom").
+	# peeker specifically to the hall window via
+	# PeekerManager.force_spawn_at_window("Hall_Window_Right").
 
 
 
@@ -752,12 +756,22 @@ func start_night(night: int) -> void:
 	# start_night()) does NOT overwrite the original snapshot with the
 	# post-consumption state. The guard is cleared in end_current_night()
 	# so the next genuine night cycle captures a fresh snapshot.
+	# The whole game is snapshotted now (Checkpoint): a death tonight
+	# restarts from exactly this moment.
 	if not _checkpoint_saved:
-		var inv_snapshot: Node = get_node_or_null("/root/Inventory")
-		if inv_snapshot and inv_snapshot.has_method("save_checkpoint"):
-			inv_snapshot.save_checkpoint()
-			_checkpoint_saved = true
-			print("[NightManager] TASK 3: Inventory checkpoint captured for Night %d." % night)
+		var checkpoint: Node = get_node_or_null("/root/Checkpoint")
+		# Night 2.2: the night only starts once the van is investigated, but
+		# a death should go back to the alarm going off (taken then).
+		if checkpoint and is_van_sequence_active and checkpoint.tag == "van_alarm":
+			print("[NightManager] Keeping the car-alarm checkpoint for Night %d." % night)
+		elif checkpoint and checkpoint.has_method("capture"):
+			checkpoint.capture("night")
+		else:
+			var inv_snapshot: Node = get_node_or_null("/root/Inventory")
+			if inv_snapshot and inv_snapshot.has_method("save_checkpoint"):
+				inv_snapshot.save_checkpoint()
+		_checkpoint_saved = true
+		print("[NightManager] Checkpoint captured for Night %d." % night)
 	
 	night_started.emit(night)
 	
@@ -804,6 +818,11 @@ func end_current_night() -> void:
 	
 	_clear_environment_pickups()
 	_respawn_day_items()
+	# A new day: snapshot it (after the day's items have spawned) so a death
+	# today restarts from this morning.
+	var day_checkpoint: Node = get_node_or_null("/root/Checkpoint")
+	if day_checkpoint and day_checkpoint.has_method("capture_deferred"):
+		day_checkpoint.capture_deferred("day")
 	
 	if current_night < total_nights:
 		current_night += 1
@@ -1066,10 +1085,15 @@ func restart_night() -> void:
 	_triggered_events.clear()
 	_event_timer = 0.0
 	
-	is_generator_on = true
-	generator_fuel = max_fuel
-	fuel_changed.emit(generator_fuel)
-	generator_state_changed.emit(true)
+	# The world as it was when the night began (Checkpoint): inventory,
+	# windows, scrap heaps, the trap, items in the world, fuel...
+	var checkpoint: Node = get_node_or_null("/root/Checkpoint")
+	var restored: bool = checkpoint != null and checkpoint.kind == "night" and checkpoint.restore()
+	if not restored:
+		is_generator_on = true
+		generator_fuel = max_fuel
+		fuel_changed.emit(generator_fuel)
+		generator_state_changed.emit(true)
 	
 	# ─── TASK 3: RESTORE INVENTORY TO CHECKPOINT ─────────────────────
 	# The player died during the night — restore the inventory to the exact
@@ -1079,7 +1103,7 @@ func restart_night() -> void:
 	# guard in start_night() prevents this restore from being overwritten
 	# by a fresh (post-consumption) snapshot.
 	var inv_restore: Node = get_node_or_null("/root/Inventory")
-	if inv_restore and inv_restore.has_method("reset_to_checkpoint"):
+	if not restored and inv_restore and inv_restore.has_method("reset_to_checkpoint"):
 		inv_restore.reset_to_checkpoint()
 		print("[NightManager] TASK 3: Inventory restored to checkpoint snapshot.")
 	
@@ -1127,12 +1151,16 @@ func _reset_entity_confidence() -> void:
 ##   - Day active → reset to the beginning of the current day
 ##     (morning baseline, player in bed, world reset).
 func restart_from_checkpoint() -> void:
+	var van_checkpoint: Node = get_node_or_null("/root/Checkpoint")
+	if van_checkpoint and van_checkpoint.tag == "van_alarm" and is_night_active and _restart_van_alarm():
+		return
 	if is_night_active:
 		print("[NightManager] Restart from checkpoint: NIGHT %d active — resetting to night start." % current_night)
 		restart_night()
 	else:
 		print("[NightManager] Restart from checkpoint: Day active — resetting to day start.")
-		restart_from_morning()
+		if not _restart_day():
+			restart_from_morning()
 	
 	# FOLLOW-UP 1: Always place the player on PlayerSpawnDev after a defeat/
 	# restart, regardless of whether the checkpoint branch reset the night or
@@ -1171,6 +1199,75 @@ func _spawn_player_at(marker_name: String) -> bool:
 	if player.has_method("reset_camera"):
 		player.reset_camera()
 	return false
+
+
+## Death during Night 2.2 (the car alarm): back to the moment the alarm went
+## off, standing in front of the van with it blaring, as if it had never been
+## investigated. False if that can't be done (then the night restarts).
+func _restart_van_alarm() -> bool:
+	var checkpoint: Node = get_node_or_null("/root/Checkpoint")
+	var scene := get_tree().current_scene
+	var van: Node = scene.find_child("EscapeVan", true, false) if scene else null
+	if not checkpoint or not van or not checkpoint.restore():
+		return false
+	# The chase is off.
+	for entity_node in get_tree().get_nodes_in_group("entity"):
+		if entity_node.has_method("deactivate"):
+			entity_node.deactivate()
+	var hsm: Node = get_node_or_null("/root/HorrorSoundManager")
+	if hsm and hsm.has_method("_stop_stalk_chase"):
+		hsm._stop_stalk_chase()
+	_reset_entity_confidence()
+	is_van_sequence_active = true
+	van_sequence_started = true
+	# The van's state is back to "alarm going, not investigated": sound it
+	# again (and darken the night, freeze the clock, as when it went off).
+	horror_event.emit("car_alarm")
+	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
+	if player:
+		if van.has_method("get_restart_transform"):
+			player.global_transform = van.get_restart_transform()
+		if player.has_method("reset_camera"):
+			player.reset_camera()
+		if player.has_method("reset_health"):
+			player.reset_health()
+	_set_objective("Investigate the car alarm outside.")
+	print("[NightManager] Night 2.2 restart: back at the van, the alarm blaring.")
+	return true
+
+
+## Death during the day: back to how this day began (Checkpoint), at the
+## time it began. False if there is no day snapshot (then the old morning
+## baseline is used).
+func _restart_day() -> bool:
+	var checkpoint: Node = get_node_or_null("/root/Checkpoint")
+	if not checkpoint or checkpoint.kind != "day" or not checkpoint.has_method("restore"):
+		return false
+	get_tree().call_group("entity", "deactivate")
+	_reset_entity_confidence()
+	is_night_active = false
+	is_day_active = true
+	night_progress = 0.0
+	_triggered_events.clear()
+	_event_timer = 0.0
+	if not checkpoint.restore():
+		return false
+	var gt: Node = get_node_or_null("/root/GameTime")
+	if gt:
+		# Directly, not set_progress(): that emits day_started, which other
+		# systems treat as a brand new day.
+		gt.cycle_progress = checkpoint.time_progress()
+		gt._elapsed = gt.cycle_progress * gt.cycle_duration
+		gt.is_day = gt.cycle_progress < 0.5
+		gt.time_changed.emit(gt.cycle_progress)
+	var player: Node = get_tree().get_first_node_in_group("player")
+	if player:
+		if player.has_method("reset_health"):
+			player.reset_health()
+		if "sanity" in player:
+			player.sanity = 100.0
+	print("[NightManager] Day restart complete: back to this morning's checkpoint.")
+	return true
 
 
 func restart_from_morning() -> void:

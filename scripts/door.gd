@@ -191,6 +191,12 @@ func interact() -> void:
 ## Only available when the door is closed and the player has the key.
 ## Unlocking just unlocks the door (stays closed) — player can then open it with a quick tap.
 ## Locking keeps the door closed.
+## Checkpoint restored is_open / is_locked: swing straight to that position.
+func _on_checkpoint_restored() -> void:
+	is_animating = false
+	rotation_degrees.y = default_rotation_y + (open_angle if is_open else 0.0)
+
+
 func toggle_lock() -> void:
 	if is_animating:
 		return

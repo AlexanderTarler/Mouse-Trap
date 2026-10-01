@@ -117,9 +117,14 @@ var _is_night: bool = false
 var _night_manager: Node = null
 
 
+## The player has "located" the anchor within this flat distance (m).
+const ANCHOR_LOCATE_RADIUS := 10.0
+
+
 func _ready() -> void:
 	add_to_group("interactable")
 	add_to_group("totem_anchor")
+	_drop_canopy_collision()
 	
 	# Find the Entity in the scene tree
 	_entity = get_tree().get_first_node_in_group("entity") as Entity
@@ -289,7 +294,10 @@ func _process(delta: float) -> void:
 	# "Locate anchor" objective exactly once.
 	if not _anchor_located_notified:
 		var locate_player = get_tree().get_first_node_in_group("player")
-		if locate_player and global_position.distance_to(locate_player.global_position) <= 5.0:
+		# Measured flat: by day the totem is buried 5 m down, and 5 m from
+		# its centre is still under the willow's canopy.
+		var flat_distance := Vector2(global_position.x - locate_player.global_position.x, global_position.z - locate_player.global_position.z).length() if locate_player else INF
+		if locate_player and flat_distance <= ANCHOR_LOCATE_RADIUS:
 			var rm_locate = get_node_or_null("/root/RoutineManager")
 			if rm_locate and rm_locate.has_method("on_anchor_located"):
 				rm_locate.on_anchor_located()
@@ -568,6 +576,23 @@ func _defeat_entity() -> void:
 		catch_area.monitoring = false
 	
 	print("[TotemAnchor] Entity defeated and disabled!")
+
+
+## The willow's collision was its whole canopy as one triangle mesh (14 x 8 x
+## 10 m, thousands of triangles): every move of the player or the Entity near
+## it was tested against all of them (~2.5 ms of physics, spikes past 12 ms),
+## and the 10-second rise at dusk and sink at dawn re-inserted it into the
+## physics world every frame. Hanging willow branches shouldn't block anyone;
+## the trunk keeps its collider (this node's own CollisionShape3D).
+func _drop_canopy_collision() -> void:
+	var willow_body := get_node_or_null("Weeping Willow/Weeping Willow/StaticBody3D") as CollisionObject3D
+	if not willow_body:
+		return
+	willow_body.collision_layer = 0
+	willow_body.collision_mask = 0
+	for shape in willow_body.get_children():
+		if shape is CollisionShape3D:
+			shape.disabled = true
 
 
 ## Shows a temporary message on the HUD.

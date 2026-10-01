@@ -258,6 +258,21 @@ func _cancel_xray_timer(group_name: String) -> void:
 
 ## Schedules a delayed x-ray highlight for the given group.
 ## If delay is 0, applies immediately (no timer).
+## The bed glows while the objective is to go to bed, like other objectives.
+var _bed_highlighted := false
+
+
+func _update_bed_highlight(objective: String) -> void:
+	var wanted := "go to bed" in objective.to_lower()
+	if wanted == _bed_highlighted:
+		return
+	_bed_highlighted = wanted
+	if wanted:
+		highlight_target("xray_bed")
+	else:
+		clear_highlight("xray_bed")
+
+
 func highlight_target(group_name: String, delay: float = 0.0) -> void:
 	# ─── DEBUG LOG: Trace every highlight call for nest debugging ─────
 	# Always print when a nest-group highlight is scheduled so we can verify
@@ -657,6 +672,7 @@ func get_current_objective() -> String:
 
 func _update_hud() -> void:
 	var text = get_current_objective()
+	_update_bed_highlight(str(text))
 	var step: int = 0
 	
 	if is_day3_sandbox:
@@ -813,6 +829,20 @@ func on_arvid_note_2_found() -> void:
 	side_track_step = 1
 	print("[RoutineManager] Arvid_Note_2 found! Unsanctioned Discoveries side-track activated.")
 	side_track_changed.emit()
+	# Already carrying what the track asks for: those count straight away
+	# (a fuel can picked up before the track started was never counted).
+	var inventory := get_node_or_null("/root/Inventory")
+	if inventory and "items" in inventory:
+		for item in inventory.items:
+			if item == null or not "item_name" in item:
+				continue
+			match item.item_name:
+				"Fuel Can":
+					on_fuel_can_found()
+				"Portable Light":
+					on_portable_light_found()
+				"Cable Spool":
+					on_cable_spool_found()
 
 func on_arvid_logged_in() -> void:
 	if arvid_logged_in:
@@ -1163,12 +1193,29 @@ func on_computer_used() -> void:
 func on_plank_picked_up() -> void:
 	phase2b_plank_picked_up = true
 	phase2b_plank_count += 1
+	# The planks are for the broken window (the player only learns it now).
+	if phase2b_plank_count == 1:
+		_think_about_broken_window()
 	print("[RoutineManager] Phase 2B: Player picked up a Wooden Plank (count: %d/3)." % phase2b_plank_count)
 	_update_hud()
 	# ─── X-RAY HIGHLIGHT: Clear plank highlight only after 3 planks ──
 	if phase2b_plank_count >= 3:
 		clear_highlight("xray_planks")
 		print("[RoutineManager] Phase 2B: Player has 3 planks. X-ray highlight cleared.")
+
+## Inner monologue (Monologue): the first plank, over the broken window.
+func _think_about_broken_window() -> void:
+	var monologue := get_node_or_null("/root/Monologue")
+	# Not for the player's starting items (given while the scene loads).
+	var scene := get_tree().current_scene
+	if not monologue or not scene or not scene.is_node_ready():
+		return
+	var broken: Node3D = null
+	for window in get_tree().get_nodes_in_group("WindowMarkers"):
+		if "start_broken" in window and window.start_broken and window.is_glass_shattered and not window.is_boarded:
+			broken = window
+	monologue.think("Someone left a window for me to patch up - how kind.", broken, 5.5, "broken_window")
+
 
 func on_window_patched() -> void:
 	if phase2b_window_patched:
@@ -1211,12 +1258,12 @@ func on_door_locked() -> void:
 	
 	# ─── TASK 6: NIGHT 1 PEEKER FORCED SPAWN ──────────────────────────
 	# The moment the Day 1 "Lock the door" objective completes, force the
-	# Peeker to appear at the LivingRoom window. If it's already there, the
+	# Peeker to appear at the hall window (Hall_Window_Right). If it's already there, the
 	# PeekerManager does nothing; if it's at another window it relocates.
 	var pm = get_node_or_null("/root/PeekerManager")
 	if pm and pm.has_method("force_spawn_at_window"):
-		pm.force_spawn_at_window("LivingRoom")
-		print("[RoutineManager] Night 1 Peeker forced to LivingRoom window.")
+		pm.force_spawn_at_window("Hall_Window_Right")
+		print("[RoutineManager] Peeker forced to the hall window.")
 	# ─── DEFENSIVE AUTO-COMPLETE: All cabin lights already OFF ──────
 	# If the player turned off every cabin light BEFORE reaching the
 	# "Turn off the lights" objective (e.g. while the door step was

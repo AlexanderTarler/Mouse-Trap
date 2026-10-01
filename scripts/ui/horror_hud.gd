@@ -716,24 +716,30 @@ func _timestamp() -> String:
 ## caused by competing fade animations.
 ##
 ## If a hint is already fully visible, it IGNORES the new request so the
-## current hint stays on screen until dismissed by mark_learned().
-func show_hint(text: String, delay: float = 0.5) -> void:
+## current hint stays on screen until dismissed by mark_learned(), unless
+## `force` is set (then the new hint replaces it). Returns whether the hint
+## is (or will be) on screen.
+func show_hint(text: String, delay: float = 0.5, force: bool = false) -> bool:
 	if not hint_label:
-		return
+		return false
 	
 	# If a hint is already visible AND we've already shown one before, ignore.
 	# (The first call must pass through — HintLabel starts at alpha=1.0 in the
 	# scene file, so we'd skip every tutorial without this guard.)
 	if _hint_has_been_shown and hint_label.modulate.a > 0.0:
+		if force:
+			print("[HorrorHUD] T+%s show_hint FORCED over '%s' → '%s'" % [_timestamp(), hint_label.text, text])
+			hint_label.text = text
+			return true
 		print("[HorrorHUD] T+%s show_hint BLOCKED — hint already visible: '%s'" % [_timestamp(), hint_label.text])
-		return
+		return false
 	
 	# If hint timer is still running (fade-in hasn't started yet),
 	# just update the text — keep the existing timer/tween.
 	if hint_timer and not hint_timer.is_stopped():
 		print("[HorrorHUD] T+%s show_hint REPLACED timer text → '%s'" % [_timestamp(), text])
 		hint_label.text = text
-		return
+		return true
 	
 	# Kill any existing tween so we don't get competing fade animations
 	if is_instance_valid(_hint_tween):
@@ -754,6 +760,16 @@ func show_hint(text: String, delay: float = 0.5) -> void:
 			hint_timer.timeout.disconnect(_on_hint_timer_timeout)
 		hint_timer.timeout.connect(_on_hint_timer_timeout)
 		hint_timer.start()
+	return true
+
+
+## The hint on screen (or about to fade in), "" for none.
+func current_hint() -> String:
+	if not hint_label:
+		return ""
+	if hint_label.modulate.a > 0.0 or (hint_timer and not hint_timer.is_stopped()):
+		return hint_label.text
+	return ""
 
 
 ## Fades the hint label from alpha 1 to 0 over 0.5 seconds.

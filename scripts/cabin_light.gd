@@ -147,6 +147,11 @@ func _should_be_lit() -> bool:
 
 ## Updates the light state immediately without any flicker animation.
 ## Used for instant transitions (power-off, initial state, toggle).
+## Checkpoint restored the switch: light up (or not) to match.
+func _on_checkpoint_restored() -> void:
+	_update_light_state()
+
+
 func _update_light_state() -> void:
 	# Kill any in-progress flicker tween
 	_cancel_flicker()

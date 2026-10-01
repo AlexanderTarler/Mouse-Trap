@@ -10,6 +10,14 @@ const DAY2_OBJECTIVE: String = "Read the earlier nest data logs in the computer.
 @onready var _game_time = get_node_or_null("/root/GameTime")
 
 ## Called when the player focuses on the bed and presses the interaction key (e.g., 'E')
+## The bed (this area's parent, which holds its meshes) is highlighted while
+## the objective is to go to bed (RoutineManager._update_bed_highlight).
+func _ready() -> void:
+	var bed := get_parent()
+	if bed:
+		bed.add_to_group("xray_bed")
+
+
 func interact(player: Node3D = null) -> void:
 	if not _night_manager or not _game_time:
 		_show_hud_message("Something feels wrong... (Managers missing)")

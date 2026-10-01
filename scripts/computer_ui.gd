@@ -299,6 +299,7 @@ func _ready() -> void:
 	# ─── TASK: GLOBAL BUTTON CLICK SOUND ─────────────────────────
 	# Wire every Button under the computer UI to play ui_click_mx_3.ogg.
 	_connect_ui_click_sounds()
+	_apply_win95_look()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -458,7 +459,8 @@ func _show_desktop() -> void:
 	_login_screen.visible = false
 	_main_window.visible = false
 	_desktop_view.visible = true
-	
+	_reflow_desktop_icons.call_deferred()
+
 	# ─── PREVIOUS NEST REPORTS (Day 2 Step 1 gate) ──────────────────
 	# The NEST_REPORTS.TXT icon is only available to the LUND profile and
 	# only while the Day 2 report-reading objective is still pending.
@@ -1156,6 +1158,7 @@ func _show_restored_data_icon() -> void:
 			icon.set_meta("_ui_click_connected", true)
 			icon.pressed.connect(_play_ui_click)
 		_desktop_view.add_child(icon)
+		_reflow_desktop_icons()
 		print("[ComputerUI] TASK 5: restored_data.txt desktop icon created.")
 
 
@@ -1182,9 +1185,30 @@ func _show_overload_button() -> void:
 		overload_btn.set_meta("_ui_click_connected", true)
 		overload_btn.pressed.connect(_play_ui_click)
 	_desktop_view.add_child(overload_btn)
+	_reflow_desktop_icons()
 	
 	_status_label.text = "New executable available: EXECUTE OVERLOAD"
 	print("[ComputerUI] EXECUTE OVERLOAD button added to desktop.")
+
+
+## The portable light to overload: every lamp joins "portable_trap" when it
+## loads (also ones still lying undeployed in the world), so the first one
+## found could be the wrong one. Prefer a deployed and powered lamp, then a
+## deployed one, then any.
+func _best_portable_lamp() -> Node:
+	var best: Node = null
+	var best_score := -1
+	for group_name in ["portable_lamp", "portable_trap"]:
+		for lamp in get_tree().get_nodes_in_group(group_name):
+			var score := 0
+			if "is_deployed" in lamp and lamp.is_deployed:
+				score += 2
+			if "is_powered" in lamp and lamp.is_powered:
+				score += 1
+			if score > best_score:
+				best = lamp
+				best_score = score
+	return best
 
 
 ## Called when the EXECUTE OVERLOAD button is pressed.
@@ -1197,9 +1221,7 @@ func _on_execute_overload() -> void:
 	# The portable lamp registers itself in the "portable_trap" group
 	# (portable_lamp.gd _ready()), NOT "portable_lamp". Search both
 	# groups so the overload button always finds the deployed lamp.
-	var lamp = get_tree().get_first_node_in_group("portable_lamp")
-	if not lamp:
-		lamp = get_tree().get_first_node_in_group("portable_trap")
+	var lamp = _best_portable_lamp()
 	if not lamp:
 		_show_access_denied("ERROR: No portable light source detected in the grid.")
 		return
@@ -1262,3 +1284,197 @@ func _on_execute_overload() -> void:
 		_recovery_panel.visible = false
 	else:
 		_show_access_denied("ERROR: Grid interface error. Cannot execute overload protocol.")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# WINDOWS 95 LOOK (Win95Theme)
+# ─────────────────────────────────────────────────────────────────────────────
+
+const DESKTOP_ICON_KINDS := {
+	"FieldLogIcon": "exe", "RecoverDataIcon": "exe", "RecycleBinIcon": "bin",
+	"PreviousReportsIcon": "txt", "LogOffIcon": "logoff", "ShutDownIcon": "power",
+	"RestoredDataIcon": "txt", "OverloadExec": "warn",
+}
+var _taskbar: Panel = null
+var _start_menu: PopupMenu = null
+var _clock_label: Label = null
+var _start_entries: Array[Button] = []
+
+
+func _apply_win95_look() -> void:
+	var theme := Win95Theme.build()
+	for child in get_children():
+		if child is Control:
+			(child as Control).theme = theme
+			# The bevels are pixel art: no smoothing when they stretch.
+			(child as Control).texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	# The scene's own boxes and colours would beat the theme: drop them
+	# (keeping red warning text).
+	for node in find_children("*", "Control", true, false):
+		var control := node as Control
+		for style in ["normal", "hover", "pressed", "focus", "disabled", "panel", "read_only"]:
+			control.remove_theme_stylebox_override(style)
+		for colour in ["font_color", "font_placeholder_color", "font_hover_color", "font_pressed_color"]:
+			if control.has_theme_color_override(colour):
+				var c := control.get_theme_color(colour)
+				if not (c.r > 0.7 and c.g < 0.4 and c.b < 0.4):
+					control.remove_theme_color_override(colour)
+	var background := get_node_or_null("DesktopBackground") as ColorRect
+	if background:
+		background.color = Win95Theme.TEAL
+	_desktop_view.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	var desktop_title := _desktop_view.get_node_or_null("DesktopTitle") as Label
+	if desktop_title:
+		desktop_title.visible = false
+	for button in _desktop_view.find_children("*", "Button", false, false):
+		_style_icon(button)
+	# The application window: a navy title bar, bevelled title buttons, a
+	# flat menu bar, a grey status bar.
+	var title_bar := _main_window.get_node_or_null("TitleBar") as ColorRect
+	if title_bar:
+		title_bar.color = Win95Theme.NAVY
+		var title := title_bar.get_node_or_null("TitleLabel") as Label
+		if title:
+			title.add_theme_font_override("font", Win95Theme.font(true))
+			title.add_theme_color_override("font_color", Win95Theme.LIGHT)
+		for button in [_minimize_button, _maximize_button, _close_button]:
+			if button:
+				button.add_theme_stylebox_override("normal", Win95Theme.bevel(true, Win95Theme.FACE, 0))
+				button.add_theme_stylebox_override("hover", Win95Theme.bevel(true, Win95Theme.FACE, 0))
+				button.add_theme_stylebox_override("pressed", Win95Theme.bevel(false, Win95Theme.FACE, 0))
+				button.add_theme_font_override("font", Win95Theme.font(true))
+				button.add_theme_font_size_override("font_size", 13)
+	var menu_bar := _main_window.get_node_or_null("MenuBar")
+	if menu_bar:
+		for entry in menu_bar.get_children():
+			if entry is Button:
+				Win95Theme.style_menu_entry(entry)
+	var status_bar := _main_window.get_node_or_null("StatusBar") as ColorRect
+	if status_bar:
+		status_bar.color = Win95Theme.FACE
+	# The login: a dialog with its own title bar.
+	var dialog_title := ColorRect.new()
+	dialog_title.name = "Win95TitleBar"
+	dialog_title.color = Win95Theme.NAVY
+	dialog_title.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	dialog_title.offset_left = 4
+	dialog_title.offset_right = -4
+	dialog_title.offset_top = 4
+	dialog_title.offset_bottom = 30
+	dialog_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var dialog_label := Label.new()
+	dialog_label.text = "  Enter Network Password"
+	dialog_label.add_theme_font_override("font", Win95Theme.font(true))
+	dialog_label.add_theme_color_override("font_color", Win95Theme.LIGHT)
+	dialog_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dialog_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	dialog_title.add_child(dialog_label)
+	_login_screen.add_child(dialog_title)
+	var login_box := _login_screen.get_node_or_null("LoginVBox") as Control
+	if login_box:
+		login_box.offset_top = maxf(login_box.offset_top, 40.0)
+	if _power_off_btn:
+		_power_off_btn.position.y = maxf(_power_off_btn.position.y, 40.0)
+	_build_taskbar(theme)
+
+
+func _style_icon(button: Button) -> void:
+	Win95Theme.style_desktop_icon(button, DESKTOP_ICON_KINDS.get(String(button.name), "exe"))
+
+
+## Desktop icons in a column down the left, the way Windows lays them out.
+func _reflow_desktop_icons() -> void:
+	var y := 16.0
+	for button in _desktop_view.find_children("*", "Button", false, false):
+		if button.icon == null:
+			_style_icon(button)
+		if not button.visible:
+			continue
+		button.position = Vector2(16.0, y)
+		y += 100.0
+
+
+func _build_taskbar(theme: Theme) -> void:
+	_taskbar = Panel.new()
+	_taskbar.name = "Taskbar"
+	_taskbar.theme = theme
+	_taskbar.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_taskbar.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	_taskbar.offset_top = -40
+	add_child(_taskbar)
+	var start := Button.new()
+	start.name = "StartButton"
+	start.text = "Start"
+	start.icon = Win95Theme.start_logo()
+	start.add_theme_font_override("font", Win95Theme.font(true))
+	start.position = Vector2(4, 4)
+	start.custom_minimum_size = Vector2(96, 32)
+	start.size = start.custom_minimum_size
+	start.pressed.connect(_open_start_menu)
+	start.pressed.connect(_play_ui_click)
+	_taskbar.add_child(start)
+	var clock_box := Panel.new()
+	clock_box.add_theme_stylebox_override("panel", Win95Theme.bevel(false, Win95Theme.FACE, 2))
+	clock_box.set_anchors_and_offsets_preset(Control.PRESET_RIGHT_WIDE)
+	clock_box.offset_left = -100
+	clock_box.offset_right = -4
+	clock_box.offset_top = 4
+	clock_box.offset_bottom = -4
+	_taskbar.add_child(clock_box)
+	_clock_label = Label.new()
+	_clock_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_clock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_clock_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	clock_box.add_child(_clock_label)
+	_start_menu = PopupMenu.new()
+	_start_menu.theme = theme
+	_start_menu.canvas_item_default_texture_filter = Viewport.DEFAULT_CANVAS_ITEM_TEXTURE_FILTER_NEAREST
+	_start_menu.id_pressed.connect(_on_start_menu)
+	_taskbar.add_child(_start_menu)
+	_taskbar.visible = false
+
+
+func _open_start_menu() -> void:
+	_start_menu.clear()
+	_start_entries.clear()
+	for button in _desktop_view.find_children("*", "Button", false, false):
+		if button.visible and button != _desktop_logoff_btn and button != _desktop_shutdown_btn:
+			_start_menu.add_icon_item(button.icon, button.text, _start_entries.size())
+			_start_entries.append(button)
+	_start_menu.add_separator()
+	for button in [_desktop_logoff_btn, _desktop_shutdown_btn]:
+		if button and button.visible:
+			_start_menu.add_icon_item(button.icon, button.text, _start_entries.size())
+			_start_entries.append(button)
+	for i in _start_menu.item_count:
+		_start_menu.set_item_icon_max_width(i, 32)
+	_start_menu.reset_size()
+	var bar := _taskbar.get_global_rect()
+	_start_menu.position = Vector2i(int(bar.position.x) + 4, int(bar.position.y) - _start_menu.size.y)
+	_start_menu.popup()
+
+
+func _on_start_menu(id: int) -> void:
+	if id >= 0 and id < _start_entries.size() and is_instance_valid(_start_entries[id]):
+		_start_entries[id].pressed.emit()
+
+
+## The taskbar belongs to the desktop (not the login), and its clock runs on
+## game time.
+func _process(_delta: float) -> void:
+	if not _taskbar:
+		return
+	_taskbar.visible = visible and not _login_screen.visible
+	if _taskbar.visible and _clock_label:
+		_clock_label.text = _clock_text()
+
+
+func _clock_text() -> String:
+	var gt := get_node_or_null("/root/GameTime")
+	var progress: float = gt.cycle_progress if gt else 0.25
+	# GameTime's clock: the day runs 06:00 (0.0) to midnight (0.5), 0.25
+	# being 15:00; the night runs midnight to 05:00 (0.7 is 02:00).
+	var hours: float = 6.0 + progress * 36.0 if progress < 0.5 else (progress - 0.5) * 10.0
+	var h := int(hours) % 24
+	var m := int((hours - floorf(hours)) * 60.0)
+	return "%d:%02d %s" % [12 if h % 12 == 0 else h % 12, m, "AM" if h < 12 else "PM"]

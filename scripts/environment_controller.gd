@@ -63,7 +63,15 @@ extends Node
 @export var night_fog_color: Color = Color(0.02, 0.02, 0.04)
 
 ## The ProceduralSkyMaterial to modify at runtime
-var _sky_material: ProceduralSkyMaterial
+## The sky: shaders/day_night_sky.gdshader (dusk, dawn, sun, moon, stars).
+var _sky_material: Material
+const SKY_SHADER := preload("res://shaders/day_night_sky.gdshader")
+## The sky shown glides towards the clock instead of jumping with it (night
+## starting forces the clock straight to dusk, for example): at most this
+## much of the cycle per second, so a jump plays as a short dusk or dawn.
+const GLIDE_SPEED := 0.025
+## The time the clock is at (the sky shown, cycle_progress, follows it).
+var _target_progress := -1.0
 
 ## The Environment resource to modify at runtime
 var _environment: Environment
@@ -110,6 +118,12 @@ var _cached_ambient_color: Color = Color()
 var _cached_ambient_sky_contrib: float = 0.0
 var _cached_tonemap_exposure: float = 0.0
 var _cached_sun_energy: float = 0.0
+## A storm (0 = clear, 1 = full storm; set by Weather): a grey, darker sky,
+## dimmer sun and ambient light (no fog: the rain itself is the curtain).
+var weather: float = 0.0:
+	set(value):
+		weather = clampf(value, 0.0, 1.0)
+		_apply_cycle()
 var _cached_sun_color: Color = Color()
 var _cached_sun_shadow_enabled: bool = false
 var _cached_moon_energy: float = 0.0
@@ -138,9 +152,13 @@ func _ready() -> void:
 	if world_environment:
 		_environment = world_environment.environment
 		if _environment and _environment.sky:
-			_sky_material = _environment.sky.sky_material as ProceduralSkyMaterial
-			if not _sky_material:
-				push_warning("EnvironmentController: Sky material is not ProceduralSkyMaterial. Sun disk may not render.")
+			# The day/night sky replaces the procedural one.
+			var shader_sky := ShaderMaterial.new()
+			shader_sky.shader = SKY_SHADER
+			_environment.sky.sky_material = shader_sky
+			_sky_material = shader_sky
+			# Stars and the moon show through the night fog.
+			_environment.fog_sky_affect = 0.35
 	else:
 		push_error("EnvironmentController: WorldEnvironment not assigned!")
 		return
@@ -189,6 +207,15 @@ func _process(delta: float) -> void:
 	# --- THROTTLE OPTIMIZATION ---
 	# Fog density, color, and volumetric parameters change gradually.
 	# Updating at 10 Hz (0.1s) saves CPU without visual degradation.
+	# The sky glides towards the clock (every frame while it does).
+	if _target_progress >= 0.0 and not is_equal_approx(cycle_progress, _target_progress):
+		var ahead := fposmod(_target_progress - cycle_progress, 1.0)
+		var step := GLIDE_SPEED * delta
+		cycle_progress = _target_progress if ahead <= step else fposmod(cycle_progress + step, 1.0)
+		is_day = cycle_progress < 0.5
+		if _environment and _sky_material:
+			_apply_cycle()
+
 	_env_tick_timer += delta
 	if _env_tick_timer < 0.1:
 		return
@@ -211,10 +238,16 @@ func _process(delta: float) -> void:
 		_apply_cycle()
 
 
-func _on_game_time_changed(progress: float) -> void:
-	cycle_progress = progress
-	is_day = progress < 0.5
-	_apply_cycle()
+## The clock moved. Small steps (time passing) and jumps backwards (a
+## restart) show at once; a jump forwards glides there (see GLIDE_SPEED).
+## `snap` shows it at once regardless (cutscenes).
+func _on_game_time_changed(progress: float, snap: bool = false) -> void:
+	var ahead := fposmod(progress - cycle_progress, 1.0)
+	_target_progress = progress
+	if snap or _target_progress < 0.0 or ahead < 0.01 or ahead > 0.5:
+		cycle_progress = progress
+		is_day = progress < 0.5
+		_apply_cycle()
 
 
 ## Forces a completely dark "true night" state regardless of the day/night cycle.
@@ -296,7 +329,10 @@ func _apply_cycle() -> void:
 
 
 func _update_light_rotations(p_sun_angle: float) -> void:
-	var rotation_x: float = -PI / 2.0 - p_sun_angle
+	# Rising at progress 0, overhead at 0.25, setting at 0.5 (the brightness
+	# follows sin(angle); the old -PI/2 offset put the sun on the horizon at
+	# noon and overhead at dawn).
+	var rotation_x: float = -p_sun_angle
 	
 	if sun:
 		if not is_equal_approx(sun.rotation.x, rotation_x):
@@ -342,29 +378,41 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 	var night_sky_horizon: Color = Color(0.05, 0.05, 0.08)
 	var night_ground_bottom: Color = Color(0.01, 0.01, 0.01)
 	
-	var sky_top: Color = day_sky_top.lerp(night_sky_top, 1.0 - p_day_factor)
+	var storm_grey := Color(0.16, 0.17, 0.19) * lerpf(0.25, 1.0, p_day_factor)
+	# Dusk and dawn: the sun near the horizon.
+	var dusk := clampf(1.0 - absf(p_sun_height) / 0.35, 0.0, 1.0)
+	var dusk_top := Color(0.22, 0.24, 0.42)
+	var sky_top: Color = day_sky_top.lerp(night_sky_top, 1.0 - p_day_factor).lerp(dusk_top, dusk * 0.5).lerp(storm_grey, weather * 0.85)
 	if not _cached_sky_top_color.is_equal_approx(sky_top):
-		_sky_material.sky_top_color = sky_top
+		_set_sky("sky_top_color", sky_top)
 		_cached_sky_top_color = sky_top
+	_set_sky("night", 1.0 - p_day_factor)
+	_set_sky("dusk", dusk)
+	_set_sky("storm", weather)
+	if sun:
+		_set_sky("sun_direction", sun.global_transform.basis.z)
+	if moon:
+		_set_sky("moon_direction", moon.global_transform.basis.z)
 	
-	var sky_horizon: Color = day_sky_horizon.lerp(night_sky_horizon, 1.0 - p_day_factor)
+	var dusk_horizon := Color(0.75, 0.42, 0.32)
+	var sky_horizon: Color = day_sky_horizon.lerp(night_sky_horizon, 1.0 - p_day_factor).lerp(dusk_horizon, dusk * 0.55).lerp(storm_grey * 1.3, weather * 0.85)
 	if not _cached_sky_horizon_color.is_equal_approx(sky_horizon):
-		_sky_material.sky_horizon_color = sky_horizon
+		_set_sky("sky_horizon_color", sky_horizon)
 		_cached_sky_horizon_color = sky_horizon
 	
 	var ground_bottom: Color = day_ground_bottom.lerp(night_ground_bottom, 1.0 - p_day_factor)
 	if not _cached_ground_bottom_color.is_equal_approx(ground_bottom):
-		_sky_material.ground_bottom_color = ground_bottom
+		_set_sky("ground_color", ground_bottom)
 		_cached_ground_bottom_color = ground_bottom
 	
 	# Sun angle max: slightly wider during day for a softer glow
 	var sun_angle_max: float = lerpf(8.0, 10.0, p_day_factor)
 	if not is_equal_approx(sun_angle_max, _cached_sun_angle_max):
-		_sky_material.sun_angle_max = sun_angle_max
+		_set_sky("sun_angle_max", sun_angle_max)
 		_cached_sun_angle_max = sun_angle_max
 	
 	# --- Ambient light: smoothly dim at night ---
-	var ambient_energy: float = lerpf(night_ambient_energy, 0.7, p_day_factor)
+	var ambient_energy: float = lerpf(night_ambient_energy, 0.7, p_day_factor) * lerpf(1.0, 0.5, weather)
 	if not is_equal_approx(ambient_energy, _cached_ambient_energy):
 		_environment.ambient_light_energy = ambient_energy
 		_cached_ambient_energy = ambient_energy
@@ -380,7 +428,7 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 		_cached_ambient_sky_contrib = ambient_sky_contrib
 	
 	# --- Tonemap exposure: slightly darker at night for deeper shadows ---
-	var tonemap_exposure: float = lerpf(night_tonemap_exposure, 1.2, p_day_factor)
+	var tonemap_exposure: float = lerpf(night_tonemap_exposure, 1.2, p_day_factor) * lerpf(1.0, 0.85, weather)
 	if not is_equal_approx(tonemap_exposure, _cached_tonemap_exposure):
 		_environment.tonemap_exposure = tonemap_exposure
 		_cached_tonemap_exposure = tonemap_exposure
@@ -478,6 +526,14 @@ func _update_fog_reprojection() -> void:
 		_environment.volumetric_fog_temporal_reprojection_enabled = not inside
 
 
+## Sets a sky parameter, whichever kind of sky material is in use.
+func _set_sky(param: String, value) -> void:
+	if _sky_material is ShaderMaterial:
+		(_sky_material as ShaderMaterial).set_shader_parameter(param, value)
+	elif _sky_material and param in _sky_material:
+		_sky_material.set(param, value)
+
+
 func _set_ground_fog_density(value: float) -> void:
 	if ground_fog and ground_fog.material is FogMaterial:
 		(ground_fog.material as FogMaterial).density = value
@@ -486,7 +542,7 @@ func _set_ground_fog_density(value: float) -> void:
 func _update_light_appearance(p_day_factor: float, p_sun_height: float) -> void:
 	# --- Sun light energy: smoothly scales with sun height ---
 	if sun:
-		var sun_energy: float = maxf(0.0, p_sun_height) * 2.0
+		var sun_energy: float = maxf(0.0, p_sun_height) * 2.0 * lerpf(1.0, 0.3, weather)
 		if not is_equal_approx(sun_energy, _cached_sun_energy):
 			sun.light_energy = sun_energy
 			_cached_sun_energy = sun_energy

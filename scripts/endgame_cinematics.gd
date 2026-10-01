@@ -641,7 +641,7 @@ func _set_dawn() -> void:
 		if environment.has_method("restore_cycle"):
 			environment.restore_cycle()
 		if environment.has_method("_on_game_time_changed"):
-			environment._on_game_time_changed(DAWN_PROGRESS)
+			environment._on_game_time_changed(DAWN_PROGRESS, true)
 
 
 # ─── The van ────────────────────────────────────────────────────────────────

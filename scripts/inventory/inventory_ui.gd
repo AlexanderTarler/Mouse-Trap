@@ -190,6 +190,11 @@ func _play_sfx(res_path: String) -> void:
 
 
 func _open_inventory() -> void:
+	# The "Press [TAB]" hint is done with (TAB opens the inventory here, so
+	# the player controller's toggle that used to clear it never ran).
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("mark_learned"):
+		tm.mark_learned("inventory")
 	_is_open = true
 	panel.visible = true
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -300,7 +305,14 @@ func _refresh_grid() -> void:
 				btn.icon = item.item_icon
 				btn.expand_icon = true
 			else:
-				btn.text = item.item_name.left(2)
+				btn.text = item.short_label() if item.has_method("short_label") else item.item_name.left(2)
+				btn.add_theme_font_size_override("font_size", 13)
+			# A fuel can shows how full it is on its slot.
+			if item.has_method("is_fuel_can") and item.is_fuel_can():
+				btn.text = "%s
+%d%%" % [btn.text, item.fuel_percent()] if not item.item_icon else "%d%%" % item.fuel_percent()
+				btn.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+			btn.tooltip_text = item.get_display_name() if item.has_method("get_display_name") else item.item_name
 			
 			# Apply the type-colored slot style
 			var slot_style = _create_slot_style(item.item_type, false)
@@ -399,6 +411,9 @@ func _use_battery(item) -> void:
 		
 		# Remove the battery from inventory
 		Inventory.remove_item(item)
+		var tm := get_node_or_null("/root/TutorialManager")
+		if tm and tm.has_method("mark_learned"):
+			tm.mark_learned("low_battery")
 	else:
 		print("No flashlight found to refill!")
 
@@ -425,6 +440,7 @@ func _on_drop_pressed() -> void:
 	var item = Inventory.items[_selected_index]
 	print("[InventoryUI] Dropping item: ", item.item_name, " scene_to_spawn=", item.scene_to_spawn)
 	
+	# A dropped fuel can keeps its own fuel level (it came back full before).
 	# Find the player to get drop position
 	var player = get_node_or_null("/root/CottageHorror/Player")
 	if not player:
@@ -438,6 +454,8 @@ func _on_drop_pressed() -> void:
 		drop_pos.y = player.global_position.y + 0.5
 		
 		var dropped = item.scene_to_spawn.instantiate()
+		if "item_data" in dropped and item.has_method("is_fuel_can") and item.is_fuel_can():
+			dropped.item_data = item
 		get_tree().current_scene.add_child(dropped)
 		dropped.global_position = drop_pos
 		print("[InventoryUI] Spawned dropped item at: ", drop_pos)
