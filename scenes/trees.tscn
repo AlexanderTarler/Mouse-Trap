@@ -246,6 +246,7 @@ height = 8.0
 
 [node name="Group of Trees" type="Node3D" unique_id=335884299]
 script = ExtResource("24_batch")
+dress_forest = true
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0)
 
 [node name="pine_tree_n_12" parent="." unique_id=807040485 instance=ExtResource("1_pine1")]

@@ -26,14 +26,12 @@
 [ext_resource type="PackedScene" uid="uid://dpnaxk3u44vbj" path="res://scenes/door.tscn" id="23_igxyt"]
 [ext_resource type="NavigationMesh" path="res://navigation/cabin_interior_navmesh.res" id="23_p6n3y"]
 [ext_resource type="Script" uid="uid://dwjkqjp5uuaqn" path="res://scripts/cabin_approach_trigger.gd" id="24_4rtr1"]
-[ext_resource type="Texture2D" uid="uid://bw8vl22ys1m00" path="res://assets/Textures/Grass/Grass_01-512x512.png" id="25_xffuf"]
-[ext_resource type="Texture2D" uid="uid://dlbvhtgwc4cov" path="res://assets/Textures/Wood/Wood_08-512x512.png" id="26_dipld"]
 [ext_resource type="ArrayMesh" uid="uid://3cbfqdr7kkll" path="res://assets/grass_mesh/grass_mesh.tres" id="27_q18r1"]
 [ext_resource type="PackedScene" uid="uid://bu8lh214x07bh" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Grass/Grass.fbx" id="28_ati4s"]
 [ext_resource type="Image" uid="uid://ysmomlamdrbj" path="res://scenes/CottageHorror/Foliage_0_0_0.res" id="29_u0lux"]
 [ext_resource type="Image" uid="uid://c3ypy8a4sbfe8" path="res://scenes/CottageHorror/Heightmap_0_0.res" id="30_xituh"]
 [ext_resource type="Image" uid="uid://dl3hjgdm8tr3v" path="res://scenes/CottageHorror/Object_0_0_0.res" id="31_7yx0e"]
-[ext_resource type="Image" uid="uid://dboy530q14flx" path="res://scenes/CottageHorror/Splatmap_0_0_0.res" id="32_ynd18"]
+[ext_resource type="Image" path="res://scenes/CottageHorror/Splatmap_0_0_0.res" id="32_ynd18"]
 [ext_resource type="PackedScene" uid="uid://cg887s8br1ysp" path="res://assets/PSX Bunkers/Models/other-formats/GLB/beam_6.glb" id="33_5sah8"]
 [ext_resource type="PackedScene" uid="uid://bn7dmpf75txej" path="res://assets/PSX Bunkers/Models/other-formats/GLB/beam_7.glb" id="34_bc4kq"]
 [ext_resource type="PackedScene" uid="uid://djoptysub0pxi" path="res://assets/PSX Bunkers/Models/other-formats/GLB/machinery_2.glb" id="35_unfsv"]
@@ -209,6 +207,12 @@
 [ext_resource type="PackedScene" uid="uid://b0lpilfht754m" path="res://assets/Fixed .fbx/SM_EC_Microwave_0.tscn" id="205_4mffe"]
 [ext_resource type="PackedScene" uid="uid://4bucm42ypn5" path="res://assets/Fixed .fbx/SM_EC_Rock_08.tscn" id="206_bsgya"]
 [ext_resource type="PackedScene" uid="uid://bwyxv6ythcmin" path="res://assets/Fixed .fbx/SM_EC_Rock_05.tscn" id="207_0g7uu"]
+[ext_resource type="Script" uid="uid://bp8mokdbsacca" path="res://scripts/cabin_occluder.gd" id="900_occl"]
+[ext_resource type="Texture2D" uid="uid://lochl2173d5k" path="res://assets/Textures/terrain/forest_floor.png" id="901_floor"]
+[ext_resource type="Texture2D" uid="uid://dkr3syqq7yf1t" path="res://assets/Textures/terrain/grass.png" id="902_grass"]
+[ext_resource type="Texture2D" uid="uid://kr5xot4f7xsa" path="res://assets/Textures/terrain/path.png" id="903_path"]
+[ext_resource type="Texture2D" uid="uid://nrn74gy8en2e" path="res://assets/Textures/terrain/worn_grass.png" id="904_worn"]
+[ext_resource type="Script" path="res://scripts/world_details.gd" id="905_details"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_50dpl"]
 sky_top_color = Color(0.4, 0.6, 1, 1)
@@ -306,13 +310,19 @@ size = Vector3(6, 2.75, 6)
 [sub_resource type="BoxShape3D" id="BoxShape3D_bcf24"]
 
 [sub_resource type="TextureSetResource" id="TextureSetResource_og0af"]
-albedoTexture = ExtResource("25_xffuf")
+albedoTexture = ExtResource("902_grass")
 
 [sub_resource type="TextureSetResource" id="TextureSetResource_ihije"]
-albedoTexture = ExtResource("26_dipld")
+albedoTexture = ExtResource("903_path")
+
+[sub_resource type="TextureSetResource" id="TextureSetResource_floor"]
+albedoTexture = ExtResource("901_floor")
+
+[sub_resource type="TextureSetResource" id="TextureSetResource_worn"]
+albedoTexture = ExtResource("904_worn")
 
 [sub_resource type="TextureSetsResource" id="TextureSetsResource_ihije"]
-textureSets = Array[TextureSetResource]([SubResource("TextureSetResource_og0af"), SubResource("TextureSetResource_ihije")])
+textureSets = Array[TextureSetResource]([SubResource("TextureSetResource_og0af"), SubResource("TextureSetResource_ihije"), SubResource("TextureSetResource_floor"), SubResource("TextureSetResource_worn")])
 
 [sub_resource type="FoliageDefinitionResource" id="FoliageDefinitionResource_k4tl1"]
 strategy = 2
@@ -482,6 +492,8 @@ mesh = ExtResource("2_pem31")
 light_color = Color(1, 0.95, 0.85, 1)
 light_energy = 1.5
 shadow_enabled = true
+directional_shadow_mode = 1
+directional_shadow_split_1 = 0.2
 directional_shadow_split_2 = 0.3
 directional_shadow_max_distance = 50.0
 
@@ -535,28 +547,28 @@ fuse_box_node = NodePath("../Fuse Box")
 fuse_waypoint = NodePath("../EntityWaypoints/EntityFuseWaypoint")
 
 [node name="GeneralSkeleton" parent="TheEntity/MonsterModel/Armature" parent_id_path=PackedInt32Array(133456140, 1066769687, 719992929) index="0" unique_id=519438561]
-bones/1/rotation = Quaternion(0.10100154, -0.17992993, -0.017677475, 0.9783207)
-bones/3/rotation = Quaternion(0.14946142, 0.3561048, 0.9073859, -0.1658363)
-bones/4/rotation = Quaternion(-0.03658754, 0.918154, -0.38815814, 0.070624866)
-bones/5/rotation = Quaternion(-0.1060281, 0.6429634, -0.74922216, 0.1184155)
-bones/7/rotation = Quaternion(5.3781164e-08, 0.99993145, 0.011708337, -5.0583882e-08)
-bones/18/rotation = Quaternion(-0.13605702, 0.29482976, 0.93954456, 0.10871988)
-bones/21/rotation = Quaternion(0.039472993, 0.93663216, -0.34375706, -0.054710895)
-bones/22/rotation = Quaternion(0.10501735, 0.63523036, -0.756169, -0.116886)
-bones/23/rotation = Quaternion(-6.608967e-09, 1, 0.00027025637, -3.0785944e-08)
-bones/33/rotation = Quaternion(0.01868823, -0.0041480614, 0.01616718, 0.9996861)
-bones/34/rotation = Quaternion(0.062452473, -0.011431661, 0.009599886, 0.9979363)
-bones/35/rotation = Quaternion(0.06261045, -0.010260761, 0.010341445, 0.9979317)
-bones/36/rotation = Quaternion(-0.04977542, 0.027339526, -0.017314259, 0.9982361)
-bones/38/rotation = Quaternion(-0.19044508, 0.121761486, -0.03466835, 0.97350043)
-bones/49/rotation = Quaternion(0.56371975, 0.42964178, 0.5251188, -0.4710395)
-bones/50/rotation = Quaternion(0.17747916, 0.8794683, -0.43986535, -0.039438408)
-bones/51/rotation = Quaternion(0.47329247, -0.52535135, 0.47329313, 0.5253512)
-bones/55/rotation = Quaternion(-0.15378568, 0.79665166, 0.17749867, 0.5569474)
-bones/58/rotation = Quaternion(0.51940316, -0.45497316, -0.57536274, -0.43838054)
-bones/59/rotation = Quaternion(-0.20711043, 0.83845216, -0.50193185, -0.046560656)
-bones/62/rotation = Quaternion(0.48659638, 0.5130533, -0.4865972, 0.5130532)
-bones/66/rotation = Quaternion(0.06731224, -0.8548455, -0.021294922, 0.5140572)
+bones/1/rotation = Quaternion(0.09569601, -0.17328207, -0.015612088, 0.9800877)
+bones/3/rotation = Quaternion(0.14828654, 0.3516508, 0.9094098, -0.1653081)
+bones/4/rotation = Quaternion(-0.03812849, 0.92327875, -0.3774426, 0.06033039)
+bones/5/rotation = Quaternion(-0.10985626, 0.6445155, -0.74658823, 0.12303421)
+bones/7/rotation = Quaternion(3.5220825e-08, 0.99997747, 0.0067143925, -1.1478339e-08)
+bones/18/rotation = Quaternion(-0.13580653, 0.29489145, 0.93967116, 0.107767455)
+bones/21/rotation = Quaternion(0.039449926, 0.9318731, -0.35489362, -0.06408463)
+bones/22/rotation = Quaternion(0.09977088, 0.6296065, -0.76243836, -0.11103698)
+bones/23/rotation = Quaternion(-5.1062326e-08, 0.9999992, 0.0013100144, -6.9441036e-08)
+bones/33/rotation = Quaternion(0.021276135, -0.004248285, 0.015647879, 0.99964225)
+bones/34/rotation = Quaternion(0.06588347, -0.010266261, 0.012070443, 0.9977015)
+bones/35/rotation = Quaternion(0.065968335, -0.009228962, 0.012455241, 0.9977013)
+bones/36/rotation = Quaternion(-0.053092904, 0.028006189, -0.020867791, 0.9979787)
+bones/38/rotation = Quaternion(-0.19735824, 0.12206289, -0.02982166, 0.97224545)
+bones/49/rotation = Quaternion(0.5647885, 0.42865172, 0.52468413, -0.4711458)
+bones/50/rotation = Quaternion(0.18278544, 0.87373096, -0.44940937, -0.03485743)
+bones/51/rotation = Quaternion(0.47528544, -0.5235489, 0.47528622, 0.5235488)
+bones/55/rotation = Quaternion(-0.15006992, 0.80228794, 0.18521763, 0.5472728)
+bones/58/rotation = Quaternion(0.51677597, -0.45838988, -0.57414603, -0.43951988)
+bones/59/rotation = Quaternion(-0.20172675, 0.8415557, -0.49902403, -0.04544659)
+bones/62/rotation = Quaternion(0.4933033, 0.50660783, -0.4933043, 0.5066077)
+bones/66/rotation = Quaternion(0.06343711, -0.8516994, -0.024000023, 0.5196228)
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1000000002]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.015592637, 0, -0.084306605)
@@ -582,6 +594,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 14.88277)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="NavigationRegion3D/Cabin/TwoFloorCollision" unique_id=123450399]
 shape = ExtResource("20_remd7")
+
+[node name="CabinOccluder" type="OccluderInstance3D" parent="NavigationRegion3D/Cabin/TwoFloorCollision" unique_id=920901177]
+script = ExtResource("900_occl")
 
 [node name="StairRamp" type="StaticBody3D" parent="NavigationRegion3D/Cabin" unique_id=123450400 groups=["navmesh_interior", "wood"]]
 
@@ -764,6 +779,9 @@ vertices = PackedVector3Array(22.870176, 0, 11.028203, 26.243319, 0, 10.933096, 
 affect_navigation_mesh = true
 carve_navigation_mesh = true
 use_3d_avoidance = true
+
+[node name="WorldDetails" type="Node3D" parent="." unique_id=1166973666]
+script = ExtResource("905_details")
 
 [node name="Details" type="Node" parent="." unique_id=1144393623]
 
@@ -2178,7 +2196,7 @@ shape = SubResource("CylinderShape3D_gael5")
 [node name="Inside Cabin" type="Node" parent="Details" unique_id=1602121845]
 
 [node name="sofa_12" parent="Details/Inside Cabin" unique_id=1933366888 groups=["navmesh_interior"] instance=ExtResource("71_gccaf")]
-transform = Transform3D(-0.9999519, 0, 0.009808534, 0, 1, 0, -0.009808534, 0, -0.9999519, 4.412139, 0.68310034, 14.000175)
+transform = Transform3D(-0.9999519, 0, 0.009808534, 0, 1, 0, -0.009808534, 0, -0.9999519, 6.0256305, 0.68310034, 14.000175)
 
 [node name="tv_table_12" parent="Details/Inside Cabin" unique_id=1963697302 groups=["navmesh_interior"] instance=ExtResource("72_k1f3j")]
 transform = Transform3D(-0.9999519, 0, 0.009808534, 0, 1, 0, -0.009808534, 0, -0.9999519, 5.675011, 0.68310046, 10.952705)
@@ -4269,10 +4287,18 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45.85206, 0, 0)
 [editable path="Lightswitches/LightSwitchHall"]
 [editable path="Lightswitches/LightSwitchLivingRoom"]
 [editable path="Lightswitches/LightSwitchKitchen"]
+[editable path="Lightswitches/LightSwitchUpperHall"]
+[editable path="Lightswitches/LightSwitchLanding"]
+[editable path="Lightswitches/LightSwitchBedroom"]
+[editable path="Lightswitches/LightSwitchStairs"]
 [editable path="Windows/BottomFloorWindows/HallWindowRight"]
 [editable path="Windows/BottomFloorWindows/LivingRoomWindow"]
 [editable path="Windows/BottomFloorWindows/ComputerRoomWindowRight"]
 [editable path="Windows/BottomFloorWindows/ComputerRoomWindowLeft"]
+[editable path="Windows/TopFloorWindows/UpperHallWindow"]
+[editable path="Windows/TopFloorWindows/LandingWindow"]
+[editable path="Windows/TopFloorWindows/BedroomWindowRight"]
+[editable path="Windows/TopFloorWindows/BedroomWindowLeft"]
 [editable path="Shed/shed_ax_32"]
 [editable path="Rocks"]
 [editable path="beam_72"]
@@ -4280,11 +4306,3 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45.85206, 0, 0)
 [editable path="SM_EC_House_Kitchen_Cupboard_Static_00"]
 [editable path="SM_EC_House_Kitchen_Cupboard_Static_01"]
 [editable path="SM_EC_KitchenBin_0"]
-[editable path="Lightswitches/LightSwitchUpperHall"]
-[editable path="Lightswitches/LightSwitchLanding"]
-[editable path="Lightswitches/LightSwitchBedroom"]
-[editable path="Lightswitches/LightSwitchStairs"]
-[editable path="Windows/TopFloorWindows/UpperHallWindow"]
-[editable path="Windows/TopFloorWindows/LandingWindow"]
-[editable path="Windows/TopFloorWindows/BedroomWindowRight"]
-[editable path="Windows/TopFloorWindows/BedroomWindowLeft"]

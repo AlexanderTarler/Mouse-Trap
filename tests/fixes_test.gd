@@ -11,6 +11,10 @@ extends SceneTree
 ##   - Stalking, being watched slows it but never holds it off.
 ##   - The forest is drawn as batches (no loose tree meshes), its colliders
 ##     untouched.
+##   - Occlusion culling: the cabin's walls hide what is behind them; the sun's
+##     shadows use 2 splits.
+##   - The walking paths stay clear: no undergrowth, world detail or tree on
+##     them; no stumps added (the nests keep theirs).
 ##
 ## Run: godot --headless --path . --fixed-fps 60 --script res://tests/fixes_test.gd
 
@@ -37,6 +41,8 @@ func _run() -> void:
 
 	_test_fog(scene)
 	_test_forest_batches(scene)
+	_test_occlusion(scene)
+	await _test_paths_clear(scene)
 	await _test_fog_reprojection()
 	await _test_feet()
 	await _test_search_speed()
@@ -301,6 +307,56 @@ func _test_forest_batches(scene: Node) -> void:
 	for block in scene.find_children("WorldMapBorderBlock*", "", true, false):
 		border_loose += block.find_children("*", "MeshInstance3D", true, false).size()
 	var nodes := scene.find_children("*", "", true, false).size()
+	# Dressed: three pine colourings, dead trees and undergrowth among the batches.
+	var kinds := {}
+	if batches:
+		for batch in batches.get_children():
+			for kind in ["pine_tree_n_1", "pine_tree_n_2", "pine_tree_n_3", "tree_8", "mushroom", "fern_1"]:
+				if kind in String(batch.name):
+					kinds[kind] = true
+	_check("forest: dressed with three pine colourings, dead trees, shrubs and mushrooms",
+		kinds.size() == 6, "found %s" % [kinds.keys()])
 	_check("forest: drawn as batches, no loose tree meshes left, colliders kept, far fewer nodes",
 		batches != null and batches.get_child_count() > 100 and loose == 0 and border_loose == 0 and colliders > 10000 and nodes < 40000,
 		"%d batches, %d + %d loose meshes, %d tree colliders, %d nodes" % [batches.get_child_count() if batches else 0, loose, border_loose, colliders, nodes])
+
+
+func _test_occlusion(scene: Node) -> void:
+	var occluder := scene.get_node_or_null("NavigationRegion3D/Cabin/TwoFloorCollision/CabinOccluder") as OccluderInstance3D
+	var shape := occluder.occluder as ArrayOccluder3D if occluder else null
+	var triangles: int = shape.indices.size() / 3 if shape else 0
+	var enabled: bool = ProjectSettings.get_setting("rendering/occlusion_culling/use_occlusion_culling", false)
+	var sun := scene.get_node("Sun") as DirectionalLight3D
+	_check("occlusion: the cabin occluder is built from its walls and culling is on; sun shadows in 2 splits",
+		triangles > 1000 and enabled and sun.directional_shadow_mode == DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS,
+		"%d occluder triangles, culling %s, sun shadow mode %d" % [triangles, enabled, sun.directional_shadow_mode])
+
+
+func _test_paths_clear(scene: Node) -> void:
+	var details = scene.get_node("WorldDetails")
+	while details.spots.is_empty():
+		await process_frame
+	var on_path := 0
+	for spot in ForestDresser.undergrowth_spots:
+		if TerrainMask.path(spot) > 0.1:
+			on_path += 1
+	var details_on_path := 0
+	for spot in details.spots:
+		if TerrainMask.path(spot) > 0.05:
+			details_on_path += 1
+	var trunks_on_path := 0
+	for shape in scene.find_children("*", "CollisionShape3D", true, false):
+		var body: Node = shape.get_parent()
+		if body is StaticBody3D and String(body.get_parent().name).begins_with("Group of Trees") 				and not shape.disabled and TerrainMask.path(shape.global_position) >= ForestDresser.TREE_ON_PATH:
+			trunks_on_path += 1
+	_check("paths: no undergrowth, world detail or tree trunk on the walking paths",
+		on_path == 0 and details_on_path == 0 and trunks_on_path == 0 and details.spots.size() > 1000,
+		"%d undergrowth, %d details (of %d), %d trunks on paths; %d trees cleared off paths" % [on_path, details_on_path, details.spots.size(), trunks_on_path, ForestDresser.trees_cleared])
+	var stump_rule := ForestDresser.UNDERGROWTH.all(func(entry): return not "stump" in String(entry[0]))
+	var nest_stumps := 0
+	for nest in scene.get_node("NestLocations").get_children():
+		for mesh in nest.find_children("*", "MeshInstance3D", true, false):
+			if mesh.mesh and "stump" in mesh.mesh.resource_path:
+				nest_stumps += 1
+	_check("stumps: none added to the forest; the three nests keep theirs", stump_rule and nest_stumps >= 3,
+		"%d nest stump meshes" % nest_stumps)
