@@ -9,6 +9,8 @@ extends SceneTree
 ##   - Its distortion field (visual distortion + whispers) only works close
 ##     by, while the player looks at it AND it sees the player.
 ##   - Stalking, being watched slows it but never holds it off.
+##   - The forest is drawn as batches (no loose tree meshes), its colliders
+##     untouched.
 ##
 ## Run: godot --headless --path . --fixed-fps 60 --script res://tests/fixes_test.gd
 
@@ -34,6 +36,7 @@ func _run() -> void:
 		await physics_frame
 
 	_test_fog(scene)
+	_test_forest_batches(scene)
 	await _test_fog_reprojection()
 	await _test_feet()
 	await _test_search_speed()
@@ -285,3 +288,19 @@ func _test_stalk_watched() -> void:
 	entity.can_kill = true
 	entity.deactivate()
 	player.set_physics_process(true)
+
+
+func _test_forest_batches(scene: Node) -> void:
+	var batches: Node = scene.get_node_or_null("ForestBatches")
+	var loose := 0
+	var colliders := 0
+	for group in scene.find_children("Group of Trees*", "", true, false):
+		loose += group.find_children("*", "MeshInstance3D", true, false).size()
+		colliders += group.find_children("*", "StaticBody3D", true, false).size()
+	var border_loose := 0
+	for block in scene.find_children("WorldMapBorderBlock*", "", true, false):
+		border_loose += block.find_children("*", "MeshInstance3D", true, false).size()
+	var nodes := scene.find_children("*", "", true, false).size()
+	_check("forest: drawn as batches, no loose tree meshes left, colliders kept, far fewer nodes",
+		batches != null and batches.get_child_count() > 100 and loose == 0 and border_loose == 0 and colliders > 10000 and nodes < 40000,
+		"%d batches, %d + %d loose meshes, %d tree colliders, %d nodes" % [batches.get_child_count() if batches else 0, loose, border_loose, colliders, nodes])

@@ -22,6 +22,7 @@
 [ext_resource type="PackedScene" uid="uid://erd1prhmksye" path="res://assets/Fixed .fbx/SM_EC_Plant_Bush_00.tscn" id="20_pls4a"]
 [ext_resource type="ArrayMesh" uid="uid://3cbfqdr7kkll" path="res://assets/grass_mesh/grass_mesh.tres" id="21_2elfe"]
 [ext_resource type="Script" uid="uid://b2xn8ggswjbhj" path="res://scenes/foliage.gd" id="22_8t882"]
+[ext_resource type="Script" path="res://scripts/foliage_batcher.gd" id="24_batch"]
 [ext_resource type="ArrayMesh" uid="uid://bm7w1dfoqu01d" path="res://assets/flowery_fern_asset.tres" id="23_e1r1i"]
 
 [sub_resource type="MultiMesh" id="MultiMesh_8t882"]
@@ -244,6 +245,7 @@ height = 8.0
 height = 8.0
 
 [node name="Group of Trees" type="Node3D" unique_id=335884299]
+script = ExtResource("24_batch")
 transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0)
 
 [node name="pine_tree_n_12" parent="." unique_id=807040485 instance=ExtResource("1_pine1")]
