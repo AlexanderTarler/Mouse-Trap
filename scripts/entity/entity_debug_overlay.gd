@@ -63,7 +63,8 @@ func _build_text() -> String:
 	lines.append("CONFIDENCE  %.1f  (rest %.1f, approach at %.0f)%s" % [
 		c.confidence, c.resting, entity.config.approach_threshold, "  RELAXING" if c.is_relaxing() else ""])
 	lines.append("")
-	lines.append("sees player: %s   range %.1fm   dist %.1fm" % [p.can_see_player, p.vision_range(), p.distance_to_player])
+	lines.append("sees player: %s   range %.1fm   dist %.1fm%s" % [p.can_see_player, p.vision_range(), p.distance_to_player,
+		"   (player in bush cover)" if p.player_in_cover() else ""])
 	lines.append("last seen %.1fs ago   last heard %.1fs ago" % [minf(p.time_since_seen(), 999.0), minf(p.time_since_heard(), 999.0)])
 	var n: Dictionary = p.last_noise
 	if n.is_empty():

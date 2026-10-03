@@ -336,6 +336,13 @@ func _update_flashlight(delta: float) -> void:
 # ─── Sight ───────────────────────────────────────────────────────────────────
 
 func vision_range() -> float:
+	var sight := _base_vision_range()
+	# Crouched in a bush, it has to come close to see the player, even when
+	# it's looking out for them (a lit flashlight gives them away).
+	return minf(sight, config.bush_cover_range) if player_in_cover() else sight
+
+
+func _base_vision_range() -> float:
 	var player := entity.get_player()
 	if player.has_method("is_flashlight_on") and player.is_flashlight_on():
 		return config.vision_range_flashlight
@@ -347,6 +354,17 @@ func vision_range() -> float:
 	if player.has_method("is_crouching") and player.is_crouching():
 		dark_range *= config.crouch_vision_multiplier
 	return dark_range
+
+
+## Crouched in a bush, flashlight off (FoliageRustle).
+func player_in_cover() -> bool:
+	var player := entity.get_player()
+	if not player or not (player.has_method("is_crouching") and player.is_crouching()):
+		return false
+	if player.has_method("is_flashlight_on") and player.is_flashlight_on():
+		return false
+	var rustle := entity.get_tree().get_first_node_in_group("foliage_rustle")
+	return rustle != null and rustle.in_cover(player.global_position)
 
 
 func _update_sight(player: Node3D) -> void:

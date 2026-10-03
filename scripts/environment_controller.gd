@@ -238,13 +238,15 @@ func _process(delta: float) -> void:
 		_apply_cycle()
 
 
-## The clock moved. Small steps (time passing) and jumps backwards (a
-## restart) show at once; a jump forwards glides there (see GLIDE_SPEED).
-## `snap` shows it at once regardless (cutscenes).
+## The clock moved. Small steps (time passing), jumps backwards (a
+## restart) and into the next day (waking up) show at once; a jump forwards
+## within the day glides there (see GLIDE_SPEED). `snap` shows it at once
+## regardless (cutscenes).
 func _on_game_time_changed(progress: float, snap: bool = false) -> void:
 	var ahead := fposmod(progress - cycle_progress, 1.0)
+	var next_day := progress < cycle_progress
 	_target_progress = progress
-	if snap or _target_progress < 0.0 or ahead < 0.01 or ahead > 0.5:
+	if snap or next_day or _target_progress < 0.0 or ahead < 0.01 or ahead > 0.5:
 		cycle_progress = progress
 		is_day = progress < 0.5
 		_apply_cycle()
@@ -389,6 +391,7 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 	_set_sky("night", 1.0 - p_day_factor)
 	_set_sky("dusk", dusk)
 	_set_sky("storm", weather)
+	_set_sky("cloud_cover", weather)
 	if sun:
 		_set_sky("sun_direction", sun.global_transform.basis.z)
 	if moon:
@@ -542,7 +545,8 @@ func _set_ground_fog_density(value: float) -> void:
 func _update_light_appearance(p_day_factor: float, p_sun_height: float) -> void:
 	# --- Sun light energy: smoothly scales with sun height ---
 	if sun:
-		var sun_energy: float = maxf(0.0, p_sun_height) * 2.0 * lerpf(1.0, 0.3, weather)
+		# Under the storm clouds the sun gives a dull light (no hard shadows).
+		var sun_energy: float = maxf(0.0, p_sun_height) * 2.0 * lerpf(1.0, 0.12, weather)
 		if not is_equal_approx(sun_energy, _cached_sun_energy):
 			sun.light_energy = sun_energy
 			_cached_sun_energy = sun_energy

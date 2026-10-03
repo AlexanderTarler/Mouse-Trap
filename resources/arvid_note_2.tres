@@ -5,25 +5,25 @@
 [resource]
 script = ExtResource("1_2v8or")
 item_name = "Arvid's Note 2"
+item_description = "Arvid's last note, found in the sunken tunnel. It ends mid-word."
 item_type = 1
-note_text = "\"To whoever they sent to replace me—because I know they already have.
+note_text = "\"To whoever the Institute sent to replace me — because I know they already have.
 
-I couldn't leave a digital trail on the network, and I knew that nobody from corporate would ever bother to crawl into this miserable old tunnel. They only care about data arrays; they don’t like getting their boots muddy.
+I couldn't put this on the network. They read everything that goes through that terminal. But nobody from the office would ever crawl into this tunnel. They like their data clean and their boots dry.
 
-Listen to me carefully: the administration is lying to us. This isn't a routine ecological survey of the Muscardinus population. The company knows exactly what is mutating the wildlife out here. They didn't send us to study an anomaly; they sent us to act as bait to map its behavior.
+So listen. This was never a dormouse survey. The Institute has known what lives in these woods since long before either of us was hired. They don't send people out here to study it. They send people out here for it to study. We're the bait. Every night you survive is a data point to them.
 
-There is something out here in the black. It isn't an animal. It mimics, it watches, it stalks, and it wants to tear me apart. It’s been using the nests to track the literal frequency of my footsteps around the cabin.
+It isn't an animal. It watches. It copies what it hears. It learned the rhythm of my footsteps through the nests, and now it walks them back to me around the cabin at night.
 
-But I am not going out quietly. I’ve managed to rig a trap for it. I bypassed the terminal’s main firewall and routed a localized high-frequency override through the cabin's primary anchor grid. If it triggers, it should sever whatever tether keeps that monster hunting in these coordinates.
+I found what keeps it here. The old willow in the forest — it doesn't belong among the pines, and nothing grows right around it. Something is anchored there. Pin the thing in enough light, long enough, and the anchor can be broken.
 
-I couldn't activate it from here before my battery died, but you can do it from the terminal in the house. You have to use my corporate override to bypass LUND's restrictions.
-
+I hid everything on the terminal, where LUND's account can't see it. Log in as me:
 USER: STENBERG
 PASSKEY: 1996
 
-Go to the terminal, log me in, and execute the anchor protocol. Please. Don't let them win.
+Read what I recovered. Finish what I couldn't.
 
-If you make it out of these woods alive, find a way to contact my family. Tell Linnea and Maja that their pappa misses them so much, and that I think of them every single single hour of the day, especially when the dark gets too heavy. I just want to come ho—
+If you make it out of these woods, find Linnea and Maja. Tell them their pappa thought of them every single hour, and most of all when the dark got heavy. Tell them I was trying to come ho—
 
-[The text ends completely abruptly, the pen dragging violently off the bottom edge of the paper in a sharp, jagged streak, leaving the word \"home\" unfinished.]\""
+[The writing breaks off. The pen has dragged a long, jagged line off the bottom of the page.]\""
 metadata/_custom_type_script = "uid://baixx1fs8cosb"

@@ -48,6 +48,9 @@ extends Resource
 @export var vision_range_watching: float = 35.0
 ## Vision range multiplier when the player crouches in the dark.
 @export var crouch_vision_multiplier: float = 0.35
+## Crouched inside a bush (FoliageRustle.in_cover), it sees the player only
+## from this close (m), unless their flashlight is on.
+@export var bush_cover_range: float = 4.0
 ## Height of the Entity's eyes above its feet.
 @export var eye_height: float = 1.9
 ## After this long without seeing or hearing the player, the last known
@@ -65,6 +68,8 @@ extends Resource
 	"door": 12.0,
 	"drop": 8.0,
 	"click": 3.0,
+	"rustle": 10.0,
+	"rustle_crouch": 6.0,
 }
 ## Footsteps on the cabin's wooden floors carry this much farther.
 @export var indoor_footstep_multiplier: float = 1.3

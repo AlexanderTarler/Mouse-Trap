@@ -37,6 +37,8 @@ func _run() -> void:
 	await _frames(90)
 	_tm = root.get_node("TutorialManager")
 	_rm = root.get_node("RoutineManager")
+	# Hints go at once here (bugs4_test covers their minimum time up).
+	root.get_node("TutorialManager").min_hint_time = 0.0
 
 	await _test_flashlight_hint()
 	await _test_hints()

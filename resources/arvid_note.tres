@@ -6,17 +6,17 @@
 [resource]
 script = ExtResource("1_item_data")
 item_name = "Arvid's Note"
-item_description = "Another note from Arvid, which ends abruptly."
+item_description = "A note in Arvid's handwriting, left by the terminal."
 item_type = 1
-note_text = "\"Log Note — 22:14
+note_text = "\"Log note — 22:14
 
-Left the computer terminal active.
+Still no signal. The office swears the mast down by the main road was upgraded last month. Funny how the network only ever works when they want something from me.
 
-Going down to the old tunnel (gamla tunneln) past the eastern thicket to pull a manual audio sample. There’s a persistent acoustic feedback looping out of the concrete structure. From the porch, it just sounds like standard low-frequency wind resonance, but the frequency shifts are perfectly matching the interval patterns I logged at Nest Gamma earlier today.
+There's a sound coming out of the sunken tunnel at night. From the porch it's just wind in the metal — but the pitch shifts match the intervals I logged at Nest Gamma today. Not roughly. Exactly.
 
-It's highly likely a structural fluke—the acoustics of the hollow corridor mimicking the local wildlife distribution—but I need to rule out equipment interference before finalizing the report for the regional office.
+It's the acoustics of the hollow. It has to be. I'm going down to take a manual sample and rule out my own equipment before the report goes to the Institute.
 
-If anyone from administration calls before I get back, tell them the data migration is still on schedule. Taking the spare battery cells.
+Left the terminal running. Taking the spare battery cells. Back within the hour.
 
 — Arvid\""
 scene_to_spawn = ExtResource("2_note_scene")

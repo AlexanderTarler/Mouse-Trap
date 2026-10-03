@@ -764,6 +764,17 @@ func _toggle_inventory() -> void:
 		if inv_ui.get("_is_open"): inv_ui._close_inventory()
 		else: inv_ui._open_inventory()
 
+var _still_time := 0.0
+
+
+## The nests' hints (crouch, stand still) are learned by doing it once
+## the hint is up; doing it before then doesn't use the hint up.
+func _learned_if_shown(mechanic_id: String) -> void:
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("was_shown") and tm.was_shown(mechanic_id):
+		tm.mark_learned(mechanic_id)
+
+
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity += get_gravity() * delta
@@ -773,8 +784,21 @@ func _physics_process(delta: float) -> void:
 
 	if Input.is_key_pressed(KEY_CTRL) or Input.is_key_pressed(KEY_C):
 		if not _is_crouching: _is_crouching = true
+		# Also when the hint comes up while already crouching.
+		_learned_if_shown("stealth")
 	else:
 		if _is_crouching: _is_crouching = false
+	# The "stand completely still" hint (Nest Gamma): done after a moment
+	# of standing still.
+	if Vector2(velocity.x, velocity.z).length() < 0.05:
+		_still_time += delta
+		if _still_time >= 1.5:
+			_learned_if_shown("stillness")
+	else:
+		_still_time = 0.0
+	# The flashlight hint, if it comes up with the light already on.
+	if _flashlight and "is_on" in _flashlight and _flashlight.is_on:
+		_learned_if_shown("flashlight")
 	
 
 	# ─── SPRINT & STAMINA ──────────────────────────────────────────────

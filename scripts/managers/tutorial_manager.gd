@@ -50,6 +50,12 @@ const REPLACEABLE_HINTS := ["inventory"]
 const ALSO_DISMISSES := {"notebook": ["pc_login_hint"]}
 ## The mechanic whose hint is currently on screen ("" for none).
 var _visible_id := ""
+## A hint stays up at least this long (s, counting its fade-in).
+var min_hint_time := 2.0
+## mechanic -> when its hint was shown (_clock, s).
+var _shown_at := {}
+## Game time (s), for how long a hint has been up.
+var _clock := 0.0
 
 ## Cached reference to the HorrorHUD.
 var _hud: Node = null
@@ -57,6 +63,10 @@ var _hud: Node = null
 ## Tracks which mechanics have been shown (one_shot guard).
 var _shown: Dictionary = {}
 
+
+
+func _process(delta: float) -> void:
+	_clock += delta
 
 
 func _ready() -> void:
@@ -166,8 +176,24 @@ func _dismiss(mechanic_id: String) -> void:
 	if not hud or not hud.has_method("hide_hint"):
 		return
 	if _visible_id == mechanic_id or _is_on_screen(mechanic_id):
+		# Done already (say, crouching as the crouch hint comes up): it
+		# still stays long enough to be read.
+		var shown_for: float = _clock - float(_shown_at.get(mechanic_id, -INF))
+		if shown_for < min_hint_time:
+			var text: String = hud.current_hint() if hud.has_method("current_hint") else ""
+			get_tree().create_timer(min_hint_time - shown_for).timeout.connect(_late_dismiss.bind(text))
+			return
 		hud.hide_hint()
 		_visible_id = ""
+
+
+## Hides a hint after its minimum time, if it's still the one up.
+func _late_dismiss(text: String) -> void:
+	var hud := _find_hud()
+	if hud and hud.has_method("current_hint") and text != "" and hud.current_hint() == text:
+		hud.hide_hint()
+		if _visible_id != "" and _find_tutorial(_visible_id) and _find_tutorial(_visible_id).prompt_text == text:
+			_visible_id = ""
 
 
 ## Whether the HUD is showing this mechanic's prompt right now (however it
@@ -240,6 +266,7 @@ func _show(tutorial: TutorialData, force: bool = false) -> void:
 		return
 	_shown[tutorial.mechanic_id] = true
 	_visible_id = tutorial.mechanic_id
+	_shown_at[tutorial.mechanic_id] = _clock
 	
 	print("[TutorialManager] Showing prompt: '%s' (%s)" % [tutorial.prompt_text, tutorial.mechanic_id])
 	

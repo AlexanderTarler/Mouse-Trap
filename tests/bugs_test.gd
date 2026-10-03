@@ -35,6 +35,8 @@ func _run() -> void:
 	root.add_child(_scene)
 	current_scene = _scene
 	await _frames(90)
+	# Hints go at once here (bugs4_test covers their minimum time up).
+	root.get_node("TutorialManager").min_hint_time = 0.0
 	root.get_node("NightManager").is_time_paused = true
 
 	_test_canopy()

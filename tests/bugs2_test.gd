@@ -39,6 +39,8 @@ func _run() -> void:
 	root.add_child(_scene)
 	current_scene = _scene
 	await _frames(90)
+	# Hints go at once here (bugs4_test covers their minimum time up).
+	root.get_node("TutorialManager").min_hint_time = 0.0
 
 	await _test_tab_hint()
 	await _test_sky()
@@ -208,7 +210,7 @@ func _test_peeker_window() -> void:
 	rm.main_objective = 8
 	rm.on_door_locked()
 	await _frames(2)
-	_check("#9 the door-lock Peeker shows at the hall window", pm._last_peeker_window_id == "Hall_Window_Right",
+	_check("#9 the Day 1 door-lock Peeker shows at the landing window (moved there in round 4)", pm._last_peeker_window_id == "Landing_Window",
 		pm._last_peeker_window_id)
 	if pm.has_method("remove_active_peeker"):
 		pm.remove_active_peeker()

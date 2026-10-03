@@ -172,6 +172,13 @@ func _input(event: InputEvent) -> void:
 			_generator_refuel_target = generator_target
 			_has_generator_refuel_started = true
 			generator_target.start_refuel()
+		# Pressing E at something (a tap, a hold on the generator or a door)
+		# is what the interact hint teaches.
+		var aimed_at: bool = generator_target != null or _find_door_target() != null 			or (im and im.has_method("get_current_target") and im.get_current_target() != null)
+		if aimed_at:
+			var tm := get_node_or_null("/root/TutorialManager")
+			if tm and tm.has_method("mark_learned"):
+				tm.mark_learned("interact")
 		
 	elif not event.pressed and _e_is_held:
 		# E released

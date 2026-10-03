@@ -514,8 +514,21 @@ func _player_has_item(item_name: String) -> bool:
 
 func _advance_main_objective(target: int) -> void:
 	if target > main_objective:
+		var was := main_objective
 		main_objective = target
 		print("[RoutineManager] Main objective advanced to %d." % main_objective)
+		# "Lock the front door" done, however it completed (locked on the
+		# objective, or locked earlier and ticked off when it came up).
+		if was <= 8 and target >= 9:
+			_spawn_peeker_at.call_deferred("Landing_Window")
+
+
+## The scripted Peeker after a door-lock objective.
+func _spawn_peeker_at(window_id: String) -> void:
+	var pm = get_node_or_null("/root/PeekerManager")
+	if pm and pm.has_method("force_spawn_at_window"):
+		pm.force_spawn_at_window(window_id)
+		print("[RoutineManager] Peeker forced to window '%s'." % window_id)
 
 func _check_power_restored() -> void:
 	if phase2_fuse_fixed and phase2_gen_refilled and phase2_gen_turned_on:
@@ -781,6 +794,10 @@ func on_van_inspected() -> void:
 	print("[RoutineManager] Van inspected! Van escape checklist activated.")
 	_update_hud()
 	van_checklist_changed.emit()
+	var monologue := get_node_or_null("/root/Monologue")
+	var van := get_tree().current_scene.find_child("EscapeVan", true, false) as Node3D if get_tree().current_scene else null
+	if monologue:
+		monologue.think("The car's wrecked - I need to find parts to repair it.", van, 5.0, "van_wrecked")
 
 func on_van_part_installed(part_name: String) -> void:
 	match part_name:
@@ -1184,6 +1201,13 @@ func on_computer_used() -> void:
 	_update_hud()
 	# ─── X-RAY HIGHLIGHT: Highlight planks after 10 seconds ──
 	highlight_target("xray_planks", 10.0)
+	# What the planks are for: a thought as the objective starts (once the
+	# computer is closed and the player can see it).
+	var pc := get_tree().get_first_node_in_group("computer_ui")
+	if pc and "is_open" in pc and pc.is_open and pc.has_signal("computer_closed"):
+		pc.computer_closed.connect(_think_about_broken_window, CONNECT_ONE_SHOT)
+	else:
+		_think_about_broken_window()
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -1193,9 +1217,6 @@ func on_computer_used() -> void:
 func on_plank_picked_up() -> void:
 	phase2b_plank_picked_up = true
 	phase2b_plank_count += 1
-	# The planks are for the broken window (the player only learns it now).
-	if phase2b_plank_count == 1:
-		_think_about_broken_window()
 	print("[RoutineManager] Phase 2B: Player picked up a Wooden Plank (count: %d/3)." % phase2b_plank_count)
 	_update_hud()
 	# ─── X-RAY HIGHLIGHT: Clear plank highlight only after 3 planks ──
@@ -1203,7 +1224,8 @@ func on_plank_picked_up() -> void:
 		clear_highlight("xray_planks")
 		print("[RoutineManager] Phase 2B: Player has 3 planks. X-ray highlight cleared.")
 
-## Inner monologue (Monologue): the first plank, over the broken window.
+## Inner monologue (Monologue): as "Find 3 planks" starts, over the
+## broken window, for 5 seconds.
 func _think_about_broken_window() -> void:
 	var monologue := get_node_or_null("/root/Monologue")
 	# Not for the player's starting items (given while the scene loads).
@@ -1214,7 +1236,7 @@ func _think_about_broken_window() -> void:
 	for window in get_tree().get_nodes_in_group("WindowMarkers"):
 		if "start_broken" in window and window.start_broken and window.is_glass_shattered and not window.is_boarded:
 			broken = window
-	monologue.think("Someone left a window for me to patch up - how kind.", broken, 5.5, "broken_window")
+	monologue.think("Someone left a window for me to patch up - how kind.", broken, 5.0, "broken_window")
 
 
 func on_window_patched() -> void:
@@ -1238,6 +1260,7 @@ func on_door_locked() -> void:
 	if main_objective >= 99 and day2_step == 6:
 		day2_step = 7
 		print("[RoutineManager] Day 2 Step 6 COMPLETE: Door locked. Step 7: Go to bed.")
+		_spawn_peeker_at("Hall_Window_Right")
 		_sync_day2_hint()
 		_update_hud()
 		return
@@ -1256,14 +1279,8 @@ func on_door_locked() -> void:
 	print("[RoutineManager] Phase 3: Front door locked.")
 	_advance_main_objective(9)
 	
-	# ─── TASK 6: NIGHT 1 PEEKER FORCED SPAWN ──────────────────────────
-	# The moment the Day 1 "Lock the door" objective completes, force the
-	# Peeker to appear at the hall window (Hall_Window_Right). If it's already there, the
-	# PeekerManager does nothing; if it's at another window it relocates.
-	var pm = get_node_or_null("/root/PeekerManager")
-	if pm and pm.has_method("force_spawn_at_window"):
-		pm.force_spawn_at_window("Hall_Window_Right")
-		print("[RoutineManager] Peeker forced to the hall window.")
+	# The Night 1 Peeker (at the landing window) comes with the objective
+	# advancing (_advance_main_objective).
 	# ─── DEFENSIVE AUTO-COMPLETE: All cabin lights already OFF ──────
 	# If the player turned off every cabin light BEFORE reaching the
 	# "Turn off the lights" objective (e.g. while the door step was

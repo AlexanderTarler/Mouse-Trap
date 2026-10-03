@@ -26,7 +26,18 @@ func _run() -> void:
 	for i in 3:
 		await physics_frame
 	var failed := false
-	for path in REGIONS:
+	# The cabin first (as the level loads: later on the game has moved
+	# things in it). Then, for the outside, wait for the props SiteDresser
+	# puts in the barn, the yard, the tunnel and the willow's clearing: they
+	# are part of its source geometry.
+	for path in [REGIONS[1], REGIONS[0]]:
+		if path == REGIONS[0]:
+			var sites: Node = scene.find_child("SiteDresser", true, false)
+			var waited := 0
+			while sites and not sites.get("built") and waited < 300:
+				await physics_frame
+				waited += 1
+			await physics_frame
 		var region: NavigationRegion3D = scene.get_node(path)
 		var mesh := region.navigation_mesh
 		if mesh == null or mesh.resource_path.is_empty() or mesh.resource_path.contains("::"):

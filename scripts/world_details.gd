@@ -59,6 +59,20 @@ var spots := PackedVector3Array()
 func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
+	# The man-made places get furnished too (SiteDresser), unless the level
+	# has them already (tools/bake_sites.gd writes them into it).
+	if not (owner and owner.has_node("Sites")):
+		var sites := SiteDresser.new()
+		sites.name = "SiteDresser"
+		add_child(sites)
+	# Crows at the willow (Crows).
+	var crows := Crows.new()
+	crows.name = "Crows"
+	add_child(crows)
+	# Plants rustle when walked into (FoliageRustle).
+	var rustle := FoliageRustle.new()
+	rustle.name = "FoliageRustle"
+	add_child(rustle)
 	# The physics space needs a step before it can be queried, and the
 	# forest's batches are built first (they share FoliageBatcher's list).
 	await get_tree().physics_frame

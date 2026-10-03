@@ -75,6 +75,11 @@ var _pickup_label: Label = null
 var _pickup_tween: Tween = null
 
 
+## Developer info (the clock, time to day/night, the phase bar, the room,
+## the generator) shows only with F3, like the Entity debug overlay.
+var debug_info_visible := false
+
+
 func _ready() -> void:
 	add_to_group("hud")
 	
@@ -165,6 +170,28 @@ func _ready() -> void:
 
 	# Connect to RoutineManager for Night 1 bedtime routine objective
 	_connect_routine_manager()
+	_apply_debug_visibility()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F3:
+		debug_info_visible = not debug_info_visible
+		_apply_debug_visibility()
+
+
+func _apply_debug_visibility() -> void:
+	for control in [time_label, clock_label, phase_bar, fuel_bar, _room_label]:
+		if control:
+			control.visible = debug_info_visible
+
+
+## The battery shows only while the flashlight is on.
+func _update_battery_visibility() -> void:
+	var on: bool = _flashlight != null and is_instance_valid(_flashlight) and "is_on" in _flashlight and _flashlight.is_on
+	if battery_bar and battery_bar.visible != on:
+		battery_bar.visible = on
+	if low_battery_warning and low_battery_warning.visible != on:
+		low_battery_warning.visible = on
 
 
 ## Fades the screen to pitch black over the given duration.
@@ -352,6 +379,7 @@ func _process(delta: float) -> void:
 	
 	# Update low battery warning flicker
 	_update_low_battery_warning(delta)
+	_update_battery_visibility()
 	
 	# ─── ROOM DEBUG LABEL ──────────────────────────────────────────────
 	# Update the room label every frame to show which room the player is in.
@@ -632,6 +660,9 @@ func _update_room_label() -> void:
 		_room_label.z_index = 10
 		add_child(_room_label)
 		_room_label_visible = true
+		_room_label.visible = debug_info_visible
+	if not _room_label.visible:
+		return
 	
 	# Find the player and get the current room
 	var player = get_node_or_null("/root/CottageHorror/Player")

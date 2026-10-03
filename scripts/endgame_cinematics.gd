@@ -119,6 +119,10 @@ var _e_mode := EntityMode.NONE
 var _e_pos := Vector3.ZERO
 var _e_leap_from := Vector3.ZERO
 var _e_leap_start := 0.0
+## How high its lowest hand/foot sits above its origin in the frozen roof
+## pose (measured once it's frozen; -1 = not yet).
+var _e_roof_lift := -1.0
+var _e_roof_frames := 0
 
 # The empty ground.
 var _t_from := Vector3.ZERO
@@ -182,6 +186,15 @@ func _run(cutscene: Callable) -> void:
 	_skipped = false
 	_clock = 0.0
 	_shake = 0.0
+	# The player's interaction prompt ("[E] Examine the van") has no place
+	# in a cutscene.
+	var player := get_tree().get_first_node_in_group("player")
+	var grab: Node = player.find_child("PhysicalGrab", true, false) if player else null
+	var prompt: Label = grab.get("_prompt_label") if grab else null
+	if prompt and prompt.get_parent() is CanvasLayer:
+		var layer := prompt.get_parent() as CanvasLayer
+		_on_end.append(layer.set.bind("visible", layer.visible))
+		layer.visible = false
 
 	await cutscene.call()
 
@@ -514,6 +527,8 @@ func _escape_mediocre() -> void:
 	_e_leap_from = _van_position() - _v_dir * (_v_half_length + 6.0)
 	_e_leap_from.y = _ground_y(_e_leap_from)
 	_e_leap_start = _clock
+	_e_roof_lift = -1.0
+	_e_roof_frames = 0
 	_e_mode = EntityMode.LEAP
 	await _wait(0.7)
 	_e_mode = EntityMode.ROOF
@@ -743,7 +758,30 @@ func _van_shot(delta: float, entity: Node3D) -> void:
 			entity.cinematic_pose(Transform3D(_facing(_v_dir), arc), &"running_crawl", 2.0)
 		EntityMode.ROOF:
 			var roof := pos - _v_dir * 0.8 + Vector3.UP * _v_roof
-			entity.cinematic_pose(Transform3D(_facing(_v_dir), roof), &"ClimbUp", 0.12)
+			# Crouched on the roof in the charge crawl, frozen mid-stride (the
+			# climb animation lifted it up off the roof), lowered so its
+			# lowest hand or foot rests on the roof.
+			_e_roof_frames += 1
+			if _e_roof_lift < 0.0 and _e_roof_frames == 3:
+				_e_roof_lift = maxf(_lowest_contact(entity) - entity.global_position.y, 0.0)
+			var lift := maxf(_e_roof_lift, 0.0)
+			entity.cinematic_pose(Transform3D(_facing(_v_dir), roof - Vector3.UP * lift), &"running_crawl", 0.0)
+
+
+## The height of the Entity's lowest hand or foot (bones), or its origin.
+func _lowest_contact(entity: Node3D) -> float:
+	var low := entity.global_position.y
+	var found := false
+	for skeleton in entity.find_children("*", "Skeleton3D", true, false):
+		var skel := skeleton as Skeleton3D
+		for i in skel.get_bone_count():
+			var bone := skel.get_bone_name(i)
+			if not ("Hand" in bone or "Toe" in bone or "Foot" in bone):
+				continue
+			var y := (skel.global_transform * skel.get_bone_global_pose(i)).origin.y
+			low = y if not found else minf(low, y)
+			found = true
+	return low
 
 
 ## Headlights (and red tail lights, which light the road behind).

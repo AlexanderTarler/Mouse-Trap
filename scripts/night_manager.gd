@@ -240,10 +240,10 @@ func _on_scene_ready() -> void:
 func _set_initial_time() -> void:
 	var gt = get_node_or_null("/root/GameTime")
 	if gt:
-		# Non-dev mode: Day 1 starts 4 minutes into the 5-minute day phase.
-		# cycle_progress = 0.4 → 4:00 elapsed, 1:00 remaining until night.
+		# Non-dev mode: Day 1 starts 3 minutes into the 5-minute day phase.
+		# cycle_progress = 0.3 → 3:00 elapsed, 2:00 remaining until night.
 		# Dev mode overrides this to 0.0 (start of day).
-		var start_progress: float = 0.4
+		var start_progress: float = 0.3
 		if is_dev_mode:
 			start_progress = 0.0
 		gt.cycle_progress = start_progress
@@ -444,6 +444,20 @@ func _find_marker_recursive(root: Node, name: String) -> Marker3D:
 
 
 
+## The opening (Opening): the van, the title card, the phone with no
+## service. Once per new game; not in headless runs (the tests).
+func _play_opening() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	var scene := get_tree().current_scene
+	if not scene or scene.find_child("Opening", false, false):
+		return
+	var opening := Opening.new()
+	opening.name = "Opening"
+	scene.add_child(opening)
+	opening.play()
+
+
 ## ─── ONBOARDING SEQUENCE ───────────────────────────────────────────────────
 func start_onboarding_sequence() -> void:
 	if is_dev_mode:
@@ -451,6 +465,7 @@ func start_onboarding_sequence() -> void:
 		return
 	
 	print("[NightManager] Starting Day 1 Onboarding Sequence...")
+	_play_opening()
 	
 	var horror_hud = get_node_or_null("/root/CottageHorror/HorrorHUD")
 	if horror_hud:
@@ -643,8 +658,8 @@ func _process(delta: float) -> void:
 	# COMPLETELY REMOVED so the peeker can NEVER appear randomly during
 	# Night 1. The ONLY trigger is RoutineManager.on_door_locked() when
 	# the Day 1 "Lock the door" objective completes, which forces the
-	# peeker specifically to the hall window via
-	# PeekerManager.force_spawn_at_window("Hall_Window_Right").
+	# peeker specifically to the landing window via
+	# PeekerManager.force_spawn_at_window("Landing_Window").
 
 
 
@@ -1047,14 +1062,14 @@ func advance_night() -> void:
 	# ─── AUTHORITATIVE TIME RESET ─────────────────────────────────────
 	# Set the new day's start time in a SINGLE block, after all signals
 	# have been processed.
-	#   - Day 2 (original_night == 0 or 1): cycle_progress = 0.0 (00:00)
-	#   - Day 3+ (original_night >= 2): cycle_progress = 0.125 (morning)
+	# Every day starts a little after dawn (WAKE_PROGRESS): the sun just
+	# up, the light still warm.
 	# We use _original_night (saved BEFORE the branch) because the branch
 	# may have already bumped current_night via end_current_night().
 	is_time_paused = false
 	var gt: Node = get_node_or_null("/root/GameTime")
 	if gt:
-		var target_progress: float = 0.0 if _original_night <= 1 else 0.125
+		var target_progress: float = WAKE_PROGRESS
 		
 		gt.cycle_progress = target_progress
 		gt._elapsed = gt.cycle_progress * gt.cycle_duration
@@ -1268,6 +1283,10 @@ func _restart_day() -> bool:
 			player.sanity = 100.0
 	print("[NightManager] Day restart complete: back to this morning's checkpoint.")
 	return true
+
+
+## Waking up: a little after dawn (0.0 is sunrise; the sun is ~14 degrees up).
+const WAKE_PROGRESS := 0.04
 
 
 func restart_from_morning() -> void:

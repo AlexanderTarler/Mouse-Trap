@@ -6,7 +6,8 @@ class_name NoiseEvent
 ## the Entity config's Hearing group); the Entity works out walls, openings
 ## and distance itself.
 ##
-## Kinds: walk, sprint, crouch (footsteps), land, hammer, door, drop, click.
+## Kinds: walk, sprint, crouch (footsteps), land, hammer, door, drop, click,
+## rustle, rustle_crouch (pushing through plants: FoliageRustle).
 
 
 static func emit(source: Node, position: Vector3, kind: StringName) -> void:
