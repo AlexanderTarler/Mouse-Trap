@@ -10,9 +10,31 @@ const DAY2_OBJECTIVE: String = "Read the earlier nest data logs in the computer.
 @onready var _game_time = get_node_or_null("/root/GameTime")
 
 ## Called when the player focuses on the bed and presses the interaction key (e.g., 'E')
+## The bed (this area's parent, which holds its meshes) is highlighted while
+## the objective is to go to bed (RoutineManager._update_bed_highlight).
+func _ready() -> void:
+	var bed := get_parent()
+	if bed:
+		bed.add_to_group("xray_bed")
+
+
+## True while a sleep sequence (fades, the night changing) is running: E
+## (handled by PhysicalGrab, which the sequence doesn't freeze) pressed again
+## mid-fade would start a second one and advance the night twice.
+var _busy := false
+
+
 func interact(player: Node3D = null) -> void:
+	if _busy:
+		return
+	_busy = true
+	await _interact(player)
+	_busy = false
+
+
+func _interact(player: Node3D = null) -> void:
 	if not _night_manager or not _game_time:
-		_show_hud_message("Something feels wrong... (Managers missing)")
+		push_warning("[Bed] NightManager or GameTime missing.")
 		return
 	
 	# Resolve player reference if not provided
@@ -21,7 +43,7 @@ func interact(player: Node3D = null) -> void:
 		if players.size() > 0:
 			player = players[0] as Node3D
 		if not player:
-			_show_hud_message("No player found!")
+			push_warning("[Bed] No player found.")
 			return
 
 	# ─── DEBUG: Log bed interaction state ─────────────────────────
@@ -34,7 +56,7 @@ func interact(player: Node3D = null) -> void:
 
 	# ─── DAY 3+ EXHAUSTION SLEEP (BEFORE all other conditions) ──
 	if player and "is_exhausted" in player and player.is_exhausted:
-		_trigger_exhaustion_sleep(player)
+		await _trigger_exhaustion_sleep(player)
 		return
 
 	var current_night: int = _night_manager.current_night
@@ -80,8 +102,6 @@ func interact(player: Node3D = null) -> void:
 			if _game_time:
 				_game_time.is_time_paused = true
 			
-			if hud and hud.has_method("show_message"):
-				hud.show_message(DAY2_OBJECTIVE)
 			var labels = get_tree().get_nodes_in_group("objective_label")
 			if not labels.is_empty():
 				for label in labels:
@@ -214,8 +234,6 @@ func interact(player: Node3D = null) -> void:
 			_night_manager.horror_event.emit("car_alarm")
 			print("[Bed Scene] Car alarm horror event emitted!")
 		
-		if hud and hud.has_method("show_message"):
-			hud.show_message(INTRO_OBJECTIVE)
 		var labels = get_tree().get_nodes_in_group("objective_label")
 		if not labels.is_empty():
 			for label in labels:
@@ -270,8 +288,6 @@ func interact(player: Node3D = null) -> void:
 		if _game_time:
 			_game_time.is_time_paused = true
 		
-		if hud and hud.has_method("show_message"):
-			hud.show_message(DAY2_OBJECTIVE)
 		var labels = get_tree().get_nodes_in_group("objective_label")
 		if not labels.is_empty():
 			for label in labels:
@@ -304,7 +320,7 @@ func interact(player: Node3D = null) -> void:
 	var is_dawn: bool = _game_time.is_day
 	
 	if is_dawn:
-		_advance_to_next_night()
+		await _advance_to_next_night()
 	else:
 		_show_hud_message("I can't go to sleep now... It isn't safe.")
 
@@ -357,6 +373,11 @@ func _trigger_exhaustion_sleep(player: Node3D) -> void:
 	if rm_exh and rm_exh.has_method("enable_sandbox_mode"):
 		rm_exh.enable_sandbox_mode()
 
+	# The storm since Nest Gamma has passed by the time they wake.
+	var weather = get_node_or_null("/root/Weather")
+	if weather and weather.has_method("clear_now"):
+		weather.clear_now()
+
 	# ─── NOW REFRESH THE HUD OBJECTIVE ───────────────────────────
 	# Now that the stale flags are cleared, refresh the HUD so it
 	# shows the correct Day 3+ objective instead of "Lock the door
@@ -381,49 +402,6 @@ func _trigger_exhaustion_sleep(player: Node3D) -> void:
 	print("[Bed Scene] Exhaustion sleep complete. Player restored. Door unlocked. Time unpaused. Objective refreshed. Day label: %s" % day_after)
 
 
-func _trigger_sleep_intro_sequence(player: Node3D) -> void:
-	print("[Bed Scene] Player went to sleep. Initiating cinematic sequence...")
-	
-	if player.has_method("set_physics_process"):
-		player.set_physics_process(false)
-		player.set_process_input(false)
-
-	var hud = get_tree().get_first_node_in_group("hud")
-	if hud and hud.has_method("fade_to_black"):
-		hud.fade_to_black(1.5)
-		await get_tree().create_timer(1.5).timeout
-	else:
-		await get_tree().create_timer(1.5).timeout
-
-	_game_time.is_time_paused = true
-	_game_time.set_progress(0.9)
-	print("[Bed Scene] Clock warped to nighttime (cycle_progress 0.9). ~1 minute before dawn.")
-
-	var horror_sound = get_node_or_null("/root/HorrorSoundManager")
-	if horror_sound and horror_sound.has_method("play_car_alarm_telegraph"):
-		horror_sound.play_car_alarm_telegraph()
-		print("[Bed Scene] HorrorSoundManager instructed to fire car alarm loop.")
-	else:
-		print("[Bed Scene] WARNING: HorrorSoundManager not found or missing play_car_alarm_telegraph method.")
-
-	await get_tree().create_timer(2.0).timeout
-	
-	if hud and hud.has_method("fade_from_black"):
-		hud.fade_from_black(2.0)
-	if hud and "objective_text" in hud:
-		hud.objective_text = INTRO_OBJECTIVE
-	
-	if _night_manager:
-		_night_manager.horror_event.emit("car_alarm")
-		print("[Bed Scene] Car alarm horror event emitted! EscapeVan alarm should now be active.")
-	
-	print("[Bed Scene] Time remains frozen during the night. Player must investigate the car alarm.")
-	
-	player.set_physics_process(true)
-	player.set_process_input(true)
-	print("[Bed Scene] Player woke up. Objective updated: Investigate the car alarm outside.")
-
-
 func _advance_to_next_night() -> void:
 	print("[Bed Scene] Night survived! Saving progress and transitioning...")
 	await get_tree().create_timer(2.0).timeout
@@ -442,6 +420,6 @@ func _advance_to_next_night() -> void:
 func _show_hud_message(msg: String) -> void:
 	var hud = get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("show_message"):
-		hud.show_message(msg)
+		hud.show_message(msg, self)
 	else:
 		print("[Bed Prompt Notification]: ", msg)

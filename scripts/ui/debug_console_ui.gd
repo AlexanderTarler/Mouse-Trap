@@ -38,6 +38,11 @@ var _log_buffer: Array[String] = []
 const MAX_LOG_LINES: int = 50
 
 
+## Found by its group (the pause menu closes it on Escape).
+func _enter_tree() -> void:
+	add_to_group("debug_console")
+
+
 func _ready() -> void:
 	visible = false
 	close_btn.pressed.connect(_close_console)
@@ -272,9 +277,7 @@ func _setup_bedroom_state() -> void:
 		print("[Debug Console] Time set to late afternoon (progress: 0.35).")
 	
 	# Force the EnvironmentController to update sky/lighting immediately.
-	var ec = get_node_or_null("/root/CottageHorror/EnvironmentController")
-	if not ec:
-		ec = get_node_or_null("/root/Main/EnvironmentController")
+	var ec = get_tree().get_first_node_in_group("environment_controller")
 	if ec and ec.has_method("_apply_cycle"):
 		ec._apply_cycle()
 		print("[Debug Console] EnvironmentController refreshed.")

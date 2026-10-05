@@ -155,10 +155,15 @@ func _try_auto_connect() -> void:
 
 	_active_cable = cable
 
-	# ─── TASK 4: "SET TRAP" — CABLE CONNECTED TO GENERATOR (auto flow) ─
+	# ─── TASK 4: "SET TRAP" — BOTH ENDS CONNECTED (auto flow) ─────────
+	# Here the cable is plugged into the generator AND the light at once,
+	# so both halves of "Set trap" are done (the light end was never
+	# reported in this flow, so the objective could not complete).
 	var rm_gen2 = get_node_or_null("/root/RoutineManager")
 	if rm_gen2 and rm_gen2.has_method("on_cable_connected_to_gen"):
 		rm_gen2.on_cable_connected_to_gen()
+	if rm_gen2 and rm_gen2.has_method("on_cable_connected_to_light"):
+		rm_gen2.on_cable_connected_to_light()
 
 	print("[GeneratorOutlet] Cable plugged in! Free end in player's hand. Carry the lamp and drop it to deploy.")
 

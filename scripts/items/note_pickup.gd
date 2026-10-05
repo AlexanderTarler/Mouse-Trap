@@ -122,12 +122,9 @@ func interact() -> void:
 	if note_ui and note_ui.has_method("display_note"):
 		_mark_collected()
 		
-		# Clean up any stale connection from a previous failed attempt
-		if note_ui.note_closed.is_connected(_on_note_closed):
-			note_ui.note_closed.disconnect(_on_note_closed)
-		
-		# Connect with bound data so the correct note is always processed
-		note_ui.note_closed.connect(_on_note_closed.bind(bound_name, bound_text, bound_item))
+		# With this note's data bound, once (CONNECT_ONE_SHOT: it disconnects
+		# itself when the note is closed).
+		note_ui.note_closed.connect(_on_note_closed.bind(bound_name, bound_text, bound_item), CONNECT_ONE_SHOT)
 		note_ui.display_note(item_data.note_text, item_data.item_name)
 	else:
 		# NoteUI not found — retry deferred in case it's loading
@@ -145,42 +142,20 @@ func _retry_interact() -> void:
 	if note_ui and note_ui.has_method("display_note"):
 		_mark_collected()
 		
-		if note_ui.note_closed.is_connected(_on_note_closed):
-			note_ui.note_closed.disconnect(_on_note_closed)
-		
-		note_ui.note_closed.connect(_on_note_closed)
+		note_ui.note_closed.connect(_on_note_closed, CONNECT_ONE_SHOT)
 		note_ui.display_note(item_data.note_text, item_data.item_name)
 		print("[NotePickup] NoteUI found on retry! Displaying note.")
 	else:
 		# Still not found — fall back to direct notebook addition
 		print("[NotePickup] NoteUI not found on retry. Adding directly to notebook.")
 		_mark_collected()
-		_show_hud_message("Note added to notebook.")
+		_show_hud_message("I'll keep this in my notebook.")
 		_add_to_notebook_and_cleanup()
 
 
-## Finds the NoteUI CanvasLayer in the scene tree.
+## The NoteUI (by its group).
 func _find_note_ui() -> Node:
-	var note_ui = get_node_or_null("/root/CottageHorror/NoteUI")
-	if not note_ui:
-		note_ui = get_node_or_null("/root/Main/NoteUI")
-	# Fallback: search the scene root recursively
-	if not note_ui:
-		var scene = get_tree().current_scene
-		if scene:
-			note_ui = _find_note_ui_recursive(scene)
-	return note_ui
-
-
-## Recursively searches for a NoteUI node.
-func _find_note_ui_recursive(node: Node) -> Node:
-	if "note_closed" in node:
-		return node
-	for child in node.get_children():
-		var result = _find_note_ui_recursive(child)
-		if result:
-			return result
-	return null
+	return get_tree().get_first_node_in_group("note_ui")
 
 
 ## Marks the note as collected to prevent double-pickup.
@@ -193,11 +168,6 @@ func _mark_collected() -> void:
 ## interact() fired before this one's note_closed signal.
 ## The bound_name, bound_text, bound_item are passed via .bind() in interact().
 func _on_note_closed(bound_name: String = "", bound_text: String = "", bound_item = null) -> void:
-	# Disconnect signal to prevent dangling connections
-	var note_ui = _find_note_ui()
-	if note_ui and note_ui.note_closed.is_connected(_on_note_closed):
-		note_ui.note_closed.disconnect(_on_note_closed)
-	
 	# Use bound data if provided (protects against cross-note signal contamination)
 	var note_name = bound_name if not bound_name.is_empty() else (item_data.item_name if item_data else "Note")
 	var note_text = bound_text if not bound_text.is_empty() else (item_data.note_text if item_data else "")
@@ -227,11 +197,11 @@ func _add_to_notebook_and_cleanup(note_name_override: String = "", note_text_ove
 			call_deferred("_add_to_notebook_and_cleanup")
 			return
 	
-	# ─── NOTEBOOK WRITING SOUND ───────────────────────────────────
-	_play_notebook_sfx()
+	# (The notebook plays its writing sound in add_note(). A player made
+	# here never sounded: this node frees itself below, taking it along.)
 	
 	# ─── HUD FEEDBACK ──────────────────────────────────────────────
-	_show_hud_message("Added to notebook.")
+	_show_hud_message("I'll keep this in my notebook.")
 	
 	# ─── ARVID'S NOTE: SET PERSISTENCE FLAG ─────────────────────────
 	if note_name == "Arvid's Note":
@@ -257,26 +227,11 @@ func _add_to_notebook_and_cleanup(note_name_override: String = "", note_text_ove
 	queue_free()
 
 
-## Plays the notebook_writing.ogg sound via a transient AudioStreamPlayer.
-## The player is auto-freed when the sound finishes.
-func _play_notebook_sfx() -> void:
-	var stream := load("res://assets/audio/notebook_writing.ogg")
-	if not stream:
-		return
-	var player := AudioStreamPlayer.new()
-	player.bus = "SFX"
-	player.stream = stream
-	add_child(player)
-	player.play()
-	player.finished.connect(player.queue_free)
-	print("[NotePickup] Played notebook_writing.ogg")
-
-
 ## Shows a temporary message on the HUD.
 func _show_hud_message(msg: String) -> void:
 	var hud = get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("show_message"):
-		hud.show_message(msg)
+		hud.show_message(msg, self)
 	else:
 		print("[NotePickup HUD]: ", msg)
 

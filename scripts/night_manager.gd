@@ -240,10 +240,10 @@ func _on_scene_ready() -> void:
 func _set_initial_time() -> void:
 	var gt = get_node_or_null("/root/GameTime")
 	if gt:
-		# Non-dev mode: Day 1 starts 4 minutes into the 5-minute day phase.
-		# cycle_progress = 0.4 → 4:00 elapsed, 1:00 remaining until night.
+		# Non-dev mode: Day 1 starts 3 minutes into the 5-minute day phase.
+		# cycle_progress = 0.3 → 3:00 elapsed, 2:00 remaining until night.
 		# Dev mode overrides this to 0.0 (start of day).
-		var start_progress: float = 0.4
+		var start_progress: float = 0.3
 		if is_dev_mode:
 			start_progress = 0.0
 		gt.cycle_progress = start_progress
@@ -406,8 +406,6 @@ func _apply_dev_mode_settings() -> void:
 func setup_player_spawn() -> void:
 	var player: Node3D = get_tree().get_first_node_in_group("player")
 	if not player:
-		player = get_tree().get_first_node_in_group("Player")
-	if not player:
 		print("[NightManager] Player not found! Cannot set spawn position.")
 		return
 	
@@ -426,6 +424,10 @@ func setup_player_spawn() -> void:
 	else:
 		print("[NightManager] Marker '%s' not found in current scene. Using fallback position." % marker_name)
 		player.global_position = Vector3(9.0, 1.0, 0.4)
+	# The game's first checkpoint: the start of the first day.
+	var first_checkpoint: Node = get_node_or_null("/root/Checkpoint")
+	if first_checkpoint and first_checkpoint.has_method("capture_deferred") and not first_checkpoint.has_checkpoint():
+		first_checkpoint.capture_deferred("night" if is_night_active else "day")
 
 
 ## Recursively searches for a Marker3D with the given name in the node tree.
@@ -440,6 +442,20 @@ func _find_marker_recursive(root: Node, name: String) -> Marker3D:
 
 
 
+## The opening (Opening): the van, the title card, the phone with no
+## service. Once per new game; not in headless runs (the tests).
+func _play_opening() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	var scene := get_tree().current_scene
+	if not scene or scene.find_child("Opening", false, false):
+		return
+	var opening := Opening.new()
+	opening.name = "Opening"
+	scene.add_child(opening)
+	opening.play()
+
+
 ## ─── ONBOARDING SEQUENCE ───────────────────────────────────────────────────
 func start_onboarding_sequence() -> void:
 	if is_dev_mode:
@@ -447,10 +463,7 @@ func start_onboarding_sequence() -> void:
 		return
 	
 	print("[NightManager] Starting Day 1 Onboarding Sequence...")
-	
-	var horror_hud = get_node_or_null("/root/CottageHorror/HorrorHUD")
-	if horror_hud:
-		_hide_horror_ui_elements(horror_hud)
+	_play_opening()
 	
 	_set_objective("Enter the cabin.")
 	
@@ -461,20 +474,6 @@ func start_onboarding_sequence() -> void:
 	else:
 		print("[NightManager] RoutineManager not found or missing reset_all_phases().")
 
-
-
-func _hide_horror_ui_elements(horror_hud: Node) -> void:
-	if horror_hud.has_method("hide_confidence"):
-		horror_hud.hide_confidence()
-	if horror_hud.has_method("hide_sanity"):
-		horror_hud.hide_sanity()
-	
-	if "confidence_bar" in horror_hud and horror_hud.confidence_bar:
-		horror_hud.confidence_bar.visible = false
-	if "sanity_bar" in horror_hud and horror_hud.sanity_bar:
-		horror_hud.sanity_bar.visible = false
-	
-	print("[NightManager] Horror UI elements hidden for onboarding.")
 
 
 func _set_objective(text: String) -> void:
@@ -540,6 +539,9 @@ func _process(delta: float) -> void:
 	_night_tick_timer += delta
 	if _night_tick_timer < 0.2:
 		return
+	# The time since the last tick (~0.2 s): what the timers below advance by
+	# (adding the frame's delta once per tick ran them ~12x too slow).
+	var tick := _night_tick_timer
 	_night_tick_timer = 0.0
 
 	if not _spawn_setup_done:
@@ -557,12 +559,11 @@ func _process(delta: float) -> void:
 
 	if _awaiting_door_lock:
 		var _poll_player = get_tree().get_first_node_in_group("player") as Node3D
-		if not _poll_player:
-			_poll_player = get_tree().get_first_node_in_group("Player") as Node3D
 		if _poll_player and _poll_player.has_method("get_player_room"):
 			var room = _poll_player.get_player_room()
-			if room == "HallRoom":
-				_door_lock_delay_timer += delta
+			# The hall's room area is named "Hallroom".
+			if room.to_lower() == "hallroom":
+				_door_lock_delay_timer += tick
 				if _door_lock_delay_timer >= 3.0:
 					var door = get_tree().get_first_node_in_group("Door")
 					if door and door.has_method("close_and_lock"):
@@ -588,14 +589,8 @@ func _process(delta: float) -> void:
 	if is_night_active:
 		if is_generator_on:
 			# ─── TASK 2: OVERLOAD EXACT 3.0/s DRAIN ─────────────────────
-			# This _process() block is throttled to 5 Hz (0.2s ticks, see
-			# _night_tick_timer above). `delta` here is still the raw per-frame
-			# delta (~0.016s), so draining `rate * delta` once per 0.2s tick
-			# would run at only ~8% of the intended rate. We therefore scale
-			# by the throttle interval (0.2s) so the math is exact:
-			#   overload: 3.0 units/sec → 0.6 units per 0.2s tick
-			#   baseline: current_drain_rate /sec → rate * 0.2 per tick
-			const THROTTLE_INTERVAL: float = 0.2
+			# Drained per tick by the time since the last one (`tick`, ~0.2 s):
+			#   overload: 3.0 units/sec; baseline: current_drain_rate /sec.
 			
 			# While an overloaded portable trap lamp is active, the drain
 			# rate is FORCED to exactly 3.0 units/sec (3% of max_fuel per
@@ -610,9 +605,9 @@ func _process(delta: float) -> void:
 					break
 			
 			if overload_active:
-				generator_fuel -= 3.0 * THROTTLE_INTERVAL
+				generator_fuel -= 3.0 * tick
 			else:
-				generator_fuel -= current_drain_rate * THROTTLE_INTERVAL
+				generator_fuel -= current_drain_rate * tick
 			generator_fuel = clampf(generator_fuel, 0.0, max_fuel)
 			fuel_changed.emit(generator_fuel)
 			
@@ -628,7 +623,7 @@ func _process(delta: float) -> void:
 
 	
 	if is_night_active:
-		_event_timer += delta
+		_event_timer += tick
 		if _event_timer >= 5.0:
 			_event_timer = 0.0
 			_check_time_events()
@@ -639,8 +634,8 @@ func _process(delta: float) -> void:
 	# COMPLETELY REMOVED so the peeker can NEVER appear randomly during
 	# Night 1. The ONLY trigger is RoutineManager.on_door_locked() when
 	# the Day 1 "Lock the door" objective completes, which forces the
-	# peeker specifically to the LivingRoom window via
-	# PeekerManager.force_spawn_at_window("LivingRoom").
+	# peeker specifically to the landing window via
+	# PeekerManager.force_spawn_at_window("Landing_Window").
 
 
 
@@ -690,8 +685,6 @@ func _apply_dawn_exhaustion() -> void:
 		gt.is_running = false
 
 	var player = get_tree().get_first_node_in_group("player") as Node3D
-	if not player:
-		player = get_tree().get_first_node_in_group("Player") as Node3D
 	if player:
 		player.is_exhausted = true
 		print("[NightManager] Dawn exhaustion applied to player.")
@@ -752,12 +745,22 @@ func start_night(night: int) -> void:
 	# start_night()) does NOT overwrite the original snapshot with the
 	# post-consumption state. The guard is cleared in end_current_night()
 	# so the next genuine night cycle captures a fresh snapshot.
+	# The whole game is snapshotted now (Checkpoint): a death tonight
+	# restarts from exactly this moment.
 	if not _checkpoint_saved:
-		var inv_snapshot: Node = get_node_or_null("/root/Inventory")
-		if inv_snapshot and inv_snapshot.has_method("save_checkpoint"):
-			inv_snapshot.save_checkpoint()
-			_checkpoint_saved = true
-			print("[NightManager] TASK 3: Inventory checkpoint captured for Night %d." % night)
+		var checkpoint: Node = get_node_or_null("/root/Checkpoint")
+		# Night 2.2: the night only starts once the van is investigated, but
+		# a death should go back to the alarm going off (taken then).
+		if checkpoint and is_van_sequence_active and checkpoint.tag == "van_alarm":
+			print("[NightManager] Keeping the car-alarm checkpoint for Night %d." % night)
+		elif checkpoint and checkpoint.has_method("capture"):
+			checkpoint.capture("night")
+		else:
+			var inv_snapshot: Node = get_node_or_null("/root/Inventory")
+			if inv_snapshot and inv_snapshot.has_method("save_checkpoint"):
+				inv_snapshot.save_checkpoint()
+		_checkpoint_saved = true
+		print("[NightManager] Checkpoint captured for Night %d." % night)
 	
 	night_started.emit(night)
 	
@@ -802,42 +805,17 @@ func end_current_night() -> void:
 	
 	print("Night %d has ended! Dawn breaks." % current_night)
 	
-	_clear_environment_pickups()
-	_respawn_day_items()
+	# A new day: snapshot it so a death
+	# today restarts from this morning.
+	var day_checkpoint: Node = get_node_or_null("/root/Checkpoint")
+	if day_checkpoint and day_checkpoint.has_method("capture_deferred"):
+		day_checkpoint.capture_deferred("day")
 	
 	if current_night < total_nights:
 		current_night += 1
 		print("Preparing for Night %d..." % current_night)
 	else:
 		print("All nights survived! Game over.")
-
-
-func _clear_environment_pickups() -> void:
-	var spawner = get_node_or_null("/root/CottageHorror/ItemSpawner")
-	if not spawner:
-		spawner = get_node_or_null("/root/Main/ItemSpawner")
-	if not spawner:
-		return
-	
-	for child in spawner.get_children():
-		if child is Marker3D:
-			continue
-		if child.has_method("queue_free"):
-			child.queue_free()
-	
-	print("[Dawn Resupply] Cleared uncollected pickups from the environment.")
-
-
-func _respawn_day_items() -> void:
-	var spawner = get_node_or_null("/root/CottageHorror/ItemSpawner")
-	if not spawner:
-		spawner = get_node_or_null("/root/Main/ItemSpawner")
-	if not spawner:
-		return
-	
-	if spawner.has_method("_spawn_items"):
-		spawner.call_deferred("_spawn_items")
-		print("[Dawn Resupply] Spawned fresh survival items for the new cycle.")
 
 
 func recalculate_fuel_drain() -> float:
@@ -1028,14 +1006,14 @@ func advance_night() -> void:
 	# ─── AUTHORITATIVE TIME RESET ─────────────────────────────────────
 	# Set the new day's start time in a SINGLE block, after all signals
 	# have been processed.
-	#   - Day 2 (original_night == 0 or 1): cycle_progress = 0.0 (00:00)
-	#   - Day 3+ (original_night >= 2): cycle_progress = 0.125 (morning)
+	# Every day starts a little after dawn (WAKE_PROGRESS): the sun just
+	# up, the light still warm.
 	# We use _original_night (saved BEFORE the branch) because the branch
 	# may have already bumped current_night via end_current_night().
 	is_time_paused = false
 	var gt: Node = get_node_or_null("/root/GameTime")
 	if gt:
-		var target_progress: float = 0.0 if _original_night <= 1 else 0.125
+		var target_progress: float = WAKE_PROGRESS
 		
 		gt.cycle_progress = target_progress
 		gt._elapsed = gt.cycle_progress * gt.cycle_duration
@@ -1066,10 +1044,15 @@ func restart_night() -> void:
 	_triggered_events.clear()
 	_event_timer = 0.0
 	
-	is_generator_on = true
-	generator_fuel = max_fuel
-	fuel_changed.emit(generator_fuel)
-	generator_state_changed.emit(true)
+	# The world as it was when the night began (Checkpoint): inventory,
+	# windows, scrap heaps, the trap, items in the world, fuel...
+	var checkpoint: Node = get_node_or_null("/root/Checkpoint")
+	var restored: bool = checkpoint != null and checkpoint.kind == "night" and checkpoint.restore()
+	if not restored:
+		is_generator_on = true
+		generator_fuel = max_fuel
+		fuel_changed.emit(generator_fuel)
+		generator_state_changed.emit(true)
 	
 	# ─── TASK 3: RESTORE INVENTORY TO CHECKPOINT ─────────────────────
 	# The player died during the night — restore the inventory to the exact
@@ -1079,7 +1062,7 @@ func restart_night() -> void:
 	# guard in start_night() prevents this restore from being overwritten
 	# by a fresh (post-consumption) snapshot.
 	var inv_restore: Node = get_node_or_null("/root/Inventory")
-	if inv_restore and inv_restore.has_method("reset_to_checkpoint"):
+	if not restored and inv_restore and inv_restore.has_method("reset_to_checkpoint"):
 		inv_restore.reset_to_checkpoint()
 		print("[NightManager] TASK 3: Inventory restored to checkpoint snapshot.")
 	
@@ -1127,12 +1110,16 @@ func _reset_entity_confidence() -> void:
 ##   - Day active → reset to the beginning of the current day
 ##     (morning baseline, player in bed, world reset).
 func restart_from_checkpoint() -> void:
+	var van_checkpoint: Node = get_node_or_null("/root/Checkpoint")
+	if van_checkpoint and van_checkpoint.tag == "van_alarm" and is_night_active and _restart_van_alarm():
+		return
 	if is_night_active:
 		print("[NightManager] Restart from checkpoint: NIGHT %d active — resetting to night start." % current_night)
 		restart_night()
 	else:
 		print("[NightManager] Restart from checkpoint: Day active — resetting to day start.")
-		restart_from_morning()
+		if not _restart_day():
+			restart_from_morning()
 	
 	# FOLLOW-UP 1: Always place the player on PlayerSpawnDev after a defeat/
 	# restart, regardless of whether the checkpoint branch reset the night or
@@ -1146,8 +1133,6 @@ func restart_from_checkpoint() -> void:
 ## a stale direction. Returns true on success.
 func _spawn_player_at(marker_name: String) -> bool:
 	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
-	if not player:
-		player = get_tree().get_first_node_in_group("Player") as Node3D
 	if not player:
 		print("[NightManager] _spawn_player_at(): Player not found in groups 'player'/'Player'.")
 		return false
@@ -1173,6 +1158,79 @@ func _spawn_player_at(marker_name: String) -> bool:
 	return false
 
 
+## Death during Night 2.2 (the car alarm): back to the moment the alarm went
+## off, standing in front of the van with it blaring, as if it had never been
+## investigated. False if that can't be done (then the night restarts).
+func _restart_van_alarm() -> bool:
+	var checkpoint: Node = get_node_or_null("/root/Checkpoint")
+	var scene := get_tree().current_scene
+	var van: Node = scene.find_child("EscapeVan", true, false) if scene else null
+	if not checkpoint or not van or not checkpoint.restore():
+		return false
+	# The chase is off.
+	for entity_node in get_tree().get_nodes_in_group("entity"):
+		if entity_node.has_method("deactivate"):
+			entity_node.deactivate()
+	var hsm: Node = get_node_or_null("/root/HorrorSoundManager")
+	if hsm and hsm.has_method("_stop_stalk_chase"):
+		hsm._stop_stalk_chase()
+	_reset_entity_confidence()
+	is_van_sequence_active = true
+	van_sequence_started = true
+	# The van's state is back to "alarm going, not investigated": sound it
+	# again (and darken the night, freeze the clock, as when it went off).
+	horror_event.emit("car_alarm")
+	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
+	if player:
+		if van.has_method("get_restart_transform"):
+			player.global_transform = van.get_restart_transform()
+		if player.has_method("reset_camera"):
+			player.reset_camera()
+		if player.has_method("reset_health"):
+			player.reset_health()
+	_set_objective("Investigate the car alarm outside.")
+	print("[NightManager] Night 2.2 restart: back at the van, the alarm blaring.")
+	return true
+
+
+## Death during the day: back to how this day began (Checkpoint), at the
+## time it began. False if there is no day snapshot (then the old morning
+## baseline is used).
+func _restart_day() -> bool:
+	var checkpoint: Node = get_node_or_null("/root/Checkpoint")
+	if not checkpoint or checkpoint.kind != "day" or not checkpoint.has_method("restore"):
+		return false
+	get_tree().call_group("entity", "deactivate")
+	_reset_entity_confidence()
+	is_night_active = false
+	is_day_active = true
+	night_progress = 0.0
+	_triggered_events.clear()
+	_event_timer = 0.0
+	if not checkpoint.restore():
+		return false
+	var gt: Node = get_node_or_null("/root/GameTime")
+	if gt:
+		# Directly, not set_progress(): that emits day_started, which other
+		# systems treat as a brand new day.
+		gt.cycle_progress = checkpoint.time_progress()
+		gt._elapsed = gt.cycle_progress * gt.cycle_duration
+		gt.is_day = gt.cycle_progress < 0.5
+		gt.time_changed.emit(gt.cycle_progress)
+	var player: Node = get_tree().get_first_node_in_group("player")
+	if player:
+		if player.has_method("reset_health"):
+			player.reset_health()
+		if "sanity" in player:
+			player.sanity = 100.0
+	print("[NightManager] Day restart complete: back to this morning's checkpoint.")
+	return true
+
+
+## Waking up: a little after dawn (0.0 is sunrise; the sun is ~14 degrees up).
+const WAKE_PROGRESS := 0.04
+
+
 func restart_from_morning() -> void:
 	print("[NightManager] restart_from_morning() — Resetting to morning baseline of Day %d." % current_night)
 	
@@ -1181,9 +1239,7 @@ func restart_from_morning() -> void:
 		gt.set_progress(0.125)
 		print("[NightManager] Time reset to morning (progress: 0.125).")
 	
-	var ec: Node = get_node_or_null("/root/CottageHorror/EnvironmentController")
-	if not ec:
-		ec = get_node_or_null("/root/Main/EnvironmentController")
+	var ec: Node = get_tree().get_first_node_in_group("environment_controller")
 	if ec and ec.has_method("_apply_cycle"):
 		ec._apply_cycle()
 		print("[NightManager] EnvironmentController refreshed to daytime lighting.")
@@ -1303,9 +1359,7 @@ func reset_to_daybreak() -> void:
 			gt.set_progress(0.125)
 		print("[NightManager] Time reset to morning (progress: %.3f)." % gt.cycle_progress)
 	
-	var ec: Node = get_node_or_null("/root/CottageHorror/EnvironmentController")
-	if not ec:
-		ec = get_node_or_null("/root/Main/EnvironmentController")
+	var ec: Node = get_tree().get_first_node_in_group("environment_controller")
 	if ec and ec.has_method("_apply_cycle"):
 		ec._apply_cycle()
 		print("[NightManager] EnvironmentController refreshed to daytime lighting.")

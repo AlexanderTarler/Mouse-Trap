@@ -1,0 +1,7 @@
+1. The portable_light should stop shining as soon as the generator runs out of power. 
+2. Some "inner thoughts" are more like "game messages" or tutorial hints - remember, the "inner thoughts" should be the thoughts of the protagonist, and not game tips. Also, it would be great to keep the "inner thoughts" floating in place like how it works for the broken window or the escape van. 
+3. When the Peeker appears during Night 2, make it appear a lot faster, and disappear quicker, than it does on Day 1. 
+4. Are you able to make the "purging" of the totem anchor/willow tree look better than it does now? Currently it just shrinks, which is very odd. 
+5. Keep the rainstorm going from the point where it starts (when the player documents the third nest) and have it keep going until the player wakes up during Day 3. 
+6. Make the passive power-drain of the generator have its "fuel per second" be lowered by 30-isch %.
+7. Change the objective "Check the fusebox. It's always the goddamn fuse box." to just "Check the fusebox", but add in an inner thought saying "It's always the goddamn fuse box."

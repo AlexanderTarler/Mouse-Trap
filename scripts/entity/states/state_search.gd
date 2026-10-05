@@ -3,7 +3,8 @@ extends EntityState
 
 ## Investigating a position (where the player was seen or heard): walks
 ## there, stops to listen, then checks a few spots nearby. A new noise
-## redirects the search.
+## redirects the search. Outdoors it speeds up exponentially the longer it
+## searches (config.search_speed_doubling_time, up to search_speed_max).
 
 const S := Entity.State
 const ARRIVE_DISTANCE := 1.0
@@ -38,9 +39,9 @@ func update(delta: float) -> void:
 		if _listen_left <= 0.0:
 			_index += 1
 		return
-	var remaining := entity.move_to(_points[_index], config.search_speed)
+	var remaining := entity.move_to(_points[_index], current_speed())
 	if remaining < ARRIVE_DISTANCE or entity.nav_agent.is_navigation_finished():
-		_listen_left = randf_range(config.search_listen_min, config.search_listen_max)
+		_listen_left = randf_range(config.search_listen_min, config.search_listen_max) / _urgency()
 
 
 func next_state() -> int:
@@ -57,6 +58,20 @@ func next_state() -> int:
 
 func can_catch() -> bool:
 	return true
+
+
+## How much faster than config.search_speed it is searching right now: 1 at
+## first, doubling every search_speed_doubling_time seconds while both are
+## outside.
+func _urgency() -> float:
+	if perception.entity_inside or perception.player_inside or config.search_speed_doubling_time <= 0.0:
+		return 1.0
+	var cap := maxf(config.search_speed_max / config.search_speed, 1.0)
+	return minf(pow(2.0, time / config.search_speed_doubling_time), cap)
+
+
+func current_speed() -> float:
+	return config.search_speed * _urgency()
 
 
 func _plan(target: Vector3) -> void:

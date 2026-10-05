@@ -1,0 +1,9 @@
+1. The "inner thought" related to the planks should show up when the "Find 3 planks" objective is started/triggered and remain for 5 seconds before fading out. 
+2. During Day 1/Night 1, the Peeker should appear in the LandingWindow (after the player locks the door). Currently I am unable to see it at that stage. 
+3. When the player wakes up from going to bed it should be a bit after dawn. 
+4. The horror_hud is currently showing some UI information that I want to "move" so that it gets displayed/hidden like how the "Entity debug menu" gets displayed/hidden when the player toggles F3. These UI elements are: 1. Time of day. 2. Time to day/night. 3. What room the player is in. 4. The "Generator". The stamina and flashlight levels should only be displayed when each respective one is "in use", meaning when the flashlight is on or when the player is using or recharging stamina. 
+5. Some tutorial messaes like "Hold Ctrl to Crouch" do not disappear after the player has performed the action. Make sure that every tutorial message disappears when the player has performed the action the tutorial teaches the player. 
+6. THere should be "clouds" or at least the sky should be cloudy when it rains. If this is already in the game, I want to tell you that the player can still see the sun clearly (as if it was not raining) during rain. 
+7. The Entity should not attempt to enter the cabin during Night 2.2 (due the the porch_light). 
+8. When the player interacts with the car (for the first time) during Day 3, add an inner monologue saying "The car's wrecked - I need to find parts to repair it."
+9. THe mediocre ending "animation" looks good - but the last Entity animation, where it climbs, makes it climb "up into the air", making it hover over the car. When the Entity lands on the van, have it enter the "Charge" animation (crawling animation) but freeze it's animation as well. 

@@ -1,256 +1,191 @@
 extends Node3D
-## Sanity/Gaze Controller — modular system attached to the player's Camera3D.
-## Staring at an Entity builds a gaze meter that triggers escalating
-## audio/visual hallucinations, culminating in a 3-second "blindness" climax.
+## The Entity's distortion field, felt through the player's own eyes. It is
+## hard to look at: when it is close, the player is looking at it AND it can
+## see the player, vision swims and won't focus on it, the eyes can't
+## converge (double vision), colour drains away, the view narrows into a
+## tunnel throbbing with the heartbeat, and whispers rise
+## (shaders/distortion_field.gdshader). The closer it is and the longer the
+## stare, the stronger; held at full strength, vision nearly blacks out for a
+## moment.
 ##
-## FIXED ARCHITECTURE:
-##   The shader "corruption_intensity" and the audio are now driven ENTIRELY
-##   by entity_seen (whether the player is looking at the Entity). They are
-##   COMPLETELY independent of the gaze meter and blindness climax.
+##   - Only within field_radius (full strength inside full_strength_distance).
+##   - Only while the player looks at it (a cone, with a clear line of sight)
+##     and it sees the player (EntityPerception.can_see_player).
+##   - Not before Night 2, not while the overcharged beam holds it, not
+##     during cutscenes (the player's camera must be the current one).
 ##
-##   SHADER: Interpolates toward 1.0 while entity_seen, toward 0.0 when not.
-##           Rate: 0.6/s up (≈1.7s to full), 0.3/s down (≈3.3s to empty).
-##           This reaches FULL SCREEN while staring and sustains there.
-##
-##   AUDIO: loop=true. Plays at audio_max_volume while entity_seen is true.
-##          Stops when entity_seen becomes false. The loop keeps it playing
-##          continuously without cutting out.
-##
-##   GAZE METER + BLINDNESS CLIMAX (legacy, preserved):
-##          The gaze meter still builds at build_rate/s and triggers the
-##          blindness climax when it hits 100. However, the climax no longer
-##          kills the audio or resets the shader — it only creates a brief
-##          "overlay flash" via a separate blind_effect ColorRect (if present).
-##          The corruption_intensity stays at 1.0 throughout the climax
-##          because entity_seen is still true (the player is still staring).
-##          After the climax, the gaze meter resets and rebuilds.
+## get_gaze_normalized() is the field's strength; the player's camera shake
+## follows it.
 
-# ============================================================
-# Exported parameters
-# ============================================================
+const DISTORTION_SHADER := preload("res://shaders/distortion_field.gdshader")
+const WHISPER_PATH := "res://assets/audio/Entity/Entity_Seen.ogg"
+## A second, deeper layer that joins as the field grows strong.
+const DEEP_WHISPER_PATH := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Cinematic/sfx cinematic 53.ogg"
+## Below the HUD (200), so the HUD stays readable.
+const OVERLAY_LAYER := 190
 
-## How fast the gaze meter fills (points per second). At 50.0, it reaches climax in ~2s.
-@export var build_rate: float = 50.0
+## The field reaches this far from it (m)...
+@export var field_radius: float = 16.0
+## ...and is at full strength this close.
+@export var full_strength_distance: float = 4.0
+## How far off-centre the player can look and still be "looking at it" (degrees).
+@export var look_cone_degrees: float = 30.0
+## How fast the field grows while all conditions hold (strength per second)...
+@export var rise_speed: float = 0.7
+## ...and fades when they don't.
+@export var fall_speed: float = 0.5
+## Seconds at (nearly) full strength before vision nearly blacks out.
+@export var burst_after: float = 3.0
+## Whisper volume at full strength (linear) and pitch.
+@export var whisper_volume: float = 0.56
+@export var whisper_pitch: float = 1.3
+## The deeper whisper layer joins above this strength.
+@export var deep_whisper_threshold: float = 0.55
 
-## How fast the gaze meter decays when NOT looking (points per second).
-@export var decay_rate: float = 15.0
+## Current field strength (0-1).
+var level: float = 0.0
+var burst: float = 0.0
 
-## Maximum distance the raycast checks for the entity.
-@export var max_ray_distance: float = 50.0
+var _full_time := 0.0
+var _burst_tween: Tween = null
+var _deep: AudioStreamPlayer = null
+var _material: ShaderMaterial = null
 
-## Volume when audio is playing (linear, 0.0–1.0).
-## TASK 3: Reduced by 30% (0.8 → 0.56) so the Entity whispers are quieter
-## and the amplified camera shake carries more of the staring feedback.
-@export var audio_volume: float = 0.56
-
-## Pitch scale when audio is playing.
-@export var audio_pitch: float = 1.3
-
-## How fast the shader rises toward 1.0 while staring (per second).
-## At 0.6/s, reaches full in ~1.7 seconds.
-@export var shader_rise_speed: float = 0.6
-
-## How fast the shader falls toward 0.0 when not staring (per second).
-## At 0.3/s, reaches zero in ~3.3 seconds.
-@export var shader_fall_speed: float = 0.3
-
-## How long (seconds) the blindness climax holds at full intensity before fading.
-@export var blindness_hold_time: float = 0.5
-
-## How long (seconds) the blindness fade-out takes.
-@export var blindness_fade_time: float = 3.0
-
-# ============================================================
-# Runtime state
-# ============================================================
-
-## Current gaze meter value (0.0 to 100.0).
-var gaze_meter: float = 0.0
-
-## True while the blindness climax is playing out.
-var is_blinded: bool = false
-
-## Reference to the active Tween for the blindness sequence.
-var _blindness_tween: Tween = null
-
-## Throttle timer for periodic debug logging
-var _debug_timer: float = 0.0
-
-## Whether the entity was seen on the previous frame.
-var _prev_entity_seen: bool = false
-
-# ============================================================
-# Node references (cached in _ready)
-# ============================================================
-
-@onready var _raycast: RayCast3D = $SanityRayCast
 @onready var _audio: AudioStreamPlayer = $SanityAudio
-## The tendril/darkness overlay ColorRect. TASK: The shader-based tendril
-## effect has been REMOVED — the overlay is hidden so it can never render.
-## Only the player_controller camera shake remains as the visual feedback.
+@onready var _overlay_layer: CanvasLayer = $OverlayLayer
 @onready var _overlay: ColorRect = $OverlayLayer/SanityOverlay
 
-# ============================================================
-# Lifecycle
-# ============================================================
 
 func _ready() -> void:
-	# Configure raycast at runtime
-	_raycast.target_position = Vector3(0.0, 0.0, -max_ray_distance)
-	_raycast.collision_mask = 1 << 4
-	_raycast.exclude_parent = true
-	_raycast.enabled = true
-	print("[Sanity] Initialized. RayCast mask=%d (layer 5), dist=%.0f" % [_raycast.collision_mask, max_ray_distance])
+	# The old ray node is not needed (the line of sight is a direct query).
+	if has_node("SanityRayCast"):
+		$SanityRayCast.enabled = false
 
-	# Load the audio stream dynamically (avoids broken UID references in .tscn)
-	_audio.stream = load("res://assets/audio/Entity/Entity_Seen.ogg")
+	_audio.stream = _looping(WHISPER_PATH)
 	_audio.bus = &"SFX"
 	_audio.stop()
-	# Enable looping so audio plays continuously while staring
-	if _audio.stream is AudioStreamOggVorbis:
-		_audio.stream.loop = true
-	print("[Sanity] Audio loop enabled. Loaded: Entity_Seen.ogg on bus SFX")
+	_deep = AudioStreamPlayer.new()
+	_deep.stream = _looping(DEEP_WHISPER_PATH)
+	_deep.bus = &"SFX"
+	add_child(_deep)
 
-	# ─── TENDRILL/OVERLAY REMOVED ─────────────────────────────────────
-	# The full-screen "darkness tendrils" shader effect has been removed.
-	# The SanityOverlay ColorRect is hidden so it can never render, even if
-	# a stale material/color reference lingers in the scene. The player's
-	# camera shake (handled in player_controller.gd) is now the ONLY visual.
+	_material = ShaderMaterial.new()
+	_material.shader = DISTORTION_SHADER
+	_overlay.material = _material
+	_overlay.color = Color.WHITE
+	_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_overlay.visible = false
-	print("[Sanity] Tendril overlay removed — SanityOverlay hidden.")
+	_overlay_layer.layer = OVERLAY_LAYER
+
+
+func _looping(path: String) -> AudioStream:
+	if not ResourceLoader.exists(path):
+		return null
+	var stream := (load(path) as AudioStream).duplicate()
+	if "loop" in stream:
+		stream.loop = true
+	return stream
+
+
+## The field's strength, 0-1 (the player's camera shake follows it).
+func get_gaze_normalized() -> float:
+	return clampf(level + burst * 0.5, 0.0, 1.0)
 
 
 func _physics_process(delta: float) -> void:
-	# --------------------------------------------------------
-	# NIGHT GATE: Hallucinations only work from Night 2 onward.
-	# Before Night 2, the Entity is inactive and the player
-	# should NOT experience sanity/gaze effects even if they
-	# look in the Entity's direction.
-	# --------------------------------------------------------
-	var nm = get_node_or_null("/root/NightManager")
+	var entity := get_tree().get_first_node_in_group("entity") as Node3D
+	var target := _field_strength(entity)
+	level = move_toward(level, target, (rise_speed if target > level else fall_speed) * delta)
+
+	# Held at full strength: a moment of near-blackout, then it builds again.
+	_full_time = _full_time + delta if level > 0.9 else 0.0
+	if _full_time >= burst_after:
+		_full_time = 0.0
+		_start_burst()
+
+	_update_overlay(entity)
+	_update_whispers()
+
+
+## How strong the field should be right now (0 when any condition fails).
+func _field_strength(entity: Node3D) -> float:
+	var nm := get_node_or_null("/root/NightManager")
 	if nm and "current_night" in nm and nm.current_night < 2:
-		# Before Night 2 — suppress all hallucination effects
-		if _prev_entity_seen:
-			_audio.stop()
-			_prev_entity_seen = false
-		if gaze_meter > 0.0:
-			gaze_meter = maxf(gaze_meter - decay_rate * delta, 0.0)
+		return 0.0
+	if not entity or not entity.has_method("is_active") or not entity.is_active():
+		return 0.0
+	if entity.get("is_overcharged") == true:
+		return 0.0
+	var cam := get_parent() as Camera3D
+	if not cam or not cam.current:
+		return 0.0
+
+	var chest := entity.global_position + Vector3.UP * 1.2
+	var to_it := chest - cam.global_position
+	var distance := to_it.length()
+	if distance > field_radius or distance < 0.01:
+		return 0.0
+	if (-cam.global_basis.z).dot(to_it / distance) < cos(deg_to_rad(look_cone_degrees)):
+		return 0.0
+	if not _clear_line(cam.global_position, chest, entity):
+		return 0.0
+	var perception = entity.get("perception")
+	if not perception or not perception.can_see_player:
+		return 0.0
+
+	var closeness := 1.0 - clampf((distance - full_strength_distance) / maxf(field_radius - full_strength_distance, 0.01), 0.0, 1.0)
+	return lerpf(0.25, 1.0, closeness)
+
+
+func _clear_line(from: Vector3, to: Vector3, entity: Node3D) -> bool:
+	var query := PhysicsRayQueryParameters3D.create(from, to, (1 << 0) | (1 << 4))
+	var player := get_tree().get_first_node_in_group("player") as CollisionObject3D
+	if player:
+		query.exclude = [player.get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	return hit.is_empty() or hit.collider == entity or (hit.collider as Node).is_in_group("entity")
+
+
+func _start_burst() -> void:
+	if _burst_tween and _burst_tween.is_valid():
+		_burst_tween.kill()
+	_burst_tween = create_tween()
+	_burst_tween.tween_property(self, "burst", 1.0, 0.08)
+	_burst_tween.tween_property(self, "burst", 0.0, 0.7).set_ease(Tween.EASE_OUT)
+
+
+func _update_overlay(entity: Node3D) -> void:
+	var strength := maxf(level, burst)
+	_overlay.visible = strength > 0.01
+	if not _overlay.visible:
 		return
-	
-	# --------------------------------------------------------
-	# Gaze detection — two-step cone + occlusion
-	# --------------------------------------------------------
-	var entity_seen: bool = false
-	var entity_node = get_tree().get_first_node_in_group("entity")
-	
-	# Also check if the entity is actually active — if it's
-	# dormant/inactive, don't trigger hallucination effects.
-	if entity_node and entity_node.has_method("is_active") and not entity_node.is_active():
-		entity_node = null
-	
-	# ─── OVERCHARGE GATE ─────────────────────────────────────────
-	# While the player holds the OVERCHARGE flashlight beam on the Entity,
-	# suppress all hallucination effects (shader corruption, growling audio,
-	# gaze meter). Overcharge is the player's strongest defensive mechanic —
-	# seeing the Entity stagger in place under the beam is a MOMENT OF POWER,
-	# not a punishment. Nulling the node skips the vision cone entirely, so
-	# the shader fades out and the audio stops naturally.
-	if entity_node and entity_node.is_overcharged:
-		entity_node = null
-	
-	if entity_node:
-		var cam = get_viewport().get_camera_3d()
-		if cam:
-			var entity_target = entity_node.global_position + Vector3(0, 1.0, 0)
-			var dir_to_entity = (entity_target - cam.global_position).normalized()
-			var cam_forward = -cam.global_transform.basis.z.normalized()
-			
-			# STEP 1: Vision cone — dot > 0.85 (~31° cone)
-			if cam_forward.dot(dir_to_entity) > 0.85:
-				# STEP 2: Occlusion raycast — mask 17 = Layer 1 (world) | Layer 5 (entity)
-				var space = get_world_3d().direct_space_state
-				var query = PhysicsRayQueryParameters3D.create(cam.global_position, entity_target)
-				query.exclude = [get_parent().get_parent()]  # exclude Player body
-				query.collision_mask = 17  # Layer 1 | Layer 5 = 1 | 16
-				var result = space.intersect_ray(query)
-				if not result.is_empty():
-					entity_seen = result.collider != null and result.collider.is_in_group("entity")
+	_material.set_shader_parameter("intensity", level)
+	_material.set_shader_parameter("burst", burst)
+	var size := get_viewport().get_visible_rect().size
+	_material.set_shader_parameter("aspect", size.x / maxf(size.y, 1.0))
+	var cam := get_parent() as Camera3D
+	if cam and entity:
+		var chest := entity.global_position + Vector3.UP * 1.2
+		if not cam.is_position_behind(chest):
+			var on_screen := cam.unproject_position(chest) / size
+			_material.set_shader_parameter("center", on_screen)
 
-	# Throttled debug log every 2 seconds
-	_debug_timer += delta
-	if _debug_timer >= 2.0:
-		_debug_timer = 0.0
-		print("[Sanity] entity_seen=%s gaze=%.1f" % [entity_seen, gaze_meter])
 
-	# --------------------------------------------------------
-	# TENDRILL SHADER REMOVED — no shader interpolation. The
-	# SanityOverlay is hidden; only the camera shake (in
-	# player_controller.gd) provides visual feedback now.
-	# --------------------------------------------------------
-
-	# --------------------------------------------------------
-	# AUDIO — driven SOLELY by entity_seen (edge-detected to
-	# avoid restarts on every frame). loop=true keeps it going.
-	# --------------------------------------------------------
-	if entity_seen and not _prev_entity_seen:
-		# Just started looking — play at max volume
-		_audio.volume_db = linear_to_db(audio_volume)
-		_audio.pitch_scale = audio_pitch
-		_audio.play()
-	elif not entity_seen and _prev_entity_seen:
-		# Just looked away — stop
+func _update_whispers() -> void:
+	var strength := maxf(level, burst)
+	if strength > 0.02:
+		if _audio.stream and not _audio.playing:
+			_audio.play()
+		_audio.volume_db = linear_to_db(maxf(whisper_volume * strength, 0.001))
+		# The pitch drifts, more the stronger it is.
+		_audio.pitch_scale = whisper_pitch + sin(Time.get_ticks_msec() * 0.0013) * 0.1 * strength
+	elif _audio.playing:
 		_audio.stop()
 
-	_prev_entity_seen = entity_seen
-
-	# --------------------------------------------------------
-	# GAZE METER — builds while looking, decays while not.
-	# Triggers blindness climax when full.
-	# DOES NOT affect shader or audio — those are independent.
-	# --------------------------------------------------------
-	if entity_seen and not is_blinded:
-		gaze_meter = minf(gaze_meter + build_rate * delta, 100.0)
-	elif not is_blinded:
-		gaze_meter = maxf(gaze_meter - decay_rate * delta, 0.0)
-
-	if gaze_meter >= 100.0 and not is_blinded:
-		_trigger_blindness()
-		# NOTE: _trigger_blindness no longer stops audio or resets shader
-		# The blindness climax only manages its own tween.
-
-	if is_blinded:
-		return  # Skip gaze meter update during climax (tween handles state)
-
-
-# ============================================================
-# Blindness climax — visual-only flash effect
-# Does NOT stop audio or reset shader.
-# ============================================================
-
-func _trigger_blindness() -> void:
-	is_blinded = true
-
-	# Cancel any previous tween that might be lingering
-	if _blindness_tween and _blindness_tween.is_valid():
-		_blindness_tween.kill()
-
-	# Create the blindness tween sequence.
-	# The shader intensity is already at or near 1.0 (driven by entity_seen),
-	# so we don't need to snap it — we just hold and then let entity_seen
-	# resume driving the intensity when the climax ends.
-	_blindness_tween = create_tween()
-	_blindness_tween.set_trans(Tween.TRANS_SINE)
-	_blindness_tween.set_ease(Tween.EASE_IN)
-
-	# Step 1: short interval
-	_blindness_tween.tween_interval(blindness_hold_time)
-
-	# Step 2: No fade needed — the shader stays where entity_seen put it.
-	# The climax just marks time, then resets the gaze meter.
-	_blindness_tween.tween_callback(_reset_blindness)
-
-
-func _reset_blindness() -> void:
-	gaze_meter = 0.0
-	is_blinded = false
-	_blindness_tween = null
+	var deep := clampf((strength - deep_whisper_threshold) / (1.0 - deep_whisper_threshold), 0.0, 1.0)
+	if deep > 0.0:
+		if _deep.stream and not _deep.playing:
+			_deep.play()
+		_deep.volume_db = linear_to_db(maxf(0.5 * deep, 0.001))
+	elif _deep.playing:
+		_deep.stop()

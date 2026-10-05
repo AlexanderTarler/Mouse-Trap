@@ -1,0 +1,123 @@
+ENDINGS PLAN — REVIEW
+=====================
+
+What exists today
+-----------------
+- EndgameManager: DEATH / ESCAPE_MEDIOCRE / ESCAPE_GOOD. The van's "Escape" picks
+  Good or Mediocre from RoutineManager.is_anchor_destroyed.
+- Cinematics node (cottage_horror): an AnimationPlayer, DeathCam, MediocreCam and GoodCam.
+  The cameras have no positions. Only a "death_drag" animation exists, and it is
+  empty. "escape_mediocre" and "escape_good" do not exist.
+- Death does NOT go through EndgameManager. JumpscareManager does the face-zoom,
+  then shows death_screen.tscn ("Restart from checkpoint"). trigger_death_ending()
+  is never called.
+
+
+BUGS FOUND WHILE READING (worth fixing whatever we do)
+-----------------------------------------------------
+1. Escaping in the repaired van most likely soft-locks the game. EndgameManager
+   plays "escape_mediocre"/"escape_good", which don't exist, then waits for
+   animation_finished, which never comes. The player stays frozen and the HUD
+   hidden, and the ending screen never appears.
+2. The ending fades the Master bus to -80 dB and nothing restores it, so the game
+   is probably silent after "Retry" or "Main Menu".
+3. There are three different end screens: the HUD panel (escapes),
+   ending_screen.tscn (unused death path) and death_screen.tscn (actual deaths).
+
+
+CHANGES I'D MAKE TO THE PLAN
+============================
+
+General: build the cinematics in code instead of hand-keyed animations
+----------------------------------------------------------------------
+The plan keyframes absolute positions in an AnimationPlayer. But the player can
+die anywhere (inside, upstairs, in the forest), and the van, road and totem are
+far apart. Keyframed cameras would play in the wrong place. Scripted cameras
+(tweens and small shake functions) can start from wherever the player actually is.
+They can also check for walls and terrain, and I can test them headlessly (no hangs,
+correct order, the ending screen appears). The shots stay the same, only the tool
+changes.
+
+
+1. DEATH — "The Drag"
+---------------------
+Keep: the black-out after the jumpscare, waking in the dirt, the drag, the hoist.
+Change:
+ a) Start where the jumpscare ends. The existing face-zoom (3.2 s) already is
+    the "0-1.5 s jumpscare sync", so the cinematic begins on the black screen.
+ b) Location problem: dying inside the cabin or upstairs means "drag through the
+    dirt" and "hoist into a tree" would clip through walls. Use the black-out to
+    cut to a fixed spot in the forest (the Entity's "lair" or a big tree near the
+    totem). This works from any death location, and it also shows the player
+    where the Entity takes its victims.
+ c) Show the Entity. While dragged, tilt the camera up so you glimpse its legs
+    and back pulling you (by the ankle, out of view), with drag and breathing
+    sounds.
+ d) Impalement: make it more implied than shown. Hard downward lurch, crunch,
+    red vignette, the image pulses, sound cuts out, black. A sharp branch mesh
+    in frame for a few frames reads fine. It doesn't need to be graphic to work.
+ e) IMPORTANT: death is not really an ending in this game; you restart the
+    night. A 10-second cinematic every time gets tiring. Play it in full the
+    first time, then a short version (drag, then black) or let the player skip it with
+    a key press. The final death (if you want a true "game over" on Night 5)
+    could always play the full one.
+
+
+2. MEDIOCRE ESCAPE — "It Follows"
+---------------------------------
+Problem: the ending text says the Entity FOLLOWED the player home and they
+vanished days later. An ambush that slams into the camera reads as "the Entity
+killed you in the van", which contradicts that text and feels like a
+death, not an escape.
+Suggestion (same misdirection, fits the text):
+  0-4 s   Drone shot following the van down the road, headlights on, relief
+          music. (The van needs headlights and tail lights. At night without
+          them you see nothing in the fog.)
+  4-6 s   Cut inside or behind: the tail lights light up the road behind,
+          and for a frame the Entity is standing in the road, watching.
+  6-8 s   Back to the drone shot: something dark is now clinging to the van's
+          roof or back, riding along. The van drives on, unaware.
+  8 s     Fade. Text: "...it followed the player home."
+Needs: a drivable route out of the map (I can lay out a Path3D along the dirt
+road to the edge of the map), van headlights, and an engine or drive sound.
+
+
+3. GOOD ESCAPE — "Dawn"
+-----------------------
+Problems with the plan:
+ - The totem (weeping willow, ~(103, 85)) is about 200 m from the van (~(-9, -90)).
+   A camera next to the totem can't see the van leave, especially in fog.
+ - The totem is already destroyed and hidden when you purge it (earlier, often on a
+   different night), so "totem sinks during the ending" repeats something the
+   player already did.
+Suggestion: make the good ending the complete opposite of the mediocre one:
+  0-5 s   Dawn. Fog thinning, birdsong (no wind or drone). Static wide shot of
+          the cabin as the van pulls away down the road.
+  5-8 s   Slow pan to where the totem stood: now an empty patch of dead
+          ground, maybe with a faint wisp of ash rising.
+  8 s     Slow fade to white or warm black.
+The contrast (night, pursued vs. dawn, quiet) makes both endings mean more.
+If the escape happens at night, the cinematic can fade in "later", at sunrise.
+
+
+4. SMALLER THINGS
+-----------------
+ - Merge the end screens: one EndingScreen for both escapes (title, text,
+   Retry/Main Menu), and keep death_screen for deaths (restart night).
+ - Stop the Entity, the chase music and the tension drone as soon as a cinematic
+   starts, and fade the sound itself rather than the player's Master volume.
+ - Show the ending name and maybe "Ending 2 of 3" on the screen. Players like
+   knowing other endings exist.
+
+
+CAN I BUILD THEM?
+=================
+Yes: the camera work, timing, shake, fades, vignette/blood overlay, the van's
+route and lights, the Entity poses (its existing animations), sound hooks, the
+EndgameManager wiring and the bug fixes above, plus headless tests.
+What I need from you:
+ - Your eyes on the result (framing and pacing need to be judged in the game).
+ - Sounds (add to your list): body dragged over dirt, heavy breathing or
+   snorting of the Entity, impalement crunch, van engine start and driving,
+   something heavy landing on a car roof, dawn birdsong.
+ - Optional: a nicer sharp branch or stake mesh (I can make a simple one).

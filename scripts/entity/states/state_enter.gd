@@ -21,7 +21,11 @@ func enter(_from: int, data: Dictionary) -> void:
 
 
 func update(_delta: float) -> void:
-	if not perception.entity_inside 			and Entity._flat_distance(entity.global_position, _entry.start_position) < AT_LINK_DISTANCE:
+	# Clinging outside an upstairs window: in through it.
+	if entity.is_perched_at(_entry):
+		entity.enter_from_perch(_entry)
+		return
+	if not perception.entity_inside 			and Entity.reach_distance(entity.global_position, _entry.start_position) < AT_LINK_DISTANCE:
 		entity.traverse_link(_entry, true)
 		return
 	entity.move_to(_entry.end_position, config.approach_speed)
@@ -31,7 +35,7 @@ func next_state() -> int:
 	if entity.is_traversing():
 		return NO_CHANGE
 	var inside := perception.entity_inside
-	if inside and Entity._flat_distance(entity.global_position, _entry.end_position) < INSIDE_DISTANCE:
+	if inside and Entity.reach_distance(entity.global_position, _entry.end_position) < INSIDE_DISTANCE:
 		return S.HUNT
 	if not inside and not _entry.enabled:
 		# Shut before it got through (door locked again, window re-boarded).

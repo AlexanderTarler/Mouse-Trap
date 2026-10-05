@@ -27,6 +27,9 @@ var history: Array[String] = []
 ## The window/door the Entity is currently going for (set by APPROACH, PEEK,
 ## BREACH, ENTER). FLEE marks it as repelled.
 var target_entry: CabinEntryLink = null
+## Seconds before a standard beam can freeze it again (set when a standoff
+## ends, so it can't be held in place by flicking the beam).
+var standoff_cooldown := 0.0
 
 var _states: Dictionary = {}
 
@@ -61,6 +64,7 @@ func tick(delta: float) -> void:
 	entity.perception.update(delta)
 	entity.confidence.update(delta)
 	entity.world.update(delta)
+	standoff_cooldown = maxf(standoff_cooldown - delta, 0.0)
 
 	current.time += delta
 	var interrupt := _check_interrupts()
@@ -87,7 +91,16 @@ func get_state(id: int) -> EntityState:
 	return _states[id]
 
 
+## States that keep it on the wall outside an upstairs window.
+const PERCH_STATES := [S.PEEK, S.BREACH, S.ENTER]
+
 func _transition(to: int, data: Dictionary) -> void:
+	# Leaving the window from the wall: climb down, or drop off if driven
+	# away. A standoff while hanging on the wall is always a drop.
+	if entity.is_clinging() and not (to in PERCH_STATES):
+		if to == S.STANDOFF:
+			to = S.FLEE
+		entity.leave_perch(to == S.FLEE or to == S.CHARGE)
 	var from := state_id
 	current.exit(to)
 	previous_state_id = from
@@ -107,7 +120,8 @@ func _check_interrupts() -> int:
 	var p := entity.perception
 
 	# The flashlight. Only the overcharged beam repels; the standard beam
-	# freezes it outdoors when both are outside (and leads to a charge).
+	# freezes it outdoors when both are outside (and can lead to a charge),
+	# but not again right after a standoff.
 	if current.reacts_to_flashlight() and state_id != S.STANDOFF:
 		if p.overcharged:
 			var entity_inside := p.entity_inside
@@ -115,7 +129,7 @@ func _check_interrupts() -> int:
 			if entity_inside != player_inside:
 				return S.FLEE
 			return S.STANDOFF
-		if p.illuminated and not p.entity_inside and not p.player_inside:
+		if p.illuminated and not p.entity_inside and not p.player_inside and standoff_cooldown <= 0.0:
 			return S.STANDOFF
 
 	# It will not stay in a lit room.

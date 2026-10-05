@@ -30,6 +30,11 @@ signal blindness_started()
 signal blindness_ended()
 
 
+## Found by its group (not by a path in the level).
+func _enter_tree() -> void:
+	add_to_group("perception_manager")
+
+
 func _ready() -> void:
 	if _raycast:
 		_raycast.hit_from_inside = true

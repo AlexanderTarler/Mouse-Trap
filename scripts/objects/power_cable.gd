@@ -66,7 +66,10 @@ var player_hand: Marker3D = null
 # ─── VERLET SIMULATION ──────────────────────────────────────────────────────
 
 ## Number of verlet particles in the cable simulation.
-const CABLE_PARTICLES: int = 12
+const CABLE_PARTICLES: int = 16
+## The cable is this much longer than the straight line between its ends, so
+## it sags and lies along the ground instead of hanging taut in the air.
+const SLACK := 1.15
 
 ## Verlet particle positions (global space).
 var _cable_points: PackedVector3Array = PackedVector3Array()
@@ -181,6 +184,8 @@ func _get_end_position() -> Vector3:
 				return player_hand.global_position
 		CableState.FULLY_CONNECTED:
 			if target_node:
+				if target_node.has_method("get_cable_attach_point"):
+					return target_node.get_cable_attach_point()
 				return target_node.global_position
 	
 	return global_position
@@ -267,9 +272,9 @@ func _simulate_cable(delta: float) -> void:
 		_cable_points[i] = new_pos
 	
 	# ─── 3. CONSTRAINT ITERATIONS (keep segment lengths consistent) ──────
-	var segment_length: float = outlet_pos.distance_to(end_pos) / float(CABLE_PARTICLES - 1)
-	if segment_length < 0.3:
-		segment_length = 0.3
+	# The cable has slack (SLACK), but never more than its real length.
+	var cable_length: float = minf(outlet_pos.distance_to(end_pos) * SLACK, max_cable_length)
+	var segment_length: float = maxf(cable_length / float(CABLE_PARTICLES - 1), 0.05)
 	
 	for _iter in range(8):  # 8 iterations for good stiffness
 		for i in range(CABLE_PARTICLES - 1):
@@ -288,6 +293,32 @@ func _simulate_cable(delta: float) -> void:
 				_cable_points[i] += correction
 			if i + 1 < last_idx:
 				_cable_points[i + 1] -= correction
+
+	# ─── 4. THE GROUND ───────────────────────────────────────────────────
+	# The cable rests on the ground (and the generator, the porch...)
+	# instead of sinking into it.
+	_rest_on_ground(last_idx)
+
+
+## Keeps every free particle on top of whatever is below it (layer 1).
+func _rest_on_ground(last_idx: int) -> void:
+	var space := get_world_3d().direct_space_state
+	if not space:
+		return
+	for i in range(1, last_idx):
+		var p: Vector3 = _cable_points[i]
+		# From just above the point: a ray from higher up would find a roof or
+		# the generator overhead and lift the cable up onto it.
+		var query := PhysicsRayQueryParameters3D.create(p + Vector3.UP * 0.25, p + Vector3.DOWN * 3.0, 1)
+		var hit := space.intersect_ray(query)
+		if hit.is_empty():
+			continue
+		var floor_y: float = hit.position.y + cable_radius
+		if p.y < floor_y:
+			p.y = floor_y
+			_cable_points[i] = p
+			# Friction: lying on the ground it doesn't slide or bounce.
+			_cable_prev[i] = _cable_prev[i].lerp(p, 0.6)
 
 
 ## ─── CABLE DRAWING ─────────────────────────────────────────────────────────
@@ -344,28 +375,24 @@ func _draw_cable() -> void:
 		var fwd: Vector3 = right.cross(dir).normalized()
 		bases.append(Basis(right, fwd, dir))
 	
-	# Draw the entire cable as a single continuous triangle strip.
-	_cable_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLE_STRIP, cable_material)
-	
+	# A closed tube: a ring of vertices at every point, joined by quads, with
+	# normals so it is lit like a round cable (not a flat ribbon).
+	_cable_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES, cable_material)
 	for i in range(smooth_points.size() - 1):
 		var p1: Vector3 = smooth_points[i]
 		var p2: Vector3 = smooth_points[i + 1]
 		var basis1: Basis = bases[i]
 		var basis2: Basis = bases[i + 1]
-		
-		for r in range(radial_segments + 1):
-			var angle: float = float(r) / float(radial_segments) * TAU
-			var cos_a: float = cos(angle)
-			var sin_a: float = sin(angle)
-			
-			# Ring vertex at p1 (global coordinates)
-			var offset1: Vector3 = basis1.x * (cos_a * cable_radius) + basis1.y * (sin_a * cable_radius)
-			_cable_mesh.surface_add_vertex(p1 + offset1)
-			
-			# Ring vertex at p2 (global coordinates)
-			var offset2: Vector3 = basis2.x * (cos_a * cable_radius) + basis2.y * (sin_a * cable_radius)
-			_cable_mesh.surface_add_vertex(p2 + offset2)
-	
+		for r in range(radial_segments):
+			var a0: float = float(r) / float(radial_segments) * TAU
+			var a1: float = float(r + 1) / float(radial_segments) * TAU
+			var n10: Vector3 = basis1.x * cos(a0) + basis1.y * sin(a0)
+			var n11: Vector3 = basis1.x * cos(a1) + basis1.y * sin(a1)
+			var n20: Vector3 = basis2.x * cos(a0) + basis2.y * sin(a0)
+			var n21: Vector3 = basis2.x * cos(a1) + basis2.y * sin(a1)
+			for v in [[p1, n10], [p2, n20], [p2, n21], [p1, n10], [p2, n21], [p1, n11]]:
+				_cable_mesh.surface_set_normal(v[1])
+				_cable_mesh.surface_add_vertex(v[0] + v[1] * cable_radius)
 	_cable_mesh.surface_end()
 
 

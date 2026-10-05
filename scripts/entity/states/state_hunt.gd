@@ -28,8 +28,13 @@ func enter(_from: int, _data: Dictionary) -> void:
 	_since_contact = 0.0
 	_scan_left = 0.0
 	_lead = _indoor_lead()
+	# Rooms on its own floor first (in random order), then the other floor,
+	# so it doesn't run up and down the stairs between every room.
 	var rooms := world.room_centers()
 	rooms.shuffle()
+	var here := entity.global_position.y
+	rooms.sort_custom(func(a: Vector3, b: Vector3) -> bool:
+		return absf(a.y - here) < Entity.FLOOR_GAP and absf(b.y - here) >= Entity.FLOOR_GAP)
 	_patrol = world.hiding_spots()
 	_patrol.append_array(rooms)
 	_patrol_index = 0

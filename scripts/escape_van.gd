@@ -54,6 +54,8 @@ var van_investigated: bool = false
 ## transition (during the Night 2.2 van sequence). Prevents re-triggering
 ## if the chase sequence is ever re-run (e.g. scene reload).
 var _sprint_tutorial_fired: bool = false
+## The Night 2.2 checkpoint has been taken at the alarm.
+var _alarm_checkpoint_taken: bool = false
 
 # ─── HOLD-TO-INTERACT: Car Part Installation ──────────────────────────────
 ## Whether the player is currently holding E to install a car part.
@@ -124,6 +126,13 @@ func _on_horror_event(event_name: String) -> void:
 		
 		_darken_environment_for_van_sequence()
 		print("[EscapeVan] Car alarm is blaring!")
+		# Night 2.2 starts here: a death in it restarts at the van with the
+		# alarm going (Checkpoint "van_alarm"), not at the start of Night 2.
+		if not _alarm_checkpoint_taken:
+			_alarm_checkpoint_taken = true
+			var checkpoint := get_node_or_null("/root/Checkpoint")
+			if checkpoint and checkpoint.has_method("capture"):
+				checkpoint.capture("night", "van_alarm")
 
 
 # ─── INTERACTION ───────────────────────────────────────────
@@ -179,7 +188,7 @@ func _try_install_component() -> void:
 	
 	# ─── UNIQUE PART VALIDATION ──────────────────────────────────
 	if _installed_parts.has(car_part_name):
-		_show_hud_message("I already installed a %s. I need different parts." % car_part_name)
+		_show_hud_message("I've already put a %s in. I need something else." % car_part_name.to_lower())
 		print("[EscapeVan] DUPLICATE REJECTED: %s is already installed." % car_part_name)
 		return
 	
@@ -194,7 +203,7 @@ func _try_install_component() -> void:
 	components_collected += 1
 	
 	print("[EscapeVan] Component installed: %s (%d/%d)" % [car_part_name, components_collected, COMPONENTS_NEEDED])
-	_show_hud_message("%s installed! (%d/%d parts)" % [car_part_name, components_collected, COMPONENTS_NEEDED])
+	_show_hud_message(_installed_line(car_part_name))
 	
 	# ─── NOTIFY ROUTINEMANAGER ────────────────────────────────────
 	var rm = get_node_or_null("/root/RoutineManager")
@@ -210,12 +219,21 @@ func _try_install_component() -> void:
 			_repair_audio.play()
 
 
+## The thought after fitting a part: how many are still missing.
+func _installed_line(part_name: String) -> String:
+	var remaining := COMPONENTS_NEEDED - components_collected
+	if remaining <= 0:
+		return "That's the %s in." % part_name.to_lower()
+	var left := "One more part to go." if remaining == 1 else "%s more parts to go." % ("Two" if remaining == 2 else str(remaining))
+	return "That's the %s in. %s" % [part_name.to_lower(), left]
+
+
 ## Called when all 3 components have been installed.
 func _repair_complete() -> void:
 	is_repaired = true
 	
 	print("[EscapeVan] ⚡ VAN REPAIRED! All %d components installed." % COMPONENTS_NEEDED)
-	_show_hud_message("The van is repaired! Get in and escape!")
+	_show_hud_message("That should do it. Time to get the hell out of here.")
 	
 	# ─── NOTIFY ROUTINEMANAGER ────────────────────────────────────
 	var rm = get_node_or_null("/root/RoutineManager")
@@ -301,7 +319,7 @@ func _process_hold_interact(delta: float) -> void:
 		components_collected += 1
 		
 		print("[EscapeVan] Component installed via hold: %s (%d/%d)" % [_pending_part_name, components_collected, COMPONENTS_NEEDED])
-		_show_hud_message("%s installed! (%d/%d parts)" % [_pending_part_name, components_collected, COMPONENTS_NEEDED])
+		_show_hud_message(_installed_line(_pending_part_name))
 		
 		# TASK 8: The repair audio is already playing from start_hold_interact() —
 		# do NOT restart it here at completion.
@@ -402,9 +420,7 @@ func _trigger_first_chase() -> void:
 		objective_label.text = "FLEE"
 		objective_label.modulate = Color(1, 0.5, 0, 1)
 	
-	var hud = get_node_or_null("/root/CottageHorror/HUD")
-	if not hud:
-		hud = get_node_or_null("/root/Main/HUD")
+	var hud = get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("_show_event"):
 		hud._show_event("The ignition... it's been completely torn out.")
 	else:
@@ -424,17 +440,57 @@ func _trigger_first_chase() -> void:
 
 func _process(delta: float) -> void:
 	if alarm_active and _alarm_light:
-		_alarm_light.omni_range = 50.0
+		# Twice as strong and further reaching as before, plus a glowing
+		# beacon: the van is ~105 m from the cabin, too far for light alone.
+		_alarm_light.omni_range = 80.0
 		var pulse = 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.005)
-		_alarm_light.light_energy = 1.0 + pulse * 4.0
+		_alarm_light.light_energy = 2.0 + pulse * 8.0
+		_update_beacon(pulse)
+	elif _beacon and _beacon.visible:
+		_beacon.visible = false
+
+
+## A pulsing red glow over the van while the alarm sounds, unaffected by fog
+## so it can be seen from the cabin.
+var _beacon: MeshInstance3D = null
+
+
+func _update_beacon(pulse: float) -> void:
+	if not _beacon:
+		_beacon = MeshInstance3D.new()
+		_beacon.name = "AlarmBeacon"
+		var quad := QuadMesh.new()
+		quad.size = Vector2(1.6, 1.6)
+		var glow := StandardMaterial3D.new()
+		glow.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		glow.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		glow.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		glow.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		glow.disable_fog = true
+		glow.no_depth_test = false
+		var gradient := Gradient.new()
+		gradient.colors = PackedColorArray([Color(1, 0.1, 0.05, 1), Color(1, 0, 0, 0)])
+		var texture := GradientTexture2D.new()
+		texture.gradient = gradient
+		texture.fill = GradientTexture2D.FILL_RADIAL
+		texture.fill_from = Vector2(0.5, 0.5)
+		texture.fill_to = Vector2(1.0, 0.5)
+		glow.albedo_texture = texture
+		quad.material = glow
+		_beacon.mesh = quad
+		_beacon.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(_beacon)
+		_beacon.position = _alarm_light.position + Vector3.UP * 0.4
+	_beacon.visible = true
+	var mat := (_beacon.mesh as QuadMesh).material as StandardMaterial3D
+	mat.albedo_color = Color(1, 1, 1, 0.25 + pulse * 0.75)
+	_beacon.scale = Vector3.ONE * (0.8 + pulse * 0.6)
 
 
 # ─── UI HELPERS ────────────────────────────────────────────
 
 func _find_objective_label() -> Label:
-	var hud = get_node_or_null("/root/CottageHorror/HUD")
-	if not hud:
-		hud = get_node_or_null("/root/Main/HUD")
+	var hud = get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_node("ObjectiveLabel"):
 		return hud.get_node("ObjectiveLabel") as Label
 	return null
@@ -447,9 +503,7 @@ func _find_objective_label() -> Label:
 # ─── ENVIRONMENT & ENTITY HELPERS ──────────────────────────
 
 func _darken_environment_for_van_sequence() -> void:
-	var ec = get_node_or_null("/root/CottageHorror/EnvironmentController")
-	if not ec:
-		ec = get_node_or_null("/root/Main/EnvironmentController")
+	var ec = get_tree().get_first_node_in_group("environment_controller")
 	if not ec:
 		print("[EscapeVan] EnvironmentController not found — skipping darkness override.")
 		return
@@ -466,15 +520,26 @@ func _darken_environment_for_van_sequence() -> void:
 
 
 func _restore_environment_lighting() -> void:
-	var ec = get_node_or_null("/root/CottageHorror/EnvironmentController")
-	if not ec:
-		ec = get_node_or_null("/root/Main/EnvironmentController")
+	var ec = get_tree().get_first_node_in_group("environment_controller")
 	if not ec:
 		return
 	if ec.has_method("restore_cycle"):
 		ec.restore_cycle()
 	elif ec.has_method("_apply_cycle"):
 		ec._apply_cycle()
+
+
+## Where the player restarts after dying in Night 2.2: a few metres in front
+## of the van, on the cabin's side, facing it.
+func get_restart_transform() -> Transform3D:
+	var toward_cabin := Vector3(9.0, 0.0, 14.0) - global_position
+	toward_cabin.y = 0.0
+	toward_cabin = toward_cabin.normalized() if toward_cabin.length_squared() > 0.01 else Vector3.BACK
+	var spot := global_position + toward_cabin * 5.0
+	var space := get_world_3d().direct_space_state
+	var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(spot + Vector3.UP * 3.0, spot + Vector3.DOWN * 5.0, 1))
+	spot.y = (hit.position.y if not hit.is_empty() else global_position.y) + 0.1
+	return Transform3D(Basis.looking_at(-toward_cabin, Vector3.UP), spot)
 
 
 func _teleport_entity_to_van() -> void:
@@ -507,7 +572,9 @@ func _teleport_entity_to_van() -> void:
 		_sprint_tutorial_fired = true
 		var tm_sprint := get_node_or_null("/root/TutorialManager")
 		if tm_sprint and tm_sprint.has_method("trigger"):
-			tm_sprint.trigger("sprint")
+			# Forced: it replaces any other hint, and stays until the player
+			# has run their stamina down to 70% (player_controller).
+			tm_sprint.trigger("sprint", true)
 
 
 func _find_marker_recursive(root: Node, marker_name: String) -> Marker3D:
@@ -523,6 +590,6 @@ func _find_marker_recursive(root: Node, marker_name: String) -> Marker3D:
 func _show_hud_message(msg: String) -> void:
 	var hud = get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("show_message"):
-		hud.show_message(msg)
+		hud.show_message(msg, self)
 	else:
 		print("[EscapeVan HUD]: ", msg)

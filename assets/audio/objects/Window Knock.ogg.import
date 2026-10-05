@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://btq6g4vei3yb7"
+path="res://.godot/imported/Window Knock.ogg-e72820f36e964f89c9864721f29971c4.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/objects/Window Knock.ogg"
+dest_files=["res://.godot/imported/Window Knock.ogg-e72820f36e964f89c9864721f29971c4.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -74,6 +74,18 @@ func setup_ending(ending_type: int) -> void:
 			title_label.text = "GAME OVER"
 			subtitle_label.text = "An unknown ending occurred."
 	
+	# The escapes start a new game, and say which ending this was (so the
+	# player knows there is another one).
+	if ending_type == 1 or ending_type == 2:
+		retry_button.text = "Play Again"
+		var caption := Label.new()
+		caption.name = "EndingCountLabel"
+		caption.text = "Ending %d of 2" % ending_type
+		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		caption.modulate = Color(1, 1, 1, 0.6)
+		$VBoxContainer.add_child(caption)
+		$VBoxContainer.move_child(caption, title_label.get_index())
+	
 	print("[EndingScreen] Displaying ending: ", ending_name)
 
 

@@ -75,6 +75,11 @@ var _pickup_label: Label = null
 var _pickup_tween: Tween = null
 
 
+## Developer info (the clock, time to day/night, the phase bar, the room,
+## the generator) shows only with F3, like the Entity debug overlay.
+var debug_info_visible := false
+
+
 func _ready() -> void:
 	add_to_group("hud")
 	
@@ -147,9 +152,7 @@ func _ready() -> void:
 
 	# Find EnvironmentController if not assigned
 	if not environment_controller:
-		environment_controller = get_node_or_null("/root/Main/EnvironmentController")
-		if not environment_controller:
-			environment_controller = get_node_or_null("/root/CottageHorror/EnvironmentController")
+		environment_controller = get_tree().get_first_node_in_group("environment_controller")
 
 	event_label.modulate = Color(1, 1, 1, 0)
 
@@ -165,6 +168,28 @@ func _ready() -> void:
 
 	# Connect to RoutineManager for Night 1 bedtime routine objective
 	_connect_routine_manager()
+	_apply_debug_visibility()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F3:
+		debug_info_visible = not debug_info_visible
+		_apply_debug_visibility()
+
+
+func _apply_debug_visibility() -> void:
+	for control in [time_label, clock_label, phase_bar, fuel_bar, _room_label]:
+		if control:
+			control.visible = debug_info_visible
+
+
+## The battery shows only while the flashlight is on.
+func _update_battery_visibility() -> void:
+	var on: bool = _flashlight != null and is_instance_valid(_flashlight) and "is_on" in _flashlight and _flashlight.is_on
+	if battery_bar and battery_bar.visible != on:
+		battery_bar.visible = on
+	if low_battery_warning and low_battery_warning.visible != on:
+		low_battery_warning.visible = on
 
 
 ## Fades the screen to pitch black over the given duration.
@@ -251,9 +276,7 @@ func _on_routine_step_changed(step: int, objective_text: String) -> void:
 
 func _find_and_connect_flashlight() -> void:
 	# Try to find the player and flashlight
-	var player = get_node_or_null("/root/CottageHorror/Player")
-	if not player:
-		player = get_node_or_null("/root/Main/Player")
+	var player = get_tree().get_first_node_in_group("player")
 	
 	if player:
 		_flashlight = player.find_child("Flashlight", true, false)
@@ -272,9 +295,7 @@ func _find_and_connect_flashlight() -> void:
 
 func _find_and_connect_stamina() -> void:
 	# Try to find the player
-	var player = get_node_or_null("/root/CottageHorror/Player")
-	if not player:
-		player = get_node_or_null("/root/Main/Player")
+	var player = get_tree().get_first_node_in_group("player")
 	
 	if player and player.has_signal("stamina_changed"):
 		player.stamina_changed.connect(_on_stamina_changed)
@@ -335,23 +356,24 @@ func _on_battery_changed(level: float) -> void:
 
 # Poll every frame to update the display
 func _process(delta: float) -> void:
-	var progress: float = 0.0
-	var p_is_day: bool = true
-	
-	# Read from GameTime directly as the primary source (most reliable).
-	# Fall back to EnvironmentController if GameTime isn't available.
-	var gt = get_node_or_null("/root/GameTime")
-	if gt:
-		progress = gt.cycle_progress
-		p_is_day = gt.is_day
-	elif environment_controller:
-		progress = environment_controller.cycle_progress
-		p_is_day = environment_controller.is_day
-	
-	_update_display(progress, p_is_day)
+	# The clock readouts are only shown with F3: formatted only then.
+	if debug_info_visible:
+		var progress: float = 0.0
+		var p_is_day: bool = true
+		# Read from GameTime directly as the primary source (most reliable).
+		# Fall back to EnvironmentController if GameTime isn't available.
+		var gt = get_node_or_null("/root/GameTime")
+		if gt:
+			progress = gt.cycle_progress
+			p_is_day = gt.is_day
+		elif environment_controller:
+			progress = environment_controller.cycle_progress
+			p_is_day = environment_controller.is_day
+		_update_display(progress, p_is_day)
 	
 	# Update low battery warning flicker
 	_update_low_battery_warning(delta)
+	_update_battery_visibility()
 	
 	# ─── ROOM DEBUG LABEL ──────────────────────────────────────────────
 	# Update the room label every frame to show which room the player is in.
@@ -490,9 +512,7 @@ func _on_horror_event(event_name: String) -> void:
 ## Unlocks the player's sprint ability.
 func _on_first_chase_started() -> void:
 	# Find the player and unlock sprint
-	var player = get_node_or_null("/root/CottageHorror/Player")
-	if not player:
-		player = get_node_or_null("/root/Main/Player")
+	var player = get_tree().get_first_node_in_group("player")
 	if player and "sprint_unlocked" in player:
 		player.sprint_unlocked = true
 		print("[HUD] Sprint unlocked for the player!")
@@ -632,11 +652,12 @@ func _update_room_label() -> void:
 		_room_label.z_index = 10
 		add_child(_room_label)
 		_room_label_visible = true
+		_room_label.visible = debug_info_visible
+	if not _room_label.visible:
+		return
 	
 	# Find the player and get the current room
-	var player = get_node_or_null("/root/CottageHorror/Player")
-	if not player:
-		player = get_node_or_null("/root/Main/Player")
+	var player = get_tree().get_first_node_in_group("player")
 	
 	if player and player.has_method("get_player_room"):
 		var room_name = player.get_player_room()
@@ -650,9 +671,21 @@ func _update_room_label() -> void:
 ## (e.g., "The totem is protected by the Entity's presence...").
 ## The message is displayed for 3.0 seconds, then fades out automatically
 ## via the existing _show_event() message queue system.
-func show_message(msg: String) -> void:
-	# Event messages removed per design direction
-	pass
+## Feedback lines ("Inventory is full!", "I should lock the door first.",
+## "I am too tired to read this right now..."). The event label that showed
+## them was removed, which left them going nowhere: refused actions gave no
+## reason. They're shown as the player's thought on screen (Monologue.say).
+## Off: silent again.
+@export var show_feedback_as_thoughts: bool = true
+
+
+## `subject`: what it's about (the thought floats over it while on screen).
+func show_message(msg: String, subject: Node3D = null) -> void:
+	if not show_feedback_as_thoughts:
+		return
+	var monologue := get_node_or_null("/root/Monologue")
+	if monologue and monologue.has_method("say"):
+		monologue.say(msg, 3.5, subject)
 
 
 ## ─── ITEM PICKUP FEEDBACK ──────────────────────────────────────────────
@@ -716,24 +749,30 @@ func _timestamp() -> String:
 ## caused by competing fade animations.
 ##
 ## If a hint is already fully visible, it IGNORES the new request so the
-## current hint stays on screen until dismissed by mark_learned().
-func show_hint(text: String, delay: float = 0.5) -> void:
+## current hint stays on screen until dismissed by mark_learned(), unless
+## `force` is set (then the new hint replaces it). Returns whether the hint
+## is (or will be) on screen.
+func show_hint(text: String, delay: float = 0.5, force: bool = false) -> bool:
 	if not hint_label:
-		return
+		return false
 	
 	# If a hint is already visible AND we've already shown one before, ignore.
 	# (The first call must pass through — HintLabel starts at alpha=1.0 in the
 	# scene file, so we'd skip every tutorial without this guard.)
 	if _hint_has_been_shown and hint_label.modulate.a > 0.0:
+		if force:
+			print("[HorrorHUD] T+%s show_hint FORCED over '%s' → '%s'" % [_timestamp(), hint_label.text, text])
+			hint_label.text = text
+			return true
 		print("[HorrorHUD] T+%s show_hint BLOCKED — hint already visible: '%s'" % [_timestamp(), hint_label.text])
-		return
+		return false
 	
 	# If hint timer is still running (fade-in hasn't started yet),
 	# just update the text — keep the existing timer/tween.
 	if hint_timer and not hint_timer.is_stopped():
 		print("[HorrorHUD] T+%s show_hint REPLACED timer text → '%s'" % [_timestamp(), text])
 		hint_label.text = text
-		return
+		return true
 	
 	# Kill any existing tween so we don't get competing fade animations
 	if is_instance_valid(_hint_tween):
@@ -754,6 +793,16 @@ func show_hint(text: String, delay: float = 0.5) -> void:
 			hint_timer.timeout.disconnect(_on_hint_timer_timeout)
 		hint_timer.timeout.connect(_on_hint_timer_timeout)
 		hint_timer.start()
+	return true
+
+
+## The hint on screen (or about to fade in), "" for none.
+func current_hint() -> String:
+	if not hint_label:
+		return ""
+	if hint_label.modulate.a > 0.0 or (hint_timer and not hint_timer.is_stopped()):
+		return hint_label.text
+	return ""
 
 
 ## Fades the hint label from alpha 1 to 0 over 0.5 seconds.

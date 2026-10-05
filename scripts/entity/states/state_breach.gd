@@ -21,8 +21,8 @@ func enter(_from: int, data: Dictionary) -> void:
 
 
 func update(delta: float) -> void:
-	if entity.move_to(_entry.start_position, config.approach_speed) < 0.6:
-		entity.stop()
+	if not hold_at_entry(_entry, config.approach_speed):
+		return   # still getting there (or climbing up to it)
 	entity.face(_entry.end_position)
 	if _swing.update(delta, entity):
 		_entry.entry.damage_barricade()

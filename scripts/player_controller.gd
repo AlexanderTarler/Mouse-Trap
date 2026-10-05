@@ -35,6 +35,18 @@ extends CharacterBody3D
 
 @export var wood_footsteps: Array[AudioStream] = []
 @export var grass_footsteps: Array[AudioStream] = []
+## Footsteps on the stairs (the Stairs room). Left empty, single wooden stair
+## steps cut from the horror pack's stair recordings are used (the recordings
+## themselves are 8 s runs of steps: restarted every step, only their quiet
+## first half-second ever played).
+@export var stairs_footsteps: Array[AudioStream] = []
+## Footstep loudness relative to walking (dB): crouching is hushed, sprinting
+## thuds.
+@export var crouch_footstep_db: float = -9.0
+@export var sprint_footstep_db: float = 3.0
+const DEFAULT_STAIRS_FOOTSTEPS := "res://assets/audio/player/stair_steps/stair_step_%02d.wav"
+const DEFAULT_STAIRS_FOOTSTEP_COUNT := 16
+var _footstep_base_db := 0.0
 
 var _current_speed: float
 var _step_timer: float = 0.0
@@ -92,10 +104,25 @@ const STAIR_STEP_CHECK_INTERVAL: int = 3
 var _flashlight_entity_check_timer: float = 0.0
 
 ## Interval between flashlight-on-entity raycasts in seconds.
-const FLASHLIGHT_ENTITY_CHECK_INTERVAL: float = 0.1  # 10Hz
+const FLASHLIGHT_ENTITY_CHECK_INTERVAL: float = 0.033  # 30Hz: the Entity reacts within a frame or two
 
-## Cached result of the last flashlight-on-entity check.
-var _cached_flashlight_on_entity: bool = false
+## Cached result of the last flashlight-on-entity check: how strongly the beam
+## hits the Entity (0-1), or -1 when it doesn't.
+var _cached_flashlight_strength: float = -1.0
+
+## The beam only counts where it visibly lights things: within the
+## flashlight's range (longer when overcharged, it is brighter) ...
+const OVERCHARGE_REACH_MULTIPLIER: float = 1.4
+## ... inside this fraction of the beam's cone (its bright core) ...
+const BEAM_HIT_CONE_FRACTION: float = 0.6
+## ... and no farther than this fraction of the fog's visibility distance.
+const FOG_VISIBILITY_FRACTION: float = 0.8
+## Points on the Entity (height above its feet) that the beam can catch; any
+## one in the beam and in sight counts, so it can't hide its body behind a
+## trunk while its head is lit.
+const ENTITY_BEAM_SAMPLE_HEIGHTS: Array[float] = [0.4, 1.0, 1.6]
+
+var _environment_controller: Node = null
 
 ## Whether the player starts the game with the ability to sprint (SHIFT).
 ## When true (default), the player can sprint from the start.
@@ -207,6 +234,7 @@ var _noise_timer: float = 0.0
 @export var breathing_sfx: AudioStream = null
 
 func _ready() -> void:
+	_load_default_stairs_footsteps()
 	# Add starting items to the Inventory autoload
 	for item in starting_items:
 		if item:
@@ -474,13 +502,11 @@ func _input(event: InputEvent) -> void:
 				# Also accept C as alias for Ctrl
 				if keycode == KEY_C and KEY_CTRL in _movement_keys_pressed:
 					_movement_keys_pressed[KEY_CTRL] = true
-				# Check if all keys are now pressed
-				var all_pressed := true
-				for v in _movement_keys_pressed.values():
-					if not v:
-						all_pressed = false
-						break
-				if all_pressed:
+				# Learned once the player has moved (any direction) and
+				# crouched: what the hint asks.
+				var moved: bool = _movement_keys_pressed[KEY_W] or _movement_keys_pressed[KEY_A] \
+					or _movement_keys_pressed[KEY_S] or _movement_keys_pressed[KEY_D]
+				if moved and _movement_keys_pressed[KEY_CTRL]:
 					var tm := get_node_or_null("/root/TutorialManager")
 					if tm and tm.has_method("mark_learned"):
 						tm.mark_learned("movement")
@@ -538,19 +564,15 @@ func has_flashlight() -> bool:
 ## during Night 1. This allows the sprint to be gated behind a narrative
 ## event when start_with_sprint is set to false in the inspector.
 func unlock_sprint() -> void:
-	var tm := get_node_or_null("/root/TutorialManager")
-	
 	if not sprint_unlocked:
 		sprint_unlocked = true
 		print("[Player] Sprint UNLOCKED! You can now hold SHIFT to run.")
 		# ─── TUTORIAL: Sprint prompt ─────────────────────────────────
-		# BUG 3 FIX: Do NOT call mark_learned("sprint") here. Marking it
-		# learned consumes the one-shot tutorial before the Night 2.2
-		# escape_van.gd trigger("sprint") at the entity-spawn moment can
-		# display the hint. Learning is now only marked when the player
-		# actually sprints (see _physics_process).
-		if tm and tm.has_method("trigger"):
-			tm.trigger("sprint")
+		# The sprint hint is shown by escape_van.gd when the chase starts
+		# (two seconds later). Triggering it here too used to use up its
+		# one shot if another hint was on screen, so it never appeared.
+		# Learning is marked when the player has actually run their stamina
+		# down to 70% (see _physics_process).
 	else:
 		print("[Player] Sprint is already unlocked.")
 
@@ -639,17 +661,12 @@ func _toggle_flashlight() -> void:
 	# the player successfully holds F for the full duration.
 	var tm := get_node_or_null("/root/TutorialManager")
 	var nm := get_node_or_null("/root/NightManager")
+	# The overcharge hint is safe: mark_learned only hides the flashlight's
+	# own hint. Learned once its hint has shown (or any time at night).
 	if tm and tm.has_method("mark_learned"):
-		if nm and "is_night_active" in nm and nm.is_night_active:
-			# ─── TASK 2.3: DO NOT dismiss the overcharge hint ──────────
-			# If the player hasn't yet completed the overcharge tutorial
-			# (3s continuous hold), skip the flashlight mark_learned so the
-			# overcharge prompt stays visible. The overcharge hint can only
-			# be dismissed by flashlight.gd's _mark_overcharge_tutorial_learned().
-			if tm.has_method("is_learned") and not tm.is_learned("overcharge"):
-				print("[Player] TASK 2.3: Overcharge tutorial still active. Skipping mark_learned('flashlight') to preserve the hold hint.")
-			else:
-				tm.mark_learned("flashlight")
+		var hint_seen: bool = tm.has_method("was_shown") and tm.was_shown("flashlight")
+		if hint_seen or (nm and "is_night_active" in nm and nm.is_night_active):
+			tm.mark_learned("flashlight")
 	if _flashlight.has_method("toggle"):
 		_flashlight.toggle()
 	else:
@@ -741,11 +758,21 @@ func _toggle_inventory() -> void:
 	if tm and tm.has_method("mark_learned"):
 		tm.mark_learned("inventory")
 	
-	var inv_ui = get_node_or_null("/root/CottageHorror/InventoryUI")
-	if not inv_ui: inv_ui = get_node_or_null("/root/Main/InventoryUI")
+	var inv_ui = get_tree().get_first_node_in_group("inventory_ui")
 	if inv_ui and inv_ui.has_method("_open_inventory") and inv_ui.has_method("_close_inventory"):
 		if inv_ui.get("_is_open"): inv_ui._close_inventory()
 		else: inv_ui._open_inventory()
+
+var _still_time := 0.0
+
+
+## The nests' hints (crouch, stand still) are learned by doing it once
+## the hint is up; doing it before then doesn't use the hint up.
+func _learned_if_shown(mechanic_id: String) -> void:
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("was_shown") and tm.was_shown(mechanic_id):
+		tm.mark_learned(mechanic_id)
+
 
 func _physics_process(delta: float) -> void:
 	if not is_on_floor():
@@ -753,12 +780,24 @@ func _physics_process(delta: float) -> void:
 
 	if Input.is_key_pressed(KEY_SPACE) and is_on_floor():
 		velocity.y = jump_velocity
-		make_noise(15.0, 1.0) # Jumping is loud!
 
 	if Input.is_key_pressed(KEY_CTRL) or Input.is_key_pressed(KEY_C):
 		if not _is_crouching: _is_crouching = true
+		# Also when the hint comes up while already crouching.
+		_learned_if_shown("stealth")
 	else:
 		if _is_crouching: _is_crouching = false
+	# The "stand completely still" hint (Nest Gamma): done after a moment
+	# of standing still.
+	if Vector2(velocity.x, velocity.z).length() < 0.05:
+		_still_time += delta
+		if _still_time >= 1.5:
+			_learned_if_shown("stillness")
+	else:
+		_still_time = 0.0
+	# The flashlight hint, if it comes up with the light already on.
+	if _flashlight and "is_on" in _flashlight and _flashlight.is_on:
+		_learned_if_shown("flashlight")
 	
 
 	# ─── SPRINT & STAMINA ──────────────────────────────────────────────
@@ -865,25 +904,17 @@ func _physics_process(delta: float) -> void:
 		velocity.z = direction.z * _current_speed
 		_head_bob_active = true
 		
-		# ─── ACOUSTIC DETECTION: Movement Noise ──────────────────────────
-		# The Entity can hear the player based on movement state:
-		#   Sprinting: 20m radius, every 0.5s (loud, fast footsteps)
-		#   Walking:   10m radius, every 0.6s (moderate, periodic footsteps)
-		#   Crouching: Silent (0m) — no noise emitted
-		#
-		# Each noise call updates the Entity's last_known_position if the
-		# Entity is within the noise radius. This is the core stealth mechanic:
-		# crouching = invisible to sound, walking = risky, sprinting = beacon.
-		if _is_running and is_on_floor():
+		# ─── ACOUSTIC DETECTION: Footsteps ─────────────────────────────
+		# Each footstep is a noise the Entity may hear (ranges in the Entity
+		# config's Hearing group; louder on the cabin's wooden floors):
+		#   sprint (every 0.5 s) > walk (every 0.6 s) > crouch (every 0.8 s,
+		#   only audible up close). Stealth is a choice of speed.
+		if is_on_floor():
+			var step_kind := &"sprint" if _is_running else (&"crouch" if _is_crouching else &"walk")
+			var step_interval := 0.5 if _is_running else (0.8 if _is_crouching else 0.6)
 			_noise_timer += delta
-			if _noise_timer >= 0.5:
-				make_noise(20.0, 0.5)  # Sprint: 20m radius
-				_noise_timer = 0.0
-		elif not _is_running and not _is_crouching and is_on_floor() and direction:
-			# Walking noise — periodic footsteps at 10m radius
-			_noise_timer += delta
-			if _noise_timer >= 0.6:
-				make_noise(10.0, 0.3)  # Walk: 10m radius
+			if _noise_timer >= step_interval:
+				make_noise(step_kind)
 				_noise_timer = 0.0
 
 	else:
@@ -903,7 +934,9 @@ func _physics_process(delta: float) -> void:
 			_try_step_up(direction)
 
 	var landed = not _was_on_floor and is_on_floor()
-	if landed: make_noise(15.0, 1.0) # Thud on landing
+	if landed:
+		make_noise(&"land") # Thud on landing
+		_play_landing_thud()
 
 	move_and_slide()
 	_was_on_floor = is_on_floor()
@@ -935,6 +968,9 @@ func _try_step_up(direction: Vector3) -> void:
 	if not space_state or not _collision_shape or not _collision_shape.shape: return
 	
 	var capsule: CapsuleShape3D = _collision_shape.shape as CapsuleShape3D
+	# The player's collider is a prism (convex) now: this needs a capsule.
+	if not capsule:
+		return
 	var capsule_center_y = global_position.y + _collision_shape.position.y
 	var capsule_bottom_y = capsule_center_y - capsule.height / 2.0
 	
@@ -980,13 +1016,37 @@ func _play_surface_footstep() -> void:
 	
 	if room == "Outside":
 		array = grass_footsteps
+	elif room == "Stairs" and not stairs_footsteps.is_empty():
+		array = stairs_footsteps
 	else:
 		array = wood_footsteps
-	
+
 	if array.size() > 0:
 		footstep_audio.stream = array.pick_random()
-		footstep_audio.pitch_scale = randf_range(0.85, 1.15)
+		footstep_audio.pitch_scale = randf_range(0.85, 1.15) * (0.9 if _is_crouching else 1.0)
+		footstep_audio.volume_db = _footstep_base_db \
+			+ (crouch_footstep_db if _is_crouching else (sprint_footstep_db if _is_running else 0.0))
 		footstep_audio.play()
+
+
+## A heavier, lower footstep when landing from a jump or a drop.
+func _play_landing_thud() -> void:
+	_play_surface_footstep()
+	if footstep_audio:
+		footstep_audio.volume_db = _footstep_base_db + 5.0
+		footstep_audio.pitch_scale = randf_range(0.65, 0.75)
+
+
+## Stair footsteps default to the single stair steps (DEFAULT_STAIRS_FOOTSTEPS).
+func _load_default_stairs_footsteps() -> void:
+	if footstep_audio:
+		_footstep_base_db = footstep_audio.volume_db
+	if not stairs_footsteps.is_empty():
+		return
+	for i in range(1, DEFAULT_STAIRS_FOOTSTEP_COUNT + 1):
+		var path := DEFAULT_STAIRS_FOOTSTEPS % i
+		if ResourceLoader.exists(path):
+			stairs_footsteps.append(load(path) as AudioStream)
 
 func _update_crouch(delta: float) -> void:
 	var target_height = crouching_height if _is_crouching else standing_height
@@ -1100,10 +1160,13 @@ func _process(delta: float) -> void:
 	
 	# Find the StandoffEffect node on the HUD (lazy init)
 
+	# NOTE: the HUD node is "HUD", so this path never finds it and the
+	# StandoffEffect (Swedish hallucination text while staring at the Entity)
+	# has never shown in play. Left as is on purpose; see
+	# planning/code_review.txt. To enable it, look the HUD up by its group:
+	#     get_tree().get_first_node_in_group("hud")
 	if not _standoff_effect:
 		var hud = get_node_or_null("/root/CottageHorror/HorrorHUD")
-		if not hud:
-			hud = get_node_or_null("/root/Main/HorrorHUD")
 		if hud:
 			_standoff_effect = hud.get_node_or_null("StandoffText")
 	
@@ -1112,17 +1175,17 @@ func _process(delta: float) -> void:
 		_entity_node = get_tree().get_first_node_in_group("entity")
 	
 	# ─── FLASHLIGHT-ON-ENTITY THROTTLING ──────────────────────────
-	# The _is_flashlight_on_entity() function fires an expensive
-	# intersect_ray from the camera to the Entity every call.
+	# flashlight_beam_on_entity() fires up to three rays from the camera
+	# to the Entity every call.
 	# We only need to check this at ~10Hz (every 0.1s), not 60Hz.
 	# Between checks, we use the cached result.
 	_flashlight_entity_check_timer -= delta
 	if _flashlight_entity_check_timer <= 0.0:
 		_flashlight_entity_check_timer = FLASHLIGHT_ENTITY_CHECK_INTERVAL
-		_cached_flashlight_on_entity = _is_flashlight_on_entity()
-	
+		_cached_flashlight_strength = flashlight_beam_on_entity()
+
 	# Check if the flashlight is ON and we're looking at the Entity
-	var is_looking_at_entity = _cached_flashlight_on_entity
+	var is_looking_at_entity: bool = _cached_flashlight_strength >= 0.0
 	
 	# Throttled debug log every 2 seconds
 	_look_debug_timer += delta
@@ -1145,7 +1208,7 @@ func _process(delta: float) -> void:
 	# Tell the Entity every frame whether the beam is on it. It keeps its own
 	# timers; look_timer below only drives the camera shake.
 	if _entity_node and _entity_node.has_method("on_flashlight"):
-		_entity_node.on_flashlight(is_looking_at_entity, is_flashlight_overcharged())
+		_entity_node.on_flashlight(is_looking_at_entity, is_flashlight_overcharged(), maxf(_cached_flashlight_strength, 0.0))
 	
 	if is_looking_at_entity:
 		look_timer = minf(look_timer + delta, 2.0)
@@ -1201,54 +1264,56 @@ func _process(delta: float) -> void:
 		_standoff_effect.update_overcharge(is_flashlight_overcharged())
 
 
-## Checks if the player's flashlight is currently shining on the Entity.
-## Uses a RayCast3D from the center of the camera to detect the Entity.
-func _is_flashlight_on_entity() -> bool:
-	# Flashlight must be on
-	if not _flashlight or not _has_flashlight:
-		return false
-	if not _flashlight.is_on:
-		return false
-	
-	if not _entity_node or not is_instance_valid(_entity_node):
-		return false
-	
-	var space_state = get_world_3d().direct_space_state
+## How strongly the flashlight beam hits the Entity: 0-1 (closer and more
+## centred is stronger), or -1 when it doesn't hit at all.
+## The beam only counts where it visibly lights things: within the
+## flashlight's range (longer when overcharged), inside the bright core of
+## its cone, no farther than the fog lets the player see, and with a clear
+## line of sight to at least one point on the Entity (feet, chest or head).
+func flashlight_beam_on_entity() -> float:
+	if not _flashlight or not _has_flashlight or not _flashlight.is_on:
+		return -1.0
+	if not _entity_node or not is_instance_valid(_entity_node) or not _entity_node.is_visible_in_tree():
+		return -1.0
+	var space_state := get_world_3d().direct_space_state
 	if not space_state:
-		return false
-	
-	# ─── STEP 1: VISION CONE (dot product) ────────────────────────
-	# The player must be looking roughly at the Entity.
-	# Standard beam: dot > 0.95 = ~18° cone — matches the flashlight beam.
-	# Overcharge beam: dot > 0.985 = ~10° cone — tighter, rewards precision.
-	var cam_forward = -_camera.global_transform.basis.z.normalized()
-	var entity_target = _entity_node.global_position + Vector3(0, 1.0, 0)
-	var dir_to_entity = (entity_target - _camera.global_position).normalized()
-	
-	var cone_dot_threshold: float = 0.95
-	if _flashlight and _flashlight.is_overcharged:
-		cone_dot_threshold = 0.985
-	
-	if cam_forward.dot(dir_to_entity) < cone_dot_threshold:
-		return false
-	
-	# ─── STEP 2: OCCLUSION RAYCAST ────────────────────────────────
-	# Cast from camera toward the Entity's chest.
-	# collision_mask = 17  → Layer 1 (world/cabin) | Layer 5 (entity)
-	# If the ray hits a wall before the Entity, is_player_spotting fails.
-	var query = PhysicsRayQueryParameters3D.create(
-		_camera.global_position,
-		entity_target
-	)
-	query.exclude = [self]
-	query.collision_mask = 17  # Layer 1 (world) | Layer 5 (entity) = 1 | 16
-	
-	var result = space_state.intersect_ray(query)
-	if result.is_empty():
-		return false
-	
-	var collider = result.collider
-	return collider != null and collider.is_in_group("entity")
+		return -1.0
+
+	var overcharged: bool = _flashlight.is_overcharged
+	var reach: float = _flashlight.spot_range * (OVERCHARGE_REACH_MULTIPLIER if overcharged else 1.0)
+	reach = minf(reach, _fog_visibility() * FOG_VISIBILITY_FRACTION)
+	var cone: float = deg_to_rad(_flashlight.spot_angle * BEAM_HIT_CONE_FRACTION)
+	var beam_axis: Vector3 = -_flashlight.global_transform.basis.z
+	var eye: Vector3 = _camera.global_position
+
+	var best := -1.0
+	for height in ENTITY_BEAM_SAMPLE_HEIGHTS:
+		var point: Vector3 = _entity_node.global_position + Vector3.UP * height
+		var to_point := point - eye
+		var distance := to_point.length()
+		if distance > reach or distance < 0.01:
+			continue
+		var angle := beam_axis.angle_to(to_point)
+		if angle > cone:
+			continue
+		# Walls, trees and furniture block the beam; the Entity itself doesn't.
+		var query := PhysicsRayQueryParameters3D.create(eye, point, 1)
+		query.exclude = [get_rid()]
+		if not space_state.intersect_ray(query).is_empty():
+			continue
+		var falloff := 1.0 - pow(distance / reach, 2.0)
+		var centred := lerpf(0.5, 1.0, 1.0 - angle / cone)
+		best = maxf(best, falloff * centred)
+	return best
+
+
+## How far the player can see through the night fog (INF without fog).
+func _fog_visibility() -> float:
+	if not _environment_controller or not is_instance_valid(_environment_controller):
+		_environment_controller = get_tree().get_first_node_in_group("environment_controller")
+	if _environment_controller and _environment_controller.has_method("get_fog_visibility"):
+		return _environment_controller.get_fog_visibility()
+	return INF
 
 
 ## Public API: returns true if the player's flashlight is currently on.
@@ -1296,10 +1361,9 @@ func get_player_room() -> String:
 
 
 # --- NEW NOISE SYSTEM EMITTER ---
-func make_noise(radius: float, intensity: float = 1.0) -> void:
-	var entity = get_tree().get_first_node_in_group("entity")
-	if entity and entity.has_method("hear_noise"):
-		entity.hear_noise(global_position, radius, intensity)
+## A noise of `kind` at the player's position (see NoiseEvent.emit).
+func make_noise(kind: StringName) -> void:
+	NoiseEvent.emit(self, global_position, kind)
 
 
 ## Called when the breathing audio fade-out tween finishes.

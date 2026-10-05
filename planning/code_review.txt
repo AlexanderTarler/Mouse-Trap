@@ -1,0 +1,262 @@
+CODE REVIEW — findings and improvements
+=======================================
+Scope: all 119 scripts in scripts/ (about 33,700 lines), plus the export setup.
+Everything below has been fixed unless marked LEFT AS IS. All 16 test suites
+pass, including a new one for this review: tests/code_review_test.gd.
+
+
+1. PERFORMANCE
+--------------
+
+1.1  The player's physics cost 6 ms per frame inside the cabin  [biggest win]
+	 How it was found: script cost was measured per script (each script's
+	 nodes switched off in turn, with wall-clock frame time compared).
+	 player_controller.gd took ~80% of all script time, and almost all of
+	 that was move_and_slide().
+	 Cause: Godot's default physics engine collides the player's prism
+	 collider (a convex shape) against the cabin's 6,526-triangle collision
+     mesh (TwoFloorCollision) very slowly:
+       inside the cabin:   6.08 ms per move_and_slide()
+       outdoors:           ~0.09 ms
+     Fix: the project now uses the Jolt physics engine, built into Godot.
+       inside the cabin:   0.047 ms   (about 130 times faster)
+       outdoors:           0.025 ms
+	 The level has 10,713 physics bodies, more than Jolt's default limit of
+	 10,240, so the limit is raised to 20,480. Both settings are in
+	 project.godot under [physics]. Every movement, stairs, climbing, door
+	 and navigation test passes on Jolt.
+	 Total script and physics time per frame (headless):
+	   outdoors:   1.28 ms -> 0.67 ms
+	   cabin:      ~7 ms   -> 0.65 ms
+	 To undo: delete the [physics] section from project.godot.
+
+1.2  Searching the whole scene tree at runtime
+	 - pause_menu.gd searched all ~10,000 nodes for the debug console on
+	   every Escape press. It now uses a group.
+	 - scrap_heap.gd searched the whole tree for "StashUI" on every loot
+	   interaction. It now uses a group.
+	 - FoliageRustle searched the whole scene every frame until the world
+	   detail had loaded. It now waits for a signal from WorldDetails.
+
+1.3  The flashlight reported its battery 60 times a second
+	 The HUD rebuilt its battery text and colour every frame. The flashlight
+	 now reports in 0.1% steps, about 5 times a second.
+
+1.4  The HUD formatted its clock text every frame
+	 That happened even though the clock is hidden unless F3 is on. It is
+	 now only done while the clock is visible.
+
+1.5  About 44 sound files were loaded at startup and never played
+	 The sound manager loaded footsteps for 8 surfaces (carpet, concrete,
+	 gravel, leaves, metal, mud, stairs, wind) that nothing in the game
+	 plays. Only wooden and grass are used, and those are kept.
+
+
+2. BUGS FIXED
+-------------
+
+2.1  The Entity could freeze outside for good (flaky entity test)
+	 When the next point on the Entity's path was almost straight above or
+     below it (where the navmesh rides over a step or a low rock), it
+     stopped:
+       - it steers horizontally, so with nothing left horizontally it stood
+         still;
+       - the navigation agent only counts a point as reached within 0.6 m in
+         3D, so a point 0.7 m overhead was never reached;
+       - the stuck recovery "hopped" to that same point.
+     It then stood outside the cabin all night. This was the cause of the
+     break-in test failing about one run in three.
+     Fix (entity.gd move_to): while the next point is right overhead or
+     underneath, the reach distance stretches to cover the height gap, so
+     the agent moves on to the next point. 10 runs out of 10 now pass.
+
+2.2  NightManager timers ran about 12 times too slowly
+	 _process only runs every 0.2 s, but its timers added one frame's delta
+	 (about 0.017 s) on each run:
+	   - the 3-second dawn door-lock delay took about 36 seconds;
+	   - the 5-second night-event check ran about every 60 seconds.
+	 They now advance by the real time since the last run. Fuel drain had
+	 already been corrected for this; it now uses the same measure.
+
+2.3  The dawn door lock never happened
+	 It waited for the player to be in the room "HallRoom", but the room is
+	 named "Hallroom". The comparison now ignores case.
+
+2.4  The game clock ran about 8% slow
+	 GameTime added exactly 0.2 s per tick but threw away the overshoot. At
+	 60 fps a tick comes every 13 frames (0.217 s), so each 5-minute day or
+	 night actually lasted about 5.4 minutes. The remainder is now kept.
+
+2.5  The fog flickered at 1/6 of its intended speed
+	 environment_controller.gd had the same throttled-timer mistake.
+
+2.6  Highlights damaged meshes
+	 Clearing a highlight set the mesh's material override to nothing. A
+     mesh that had its own material in the scene lost it permanently after
+     its first highlight.
+     The 400 m culling box that lets the outline show through walls was
+     never removed either, so highlighted meshes were never culled again.
+     A mesh with no material at all was left invisible.
+	 Highlights now save the mesh's own material and culling settings and
+	 restore them exactly when cleared.
+
+2.7  The bed could run its sleep sequence twice
+	 The E key is handled by PhysicalGrab, which the sleep fade doesn't
+     freeze. Pressing E again during the fade started a second sequence,
+     which advances the night twice and skips a day.
+     The bed now ignores E while a sequence runs. It also waits for its
+     helper sequences to finish.
+
+2.8  Refusal and feedback lines were never shown
+     HorrorHUD.show_message() was emptied when the event label was removed.
+     That silently swallowed 29 lines, for example:
+       "I should lock the door first."
+       "Inventory is full!"
+       "I am too tired to read this right now..."
+       "The scrap heap is sealed up tight..."
+	 Refused actions gave no reason. These lines now show as the player's
+	 thought, low on the screen (new Monologue.say()):
+	   - a line already showing isn't restarted;
+	   - a story thought on screen isn't interrupted.
+	 To silence them again, untick "Show Feedback As Thoughts" on the HUD
+	 node.
+
+2.9  The battery swap sound was never heard
+	 It was a wooden footstep played as a 3D sound at the world origin,
+	 wherever the player was. It is now a click played at the player.
+
+2.10 The note pickup's sound and signal handling
+     - It played a writing sound on a sound player attached to the note,
+       which frees itself in the same frame, so the sound never played. The
+       notebook already plays its own sound when a note is added, so the
+       duplicate is removed.
+     - It connected a bound signal handler but disconnected the unbound
+       one, so the disconnect never matched. It now uses a one-shot
+       connection.
+
+2.11 The pause menu could close a door instead of the computer
+     Its fallback searched the tree for anything with an "is_open"
+     property, and doors have one. It now looks the computer up by its
+     group.
+
+2.12 The stair-step assist would crash
+     player_controller.gd _try_step_up() assumed a capsule collider, but the
+	 player's collider is a prism. It is switched off in the player scene,
+	 so it never ran. It now returns safely.
+
+2.13 Debug code that ran in shipped builds
+	 jumpscare_manager.gd fired a 1 km raycast and printed a line on every
+	 left click. It now only does this in debug builds.
+
+2.14 EXPORT: the shipped builds were missing sounds  [found during this review]
+	 tools/export_list.py, which decides what goes into the export, could
+	 not see file names built in code from pieces, such as:
+	   HORROR_SFX_DIR + "Ambient Wind/" + "Ambient Wind (%d).mp3"
+       "stair_step_%02d.wav"
+	 The game skips files that don't exist without a warning, so the
+     exported game just played without them:
+       wind sounds        0 of 9
+       wooden footsteps   0 of 8
+       door creaks        0 of 12
+       monster growls     0 of 12
+       grass footsteps    3 of 6
+	   stair steps and the Entity's growls and creaks were also missing.
+	 The scanner now understands counter formats and folder + prefix
+	 names. The exported game loads all of them (checked in its log).
+	 The builds in build/ and both zips have been re-exported.
+
+
+3. REFACTORS AND CLEANUP
+------------------------
+
+3.1  65 hard-coded scene paths replaced by group lookups
+	 For example get_node_or_null("/root/CottageHorror/HUD"), usually with a
+	 "/root/Main/..." fallback for a scene that no longer exists. They broke
+	 as soon as anything was renamed, and some never matched at all (see
+	 4.1).
+	 New groups, registered in _enter_tree() so they can be found from any
+	 _ready(): inventory_ui, note_ui, stash_ui, notebook_ui,
+	 perception_manager, debug_console. The existing groups are hud,
+	 player, computer_ui and environment_controller.
+
+3.2  Dead code removed (about 650 lines)
+	 - 8 scripts nothing used: batch_fix_assets, batch_tree_collision,
+	   battery, cabin_debug, claw_gouge, dev_console, item_spawner,
+	   pickup_item. They remain in git history.
+	 - NightManager:
+		 ItemSpawner cleanup and respawn (no such node exists);
+		 HUD bar hiding (the HUD has no such bars, and the path was wrong).
+	 - Bed: _trigger_sleep_intro_sequence(), which had no callers.
+	 - Pause menu: unused debug-console helper; recursive searches.
+	 - Note pickup: recursive NoteUI search.
+	 - Fallbacks to a "Player" group that doesn't exist (7 places).
+
+3.3  A highlight setting was applied to meshes it didn't highlight
+	 The culling settings were applied to every mesh of a highlighted
+	 group, including ones the generator filter skipped. They now only go
+	 on meshes that are actually highlighted.
+
+
+4. FOUND, LEFT AS IS (your call)
+--------------------------------
+
+4.1  The standoff "hallucination" effect has never appeared in play
+	 player_controller.gd looks the HUD up as
+	 "/root/CottageHorror/HorrorHUD", but the node is named "HUD". So
+	 StandoffEffect (faint Swedish text that fades in while you stare at the
+	 Entity, with a hallucination sound loop) never received the stare
+	 timer.
+	 Fixing the lookup would turn on an effect nobody has seen, and you
+	 turned down camera and screen effects before, so it's left off. To
+     turn it on, replace the lookup with:
+         get_tree().get_first_node_in_group("hud")
+     There is a comment at the spot.
+
+4.2  Left Alt toggles mouse capture in every build
+     This is a debug convenience, so Alt+Tab leaves the mouse released
+	 until Alt is pressed again. Kept because it's handy while testing.
+
+4.3  RoutineManager.get_current_objective() changes game state
+	 It advances objectives as a side effect. That's how auto-completion
+     works, but a getter that changes state is easy to trip over (it now
+     also spawns the Peeker through _advance_main_objective).
+
+4.4  The biggest scripts are worth splitting eventually
+     routine_manager.gd (1,700 lines), night_manager.gd (1,580),
+     computer_ui.gd (1,480) and player_controller.gd (1,370) each do many
+	 jobs. Splitting them is a larger refactor with real risk, so it's not
+	 done here.
+
+4.5  The exported builds use Jolt too
+	 The web build runs Jolt in WebAssembly. It loaded fine in headless
+	 Edge, but play it once after uploading.
+
+
+5. TESTS
+--------
+
+New suite: tests/code_review_test.gd (12 checks) covers:
+  - the Jolt settings;
+  - the dawn door lock after ~3 s;
+  - highlight restore;
+  - group lookups;
+  - the bed guard;
+  - the sound sets;
+  - the note pickup flow;
+  - GameTime keeping real time;
+  - the battery signal throttle;
+  - feedback thoughts;
+  - the overhead path fix.
+
+Two older tests changed state that GameTime overwrites on its next tick.
+They only passed because of the old tick timing, so they now pause
+GameTime while they do it:
+  - bugs4 #3 (waking);
+  - lore ("none stay at night").
+
+audio_test no longer checks the removed stair-footstep set in the sound
+manager. The player plays its own stair steps, and those are still tested.
+
+All 16 suites pass:
+  code_review, sites, bugs, bugs2, bugs3, bugs4, foliage, lore, fixes,
+  endings, audio, entity_behavior, hearing, climb, two_floor, nav_split

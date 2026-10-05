@@ -36,7 +36,7 @@ const FUEL_PER_CAN: float = 50.0
 
 ## ─── REFUEL SOUND EFFECT ─────────────────────────────────────────────
 ## Looping audio stream played while the player holds E to refill the
-## generator. Assign "res://assets/audio/Generator/refuel_generator.ogg"
+## generator. Assign "res://assets/audio/objects/refuel_generator.ogg"
 ## (or equivalent) in the Inspector on generator_interaction.tscn.
 ## Falls back to a hardcoded path if left null.
 @export var refuel_sound_stream: AudioStream = null
@@ -342,7 +342,7 @@ func _try_connect_portable_light() -> bool:
 	print("[Generator] Portable light spawned at: ", lamp.global_position)
 	
 	# Show HUD message
-	_show_hud_message("The portable light is now connected to the generator!")
+	_show_hud_message("There. The lamp's hooked up to the generator.")
 	
 	_is_light_connected = true
 	print("[Generator] Portable light connected and deployed at: ", lamp.global_position)
@@ -353,7 +353,7 @@ func _try_connect_portable_light() -> bool:
 func _show_hud_message(msg: String) -> void:
 	var hud = get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("show_message"):
-		hud.show_message(msg)
+		hud.show_message(msg, self)
 	else:
 		print("[Generator HUD]: ", msg)
 

@@ -1,0 +1,61 @@
+The Layout & SETUP
+
+	The Concept: Jumpscare finishes -> Fade to Black -> Dragging POV -> Hoisted & Impaled.
+
+	Preparation: Create a simple 3D mesh of a sharp branch or log. Set its visibility to false by default and place it under your DeathCam. Create a full-screen ColorRect (Black) on a CanvasLayer childed to your Cinematics node.
+
+Timeline Choreography
+
+	0.0s – 1.5s (The Jumpscare Sync): Leave the camera static. This is where your existing gameplay jumpscare triggers.
+
+	1.5s: Keyframe your black overlay canvas layer's alpha to 1.0 (Instant snap to black as the player passes out).
+
+	3.0s: Move the playhead to 3.0s. Move the DeathCam's starting position exactly to the ground layer, tilted slightly sideways to look like a head resting in the dirt. Keyframe the black overlay's alpha back to 0.0 over these 1.5 seconds.
+
+    3.0s – 7.0s (The Dirt Drag): Pull the DeathCam backward along the ground.
+
+		The Secret to Camera Shake: To fake a bumpy, violent drag through the Sparsör dirt, keyframe the camera's Z-rotation (Roll) every 0.3 seconds to fluctuate subtly between -4 and 4 degrees, while bouncing the Y-position slightly up and down.
+
+	7.0s – 8.5s (The Hoist): Animate the camera lifting sharply straight up up into the air (~3-4 meters) and tilting downward aggressively as if being forced up into a tree.
+
+	8.5s (The Impalement): Move the timeline to 8.5s. Turn the visibility of your custom branch model to true. Tilt the camera violently downward right onto it.
+
+		The Impact Shake: Create a cluster of highly intense, rapid transform keyframes over 0.5 seconds with tight positional offsets.
+
+		Blood Effect: You can add a 2D red vignette or screen space particle overlay right onto a canvas layer and keyframe its visibility to true at this exact frame.
+
+	10.0s: Fade the black overlay back to 1.0. The animation ends, and EndgameManager takes over to show the UI.
+
+Animation Blueprint 2: The Mediocre Escape
+
+This ending relies entirely on classic misdirection. The player thinks they won, the music is playing, and then you strike.
+The Layout & SETUP
+
+	The Concept: Drone-style overhead tracking shot of the driving van -> Sudden monster ambush.
+
+	Preparation: To make the van look like it's driving away, we use relative motion. You will parent the MediocreCam directly to your Van model. When you animate the van driving down your dirt road, the camera moves perfectly with it.
+
+Timeline Choreography
+
+    0.0s – 4.0s (The False Victory): Place the van at its starting location. Place the MediocreCam high up, looking down at the roof. Animate the van moving forward slowly, then accelerating down the path. Because the camera is a child, it creates a gorgeous, smooth cinematic chase tracking shot.
+
+	4.0s (The Twist): Move the playhead to 4.0s. Add a track for the Entity model's transform. Position the Entity right inside the tree line boundary.
+
+	4.0s – 5.5s (The Ambush): Animate the Entity leaping out from the foliage directly at the rear bumper of the accelerating van.
+
+	Audio Trigger: Look at the track options in your AnimationPlayer window. Click Add Track -> Audio Playback Track. Choose your Entity's GrowlAudio stream. At exactly 4.0s, drop a keyframe to play its signature charge audio scream.
+
+	6.0s: As the creature's claws face-plant directly into the lens of your tracking camera, snap a black overlay to 1.0 opacity.
+
+Animation Blueprint 3: The Good Escape
+
+This is your structural reward track for the true victory. It uses the exact same assets and setup as the mediocre escape but changes the tone completely.
+Timeline Choreography
+
+	0.0s – 5.0s (The Separation): Instead of parenting the GoodCam to the van, let's keep it completely stationary on a tripod mount right next to the crumbling Totem Anchor.
+
+    0.0s – 3.0s: Animate your Totem Anchor mesh scaling down to Vector3.ZERO or sinking physically beneath the level geometry while playing a final particle burst.
+
+    3.0s – 7.0s (Burying the Threat): Pan the camera slowly to the left, tracking your van mesh as it smoothly disappears into the distant Sparsör horizon safely.
+
+    7.0s: Slow cinematic fade-out to black.

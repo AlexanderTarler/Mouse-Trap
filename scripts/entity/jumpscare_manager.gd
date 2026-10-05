@@ -12,6 +12,8 @@ const death_screen_scene = preload("res://scenes/death_screen.tscn")
 
 ## Audio sting played during the jumpscare face-zoom.
 @export var audio_sting: AudioStream = null
+## The sting when audio_sting isn't assigned.
+const AUDIO_STING_DEFAULT := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/Bonus/Pure Horror/One-shots/stinger_ph_3.ogg"
 
 var _fade_rect: ColorRect = null
 var is_jumping: bool = false
@@ -39,8 +41,11 @@ func _ready() -> void:
 	
 	# 2. Add an audio sting player
 	_audio_sting_player = AudioStreamPlayer.new()
+	_audio_sting_player.bus = &"SFX"
 	if audio_sting:
 		_audio_sting_player.stream = audio_sting
+	elif ResourceLoader.exists(AUDIO_STING_DEFAULT):
+		_audio_sting_player.stream = load(AUDIO_STING_DEFAULT)
 	add_child(_audio_sting_player)
 	
 	# 3. Connect to the NightManager's event bus
@@ -50,7 +55,8 @@ func _ready() -> void:
 
 func _input(event: InputEvent) -> void:
 	# DEBUG: Log every left-click and what was clicked
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+	# (Debug builds only: in an exported game it raycast on every click.)
+	if OS.is_debug_build() and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		var mouse_pos = get_viewport().get_mouse_position()
 		# Use raycasting from the current camera to find what's under the cursor
 		var camera = get_viewport().get_camera_3d()
@@ -155,6 +161,9 @@ func _execute_jumpscare() -> void:
 		fade_tween.tween_property(_fade_rect, "color:a", 1.0, 0.5)
 		await fade_tween.finished
 		
+		# The death cutscene ("The Drag") plays on the black screen.
+		await _play_death_cinematic()
+		
 		# GAME OVER — always trigger the death screen after a jumpscare.
 		# The player must restart the night from the death screen.
 		_trigger_game_over()
@@ -169,6 +178,21 @@ func _execute_jumpscare() -> void:
 		player.set_physics_process(true)
 		player.set_process_input(true)
 		is_jumping = false
+
+## EndgameCinematics.play_death: our black fade steps aside while it plays
+## (it has its own), and is back up when it ends.
+func _play_death_cinematic() -> void:
+	var cinematics = get_tree().get_first_node_in_group("cinematics")
+	if not cinematics or not cinematics.has_method("play_death"):
+		return
+	cinematics.cover()
+	if _fade_rect:
+		_fade_rect.color.a = 0.0
+	await cinematics.play_death()
+	if _fade_rect:
+		_fade_rect.color.a = 1.0
+	cinematics.clear_overlay()
+
 
 func _apply_survival_penalties(player: Node3D) -> void:
 	var nm = get_node_or_null("/root/NightManager")

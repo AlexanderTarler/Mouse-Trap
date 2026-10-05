@@ -34,6 +34,9 @@ EndgameManager="*res://scripts/managers/endgame_manager.gd"
 PeekerManager="*res://scripts/peeker_manager.gd"
 MCPRuntime="*uid://d0d44kj7mgnoo"
 TutorialManager="*res://scripts/managers/tutorial_manager.gd"
+Checkpoint="*res://scripts/managers/checkpoint_manager.gd"
+Weather="*res://scripts/managers/weather.gd"
+Monologue="*res://scripts/managers/monologue.gd"
 
 [debug]
 
@@ -197,9 +200,15 @@ pause_menu={
 3d/default_cell_size=0.2
 3d/default_cell_height=0.2
 
+[physics]
+
+3d/physics_engine="Jolt Physics"
+jolt_physics_3d/limits/max_bodies=20480
+
 [rendering]
 
 textures/vram_compression/import_etc2_astc=true
 lights_and_shadows/directional_shadow/size=1024.0
 anti_aliasing/quality/msaa_3d=0.0
 environment/volumetric_fog_enabled=false
+occlusion_culling/use_occlusion_culling=true

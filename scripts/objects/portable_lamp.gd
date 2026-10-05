@@ -283,10 +283,9 @@ func drop_trap() -> void:
 		query.collision_mask = 1  # Layer 1: World/terrain geometry
 		var result: Dictionary = space_state.intersect_ray(query)
 		if result:
-			# Snap the lamp to the ground surface + half the collision box height
+			# Snap the lamp so its collision box rests on the ground.
 			var ground_y: float = result.position.y
-			var box_half_height: float = 0.2  # BoxShape3D height is 0.4, half is 0.2
-			global_position.y = ground_y + box_half_height
+			global_position.y = ground_y + _box_bottom_offset()
 			print("[PortableLamp] Ground-snapped to Y=%.2f (hit: %s)" % [global_position.y, result.collider.name])
 		else:
 			print("[PortableLamp] WARNING: No ground found beneath lamp! It may fall through.")
@@ -322,6 +321,21 @@ func drop_trap() -> void:
 	var nm: Node = get_node_or_null("/root/NightManager")
 	if nm and nm.has_method("recalculate_fuel_drain"):
 		nm.recalculate_fuel_drain()
+
+
+## How far above its collision box's bottom the lamp's origin sits (the box
+## fits the model, so it rests on the ground instead of hovering).
+func _box_bottom_offset() -> float:
+	var shape_node := get_node_or_null("CollisionShape3D") as CollisionShape3D
+	var box := shape_node.shape as BoxShape3D if shape_node else null
+	if not box:
+		return 0.1
+	return box.size.y * 0.5 - shape_node.position.y
+
+
+## Where the power cable plugs in (the lamp's hook).
+func get_cable_attach_point() -> Vector3:
+	return global_position
 
 
 ## Public API: Called by PowerCable when the cable is connected to this lamp.
@@ -363,7 +377,7 @@ func take_physical_hit(hit_direction: Vector3) -> void:
 	# Play a metallic smashing sound via HorrorSoundManager
 	var hsm: Node = get_node_or_null("/root/HorrorSoundManager")
 	if hsm and hsm.has_method("play_sound"):
-		hsm.play_sound("lamp_hit")
+		hsm.play_sound("lamp_hit", global_position)
 	
 	# Check if this is the 3rd strike — destroy the cable completely
 	if attack_strikes >= 3:
@@ -507,7 +521,7 @@ func _physics_process(delta: float) -> void:
 				if _strain_sound_cooldown <= 0.0:
 					var hsm: Node = get_node_or_null("/root/HorrorSoundManager")
 					if hsm and hsm.has_method("play_sound"):
-						hsm.play_sound("cable_strain")
+						hsm.play_sound("cable_strain", global_position)
 					_strain_sound_cooldown = 1.5
 		
 		# Smoothly interpolate position to the hand marker
@@ -586,17 +600,27 @@ func trigger_overload() -> void:
 	print("[PortableLamp] Overload active! Drain rate: %.1f | Light energy: %.1f" % [energy_drain_rate, lamp_light.light_energy if lamp_light else 0.0])
 
 
-## Auto-monitors the overload state. While overloaded, if the generator
-## fuel reaches 0 (blackout), the overload is automatically seized/shut off.
-## The overload CANNOT be manually disabled by the player — this is the
-## ONLY exit path (fuel exhaustion), matching Task 1 requirements.
+## Auto-monitors the power. The moment the generator runs dry (or is
+## switched off), the overload ends and the lamp goes dark; it has to be
+## switched on again from the terminal once the generator runs. The overload
+## CANNOT be manually disabled by the player — fuel exhaustion is its ONLY
+## exit path, matching Task 1 requirements.
 func _process(_delta: float) -> void:
-	if not is_overloaded:
+	if not is_overloaded and not is_on:
 		return
 	var nm: Node = get_node_or_null("/root/NightManager")
-	if nm and nm.generator_fuel <= 0.0:
-		print("[PortableLamp] Generator fuel depleted! Overload automatically shut down.")
-		reset_overload()
+	if nm and (nm.generator_fuel <= 0.0 or not nm.is_generator_on):
+		if is_overloaded:
+			print("[PortableLamp] Generator fuel depleted! Overload automatically shut down.")
+			reset_overload()
+		if lamp_light and lamp_light.visible:
+			lamp_light.visible = false
+			var hsm: Node = get_node_or_null("/root/HorrorSoundManager")
+			if hsm and hsm.has_method("play_sound"):
+				hsm.play_sound("lamp_off", global_position)
+		energy_drain_rate = 0.0
+		if nm.has_method("recalculate_fuel_drain"):
+			nm.recalculate_fuel_drain()
 
 
 ## Resets the Overload state, restoring the original drain rate and light

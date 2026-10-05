@@ -57,7 +57,14 @@ var is_locked: bool = false:
 var _entry_link: CabinEntryLink = null
 
 
+## Trying a locked door when locked_sound isn't assigned: the heavy lock
+## jiggled, pitched up.
+const LOCKED_SOUND_DEFAULT := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Doors & Drawers/heavy_door_lock-unlock_1.ogg"
+
+
 func _ready() -> void:
+	if not locked_sound and ResourceLoader.exists(LOCKED_SOUND_DEFAULT):
+		locked_sound = load(LOCKED_SOUND_DEFAULT)
 	# Save the baseline rotation so we always return to a clean closed state
 	default_rotation_y = rotation_degrees.y
 	
@@ -140,6 +147,7 @@ func interact() -> void:
 	
 	# Normal door toggle (open/close)
 	is_open = not is_open
+	NoiseEvent.emit(self, global_position, &"door")
 	is_animating = true
 	
 	# ─── ENTITY DOOR OPEN DEBUG LOG ─────────────────────────────────
@@ -190,6 +198,12 @@ func interact() -> void:
 ## Only available when the door is closed and the player has the key.
 ## Unlocking just unlocks the door (stays closed) — player can then open it with a quick tap.
 ## Locking keeps the door closed.
+## Checkpoint restored is_open / is_locked: swing straight to that position.
+func _on_checkpoint_restored() -> void:
+	is_animating = false
+	rotation_degrees.y = default_rotation_y + (open_angle if is_open else 0.0)
+
+
 func toggle_lock() -> void:
 	if is_animating:
 		return
@@ -266,6 +280,7 @@ func _unlock_door() -> void:
 	# Unlock and open the door
 	is_locked = false
 	is_open = true
+	NoiseEvent.emit(self, global_position, &"door")
 	is_animating = true
 	
 	var target_angle = default_rotation_y + open_angle
@@ -280,7 +295,7 @@ func _unlock_door() -> void:
 func _play_locked_sound() -> void:
 	if locked_sound and door_audio:
 		door_audio.stream = locked_sound
-		door_audio.pitch_scale = randf_range(0.9, 1.1)
+		door_audio.pitch_scale = randf_range(1.2, 1.35)
 		door_audio.play()
 
 
@@ -322,8 +337,6 @@ func _play_lock_unlock_sound(is_locking: bool) -> void:
 ## Returns true if the player is currently in an exhausted state (Day 3+).
 func _is_player_exhausted() -> bool:
 	var player_node = get_tree().get_first_node_in_group("player") as Node3D
-	if not player_node:
-		player_node = get_tree().get_first_node_in_group("Player") as Node3D
 	return player_node and "is_exhausted" in player_node and player_node.is_exhausted
 
 
@@ -332,33 +345,12 @@ func _show_hint(message: String) -> void:
 	print("[Door] ", message)
 	var hud = get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("show_message"):
-		hud.show_message(message)
+		hud.show_message(message, self)
 
 
-## Shows the exhaustion message as a centered event text that fades
-## after 5 seconds. Bypasses the HUD's usual 3-second event timer by
-## targeting the event_label directly and using a Tween with a 5s delay.
+## The exhaustion line, as the player's thought over the door.
 func _show_exhaustion_message(message: String) -> void:
-	print("[Door] ", message)
-	var hud = get_tree().get_first_node_in_group("hud")
-	if not hud:
-		return
-	
-	# Access the HUD's internal event_label and event_timer nodes
-	var event_label = hud.get_node_or_null("EventLabel") as Label
-	var event_timer_node = hud.get_node_or_null("EventTimer") as Timer
-
-	if event_label and event_timer_node:
-		# Display the message centered on screen
-		event_label.text = message
-		event_label.modulate = Color(1, 1, 1, 1)
-		# Set 5-second timer before fade
-		event_timer_node.wait_time = 5.0
-		event_timer_node.start()
-	else:
-		# Fallback: use the standard show_message
-		if hud.has_method("show_message"):
-			hud.show_message(message)
+	_show_hint(message)
 
 
 ## Closes and locks the door with a smooth animation (used by NightManager

@@ -172,6 +172,13 @@ func _input(event: InputEvent) -> void:
 			_generator_refuel_target = generator_target
 			_has_generator_refuel_started = true
 			generator_target.start_refuel()
+		# Pressing E at something (a tap, a hold on the generator or a door)
+		# is what the interact hint teaches.
+		var aimed_at: bool = generator_target != null or _find_door_target() != null 			or (im and im.has_method("get_current_target") and im.get_current_target() != null)
+		if aimed_at:
+			var tm := get_node_or_null("/root/TutorialManager")
+			if tm and tm.has_method("mark_learned"):
+				tm.mark_learned("interact")
 		
 	elif not event.pressed and _e_is_held:
 		# E released
@@ -407,6 +414,7 @@ func _drop_carried_lamp() -> void:
 		print("[PhysicalGrab] PortableLamp dropped.")
 	
 	_carried_lamp = null
+	_learned_pickup_drop()
 
 
 
@@ -434,12 +442,22 @@ func _drop_object() -> void:
 	_grabbed_body.freeze = false
 	_grabbed_body.gravity_scale = _saved_gravity_scale
 	
+	NoiseEvent.emit(self, _grabbed_body.global_position, &"drop")
+	
 	# Give it a tiny nudge forward so it doesn't just drop straight down
 	var camera_forward = -_camera.global_transform.basis.z if _camera else Vector3.FORWARD
 	_grabbed_body.linear_velocity = camera_forward * 0.5
 	
 	_grabbed_body = null
 	_is_grabbing = false
+	_learned_pickup_drop()
+
+
+## The pick up / drop hint: done once something was picked up and dropped.
+func _learned_pickup_drop() -> void:
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("mark_learned"):
+		tm.mark_learned("pickup_drop")
 
 
 ## Finds a door target in front of the camera that has toggle_lock() method.

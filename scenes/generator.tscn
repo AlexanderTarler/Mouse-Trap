@@ -24,7 +24,7 @@ radius = 0.3
 script = ExtResource("1_rqoq6")
 cabin_light_drain_rate = 0.25
 porch_light_drain_rate = 0.15
-base_drain_rate = 0.06
+base_drain_rate = 0.042
 generator_switch_sfx = ExtResource("2_kgmdj")
 
 [node name="generator_1" parent="." unique_id=1280159935 instance=ExtResource("1_5yxne")]

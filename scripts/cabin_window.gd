@@ -50,8 +50,8 @@ class_name CabinWindow
 ## Level designers should explicitly tag second-floor windows rather than
 ## relying on Y-coordinate math, which can be unreliable with varying
 ## terrain heights and foundation elevations.
-## When true, the Entity will pathfind to the wall base, climb vertically
-## (CLIMB_TO_WINDOW state), and then transition to WINDOW_PEEK to breach.
+## When true, the Entity (from Night 4) climbs the wall to cling outside it,
+## peeks and breaks in from there (see CabinEntryLink.climb).
 @export var is_upstairs_window: bool = false
 
 ## ─── TUTORIAL: Broken Window ────────────────────────────────────────────────
@@ -82,6 +82,10 @@ var _boarding_progress: float = 0.0
 
 ## How long the player must hold E to add one plank to this window.
 const BOARD_PER_PLANK_TIME: float = 4.0
+
+## Seconds between hammer-blow noises while boarding (see NoiseEvent.emit).
+const HAMMER_NOISE_INTERVAL: float = 1.0
+var _hammer_noise_timer: float = 0.0
 
 ## Whether to show an extra visual plank while the player is holding E.
 ## Set to true when start_hold_interact() begins, set to false in
@@ -174,7 +178,39 @@ var _deferred_plank_swap: bool = false
 var _deferred_swap_timer: float = 0.0
 
 
+## Copies of the intact glass and crossbars (shattering frees them), so a
+## checkpoint from before the break can put them back.
+var _pristine_templates: Array[Node] = []
+
+
+func _keep_pristine_templates() -> void:
+	var pristine := get_node_or_null("PristineVisuals")
+	if not pristine:
+		return
+	for child in pristine.get_children():
+		_pristine_templates.append(child.duplicate())
+
+
+## Checkpoint restored this window's state: rebuild what it looks like.
+func _on_checkpoint_restored() -> void:
+	var pristine := get_node_or_null("PristineVisuals")
+	if pristine and not is_glass_shattered:
+		# Only the pieces shattering freed (the glass pane, the crossbars).
+		for template in _pristine_templates:
+			if not pristine.has_node(NodePath(template.name)):
+				var piece := template.duplicate()
+				pristine.add_child(piece)
+				piece.visible = true
+	if is_instance_valid(_glass_shards) and "emitting" in _glass_shards:
+		_glass_shards.emitting = false
+	_update_window_visuals()
+	_update_plank_visuals()
+	_update_nav_blocker()
+	_update_entry_link()
+
+
 func _ready() -> void:
+	_keep_pristine_templates()
 	# Add to the WindowMarkers group so the Entity AI can find this window
 	add_to_group("WindowMarkers")
 	
@@ -318,20 +354,21 @@ func _update_window_visuals() -> void:
 
 
 ## True when the Entity can climb through: the glass is gone and no planks
-## remain. Upstairs windows are never passable from the ground.
+## remain. (Upstairs it has to climb the wall to get there, from Night 4.)
 func is_passable() -> bool:
-	return is_glass_shattered and not is_boarded and not is_upstairs_window
+	return is_glass_shattered and not is_boarded
 
 
+## Upstairs windows get a climbing link: from the ground below (WindowMarker)
+## up the wall and in (see CabinEntryLink.climb).
 func _create_entry_link() -> void:
-	if is_upstairs_window:
-		return
 	var outside := get_node_or_null("WindowMarker") as Node3D
 	var inside := _indoor_breach_waypoint
 	if not outside or not inside:
 		push_warning("CabinWindow '%s': missing WindowMarker or IndoorBreachWaypoint; no navigation link created." % window_id)
 		return
 	_entry_link = CabinEntryLink.create(self, CabinEntryLink.Kind.WINDOW, outside, inside, is_passable())
+	_entry_link.climb = is_upstairs_window
 
 
 func _update_entry_link() -> void:
@@ -516,6 +553,11 @@ func _process_hold_interact(delta: float) -> void:
 		return
 	
 	_boarding_progress += delta
+	# Every hammer blow is a noise the Entity may hear.
+	_hammer_noise_timer += delta
+	if _hammer_noise_timer >= HAMMER_NOISE_INTERVAL:
+		_hammer_noise_timer = 0.0
+		NoiseEvent.emit(self, global_position, &"hammer")
 	
 	# Clamp to avoid overshooting
 	if _boarding_progress >= BOARD_PER_PLANK_TIME:
@@ -628,6 +670,30 @@ func get_secure_type() -> String:
 	return ""
 
 
+## Blows on the planks: a dull thud, and a wood crack when one gives way.
+const PLANK_SFX_DIR := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Misc/"
+const PLANK_HIT_PATHS: Array[String] = [
+	PLANK_SFX_DIR + "hit_1.ogg", PLANK_SFX_DIR + "hit_2.ogg", PLANK_SFX_DIR + "hit_5.ogg"]
+const PLANK_CRACK_PATHS: Array[String] = [PLANK_SFX_DIR + "crack_1_wood.ogg", PLANK_SFX_DIR + "crack_2_wood.ogg"]
+var _plank_sound: AudioStreamPlayer3D = null
+
+
+func _play_plank_sound(broken: bool) -> void:
+	if not _plank_sound:
+		_plank_sound = AudioStreamPlayer3D.new()
+		_plank_sound.name = "PlankHitSound"
+		_plank_sound.bus = &"SFX"
+		_plank_sound.unit_size = 4.0
+		_plank_sound.max_distance = 35.0
+		add_child(_plank_sound)
+	var path: String = (PLANK_CRACK_PATHS if broken else PLANK_HIT_PATHS).pick_random()
+	if not ResourceLoader.exists(path):
+		return
+	_plank_sound.stream = load(path)
+	_plank_sound.pitch_scale = randf_range(0.8, 1.0)
+	_plank_sound.play()
+
+
 ## Called by the Entity AI to damage the barricade with a single hit.
 ## STRICTLY SEQUENTIAL TWO-PHASE EXECUTION:
 ##
@@ -663,6 +729,7 @@ func damage_barricade() -> bool:
 	# Glass is already shattered. If planks are present, apply one hit.
 	if is_boarded:
 		hits_on_current_plank += 1
+		_play_plank_sound(hits_on_current_plank >= HITS_PER_PLANK)
 		
 		# Check if the current plank is fully broken
 		if hits_on_current_plank >= HITS_PER_PLANK:

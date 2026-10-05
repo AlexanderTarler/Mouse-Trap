@@ -74,6 +74,19 @@ var _destroy_audio: AudioStreamPlayer3D = null
 ## Particle emitter for the destruction sparks.
 var _spark_particles: GPUParticles3D = null
 
+## The purge, seen: while E is held the willow shudders harder and its red
+## glow swells, with embers drifting off it. When it breaks, a flash; the
+## tree chars black with its last embers glowing in the bark, then crumbles
+## away (fading and settling a little) into rising ash, and ash keeps
+## drifting up from the spot for a while.
+var _willow: Node3D = null
+var _willow_rest := Vector3.ZERO
+var _glow: OmniLight3D = null
+var _glow_rest := 0.8
+var _purge_embers: GPUParticles3D = null
+const CHAR_COLOR := Color(0.07, 0.05, 0.04)
+const EMBER_COLOR := Color(1.0, 0.38, 0.08)
+
 ## The prompt text shown when the player looks at the totem.
 const INTERACT_PROMPT: String = "[E] Destroy Totem Anchor"
 
@@ -117,9 +130,14 @@ var _is_night: bool = false
 var _night_manager: Node = null
 
 
+## The player has "located" the anchor within this flat distance (m).
+const ANCHOR_LOCATE_RADIUS := 10.0
+
+
 func _ready() -> void:
 	add_to_group("interactable")
 	add_to_group("totem_anchor")
+	_drop_canopy_collision()
 	
 	# Find the Entity in the scene tree
 	_entity = get_tree().get_first_node_in_group("entity") as Entity
@@ -164,7 +182,14 @@ func _ready() -> void:
 	_spark_particles.process_material = particle_material
 	
 	add_child(_spark_particles)
-	
+
+	_willow = get_node_or_null("Weeping Willow") as Node3D
+	if _willow:
+		_willow_rest = _willow.position
+	_glow = get_node_or_null("GlowLight") as OmniLight3D
+	if _glow:
+		_glow_rest = _glow.light_energy
+
 	# ─── CONNECT TO NIGHT MANAGER ─────────────────────────────────────
 	_night_manager = get_node_or_null("/root/NightManager")
 	if _night_manager:
@@ -289,7 +314,10 @@ func _process(delta: float) -> void:
 	# "Locate anchor" objective exactly once.
 	if not _anchor_located_notified:
 		var locate_player = get_tree().get_first_node_in_group("player")
-		if locate_player and global_position.distance_to(locate_player.global_position) <= 5.0:
+		# Measured flat: by day the totem is buried 5 m down, and 5 m from
+		# its centre is still under the willow's canopy.
+		var flat_distance := Vector2(global_position.x - locate_player.global_position.x, global_position.z - locate_player.global_position.z).length() if locate_player else INF
+		if locate_player and flat_distance <= ANCHOR_LOCATE_RADIUS:
 			var rm_locate = get_node_or_null("/root/RoutineManager")
 			if rm_locate and rm_locate.has_method("on_anchor_located"):
 				rm_locate.on_anchor_located()
@@ -329,7 +357,8 @@ func _process(delta: float) -> void:
 			if dist_to_near_player <= TOTEM_DEFENSE_RADIUS:
 				if _entity and is_instance_valid(_entity) and not _totem_defending:
 					# A fleeing or stunned Entity can't defend it, and the
-					# overload stun keeps the defence off for its duration.
+					# lamp stun keeps the defence off until the player is back
+					# in the cabin (Entity.totem_defense_disabled).
 					var ent_state: int = _entity.get_state()
 					var can_defend: bool = ent_state != Entity.State.FLEE \
 						and ent_state != Entity.State.STUNNED \
@@ -377,8 +406,6 @@ func _process(delta: float) -> void:
 	# 1. Is the player physically holding the 'E' key?
 	if Input.is_physical_key_pressed(KEY_E):
 		var player = get_tree().get_first_node_in_group("player")
-		if not player:
-			player = get_tree().get_first_node_in_group("Player")
 		
 		# 2. Is the player within 5 meters?
 		if player and global_position.distance_to(player.global_position) <= 5.0:
@@ -440,7 +467,7 @@ func _defend_totem_with_entity() -> void:
 	_entity.defend_totem(target_pos)
 
 	print("[TotemAnchor] TOTEM DEFENSE: Entity teleported to waypoint and forced into CHARGE to defend the totem!")
-	_show_hud_message("The Entity guards the totem with violent ferocity!")
+	_show_hud_message("It won't let me near the tree!")
 
 
 ## Maintains the purge state. Called every frame from _process() while all
@@ -455,7 +482,8 @@ func _maintain_purge(delta: float) -> void:
 			hud.show_purge_progress()
 	
 	purge_progress += delta
-	
+	_purge_effects(purge_progress / total_purge_time_required)
+
 	var hud = get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("update_purge_progress"):
 		hud.update_purge_progress(purge_progress / total_purge_time_required)
@@ -468,6 +496,7 @@ func _maintain_purge(delta: float) -> void:
 func _abort_purge() -> void:
 	is_being_purged = false
 	purge_progress = 0.0
+	_purge_effects(0.0)
 	print("[TotemAnchor] Purge aborted.")
 	var hud = get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("hide_purge_progress"):
@@ -497,7 +526,7 @@ func _complete_purge() -> void:
 		_spark_particles.emitting = true
 	
 	# Show HUD feedback
-	_show_hud_message("The totem crumbles to ash! The Entity is anchored no more!")
+	_show_hud_message("It's done. Whatever held it here is gone.")
 	
 	# ─── DEFEAT THE ENTITY ──────────────────────────────────────────
 	_defeat_entity()
@@ -514,20 +543,201 @@ func _complete_purge() -> void:
 	else:
 		print("[TotemAnchor] WARNING: RoutineManager not found or missing on_anchor_destroyed method!")
 	
-	# Make the totem visually disappear instantly.
-	# PERF FIX: Do NOT tween the root's scale. This node is a StaticBody3D
-	# whose child carries a huge ConcavePolygonShape3D (the full willow-tree
-	# trimesh). Tweening scale forced the physics server to re-transform and
-	# re-insert that concave shape into the broadphase every frame, collapsing
-	# FPS to ~0.1. Hide + disable both collision shapes in a single frame.
-	visible = false
+	# The tree burns away (_burn_away); its collision goes at once.
+	# PERF: never tween this root's transform or scale (a StaticBody3D whose
+	# willow carries a huge trimesh, which re-inserted into the broadphase
+	# every frame). Only the willow's visual child moves, and its canopy
+	# collision is already off (_drop_canopy_collision).
 	_disable_collision()
+	_burn_away()
 	var willow_body := get_node_or_null("Weeping Willow/Weeping Willow/StaticBody3D") as CollisionObject3D
 	if willow_body:
 		willow_body.collision_layer = 0
 		var willow_shape := willow_body.get_node_or_null("CollisionShape3D") as CollisionShape3D
 		if willow_shape:
 			willow_shape.disabled = true
+
+
+## While E is held (`ratio` 0..1; 0 puts it back): the willow shudders, the
+## glow swells and flickers, embers drift off it.
+func _purge_effects(ratio: float) -> void:
+	if _willow:
+		var shake := 0.05 * ratio * ratio
+		_willow.position = _willow_rest + Vector3(randf_range(-shake, shake), 0.0, randf_range(-shake, shake))
+	if _glow:
+		_glow.light_energy = _glow_rest + ratio * randf_range(2.0, 4.0)
+	if ratio > 0.0 and not _purge_embers:
+		_purge_embers = _make_embers(60, 2.5)
+	elif ratio <= 0.0 and _purge_embers:
+		_stop_particles(_purge_embers, 0.0)
+		_purge_embers = null
+
+
+## The purged willow: a flash, then it chars and crumbles into ash.
+func _burn_away() -> void:
+	if _purge_embers:
+		_stop_particles(_purge_embers, 4.0)
+		_purge_embers = null
+	if _willow:
+		_willow.position = _willow_rest
+	var flash := OmniLight3D.new()
+	flash.light_color = EMBER_COLOR
+	flash.light_energy = 0.0
+	flash.omni_range = 16.0
+	flash.position = Vector3(0, 3.0, 0)
+	add_child(flash)
+	var flash_tween := flash.create_tween()
+	flash_tween.tween_property(flash, "light_energy", 12.0, 0.12)
+	flash_tween.tween_property(flash, "light_energy", 1.5, 1.2)
+	flash_tween.tween_property(flash, "light_energy", 0.0, 3.0)
+	flash_tween.tween_callback(flash.queue_free)
+	if _glow:
+		_glow.create_tween().tween_property(_glow, "light_energy", 0.0, 2.0)
+
+	_stop_particles(_make_embers(160, 3.0), 3.5)
+	_stop_particles(_make_ash(), 9.0)
+	# A low whoosh as it goes up, then the tree crumbling, fading out.
+	_burn_sound(BURN_WHOOSH, 0.0, 0.55, 0.0, 4.0)
+	_burn_sound(BURN_CRUMBLE, -3.0, 0.8, 5.0, 3.0)
+
+	if not _willow:
+		return
+	# Each surface gets its own copy of its material to char and fade.
+	var materials: Array[StandardMaterial3D] = []
+	for mesh in _willow.find_children("*", "MeshInstance3D", true, false):
+		for i in mesh.get_surface_override_material_count():
+			var source := mesh.get_active_material(i) as StandardMaterial3D
+			if not source:
+				continue
+			var burnt := source.duplicate() as StandardMaterial3D
+			burnt.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_DEPTH_PRE_PASS
+			burnt.emission_enabled = true
+			burnt.emission = EMBER_COLOR
+			burnt.emission_energy_multiplier = 0.0
+			mesh.set_surface_override_material(i, burnt)
+			materials.append(burnt)
+	for m in materials:
+		var char_tween := _willow.create_tween().set_parallel()
+		char_tween.tween_property(m, "albedo_color", Color(CHAR_COLOR, m.albedo_color.a), 1.6)
+		char_tween.tween_property(m, "emission_energy_multiplier", 2.5, 0.5)
+		char_tween.chain().tween_property(m, "emission_energy_multiplier", 0.0, 2.2)
+		var fade := _willow.create_tween()
+		fade.tween_interval(1.8)
+		fade.tween_property(m, "albedo_color:a", 0.0, 2.8).set_ease(Tween.EASE_IN)
+	var sink := _willow.create_tween()
+	sink.tween_interval(1.4)
+	sink.tween_property(_willow, "position:y", _willow_rest.y - 0.5, 3.2).set_ease(Tween.EASE_IN)
+	sink.tween_callback(_willow.hide)
+
+
+const BURN_WHOOSH := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Explosions/explosion_distant_1.ogg"
+const BURN_CRUMBLE := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Misc/crumble_1.ogg"
+
+
+## Plays `path` from the tree; after `hold` seconds (0: let it ring out) it
+## fades out over `fade` seconds.
+func _burn_sound(path: String, volume_db: float, pitch: float, hold: float, fade: float) -> void:
+	if not ResourceLoader.exists(path):
+		return
+	var sound := AudioStreamPlayer3D.new()
+	sound.bus = &"SFX"
+	sound.stream = load(path)
+	sound.volume_db = volume_db
+	sound.pitch_scale = pitch
+	sound.unit_size = 10.0
+	sound.max_distance = 60.0
+	sound.position = Vector3(0, 2.5, 0)
+	add_child(sound)
+	sound.play()
+	sound.finished.connect(sound.queue_free)
+	if hold > 0.0:
+		var tween := sound.create_tween()
+		tween.tween_interval(hold)
+		tween.tween_property(sound, "volume_db", -60.0, fade)
+		tween.tween_callback(sound.queue_free)
+
+
+func _particles_material(color: Color, emissive: bool) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	m.vertex_color_use_as_albedo = true
+	m.albedo_color = color
+	if emissive:
+		m.emission_enabled = true
+		m.emission = color
+		m.emission_energy_multiplier = 2.0
+	return m
+
+
+## Fades a particle in, holds, and fades it out over its life.
+func _fading(alpha: float) -> GradientTexture1D:
+	var gradient := Gradient.new()
+	gradient.set_color(0, Color(1, 1, 1, 0))
+	gradient.set_color(1, Color(1, 1, 1, 0))
+	gradient.add_point(0.15, Color(1, 1, 1, alpha))
+	gradient.add_point(0.6, Color(1, 1, 1, alpha * 0.7))
+	var texture := GradientTexture1D.new()
+	texture.gradient = gradient
+	return texture
+
+
+func _make_particles(amount: int, lifetime: float, extents: Vector3, height: float,
+		velocity: Vector2, rise: float, turbulence: float, size: float, material: StandardMaterial3D, alpha: float) -> GPUParticles3D:
+	var p := GPUParticles3D.new()
+	p.amount = amount
+	p.lifetime = lifetime
+	p.randomness = 0.5
+	p.visibility_aabb = AABB(Vector3(-10, -2, -10), Vector3(20, 26, 20))
+	var pm := ParticleProcessMaterial.new()
+	pm.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	pm.emission_box_extents = extents
+	pm.direction = Vector3.UP
+	pm.spread = 35.0
+	pm.initial_velocity_min = velocity.x
+	pm.initial_velocity_max = velocity.y
+	pm.gravity = Vector3(0, rise, 0)
+	pm.turbulence_enabled = true
+	pm.turbulence_noise_strength = turbulence
+	pm.angle_min = -180.0
+	pm.angle_max = 180.0
+	pm.scale_min = 0.6
+	pm.scale_max = 1.4
+	pm.color_ramp = _fading(alpha)
+	p.process_material = pm
+	var quad := QuadMesh.new()
+	quad.size = Vector2(size, size)
+	quad.material = material
+	p.draw_pass_1 = quad
+	p.position = Vector3(0, height, 0)
+	add_child(p)
+	p.emitting = true
+	return p
+
+
+## Orange embers rising off the tree.
+func _make_embers(amount: int, lifetime: float) -> GPUParticles3D:
+	return _make_particles(amount, lifetime, Vector3(2.5, 2.5, 2.5), 3.0, Vector2(0.6, 1.8), 0.4, 0.6,
+		0.05, _particles_material(EMBER_COLOR, true), 1.0)
+
+
+## Grey ash flakes drifting slowly up and away.
+func _make_ash() -> GPUParticles3D:
+	return _make_particles(320, 7.0, Vector3(3.5, 3.0, 3.5), 3.5, Vector2(0.2, 0.8), 0.12, 1.2,
+		0.08, _particles_material(Color(0.32, 0.3, 0.29), false), 0.85)
+
+
+## Stops emitting after `after` seconds and frees the emitter once its last
+## particles are gone.
+func _stop_particles(p: GPUParticles3D, after: float) -> void:
+	if not is_instance_valid(p):
+		return
+	var tween := p.create_tween()
+	tween.tween_interval(after)
+	tween.tween_callback(func(): p.emitting = false)
+	tween.tween_interval(p.lifetime + 0.5)
+	tween.tween_callback(p.queue_free)
 
 
 ## Defeats the Entity: plays a death scream, hides it, and disables it
@@ -570,10 +780,27 @@ func _defeat_entity() -> void:
 	print("[TotemAnchor] Entity defeated and disabled!")
 
 
+## The willow's collision was its whole canopy as one triangle mesh (14 x 8 x
+## 10 m, thousands of triangles): every move of the player or the Entity near
+## it was tested against all of them (~2.5 ms of physics, spikes past 12 ms),
+## and the 10-second rise at dusk and sink at dawn re-inserted it into the
+## physics world every frame. Hanging willow branches shouldn't block anyone;
+## the trunk keeps its collider (this node's own CollisionShape3D).
+func _drop_canopy_collision() -> void:
+	var willow_body := get_node_or_null("Weeping Willow/Weeping Willow/StaticBody3D") as CollisionObject3D
+	if not willow_body:
+		return
+	willow_body.collision_layer = 0
+	willow_body.collision_mask = 0
+	for shape in willow_body.get_children():
+		if shape is CollisionShape3D:
+			shape.disabled = true
+
+
 ## Shows a temporary message on the HUD.
 func _show_hud_message(msg: String) -> void:
 	var hud = get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("show_message"):
-		hud.show_message(msg)
+		hud.show_message(msg, self)
 	else:
 		print("[TotemAnchor HUD]: ", msg)

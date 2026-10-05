@@ -57,7 +57,8 @@ signal caught_player
 
 ## When false (debug console), reaching the player doesn't kill them.
 var can_kill: bool = true
-## Set while the overload stun holds; read by totem_anchor.gd.
+## Set by the overload stun and kept until the player is back in the cabin
+## (no totem teleport meanwhile); read by totem_anchor.gd.
 var totem_defense_disabled: bool = false
 ## True during the Night 2 van chase (a scripted, fully aware pursuit).
 var van_chase_active: bool = false
@@ -83,11 +84,20 @@ var _is_active: bool = false
 var _anim_playback: AnimationNodeStateMachinePlayback = null
 var _anim_player: AnimationPlayer = null
 var _catch_area: Area3D = null
+@onready var _eye_glow: OmniLight3D = get_node_or_null("ProfileGlow") as OmniLight3D
+@onready var _eye_glow_energy: float = _eye_glow.light_energy if _eye_glow else 0.0
 
 # ─── Movement state (reset every physics frame by the active state) ─────────
 var _desired_velocity := Vector3.ZERO
 var _look_target = null            ## Vector3 or null: face this instead of the movement direction.
 var _anim_override: StringName = &""
+var _model_base_y := 0.0
+var _model_base_scale := Vector3.ONE
+var _glow_base_y := 0.0
+## Indoors it shrinks a little to fit under the ceiling (1 = full size).
+var _size := 1.0
+var _target_size := 1.0
+var _headroom_check := 0.0
 var _last_nav_target := Vector3.INF
 var _nav_retarget_timer := 0.0
 const NAV_RETARGET_INTERVAL := 0.3
@@ -97,6 +107,14 @@ const TURN_SPEED := 8.0
 # ─── Link traversal (climbing through a window / walking through the door) ──
 var _traversal: Tween = null
 var _traversal_kind := -1
+## Animation for the current leg of a traversal (empty: pick from the kind).
+var _traversal_anim: StringName = &""
+
+# ─── Clinging to the wall outside an upstairs window ────────────────────────
+var _perch_link: CabinEntryLink = null
+var _perch_offset := Vector3.ZERO
+var _climb_tap_left := 0.0
+const CLIMB_TAP_INTERVAL := 0.95
 
 # ─── Stuck detection ─────────────────────────────────────────────────────────
 var _stuck_timer := 0.0
@@ -108,10 +126,15 @@ func _ready() -> void:
 	collision_layer = LAYER_ENTITY
 	collision_mask = MOVE_MASK
 	nav_agent.avoidance_enabled = false
-	nav_agent.path_desired_distance = 0.6
+	nav_agent.path_desired_distance = PATH_DESIRED_DISTANCE
 	nav_agent.target_desired_distance = 0.4
 	nav_agent.link_reached.connect(_on_link_reached)
 
+	if model:
+		_model_base_y = model.position.y
+		_model_base_scale = model.scale
+	if _eye_glow:
+		_glow_base_y = _eye_glow.position.y
 	if _anim_tree:
 		_anim_playback = _anim_tree.get("parameters/playback")
 		_anim_player = _anim_tree.get_node_or_null(_anim_tree.anim_player) as AnimationPlayer
@@ -177,6 +200,7 @@ func deactivate() -> void:
 	_is_active = false
 	van_chase_active = false
 	_cancel_traversal()
+	_release_perch()
 	velocity = Vector3.ZERO
 	_set_hidden(true)
 	if brain:
@@ -196,6 +220,29 @@ func request_state(state: State, data: Dictionary = {}) -> void:
 	if not _is_active:
 		activate()
 	brain.force(state, data)
+
+
+## Puppets it for an ending cutscene: out of the game (no thinking, moving,
+## catching or sounds of its own), visible at `xform`, playing `anim`. Call it
+## every frame to move it; deactivate() or restore it afterwards.
+func cinematic_pose(xform: Transform3D, anim: StringName, anim_speed: float = 1.0) -> void:
+	if _is_active or is_traversing() or is_clinging():
+		_is_active = false
+		_cancel_traversal()
+		_release_perch()
+		audio.stop_all()
+	velocity = Vector3.ZERO
+	visible = true
+	if collision_shape:
+		collision_shape.disabled = true
+	if _catch_area:
+		_catch_area.monitoring = false
+	# Keep its own scale; `xform` only places and turns it.
+	global_transform = Transform3D(xform.basis.orthonormalized() * Basis.from_scale(scale), xform.origin)
+	if _anim_playback and _anim_playback.get_current_node() != anim:
+		_anim_playback.start(anim)
+	if _anim_player:
+		_anim_player.speed_scale = anim_speed
 
 
 func get_state() -> State:
@@ -218,10 +265,11 @@ func start_van_chase(spawn_position: Vector3) -> void:
 	brain.force(State.STALK)
 
 
-## Called by the player every flashlight check.
-func on_flashlight(is_hit: bool, overcharged: bool) -> void:
+## Called by the player every frame. `strength` (0-1): how strongly the beam
+## hits (closer and more centred is stronger).
+func on_flashlight(is_hit: bool, overcharged: bool, strength: float = 1.0) -> void:
 	if perception:
-		perception.on_flashlight(is_hit, overcharged)
+		perception.on_flashlight(is_hit, overcharged, strength)
 
 
 ## True while an overcharged beam is on the Entity (sanity/perception effects
@@ -231,10 +279,10 @@ var is_overcharged: bool:
 		return perception != null and perception.overcharged
 
 
-## Called by player_controller.make_noise().
-func hear_noise(noise_position: Vector3, radius: float, _intensity: float = 1.0) -> void:
+## Called through NoiseEvent.emit(): a noise of `kind` at `noise_position`.
+func hear_noise(noise_position: Vector3, kind: StringName) -> void:
 	if _is_active and perception:
-		perception.hear_noise(noise_position, radius)
+		perception.hear_noise(noise_position, kind)
 
 
 ## Portable lamp overload. Ignored when far away or already stunned.
@@ -315,8 +363,8 @@ func speed_multiplier() -> float:
 # MOVEMENT (called by states every frame)
 # ═════════════════════════════════════════════════════════════════════════════
 
-## Walks along the navmesh toward `target`. Returns the remaining straight-line
-## distance.
+## Walks along the navmesh toward `target`. Returns the remaining distance
+## (see reach_distance: a target on another floor is never "close").
 func move_to(target: Vector3, speed: float) -> float:
 	_nav_retarget_timer -= get_physics_process_delta_time()
 	if _last_nav_target.distance_to(target) > NAV_RETARGET_DISTANCE and _nav_retarget_timer <= 0.0:
@@ -324,22 +372,32 @@ func move_to(target: Vector3, speed: float) -> float:
 		_last_nav_target = target
 		_nav_retarget_timer = NAV_RETARGET_INTERVAL
 	var next := nav_agent.get_next_path_position()
+	# A path point right above or below it (the navmesh riding over a step or
+	# a low rock): it can't get any closer to it on the flat, and the agent
+	# only counts a point as reached within PATH_DESIRED_DISTANCE in 3D, so
+	# it stood there for good. The reach distance covers the gap until the
+	# agent has moved on to the next point.
+	var gap := absf(next.y - global_position.y)
+	if _flat_distance(global_position, next) < 0.3 and gap > PATH_DESIRED_DISTANCE * 0.8:
+		nav_agent.path_desired_distance = gap + 0.2
+	elif nav_agent.path_desired_distance != PATH_DESIRED_DISTANCE:
+		nav_agent.path_desired_distance = PATH_DESIRED_DISTANCE
 	if not nav_agent.is_navigation_finished():
 		_set_move_direction(next - global_position, speed * speed_multiplier())
-	return _flat_distance(global_position, target)
+	return reach_distance(global_position, target)
 
 
 ## Moves straight toward `target`, ignoring the navmesh (short hops only).
 func move_direct(target: Vector3, speed: float) -> float:
 	_set_move_direction(target - global_position, speed * speed_multiplier())
-	return _flat_distance(global_position, target)
+	return reach_distance(global_position, target)
 
 
 ## True when the navmesh has no route closer than `tolerance` to `target`.
 func is_unreachable(target: Vector3, tolerance: float = 1.5) -> bool:
 	var map := get_world_3d().navigation_map
 	var path := NavigationServer3D.map_get_path(map, global_position, target, true)
-	return path.is_empty() or _flat_distance(path[path.size() - 1], target) > tolerance
+	return path.is_empty() or reach_distance(path[path.size() - 1], target) > tolerance
 
 
 func stop() -> void:
@@ -354,9 +412,19 @@ func play_anim(anim: StringName) -> void:
 	_anim_override = anim
 
 
+## Scales the glow around its head: 1 is normal, higher flares it (the charge
+## wind-up).
+func set_eye_glow(multiplier: float) -> void:
+	if _eye_glow:
+		_eye_glow.light_energy = _eye_glow_energy * multiplier
+
+
 ## Teleports only if neither the current position nor `target` is in the
-## player's view. Returns whether it happened.
+## player's view, and it isn't in the middle of a move (climbing down a wall,
+## vaulting a window) or holding on to a wall. Returns whether it happened.
 func try_teleport(target: Vector3) -> bool:
+	if is_traversing() or is_clinging():
+		return false
 	if perception.is_in_player_view(global_position) or perception.is_in_player_view(target):
 		return false
 	_teleport(target)
@@ -365,6 +433,7 @@ func try_teleport(target: Vector3) -> bool:
 
 func _teleport(target: Vector3) -> void:
 	_cancel_traversal()
+	_release_perch()
 	global_position = target
 	velocity = Vector3.ZERO
 	nav_agent.target_position = target
@@ -384,8 +453,24 @@ func _set_move_direction(direction: Vector3, speed: float) -> void:
 	_desired_velocity = direction.normalized() * speed
 
 
+## How close (3D) a path point must be to count as reached (see move_to).
+const PATH_DESIRED_DISTANCE := 0.6
+
+
 static func _flat_distance(a: Vector3, b: Vector3) -> float:
 	return Vector2(a.x - b.x, a.z - b.z).length()
+
+
+## Height difference beyond which two points are on different floors.
+const FLOOR_GAP := 1.5
+
+## Distance for "have I got there?": horizontal, so slopes and step heights
+## don't matter, unless the points are on different floors: then the height
+## is added, so standing below an upstairs room never counts as being in it.
+static func reach_distance(a: Vector3, b: Vector3) -> float:
+	var flat := _flat_distance(a, b)
+	var rise := absf(a.y - b.y)
+	return flat + rise if rise > FLOOR_GAP else flat
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -400,11 +485,26 @@ func _physics_process(delta: float) -> void:
 	_look_target = null
 	_anim_override = &""
 
+	# The totem defence, off since the lamp's stun, comes back once the
+	# player is inside the cabin again.
+	if totem_defense_disabled and perception.player_inside and brain.state_id != State.STUNNED:
+		totem_defense_disabled = false
+
 	if not is_traversing():
 		brain.tick(delta)
-		_check_link_crossing()
+		if not is_clinging():
+			_check_link_crossing()
 
 	if is_traversing():
+		_update_climb_sounds(delta)
+		_update_animation(delta)
+		return
+	if is_clinging():
+		# Holding on outside the window: no gravity, no walking.
+		var hold := world.perch_position(_perch_link) + _perch_offset
+		global_position = global_position.lerp(hold, clampf(delta * 6.0, 0.0, 1.0))
+		velocity = Vector3.ZERO
+		_face_window(_perch_link)
 		_update_animation(delta)
 		return
 
@@ -412,6 +512,10 @@ func _physics_process(delta: float) -> void:
 	velocity.z = _desired_velocity.z
 	if is_on_floor():
 		velocity.y = 0.0
+		# On a slope (the stair ramp) move along the floor: pushing
+		# horizontally into it stalls the capsule partway up.
+		if get_floor_normal().y < 0.99:
+			velocity = velocity.slide(get_floor_normal()).normalized() * velocity.length()
 	else:
 		velocity += get_gravity() * delta
 	move_and_slide()
@@ -420,8 +524,44 @@ func _physics_process(delta: float) -> void:
 	_update_stuck(delta)
 	_check_catch()
 	traces.update_tracks(is_on_floor())
-	audio.update_footsteps(delta, Vector2(get_real_velocity().x, get_real_velocity().z).length())
+	var ground_speed := Vector2(get_real_velocity().x, get_real_velocity().z).length()
+	audio.update_footsteps(delta, ground_speed)
+	audio.update_floor_creaks(delta, ground_speed)
+	audio.update_murmurs(delta)
 	_update_animation(delta)
+
+
+## Keeps its feet on the ground whatever animation plays (ANIM_GROUND_OFFSET),
+## easing between them as the animations cross-fade; and indoors keeps its
+## head under the ceiling (walking upright it is taller than the ground
+## floor's 2.85 m, and its head poked up through the floor above).
+func _process(delta: float) -> void:
+	if not model or not _anim_playback or not visible:
+		return
+	_headroom_check -= delta
+	if _headroom_check <= 0.0:
+		_headroom_check = HEADROOM_CHECK_INTERVAL
+		_target_size = _fit_under_ceiling()
+	_size = lerpf(_size, _target_size, clampf(delta * 4.0, 0.0, 1.0))
+	model.scale = _model_base_scale * _size
+	if _eye_glow:
+		_eye_glow.position.y = _glow_base_y * _size
+	var target: float = _model_base_y + ANIM_GROUND_OFFSET.get(_anim_playback.get_current_node(), 0.0) * _size
+	model.position.y = lerpf(model.position.y, target, clampf(delta * 8.0, 0.0, 1.0))
+
+
+## Its size under whatever is above it indoors: full size if its head fits
+## (TALLEST plus HEADROOM), smaller if not, never below MIN_SIZE.
+func _fit_under_ceiling() -> float:
+	if not perception or not perception.entity_inside or not is_inside_tree():
+		return 1.0
+	var from := global_position + Vector3.UP * 0.5
+	var query := PhysicsRayQueryParameters3D.create(from, global_position + Vector3.UP * (TALLEST + HEADROOM), LAYER_WORLD)
+	query.exclude = [get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if hit.is_empty():
+		return 1.0
+	return clampf((hit.position.y - global_position.y - HEADROOM) / TALLEST, MIN_SIZE, 1.0)
 
 
 func _update_facing(delta: float) -> void:
@@ -511,10 +651,10 @@ func _check_link_crossing() -> void:
 	for link in world.entries():
 		if not link.enabled:
 			continue
-		if _flat_distance(global_position, link.start_position) < LINK_CROSS_NEAR 				and _flat_distance(next, link.end_position) < LINK_CROSS_NEXT:
+		if reach_distance(global_position, link.start_position) < LINK_CROSS_NEAR 				and reach_distance(next, link.end_position) < LINK_CROSS_NEXT:
 			_traverse(link, link.start_position, link.end_position)
 			return
-		if _flat_distance(global_position, link.end_position) < LINK_CROSS_NEAR 				and _flat_distance(next, link.start_position) < LINK_CROSS_NEXT:
+		if reach_distance(global_position, link.end_position) < LINK_CROSS_NEAR 				and reach_distance(next, link.start_position) < LINK_CROSS_NEXT:
 			_traverse(link, link.end_position, link.start_position)
 			return
 
@@ -531,6 +671,9 @@ func _on_link_reached(details: Dictionary) -> void:
 ## Carries the Entity across an entry link. Collision is off during the move:
 ## windows are climbed over the sill, the door is walked through after opening.
 func _traverse(link: CabinEntryLink, start: Vector3, end: Vector3) -> void:
+	if link.climb:
+		_traverse_climb(link, start.distance_to(link.start_position) < start.distance_to(link.end_position))
+		return
 	_traversal_kind = link.kind
 	collision_mask = 0
 	velocity = Vector3.ZERO
@@ -558,7 +701,9 @@ func _traverse(link: CabinEntryLink, start: Vector3, end: Vector3) -> void:
 func _end_traversal() -> void:
 	_traversal = null
 	_traversal_kind = -1
-	collision_mask = MOVE_MASK
+	_traversal_anim = &""
+	if not is_clinging():
+		collision_mask = MOVE_MASK
 	_last_nav_target = Vector3.INF
 	_nav_retarget_timer = 0.0
 	_stuck_timer = 0.0
@@ -572,11 +717,169 @@ func _cancel_traversal() -> void:
 
 
 # ═════════════════════════════════════════════════════════════════════════════
+# CLIMBING (upstairs windows, from Night 4)
+# ═════════════════════════════════════════════════════════════════════════════
+# It climbs the wall below an upstairs window and clings outside it (on the
+# ledge where there is one): peeking, tapping and breaking the glass happen
+# from there. It vaults in from the wall, climbs back down when it gives up,
+# and drops off when it is driven away. A route through an open upstairs
+# window (its link) does the whole climb and vault in one go.
+
+func can_climb() -> bool:
+	return is_dev_mode() or current_night() >= config.climb_night
+
+
+## Holding on to the wall outside an upstairs window (including while ducking).
+func is_clinging() -> bool:
+	return _perch_link != null
+
+
+## Clinging outside `link`'s window, not in the middle of a move.
+func is_perched_at(link: CabinEntryLink) -> bool:
+	return _perch_link == link and not is_traversing()
+
+
+## Climbs from the ground below `link`'s window to cling outside it.
+func climb_to_perch(link: CabinEntryLink) -> void:
+	if is_traversing() or is_clinging():
+		return
+	var perch := world.perch_position(link)
+	var base := Vector3(perch.x, link.start_position.y, perch.z)
+	_begin_climb(link)
+	_face_window(link)
+	traces.scratch_climb(link, base, perch)
+	_traversal.tween_callback(_set_traversal_anim.bind(&"Stalk"))
+	_traversal.tween_property(self, "global_position", base, maxf(global_position.distance_to(base) / config.approach_speed, 0.2))
+	_tween_climb(base, perch, &"ClimbUp")
+	_traversal.tween_callback(_set_perch.bind(link))
+
+
+## Lets go of the wall: climbs back down, or (`scared`) drops off.
+func leave_perch(scared: bool) -> void:
+	if not is_clinging() or is_traversing():
+		return
+	var link := _perch_link
+	var base := Vector3(global_position.x, link.start_position.y, global_position.z)
+	_perch_offset = Vector3.ZERO
+	_begin_climb(link)
+	if scared:
+		_traversal.tween_callback(_set_traversal_anim.bind(&"entity_in_light"))
+		_traversal.tween_property(self, "global_position", base, config.drop_time) \
+			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+		_traversal.tween_callback(audio.play_drop_thud)
+	else:
+		_tween_climb(global_position, base, &"ClimbDown")
+	_traversal.tween_callback(_set_perch.bind(null))
+
+
+## From the wall, in through the (open) window.
+func enter_from_perch(link: CabinEntryLink) -> void:
+	if not is_perched_at(link) or not link.enabled:
+		return
+	_begin_climb(link)
+	_traversal.tween_callback(_set_perch.bind(null))
+	_tween_vault(global_position, link.end_position)
+
+
+## Ducks below the sill (`down`) or comes back up while clinging.
+func set_perch_duck(down: bool) -> void:
+	_perch_offset = Vector3.DOWN * config.perch_duck_drop if down else Vector3.ZERO
+
+
+## A route through an open upstairs window: the whole climb in one move.
+func _traverse_climb(link: CabinEntryLink, inward: bool) -> void:
+	var perch := world.perch_position(link)
+	var base := Vector3(perch.x, link.start_position.y, perch.z)
+	_begin_climb(link)
+	_face_window(link)
+	if inward:
+		traces.scratch_climb(link, base, perch)
+		_traversal.tween_property(self, "global_position", base, maxf(global_position.distance_to(base) / config.approach_speed, 0.2))
+		_tween_climb(base, perch, &"ClimbUp")
+		_tween_vault(perch, link.end_position)
+	else:
+		_tween_vault(global_position, perch)
+		_traversal.tween_callback(_face_window.bind(link))
+		_tween_climb(perch, base, &"ClimbDown")
+		_traversal.tween_property(self, "global_position", link.start_position, 0.3)
+
+
+func _begin_climb(link: CabinEntryLink) -> void:
+	_traversal_kind = link.kind
+	collision_mask = 0
+	velocity = Vector3.ZERO
+	_climb_tap_left = 0.0
+	_traversal = create_tween()
+	_traversal.finished.connect(_end_traversal)
+
+
+func _tween_climb(from: Vector3, to: Vector3, anim: StringName) -> void:
+	_traversal.tween_callback(_set_traversal_anim.bind(anim))
+	_traversal.tween_property(self, "global_position", to, maxf(from.distance_to(to) / config.climb_speed, 0.3))
+
+
+func _tween_vault(from: Vector3, to: Vector3) -> void:
+	var apex := (from + to) * 0.5 + Vector3.UP * 0.6
+	var half := config.vault_time * 0.5
+	_traversal.tween_callback(_set_traversal_anim.bind(&"EnterWindow"))
+	_traversal.tween_callback(audio.play_vault)
+	_traversal.tween_property(self, "global_position", apex, half).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	_traversal.tween_property(self, "global_position", to, half).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
+
+
+func _set_traversal_anim(anim: StringName) -> void:
+	_traversal_anim = anim
+
+
+func _set_perch(link: CabinEntryLink) -> void:
+	_perch_link = link
+
+
+## Claws on the logs while it climbs.
+func _update_climb_sounds(delta: float) -> void:
+	if _traversal_anim != &"ClimbUp" and _traversal_anim != &"ClimbDown":
+		return
+	_climb_tap_left -= delta
+	if _climb_tap_left <= 0.0:
+		_climb_tap_left = CLIMB_TAP_INTERVAL
+		audio.play_climb_scrape(global_position + Vector3.UP * 1.2)
+
+
+func _face_window(link: CabinEntryLink) -> void:
+	var inward := link.end_position - link.start_position
+	rotation.y = atan2(inward.x, inward.z)
+
+
+## Drops any hold on the wall at once (teleport, deactivation).
+func _release_perch() -> void:
+	_perch_link = null
+	_perch_offset = Vector3.ZERO
+	if not is_traversing():
+		collision_mask = MOVE_MASK
+
+
+# ═════════════════════════════════════════════════════════════════════════════
 # ANIMATION & VISIBILITY
 # ═════════════════════════════════════════════════════════════════════════════
 
 ## Reference walking speed the "Stalk" animation was authored for.
 const ANIM_WALK_SPEED := 2.5
+## The top of its head at full size, walking upright (m).
+const TALLEST := 2.9
+## Space kept between its head and a ceiling (m).
+const HEADROOM := 0.2
+const MIN_SIZE := 0.7
+const HEADROOM_CHECK_INTERVAL := 0.15
+## Most of its animations hold the body higher than the walk cycle does, so
+## it floated above the ground in them. The model is lowered by this much
+## (measured: each animation's lowest hand/foot against the walk's).
+const ANIM_GROUND_OFFSET := {
+	&"Idle": -0.37,
+	&"running_crawl": -0.43,
+	&"entity_in_light": -0.31,
+	&"AttackWindow": -0.38,
+	&"entity_running": -0.17,
+}
 const ANIM_RUN_SPEED := 6.0
 
 func _update_animation(_delta: float) -> void:
@@ -586,7 +889,14 @@ func _update_animation(_delta: float) -> void:
 	var anim: StringName
 	var speed_scale := 1.0
 	if is_traversing():
-		anim = &"EnterWindow" if _traversal_kind == CabinEntryLink.Kind.WINDOW else &"Stalk"
+		if _traversal_anim != &"":
+			anim = _traversal_anim
+		else:
+			anim = &"EnterWindow" if _traversal_kind == CabinEntryLink.Kind.WINDOW else &"Stalk"
+	elif is_clinging() and _anim_override == &"":
+		# Holding still on the wall: the climb cycle, barely moving.
+		anim = &"ClimbUp"
+		speed_scale = 0.15
 	elif _anim_override != &"":
 		anim = _anim_override
 	elif horizontal_speed > 4.5:

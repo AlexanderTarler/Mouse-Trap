@@ -44,5 +44,5 @@ func interact() -> void:
 
 func get_interact_text() -> String:
 	if item_data:
-		return "[E] Pick up " + item_data.item_name
+		return "[E] Pick up " + item_data.get_display_name()
 	return "[E] Pick up Fuel Can"

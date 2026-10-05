@@ -5,8 +5,10 @@
 [ext_resource type="PackedScene" uid="uid://c1eu1053leh0u" path="res://assets/PSX Nature/Trees without colliders/pine_tree_n_1_2.glb" id="3_hpa56"]
 [ext_resource type="PackedScene" uid="uid://yeulr1y1obar" path="res://assets/PSX Nature/Trees without colliders/pine_tree_n_1_3.glb" id="4_f6g0p"]
 [ext_resource type="PackedScene" uid="uid://bdibc4du8jbue" path="res://assets/PSX Nature/Trees without colliders/pine_tree_n_1_4.glb" id="5_1qcp8"]
+[ext_resource type="Script" path="res://scripts/foliage_batcher.gd" id="99_batch"]
 
 [node name="WorldMapBorderBlock" type="Node3D" unique_id=1755779933]
+script = ExtResource("99_batch")
 
 [node name="pine_tree_n_12" parent="." unique_id=1511087607 instance=ExtResource("1_sldkm")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.46076512, 0, -0.3692901)

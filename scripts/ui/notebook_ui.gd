@@ -103,12 +103,18 @@ var _day2_hint_text: String = ""
 # Lifecycle
 # ============================================================
 
+## Found by its group (not by a path in the level).
+func _enter_tree() -> void:
+	add_to_group("notebook_ui")
+
+
 func _ready() -> void:
 	visible = false
 	process_mode = PROCESS_MODE_ALWAYS
 	
 	# Apply ink color and book styling
 	_apply_styles()
+	_improve_layout()
 	
 	# Initialize page content
 	_initialize_pages()
@@ -196,7 +202,7 @@ func _on_routine_step_changed(_step: int, objective_text: String) -> void:
 	# The RoutineManager injects a lore-friendly hint for the active
 	# nest documentation step (Alpha/Beta/Gamma). Rendered in italics.
 	if not _day2_hint_text.is_empty():
-		bbcode += "\n[i][color=gray]%s[/color][/i]" % _day2_hint_text
+		bbcode += "\n[i][color=#6e655a]%s[/color][/i]" % _day2_hint_text
 	_todo_label.text = bbcode
 
 
@@ -235,7 +241,7 @@ func _initialize_pages() -> void:
 	#
 	# Chapter 2: Personnel Credentials (always page 0)
 	_all_pages = []
-	_all_pages.append("[center][b]PERSONNEL CREDENTIALS[/b][/center]\n\n[font_size=14][b]Svea Naturinstitut[/b][/font_size]\n[font_size=11][i]Ekologisk Fältundersökning[/i][/font_size]\n\n[font_size=12][b]Researcher:[/b] Arvid Lindqvist\n[b]ID:[/b] SNI-7742-AL\n[b]Clearance:[/b] Level 3 (Ecological)\n[b]Vehicle:[/b] Unit 12 — '92 Volvo 240\n[b]Assignment:[/b] Hazel Mouse (Muscardinus avellanarius) Population Survey — Phase 2\n\n[b]─── COMPUTER LOGIN ───[/b]\n[b]Login:[/b] LUND\n[b]Password:[/b] PASSKEY1\n\n[font_size=11][i]This notebook is the property of Svea Naturinstitut.\nUnauthorised access or reproduction is a violation of the Swedish Environmental Code (Miljöbalken, 1998:808).\n\nReport lost or damaged equipment to your supervising officer immediately.[/i][/font_size]")
+	_all_pages.append(CREDENTIALS_PAGE)
 	
 	# Chapter 3: Nest Data — starts at page 1 (no nests yet documented)
 	# Chapter 4: Notes — will be appended via add_note()
@@ -247,24 +253,26 @@ func _initialize_pages() -> void:
 
 
 func _rebuild_index() -> void:
-	# UI 1 FIX: Page numbers (and the dotted leaders/"[i]Page N[/i]" suffixes)
-	# removed from the index. The index now cleanly lists only the chapter /
-	# section titles. No page-number computation is needed any more.
+	# Each chapter with where it starts and how far along it is.
 	_index_label.text = """[center][font_size=22][b]FIELD NOTEBOOK[/b][/font_size][/center]
 [center][i]Svea Naturinstitut Ecological Survey[/i][/center]
 
 [font_size=16][b]INDEX[/b][/font_size]
 
-  [b]1.[/b]  To-do
+  [b]1.[/b]  To-do   [color=#6e655a][i]opposite[/i][/color]
 
-  [b]2.[/b]  Personnel Credentials
+  [b]2.[/b]  Personnel Credentials   [color=#6e655a][i]p. 1[/i][/color]
 
-  [b]3.[/b]  Nest Data
+  [b]3.[/b]  Nest Data   [color=#6e655a][i]p. %d · %d of 3 documented[/i][/color]
 
-  [b]4.[/b]  Field Notes
+  [b]4.[/b]  Field Notes   [color=#6e655a][i]%s[/i][/color]
 
 [center]---
-Press [b][J][/b] to close[/center]"""
+[color=#6e655a][Q] / [E] turn the pages · [J] close[/color][/center]""" % [
+		_nest_data_start_page + 1,
+		_unlocked_nests.size(),
+		"p. %d · %d %s" % [_notes_start_page + 1, _unlocked_notes.size(), "entry" if _unlocked_notes.size() == 1 else "entries"] if not _unlocked_notes.is_empty() else "none yet",
+	]
 
 
 func _apply_styles() -> void:
@@ -312,9 +320,11 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_notebook"):
 		_is_open = !_is_open
 		visible = _is_open
+		_play_page_turn()
 		if _is_open:
 			current_spread = 0
 			_current_page = 0
+			_rebuild_index()
 			_update_spread()
 			var tm := get_node_or_null("/root/TutorialManager")
 			if tm and tm.has_method("mark_learned"):
@@ -332,6 +342,8 @@ func _input(event: InputEvent) -> void:
 	if not _is_open:
 		return
 
+	if event.is_action_pressed("notebook_next_page") or event.is_action_pressed("notebook_prev_page"):
+		_play_page_turn()
 	if event.is_action_pressed("notebook_next_page"):
 		if current_spread == 1:
 			# Advance by 2 pages (one spread)
@@ -391,6 +403,110 @@ func _input(event: InputEvent) -> void:
 
 
 # ============================================================
+# Layout: backdrop, paper, page numbers, page-turn sound
+# ============================================================
+
+const INK := Color("#1a1a1a")
+const PENCIL := Color("#6e655a")
+var _page_numbers: Array[Label] = []
+var _page_turn: AudioStreamWAV = null
+
+
+## The book on a dimmed screen, paper with a gutter shade and a margin
+## rule, page numbers, the stray day label hidden, page hints in ink.
+func _improve_layout() -> void:
+	# The day is shown on the To-do page; the bare label sat in the screen
+	# corner.
+	_day_label.visible = false
+	var backdrop := ColorRect.new()
+	backdrop.name = "Backdrop"
+	backdrop.color = Color(0, 0, 0, 0.55)
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(backdrop)
+	move_child(backdrop, 0)
+	for page in [_left_page, _right_page]:
+		page.draw.connect(_draw_paper.bind(page))
+		page.queue_redraw()
+		var number := Label.new()
+		number.name = "PageNumber"
+		number.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+		number.offset_left = -60
+		number.offset_right = 60
+		number.offset_top = -36
+		number.offset_bottom = -14
+		number.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		number.add_theme_color_override("font_color", PENCIL)
+		number.add_theme_font_size_override("font_size", 14)
+		number.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		page.add_child(number)
+		_page_numbers.append(number)
+	for hint_name in ["PrevHint", "NextHint"]:
+		var hint := get_node_or_null("%" + hint_name) as Label
+		if hint:
+			hint.add_theme_color_override("font_color", PENCIL)
+			hint.add_theme_constant_override("outline_size", 0)
+			hint.add_theme_constant_override("shadow_outline_size", 0)
+			hint.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0))
+			hint.add_theme_font_size_override("font_size", 14)
+
+
+## Paper: shaded toward the spine, a faint red margin rule on the outer
+## side.
+func _draw_paper(page: Panel) -> void:
+	var size := page.size
+	var left := page == _left_page
+	var gutter := 26.0
+	for i in 8:
+		var a := 0.06 * (1.0 - float(i) / 8.0)
+		var w := gutter / 8.0
+		var x := size.x - (i + 1) * w if left else i * w
+		page.draw_rect(Rect2(x, 0, w, size.y), Color(0.35, 0.25, 0.12, a))
+	var rule_x := 22.0 if left else size.x - 22.0
+	page.draw_line(Vector2(rule_x, 0), Vector2(rule_x, size.y), Color(0.7, 0.25, 0.2, 0.25), 1.5)
+
+
+func _update_page_numbers() -> void:
+	if _page_numbers.size() < 2:
+		return
+	if current_spread == 0:
+		_page_numbers[0].text = ""
+		_page_numbers[1].text = ""
+		return
+	var left := _current_page
+	_page_numbers[0].text = "— %d —" % (left + 1) if left < _all_pages.size() else ""
+	_page_numbers[1].text = "— %d —" % (left + 2) if left + 1 < _all_pages.size() else ""
+
+
+## A short paper rustle (synthesized: there's no page sound in the kit).
+func _play_page_turn() -> void:
+	if not _page_turn:
+		var rate := 22050
+		var length := int(rate * 0.22)
+		var data := PackedByteArray()
+		data.resize(length * 2)
+		var smooth := 0.0
+		for i in length:
+			var t := float(i) / length
+			# Quick swell and fade, with a crinkle in the middle.
+			var envelope := sin(t * PI) * (0.6 + 0.4 * sin(t * 40.0))
+			smooth = smooth * 0.55 + (randf() * 2.0 - 1.0) * 0.45
+			data.encode_s16(i * 2, int(clampf(smooth * envelope * 0.5, -1.0, 1.0) * 32767.0))
+		_page_turn = AudioStreamWAV.new()
+		_page_turn.format = AudioStreamWAV.FORMAT_16_BITS
+		_page_turn.mix_rate = rate
+		_page_turn.data = data
+	var player := AudioStreamPlayer.new()
+	player.bus = "SFX"
+	player.stream = _page_turn
+	player.volume_db = -14.0
+	player.pitch_scale = randf_range(0.9, 1.15)
+	add_child(player)
+	player.play()
+	player.finished.connect(player.queue_free)
+
+
+# ============================================================
 # Spread update
 # ============================================================
 
@@ -407,6 +523,8 @@ func _update_spread() -> void:
 
 	if current_spread == 1:
 		_refresh_spread_1()
+	else:
+		_update_page_numbers()
 
 
 ## Shows the current spread: left page = _all_pages[_current_page],
@@ -424,6 +542,7 @@ func _refresh_spread_1() -> void:
 		_notes_label.text = _all_pages[right_idx]
 	else:
 		_notes_label.text = ""
+	_update_page_numbers()
 
 
 # ============================================================
@@ -595,6 +714,8 @@ const NEST_HINTS: Dictionary = {
 
 const NEST_ORDER: Array[String] = ["Nest Alpha", "Nest Beta", "Nest Gamma"]
 
+const CREDENTIALS_PAGE := "[center][b]PERSONNEL CREDENTIALS[/b][/center]\n\n[font_size=16][b]Svea Naturinstitut[/b][/font_size]\n[font_size=13][i]Ekologisk Fältundersökning[/i][/font_size]\n\n[font_size=14][b]Researcher:[/b] Lund\n[b]ID:[/b] SNI-7742-L\n[b]Clearance:[/b] Level 3 (Ecological)\n[b]Vehicle:[/b] Unit 12 — field van\n[b]Assignment:[/b] Hazel dormouse (Muscardinus avellanarius) population survey — Phase 2, replacing A. Stenberg\n\n[b]─── COMPUTER LOGIN ───[/b]\n[b]Login:[/b] LUND\n[b]Password:[/b] PASSKEY1[/font_size]\n\n[font_size=12][i]This notebook is the property of Svea Naturinstitut.\nUnauthorised access or reproduction is a violation of the Swedish Environmental Code (Miljöbalken, 1998:808).\n\nReport lost or damaged equipment to your supervising officer immediately.[/i][/font_size]"
+
 
 ## ─── STATE-DRIVEN REBUILD ──────────────────────────────────────
 ## Completely clears and rebuilds _all_pages from the two backend
@@ -610,7 +731,7 @@ func _rebuild_all_pages() -> void:
 	_all_pages.clear()
 	
 	# Chapter 2: Personnel Credentials (always page 0)
-	_all_pages.append("[center][b]PERSONNEL CREDENTIALS[/b][/center]\n\n[font_size=14][b]Svea Naturinstitut[/b][/font_size]\n[font_size=11][i]Ekologisk Fältundersökning[/i][/font_size]\n\n[font_size=12][b]Researcher:[/b] Arvid Lindqvist\n[b]ID:[/b] SNI-7742-AL\n[b]Clearance:[/b] Level 3 (Ecological)\n[b]Vehicle:[/b] Unit 12 — '92 Volvo 240\n[b]Assignment:[/b] Hazel Mouse (Muscardinus avellanarius) Population Survey — Phase 2\n\n[b]─── COMPUTER LOGIN ───[/b]\n[b]Login:[/b] LUND\n[b]Password:[/b] PASSKEY1\n\n[font_size=11][i]This notebook is the property of Svea Naturinstitut.\nUnauthorised access or reproduction is a violation of the Swedish Environmental Code (Miljöbalken, 1998:808).\n\nReport lost or damaged equipment to your supervising officer immediately.[/i][/font_size]")
+	_all_pages.append(CREDENTIALS_PAGE)
 	
 	_nest_data_start_page = 1
 	
@@ -636,9 +757,11 @@ func _rebuild_all_pages() -> void:
 func _build_nest_page(nest_key: String) -> String:
 	var hint: String = NEST_HINTS.get(nest_key, "")
 	var header := "[b]Subject: %s[/b]" % nest_key
+	if _unlocked_nests.has(nest_key):
+		header += "   [color=#8a2b1d][b]DOCUMENTED[/b][/color]"
 	var page := header + "\n"
 	if not hint.is_empty():
-		page += "[i][color=gray]Hint: %s[/color][/i]\n\n" % hint
+		page += "[i][color=#6e655a]Hint: %s[/color][/i]\n\n" % hint
 	
 	if _unlocked_nests.has(nest_key):
 		var lore_text: String = NEST_LORE.get(nest_key, "")
@@ -652,7 +775,7 @@ func _build_nest_page(nest_key: String) -> String:
 					data_body = data_body.substr(header_end + 1)
 			page += data_body.strip_edges()
 	else:
-		page += "[color=gray][i]No data recorded yet. Observations will be written here once the nest is documented.[/i][/color]"
+		page += "[color=#6e655a][i]No data recorded yet. Observations will be written here once the nest is documented.[/i][/color]"
 	return page
 
 
@@ -738,7 +861,7 @@ func _play_scribble_sfx() -> void:
 	var stream := load("res://assets/audio/notebook_writing.ogg")
 	if not stream:
 		# Fallback: try UI click sound if notebook writing sound is missing
-		stream = load("res://assets/audio/UI/ui_click_success.ogg")
+		stream = load("res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/GUI/gui_click_1.ogg")
 	if not stream:
 		return
 	var player := AudioStreamPlayer.new()

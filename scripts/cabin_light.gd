@@ -35,8 +35,6 @@ class_name CabinLight
 ## It no longer gates any overload behavior in this script.
 @export var is_overload_target: bool = false
 
-## Sound played when this light switch is toggled (both ON and OFF).
-@export var light_switch_sfx: AudioStream = null
 
 
 ## The physical light emitter child (OmniLight3D or SpotLight3D).
@@ -147,6 +145,11 @@ func _should_be_lit() -> bool:
 
 ## Updates the light state immediately without any flicker animation.
 ## Used for instant transitions (power-off, initial state, toggle).
+## Checkpoint restored the switch: light up (or not) to match.
+func _on_checkpoint_restored() -> void:
+	_update_light_state()
+
+
 func _update_light_state() -> void:
 	# Kill any in-progress flicker tween
 	_cancel_flicker()
@@ -205,6 +208,9 @@ func _play_power_on_flicker() -> void:
 func entity_sabotage() -> void:
 	if is_faulty or not is_room_lit():
 		return
+	var sound_manager := get_node_or_null("/root/HorrorSoundManager")
+	if sound_manager and sound_manager.has_method("play_stinger"):
+		sound_manager.play_stinger()
 	_cancel_flicker()
 	_flicker_tween = create_tween()
 	for i in randi_range(3, 5):

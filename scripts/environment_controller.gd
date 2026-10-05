@@ -39,10 +39,22 @@ extends Node
 @export var night_tonemap_exposure: float = 0.85
 
 ## --- Night fog tuning (Inspector-editable) ---
-## Base fog density at night. Higher = thicker fog.
-@export var night_fog_density: float = 0.025
-## Base volumetric fog density at night. Higher = thicker volumetric fog.
-@export var night_vfog_density: float = 0.012
+## The night fog has two layers:
+##   - Distance fog (depth mode): nothing closer than fog_clear_distance, so it
+##     never shows up inside the cabin, thickening to fully opaque at the
+##     visibility distance.
+##   - Ground fog: the ground_fog FogVolume, densest at ground level and
+##     thinning with height, so upstairs windows see over most of it.
+## Both scale with the night's thickness (random per night, slow swells,
+## +50% from Night 3).
+## Distance (m) at which the night fog is fully opaque at normal thickness.
+@export var night_fog_visibility: float = 55.0
+## No distance fog closer than this (m), so rooms stay clear.
+@export var fog_clear_distance: float = 14.0
+## Ground fog density at ground level at normal thickness.
+@export var night_ground_fog_density: float = 0.04
+## FogVolume carrying the ground fog (its material's density is driven here).
+@export var ground_fog: FogVolume
 ## Minimum fog fluctuation multiplier (0.0-1.0). Higher = fog never fully clears at night.
 @export var night_fog_fluctuation_min: float = 0.6
 ## Maximum fog fluctuation multiplier. Higher = thicker fog peaks.
@@ -51,7 +63,15 @@ extends Node
 @export var night_fog_color: Color = Color(0.02, 0.02, 0.04)
 
 ## The ProceduralSkyMaterial to modify at runtime
-var _sky_material: ProceduralSkyMaterial
+## The sky: shaders/day_night_sky.gdshader (dusk, dawn, sun, moon, stars).
+var _sky_material: Material
+const SKY_SHADER := preload("res://shaders/day_night_sky.gdshader")
+## The sky shown glides towards the clock instead of jumping with it (night
+## starting forces the clock straight to dusk, for example): at most this
+## much of the cycle per second, so a jump plays as a short dusk or dawn.
+const GLIDE_SPEED := 0.025
+## The time the clock is at (the sky shown, cycle_progress, follows it).
+var _target_progress := -1.0
 
 ## The Environment resource to modify at runtime
 var _environment: Environment
@@ -98,6 +118,12 @@ var _cached_ambient_color: Color = Color()
 var _cached_ambient_sky_contrib: float = 0.0
 var _cached_tonemap_exposure: float = 0.0
 var _cached_sun_energy: float = 0.0
+## A storm (0 = clear, 1 = full storm; set by Weather): a grey, darker sky,
+## dimmer sun and ambient light (no fog: the rain itself is the curtain).
+var weather: float = 0.0:
+	set(value):
+		weather = clampf(value, 0.0, 1.0)
+		_apply_cycle()
 var _cached_sun_color: Color = Color()
 var _cached_sun_shadow_enabled: bool = false
 var _cached_moon_energy: float = 0.0
@@ -108,16 +134,31 @@ var _cached_fog_density: float = 0.0
 var _cached_fog_color: Color = Color()
 var _cached_vfog_enabled: bool = false
 var _cached_vfog_density: float = 0.0
+var _cached_fog_depth_end: float = 0.0
+
+## Current distance at which the fog is fully opaque (INF when there is none).
+var _fog_visibility: float = INF
+
+
+## How far the player can see through the fog right now: the distance at
+## which the distance fog becomes fully opaque, or INF when there is no fog.
+func get_fog_visibility() -> float:
+	return _fog_visibility
 
 
 func _ready() -> void:
+	add_to_group("environment_controller")
 	# Get the Environment resource from the WorldEnvironment
 	if world_environment:
 		_environment = world_environment.environment
 		if _environment and _environment.sky:
-			_sky_material = _environment.sky.sky_material as ProceduralSkyMaterial
-			if not _sky_material:
-				push_warning("EnvironmentController: Sky material is not ProceduralSkyMaterial. Sun disk may not render.")
+			# The day/night sky replaces the procedural one.
+			var shader_sky := ShaderMaterial.new()
+			shader_sky.shader = SKY_SHADER
+			_environment.sky.sky_material = shader_sky
+			_sky_material = shader_sky
+			# Stars and the moon show through the night fog.
+			_environment.fog_sky_affect = 0.35
 	else:
 		push_error("EnvironmentController: WorldEnvironment not assigned!")
 		return
@@ -166,31 +207,51 @@ func _process(delta: float) -> void:
 	# --- THROTTLE OPTIMIZATION ---
 	# Fog density, color, and volumetric parameters change gradually.
 	# Updating at 10 Hz (0.1s) saves CPU without visual degradation.
+	# The sky glides towards the clock (every frame while it does).
+	if _target_progress >= 0.0 and not is_equal_approx(cycle_progress, _target_progress):
+		var ahead := fposmod(_target_progress - cycle_progress, 1.0)
+		var step := GLIDE_SPEED * delta
+		cycle_progress = _target_progress if ahead <= step else fposmod(cycle_progress + step, 1.0)
+		is_day = cycle_progress < 0.5
+		if _environment and _sky_material:
+			_apply_cycle()
+
 	_env_tick_timer += delta
 	if _env_tick_timer < 0.1:
 		return
+	# The time since the last tick: what the timers below advance by.
+	var tick := _env_tick_timer
 	_env_tick_timer = 0.0
 
 	if not _environment or not _sky_material:
 		return
 	
-	# Advance the fog noise timer every frame so the fog density
-	# fluctuates smoothly even when the cycle is paused.
-	_fog_noise_time += delta
+	# Advance the fog noise timer (in real time) so the fog density
+	# fluctuates even when the cycle is paused.
+	_fog_noise_time += tick
+	_update_fog_reprojection()
 	
 	# If GameTime is NOT available, use our own timer
 	var gt = get_node_or_null("/root/GameTime")
 	if not gt:
-		_elapsed += delta
+		_elapsed += tick
 		cycle_progress = fmod(_elapsed / cycle_duration, 1.0)
 		is_day = cycle_progress < 0.5
 		_apply_cycle()
 
 
-func _on_game_time_changed(progress: float) -> void:
-	cycle_progress = progress
-	is_day = progress < 0.5
-	_apply_cycle()
+## The clock moved. Small steps (time passing), jumps backwards (a
+## restart) and into the next day (waking up) show at once; a jump forwards
+## within the day glides there (see GLIDE_SPEED). `snap` shows it at once
+## regardless (cutscenes).
+func _on_game_time_changed(progress: float, snap: bool = false) -> void:
+	var ahead := fposmod(progress - cycle_progress, 1.0)
+	var next_day := progress < cycle_progress
+	_target_progress = progress
+	if snap or next_day or _target_progress < 0.0 or ahead < 0.01 or ahead > 0.5:
+		cycle_progress = progress
+		is_day = progress < 0.5
+		_apply_cycle()
 
 
 ## Forces a completely dark "true night" state regardless of the day/night cycle.
@@ -272,7 +333,10 @@ func _apply_cycle() -> void:
 
 
 func _update_light_rotations(p_sun_angle: float) -> void:
-	var rotation_x: float = -PI / 2.0 - p_sun_angle
+	# Rising at progress 0, overhead at 0.25, setting at 0.5 (the brightness
+	# follows sin(angle); the old -PI/2 offset put the sun on the horizon at
+	# noon and overhead at dawn).
+	var rotation_x: float = -p_sun_angle
 	
 	if sun:
 		if not is_equal_approx(sun.rotation.x, rotation_x):
@@ -318,29 +382,42 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 	var night_sky_horizon: Color = Color(0.05, 0.05, 0.08)
 	var night_ground_bottom: Color = Color(0.01, 0.01, 0.01)
 	
-	var sky_top: Color = day_sky_top.lerp(night_sky_top, 1.0 - p_day_factor)
+	var storm_grey := Color(0.16, 0.17, 0.19) * lerpf(0.25, 1.0, p_day_factor)
+	# Dusk and dawn: the sun near the horizon.
+	var dusk := clampf(1.0 - absf(p_sun_height) / 0.35, 0.0, 1.0)
+	var dusk_top := Color(0.22, 0.24, 0.42)
+	var sky_top: Color = day_sky_top.lerp(night_sky_top, 1.0 - p_day_factor).lerp(dusk_top, dusk * 0.5).lerp(storm_grey, weather * 0.85)
 	if not _cached_sky_top_color.is_equal_approx(sky_top):
-		_sky_material.sky_top_color = sky_top
+		_set_sky("sky_top_color", sky_top)
 		_cached_sky_top_color = sky_top
+	_set_sky("night", 1.0 - p_day_factor)
+	_set_sky("dusk", dusk)
+	_set_sky("storm", weather)
+	_set_sky("cloud_cover", weather)
+	if sun:
+		_set_sky("sun_direction", sun.global_transform.basis.z)
+	if moon:
+		_set_sky("moon_direction", moon.global_transform.basis.z)
 	
-	var sky_horizon: Color = day_sky_horizon.lerp(night_sky_horizon, 1.0 - p_day_factor)
+	var dusk_horizon := Color(0.75, 0.42, 0.32)
+	var sky_horizon: Color = day_sky_horizon.lerp(night_sky_horizon, 1.0 - p_day_factor).lerp(dusk_horizon, dusk * 0.55).lerp(storm_grey * 1.3, weather * 0.85)
 	if not _cached_sky_horizon_color.is_equal_approx(sky_horizon):
-		_sky_material.sky_horizon_color = sky_horizon
+		_set_sky("sky_horizon_color", sky_horizon)
 		_cached_sky_horizon_color = sky_horizon
 	
 	var ground_bottom: Color = day_ground_bottom.lerp(night_ground_bottom, 1.0 - p_day_factor)
 	if not _cached_ground_bottom_color.is_equal_approx(ground_bottom):
-		_sky_material.ground_bottom_color = ground_bottom
+		_set_sky("ground_color", ground_bottom)
 		_cached_ground_bottom_color = ground_bottom
 	
 	# Sun angle max: slightly wider during day for a softer glow
 	var sun_angle_max: float = lerpf(8.0, 10.0, p_day_factor)
 	if not is_equal_approx(sun_angle_max, _cached_sun_angle_max):
-		_sky_material.sun_angle_max = sun_angle_max
+		_set_sky("sun_angle_max", sun_angle_max)
 		_cached_sun_angle_max = sun_angle_max
 	
 	# --- Ambient light: smoothly dim at night ---
-	var ambient_energy: float = lerpf(night_ambient_energy, 0.7, p_day_factor)
+	var ambient_energy: float = lerpf(night_ambient_energy, 0.7, p_day_factor) * lerpf(1.0, 0.5, weather)
 	if not is_equal_approx(ambient_energy, _cached_ambient_energy):
 		_environment.ambient_light_energy = ambient_energy
 		_cached_ambient_energy = ambient_energy
@@ -356,7 +433,7 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 		_cached_ambient_sky_contrib = ambient_sky_contrib
 	
 	# --- Tonemap exposure: slightly darker at night for deeper shadows ---
-	var tonemap_exposure: float = lerpf(night_tonemap_exposure, 1.2, p_day_factor)
+	var tonemap_exposure: float = lerpf(night_tonemap_exposure, 1.2, p_day_factor) * lerpf(1.0, 0.85, weather)
 	if not is_equal_approx(tonemap_exposure, _cached_tonemap_exposure):
 		_environment.tonemap_exposure = tonemap_exposure
 		_cached_tonemap_exposure = tonemap_exposure
@@ -393,19 +470,32 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 		if fog_nm and "current_night" in fog_nm and fog_nm.current_night >= 3:
 			night_multiplier = 1.5
 		
-		var fog_density: float = night_fog_density * fog_factor * fog_fluctuation * _night_fog_base * night_multiplier
-		if not is_equal_approx(fog_density, _cached_fog_density):
-			_environment.fog_density = fog_density
-			_cached_fog_density = fog_density
-		
+		var thickness: float = fog_factor * fog_fluctuation * _night_fog_base * night_multiplier
+
+		# Distance fog: clear up to fog_clear_distance, fully opaque at the
+		# visibility distance (closer when the fog is thicker). In depth mode
+		# fog_density is the opacity reached at fog_depth_end.
+		_environment.fog_mode = Environment.FOG_MODE_DEPTH
+		_environment.fog_depth_begin = fog_clear_distance
+		_fog_visibility = fog_clear_distance + (night_fog_visibility - fog_clear_distance) / maxf(thickness, 0.05)
+		if not is_equal_approx(_fog_visibility, _cached_fog_depth_end):
+			_environment.fog_depth_end = _fog_visibility
+			_cached_fog_depth_end = _fog_visibility
+		if not is_equal_approx(fog_factor, _cached_fog_density):
+			_environment.fog_density = fog_factor
+			_cached_fog_density = fog_factor
+
 		var vfog_enabled: bool = true
 		if _cached_vfog_enabled != vfog_enabled:
 			_environment.volumetric_fog_enabled = vfog_enabled
 			_cached_vfog_enabled = vfog_enabled
-		
-		var vfog_density: float = night_vfog_density * fog_factor * fog_fluctuation * _night_fog_base * night_multiplier
+
+		# Ground fog lives in the ground_fog volume only; the global volumetric
+		# density stays 0 so there is no fog up high or inside the cabin.
+		var vfog_density: float = night_ground_fog_density * thickness
 		if not is_equal_approx(vfog_density, _cached_vfog_density):
-			_environment.volumetric_fog_density = vfog_density
+			_environment.volumetric_fog_density = 0.0
+			_set_ground_fog_density(vfog_density)
 			_cached_vfog_density = vfog_density
 		
 		var day_fog_color: Color = Color(0.7, 0.75, 0.8)
@@ -423,12 +513,42 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 		if _cached_vfog_enabled != false:
 			_environment.volumetric_fog_enabled = false
 			_cached_vfog_enabled = false
+		if not is_equal_approx(_cached_vfog_density, 0.0):
+			_set_ground_fog_density(0.0)
+			_cached_vfog_density = 0.0
+		_fog_visibility = INF
+
+
+## Volumetric fog blends every frame with the previous ones (temporal
+## reprojection) to hide its noise. When the camera moves, that drags fog from
+## outside through the walls into the cabin: a haze in the rooms that grew
+## the more the player moved. Indoors it is off, so the FogVolume erasers keep
+## the rooms clear; outdoors it stays on and keeps the fog smooth.
+func _update_fog_reprojection() -> void:
+	var player := get_tree().get_first_node_in_group("player")
+	var inside: bool = player != null and player.has_method("get_player_room") and player.get_player_room() != "Outside"
+	if _environment.volumetric_fog_temporal_reprojection_enabled == inside:
+		_environment.volumetric_fog_temporal_reprojection_enabled = not inside
+
+
+## Sets a sky parameter, whichever kind of sky material is in use.
+func _set_sky(param: String, value) -> void:
+	if _sky_material is ShaderMaterial:
+		(_sky_material as ShaderMaterial).set_shader_parameter(param, value)
+	elif _sky_material and param in _sky_material:
+		_sky_material.set(param, value)
+
+
+func _set_ground_fog_density(value: float) -> void:
+	if ground_fog and ground_fog.material is FogMaterial:
+		(ground_fog.material as FogMaterial).density = value
 
 
 func _update_light_appearance(p_day_factor: float, p_sun_height: float) -> void:
 	# --- Sun light energy: smoothly scales with sun height ---
 	if sun:
-		var sun_energy: float = maxf(0.0, p_sun_height) * 2.0
+		# Under the storm clouds the sun gives a dull light (no hard shadows).
+		var sun_energy: float = maxf(0.0, p_sun_height) * 2.0 * lerpf(1.0, 0.12, weather)
 		if not is_equal_approx(sun_energy, _cached_sun_energy):
 			sun.light_energy = sun_energy
 			_cached_sun_energy = sun_energy

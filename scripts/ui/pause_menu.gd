@@ -73,31 +73,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-## Checks whether the Debug Console UI is currently open in the scene tree.
-## Returns true if a DebugConsoleUI CanvasLayer is visible.
-func _is_debug_console_open() -> bool:
-	return _find_debug_console_recursive(get_tree().root) != null
+## The debug console, if it's open (by its group).
+func _open_debug_console() -> Node:
+	var console := get_tree().get_first_node_in_group("debug_console")
+	return console if console and console.visible and console.has_method("_close_console") else null
 
-
-## Recursively searches a node and its children for the DebugConsoleUI script.
-## Returns the node if found and visible, null otherwise.
-func _find_debug_console_recursive(node: Node) -> Node:
-	if node.has_method("_close_console") and node.visible:
-		return node
-	for child in node.get_children():
-		var result = _find_debug_console_recursive(child)
-		if result:
-			return result
-	return null
 
 ## Finds and closes the stash UI if it is open.
 ## Returns true if the stash was found and closed, false otherwise.
 func _close_stash_ui() -> bool:
-	var stash_ui = get_node_or_null("/root/CottageHorror/StashUI")
-	if not stash_ui:
-		stash_ui = get_node_or_null("/root/Main/StashUI")
-	if not stash_ui:
-		stash_ui = get_tree().get_first_node_in_group("stash_ui")
+	var stash_ui = get_tree().get_first_node_in_group("stash_ui")
 	if stash_ui and stash_ui.get("_is_open"):
 		if stash_ui.has_method("_close_stash"):
 			stash_ui._close_stash()
@@ -109,9 +94,7 @@ func _close_stash_ui() -> bool:
 ## Finds and closes the inventory UI if it is open.
 ## Returns true if the inventory was found and closed, false otherwise.
 func _close_inventory_ui() -> bool:
-	var inv_ui = get_node_or_null("/root/CottageHorror/InventoryUI")
-	if not inv_ui:
-		inv_ui = get_node_or_null("/root/Main/InventoryUI")
+	var inv_ui = get_tree().get_first_node_in_group("inventory_ui")
 	if inv_ui and inv_ui.get("_is_open"):
 		if inv_ui.has_method("_close_inventory"):
 			inv_ui._close_inventory()
@@ -122,17 +105,10 @@ func _close_inventory_ui() -> bool:
 
 ## Finds and closes the computer UI if it's open.
 ## Returns true if the computer was found and closed, false otherwise.
+## (A recursive search for anything with "is_open" used to be the fallback:
+## it could find a door first.)
 func _close_computer_ui() -> bool:
-	# Check multiple possible paths for the ComputerUI
-	var computer_ui = get_node_or_null("/root/CottageHorror/ComputerUI")
-	if not computer_ui:
-		computer_ui = get_node_or_null("/root/Main/ComputerUI")
-	if not computer_ui:
-		# Search the scene root recursively as a fallback
-		var scene = get_tree().current_scene
-		if scene:
-			computer_ui = _find_computer_ui_recursive(scene)
-	
+	var computer_ui = get_tree().get_first_node_in_group("computer_ui")
 	if computer_ui and "is_open" in computer_ui and computer_ui.is_open:
 		if computer_ui.has_method("close_computer"):
 			computer_ui.close_computer()
@@ -141,22 +117,11 @@ func _close_computer_ui() -> bool:
 	return false
 
 
-## Recursively searches a node and its children for the ComputerUI script.
-func _find_computer_ui_recursive(node: Node) -> Node:
-	if "is_open" in node:
-		return node
-	for child in node.get_children():
-		var result = _find_computer_ui_recursive(child)
-		if result:
-			return result
-	return null
-
-
 ## Finds and closes the debug console if it's open and visible.
 ## Returns true if a console was found and closed, false otherwise.
 func _close_debug_console() -> bool:
-	var console = _find_debug_console_recursive(get_tree().root)
-	if console and console.has_method("_close_console") and console.visible:
+	var console := _open_debug_console()
+	if console:
 		console._close_console()
 		return true
 	return false

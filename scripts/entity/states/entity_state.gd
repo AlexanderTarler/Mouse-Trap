@@ -68,6 +68,23 @@ func on_stuck() -> void:
 
 ## Switches to `to` with `data` (for transitions that need to pass something,
 ## such as an entry point). Use as `return go(State.X, {...})` from next_state().
+## Keeps it at `link`'s outside spot: on the ground in front of a door or a
+## ground-floor window, or clinging to the wall outside an upstairs window
+## (climbing up first). True once it is there.
+func hold_at_entry(link: CabinEntryLink, speed: float) -> bool:
+	if link.climb:
+		if entity.is_perched_at(link):
+			entity.stop()
+			return true
+		if not entity.is_traversing() and entity.move_to(link.start_position, speed) < 0.8:
+			entity.climb_to_perch(link)
+		return false
+	if entity.move_to(link.start_position, speed) < 0.6:
+		entity.stop()
+		return true
+	return false
+
+
 func go(to: int, data: Dictionary = {}) -> int:
 	brain.go(to, data)
 	return NO_CHANGE

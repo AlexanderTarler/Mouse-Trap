@@ -29,6 +29,7 @@ var _watched_audio_player: AudioStreamPlayer = null
 var _watched_audio_was_playing: bool = false
 const WATCHED_AUDIO_PATH: String = "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Cinematic/sfx cinematic 53.ogg"
 const WATCHED_AUDIO_VOLUME_DB: float = -6.0
+const PLAY_WATCHED_AUDIO := false
 
 
 func _ready() -> void:
@@ -64,9 +65,7 @@ func _ready() -> void:
 	
 	# Find PerceptionManager
 	if not perception_manager:
-		perception_manager = get_node_or_null("/root/CottageHorror/Player/PerceptionManager")
-		if not perception_manager:
-			perception_manager = get_node_or_null("/root/Main/Player/PerceptionManager")
+		perception_manager = get_tree().get_first_node_in_group("perception_manager")
 	
 	# Connect to PerceptionManager signals
 	if perception_manager:
@@ -90,10 +89,12 @@ func _on_watched_intensity_changed(intensity: float) -> void:
 	# The visual darkness overlay is gone — intensity is still used below
 	# to drive the watched/whisper audio cue.
 	
-	# Play "sfx cinematic 53" when the player starts looking at the Entity.
-	# Once playing, the audio loops continuously until the player looks away
-	# (intensity drops to 0.0). At peak intensity (1.0), the volume reaches
-	# its maximum audible level and stays there.
+	# The whispers moved into the Entity's distortion field
+	# (sanity_controller.gd), which only works close by, while the player
+	# looks at it AND it sees the player. This looped on any glance within
+	# 40 m, so it stays off.
+	if not PLAY_WATCHED_AUDIO:
+		return
 	if intensity > 0.0 and not _watched_audio_was_playing:
 		if _watched_audio_player and _watched_audio_player.stream:
 			_watched_audio_player.play()

@@ -40,8 +40,9 @@ func enter(_from: int, data: Dictionary) -> void:
 	_light_kill_left = 0.0
 	_tap_left = randf_range(config.tap_interval_min, config.tap_interval_max)
 	if _rattle:
-		_stare_left = 2.5
+		_stare_left = 3.5
 		_entry.entry.interact()   # Locked: plays the rattle.
+		entity.audio.play_knocks(_entry.entry.global_position + Vector3.UP * 1.2)
 	else:
 		_stare_left = randf_range(config.peek_time_min, config.peek_time_max)
 		entity.traces.scratch_window(_entry)
@@ -51,11 +52,16 @@ func update(delta: float) -> void:
 	_light_kill_left -= delta
 	if _duck_left > 0.0:
 		_duck_left -= delta
-		entity.move_to(_duck_position, config.approach_speed)
+		if _entry.climb:
+			entity.set_perch_duck(true)   # below the sill
+		else:
+			entity.move_to(_duck_position, config.approach_speed)
 		return
+	if _entry.climb:
+		entity.set_perch_duck(false)
 
-	if entity.move_to(_entry.start_position, config.approach_speed) < 0.6:
-		entity.stop()
+	if not hold_at_entry(_entry, config.approach_speed):
+		return   # still walking up to it, or climbing
 	entity.face(_entry.end_position)
 	_stare_left -= delta
 	if _rattle:
@@ -84,7 +90,7 @@ func next_state() -> int:
 	if world.is_entry_lit(_entry):
 		if _light_kill_left > 0.0 or _try_kill_light():
 			return NO_CHANGE
-		entity.audio.play_grunt(1.3)
+		entity.audio.play_growl()
 		return S.OBSERVE
 	if _stare_left > 0.0 or _duck_left > 0.0:
 		return NO_CHANGE

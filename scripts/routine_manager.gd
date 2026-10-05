@@ -258,6 +258,21 @@ func _cancel_xray_timer(group_name: String) -> void:
 
 ## Schedules a delayed x-ray highlight for the given group.
 ## If delay is 0, applies immediately (no timer).
+## The bed glows while the objective is to go to bed, like other objectives.
+var _bed_highlighted := false
+
+
+func _update_bed_highlight(objective: String) -> void:
+	var wanted := "go to bed" in objective.to_lower()
+	if wanted == _bed_highlighted:
+		return
+	_bed_highlighted = wanted
+	if wanted:
+		highlight_target("xray_bed")
+	else:
+		clear_highlight("xray_bed")
+
+
 func highlight_target(group_name: String, delay: float = 0.0) -> void:
 	# ─── DEBUG LOG: Trace every highlight call for nest debugging ─────
 	# Always print when a nest-group highlight is scheduled so we can verify
@@ -340,35 +355,18 @@ func _do_highlight_target(group_name: String) -> void:
 		return
 	
 	for node in nodes:
+		var meshes: Array = node.find_children("*", "MeshInstance3D", true)
 		if node is MeshInstance3D:
-			if _should_highlight_mesh(node, group_name):
-				_apply_xray_to_mesh(node, mat)
-			node.extra_cull_margin = 100.0
-			if "custom_aabb" in node:
-				node.custom_aabb = AABB(Vector3(-200, -200, -200), Vector3(400, 400, 400))
-			var internal_meshes := node.find_children("*", "MeshInstance3D", true)
-			for im in internal_meshes:
-				if _should_highlight_mesh(im, group_name):
-					_apply_xray_to_mesh(im, mat)
-				im.extra_cull_margin = 100.0
-				im.custom_aabb = AABB(Vector3(-200, -200, -200), Vector3(400, 400, 400))
-			print("[RoutineManager] X-ray highlight applied via next_pass to '%s' (group: %s)" % [node.name, group_name])
-		else:
-			var mesh_children := node.find_children("*", "MeshInstance3D", true)
-			var applied_count := 0
-			for mesh_child in mesh_children:
-				if _should_highlight_mesh(mesh_child, group_name):
-					_apply_xray_to_mesh(mesh_child, mat)
-				mesh_child.extra_cull_margin = 100.0
-				if "custom_aabb" in mesh_child:
-					mesh_child.custom_aabb = AABB(Vector3(-200, -200, -200), Vector3(400, 400, 400))
+			meshes.push_front(node)
+		var applied_count := 0
+		for mesh in meshes:
+			if _should_highlight_mesh(mesh, group_name):
+				_apply_xray_to_mesh(mesh, mat)
 				applied_count += 1
-			if applied_count > 0:
-				print("[RoutineManager] X-ray highlight applied to %d MeshInstance3D children of '%s' (group: %s)" % [applied_count, node.name, group_name])
-			elif "nest" in group_name:
-				# ─── NEST DEBUG: Log when a nest node was found but had NO mesh children ──
-				var scene_path: String = node.scene_file_path if node.has_method("get_scene_file_path") else node.scene_file_path if "scene_file_path" in node else "?"
-				push_warning("[RoutineManager] NEST HIGHLIGHT FAILED: node '%s' (type=%s, scene='%s') has 0 MeshInstance3D children. find_children recursive found %d total descendants." % [node.name, node.get_class(), scene_path, node.get_child_count(true)])
+		if applied_count > 0:
+			print("[RoutineManager] X-ray highlight applied to %d mesh(es) of '%s' (group: %s)" % [applied_count, node.name, group_name])
+		elif "nest" in group_name:
+			push_warning("[RoutineManager] NEST HIGHLIGHT FAILED: node '%s' (type=%s, scene='%s') has no meshes." % [node.name, node.get_class(), node.scene_file_path])
 
 
 ## Applies the x-ray highlight to a single node and all MeshInstance3D
@@ -376,21 +374,15 @@ func _do_highlight_target(group_name: String) -> void:
 ## This is the restricted-subtree path used when a group declares an
 ## exported `highlight_target` NodePath (e.g. xray_generator → button box).
 func _apply_xray_to_subtree(root: Node, mat: Material, group_name: String) -> void:
-	var meshes: Array[MeshInstance3D] = []
+	var meshes: Array = root.find_children("*", "MeshInstance3D", true)
 	if root is MeshInstance3D:
-		meshes.append(root)
-	meshes.append_array(root.find_children("*", "MeshInstance3D", true))
-	
+		meshes.push_front(root)
 	var applied_count := 0
 	for m in meshes:
 		if _should_highlight_mesh(m, group_name):
 			_apply_xray_to_mesh(m, mat)
-		m.extra_cull_margin = 100.0
-		if "custom_aabb" in m:
-			m.custom_aabb = AABB(Vector3(-200, -200, -200), Vector3(400, 400, 400))
-		applied_count += 1
-	
-	print("[RoutineManager] X-ray highlight restricted to target '%s' (%d meshes in subtree, group: %s)." % [root.name, applied_count, group_name])
+			applied_count += 1
+	print("[RoutineManager] X-ray highlight restricted to target '%s' (%d meshes, group: %s)." % [root.name, applied_count, group_name])
 
 
 ## ─── TASK 3.2: HIGHLIGHT TARGET FILTER ──────────────────────────────
@@ -416,71 +408,61 @@ func _should_highlight_mesh(mesh: MeshInstance3D, group_name: String) -> bool:
 	return true
 
 
-## Applies x-ray next_pass material to a specific MeshInstance3D.
-## Uses next_pass on the surface override material instead of material_overlay.
+## Applies the x-ray next_pass material to a MeshInstance3D (its first
+## surface). What it had before (its own surface material override, its
+## culling margin and AABB) is kept in "_xray_saved" and put back by
+## _clear_xray_from_mesh(). (Clearing used to set the override to null,
+## wiping a material the scene had given the mesh, and the 400 m culling
+## box that lets the outline show through walls was never taken off.)
 func _apply_xray_to_mesh(mesh: MeshInstance3D, xray_mat: Material) -> void:
-	var existing_mat = null
-	var mat_idx = 0
-	
-	if mesh.get_surface_override_material_count() > 0:
-		existing_mat = mesh.get_surface_override_material(mat_idx)
-	
-	if not existing_mat and mesh.mesh:
-		existing_mat = mesh.mesh.surface_get_material(mat_idx)
-	
-	if existing_mat:
-		var clone = existing_mat.duplicate()
-		var inst_xray = xray_mat.duplicate()
-		clone.next_pass = inst_xray
-		if mesh.has_meta("_xray_original_material"):
-			mesh.remove_meta("_xray_original_material")
-		mesh.set_meta("_xray_original_material", existing_mat.resource_path if existing_mat.resource_path else "")
-		mesh.set_surface_override_material(mat_idx, clone)
-		print("[RoutineManager] next_pass x-ray applied via surface_override_material on '%s'" % mesh.name)
+	if mesh.get_surface_override_material_count() == 0:
+		return
+	if not mesh.has_meta("_xray_saved"):
+		mesh.set_meta("_xray_saved", {
+			"override": mesh.get_surface_override_material(0),
+			"margin": mesh.extra_cull_margin,
+			"aabb": mesh.custom_aabb,
+		})
+	var saved: Dictionary = mesh.get_meta("_xray_saved")
+	var base: Material = saved.override
+	if not base and mesh.mesh and mesh.mesh.get_surface_count() > 0:
+		base = mesh.mesh.surface_get_material(0)
+	var highlighted: Material
+	if base:
+		highlighted = base.duplicate()
 	else:
-		var base = StandardMaterial3D.new()
-		base.albedo_color = Color.TRANSPARENT
-		base.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		var inst_xray = xray_mat.duplicate()
-		base.next_pass = inst_xray
-		if mesh.has_meta("_xray_original_material"):
-			mesh.remove_meta("_xray_original_material")
-		mesh.set_surface_override_material(mat_idx, base)
-		print("[RoutineManager] next_pass x-ray applied via new fallback material on '%s'" % mesh.name)
+		var invisible := StandardMaterial3D.new()
+		invisible.albedo_color = Color.TRANSPARENT
+		invisible.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		highlighted = invisible
+	highlighted.next_pass = xray_mat.duplicate()
+	mesh.set_surface_override_material(0, highlighted)
+	# Seen through walls from anywhere: never culled while highlighted.
+	mesh.extra_cull_margin = 100.0
+	mesh.custom_aabb = AABB(Vector3(-200, -200, -200), Vector3(400, 400, 400))
 
 
 ## Removes the x-ray highlight from all nodes in the given group.
 ## Also cancels any pending delayed highlight for that group.
 func clear_highlight(group_name: String) -> void:
-	# Cancel any pending timer
 	_cancel_xray_timer(group_name)
-	
-	var nodes := get_tree().get_nodes_in_group(group_name)
-	for node in nodes:
+	for node in get_tree().get_nodes_in_group(group_name):
 		if node is MeshInstance3D:
 			_clear_xray_from_mesh(node)
-			var internal_meshes := node.find_children("*", "MeshInstance3D", true)
-			for im in internal_meshes:
-				_clear_xray_from_mesh(im)
-			if node.has_meta("_xray_original_material"):
-				node.remove_meta("_xray_original_material")
-		else:
-			var mesh_children := node.find_children("*", "MeshInstance3D", true)
-			for mc in mesh_children:
-				_clear_xray_from_mesh(mc)
+		for mesh in node.find_children("*", "MeshInstance3D", true):
+			_clear_xray_from_mesh(mesh)
 	print("[RoutineManager] X-ray highlight cleared for group '%s'" % group_name)
 
 
-## Clears the x-ray next_pass from a single MeshInstance3D.
+## Puts back what the mesh had before it was highlighted.
 func _clear_xray_from_mesh(mesh: MeshInstance3D) -> void:
-	var mat_idx = 0
-	if mesh.has_meta("_xray_original_material"):
-		mesh.set_surface_override_material(mat_idx, null)
-		mesh.remove_meta("_xray_original_material")
-	else:
-		var override_mat = mesh.get_surface_override_material(mat_idx)
-		if override_mat:
-			override_mat.next_pass = null
+	if not mesh.has_meta("_xray_saved"):
+		return
+	var saved: Dictionary = mesh.get_meta("_xray_saved")
+	mesh.set_surface_override_material(0, saved.override)
+	mesh.extra_cull_margin = saved.margin
+	mesh.custom_aabb = saved.aabb
+	mesh.remove_meta("_xray_saved")
 
 
 ## ─── INVENTORY HELPERS ──────────────────────────────────────────────
@@ -499,8 +481,31 @@ func _player_has_item(item_name: String) -> bool:
 
 func _advance_main_objective(target: int) -> void:
 	if target > main_objective:
+		var was := main_objective
 		main_objective = target
 		print("[RoutineManager] Main objective advanced to %d." % main_objective)
+		# "Lock the front door" done, however it completed (locked on the
+		# objective, or locked earlier and ticked off when it came up).
+		if was <= 8 and target >= 9:
+			_spawn_peeker_at.call_deferred("Landing_Window")
+		if was < 4 and target == 4:
+			_think_fuse_box.call_deferred()
+
+
+## As "Check the fuse box" comes up.
+func _think_fuse_box() -> void:
+	var monologue := get_node_or_null("/root/Monologue")
+	var box := get_tree().get_first_node_in_group("xray_fuse_box") as Node3D
+	if monologue:
+		monologue.think("It's always the goddamn fuse box.", box, 4.0, "fuse_box")
+
+
+## The scripted Peeker after a door-lock objective.
+func _spawn_peeker_at(window_id: String) -> void:
+	var pm = get_node_or_null("/root/PeekerManager")
+	if pm and pm.has_method("force_spawn_at_window"):
+		pm.force_spawn_at_window(window_id)
+		print("[RoutineManager] Peeker forced to window '%s'." % window_id)
 
 func _check_power_restored() -> void:
 	if phase2_fuse_fixed and phase2_gen_refilled and phase2_gen_turned_on:
@@ -613,9 +618,7 @@ func get_current_objective() -> String:
 					return "Check the fuse box. You have a new fuse."
 			if phase2_fuse_box_interacted:
 				return "Find a fuse in the cabin."
-			if phase2_computer_tried_no_power:
-				return "Check the fuse box. It's always the god damn fuse box."
-			return "Check the fuse box. It's always the god damn fuse box."
+			return "Check the fuse box."
 		5:
 			if phase2_gen_turned_on:
 				_advance_main_objective(6)
@@ -657,6 +660,7 @@ func get_current_objective() -> String:
 
 func _update_hud() -> void:
 	var text = get_current_objective()
+	_update_bed_highlight(str(text))
 	var step: int = 0
 	
 	if is_day3_sandbox:
@@ -765,6 +769,10 @@ func on_van_inspected() -> void:
 	print("[RoutineManager] Van inspected! Van escape checklist activated.")
 	_update_hud()
 	van_checklist_changed.emit()
+	var monologue := get_node_or_null("/root/Monologue")
+	var van := get_tree().current_scene.find_child("EscapeVan", true, false) as Node3D if get_tree().current_scene else null
+	if monologue:
+		monologue.think("The car's wrecked - I need to find parts to repair it.", van, 5.0, "van_wrecked")
 
 func on_van_part_installed(part_name: String) -> void:
 	match part_name:
@@ -813,6 +821,20 @@ func on_arvid_note_2_found() -> void:
 	side_track_step = 1
 	print("[RoutineManager] Arvid_Note_2 found! Unsanctioned Discoveries side-track activated.")
 	side_track_changed.emit()
+	# Already carrying what the track asks for: those count straight away
+	# (a fuel can picked up before the track started was never counted).
+	var inventory := get_node_or_null("/root/Inventory")
+	if inventory and "items" in inventory:
+		for item in inventory.items:
+			if item == null or not "item_name" in item:
+				continue
+			match item.item_name:
+				"Fuel Can":
+					on_fuel_can_found()
+				"Portable Light":
+					on_portable_light_found()
+				"Cable Spool":
+					on_cable_spool_found()
 
 func on_arvid_logged_in() -> void:
 	if arvid_logged_in:
@@ -1154,6 +1176,13 @@ func on_computer_used() -> void:
 	_update_hud()
 	# ─── X-RAY HIGHLIGHT: Highlight planks after 10 seconds ──
 	highlight_target("xray_planks", 10.0)
+	# What the planks are for: a thought as the objective starts (once the
+	# computer is closed and the player can see it).
+	var pc := get_tree().get_first_node_in_group("computer_ui")
+	if pc and "is_open" in pc and pc.is_open and pc.has_signal("computer_closed"):
+		pc.computer_closed.connect(_think_about_broken_window, CONNECT_ONE_SHOT)
+	else:
+		_think_about_broken_window()
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -1169,6 +1198,21 @@ func on_plank_picked_up() -> void:
 	if phase2b_plank_count >= 3:
 		clear_highlight("xray_planks")
 		print("[RoutineManager] Phase 2B: Player has 3 planks. X-ray highlight cleared.")
+
+## Inner monologue (Monologue): as "Find 3 planks" starts, over the
+## broken window, for 5 seconds.
+func _think_about_broken_window() -> void:
+	var monologue := get_node_or_null("/root/Monologue")
+	# Not for the player's starting items (given while the scene loads).
+	var scene := get_tree().current_scene
+	if not monologue or not scene or not scene.is_node_ready():
+		return
+	var broken: Node3D = null
+	for window in get_tree().get_nodes_in_group("WindowMarkers"):
+		if "start_broken" in window and window.start_broken and window.is_glass_shattered and not window.is_boarded:
+			broken = window
+	monologue.think("Someone left a window for me to patch up - how kind.", broken, 5.0, "broken_window")
+
 
 func on_window_patched() -> void:
 	if phase2b_window_patched:
@@ -1191,6 +1235,7 @@ func on_door_locked() -> void:
 	if main_objective >= 99 and day2_step == 6:
 		day2_step = 7
 		print("[RoutineManager] Day 2 Step 6 COMPLETE: Door locked. Step 7: Go to bed.")
+		_spawn_peeker_at("Hall_Window_Right")
 		_sync_day2_hint()
 		_update_hud()
 		return
@@ -1209,14 +1254,8 @@ func on_door_locked() -> void:
 	print("[RoutineManager] Phase 3: Front door locked.")
 	_advance_main_objective(9)
 	
-	# ─── TASK 6: NIGHT 1 PEEKER FORCED SPAWN ──────────────────────────
-	# The moment the Day 1 "Lock the door" objective completes, force the
-	# Peeker to appear at the LivingRoom window. If it's already there, the
-	# PeekerManager does nothing; if it's at another window it relocates.
-	var pm = get_node_or_null("/root/PeekerManager")
-	if pm and pm.has_method("force_spawn_at_window"):
-		pm.force_spawn_at_window("LivingRoom")
-		print("[RoutineManager] Night 1 Peeker forced to LivingRoom window.")
+	# The Night 1 Peeker (at the landing window) comes with the objective
+	# advancing (_advance_main_objective).
 	# ─── DEFENSIVE AUTO-COMPLETE: All cabin lights already OFF ──────
 	# If the player turned off every cabin light BEFORE reaching the
 	# "Turn off the lights" objective (e.g. while the door step was

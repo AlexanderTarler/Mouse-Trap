@@ -40,8 +40,8 @@ const GAZE_DOT_THRESHOLD: float = 0.94
 const GAZE_MAX_DISTANCE: float = 25.0
 
 ## Delay in seconds after the player looks at the peeker before it vanishes.
-## Reduced by 35% from 0.5s to 0.325s for faster, snappier reactions.
-const SPOTTED_VANISH_DELAY: float = 0.325
+## 1.325 s: long enough to be sure of what you saw (it was 0.325 s).
+const SPOTTED_VANISH_DELAY: float = 1.325
 
 ## Timer counting up while the player is looking at this peeker.
 ## Resets to 0 if the player looks away before SPOTTED_VANISH_DELAY elapses.
@@ -60,6 +60,13 @@ const SPAWN_RISE_DISTANCE: float = -3.0
 
 ## Duration of the rise-up tween in seconds.
 const SPAWN_RISE_DURATION: float = 1.5
+
+## Night 2 (set by PeekerManager before it enters the tree): a much quicker
+## rise, and it ducks away sooner and faster once seen.
+var quick: bool = false
+const QUICK_RISE_DURATION: float = 0.35
+const QUICK_VANISH_DELAY: float = 0.35
+const QUICK_DUCK_DURATION: float = 0.15
 
 ## Whether the peeker is still rising into position.
 ## Gaze checks are disabled during this phase so the peeker isn't spotted
@@ -88,7 +95,7 @@ func _ready() -> void:
 		var tween = create_tween()
 		tween.set_ease(Tween.EASE_OUT)
 		tween.set_trans(Tween.TRANS_CUBIC)
-		tween.tween_property(_monster_model, "position", model_offset, SPAWN_RISE_DURATION)
+		tween.tween_property(_monster_model, "position", model_offset, QUICK_RISE_DURATION if quick else SPAWN_RISE_DURATION)
 		tween.finished.connect(_on_rise_finished)
 	else:
 		_is_rising = false
@@ -121,7 +128,7 @@ func _process(delta: float) -> void:
 		var pm = get_node_or_null("/root/PeekerManager")
 		if (pm and pm.peeker_vanish_on_sight) or not pm:
 			_spotted_timer += delta
-			if _spotted_timer >= SPOTTED_VANISH_DELAY:
+			if _spotted_timer >= (QUICK_VANISH_DELAY if quick else SPOTTED_VANISH_DELAY):
 				_vanish()
 	else:
 		_spotted_timer = 0.0
@@ -178,7 +185,7 @@ func _vanish() -> void:
 	var tween = create_tween()
 	tween.set_ease(Tween.EASE_IN)
 	tween.set_trans(Tween.TRANS_QUAD)
-	tween.tween_property(_monster_model, "position:y", target_y, DUCK_DOWN_DURATION)
+	tween.tween_property(_monster_model, "position:y", target_y, QUICK_DUCK_DURATION if quick else DUCK_DOWN_DURATION)
 	tween.finished.connect(_on_duck_finished)
 
 

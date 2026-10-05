@@ -28,6 +28,11 @@ var _tab_pressed_last_frame: bool = false
 var _flashlight: Node = null
 
 
+## Found by its group (not by a path in the level).
+func _enter_tree() -> void:
+	add_to_group("inventory_ui")
+
+
 func _ready() -> void:
 	panel.visible = false
 	self.layer = 100  # Guarantee this CanvasLayer draws on top of everything
@@ -48,17 +53,13 @@ func _ready() -> void:
 
 
 func _find_flashlight() -> void:
-	var player = get_node_or_null("/root/CottageHorror/Player")
-	if not player:
-		player = get_node_or_null("/root/Main/Player")
+	var player = get_tree().get_first_node_in_group("player")
 	if player:
 		_flashlight = player.find_child("Flashlight", true, false)
 
 
 func _find_note_ui() -> void:
-	_note_ui = get_node_or_null("/root/CottageHorror/NoteUI")
-	if not _note_ui:
-		_note_ui = get_node_or_null("/root/Main/NoteUI")
+	_note_ui = get_tree().get_first_node_in_group("note_ui")
 	if not _note_ui:
 		# Retry next frame if the scene isn't ready yet
 		call_deferred("_find_note_ui")
@@ -92,9 +93,7 @@ func _process(_delta: float) -> void:
 	# Prevent TAB from toggling the inventory while the computer
 	# (computer_ui.gd) is open. The player should not be able to
 	# open the inventory while interacting with the computer.
-	var computer_ui = get_node_or_null("/root/CottageHorror/ComputerUI")
-	if not computer_ui:
-		computer_ui = get_tree().get_first_node_in_group("computer_ui")
+	var computer_ui = get_tree().get_first_node_in_group("computer_ui")
 	if computer_ui and computer_ui.get("is_open"):
 		if _is_open:
 			_close_inventory()
@@ -167,9 +166,7 @@ func _update_tooltip() -> void:
 ## Checks if the StashUI (scrap heap looting interface) is currently open.
 ## Returns true if the stash UI exists and is visible, false otherwise.
 func _is_stash_ui_open() -> bool:
-	var stash_ui = get_node_or_null("/root/CottageHorror/StashUI")
-	if not stash_ui:
-		stash_ui = get_node_or_null("/root/Main/StashUI")
+	var stash_ui = get_tree().get_first_node_in_group("stash_ui")
 	if stash_ui and stash_ui.get("_is_open"):
 		return true
 	return false
@@ -177,6 +174,9 @@ func _is_stash_ui_open() -> bool:
 
 ## Plays a simple sound effect via a transient AudioStreamPlayer.
 ## The player is auto-freed when the sound finishes.
+const BATTERY_SWAP_SOUND := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Buttons & Levers/button_12.ogg"
+
+
 func _play_sfx(res_path: String) -> void:
 	var stream := load(res_path)
 	if not stream:
@@ -190,6 +190,11 @@ func _play_sfx(res_path: String) -> void:
 
 
 func _open_inventory() -> void:
+	# The "Press [TAB]" hint is done with (TAB opens the inventory here, so
+	# the player controller's toggle that used to clear it never ran).
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("mark_learned"):
+		tm.mark_learned("inventory")
 	_is_open = true
 	panel.visible = true
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -300,7 +305,14 @@ func _refresh_grid() -> void:
 				btn.icon = item.item_icon
 				btn.expand_icon = true
 			else:
-				btn.text = item.item_name.left(2)
+				btn.text = item.short_label() if item.has_method("short_label") else item.item_name.left(2)
+				btn.add_theme_font_size_override("font_size", 13)
+			# A fuel can shows how full it is on its slot.
+			if item.has_method("is_fuel_can") and item.is_fuel_can():
+				btn.text = "%s
+%d%%" % [btn.text, item.fuel_percent()] if not item.item_icon else "%d%%" % item.fuel_percent()
+				btn.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+			btn.tooltip_text = item.get_display_name() if item.has_method("get_display_name") else item.item_name
 			
 			# Apply the type-colored slot style
 			var slot_style = _create_slot_style(item.item_type, false)
@@ -392,13 +404,15 @@ func _use_battery(item) -> void:
 		_flashlight.refill(50.0)  # Refill 50% per battery
 		print("Battery used! Flashlight refilled.")
 		
-		# Play battery-swap sound via HorrorSoundManager
-		var sm = get_node_or_null("/root/HorrorSoundManager")
-		if sm:
-			sm.play_footstep_at("wooden", Vector3.ZERO)
+		# The battery clicking into place. (It was a wooden footstep played
+		# as a 3D sound at the world origin, so it was hardly ever heard.)
+		_play_sfx(BATTERY_SWAP_SOUND)
 		
 		# Remove the battery from inventory
 		Inventory.remove_item(item)
+		var tm := get_node_or_null("/root/TutorialManager")
+		if tm and tm.has_method("mark_learned"):
+			tm.mark_learned("low_battery")
 	else:
 		print("No flashlight found to refill!")
 
@@ -425,10 +439,9 @@ func _on_drop_pressed() -> void:
 	var item = Inventory.items[_selected_index]
 	print("[InventoryUI] Dropping item: ", item.item_name, " scene_to_spawn=", item.scene_to_spawn)
 	
+	# A dropped fuel can keeps its own fuel level (it came back full before).
 	# Find the player to get drop position
-	var player = get_node_or_null("/root/CottageHorror/Player")
-	if not player:
-		player = get_node_or_null("/root/Main/Player")
+	var player = get_tree().get_first_node_in_group("player")
 	print("[InventoryUI] Player found: ", player)
 	
 	if player and item.scene_to_spawn:
@@ -438,6 +451,8 @@ func _on_drop_pressed() -> void:
 		drop_pos.y = player.global_position.y + 0.5
 		
 		var dropped = item.scene_to_spawn.instantiate()
+		if "item_data" in dropped and item.has_method("is_fuel_can") and item.is_fuel_can():
+			dropped.item_data = item
 		get_tree().current_scene.add_child(dropped)
 		dropped.global_position = drop_pos
 		print("[InventoryUI] Spawned dropped item at: ", drop_pos)

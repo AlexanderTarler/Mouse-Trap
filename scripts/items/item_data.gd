@@ -44,3 +44,40 @@ enum ItemType {
 
 ## Scene to spawn when dropping the item
 @export var scene_to_spawn: PackedScene
+
+
+## True for a fuel can (the only item with a fuel level).
+func is_fuel_can() -> bool:
+	return item_type == ItemType.FUEL or item_name == "Fuel Can"
+
+
+## Its fuel left as a whole percentage (fuel cans).
+func fuel_percent() -> int:
+	return int(round(clampf(fuel_amount, 0.0, 100.0)))
+
+
+## Slot labels, distinct at a glance (the first two letters made "Fuse" and
+## "Fuel Can" both "Fu").
+const SHORT_LABELS := {
+	"Wooden Plank": "PLANK", "Battery": "BATT", "Fuse": "FUSE", "Fuel Can": "FUEL",
+	"Cable Spool": "CABLE", "Cabin Key": "KEY", "Portable Light": "LAMP",
+	"Radiator": "RAD", "Ignition Wiring": "WIRES", "Car Battery": "CAR\nBATT",
+	"Research Map": "MAP", "Field Journal": "BOOK",
+}
+
+
+## The short label shown on an inventory or stash slot.
+func short_label() -> String:
+	if SHORT_LABELS.has(item_name):
+		return SHORT_LABELS[item_name]
+	if item_type == ItemType.NOTE:
+		return "NOTE"
+	# Otherwise: the first word, cut to five letters.
+	return item_name.get_slice(" ", 0).left(5).to_upper()
+
+
+## The name as shown to the player: "Fuel Can (75%)" for a fuel can.
+func get_display_name() -> String:
+	if is_fuel_can():
+		return "%s (%d%%)" % [item_name, fuel_percent()]
+	return item_name
