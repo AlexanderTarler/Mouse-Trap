@@ -27,7 +27,7 @@ func _on_body_entered(body: Node) -> void:
 		return
 	
 	# Check if the entering body is the player
-	if body.is_in_group("player") or body.is_in_group("Player"):
+	if body.is_in_group("player"):
 		_triggered = true
 		
 		# Notify RoutineManager

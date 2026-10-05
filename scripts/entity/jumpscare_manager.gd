@@ -12,6 +12,8 @@ const death_screen_scene = preload("res://scenes/death_screen.tscn")
 
 ## Audio sting played during the jumpscare face-zoom.
 @export var audio_sting: AudioStream = null
+## The sting when audio_sting isn't assigned.
+const AUDIO_STING_DEFAULT := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/Bonus/Pure Horror/One-shots/stinger_ph_3.ogg"
 
 var _fade_rect: ColorRect = null
 var is_jumping: bool = false
@@ -39,8 +41,11 @@ func _ready() -> void:
 	
 	# 2. Add an audio sting player
 	_audio_sting_player = AudioStreamPlayer.new()
+	_audio_sting_player.bus = &"SFX"
 	if audio_sting:
 		_audio_sting_player.stream = audio_sting
+	elif ResourceLoader.exists(AUDIO_STING_DEFAULT):
+		_audio_sting_player.stream = load(AUDIO_STING_DEFAULT)
 	add_child(_audio_sting_player)
 	
 	# 3. Connect to the NightManager's event bus
@@ -50,7 +55,8 @@ func _ready() -> void:
 
 func _input(event: InputEvent) -> void:
 	# DEBUG: Log every left-click and what was clicked
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+	# (Debug builds only: in an exported game it raycast on every click.)
+	if OS.is_debug_build() and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		var mouse_pos = get_viewport().get_mouse_position()
 		# Use raycasting from the current camera to find what's under the cursor
 		var camera = get_viewport().get_camera_3d()

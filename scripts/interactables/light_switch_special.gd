@@ -91,7 +91,7 @@ func _play_click_sound() -> void:
 	# Try the global HorrorSoundManager first
 	var hsm: Node = get_node_or_null("/root/HorrorSoundManager")
 	if hsm and hsm.has_method("play_sound"):
-		hsm.play_sound("switch_toggle")
+		hsm.play_sound("switch_toggle", global_position)
 		return
 	
 	# Fallback: play the local audio player if it has a stream

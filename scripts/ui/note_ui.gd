@@ -32,6 +32,11 @@ var _current_page: int = 0
 const CHARS_PER_PAGE: int = 1000
 
 
+## Found by its group (not by a path in the level).
+func _enter_tree() -> void:
+	add_to_group("note_ui")
+
+
 func _ready() -> void:
 	visible = false
 	close_button.pressed.connect(_close_note)

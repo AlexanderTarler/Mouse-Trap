@@ -79,23 +79,23 @@ func interact(player: Node3D = null) -> void:
 	var inventory: Node = _get_inventory()
 	if not inventory:
 		print("[Wreck] ERROR: Could not find Inventory autoload!")
-		_show_hud_message("Cannot access inventory right now.")
+		_show_hud_message("I can't take this right now.")
 		return
 	
 	var added: bool = inventory.add_item(item_resource)
 	if not added:
-		_show_hud_message("Inventory is full!")
+		_show_hud_message("I can't carry any more.")
 		return
 	
 	# Mark as looted and clear x-ray highlight
 	is_looted = true
 	var item_name := _get_item_name()
-	_show_hud_message("CAR PART SALVAGED: " + item_name)
+	_show_hud_message("This %s should work in the van." % item_name.to_lower())
 	
 	# ─── AUDIO FEEDBACK ──────────────────────────────────────────────
 	var hsm := get_node_or_null("/root/HorrorSoundManager")
 	if hsm and hsm.has_method("play_sound"):
-		hsm.play_sound("scrap_salvage")
+		hsm.play_sound("scrap_salvage", global_position)
 	
 	# ─── VISUAL FEEDBACK: Brief spark particle burst ────────────────
 	_spawn_salvage_spark_particles()
@@ -200,6 +200,6 @@ func get_interact_text() -> String:
 func _show_hud_message(msg: String) -> void:
 	var hud = get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("show_message"):
-		hud.show_message(msg)
+		hud.show_message(msg, self)
 	else:
 		print("[Wreck HUD Missing] ", msg)

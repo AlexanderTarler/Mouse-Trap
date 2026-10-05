@@ -35,8 +35,6 @@ class_name CabinLight
 ## It no longer gates any overload behavior in this script.
 @export var is_overload_target: bool = false
 
-## Sound played when this light switch is toggled (both ON and OFF).
-@export var light_switch_sfx: AudioStream = null
 
 
 ## The physical light emitter child (OmniLight3D or SpotLight3D).

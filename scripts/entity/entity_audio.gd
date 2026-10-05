@@ -15,20 +15,21 @@ const VOICE_STREAMS := {
 	"angry": [preload("res://assets/audio/Entity/Entity Angry.ogg")],
 }
 const GRUNT_STREAM := preload("res://assets/audio/Entity/Entity_grunt_long.ogg")
-const TAP_STREAM := preload("res://assets/audio/Entity/Metal_random tapping.wav")
 
 const ECHOES := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/"
 const HORROR_SFX := "res://assets/audio/horror_sfx_vol_1/"
 ## Growls: winding up to charge, turned away by a lit window.
 const GROWL_PATTERN := HORROR_SFX + "Monster Growl/Monster Growl (%d).mp3"
 const GROWL_COUNT := 12
+const OBJECTS := "res://assets/audio/objects/"
 ## Claws dragging on the logs while it climbs.
-const SCRAPE_PATHS: Array[String] = [ECHOES + "SFX/Misc/slide_1.ogg", ECHOES + "SFX/Misc/slide_2.ogg", ECHOES + "SFX/Misc/slide_4.ogg"]
+const SCRAPE_PATHS: Array[String] = [OBJECTS + "Climb Scrape.ogg"]
 ## Hitting the ground when it drops off a wall.
-const THUD_PATHS: Array[String] = [ECHOES + "SFX/Impacts/impact_1.ogg", ECHOES + "SFX/Impacts/impact_2.ogg", ECHOES + "SFX/Impacts/impact_3.ogg"]
-## Old boards under its weight (door creaks, pitched down).
-const CREAK_PATTERN := HORROR_SFX + "Creaking Door/Creaking Door (%d).mp3"
-const CREAK_COUNT := 12
+const THUD_PATHS: Array[String] = [OBJECTS + "Drop Thud.ogg"]
+## Old boards under its weight.
+const CREAK_PATHS: Array[String] = [OBJECTS + "Floor Creak.ogg"]
+## Knocking on the glass while it peeks in at a window.
+const WINDOW_KNOCK := preload("res://assets/audio/objects/Window Knock.ogg")
 ## Knuckles on the door.
 const KNOCK_PATHS: Array[String] = [ECHOES + "SFX/Misc/hit_1.ogg", ECHOES + "SFX/Misc/hit_2.ogg", ECHOES + "SFX/Misc/hit_4.ogg"]
 ## Extra low murmurs for the "murmur" voice.
@@ -103,7 +104,7 @@ func setup(owner_entity: Entity) -> void:
 	_shriek = _make_player("Shriek", 8.0, 60.0, 4.0)
 	_shriek_streams = _load_paths(SHRIEK_PATHS)
 	_growl_streams = _load_pattern(GROWL_PATTERN, GROWL_COUNT)
-	_creak_streams = _load_pattern(CREAK_PATTERN, CREAK_COUNT)
+	_creak_streams = _load_paths(CREAK_PATHS)
 	_scrape_streams = _load_paths(SCRAPE_PATHS)
 	_thud_streams = _load_paths(THUD_PATHS)
 	_knock_streams = _load_paths(KNOCK_PATHS)
@@ -204,7 +205,7 @@ func play_climb_scrape(world_position: Vector3) -> void:
 		return
 	_scrape.global_position = world_position
 	_scrape.stream = _scrape_streams.pick_random()
-	_scrape.pitch_scale = randf_range(0.7, 0.95)
+	_scrape.pitch_scale = randf_range(0.9, 1.1)
 	_scrape.play()
 
 
@@ -213,7 +214,7 @@ func play_drop_thud() -> void:
 	if not _thud_streams.is_empty():
 		_scrape.global_position = entity.global_position
 		_scrape.stream = _thud_streams.pick_random()
-		_scrape.pitch_scale = randf_range(0.7, 0.85)
+		_scrape.pitch_scale = randf_range(0.9, 1.05)
 		_scrape.play()
 	play_grunt(0.55)
 
@@ -251,7 +252,7 @@ func update_floor_creaks(delta: float, horizontal_speed: float) -> void:
 	_creak_left = randf_range(CREAK_INTERVAL_MIN, CREAK_INTERVAL_MAX)
 	_creak.global_position = entity.global_position + Vector3.UP * 0.2
 	_creak.stream = _creak_streams.pick_random()
-	_creak.pitch_scale = randf_range(0.45, 0.65)
+	_creak.pitch_scale = randf_range(0.85, 1.05)
 	_creak.play()
 
 
@@ -266,10 +267,10 @@ func update_murmurs(delta: float) -> void:
 		play_voice("murmur", true)
 
 
-## Tapping on glass at a world position (a window).
+## Knocking on the glass at a world position (a window).
 func play_tap_at(world_position: Vector3) -> void:
 	_tap.global_position = world_position
-	_tap.stream = TAP_STREAM
+	_tap.stream = WINDOW_KNOCK
 	_tap.pitch_scale = randf_range(0.9, 1.1)
 	_tap.play()
 
@@ -292,6 +293,8 @@ func update_footsteps(delta: float, horizontal_speed: float) -> void:
 
 
 func start_chase_music() -> void:
+	if entity.van_chase_active and not entity.config.van_chase_music:
+		return
 	var hsm := get_node_or_null("/root/HorrorSoundManager")
 	if hsm and not _chase_music_on:
 		hsm.play_stalk_chase()

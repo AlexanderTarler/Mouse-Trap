@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://dhhf0xqo65iek"
+path="res://.godot/imported/Climb Scrape.ogg-85163d0fe4e59b66ce0c4353129c501b.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/objects/Climb Scrape.ogg"
+dest_files=["res://.godot/imported/Climb Scrape.ogg-85163d0fe4e59b66ce0c4353129c501b.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

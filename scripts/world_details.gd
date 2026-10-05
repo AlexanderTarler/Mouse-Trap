@@ -51,7 +51,12 @@ const PATH_MARGIN := 1.2
 ## Something solid within this radius of a spot: skip it.
 const SOLID_CHECK_RADIUS := 0.6
 
+## Emitted once the detail is scattered and batched (FoliageRustle waits
+## for it).
+signal scattered
+
 var placed := 0
+var is_scattered := false
 ## Where things were placed (for the tests).
 var spots := PackedVector3Array()
 
@@ -113,6 +118,8 @@ func scatter() -> void:
 			placed += 1
 			spots.append(spot)
 	FoliageBatcher.build(get_parent(), "WorldDetailBatches")
+	is_scattered = true
+	scattered.emit()
 
 
 ## What grows at a spot with these ground weights, for this roll (or nothing).

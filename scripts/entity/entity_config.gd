@@ -184,6 +184,13 @@ extends Resource
 
 @export_group("Charge")
 @export var charge_max_time: float = 6.0
+## After the portable lamp's stun wears off (player outside): a committed
+## charge at the player (tracks them without needing to see them, the
+## flashlight can't stop it) that lasts this long.
+@export var post_stun_chase_time: float = 15.0
+## The chase music during the Night 2.2 van chase. Off: only the tension
+## drone and the Entity's own sounds.
+@export var van_chase_music: bool = false
 ## Charge ends when the player has been out of sight this long.
 @export var charge_lose_sight_time: float = 1.5
 

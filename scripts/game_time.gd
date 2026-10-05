@@ -70,7 +70,9 @@ func _process(delta: float) -> void:
 	_tick_timer += delta
 	if _tick_timer < 0.2:
 		return
-	_tick_timer = 0.0
+	# Keep the overshoot (at 60 fps a tick comes after ~0.217 s): resetting
+	# to 0 while adding 0.2 s ran the clock ~8% slow.
+	_tick_timer -= 0.2
 
 	if not is_running:
 		return

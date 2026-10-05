@@ -9,8 +9,6 @@ extends Node
 ##   - Occasional distant sounds around the player: wood cracking, things
 ##     falling, and (from Night 3) far-off roars.
 ##   - Wind whistling at broken, unboarded windows.
-##   - The house settling: now and then an old board creaks near the player
-##     while they are inside.
 ##   - A tension drone that rises as the Entity gets closer or bolder (and
 ##     steps aside for the chase music).
 ##   - Stingers: the first time each night the player sees the Entity, and
@@ -29,17 +27,25 @@ signal sound_played(sound_name: String)
 const HORROR_SFX_DIR: String = "res://assets/audio/horror_sfx_vol_1/"
 const ECHOES_DIR: String = "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/"
 const AMBIENT_WIND_DIR: String = HORROR_SFX_DIR + "Ambient Wind/"
-const CARPET_FOOTSTEP_DIR: String = HORROR_SFX_DIR + "Carpet Footstep/"
-const CONCRETE_FOOTSTEP_DIR: String = HORROR_SFX_DIR + "Concrete Footsteps/"
-const GRAVEL_FOOTSTEP_DIR: String = HORROR_SFX_DIR + "Gravel Footsteps/"
-const LEAVES_FOOTSTEP_DIR: String = HORROR_SFX_DIR + "Leaves Footsteps/"
-const METAL_FOOTSTEP_DIR: String = HORROR_SFX_DIR + "Metal Footsteps/"
-const MUD_FOOTSTEP_DIR: String = HORROR_SFX_DIR + "Mud foosteps/"
-const STAIRS_FOOTSTEP_DIR: String = HORROR_SFX_DIR + "Stairs Footsteps/"
-const WIND_FOOTSTEP_DIR: String = HORROR_SFX_DIR + "Wind Footsteps/"
 const WOODEN_FOOTSTEP_DIR: String = HORROR_SFX_DIR + "Wooden Foosteps/"
 const GRASS_FOOTSTEP_DIR: String = "res://assets/audio/40 Free PSX Footsteps/Grass/"
-const CREAKING_DOOR_DIR: String = HORROR_SFX_DIR + "Creaking Door/"
+## The scripted night events (the cabin has only its front door, so none of
+## them creak like one): boards creaking, something shifting in another room,
+## the wiring clicking, wood cracking out in the dark.
+const FLOOR_CREAK_PATHS: Array[String] = ["res://assets/audio/objects/Floor Creak.ogg"]
+const OBJECT_MOVED_PATHS: Array[String] = [
+	ECHOES_DIR + "SFX/Misc/move_3.ogg",
+	ECHOES_DIR + "SFX/Misc/move_5.ogg",
+	ECHOES_DIR + "SFX/Misc/move_7.ogg",
+]
+const ELECTRIC_CLICK_PATHS: Array[String] = [
+	ECHOES_DIR + "SFX/Buttons & Levers/button_flashlight_3.ogg",
+	ECHOES_DIR + "SFX/Buttons & Levers/button_flashlight_4.ogg",
+]
+const WOOD_CRACK_PATHS: Array[String] = [
+	ECHOES_DIR + "SFX/Misc/crack_1_wood.ogg",
+	ECHOES_DIR + "SFX/Misc/crack_2_wood.ogg",
+]
 const MONSTER_GROWL_DIR: String = HORROR_SFX_DIR + "Monster Growl/"
 ## Low murmurs for the Entity's "whisper" (it used to borrow wind clips).
 const WHISPER_PATHS: Array[String] = [
@@ -108,12 +114,6 @@ const WHISTLE_DB := -10.0
 ## Stingers never closer together than this (s).
 const STINGER_COOLDOWN := 40.0
 const STINGER_DB := -4.0
-## The house settling while the player is inside: one creak every so often,
-## this far from the player (m).
-const SETTLE_INTERVAL_MIN := 30.0
-const SETTLE_INTERVAL_MAX := 70.0
-const SETTLE_RANGE_MIN := 3.0
-const SETTLE_RANGE_MAX := 7.0
 ## Tension: full within TENSION_NEAR m, nothing beyond TENSION_FAR m; its
 ## boldness (confidence) adds up to TENSION_CONFIDENCE_SHARE on its own.
 const TENSION_NEAR := 6.0
@@ -134,16 +134,11 @@ var _entity_whisper: AudioStreamPlayer = null
 # Preloaded audio streams
 var _ambient_wind_streams: Array[AudioStream] = []
 var _wooden_footstep_streams: Array[AudioStream] = []
-var _carpet_footstep_streams: Array[AudioStream] = []
-var _concrete_footstep_streams: Array[AudioStream] = []
-var _gravel_footstep_streams: Array[AudioStream] = []
-var _leaves_footstep_streams: Array[AudioStream] = []
-var _metal_footstep_streams: Array[AudioStream] = []
-var _mud_footstep_streams: Array[AudioStream] = []
-var _stairs_footstep_streams: Array[AudioStream] = []
-var _wind_footstep_streams: Array[AudioStream] = []
 var _grass_footstep_streams: Array[AudioStream] = []
-var _creaking_door_streams: Array[AudioStream] = []
+var _floor_creak_streams: Array[AudioStream] = []
+var _object_moved_streams: Array[AudioStream] = []
+var _electric_click_streams: Array[AudioStream] = []
+var _wood_crack_streams: Array[AudioStream] = []
 var _monster_growl_streams: Array[AudioStream] = []
 
 # Whether sound is muted
@@ -167,7 +162,6 @@ var _stinger_streams: Array[AudioStream] = []
 var _stinger_player: AudioStreamPlayer = null
 var _stinger_cooldown := 0.0
 var _seen_tonight := false
-var _settle_left := 45.0
 var _tension_player: AudioStreamPlayer = null
 var _tension := 0.0
 ## True while an ending cutscene plays (see enter_cinematic).
@@ -279,17 +273,7 @@ func _preload_audio_files() -> void:
 	
 	# Footstep types
 	_wooden_footstep_streams = _load_audio_files(WOODEN_FOOTSTEP_DIR, "Wooden Foosteps", 8)
-	_carpet_footstep_streams = _load_audio_files(CARPET_FOOTSTEP_DIR, "Carpet Footstep", 4)
-	_concrete_footstep_streams = _load_audio_files(CONCRETE_FOOTSTEP_DIR, "Concrete Footsteps", 4)
-	_gravel_footstep_streams = _load_audio_files(GRAVEL_FOOTSTEP_DIR, "Gravel Footsteps", 8)
-	_leaves_footstep_streams = _load_audio_files(LEAVES_FOOTSTEP_DIR, "Leaves Footsteps", 4)
-	_metal_footstep_streams = _load_audio_files(METAL_FOOTSTEP_DIR, "Metal Footsteps", 4)
-	_mud_footstep_streams = _load_audio_files(MUD_FOOTSTEP_DIR, "Mud Footsteps", 8)
-	_stairs_footstep_streams = _load_audio_files(STAIRS_FOOTSTEP_DIR, "Stair Footsteps", 8)
-	_wind_footstep_streams = _load_audio_files(WIND_FOOTSTEP_DIR, "Wind Footsteps", 4)
 	
-	# Creaking doors (files: "Creaking Door (1).mp3" through "Creaking Door (12).mp3")
-	_creaking_door_streams = _load_audio_files(CREAKING_DOOR_DIR, "Creaking Door", 12)
 	
 	# Monster growls (files: "Monster Growl (1).mp3" through "Monster Growl (12).mp3")
 	_monster_growl_streams = _load_audio_files(MONSTER_GROWL_DIR, "Monster Growl", 12)
@@ -301,12 +285,16 @@ func _preload_audio_files() -> void:
 	_distant_forest_streams = _load_paths(DISTANT_FOREST_PATHS)
 	_distant_roar_streams = _load_paths(DISTANT_ROAR_PATHS)
 	_stinger_streams = _load_paths(STINGER_PATHS)
+	_floor_creak_streams = _load_paths(FLOOR_CREAK_PATHS)
+	_object_moved_streams = _load_paths(OBJECT_MOVED_PATHS)
+	_electric_click_streams = _load_paths(ELECTRIC_CLICK_PATHS)
+	_wood_crack_streams = _load_paths(WOOD_CRACK_PATHS)
 	
-	print("HorrorSoundManager: Loaded %d ambient wind, %d wooden footsteps, %d grass footsteps, %d door creaks, %d monster growls" % [
+	print("HorrorSoundManager: Loaded %d ambient wind, %d wooden footsteps, %d grass footsteps, %d floor creaks, %d monster growls" % [
 		_ambient_wind_streams.size(),
 		_wooden_footstep_streams.size(),
 		_grass_footstep_streams.size(),
-		_creaking_door_streams.size(),
+		_floor_creak_streams.size(),
 		_monster_growl_streams.size()
 	])
 
@@ -473,7 +461,6 @@ func _on_night_started(night: int) -> void:
 	_is_night = true
 	_night = night
 	_seen_tonight = false
-	_settle_left = randf_range(SETTLE_INTERVAL_MIN, SETTLE_INTERVAL_MAX) * 0.5
 	_distant_left = randf_range(DISTANT_INTERVAL_MIN, DISTANT_INTERVAL_MAX) * 0.5
 	_play_ambient()
 	# Switch to night forest ambience
@@ -514,30 +501,30 @@ func _on_night_ended(_night: int) -> void:
 func _on_horror_event(event_name: String) -> void:
 	match event_name:
 		"distant_sound":
-			_play_event_sound_3d(_get_random_stream(_creaking_door_streams), Vector3(0, 1, -8))
+			_play_event_sound_3d(_get_random_stream(_wood_crack_streams), Vector3(0, 1, -8))
 		"shadow_outside":
 			_play_event_sound_3d(_get_random_stream(_ambient_wind_streams), Vector3(0, 1, -6))
 		"entity_glimpse":
 			_play_event_sound_3d(_get_random_stream(_wooden_footstep_streams), Vector3(3, 1, -5))
 			_play_whisper()
 		"door_creak":
-			_play_event_sound_3d(_get_random_stream(_creaking_door_streams), Vector3(0, 1, 4))
+			_play_event_sound_3d(_get_random_stream(_floor_creak_streams), Vector3(0, 1, 4))
 		"entity_inside":
 			_play_event_sound_3d(_get_random_stream(_wooden_footstep_streams), Vector3(-2, 1, 2))
 		"object_moved":
-			_play_event_sound_3d(_get_random_stream(_creaking_door_streams), Vector3(1, 0.5, -1))
+			_play_event_sound_3d(_get_random_stream(_object_moved_streams), Vector3(1, 0.5, -1))
 		"footsteps":
 			_play_event_sound_3d(_get_random_stream(_wooden_footstep_streams), Vector3(0, 1, 3))
 		"entity_appears":
 			_play_event_sound_3d(_get_random_stream(_monster_growl_streams), Vector3(0, 1, -4))
 		"lights_flicker":
-			_play_event_sound_3d(_get_random_stream(_creaking_door_streams), Vector3(0, 1, -3))
+			_play_event_sound_3d(_get_random_stream(_electric_click_streams), Vector3(0, 1, -3))
 		"entity_charge":
 			_play_event_sound_3d(_get_random_stream(_monster_growl_streams), Vector3(0, 1, -2))
 		"entity_constant":
 			_play_whisper()
 		"poltergeist":
-			_play_event_sound_3d(_get_random_stream(_creaking_door_streams), Vector3(0, 1, 0))
+			_play_event_sound_3d(_get_random_stream(_floor_creak_streams), Vector3(0, 1, 0))
 		"final_confrontation":
 			_play_event_sound_3d(_get_random_stream(_monster_growl_streams), Vector3(0, 1, -3))
 
@@ -598,25 +585,9 @@ func play_footstep_at(surface_type: String = "wooden", position: Vector3 = Vecto
 		return
 	
 	var stream: AudioStream = null
+	# Wooden and grass only (the other surfaces' sounds were loaded at start
+	# and never played; the player plays its own footsteps).
 	match surface_type:
-		"wooden":
-			stream = _get_random_stream(_wooden_footstep_streams)
-		"carpet":
-			stream = _get_random_stream(_carpet_footstep_streams)
-		"concrete":
-			stream = _get_random_stream(_concrete_footstep_streams)
-		"gravel":
-			stream = _get_random_stream(_gravel_footstep_streams)
-		"leaves":
-			stream = _get_random_stream(_leaves_footstep_streams)
-		"metal":
-			stream = _get_random_stream(_metal_footstep_streams)
-		"mud":
-			stream = _get_random_stream(_mud_footstep_streams)
-		"stairs":
-			stream = _get_random_stream(_stairs_footstep_streams)
-		"wind":
-			stream = _get_random_stream(_wind_footstep_streams)
 		"grass":
 			stream = _get_random_stream(_grass_footstep_streams)
 		_:
@@ -838,7 +809,6 @@ func _process(delta: float) -> void:
 		_update_silence(player)
 		_update_distant(step, player)
 		_update_whistles()
-		_update_settling(step, player, inside)
 		_update_tension(player)
 		_update_first_sighting()
 
@@ -988,6 +958,50 @@ func exit_cinematic() -> void:
 	_in_cinematic = false
 
 
+## One-shot object sounds by name: [path, volume dB, pitch min, pitch max].
+const NAMED_SOUNDS := {
+	"scrap_salvage": [ECHOES_DIR + "SFX/Player/Misc/equip_1.ogg", -4.0, 0.85, 1.0],
+	"lamp_hit": [ECHOES_DIR + "SFX/Impacts/impact_1.ogg", -6.0, 1.15, 1.3],
+	"cable_strain": ["res://assets/audio/objects/Floor Creak.ogg", -8.0, 1.25, 1.45],
+	"switch_toggle": ["res://assets/audio/objects/light_switch.wav", -2.0, 0.95, 1.05],
+	"lamp_off": [ECHOES_DIR + "SFX/Buttons & Levers/button_flashlight_2.ogg", -2.0, 0.65, 0.75],
+}
+var _named_streams := {}
+
+
+## Plays one of NAMED_SOUNDS at `at` (at the player if left out), on a
+## player of its own that frees itself.
+func play_sound(sound_name: String, at: Variant = null) -> void:
+	var entry: Array = NAMED_SOUNDS.get(sound_name, [])
+	if entry.is_empty():
+		push_warning("HorrorSoundManager: no sound named '%s'." % sound_name)
+		return
+	if not _named_streams.has(sound_name):
+		_named_streams[sound_name] = load(entry[0]) if ResourceLoader.exists(entry[0]) else null
+	var stream: AudioStream = _named_streams[sound_name]
+	var scene := get_tree().current_scene
+	if not stream or not scene:
+		return
+	var position: Vector3
+	if at is Vector3:
+		position = at
+	else:
+		var player := get_tree().get_first_node_in_group("player") as Node3D
+		position = player.global_position if player else Vector3.ZERO
+	var sound := AudioStreamPlayer3D.new()
+	sound.bus = &"SFX"
+	sound.stream = stream
+	sound.volume_db = entry[1]
+	sound.pitch_scale = randf_range(entry[2], entry[3])
+	sound.unit_size = 5.0
+	sound.max_distance = 30.0
+	scene.add_child(sound)
+	sound.global_position = position
+	sound.finished.connect(sound.queue_free)
+	sound.play()
+	sound_played.emit(sound_name)
+
+
 ## A short horror stinger, unless one played in the last STINGER_COOLDOWN s.
 ## Returns whether it played.
 func play_stinger() -> bool:
@@ -1009,26 +1023,6 @@ func _update_first_sighting() -> void:
 			and entity.get("perception") and entity.perception.in_player_view:
 		_seen_tonight = true
 		play_stinger()
-
-
-## The old house settling around the player while they are inside.
-func _update_settling(step: float, player: Node3D, inside: bool) -> void:
-	_settle_left -= step
-	if _settle_left > 0.0:
-		return
-	_settle_left = randf_range(SETTLE_INTERVAL_MIN, SETTLE_INTERVAL_MAX)
-	if not inside or _creaking_door_streams.is_empty():
-		return
-	var player3d := _get_available_event_player()
-	if not player3d:
-		return
-	var direction := Vector3.FORWARD.rotated(Vector3.UP, randf() * TAU)
-	player3d.stream = _get_random_stream(_creaking_door_streams)
-	player3d.global_position = player.global_position + direction * randf_range(SETTLE_RANGE_MIN, SETTLE_RANGE_MAX) \
-		+ Vector3.UP * randf_range(0.5, 2.5)
-	player3d.pitch_scale = randf_range(0.45, 0.65)   # boards, not hinges
-	player3d.play()
-	sound_played.emit("house_settling")
 
 
 ## A low drone that rises as the Entity closes in (or grows bold), and gets

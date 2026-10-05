@@ -10,6 +10,8 @@ extends RefCounted
 ##     pebbles, saplings), kept off the walking paths (TerrainMask) and clear
 ##     of the cabin, the road, the totem and anything the player interacts
 ##     with.
+##   - the barn yard's fence line is cleared the same way (FENCE_LINES): no
+##     trunk through a fence, no shrub in it.
 ##   - the walking paths are kept clear: trees standing on one are removed
 ##     with their colliders (rebake the navmesh to drop their holes), and the
 ##     group's own ferns, grass, rocks and logs on or next to one are dropped.
@@ -48,6 +50,17 @@ const CLEAR_ZONES := [
 	[Vector3(9.0, 0.0, 14.0), 15.0],
 	[Vector3(103.0, 0.0, 85.3), 12.0],
 ]
+## The barn yard's fence (cottage_horror.tscn "Barn Fence"), post line to
+## post line: trees closer than FENCE_TREE_CLEARANCE go, undergrowth keeps
+## FENCE_CLEARANCE away.
+const FENCE_LINES := [
+	[Vector2(11.2, -86.9), Vector2(62.26, -86.9)],
+	[Vector2(62.26, -86.9), Vector2(62.26, -60.12)],
+	[Vector2(62.26, -60.12), Vector2(11.2, -60.12)],
+	[Vector2(11.2, -60.12), Vector2(11.2, -86.9)],
+]
+const FENCE_TREE_CLEARANCE := 1.1
+const FENCE_CLEARANCE := 0.8
 ## The escape road (z, half width) and around interactable things (m).
 const ROAD_Z := -92.0
 const ROAD_HALF_WIDTH := 3.5
@@ -80,11 +93,11 @@ static func dress(group: Node3D, add: Callable) -> Dictionary:
 		var at := mesh_instance.global_position
 		if not source.begins_with(PINE_SOURCE):
 			# The group's own small things: off the paths.
-			if mesh_instance.mesh and TerrainMask.near_path(at, 0.6):
+			if mesh_instance.mesh and (TerrainMask.near_path(at, 0.6) or near_fence(at, FENCE_CLEARANCE)):
 				replaced[mesh_instance] = true
 			continue
 		replaced[mesh_instance] = true
-		if TerrainMask.path(at) >= TREE_ON_PATH:
+		if TerrainMask.path(at) >= TREE_ON_PATH or near_fence(at, FENCE_TREE_CLEARANCE):
 			_remove_collider_near(colliders, at)
 			trees_cleared += 1
 			continue
@@ -107,6 +120,15 @@ static func _tree_colliders(group: Node3D) -> Array:
 				if shape is CollisionShape3D:
 					found.append([shape, (shape as Node3D).global_position])
 	return found
+
+
+## Whether `spot` is within `margin` (m) of the barn yard's fence.
+static func near_fence(spot: Vector3, margin: float) -> bool:
+	var at := Vector2(spot.x, spot.z)
+	for line in FENCE_LINES:
+		if at.distance_to(Geometry2D.get_closest_point_to_segment(at, line[0], line[1])) < margin:
+			return true
+	return false
 
 
 ## Turns off the trunk collider standing at `at` (the tree is gone).
@@ -158,7 +180,7 @@ static func _undergrowth(rng: RandomNumberGenerator, at: Vector3, add: Callable)
 ## False where nothing should grow (the walking paths, the cabin, the totem,
 ## the road, next to interactable things).
 static func clear(spot: Vector3) -> bool:
-	if TerrainMask.near_path(spot):
+	if TerrainMask.near_path(spot) or near_fence(spot, FENCE_CLEARANCE):
 		return false
 	for zone in CLEAR_ZONES:
 		if Vector2(spot.x - zone[0].x, spot.z - zone[0].z).length() < zone[1]:

@@ -758,8 +758,7 @@ func _toggle_inventory() -> void:
 	if tm and tm.has_method("mark_learned"):
 		tm.mark_learned("inventory")
 	
-	var inv_ui = get_node_or_null("/root/CottageHorror/InventoryUI")
-	if not inv_ui: inv_ui = get_node_or_null("/root/Main/InventoryUI")
+	var inv_ui = get_tree().get_first_node_in_group("inventory_ui")
 	if inv_ui and inv_ui.has_method("_open_inventory") and inv_ui.has_method("_close_inventory"):
 		if inv_ui.get("_is_open"): inv_ui._close_inventory()
 		else: inv_ui._open_inventory()
@@ -969,6 +968,9 @@ func _try_step_up(direction: Vector3) -> void:
 	if not space_state or not _collision_shape or not _collision_shape.shape: return
 	
 	var capsule: CapsuleShape3D = _collision_shape.shape as CapsuleShape3D
+	# The player's collider is a prism (convex) now: this needs a capsule.
+	if not capsule:
+		return
 	var capsule_center_y = global_position.y + _collision_shape.position.y
 	var capsule_bottom_y = capsule_center_y - capsule.height / 2.0
 	
@@ -1158,10 +1160,13 @@ func _process(delta: float) -> void:
 	
 	# Find the StandoffEffect node on the HUD (lazy init)
 
+	# NOTE: the HUD node is "HUD", so this path never finds it and the
+	# StandoffEffect (Swedish hallucination text while staring at the Entity)
+	# has never shown in play. Left as is on purpose; see
+	# planning/code_review.txt. To enable it, look the HUD up by its group:
+	#     get_tree().get_first_node_in_group("hud")
 	if not _standoff_effect:
 		var hud = get_node_or_null("/root/CottageHorror/HorrorHUD")
-		if not hud:
-			hud = get_node_or_null("/root/Main/HorrorHUD")
 		if hud:
 			_standoff_effect = hud.get_node_or_null("StandoffText")
 	

@@ -37,6 +37,15 @@ func _ready() -> void:
 	# Button signals are already connected in main_menu.tscn via the
 	# [connection] entries, so no programmatic connection is needed here.
 	print("[MainMenu] Main menu loaded.")
+	# "-- --autoplay" (or "?autoplay" in the browser): straight into the
+	# game (testing an exported build).
+	var autoplay := "--autoplay" in OS.get_cmdline_user_args()
+	# The web build: "?autoplay" on the page's address.
+	if OS.has_feature("web"):
+		var query = JavaScriptBridge.eval("window.location.search")
+		autoplay = autoplay or (query is String and "autoplay" in query)
+	if autoplay:
+		_on_play_pressed.call_deferred()
 
 
 ## Called by the PlayButton when pressed.

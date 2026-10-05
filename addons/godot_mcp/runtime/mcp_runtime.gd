@@ -29,6 +29,12 @@ var _started_at_msec := 0
 
 
 func _ready() -> void:
+	# Only when run from the editor: an exported game (a download, the web
+	# build) has no MCP server to talk to.
+	if not OS.has_feature("editor"):
+		set_process(false)
+		queue_free()
+		return
 	_project_path = ProjectSettings.globalize_path("res://")
 	_started_at_msec = Time.get_ticks_msec()
 	process_mode = Node.PROCESS_MODE_ALWAYS

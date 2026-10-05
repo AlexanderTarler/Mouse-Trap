@@ -8,17 +8,20 @@ extends EntityState
 ## config.charge_max_time. Indoors it goes back to hunting the cabin (never to
 ## the treeline); outdoors it searches where it last saw them.
 ##
-## data {"committed": true} (totem defence) tracks the player directly for
-## the whole charge instead of only while visible.
+## data {"committed": true} (totem defence, and after the lamp's stun) tracks
+## the player directly for the whole charge instead of only while visible;
+## {"max_time": s} lasts that long instead of config.charge_max_time.
 
 const S := Entity.State
 
 var _committed := false
 var _lost_time := 0.0
+var _max_time := 0.0
 
 
 func enter(_from: int, data: Dictionary) -> void:
 	_committed = data.get("committed", false)
+	_max_time = data.get("max_time", config.charge_max_time)
 	_lost_time = 0.0
 	# A shriek from its own head, indoors as well as out.
 	entity.audio.play_shriek()
@@ -40,7 +43,7 @@ func update(delta: float) -> void:
 
 func next_state() -> int:
 	var lost := _lost_time > config.charge_lose_sight_time and not _committed
-	if not lost and time < config.charge_max_time:
+	if not lost and time < _max_time:
 		return NO_CHANGE
 	if perception.entity_inside:
 		return S.HUNT

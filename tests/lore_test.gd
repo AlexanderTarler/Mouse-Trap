@@ -69,11 +69,14 @@ func _test_crows() -> void:
 	await _frames(30)
 	var back: bool = _states(crows).all(func(s): return s == crows.State.PERCHED)
 	_check("and settle again once the player is far away", back, str(_states(crows)))
+	# GameTime held still, or its next tick sets is_day back from the clock.
+	gt.set_process(false)
 	gt.is_day = false
 	await _frames(30)
 	var gone: bool = _states(crows).all(func(s): return s != crows.State.PERCHED)
 	_check("none stay at night", gone, str(_states(crows)))
 	gt.is_day = true
+	gt.set_process(true)
 
 
 func _test_opening() -> void:

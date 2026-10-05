@@ -77,10 +77,37 @@ func _update_audio(_delta: float) -> void:
 	if not nm:
 		return
 	var should_play: bool = nm.generator_fuel > 0.0 and nm.is_generator_on
-	if should_play and not _generator_audio.playing:
-		_generator_audio.play()
-	elif not should_play and _generator_audio.playing:
-		_generator_audio.stop()
+	if should_play and (not _generator_audio.playing or _winding_down):
+		if _wind_down and _wind_down.is_valid():
+			_wind_down.kill()
+		_winding_down = false
+		_generator_audio.pitch_scale = 1.0
+		_generator_audio.volume_db = generator_audio_volume_db
+		if not _generator_audio.playing:
+			_generator_audio.play()
+	elif not should_play and _generator_audio.playing and not _winding_down:
+		if nm.generator_fuel <= 0.0:
+			# Out of fuel: the engine sputters down instead of cutting out.
+			_winding_down = true
+			_wind_down = create_tween().set_parallel()
+			_wind_down.tween_property(_generator_audio, "pitch_scale", 0.35, WIND_DOWN_TIME).set_ease(Tween.EASE_IN)
+			_wind_down.tween_property(_generator_audio, "volume_db", generator_audio_volume_db - 30.0, WIND_DOWN_TIME).set_ease(Tween.EASE_IN)
+			_wind_down.chain().tween_callback(_end_wind_down)
+		else:
+			_generator_audio.stop()
+
+
+## Seconds the engine takes to die when the fuel runs out.
+const WIND_DOWN_TIME := 2.5
+var _wind_down: Tween = null
+var _winding_down := false
+
+
+func _end_wind_down() -> void:
+	_generator_audio.stop()
+	_generator_audio.pitch_scale = 1.0
+	_generator_audio.volume_db = generator_audio_volume_db
+	_winding_down = false
 
 func _update_fuel_indicator(delta: float) -> void:
 	var nm := get_node_or_null("/root/NightManager")
@@ -125,22 +152,22 @@ func toggle_switch() -> void:
 		if nm.has_signal("generator_state_changed"): nm.generator_state_changed.emit(false)
 		if nm.has_method("recalculate_fuel_drain"): nm.recalculate_fuel_drain()
 		_play_sfx(generator_switch_sfx)
-		_show_hud_msg("Generator stopped.")
+		_show_hud_msg("There. Generator's off.")
 	else:
 		var fuse_box = get_tree().get_first_node_in_group("FuseBox")
 		if not fuse_box:
 			for node in get_tree().get_nodes_in_group("interactable"):
 				if node is FuseBox: fuse_box = node; break
 		if not fuse_box or not fuse_box.has_method("is_powered") or not fuse_box.is_powered():
-			_show_hud_msg("The fuse box needs to be repaired first..."); return
+			_show_hud_msg("It won't run until I fix the fuse box."); return
 		var fuel_pct: float = (nm.generator_fuel / nm.max_fuel) * 100.0
-		if nm.generator_fuel <= 0.0: _show_hud_msg("The generator is out of fuel..."); return
-		if fuel_pct < MIN_START_FUEL_PERCENT: _show_hud_msg("Not enough fuel to start (need > 10%%)..."); return
+		if nm.generator_fuel <= 0.0: _show_hud_msg("It's bone dry. I need fuel."); return
+		if fuel_pct < MIN_START_FUEL_PERCENT: _show_hud_msg("There's barely any fuel in it. Not enough to get it going."); return
 		is_switched_on = true; nm.is_generator_on = true
 		if nm.has_signal("generator_state_changed"): nm.generator_state_changed.emit(true)
 		if nm.has_method("recalculate_fuel_drain"): nm.recalculate_fuel_drain()
 		_play_sfx(generator_switch_sfx)
-		_show_hud_msg("Generator started.")
+		_show_hud_msg("There we go.")
 		# ─── ROUTINE MANAGER: Generator turned ON ─────────────────────
 		# The Day 1 "Turn on the generator" objective completes the moment
 		# the switch is flipped. This is the post-refuel step before the
@@ -173,7 +200,7 @@ func get_interact_text() -> String:
 
 func _show_hud_msg(msg: String) -> void:
 	var hud = get_tree().get_first_node_in_group("hud")
-	if hud and hud.has_method("show_message"): hud.show_message(msg)
+	if hud and hud.has_method("show_message"): hud.show_message(msg, self)
 	else: print("[Generator HUD]: ", msg)
 
 func _play_sfx(stream: AudioStream) -> void:

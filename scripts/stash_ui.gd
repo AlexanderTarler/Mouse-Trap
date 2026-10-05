@@ -44,6 +44,11 @@ var _container_item_buttons: Array[Button] = []
 @onready var _store_all_button: Button = $StashPanel/TransferButtons/StoreAllButton
 
 
+## Found by its group (not by a path in the level).
+func _enter_tree() -> void:
+	add_to_group("stash_ui")
+
+
 func _ready() -> void:
 	# Start hidden
 	visible = false
@@ -260,7 +265,7 @@ func _on_container_item_pressed(index: int) -> void:
 	var added = Inventory.add_item(item_data)
 	if not added:
 		# Inventory is full — show message
-		_show_hud_message("Inventory is full!")
+		_show_hud_message("I can't carry any more.")
 		print("[StashUI] Transfer failed: Player inventory full.")
 		return
 
@@ -304,9 +309,9 @@ func _on_take_all_pressed() -> void:
 			if not added:
 				# Inventory full — stop entire Take All
 				if items_added_this_entry > 0 and quantity > 1:
-					_show_hud_message("Inventory full — took %d/%d %s" % [items_added_this_entry, quantity, item_data.item_name])
+					_show_hud_message("I could only carry %d of the %d." % [items_added_this_entry, quantity])
 				else:
-					_show_hud_message("Inventory is full!")
+					_show_hud_message("I can't carry any more.")
 				take_success = false
 				break
 			items_added_this_entry += 1

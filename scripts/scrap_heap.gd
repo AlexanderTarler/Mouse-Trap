@@ -100,7 +100,7 @@ func get_interact_text() -> String:
 func interact(player: Node3D = null) -> void:
 	# ─── SPENT CHECK ───────────────────────────────────────
 	if is_spent:
-		_show_hud_message("No more useable items.")
+		_show_hud_message("There's nothing left worth taking.")
 		print("[ScrapHeap] %s: Spent — no items left." % scrap_heap_id)
 		return
 
@@ -128,7 +128,7 @@ func interact(player: Node3D = null) -> void:
 		return
 
 	if _night_manager.current_night < 3:
-		_show_hud_message("The scrap heap is sealed up tight. Maybe you'll have better luck in a few days...")
+		_show_hud_message("It's all wedged together. Maybe in a few days I can get at it.")
 		print("[ScrapHeap] %s: Blocked — Day %d (unlocked on Night 3)." % [scrap_heap_id, _night_manager.current_night])
 		return
 
@@ -353,8 +353,7 @@ func _try_load_resource(path: String):
 ## Finds an existing StashUI in the scene tree, or lazy-instantiates
 ## a new one from the stash_ui.tscn scene.
 func _get_or_create_stash_ui() -> Node:
-	# Search the entire scene tree for an existing StashUI instance
-	var existing = get_tree().root.find_child("StashUI", true, false)
+	var existing = get_tree().get_first_node_in_group("stash_ui")
 	if existing:
 		return existing
 
@@ -386,6 +385,6 @@ func _get_or_create_stash_ui() -> Node:
 func _show_hud_message(msg: String) -> void:
 	var hud = get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("show_message"):
-		hud.show_message(msg)
+		hud.show_message(msg, self)
 	else:
 		print("[ScrapHeap HUD]: ", msg)

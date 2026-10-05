@@ -65,9 +65,7 @@ func _ready() -> void:
 	
 	# Find PerceptionManager
 	if not perception_manager:
-		perception_manager = get_node_or_null("/root/CottageHorror/Player/PerceptionManager")
-		if not perception_manager:
-			perception_manager = get_node_or_null("/root/Main/Player/PerceptionManager")
+		perception_manager = get_tree().get_first_node_in_group("perception_manager")
 	
 	# Connect to PerceptionManager signals
 	if perception_manager:

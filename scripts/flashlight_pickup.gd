@@ -31,9 +31,7 @@ func interact() -> void:
 	print("[FlashlightPickup] interact() called!")
 	
 	# Find the player and enable their flashlight
-	var player = get_node_or_null("/root/CottageHorror/Player")
-	if not player:
-		player = get_node_or_null("/root/Main/Player")
+	var player = get_tree().get_first_node_in_group("player")
 	
 	if player and player.has_method("enable_flashlight"):
 		player.enable_flashlight()

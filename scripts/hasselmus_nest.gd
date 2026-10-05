@@ -33,7 +33,7 @@ extends StaticBody3D
 ##   lock_type = "none":       Unlocked always (no mechanic required).
 ##
 ## While the lock is NOT satisfied, get_interact_text() returns a dimmed
-## contextual clue (e.g. "Nest Dormant - Requires Provocation"). Once the
+## contextual clue (e.g. "They're dormant. Something has to stir them up."). Once the
 ## condition is met, the prompt swaps to the standard "Document Nest".
 ##
 ## ─── TUTORIAL TRIGGERS ─────────────────────────────────────────────────
@@ -262,7 +262,7 @@ func _is_player_crouching() -> bool:
 func _show_stealth_fail_message() -> void:
 	var hud := get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("show_message"):
-		hud.show_message("The nest sensed my presence — I startled them.")
+		hud.show_message("The nest sensed me. I startled them.", self)
 	print("[HasselmusNest] %s: STEALTH FAILED! Player moved within %.1fm while not crouching." % [nest_label, stealth_fail_radius])
 
 
@@ -369,7 +369,7 @@ func interact() -> void:
 		if not clue.is_empty():
 			var hud := get_tree().get_first_node_in_group("hud")
 			if hud and hud.has_method("show_message"):
-				hud.show_message(clue)
+				hud.show_message(clue, self)
 		return
 	
 	# Mark as documented
@@ -380,11 +380,12 @@ func interact() -> void:
 	# Emit signal
 	nest_documented.emit(nest_id)
 
-	# The last nest: a storm breaks for the long walk back to the cabin.
+	# The last nest: a storm breaks for the long walk back to the cabin, and
+	# rains on until the player wakes up on Day 3.
 	if nest_label == "Nest Gamma":
 		var weather := get_node_or_null("/root/Weather")
 		if weather and weather.has_method("start_storm"):
-			weather.start_storm()
+			weather.start_storm(0.0, true)
 	
 	# Notify RoutineManager
 	var rm = get_node_or_null("/root/RoutineManager")
@@ -434,16 +435,16 @@ func _refresh_lock_snapshot() -> void:
 ## Uses the exported lock_clue_text if set, otherwise auto-generates.
 func _get_clue_text() -> String:
 	if _stealth_failed:
-		return "The nest is on guard — I startled them. Leave and approach in silence."
+		return "I startled them. I'll back off and come at them quietly."
 	if not lock_clue_text.is_empty():
 		return lock_clue_text
 	match lock_type:
 		"overcharge":
-			return "Nest Dormant - Requires Provocation"
+			return "They're dormant. Something has to stir them up."
 		"stealth":
-			return "The nest is watching. Stay low and approach quietly."
+			return "They're watching. I'd better stay low and keep quiet."
 		"stillness":
-			return "Nest Silent - Too Much Noise"
+			return "Dead quiet. I'm making too much noise."
 	return ""
 
 
@@ -464,9 +465,7 @@ func _add_to_notebook() -> void:
 	
 	# Method 3: Fall back to hardcoded paths
 	if not notebook:
-		notebook = get_node_or_null("/root/CottageHorror/Player/NotebookLayer/NotebookUI")
-	if not notebook:
-		notebook = get_node_or_null("/root/Main/Player/NotebookLayer/NotebookUI")
+		notebook = get_tree().get_first_node_in_group("notebook_ui")
 	
 	if notebook and notebook.has_method("add_documentation"):
 		notebook.add_documentation(nest_label)

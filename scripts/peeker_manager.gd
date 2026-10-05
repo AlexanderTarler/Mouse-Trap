@@ -335,6 +335,10 @@ func _pick_valid_window() -> Node3D:
 ## The peeker will tween up into view (handled by WindowPeeker._ready).
 func _instantiate_peeker(target_window: Node3D) -> WindowPeeker:
 	var peeker: WindowPeeker = PEEKER_SCENE.instantiate()
+	# From Day 2 on (the Day 2 door-lock peeker, and Night 2's) it's quick.
+	# main_objective is 99 from Day 2.
+	var rm = get_node_or_null("/root/RoutineManager")
+	peeker.quick = rm != null and rm.main_objective >= 99
 	get_tree().current_scene.add_child(peeker)
 	
 	# Position at the window's XZ but below ground (Y offset handled by peeker)

@@ -102,12 +102,16 @@ func _test_peeker() -> void:
 func _test_wake() -> void:
 	var nm: Node = root.get_node("NightManager")
 	var ec: Node = get_first_node_in_group("environment_controller")
+	# GameTime held still, or its next tick sends the real clock in between.
+	var gt: Node = root.get_node("GameTime")
+	gt.set_process(false)
 	ec._on_game_time_changed(0.8, true)
 	ec._on_game_time_changed(nm.WAKE_PROGRESS)
 	await _frames(1)
 	_check("#3 waking: a little after dawn (%.2f), shown at once (sky at %.2f)" % [nm.WAKE_PROGRESS, ec.cycle_progress],
 		nm.WAKE_PROGRESS > 0.0 and nm.WAKE_PROGRESS < 0.08 and is_equal_approx(ec.cycle_progress, nm.WAKE_PROGRESS))
-	ec._on_game_time_changed(root.get_node("GameTime").cycle_progress, true)
+	gt.set_process(true)
+	ec._on_game_time_changed(gt.cycle_progress, true)
 
 
 func _f3(hud: Node) -> void:

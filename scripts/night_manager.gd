@@ -406,8 +406,6 @@ func _apply_dev_mode_settings() -> void:
 func setup_player_spawn() -> void:
 	var player: Node3D = get_tree().get_first_node_in_group("player")
 	if not player:
-		player = get_tree().get_first_node_in_group("Player")
-	if not player:
 		print("[NightManager] Player not found! Cannot set spawn position.")
 		return
 	
@@ -467,10 +465,6 @@ func start_onboarding_sequence() -> void:
 	print("[NightManager] Starting Day 1 Onboarding Sequence...")
 	_play_opening()
 	
-	var horror_hud = get_node_or_null("/root/CottageHorror/HorrorHUD")
-	if horror_hud:
-		_hide_horror_ui_elements(horror_hud)
-	
 	_set_objective("Enter the cabin.")
 	
 	var routine_manager = get_node_or_null("/root/RoutineManager")
@@ -480,20 +474,6 @@ func start_onboarding_sequence() -> void:
 	else:
 		print("[NightManager] RoutineManager not found or missing reset_all_phases().")
 
-
-
-func _hide_horror_ui_elements(horror_hud: Node) -> void:
-	if horror_hud.has_method("hide_confidence"):
-		horror_hud.hide_confidence()
-	if horror_hud.has_method("hide_sanity"):
-		horror_hud.hide_sanity()
-	
-	if "confidence_bar" in horror_hud and horror_hud.confidence_bar:
-		horror_hud.confidence_bar.visible = false
-	if "sanity_bar" in horror_hud and horror_hud.sanity_bar:
-		horror_hud.sanity_bar.visible = false
-	
-	print("[NightManager] Horror UI elements hidden for onboarding.")
 
 
 func _set_objective(text: String) -> void:
@@ -559,6 +539,9 @@ func _process(delta: float) -> void:
 	_night_tick_timer += delta
 	if _night_tick_timer < 0.2:
 		return
+	# The time since the last tick (~0.2 s): what the timers below advance by
+	# (adding the frame's delta once per tick ran them ~12x too slow).
+	var tick := _night_tick_timer
 	_night_tick_timer = 0.0
 
 	if not _spawn_setup_done:
@@ -576,12 +559,11 @@ func _process(delta: float) -> void:
 
 	if _awaiting_door_lock:
 		var _poll_player = get_tree().get_first_node_in_group("player") as Node3D
-		if not _poll_player:
-			_poll_player = get_tree().get_first_node_in_group("Player") as Node3D
 		if _poll_player and _poll_player.has_method("get_player_room"):
 			var room = _poll_player.get_player_room()
-			if room == "HallRoom":
-				_door_lock_delay_timer += delta
+			# The hall's room area is named "Hallroom".
+			if room.to_lower() == "hallroom":
+				_door_lock_delay_timer += tick
 				if _door_lock_delay_timer >= 3.0:
 					var door = get_tree().get_first_node_in_group("Door")
 					if door and door.has_method("close_and_lock"):
@@ -607,14 +589,8 @@ func _process(delta: float) -> void:
 	if is_night_active:
 		if is_generator_on:
 			# ─── TASK 2: OVERLOAD EXACT 3.0/s DRAIN ─────────────────────
-			# This _process() block is throttled to 5 Hz (0.2s ticks, see
-			# _night_tick_timer above). `delta` here is still the raw per-frame
-			# delta (~0.016s), so draining `rate * delta` once per 0.2s tick
-			# would run at only ~8% of the intended rate. We therefore scale
-			# by the throttle interval (0.2s) so the math is exact:
-			#   overload: 3.0 units/sec → 0.6 units per 0.2s tick
-			#   baseline: current_drain_rate /sec → rate * 0.2 per tick
-			const THROTTLE_INTERVAL: float = 0.2
+			# Drained per tick by the time since the last one (`tick`, ~0.2 s):
+			#   overload: 3.0 units/sec; baseline: current_drain_rate /sec.
 			
 			# While an overloaded portable trap lamp is active, the drain
 			# rate is FORCED to exactly 3.0 units/sec (3% of max_fuel per
@@ -629,9 +605,9 @@ func _process(delta: float) -> void:
 					break
 			
 			if overload_active:
-				generator_fuel -= 3.0 * THROTTLE_INTERVAL
+				generator_fuel -= 3.0 * tick
 			else:
-				generator_fuel -= current_drain_rate * THROTTLE_INTERVAL
+				generator_fuel -= current_drain_rate * tick
 			generator_fuel = clampf(generator_fuel, 0.0, max_fuel)
 			fuel_changed.emit(generator_fuel)
 			
@@ -647,7 +623,7 @@ func _process(delta: float) -> void:
 
 	
 	if is_night_active:
-		_event_timer += delta
+		_event_timer += tick
 		if _event_timer >= 5.0:
 			_event_timer = 0.0
 			_check_time_events()
@@ -709,8 +685,6 @@ func _apply_dawn_exhaustion() -> void:
 		gt.is_running = false
 
 	var player = get_tree().get_first_node_in_group("player") as Node3D
-	if not player:
-		player = get_tree().get_first_node_in_group("Player") as Node3D
 	if player:
 		player.is_exhausted = true
 		print("[NightManager] Dawn exhaustion applied to player.")
@@ -831,9 +805,7 @@ func end_current_night() -> void:
 	
 	print("Night %d has ended! Dawn breaks." % current_night)
 	
-	_clear_environment_pickups()
-	_respawn_day_items()
-	# A new day: snapshot it (after the day's items have spawned) so a death
+	# A new day: snapshot it so a death
 	# today restarts from this morning.
 	var day_checkpoint: Node = get_node_or_null("/root/Checkpoint")
 	if day_checkpoint and day_checkpoint.has_method("capture_deferred"):
@@ -844,34 +816,6 @@ func end_current_night() -> void:
 		print("Preparing for Night %d..." % current_night)
 	else:
 		print("All nights survived! Game over.")
-
-
-func _clear_environment_pickups() -> void:
-	var spawner = get_node_or_null("/root/CottageHorror/ItemSpawner")
-	if not spawner:
-		spawner = get_node_or_null("/root/Main/ItemSpawner")
-	if not spawner:
-		return
-	
-	for child in spawner.get_children():
-		if child is Marker3D:
-			continue
-		if child.has_method("queue_free"):
-			child.queue_free()
-	
-	print("[Dawn Resupply] Cleared uncollected pickups from the environment.")
-
-
-func _respawn_day_items() -> void:
-	var spawner = get_node_or_null("/root/CottageHorror/ItemSpawner")
-	if not spawner:
-		spawner = get_node_or_null("/root/Main/ItemSpawner")
-	if not spawner:
-		return
-	
-	if spawner.has_method("_spawn_items"):
-		spawner.call_deferred("_spawn_items")
-		print("[Dawn Resupply] Spawned fresh survival items for the new cycle.")
 
 
 func recalculate_fuel_drain() -> float:
@@ -1190,8 +1134,6 @@ func restart_from_checkpoint() -> void:
 func _spawn_player_at(marker_name: String) -> bool:
 	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
 	if not player:
-		player = get_tree().get_first_node_in_group("Player") as Node3D
-	if not player:
 		print("[NightManager] _spawn_player_at(): Player not found in groups 'player'/'Player'.")
 		return false
 	
@@ -1297,9 +1239,7 @@ func restart_from_morning() -> void:
 		gt.set_progress(0.125)
 		print("[NightManager] Time reset to morning (progress: 0.125).")
 	
-	var ec: Node = get_node_or_null("/root/CottageHorror/EnvironmentController")
-	if not ec:
-		ec = get_node_or_null("/root/Main/EnvironmentController")
+	var ec: Node = get_tree().get_first_node_in_group("environment_controller")
 	if ec and ec.has_method("_apply_cycle"):
 		ec._apply_cycle()
 		print("[NightManager] EnvironmentController refreshed to daytime lighting.")
@@ -1419,9 +1359,7 @@ func reset_to_daybreak() -> void:
 			gt.set_progress(0.125)
 		print("[NightManager] Time reset to morning (progress: %.3f)." % gt.cycle_progress)
 	
-	var ec: Node = get_node_or_null("/root/CottageHorror/EnvironmentController")
-	if not ec:
-		ec = get_node_or_null("/root/Main/EnvironmentController")
+	var ec: Node = get_tree().get_first_node_in_group("environment_controller")
 	if ec and ec.has_method("_apply_cycle"):
 		ec._apply_cycle()
 		print("[NightManager] EnvironmentController refreshed to daytime lighting.")

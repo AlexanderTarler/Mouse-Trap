@@ -3,9 +3,10 @@ extends Node
 ## the thing it is about (think(text, subject)): italic, warm and quoted, so it
 ## never reads like an objective or a tutorial prompt, drifting up and fading
 ## away. It shows through walls (it's in the player's head). With no subject,
-## or a subject that is off screen, the thought appears low on the screen
-## instead, in the same style. Each thought (by key, or by its text) is only
-## ever thought once.
+## or a subject that is off screen, the thought floats in place a couple of
+## metres ahead of where the player is looking (it stays there; the player
+## can walk away from it). Each thought (by key, or by its text) is only ever
+## thought once.
 ##
 ##   Monologue.think("Someone left a window for me to patch up - how kind.", window)
 
@@ -16,9 +17,15 @@ const HEIGHT := 1.2
 const FADE_IN := 0.6
 const FADE_OUT := 1.2
 const DRIFT := 0.35
+## With no subject on screen: this far ahead of the camera (m), and this far
+## above the centre of view, clear of the crosshair.
+const AHEAD := 2.2
+const AHEAD_RAISE := 0.3
 
 var _thought: Node = null
 var _had := {}
+## The line say() is showing ("" while a story thought from think() is).
+var _said := ""
 var _font: SystemFont = null
 
 
@@ -30,14 +37,41 @@ func think(text: String, subject: Node3D = null, duration: float = 5.0, key: Str
 		return false
 	_had[id] = true
 	_clear()
-	var camera := get_viewport().get_camera_3d()
-	var anchor := _anchor(subject)
-	if subject and camera and not camera.is_position_behind(anchor) and _on_screen(camera, anchor):
-		_float(text, anchor, duration)
-	else:
-		_on_screen_line(text, duration)
+	_show(text, subject, duration)
 	print("[Monologue] \"%s\"" % text)
 	return true
+
+
+## A passing remark (feedback like "I can't carry any more." or "I should
+## lock the door first."), over `subject` (usually the thing interacted with)
+## in the same style. Unlike think() it can come again, but the same line
+## isn't restarted while it's showing, and a story thought on screen isn't
+## interrupted.
+func say(text: String, duration: float = 3.5, subject: Node3D = null) -> void:
+	if text.strip_edges().is_empty():
+		return
+	if is_instance_valid(_thought):
+		if _said.is_empty() or _said == text:
+			return
+	_clear()
+	_said = text
+	_show(text, subject, duration)
+
+
+## Over the subject if it's on screen, else in place ahead of the camera
+## (on the screen only without a camera).
+func _show(text: String, subject: Node3D, duration: float) -> void:
+	var camera := get_viewport().get_camera_3d()
+	if not camera:
+		_on_screen_line(text, duration)
+		return
+	if subject and is_instance_valid(subject):
+		var anchor := _anchor(subject)
+		if not camera.is_position_behind(anchor) and _on_screen(camera, anchor):
+			_float(text, anchor, duration)
+			return
+	var view := camera.global_transform
+	_float(text, view.origin - view.basis.z * AHEAD + view.basis.y * AHEAD_RAISE, duration)
 
 
 ## Forgets which thoughts were had (a new game).
@@ -149,3 +183,4 @@ func _clear() -> void:
 	if is_instance_valid(_thought):
 		_thought.queue_free()
 	_thought = null
+	_said = ""

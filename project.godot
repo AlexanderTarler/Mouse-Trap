@@ -200,6 +200,11 @@ pause_menu={
 3d/default_cell_size=0.2
 3d/default_cell_height=0.2
 
+[physics]
+
+3d/physics_engine="Jolt Physics"
+jolt_physics_3d/limits/max_bodies=20480
+
 [rendering]
 
 textures/vram_compression/import_etc2_astc=true

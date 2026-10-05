@@ -324,9 +324,7 @@ func open_computer() -> void:
 	is_open = true
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	
-	var inv_ui = get_node_or_null("/root/CottageHorror/InventoryUI")
-	if not inv_ui:
-		inv_ui = get_node_or_null("/root/Main/InventoryUI")
+	var inv_ui = get_tree().get_first_node_in_group("inventory_ui")
 	if inv_ui and inv_ui.has_method("_close_inventory") and inv_ui.get("_is_open"):
 		inv_ui._close_inventory()
 	

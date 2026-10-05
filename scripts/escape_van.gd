@@ -188,7 +188,7 @@ func _try_install_component() -> void:
 	
 	# ─── UNIQUE PART VALIDATION ──────────────────────────────────
 	if _installed_parts.has(car_part_name):
-		_show_hud_message("I already installed a %s. I need different parts." % car_part_name)
+		_show_hud_message("I've already put a %s in. I need something else." % car_part_name.to_lower())
 		print("[EscapeVan] DUPLICATE REJECTED: %s is already installed." % car_part_name)
 		return
 	
@@ -203,7 +203,7 @@ func _try_install_component() -> void:
 	components_collected += 1
 	
 	print("[EscapeVan] Component installed: %s (%d/%d)" % [car_part_name, components_collected, COMPONENTS_NEEDED])
-	_show_hud_message("%s installed! (%d/%d parts)" % [car_part_name, components_collected, COMPONENTS_NEEDED])
+	_show_hud_message(_installed_line(car_part_name))
 	
 	# ─── NOTIFY ROUTINEMANAGER ────────────────────────────────────
 	var rm = get_node_or_null("/root/RoutineManager")
@@ -219,12 +219,21 @@ func _try_install_component() -> void:
 			_repair_audio.play()
 
 
+## The thought after fitting a part: how many are still missing.
+func _installed_line(part_name: String) -> String:
+	var remaining := COMPONENTS_NEEDED - components_collected
+	if remaining <= 0:
+		return "That's the %s in." % part_name.to_lower()
+	var left := "One more part to go." if remaining == 1 else "%s more parts to go." % ("Two" if remaining == 2 else str(remaining))
+	return "That's the %s in. %s" % [part_name.to_lower(), left]
+
+
 ## Called when all 3 components have been installed.
 func _repair_complete() -> void:
 	is_repaired = true
 	
 	print("[EscapeVan] ⚡ VAN REPAIRED! All %d components installed." % COMPONENTS_NEEDED)
-	_show_hud_message("The van is repaired! Get in and escape!")
+	_show_hud_message("That should do it. Time to get the hell out of here.")
 	
 	# ─── NOTIFY ROUTINEMANAGER ────────────────────────────────────
 	var rm = get_node_or_null("/root/RoutineManager")
@@ -310,7 +319,7 @@ func _process_hold_interact(delta: float) -> void:
 		components_collected += 1
 		
 		print("[EscapeVan] Component installed via hold: %s (%d/%d)" % [_pending_part_name, components_collected, COMPONENTS_NEEDED])
-		_show_hud_message("%s installed! (%d/%d parts)" % [_pending_part_name, components_collected, COMPONENTS_NEEDED])
+		_show_hud_message(_installed_line(_pending_part_name))
 		
 		# TASK 8: The repair audio is already playing from start_hold_interact() —
 		# do NOT restart it here at completion.
@@ -411,9 +420,7 @@ func _trigger_first_chase() -> void:
 		objective_label.text = "FLEE"
 		objective_label.modulate = Color(1, 0.5, 0, 1)
 	
-	var hud = get_node_or_null("/root/CottageHorror/HUD")
-	if not hud:
-		hud = get_node_or_null("/root/Main/HUD")
+	var hud = get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("_show_event"):
 		hud._show_event("The ignition... it's been completely torn out.")
 	else:
@@ -483,9 +490,7 @@ func _update_beacon(pulse: float) -> void:
 # ─── UI HELPERS ────────────────────────────────────────────
 
 func _find_objective_label() -> Label:
-	var hud = get_node_or_null("/root/CottageHorror/HUD")
-	if not hud:
-		hud = get_node_or_null("/root/Main/HUD")
+	var hud = get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_node("ObjectiveLabel"):
 		return hud.get_node("ObjectiveLabel") as Label
 	return null
@@ -498,9 +503,7 @@ func _find_objective_label() -> Label:
 # ─── ENVIRONMENT & ENTITY HELPERS ──────────────────────────
 
 func _darken_environment_for_van_sequence() -> void:
-	var ec = get_node_or_null("/root/CottageHorror/EnvironmentController")
-	if not ec:
-		ec = get_node_or_null("/root/Main/EnvironmentController")
+	var ec = get_tree().get_first_node_in_group("environment_controller")
 	if not ec:
 		print("[EscapeVan] EnvironmentController not found — skipping darkness override.")
 		return
@@ -517,9 +520,7 @@ func _darken_environment_for_van_sequence() -> void:
 
 
 func _restore_environment_lighting() -> void:
-	var ec = get_node_or_null("/root/CottageHorror/EnvironmentController")
-	if not ec:
-		ec = get_node_or_null("/root/Main/EnvironmentController")
+	var ec = get_tree().get_first_node_in_group("environment_controller")
 	if not ec:
 		return
 	if ec.has_method("restore_cycle"):
@@ -589,6 +590,6 @@ func _find_marker_recursive(root: Node, marker_name: String) -> Marker3D:
 func _show_hud_message(msg: String) -> void:
 	var hud = get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("show_message"):
-		hud.show_message(msg)
+		hud.show_message(msg, self)
 	else:
 		print("[EscapeVan HUD]: ", msg)

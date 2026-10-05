@@ -189,10 +189,15 @@ func restore() -> bool:
 		var node := get_node_or_null(path)
 		if node and node.has_method("_on_checkpoint_restored"):
 			node._on_checkpoint_restored()
-	# The weather isn't part of the snapshot: whatever storm was raging ends.
+	# The weather isn't part of the snapshot: it follows the story. From
+	# Nest Gamma until the Day 3 wake-up it rains; otherwise it's clear.
 	var weather := get_node_or_null("/root/Weather")
-	if weather and weather.has_method("clear_now") and weather.is_raining():
-		weather.clear_now()
+	var rm := get_node_or_null("/root/RoutineManager")
+	if weather and weather.has_method("clear_now"):
+		if rm and rm.day2_step >= 5 and not rm.is_day3_sandbox:
+			weather.start_storm(0.0, true)
+		else:
+			weather.clear_now()
 	restoring = false
 	print("[Checkpoint] Restored the %s snapshot." % kind)
 	return true

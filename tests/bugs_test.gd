@@ -4,7 +4,7 @@ extends SceneTree
 ##   2/6. Dying restores the start of the night / day (Checkpoint).
 ##   3/9. The sprint hint shows over other hints and stays until stamina 70%.
 ##   4. The willow's canopy has no collision (heavy physics near the totem).
-##   5. A storm breaks after documenting Nest Gamma, ends back inside.
+##   5. A storm breaks after documenting Nest Gamma and lasts until Day 3.
 ##   7. The side-track objectives tick off.
 ##   8. Fuel cans show their fuel in %; a dropped can keeps its fuel.
 ##
@@ -203,9 +203,13 @@ func _test_storm() -> void:
 	var raining: bool = weather.is_raining() and weather._rain_particles != null and environment.weather > 0.1
 	player.global_position = Vector3(6.5, 0.8, 11.0)   # back in the cabin
 	await _frames(60 * int(weather.INSIDE_ENDS_AFTER + weather.FADE_OUT + 2.0))
-	_check("#5 storm: documenting Nest Gamma brings rain, a darker sky and fog; it passes once back inside",
-		started and raining and not weather.is_raining() and environment.weather == 0.0,
-		"started=%s, raining=%s, level now %.2f" % [started, raining, weather.level])
+	# It rains on (indoors too) until the Day 3 wake-up clears it.
+	var still: bool = weather.is_raining()
+	var bed_clears := "weather.clear_now()" in FileAccess.get_file_as_string("res://scripts/bed_interactable.gd")
+	weather.clear_now()
+	_check("#5 storm: documenting Nest Gamma brings rain, a darker sky and fog; it lasts until the Day 3 wake-up",
+		started and raining and still and bed_clears and not weather.is_raining() and environment.weather == 0.0,
+		"started=%s, raining=%s, still inside=%s, bed clears=%s" % [started, raining, still, bed_clears])
 
 
 func _window(name: String) -> Node:

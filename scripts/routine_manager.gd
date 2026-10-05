@@ -355,35 +355,18 @@ func _do_highlight_target(group_name: String) -> void:
 		return
 	
 	for node in nodes:
+		var meshes: Array = node.find_children("*", "MeshInstance3D", true)
 		if node is MeshInstance3D:
-			if _should_highlight_mesh(node, group_name):
-				_apply_xray_to_mesh(node, mat)
-			node.extra_cull_margin = 100.0
-			if "custom_aabb" in node:
-				node.custom_aabb = AABB(Vector3(-200, -200, -200), Vector3(400, 400, 400))
-			var internal_meshes := node.find_children("*", "MeshInstance3D", true)
-			for im in internal_meshes:
-				if _should_highlight_mesh(im, group_name):
-					_apply_xray_to_mesh(im, mat)
-				im.extra_cull_margin = 100.0
-				im.custom_aabb = AABB(Vector3(-200, -200, -200), Vector3(400, 400, 400))
-			print("[RoutineManager] X-ray highlight applied via next_pass to '%s' (group: %s)" % [node.name, group_name])
-		else:
-			var mesh_children := node.find_children("*", "MeshInstance3D", true)
-			var applied_count := 0
-			for mesh_child in mesh_children:
-				if _should_highlight_mesh(mesh_child, group_name):
-					_apply_xray_to_mesh(mesh_child, mat)
-				mesh_child.extra_cull_margin = 100.0
-				if "custom_aabb" in mesh_child:
-					mesh_child.custom_aabb = AABB(Vector3(-200, -200, -200), Vector3(400, 400, 400))
+			meshes.push_front(node)
+		var applied_count := 0
+		for mesh in meshes:
+			if _should_highlight_mesh(mesh, group_name):
+				_apply_xray_to_mesh(mesh, mat)
 				applied_count += 1
-			if applied_count > 0:
-				print("[RoutineManager] X-ray highlight applied to %d MeshInstance3D children of '%s' (group: %s)" % [applied_count, node.name, group_name])
-			elif "nest" in group_name:
-				# ─── NEST DEBUG: Log when a nest node was found but had NO mesh children ──
-				var scene_path: String = node.scene_file_path if node.has_method("get_scene_file_path") else node.scene_file_path if "scene_file_path" in node else "?"
-				push_warning("[RoutineManager] NEST HIGHLIGHT FAILED: node '%s' (type=%s, scene='%s') has 0 MeshInstance3D children. find_children recursive found %d total descendants." % [node.name, node.get_class(), scene_path, node.get_child_count(true)])
+		if applied_count > 0:
+			print("[RoutineManager] X-ray highlight applied to %d mesh(es) of '%s' (group: %s)" % [applied_count, node.name, group_name])
+		elif "nest" in group_name:
+			push_warning("[RoutineManager] NEST HIGHLIGHT FAILED: node '%s' (type=%s, scene='%s') has no meshes." % [node.name, node.get_class(), node.scene_file_path])
 
 
 ## Applies the x-ray highlight to a single node and all MeshInstance3D
@@ -391,21 +374,15 @@ func _do_highlight_target(group_name: String) -> void:
 ## This is the restricted-subtree path used when a group declares an
 ## exported `highlight_target` NodePath (e.g. xray_generator → button box).
 func _apply_xray_to_subtree(root: Node, mat: Material, group_name: String) -> void:
-	var meshes: Array[MeshInstance3D] = []
+	var meshes: Array = root.find_children("*", "MeshInstance3D", true)
 	if root is MeshInstance3D:
-		meshes.append(root)
-	meshes.append_array(root.find_children("*", "MeshInstance3D", true))
-	
+		meshes.push_front(root)
 	var applied_count := 0
 	for m in meshes:
 		if _should_highlight_mesh(m, group_name):
 			_apply_xray_to_mesh(m, mat)
-		m.extra_cull_margin = 100.0
-		if "custom_aabb" in m:
-			m.custom_aabb = AABB(Vector3(-200, -200, -200), Vector3(400, 400, 400))
-		applied_count += 1
-	
-	print("[RoutineManager] X-ray highlight restricted to target '%s' (%d meshes in subtree, group: %s)." % [root.name, applied_count, group_name])
+			applied_count += 1
+	print("[RoutineManager] X-ray highlight restricted to target '%s' (%d meshes, group: %s)." % [root.name, applied_count, group_name])
 
 
 ## ─── TASK 3.2: HIGHLIGHT TARGET FILTER ──────────────────────────────
@@ -431,71 +408,61 @@ func _should_highlight_mesh(mesh: MeshInstance3D, group_name: String) -> bool:
 	return true
 
 
-## Applies x-ray next_pass material to a specific MeshInstance3D.
-## Uses next_pass on the surface override material instead of material_overlay.
+## Applies the x-ray next_pass material to a MeshInstance3D (its first
+## surface). What it had before (its own surface material override, its
+## culling margin and AABB) is kept in "_xray_saved" and put back by
+## _clear_xray_from_mesh(). (Clearing used to set the override to null,
+## wiping a material the scene had given the mesh, and the 400 m culling
+## box that lets the outline show through walls was never taken off.)
 func _apply_xray_to_mesh(mesh: MeshInstance3D, xray_mat: Material) -> void:
-	var existing_mat = null
-	var mat_idx = 0
-	
-	if mesh.get_surface_override_material_count() > 0:
-		existing_mat = mesh.get_surface_override_material(mat_idx)
-	
-	if not existing_mat and mesh.mesh:
-		existing_mat = mesh.mesh.surface_get_material(mat_idx)
-	
-	if existing_mat:
-		var clone = existing_mat.duplicate()
-		var inst_xray = xray_mat.duplicate()
-		clone.next_pass = inst_xray
-		if mesh.has_meta("_xray_original_material"):
-			mesh.remove_meta("_xray_original_material")
-		mesh.set_meta("_xray_original_material", existing_mat.resource_path if existing_mat.resource_path else "")
-		mesh.set_surface_override_material(mat_idx, clone)
-		print("[RoutineManager] next_pass x-ray applied via surface_override_material on '%s'" % mesh.name)
+	if mesh.get_surface_override_material_count() == 0:
+		return
+	if not mesh.has_meta("_xray_saved"):
+		mesh.set_meta("_xray_saved", {
+			"override": mesh.get_surface_override_material(0),
+			"margin": mesh.extra_cull_margin,
+			"aabb": mesh.custom_aabb,
+		})
+	var saved: Dictionary = mesh.get_meta("_xray_saved")
+	var base: Material = saved.override
+	if not base and mesh.mesh and mesh.mesh.get_surface_count() > 0:
+		base = mesh.mesh.surface_get_material(0)
+	var highlighted: Material
+	if base:
+		highlighted = base.duplicate()
 	else:
-		var base = StandardMaterial3D.new()
-		base.albedo_color = Color.TRANSPARENT
-		base.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		var inst_xray = xray_mat.duplicate()
-		base.next_pass = inst_xray
-		if mesh.has_meta("_xray_original_material"):
-			mesh.remove_meta("_xray_original_material")
-		mesh.set_surface_override_material(mat_idx, base)
-		print("[RoutineManager] next_pass x-ray applied via new fallback material on '%s'" % mesh.name)
+		var invisible := StandardMaterial3D.new()
+		invisible.albedo_color = Color.TRANSPARENT
+		invisible.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		highlighted = invisible
+	highlighted.next_pass = xray_mat.duplicate()
+	mesh.set_surface_override_material(0, highlighted)
+	# Seen through walls from anywhere: never culled while highlighted.
+	mesh.extra_cull_margin = 100.0
+	mesh.custom_aabb = AABB(Vector3(-200, -200, -200), Vector3(400, 400, 400))
 
 
 ## Removes the x-ray highlight from all nodes in the given group.
 ## Also cancels any pending delayed highlight for that group.
 func clear_highlight(group_name: String) -> void:
-	# Cancel any pending timer
 	_cancel_xray_timer(group_name)
-	
-	var nodes := get_tree().get_nodes_in_group(group_name)
-	for node in nodes:
+	for node in get_tree().get_nodes_in_group(group_name):
 		if node is MeshInstance3D:
 			_clear_xray_from_mesh(node)
-			var internal_meshes := node.find_children("*", "MeshInstance3D", true)
-			for im in internal_meshes:
-				_clear_xray_from_mesh(im)
-			if node.has_meta("_xray_original_material"):
-				node.remove_meta("_xray_original_material")
-		else:
-			var mesh_children := node.find_children("*", "MeshInstance3D", true)
-			for mc in mesh_children:
-				_clear_xray_from_mesh(mc)
+		for mesh in node.find_children("*", "MeshInstance3D", true):
+			_clear_xray_from_mesh(mesh)
 	print("[RoutineManager] X-ray highlight cleared for group '%s'" % group_name)
 
 
-## Clears the x-ray next_pass from a single MeshInstance3D.
+## Puts back what the mesh had before it was highlighted.
 func _clear_xray_from_mesh(mesh: MeshInstance3D) -> void:
-	var mat_idx = 0
-	if mesh.has_meta("_xray_original_material"):
-		mesh.set_surface_override_material(mat_idx, null)
-		mesh.remove_meta("_xray_original_material")
-	else:
-		var override_mat = mesh.get_surface_override_material(mat_idx)
-		if override_mat:
-			override_mat.next_pass = null
+	if not mesh.has_meta("_xray_saved"):
+		return
+	var saved: Dictionary = mesh.get_meta("_xray_saved")
+	mesh.set_surface_override_material(0, saved.override)
+	mesh.extra_cull_margin = saved.margin
+	mesh.custom_aabb = saved.aabb
+	mesh.remove_meta("_xray_saved")
 
 
 ## ─── INVENTORY HELPERS ──────────────────────────────────────────────
@@ -521,6 +488,16 @@ func _advance_main_objective(target: int) -> void:
 		# objective, or locked earlier and ticked off when it came up).
 		if was <= 8 and target >= 9:
 			_spawn_peeker_at.call_deferred("Landing_Window")
+		if was < 4 and target == 4:
+			_think_fuse_box.call_deferred()
+
+
+## As "Check the fuse box" comes up.
+func _think_fuse_box() -> void:
+	var monologue := get_node_or_null("/root/Monologue")
+	var box := get_tree().get_first_node_in_group("xray_fuse_box") as Node3D
+	if monologue:
+		monologue.think("It's always the goddamn fuse box.", box, 4.0, "fuse_box")
 
 
 ## The scripted Peeker after a door-lock objective.
@@ -641,9 +618,7 @@ func get_current_objective() -> String:
 					return "Check the fuse box. You have a new fuse."
 			if phase2_fuse_box_interacted:
 				return "Find a fuse in the cabin."
-			if phase2_computer_tried_no_power:
-				return "Check the fuse box. It's always the god damn fuse box."
-			return "Check the fuse box. It's always the god damn fuse box."
+			return "Check the fuse box."
 		5:
 			if phase2_gen_turned_on:
 				_advance_main_objective(6)

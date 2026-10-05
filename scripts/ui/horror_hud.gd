@@ -152,9 +152,7 @@ func _ready() -> void:
 
 	# Find EnvironmentController if not assigned
 	if not environment_controller:
-		environment_controller = get_node_or_null("/root/Main/EnvironmentController")
-		if not environment_controller:
-			environment_controller = get_node_or_null("/root/CottageHorror/EnvironmentController")
+		environment_controller = get_tree().get_first_node_in_group("environment_controller")
 
 	event_label.modulate = Color(1, 1, 1, 0)
 
@@ -278,9 +276,7 @@ func _on_routine_step_changed(step: int, objective_text: String) -> void:
 
 func _find_and_connect_flashlight() -> void:
 	# Try to find the player and flashlight
-	var player = get_node_or_null("/root/CottageHorror/Player")
-	if not player:
-		player = get_node_or_null("/root/Main/Player")
+	var player = get_tree().get_first_node_in_group("player")
 	
 	if player:
 		_flashlight = player.find_child("Flashlight", true, false)
@@ -299,9 +295,7 @@ func _find_and_connect_flashlight() -> void:
 
 func _find_and_connect_stamina() -> void:
 	# Try to find the player
-	var player = get_node_or_null("/root/CottageHorror/Player")
-	if not player:
-		player = get_node_or_null("/root/Main/Player")
+	var player = get_tree().get_first_node_in_group("player")
 	
 	if player and player.has_signal("stamina_changed"):
 		player.stamina_changed.connect(_on_stamina_changed)
@@ -362,20 +356,20 @@ func _on_battery_changed(level: float) -> void:
 
 # Poll every frame to update the display
 func _process(delta: float) -> void:
-	var progress: float = 0.0
-	var p_is_day: bool = true
-	
-	# Read from GameTime directly as the primary source (most reliable).
-	# Fall back to EnvironmentController if GameTime isn't available.
-	var gt = get_node_or_null("/root/GameTime")
-	if gt:
-		progress = gt.cycle_progress
-		p_is_day = gt.is_day
-	elif environment_controller:
-		progress = environment_controller.cycle_progress
-		p_is_day = environment_controller.is_day
-	
-	_update_display(progress, p_is_day)
+	# The clock readouts are only shown with F3: formatted only then.
+	if debug_info_visible:
+		var progress: float = 0.0
+		var p_is_day: bool = true
+		# Read from GameTime directly as the primary source (most reliable).
+		# Fall back to EnvironmentController if GameTime isn't available.
+		var gt = get_node_or_null("/root/GameTime")
+		if gt:
+			progress = gt.cycle_progress
+			p_is_day = gt.is_day
+		elif environment_controller:
+			progress = environment_controller.cycle_progress
+			p_is_day = environment_controller.is_day
+		_update_display(progress, p_is_day)
 	
 	# Update low battery warning flicker
 	_update_low_battery_warning(delta)
@@ -518,9 +512,7 @@ func _on_horror_event(event_name: String) -> void:
 ## Unlocks the player's sprint ability.
 func _on_first_chase_started() -> void:
 	# Find the player and unlock sprint
-	var player = get_node_or_null("/root/CottageHorror/Player")
-	if not player:
-		player = get_node_or_null("/root/Main/Player")
+	var player = get_tree().get_first_node_in_group("player")
 	if player and "sprint_unlocked" in player:
 		player.sprint_unlocked = true
 		print("[HUD] Sprint unlocked for the player!")
@@ -665,9 +657,7 @@ func _update_room_label() -> void:
 		return
 	
 	# Find the player and get the current room
-	var player = get_node_or_null("/root/CottageHorror/Player")
-	if not player:
-		player = get_node_or_null("/root/Main/Player")
+	var player = get_tree().get_first_node_in_group("player")
 	
 	if player and player.has_method("get_player_room"):
 		var room_name = player.get_player_room()
@@ -681,9 +671,21 @@ func _update_room_label() -> void:
 ## (e.g., "The totem is protected by the Entity's presence...").
 ## The message is displayed for 3.0 seconds, then fades out automatically
 ## via the existing _show_event() message queue system.
-func show_message(msg: String) -> void:
-	# Event messages removed per design direction
-	pass
+## Feedback lines ("Inventory is full!", "I should lock the door first.",
+## "I am too tired to read this right now..."). The event label that showed
+## them was removed, which left them going nowhere: refused actions gave no
+## reason. They're shown as the player's thought on screen (Monologue.say).
+## Off: silent again.
+@export var show_feedback_as_thoughts: bool = true
+
+
+## `subject`: what it's about (the thought floats over it while on screen).
+func show_message(msg: String, subject: Node3D = null) -> void:
+	if not show_feedback_as_thoughts:
+		return
+	var monologue := get_node_or_null("/root/Monologue")
+	if monologue and monologue.has_method("say"):
+		monologue.say(msg, 3.5, subject)
 
 
 ## ─── ITEM PICKUP FEEDBACK ──────────────────────────────────────────────

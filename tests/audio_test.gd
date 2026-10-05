@@ -4,7 +4,9 @@ extends SceneTree
 ## indoor muffling, wind, the forest going quiet near the Entity, distant
 ## sounds, whistling broken windows, events placed around the player, stair
 ## footsteps and the chase music. Plus the Entity's and the house's own
-## sounds: growls, climbing, floor creaks, knocks, plank blows, stingers, the house settling and the tension drone.
+## sounds: growls, climbing, floor creaks, knocks, plank blows, stingers and the tension drone.
+## And the object sounds: named one-shots, locked doors, the overcharge hum,
+## the capture sting, bushes, the generator dying, no van-chase music.
 ##
 ## Run: godot --headless --path . --fixed-fps 60 --script res://tests/audio_test.gd
 
@@ -65,6 +67,7 @@ func _run() -> void:
 	_test_house_sounds()
 	await _test_stingers_and_settling()
 	await _test_tension()
+	await _test_new_sounds()
 
 	print("[AUDIO TEST] %s" % ("ALL PASSED" if _failures == 0 else "%d FAILED" % _failures))
 	_scene.queue_free()
@@ -109,8 +112,8 @@ func _files(dir: String, extension: String) -> Array[String]:
 ## The manager's sound sets load in full (these were silently empty).
 func _test_sound_sets() -> void:
 	var expected := {
-		"_ambient_wind_streams": 9, "_wooden_footstep_streams": 8, "_stairs_footstep_streams": 8,
-		"_creaking_door_streams": 12, "_monster_growl_streams": 12, "_grass_footstep_streams": 6,
+		"_ambient_wind_streams": 9, "_wooden_footstep_streams": 8,
+		"_floor_creak_streams": 1, "_object_moved_streams": 3, "_electric_click_streams": 2, "_wood_crack_streams": 2, "_monster_growl_streams": 12, "_grass_footstep_streams": 6,
 		"_whisper_streams": 3, "_distant_forest_streams": 8, "_distant_roar_streams": 4,
 	}
 	var short: Array[String] = []
@@ -118,7 +121,7 @@ func _test_sound_sets() -> void:
 		var got: int = _hsm.get(set_name).size()
 		if got != expected[set_name]:
 			short.append("%s %d/%d" % [set_name, got, expected[set_name]])
-	_check("sound sets: wind, footsteps, door creaks, growls, whispers and distant sounds all load", short.is_empty(), ", ".join(short))
+	_check("sound sets: wind, footsteps, event sounds (no door creaks), growls, whispers and distant sounds all load", short.is_empty(), ", ".join(short))
 
 
 func _test_buses_and_rooms() -> void:
@@ -246,8 +249,8 @@ func _test_chase_music() -> void:
 func _test_entity_sound_sets() -> void:
 	var audio = get_first_node_in_group("entity").audio
 	var expected := {
-		"_growl_streams": 12, "_scrape_streams": 3, "_thud_streams": 3,
-		"_creak_streams": 12, "_knock_streams": 3,
+		"_growl_streams": 12, "_scrape_streams": 1, "_thud_streams": 1,
+		"_creak_streams": 1, "_knock_streams": 3,
 	}
 	var short: Array[String] = []
 	for set_name in expected:
@@ -305,23 +308,8 @@ func _test_stingers_and_settling() -> void:
 	_check("stingers: one plays, and a second right after is held back by the cooldown",
 		first and not second and _hsm._stinger_player.playing)
 
-	_stand(HALL)
-	_hsm._on_night_started(2)
-	await _frames(30)
-	for p in _hsm._event_players:
-		p.stop()
-	_hsm._settle_left = 0.0
-	await _frames(20)
-	var creaks: Array = _hsm._event_players.filter(func(p): return p.playing)
-	var ok := false
-	var detail := "nothing played"
-	if not creaks.is_empty():
-		var c: AudioStreamPlayer3D = creaks[0]
-		var d := Vector2(c.global_position.x - _player.global_position.x, c.global_position.z - _player.global_position.z).length()
-		ok = c.pitch_scale < 0.7 and d >= 2.9 and d <= 7.1
-		detail = "pitch %.2f at %.1f m" % [c.pitch_scale, d]
-	_check("house settling: a low board creak somewhere near the player indoors at night", ok, detail)
-	_hsm._on_night_ended(2)
+	# The house-settling creaks are gone (they sounded like a door opening).
+	_check("house settling: no creaks of its own any more", not "_settle_left" in _hsm)
 
 
 ## The drone swells as the Entity closes in, and is gone by day.
@@ -344,3 +332,57 @@ func _test_tension() -> void:
 	_check("tension: the drone swells as the Entity comes close, and stops by day",
 		near_playing and near_db > far_db + 10.0 and near_db > -20.0 and not _hsm._tension_player.playing,
 		"far %.0f dB, near %.0f dB" % [far_db, near_db])
+
+
+func _test_new_sounds() -> void:
+	# Named one-shots (they used to call a play_sound() that didn't exist).
+	var missing: Array[String] = []
+	for sound_name in _hsm.NAMED_SOUNDS:
+		if not ResourceLoader.exists(_hsm.NAMED_SOUNDS[sound_name][0]):
+			missing.append(sound_name)
+	var played := [0]
+	var count := func(_n): played[0] += 1
+	_hsm.sound_played.connect(count)
+	for sound_name in _hsm.NAMED_SOUNDS:
+		_hsm.play_sound(sound_name, HALL)
+	_hsm.sound_played.disconnect(count)
+	_check("object sounds: salvage, lamp hit, cable strain, switch, lamp off exist and play",
+		missing.is_empty() and played[0] == _hsm.NAMED_SOUNDS.size(), "missing %s, played %d" % [missing, played[0]])
+
+	var door: Node = get_first_node_in_group("Door")
+	var flashlight: Node = _player._flashlight
+	var jumpscare: Node = root.get_node("JumpscareManager")
+	_check("a locked door, the overcharge hum and the capture sting have sounds",
+		door.locked_sound != null and flashlight._hum_player.stream != null and jumpscare._audio_sting_player.stream != null)
+
+	var rustle: Node = get_first_node_in_group("foliage_rustle")
+	var recorded: bool = rustle != null and rustle._sounds["leafy"][0].resource_path.ends_with("Brushing Against Bushes.ogg")
+	var audio = get_first_node_in_group("entity").audio
+	var entity_files: bool = audio._scrape_streams[0].resource_path.ends_with("Climb Scrape.ogg") \
+		and audio._thud_streams[0].resource_path.ends_with("Drop Thud.ogg") \
+		and audio._creak_streams[0].resource_path.ends_with("Floor Creak.ogg") \
+		and audio.WINDOW_KNOCK.resource_path.ends_with("Window Knock.ogg")
+	_check("bushes, climbing, dropping, floor creaks and window knocks use the new recordings", recorded and entity_files)
+
+	# No chase music in the van chase (config.van_chase_music off).
+	var entity = get_first_node_in_group("entity")
+	entity.van_chase_active = true
+	audio.start_chase_music()
+	var silent: bool = not _hsm._stalk_chase_playing
+	entity.van_chase_active = false
+	audio.stop_chase_music()
+	_check("van chase: no chase music", silent)
+
+	# The generator dies down instead of cutting out.
+	var nm := root.get_node("NightManager")
+	var generator: Node = get_first_node_in_group("generator_controller")
+	nm.generator_fuel = 50.0
+	nm.is_generator_on = true
+	await _frames(3)
+	var running: bool = generator._generator_audio.playing
+	nm.generator_fuel = 0.0
+	await _frames(30)
+	var dying: bool = generator._generator_audio.playing and generator._generator_audio.pitch_scale < 0.95
+	await _frames(int(60 * (generator.WIND_DOWN_TIME + 0.5)))
+	_check("generator: out of fuel, it winds down and stops", running and dying and not generator._generator_audio.playing,
+		"running=%s dying=%s" % [running, dying])

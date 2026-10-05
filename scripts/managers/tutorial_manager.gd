@@ -98,11 +98,6 @@ func _find_hud() -> Node:
 		if node.has_method("show_hint"):
 			_hud = node
 			return _hud
-	
-	var hud := get_node_or_null("/root/CottageHorror/HUD")
-	if hud:
-		_hud = hud
-		return _hud
 	return null
 
 

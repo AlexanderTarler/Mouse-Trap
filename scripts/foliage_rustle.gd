@@ -15,7 +15,12 @@ extends Node3D
 ## through them makes a noise it can hear ("rustle", "rustle_crouch" in
 ## EntityConfig.noise_radius).
 ##
-## The sounds are synthesized (the kit has none) in a few variants.
+## The sound is a recording of brushing against bushes (BRUSH_SOUND), pitched
+## per kind: lower for dry twigs, higher for grass. Without it, synthesized
+## rustles stand in.
+
+const BRUSH_SOUND := "res://assets/audio/objects/Brushing Against Bushes.ogg"
+const KIND_PITCH := {"leafy": 1.0, "twiggy": 0.88, "grassy": 1.2}
 
 ## Mesh name (prefix) -> [kind, footprint scale]. The footprint is the
 ## mesh's width times this (a bush's leaves reach further than you'd brush).
@@ -73,10 +78,14 @@ func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
 	_rng.seed = 11
+	var brushing: AudioStream = load(BRUSH_SOUND) if ResourceLoader.exists(BRUSH_SOUND) else null
 	for kind in VOLUME_DB:
 		_sounds[kind] = []
-		for i in 4:
-			_sounds[kind].append(_make_sound(kind))
+		if brushing:
+			_sounds[kind].append(brushing)
+		else:
+			for i in 4:
+				_sounds[kind].append(_make_sound(kind))
 	for i in 4:
 		var player := AudioStreamPlayer3D.new()
 		player.bus = &"SFX"
@@ -84,13 +93,14 @@ func _ready() -> void:
 		player.max_distance = 30.0
 		add_child(player)
 		_pool.append(player)
-	# Wait for the forest's and WorldDetails' batches.
+	# Wait for the forest's and WorldDetails' batches (WorldDetails is the
+	# parent; it says when it's done).
 	await get_tree().physics_frame
-	for i in 600:
+	var details := get_parent()
+	if details and "is_scattered" in details and not details.is_scattered:
+		await details.scattered
+	while FoliageBatcher.is_build_scheduled():
 		await get_tree().process_frame
-		if not FoliageBatcher.is_build_scheduled() and get_tree().current_scene \
-				and get_tree().current_scene.find_child("WorldDetailBatches", true, false):
-			break
 	collect()
 
 
@@ -256,7 +266,7 @@ func _rustle(plant: Array, player_at: Vector3, speed: float, crouching: bool) ->
 	elif speed > 5.5:
 		loud += 4.0
 	sound.volume_db = loud
-	sound.pitch_scale = _rng.randf_range(0.88, 1.12) * (0.9 if crouching else 1.0)
+	sound.pitch_scale = _rng.randf_range(0.88, 1.12) * KIND_PITCH[kind] * (0.9 if crouching else 1.0)
 	var at: Vector3 = plant[0]
 	sound.global_position = Vector3(at.x, player_at.y - 0.6, at.z)
 	sound.play()

@@ -344,6 +344,9 @@ func vision_range() -> float:
 
 func _base_vision_range() -> float:
 	var player := entity.get_player()
+	# No player yet (the Entity isn't active; the F3 overlay still asks).
+	if not player:
+		return config.vision_range_dark
 	if player.has_method("is_flashlight_on") and player.is_flashlight_on():
 		return config.vision_range_flashlight
 	if entity.get_state() in WATCHING_STATES:

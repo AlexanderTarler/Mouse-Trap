@@ -62,6 +62,8 @@ var _is_flickering: bool = false
 ## node always exists in the tree; it only plays when a stream is assigned AND
 ## overcharge is active.
 var _hum_player: AudioStreamPlayer = null
+## The hum when overcharge_hum isn't assigned.
+const OVERCHARGE_HUM_DEFAULT := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Misc/portal_1_loop.ogg"
 
 ## ─── OVERCHARGE TUTORIAL HOLD TRACKING ────────────────────────────────────
 ## Accumulated time (seconds) the player has continuously held the F key in
@@ -101,9 +103,17 @@ func _ready() -> void:
 	_hum_player = AudioStreamPlayer.new()
 	_hum_player.bus = "SFX"
 	_hum_player.volume_db = overcharge_hum_volume_db
-	if overcharge_hum:
-		_hum_player.stream = overcharge_hum
+	var hum: AudioStream = overcharge_hum
+	if not hum and ResourceLoader.exists(OVERCHARGE_HUM_DEFAULT):
+		# An electric hum from the kit, looped.
+		hum = (load(OVERCHARGE_HUM_DEFAULT) as AudioStream).duplicate()
+		if "loop" in hum:
+			hum.loop = true
+	_hum_player.stream = hum
 	add_child(_hum_player)
+
+
+var _last_reported_battery := -1.0
 
 
 func _process(delta: float) -> void:
@@ -114,7 +124,11 @@ func _process(delta: float) -> void:
 			active_drain *= overcharge_drain_multiplier
 		battery_level -= active_drain * delta
 		battery_level = maxf(battery_level, 0.0)
-		battery_changed.emit(battery_level)
+		# Told in 0.1% steps, not every frame (the HUD redrew its battery
+		# readout 60 times a second).
+		if absf(battery_level - _last_reported_battery) >= max_battery * 0.001 or battery_level <= 0.0:
+			_last_reported_battery = battery_level
+			battery_changed.emit(battery_level)
 		
 		if battery_level <= 0.0:
 			# Battery died mid-standoff — cleanly reset overcharge state.

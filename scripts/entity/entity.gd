@@ -57,7 +57,8 @@ signal caught_player
 
 ## When false (debug console), reaching the player doesn't kill them.
 var can_kill: bool = true
-## Set while the overload stun holds; read by totem_anchor.gd.
+## Set by the overload stun and kept until the player is back in the cabin
+## (no totem teleport meanwhile); read by totem_anchor.gd.
 var totem_defense_disabled: bool = false
 ## True during the Night 2 van chase (a scripted, fully aware pursuit).
 var van_chase_active: bool = false
@@ -113,7 +114,7 @@ var _traversal_anim: StringName = &""
 var _perch_link: CabinEntryLink = null
 var _perch_offset := Vector3.ZERO
 var _climb_tap_left := 0.0
-const CLIMB_TAP_INTERVAL := 0.8
+const CLIMB_TAP_INTERVAL := 0.95
 
 # ─── Stuck detection ─────────────────────────────────────────────────────────
 var _stuck_timer := 0.0
@@ -125,7 +126,7 @@ func _ready() -> void:
 	collision_layer = LAYER_ENTITY
 	collision_mask = MOVE_MASK
 	nav_agent.avoidance_enabled = false
-	nav_agent.path_desired_distance = 0.6
+	nav_agent.path_desired_distance = PATH_DESIRED_DISTANCE
 	nav_agent.target_desired_distance = 0.4
 	nav_agent.link_reached.connect(_on_link_reached)
 
@@ -371,6 +372,16 @@ func move_to(target: Vector3, speed: float) -> float:
 		_last_nav_target = target
 		_nav_retarget_timer = NAV_RETARGET_INTERVAL
 	var next := nav_agent.get_next_path_position()
+	# A path point right above or below it (the navmesh riding over a step or
+	# a low rock): it can't get any closer to it on the flat, and the agent
+	# only counts a point as reached within PATH_DESIRED_DISTANCE in 3D, so
+	# it stood there for good. The reach distance covers the gap until the
+	# agent has moved on to the next point.
+	var gap := absf(next.y - global_position.y)
+	if _flat_distance(global_position, next) < 0.3 and gap > PATH_DESIRED_DISTANCE * 0.8:
+		nav_agent.path_desired_distance = gap + 0.2
+	elif nav_agent.path_desired_distance != PATH_DESIRED_DISTANCE:
+		nav_agent.path_desired_distance = PATH_DESIRED_DISTANCE
 	if not nav_agent.is_navigation_finished():
 		_set_move_direction(next - global_position, speed * speed_multiplier())
 	return reach_distance(global_position, target)
@@ -442,6 +453,10 @@ func _set_move_direction(direction: Vector3, speed: float) -> void:
 	_desired_velocity = direction.normalized() * speed
 
 
+## How close (3D) a path point must be to count as reached (see move_to).
+const PATH_DESIRED_DISTANCE := 0.6
+
+
 static func _flat_distance(a: Vector3, b: Vector3) -> float:
 	return Vector2(a.x - b.x, a.z - b.z).length()
 
@@ -469,6 +484,11 @@ func _physics_process(delta: float) -> void:
 	_desired_velocity = Vector3.ZERO
 	_look_target = null
 	_anim_override = &""
+
+	# The totem defence, off since the lamp's stun, comes back once the
+	# player is inside the cabin again.
+	if totem_defense_disabled and perception.player_inside and brain.state_id != State.STUNNED:
+		totem_defense_disabled = false
 
 	if not is_traversing():
 		brain.tick(delta)

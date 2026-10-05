@@ -66,13 +66,7 @@ func _on_body_entered(body: Node3D) -> void:
 
 func _find_hud() -> Node:
 	# Prefer the group "hud" so designers don't have to worry about paths.
-	var hud_nodes = get_tree().get_nodes_in_group("hud")
-	for node in hud_nodes:
+	for node in get_tree().get_nodes_in_group("hud"):
 		if node.has_method("show_hint"):
 			return node
-	
-	# Fallback: common paths
-	var hud = get_node_or_null("/root/CottageHorror/HorrorHUD")
-	if hud:
-		return hud
-	return get_node_or_null("/root/Main/HorrorHUD")
+	return null

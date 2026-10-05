@@ -194,7 +194,7 @@ func _throw_switch() -> void:
 	# ─── REPAIR SOUND ──────────────────────────────────────────────
 	_play_sfx(repair_fusebox_sfx)
 	
-	_show_hud_msg("Fuse repaired! Turn on the generator to restore power.")
+	_show_hud_msg("That should do it. Now the generator.")
 	print("[FuseBox] Fuse inserted! Fuse box repaired (POWER_ON). Start the generator at the switch.")
 	
 	# ─── DAY 1 ONBOARDING: PHASE 2 — FUSE FIXED ────────────────────────
@@ -244,7 +244,7 @@ func _set_generator_state(enabled: bool) -> bool:
 func _show_hud_msg(msg: String) -> void:
 	var hud = get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("show_message"):
-		hud.show_message(msg)
+		hud.show_message(msg, self)
 	else:
 		print("[FuseBox HUD]: ", msg)
 

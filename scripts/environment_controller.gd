@@ -219,20 +219,22 @@ func _process(delta: float) -> void:
 	_env_tick_timer += delta
 	if _env_tick_timer < 0.1:
 		return
+	# The time since the last tick: what the timers below advance by.
+	var tick := _env_tick_timer
 	_env_tick_timer = 0.0
 
 	if not _environment or not _sky_material:
 		return
 	
-	# Advance the fog noise timer every frame so the fog density
-	# fluctuates smoothly even when the cycle is paused.
-	_fog_noise_time += delta
+	# Advance the fog noise timer (in real time) so the fog density
+	# fluctuates even when the cycle is paused.
+	_fog_noise_time += tick
 	_update_fog_reprojection()
 	
 	# If GameTime is NOT available, use our own timer
 	var gt = get_node_or_null("/root/GameTime")
 	if not gt:
-		_elapsed += delta
+		_elapsed += tick
 		cycle_progress = fmod(_elapsed / cycle_duration, 1.0)
 		is_day = cycle_progress < 0.5
 		_apply_cycle()

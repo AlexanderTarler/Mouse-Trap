@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://ch6fpn3nvc6ax"
+path="res://.godot/imported/Drop Thud.ogg-417719cc80d233a9fd3d52548ad7a88b.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/objects/Drop Thud.ogg"
+dest_files=["res://.godot/imported/Drop Thud.ogg-417719cc80d233a9fd3d52548ad7a88b.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

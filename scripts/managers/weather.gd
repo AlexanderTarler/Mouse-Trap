@@ -3,8 +3,11 @@ extends Node
 ## Gamma (hasselmus_nest.gd), so the long walk back to the cabin happens in
 ## a downpour: rain streaking down around them, the hiss of it (muffled
 ## indoors by the Ambient bus), a grey, darker sky,
-## and now and then lightning and a roll of thunder. It eases off once they
-## are back inside the cabin, or after STORM_DURATION.
+## and now and then lightning and a roll of thunder. That storm lasts the
+## rest of Day 2 and all of Night 2, until the player wakes up on Day 3
+## (bed_interactable.gd clears it while the screen is black). A storm that
+## isn't lasting eases off once the player is back inside the cabin, or
+## after STORM_DURATION.
 ##
 ## The kit has no rain recording: the rain is synthesized (filtered noise
 ## with droplet ticks); the thunder is the kit's distant explosions, pitched
@@ -32,6 +35,8 @@ const MIX_RATE := 22050.0
 var level := 0.0
 var _target := 0.0
 var _storm_left := 0.0
+## Rains until clear_now() (no time limit, doesn't ease off indoors).
+var _lasting := false
 var _inside_time := 0.0
 var _thunder_left := 0.0
 var _rain_particles: GPUParticles3D = null
@@ -54,11 +59,14 @@ func is_raining() -> bool:
 	return level > 0.01
 
 
-## The storm breaks (building up over FADE_IN seconds).
-func start_storm(duration: float = STORM_DURATION) -> void:
+## The storm breaks (building up over FADE_IN seconds). `lasting`: it keeps
+## raining until clear_now().
+func start_storm(duration: float = STORM_DURATION, lasting: bool = false) -> void:
 	if _target > 0.0:
+		_lasting = _lasting or lasting
 		return
 	_target = 1.0
+	_lasting = lasting
 	_storm_left = duration
 	_inside_time = 0.0
 	_thunder_left = randf_range(4.0, 9.0)
@@ -68,6 +76,7 @@ func start_storm(duration: float = STORM_DURATION) -> void:
 ## Clear skies at once (a checkpoint from before the storm was restored).
 func clear_now() -> void:
 	_target = 0.0
+	_lasting = false
 	level = 0.0
 	_tear_down()
 
@@ -81,7 +90,7 @@ func _process(delta: float) -> void:
 	if _target <= 0.0 and level <= 0.0:
 		return
 	var player := get_tree().get_first_node_in_group("player") as Node3D
-	if _target > 0.0:
+	if _target > 0.0 and not _lasting:
 		_storm_left -= delta
 		var inside: bool = player != null and player.has_method("get_player_room") and player.get_player_room() != "Outside"
 		_inside_time = _inside_time + delta if inside else 0.0

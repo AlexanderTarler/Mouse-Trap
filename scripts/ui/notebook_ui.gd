@@ -103,6 +103,11 @@ var _day2_hint_text: String = ""
 # Lifecycle
 # ============================================================
 
+## Found by its group (not by a path in the level).
+func _enter_tree() -> void:
+	add_to_group("notebook_ui")
+
+
 func _ready() -> void:
 	visible = false
 	process_mode = PROCESS_MODE_ALWAYS
