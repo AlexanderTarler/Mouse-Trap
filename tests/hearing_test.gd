@@ -203,8 +203,8 @@ func _test_open_window() -> void:
 	_check("window: not heard once it is boarded up again", not boarded.heard, _desc(boarded))
 
 
-## D: a noise heard inside tells it where the player is; it favours that
-## room's windows and grows bolder.
+## D: a noise heard inside tells it where the player is; it keeps away from
+## that room's windows (it would rather not be seen) and grows bolder.
 func _test_heard_room() -> void:
 	_close_cabin()
 	var had_power: bool = _nm.is_generator_on
@@ -221,7 +221,7 @@ func _test_heard_room() -> void:
 	_nm.is_generator_on = had_power
 	_check("heard room: footsteps in the computer room heard through its wall", n.heard, _desc(n))
 	_check("heard room: it now thinks the player is in the ComputerRoom", suspected == "ComputerRoom", "'%s'" % suspected)
-	_check("heard room: it goes for that room's windows", after >= 27, "%d/30 picks (before the noise: %d/30)" % [after, before])
+	_check("heard room: it keeps away from that room's windows", after <= 3, "%d/30 picks (before the noise: %d/30)" % [after, before])
 	_check("heard room: a noise from inside makes it bolder", boost > 0.0, "confidence +%.2f" % boost)
 
 

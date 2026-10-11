@@ -146,7 +146,7 @@ func _test_monologue() -> void:
 		text = (thought as Label3D).text
 	elif thought:
 		text = (thought.get_child(0) as Label).text
-	_check("#4 the first plank: a thought, styled apart from hints (%s)" % ("floating" if thought is Label3D else "on screen"),
+	_check("#4 the first plank: a thought, styled apart from hints",
 		monologue.has_thought("broken_window") and "patch up" in text, text)
 	monologue._clear()
 

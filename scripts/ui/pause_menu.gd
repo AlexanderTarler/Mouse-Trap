@@ -19,6 +19,7 @@ var _is_open: bool = false
 func _ready() -> void:
 	process_mode = PROCESS_MODE_ALWAYS
 	visible = false
+	GameFonts.use_title($PanelContainer/VBoxContainer/TitleLabel)
 	_resume_button.pressed.connect(_on_resume_pressed)
 	_settings_button.pressed.connect(_on_settings_pressed)
 	_main_menu_button.pressed.connect(_on_main_menu_pressed)

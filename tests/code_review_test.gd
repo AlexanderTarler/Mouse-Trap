@@ -240,7 +240,7 @@ func _test_post_stun() -> void:
 	await _frames(40)
 	var charge = entity.brain._states.get(entity.State.CHARGE)
 	var chasing: bool = entity.get_state() == entity.State.CHARGE and charge._committed \
-		and is_equal_approx(charge._max_time, entity.config.post_stun_chase_time)
+		and is_equal_approx(charge._max_time, entity.config.post_stun_chase_time + entity.ROAR_TIME)
 	var still_off: bool = entity.totem_defense_disabled
 	player.global_position = hall.global_position + Vector3.UP * 0.2
 	await _frames(30)

@@ -14,9 +14,17 @@ var _impact := -1.0
 var _anim := 0.0
 
 
-func _init(swing_interval: float, swing_impact_delay: float) -> void:
+## The swing's animation; `held` keeps it playing between blows (a loop of
+## blows, like Zombie Punching) instead of one swing per blow.
+var anim: StringName = &"AttackWindow"
+var held := false
+
+
+func _init(swing_interval: float, swing_impact_delay: float, swing_anim: StringName = &"AttackWindow", swing_held: bool = false) -> void:
 	interval = swing_interval
 	impact_delay = swing_impact_delay
+	anim = swing_anim
+	held = swing_held
 
 
 ## Advances the swing. Returns true on the frame the blow lands.
@@ -32,7 +40,9 @@ func update(delta: float, entity: Entity) -> bool:
 			_cooldown = interval
 			_impact = impact_delay
 			_anim = ANIM_TIME
-	if _anim > 0.0:
+	if held:
+		entity.play_anim(anim)
+	elif _anim > 0.0:
 		_anim -= delta
-		entity.play_anim(&"AttackWindow")
+		entity.play_anim(anim)
 	return landed

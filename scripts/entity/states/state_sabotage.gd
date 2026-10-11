@@ -19,7 +19,7 @@ func enter(_from: int, _data: Dictionary) -> void:
 	_box = world.fuse_box()
 	_stand_at = world.fuse_position()
 	_hits = 0
-	_swing = EntitySwing.new(config.fuse_hit_interval, config.hit_impact_delay)
+	_swing = EntitySwing.new(config.fuse_hit_interval, config.hit_impact_delay, &"Punch", true)
 
 
 func update(delta: float) -> void:

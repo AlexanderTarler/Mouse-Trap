@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_lowbat")
 mechanic_id = "low_battery"
-prompt_text = "The flashlight is running low on energy. Open your inventory and press [Use] on a spare battery to swap in a fresh one."
+prompt_text = "The flashlight is running low. Press [R] to swap in a spare battery."
 trigger_moment = ""
 prerequisite = ""
 one_shot = true

@@ -24,6 +24,7 @@ var _phase := Phase.HELD
 var _phase_time := 0.0
 var _lost_time := 0.0
 var _screamed := false
+var _hit_at := -INF
 var _retreat_target := Vector3.ZERO
 
 
@@ -47,10 +48,15 @@ func update(delta: float) -> void:
 		Phase.HELD:
 			entity.stop()
 			var writhing := perception.overcharged or perception.overcharge_time > 0.0
-			entity.play_anim(&"entity_in_light" if writhing else &"Idle")
 			if writhing and not _screamed:
 				_screamed = true
+				_hit_at = time
 				entity.audio.play_scream()
+			if writhing and time - _hit_at < EntityStateStunned.HIT_REACT_TIME:
+				# Struck by the beam first, then writhing.
+				entity.play_anim(&"HitReact", EntityStateStunned.HIT_REACT_SPEED)
+			else:
+				entity.play_anim(&"entity_in_light" if writhing else &"Idle")
 		Phase.WINDUP:
 			entity.stop()
 			entity.play_anim(&"AttackWindow")

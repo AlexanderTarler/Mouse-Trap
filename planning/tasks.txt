@@ -1,7 +1,9 @@
-1. The portable_light should stop shining as soon as the generator runs out of power. 
-2. Some "inner thoughts" are more like "game messages" or tutorial hints - remember, the "inner thoughts" should be the thoughts of the protagonist, and not game tips. Also, it would be great to keep the "inner thoughts" floating in place like how it works for the broken window or the escape van. 
-3. When the Peeker appears during Night 2, make it appear a lot faster, and disappear quicker, than it does on Day 1. 
-4. Are you able to make the "purging" of the totem anchor/willow tree look better than it does now? Currently it just shrinks, which is very odd. 
-5. Keep the rainstorm going from the point where it starts (when the player documents the third nest) and have it keep going until the player wakes up during Day 3. 
-6. Make the passive power-drain of the generator have its "fuel per second" be lowered by 30-isch %.
-7. Change the objective "Check the fusebox. It's always the goddamn fuse box." to just "Check the fusebox", but add in an inner thought saying "It's always the goddamn fuse box."
+1. The "Find the flashlight" objective should be treated in a special way - it should trigger and replace the current objective as soon as Night 1 starts. When the player has completed the "Find the flashlight" objective, the objective that the "flashlight objective" replaced should be triggered again.
+2. Walking upstairs should use the same footstep sounds as walking downstairs. Use the sound for the stairs as well. 
+3. Remove the "overcharged flashlight" sound effect.
+4. The "page flip" sound in the journal should use the "toggle journal" sound.
+5. Please create a proper "gravel road" that the player drove on to the cabin/drives out on in the endings. The current solution looks bad. 
+6. The HallRoom window's sound that plays when it gets boarded up is odd - it sounds as if it is far away.
+7. The stash inventory menu and the player's inventory when the aforemented menu is open looks odd - the sizing is not great and things overlap. 
+8. The player should not be able to loot the car parts until they have interacted with the van again during Day 3 (aka the "Investigate the car again" objective is completed).
+9. I want the Entity to be more shy, and to prioritise having the player not see it. For example, if the player is in room x, it will try to target windows in other rooms if possible. If the window that the player is in is the "best breach target", the Entity can try to trick the player to go to another room. Essentially, make the Entity "smarter" if possible. 

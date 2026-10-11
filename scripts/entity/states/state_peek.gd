@@ -5,7 +5,8 @@ extends EntityState
 ##
 ##   - While the player isn't looking, it taps on the glass now and then.
 ##   - When the player looks at the window it may duck out of sight, then
-##     come back.
+##     come back; looked at again after that, it leaves the window for a
+##     while (config.peek_leave_when_watched).
 ##   - If the room's light comes on it either kills the light from outside
 ##     (flicker, then dark) or grunts and leaves.
 ##   - After a while it starts breaking in (BREACH), or leaves if the window
@@ -27,6 +28,9 @@ var _duck_left := 0.0
 var _duck_position := Vector3.ZERO
 var _ducks := 0
 var _was_looked_at := false
+var _looks := 0
+## Looked at again after ducking all it will: it leaves this window.
+var _leaving := false
 var _light_kill_left := 0.0   ## Waiting for a sabotaged light to finish flickering.
 
 
@@ -35,6 +39,8 @@ func enter(_from: int, data: Dictionary) -> void:
 	brain.target_entry = _entry
 	_rattle = data.get("rattle", false)
 	_ducks = 0
+	_looks = 0
+	_leaving = false
 	_duck_left = 0.0
 	_was_looked_at = false
 	_light_kill_left = 0.0
@@ -69,8 +75,12 @@ func update(delta: float) -> void:
 
 	var window_position := _entry.entry.global_position
 	var looked_at := perception.is_player_looking_at(window_position, LOOK_CONE_DEGREES)
+	if looked_at and not _was_looked_at:
+		_looks += 1
 	if looked_at and not _was_looked_at and _ducks < MAX_DUCKS and randf() < config.peek_duck_chance:
 		_duck()
+	elif looked_at and not _was_looked_at and _looks > MAX_DUCKS and config.peek_leave_when_watched:
+		_leaving = true
 	elif not looked_at:
 		_tap_left -= delta
 		if _tap_left <= 0.0:
@@ -86,6 +96,10 @@ func next_state() -> int:
 		if _stare_left > 0.0:
 			return NO_CHANGE
 		world.mark_repelled(_entry)
+		return S.OBSERVE
+	if _leaving:
+		# Seen once too often here: it goes, and tries elsewhere later.
+		world.mark_spotted(_entry)
 		return S.OBSERVE
 	if world.is_entry_lit(_entry):
 		if _light_kill_left > 0.0 or _try_kill_light():

@@ -116,10 +116,13 @@ func _create_prompt() -> void:
 	_prompt_label.position = Vector2(0, 0)
 	_prompt_label.size = Vector2(0, 0)
 	_prompt_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	_prompt_label.offset_top = -90
-	_prompt_label.offset_bottom = -50
-	_prompt_label.add_theme_color_override("font_color", Color(0.8, 0.9, 1.0, 0.9))
-	_prompt_label.add_theme_font_size_override("font_size", 14)
+	_prompt_label.offset_top = -176
+	_prompt_label.offset_bottom = -146
+	# Looks like the interaction prompt (InteractionManager), just below it.
+	_prompt_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.9))
+	_prompt_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	_prompt_label.add_theme_constant_override("outline_size", 5)
+	_prompt_label.add_theme_font_size_override("font_size", 17)
 	_prompt_label.text = ""
 	canvas.add_child(_prompt_label)
 
@@ -244,6 +247,29 @@ func _process(delta: float) -> void:
 	
 	# Update prompt text
 	_update_prompt()
+	_update_hold_ring()
+
+
+## The crosshair's ring: how far along whatever E is held on is (boarding,
+## installing, inserting the fuse, refuelling, locking or unlocking the door,
+## picking something up).
+func _update_hold_ring() -> void:
+	if not _e_is_held or _is_grabbing or _carried_lamp:
+		return
+	var progress := -1.0
+	if _hold_interact_target and _hold_interact_cached and is_instance_valid(_hold_interact_target) 			and _hold_interact_target.has_method("get_hold_progress"):
+		progress = _hold_interact_target.get_hold_progress()
+	if progress < 0.0 and _generator_refuel_target and _generator_refuel_target.has_method("get_hold_progress"):
+		progress = _generator_refuel_target.get_hold_progress()
+	if progress < 0.0 and not _has_passed_door_threshold and not _has_passed_threshold:
+		if _find_door_target():
+			progress = _e_held_time / door_lock_threshold
+		elif _find_grabbable_target():
+			progress = _e_held_time / hold_threshold
+	if progress >= 0.0:
+		var ring := get_tree().get_first_node_in_group("crosshair")
+		if ring:
+			ring.set_hold(progress)
 
 
 func _physics_process(delta: float) -> void:
@@ -566,12 +592,10 @@ func _update_prompt() -> void:
 			# Check if we're looking at a door for lock toggle
 			var door_target = _find_door_target()
 			if door_target:
-				var progress = min(1.0, _e_held_time / door_lock_threshold)
-				var pct = int(progress * 100)
 				if door_target.is_locked:
-					_prompt_label.text = "Unlocking... %d%%" % pct
+					_prompt_label.text = "Unlocking..."
 				else:
-					_prompt_label.text = "Locking... %d%%" % pct
+					_prompt_label.text = "Locking..."
 			else:
 				_prompt_label.text = ""
 	else:

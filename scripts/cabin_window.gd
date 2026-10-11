@@ -209,8 +209,18 @@ func _on_checkpoint_restored() -> void:
 	_update_entry_link()
 
 
+## Moves the window's own sounds (hammering, planks breaking, glass) by this
+## much (local): a window set back inside its room's volume otherwise gets the
+## room's reverb on them and they sound far away (HallWindowRight).
+@export var sound_offset := Vector3.ZERO
+
+
 func _ready() -> void:
 	_keep_pristine_templates()
+	if sound_offset != Vector3.ZERO:
+		for sound in [_break_sound, _hammer_sound, _glass_crunch_sound]:
+			if sound:
+				sound.position += sound_offset
 	# Add to the WindowMarkers group so the Entity AI can find this window
 	add_to_group("WindowMarkers")
 	
@@ -461,6 +471,11 @@ func is_secure() -> bool:
 ## Previously gated on is_glass_shattered which silently blocked non-tutorial
 ## windows (those without "Start Broken" enabled in the scene Inspector).
 ## Only the player's plank inventory limits boarding.
+## Boarding progress for the crosshair's ring (-1: not boarding).
+func get_hold_progress() -> float:
+	return _boarding_progress / BOARD_PER_PLANK_TIME if _is_boarding else -1.0
+
+
 func start_hold_interact() -> void:
 	# If already fully boarded, nothing to do
 	if is_boarded and planks_remaining >= 3:
@@ -634,26 +649,26 @@ func _consume_plank_from_inventory() -> bool:
 func get_interact_text() -> String:
 	if _is_boarding:
 		var pct = int((_boarding_progress / BOARD_PER_PLANK_TIME) * 100.0)
-		return "[E] Boarding... %d%%" % pct
+		return "Boarding..."
 	# ─── DAY 1 / NIGHT 1 GATE ──────────────────────────────────────────
 	# While boarding is restricted to the tutorial window, non-tutorial
 	# windows show a "not yet" message instead of the boarding prompt.
 	if not _can_board_this_window():
 		if is_boarded and planks_remaining >= 3:
-			return "[E] Window (Secured)"
-		return "[E] Can't board this window yet"
+			return "Window (secured)"
+		return "Can't board this window yet"
 	# NOTE: No is_glass_shattered guard here — boarding works on ALL windows
 	# regardless of glass state. The prompt should always show when the player
 	# has planks, so they know they can board any window.
 	if is_boarded and planks_remaining >= 3:
-		return "[E] Window (Secured)"
+		return "Window (secured)"
 	if not _has_planks():
 		if planks_remaining > 0:
-			return "[E] Board Window (%d/3) — No Planks" % planks_remaining
-		return "[E] Board Window — No Planks"
+			return "Board window (%d/3): no planks" % planks_remaining
+		return "Board window: no planks"
 	if planks_remaining > 0:
-		return "[E] Board Window (%d/3) [Hold %.1fs]" % [planks_remaining, BOARD_PER_PLANK_TIME]
-	return "[E] Board Window [Hold %.1fs]" % BOARD_PER_PLANK_TIME
+		return "[Hold E] Board Window (%d/3)" % planks_remaining
+	return "[Hold E] Board Window"
 
 
 ## Returns the type of security active on this window.

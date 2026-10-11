@@ -26,6 +26,7 @@ var _arrived := false
 
 func enter(from: int, data: Dictionary) -> void:
 	_calm = data.get("calm", false)
+	entity.cancel_oneshot()   # driven off mid-roar
 	_vanish = data.get("vanish", false)
 	_arrived = false
 	if not _calm and not _vanish:

@@ -68,6 +68,7 @@ var _bars: Array[ColorRect] = []
 var _running := false
 var _skippable := false
 var _skipped := false
+var _skip_hint: Label = null
 var _clock := 0.0
 var _shot := Callable()
 var _shake := 0.0
@@ -105,6 +106,12 @@ var _v_basis := Basis.IDENTITY
 var _v_origin := Vector3.ZERO
 var _v_dir := Vector3.RIGHT
 var _v_side := Vector3.BACK
+## Following the gravel road (GravelRoad): where along it the van set off,
+## how far right of its centre line it drives, and the van's heading then.
+## _road_from < 0: no road, straight along road_direction.
+var _road_from := -1.0
+var _road_offset := 0.0
+var _v_dir0 := Vector3.RIGHT
 var _v_half_length := 3.0
 var _v_roof := 3.0
 var _v_speed := 0.0
@@ -186,6 +193,13 @@ func _run(cutscene: Callable) -> void:
 	_skipped = false
 	_clock = 0.0
 	_shake = 0.0
+	if _skip_hint:
+		_skip_hint.visible = _skippable
+		_skip_hint.modulate.a = 0.0
+		if _skippable:
+			var hint_in := create_tween()
+			hint_in.tween_interval(0.6)
+			hint_in.tween_property(_skip_hint, "modulate:a", 1.0, 0.8)
 	# The player's interaction prompt ("[E] Examine the van") has no place
 	# in a cutscene.
 	var player := get_tree().get_first_node_in_group("player")
@@ -221,6 +235,8 @@ func _run(cutscene: Callable) -> void:
 	_on_end.clear()
 	_running = false
 	_skippable = false
+	if _skip_hint:
+		_skip_hint.visible = false
 
 
 func _process(delta: float) -> void:
@@ -696,6 +712,14 @@ func _setup_van() -> bool:
 	_v_half_length = maxf(box.size.x, box.size.z) * 0.47
 	_v_roof = box.end.y - _van.global_position.y
 	_v_origin = Vector3(road_start.x, _van.global_position.y, road_start.z)
+	_v_dir0 = _v_dir
+	# On the gravel road it follows the road's bends (in its lane).
+	_road_from = -1.0
+	if scene.get_node_or_null("GravelRoad") is GravelRoad:
+		_road_from = GravelRoad.project(road_start)
+		var at: Dictionary = GravelRoad.sample(_road_from)
+		var normal := Vector2(-at.direction.y, at.direction.x)
+		_road_offset = (Vector2(road_start.x, road_start.z) - at.position).dot(normal)
 	_v_distance = 0.0
 	_v_speed = 0.0
 	_v_moving = false
@@ -705,7 +729,11 @@ func _setup_van() -> bool:
 
 
 func _van_position() -> Vector3:
-	return _v_origin + _v_dir * _v_distance
+	if _road_from < 0.0:
+		return _v_origin + _v_dir * _v_distance
+	var at: Dictionary = GravelRoad.sample(_road_from + _v_distance)
+	var p: Vector2 = at.position + Vector2(-at.direction.y, at.direction.x) * _road_offset
+	return Vector3(p.x, _v_origin.y, p.y)
 
 
 func _van_shot(delta: float, entity: Node3D) -> void:
@@ -715,7 +743,14 @@ func _van_shot(delta: float, entity: Node3D) -> void:
 		_v_speed = minf(_v_speed + VAN_ACCEL * delta, _v_top_speed)
 	_v_distance += _v_speed * delta
 	var pos := _van_position()
-	_van.global_transform = Transform3D(_v_basis, pos)
+	var turn := Basis.IDENTITY
+	if _road_from >= 0.0:
+		# Turning with the road: a little ahead, so it steers into bends.
+		var ahead: Dictionary = GravelRoad.sample(_road_from + _v_distance + 2.0)
+		_v_dir = Vector3(ahead.direction.x, 0.0, ahead.direction.y).normalized()
+		_v_side = _v_dir.cross(Vector3.UP).normalized()
+		turn = Basis(Vector3.UP, _v_dir0.signed_angle_to(_v_dir, Vector3.UP))
+	_van.global_transform = Transform3D(turn * _v_basis, pos)
 	if _v_engine:
 		_v_engine.pitch_scale = 0.7 + _v_speed / VAN_TOP_SPEED * 0.6
 
@@ -918,6 +953,23 @@ void fragment() {
 	_black.color = Color(0, 0, 0, 0)
 	_overlay.add_child(_black)
 	_set_vignette(0.0)
+
+	# "Press any key to skip", for the skippable ones (the death scene).
+	_skip_hint = Label.new()
+	_skip_hint.text = "Press any key to skip"
+	_skip_hint.add_theme_font_size_override("font_size", 16)
+	_skip_hint.add_theme_color_override("font_color", Color(1, 1, 1, 0.55))
+	_skip_hint.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
+	_skip_hint.add_theme_constant_override("outline_size", 4)
+	_skip_hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	_skip_hint.offset_left = -260.0
+	_skip_hint.offset_top = -48.0
+	_skip_hint.offset_right = -24.0
+	_skip_hint.offset_bottom = -20.0
+	_skip_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_skip_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_skip_hint.visible = false
+	_overlay.add_child(_skip_hint)
 
 
 func _set_vignette(amount: float) -> void:

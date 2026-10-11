@@ -38,6 +38,8 @@ func update(delta: float) -> void:
 			_start_watching()
 	else:
 		entity.stop()
+		# Watching from the treeline crouched low.
+		entity.crawl()
 		var look := perception.last_seen_position if perception.has_fresh_sighting() else world.cabin_center()
 		entity.face(look)
 		_watch_left -= delta
@@ -69,9 +71,13 @@ func next_state() -> int:
 		if box and box.is_powered():
 			return S.SABOTAGE
 	if entity.confidence.wants_to_approach():
-		var entry := world.pick_entry()
-		if entry:
-			return go(S.APPROACH, {"entry": entry})
+		# The way in it would rather not be seen at, or, if that's the
+		# player's own room, a lure first (EntityWorld.plan_entry).
+		var plan := world.plan_entry()
+		if plan.has("decoy"):
+			return go(S.LURE, plan)
+		if plan.has("entry"):
+			return go(S.APPROACH, plan)
 	return NO_CHANGE
 
 

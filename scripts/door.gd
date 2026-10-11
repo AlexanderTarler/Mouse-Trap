@@ -57,9 +57,8 @@ var is_locked: bool = false:
 var _entry_link: CabinEntryLink = null
 
 
-## Trying a locked door when locked_sound isn't assigned: the heavy lock
-## jiggled, pitched up.
-const LOCKED_SOUND_DEFAULT := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Doors & Drawers/heavy_door_lock-unlock_1.ogg"
+## Trying a locked door when locked_sound isn't assigned.
+const LOCKED_SOUND_DEFAULT := "res://assets/audio/objects/Locked Door.ogg"
 
 
 func _ready() -> void:
@@ -295,7 +294,7 @@ func _unlock_door() -> void:
 func _play_locked_sound() -> void:
 	if locked_sound and door_audio:
 		door_audio.stream = locked_sound
-		door_audio.pitch_scale = randf_range(1.2, 1.35)
+		door_audio.pitch_scale = 1.0
 		door_audio.play()
 
 

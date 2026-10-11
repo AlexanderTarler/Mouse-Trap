@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://cw7bj17bnwbkr"
+path="res://.godot/imported/Toggle Journal.ogg-8e8d23604a2e474359b7e79c5acd22b7.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/objects/Toggle Journal.ogg"
+dest_files=["res://.godot/imported/Toggle Journal.ogg-8e8d23604a2e474359b7e79c5acd22b7.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

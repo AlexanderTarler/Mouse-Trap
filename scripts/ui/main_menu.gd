@@ -33,6 +33,9 @@ func _ready() -> void:
 	# Ensure the mouse is visible and the game is unpaused
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	get_tree().paused = false
+	# The display mode chosen in the options last time.
+	OptionsMenu.apply_saved_settings()
+	GameFonts.use_title($TitleLabel)
 	
 	# Button signals are already connected in main_menu.tscn via the
 	# [connection] entries, so no programmatic connection is needed here.

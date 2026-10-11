@@ -225,6 +225,13 @@ func _stop_refuel_audio() -> void:
 
 
 ## Called by PhysicalGrab when the player presses E while looking at this generator.
+## While refuelling: how full the tank is, for the crosshair's ring (-1: not refuelling).
+func get_hold_progress() -> float:
+	if not _is_refueling or not _active_fuel_can or not _nm:
+		return -1.0
+	return _nm.generator_fuel / _nm.max_fuel
+
+
 ## Starts the continuous fuel transfer. Does NOT check inventory — if no fuel can
 ## is available, _process() does nothing and returns harmlessly.
 func start_refuel() -> void:
@@ -390,17 +397,17 @@ func _get_fuel_percent() -> int:
 func get_interact_text() -> String:
 	var fuel_pct: int = _get_fuel_percent()
 	if _nm and _nm.generator_fuel >= _nm.max_fuel:
-		return "[E] Generator (Full)"
+		return "Generator (full)"
 	if _is_refueling:
 		# ─── BUG 3 FIX: SHOW GENERATOR'S TOTAL FUEL PERCENTAGE ────────
 		# Previously this used _can_progress (per-can progress) which
 		# restarted from 0% every time a new fuel can was selected or the
 		# player stopped and resumed. Now it shows the generator's actual
 		# fuel percentage so the number always reflects the real fill level.
-		return "[E] Refueling... Generator %d%%" % fuel_pct
+		return "Refuelling... %d%%" % fuel_pct
 	if not _find_fuel_can_in_inventory():
-		return "[E] Refill Generator (No Fuel Can — %d%% Remaining)" % fuel_pct
-	return "[E] Hold to Refill Generator (%d%% Fuel Remaining)" % fuel_pct
+		return "Generator: %d%% fuel (no fuel can)" % fuel_pct
+	return "[Hold E] Refill Generator (%d%% fuel)" % fuel_pct
 
 
 ## Searches the player's inventory for a Fuel Can item.

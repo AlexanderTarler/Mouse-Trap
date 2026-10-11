@@ -47,13 +47,8 @@ var _warning_visible: bool = false
 var _message_queue: Array[String] = []
 var _message_busy: bool = false
 
-# ─── PURGE PROGRESS BAR ────────────────────────────────────────────────
-# A full-width progress bar displayed at the center of the screen when the
-# player is actively purging the TotemAnchor. Created programmatically so
-# no scene changes are needed.
-var _purge_bar_bg: ColorRect = null
-var _purge_bar_fill: ColorRect = null
-var _purge_bar_label: Label = null
+# ─── PURGE PROGRESS ─────────────────────────────────────────────────────
+# While the totem is being purged, its progress goes to the crosshair's ring.
 var _purge_bar_visible: bool = false
 
 # ─── FADE-TO-BLACK SYSTEM ──────────────────────────────────────────────
@@ -80,8 +75,21 @@ var _pickup_tween: Tween = null
 var debug_info_visible := false
 
 
+## The quiet gauges (battery, stamina) that replace the coloured bars.
+var _gauges: HudGauges = null
+var _day_tween: Tween = null
+
+
 func _ready() -> void:
 	add_to_group("hud")
+	# The battery and stamina as quiet gauges (HudGauges); the old bars and
+	# their emoji labels stay hidden.
+	_gauges = HudGauges.new()
+	add_child(_gauges)
+	for old in [battery_bar, low_battery_warning, stamina_bar]:
+		if old:
+			old.visible = false
+			old.modulate.a = 0.0
 	
 	# Ending screen: wire the Main Menu button and hide the panel by default.
 	if main_menu_button and not main_menu_button.pressed.is_connected(_on_main_menu_pressed):
@@ -113,8 +121,8 @@ func _ready() -> void:
 	_pickup_label.offset_top = 40.0
 	_pickup_label.offset_right = 300.0
 	_pickup_label.offset_bottom = 70.0
-	_pickup_label.add_theme_font_size_override("font_size", 18)
-	_pickup_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.8, 1.0))
+	_pickup_label.add_theme_font_size_override("font_size", 16)
+	_pickup_label.add_theme_color_override("font_color", Color(0.9, 0.86, 0.76, 0.75))
 	_pickup_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
 	_pickup_label.add_theme_constant_override("shadow_offset_x", 2)
 	_pickup_label.add_theme_constant_override("shadow_offset_y", 2)
@@ -186,10 +194,8 @@ func _apply_debug_visibility() -> void:
 ## The battery shows only while the flashlight is on.
 func _update_battery_visibility() -> void:
 	var on: bool = _flashlight != null and is_instance_valid(_flashlight) and "is_on" in _flashlight and _flashlight.is_on
-	if battery_bar and battery_bar.visible != on:
-		battery_bar.visible = on
-	if low_battery_warning and low_battery_warning.visible != on:
-		low_battery_warning.visible = on
+	if _gauges:
+		_gauges.light_on = on
 
 
 ## Fades the screen to pitch black over the given duration.
@@ -270,8 +276,55 @@ func _on_routine_step_changed(step: int, objective_text: String) -> void:
 	if not objective_label:
 		return
 	
+	var changed := objective_text != objective_label.text and objective_label.text != ""
 	objective_label.text = objective_text
+	if changed and objective_text != "":
+		_announce_objective()
 	print("[HUD] Routine step updated: Step ", step, " — ", objective_text)
+
+
+## A new objective: the line brightens and settles, "Notebook updated"
+## shows under it for a moment, and a pencil scratches (so it isn't missed).
+const OBJECTIVE_SOUND := "res://assets/audio/notebook_writing.ogg"
+var _objective_note: Label = null
+var _objective_tween: Tween = null
+
+
+func _announce_objective() -> void:
+	if not _objective_note:
+		_objective_note = Label.new()
+		_objective_note.name = "ObjectiveNote"
+		_objective_note.text = "Notebook updated"
+		_objective_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_objective_note.add_theme_font_size_override("font_size", 13)
+		_objective_note.add_theme_color_override("font_color", Color(0.85, 0.82, 0.7))
+		_objective_note.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
+		_objective_note.add_theme_constant_override("outline_size", 4)
+		_objective_note.anchor_left = 0.5
+		_objective_note.anchor_right = 0.5
+		_objective_note.offset_left = -200.0
+		_objective_note.offset_right = 200.0
+		_objective_note.offset_top = objective_label.offset_bottom + 2.0
+		_objective_note.offset_bottom = objective_label.offset_bottom + 22.0
+		_objective_note.modulate.a = 0.0
+		_objective_note.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_objective_note)
+	if _objective_tween and _objective_tween.is_valid():
+		_objective_tween.kill()
+	objective_label.modulate = Color(1.6, 1.5, 1.2, 1.0)
+	_objective_tween = create_tween().set_parallel()
+	_objective_tween.tween_property(objective_label, "modulate", Color.WHITE, 1.4).set_ease(Tween.EASE_OUT)
+	_objective_tween.tween_property(_objective_note, "modulate:a", 1.0, 0.3)
+	_objective_tween.chain().tween_interval(2.2)
+	_objective_tween.chain().tween_property(_objective_note, "modulate:a", 0.0, 0.8)
+	if ResourceLoader.exists(OBJECTIVE_SOUND):
+		var sound := AudioStreamPlayer.new()
+		sound.bus = &"SFX"
+		sound.stream = load(OBJECTIVE_SOUND)
+		sound.volume_db = -12.0
+		add_child(sound)
+		sound.play()
+		sound.finished.connect(sound.queue_free)
 
 
 func _find_and_connect_flashlight() -> void:
@@ -309,8 +362,10 @@ func _on_stamina_changed(percent: float) -> void:
 	if not stamina_bar or not stamina_label:
 		return
 	
+	if _gauges:
+		_gauges.stamina = percent
 	stamina_bar.value = percent
-	stamina_label.text = "⚡ %d%%" % percent
+	stamina_label.text = "%d%%" % percent
 	
 	# Hide stamina bar when at 100%
 	if percent >= 99.9:
@@ -334,10 +389,12 @@ func _on_battery_changed(level: float) -> void:
 	# Calculate percentage
 	var max_battery = _flashlight.max_battery if _flashlight else 100.0
 	var percent = (level / max_battery) * 100.0
+	if _gauges:
+		_gauges.battery = percent
 	
 	# Update bar
 	battery_bar.value = percent
-	battery_label.text = "🔋 %d%%" % percent
+	battery_label.text = "%d%%" % percent
 	
 	# Color the bar based on battery level
 	if percent <= 15.0:
@@ -460,14 +517,9 @@ func _sync_all_displays() -> void:
 	# ─── Night label ──────────────────────────────────────────────
 	# Use RoutineManager's get_current_day_string() which correctly
 	# maps night 0→"Day 1", night 1→"Day 1", night 2→"Day 2", etc.
-	var rm = get_node_or_null("/root/RoutineManager")
 	var nm = get_node_or_null("/root/NightManager")
-	if rm and rm.has_method("get_current_day_string"):
-		night_label.text = rm.get_current_day_string()
-	elif nm:
-		night_label.text = "Day 1" if nm.current_night <= 0 else "Night %d / 5" % nm.current_night
-	else:
-		night_label.text = "Day 1"
+	# (As a card that fades, see _show_day_card.)
+	_update_night_label(nm.current_night if nm else 0)
 	# Also sync fuel display immediately
 	if nm:
 		_on_generator_fuel_changed(nm.generator_fuel)
@@ -525,7 +577,7 @@ func _on_generator_fuel_changed(current_fuel: float) -> void:
 		return
 	
 	fuel_bar.value = current_fuel
-	fuel_label.text = "⛽ Generator"
+	fuel_label.text = "Fuel"
 	
 	# Color the bar based on fuel level
 	if current_fuel <= 25.0:
@@ -547,13 +599,13 @@ func _on_generator_state_changed(is_running: bool) -> void:
 		if fuel_bar:
 			fuel_bar.modulate = Color(0.4, 0.4, 0.4, 0.6)
 		if fuel_label:
-			fuel_label.text = "⛽ OFF"
+			fuel_label.text = "Fuel: off"
 	else:
 		# Restore fuel bar color and label (will be updated by next fuel_changed signal)
 		if fuel_bar:
 			fuel_bar.modulate = Color(0.3, 0.8, 0.3, 1.0)
 		if fuel_label:
-			fuel_label.text = "⛽ Generator"
+			fuel_label.text = "Fuel"
 
 
 func _update_night_label(night: int) -> void:
@@ -561,10 +613,24 @@ func _update_night_label(night: int) -> void:
 	# Night 2→"Day 2", etc.) for the HUD label. Fall back to raw night
 	# number if RoutineManager is unavailable.
 	var rm = get_node_or_null("/root/RoutineManager")
-	if rm and rm.has_method("get_current_day_string"):
-		night_label.text = rm.get_current_day_string()
-	else:
-		night_label.text = "Night %d / 5" % night
+	var text: String = rm.get_current_day_string() if rm and rm.has_method("get_current_day_string") else "Night %d" % night
+	# A new day or night (or the first time): the card.
+	if text != night_label.text or _day_tween == null:
+		night_label.text = text
+		_show_day_card()
+
+
+## "Day 2" / "Night 2": a card that fades in at the top left as the day
+## or night begins, then goes (it doesn't need to sit there all day).
+func _show_day_card() -> void:
+	if _day_tween and _day_tween.is_valid():
+		_day_tween.kill()
+	GameFonts.use_title(night_label)
+	night_label.modulate.a = 0.0
+	_day_tween = create_tween()
+	_day_tween.tween_property(night_label, "modulate:a", 1.0, 1.0)
+	_day_tween.tween_interval(5.0)
+	_day_tween.tween_property(night_label, "modulate:a", 0.0, 1.5)
 
 
 ## Shows an event message with a 3-second display time, then fades out.
@@ -591,46 +657,20 @@ func _on_event_timer_timeout() -> void:
 ## Shows the purge progress bar overlay at the center of the screen.
 ## Called by TotemAnchor.interact() when the player begins purging.
 func show_purge_progress() -> void:
-	if not _purge_bar_bg:
-		_create_purge_bar_nodes()
-	_purge_bar_bg.visible = true
-	_purge_bar_fill.size.x = 0.0
-	_purge_bar_fill.modulate = Color(1.0, 0.5, 0.0, 1.0)  # Orange
-	_purge_bar_label.text = "Purging Totem..."
-	_purge_bar_label.modulate = Color(1, 1, 1, 1)
 	_purge_bar_visible = true
 
 
-## Updates the purge progress bar fill to reflect the current progress ratio.
-## progress_ratio: 0.0 (empty) to 1.0 (complete).
+## The purge's progress (0..1), shown on the crosshair's ring like every
+## other hold.
 func update_purge_progress(progress_ratio: float) -> void:
-	if not _purge_bar_visible or not _purge_bar_bg:
+	if not _purge_bar_visible:
 		return
-	
-	var clamped: float = clampf(progress_ratio, 0.0, 1.0)
-	_purge_bar_fill.size.x = _purge_bar_bg.size.x * clamped
-	
-	# Color transitions: Orange → Yellow → Green as progress increases
-	if clamped >= 1.0:
-		_purge_bar_fill.modulate = Color(0.3, 1.0, 0.3, 1.0)  # Green - complete
-		_purge_bar_label.text = "Totem Purged!"
-	elif clamped >= 0.66:
-		_purge_bar_fill.modulate = Color(1.0, 0.9, 0.2, 1.0)  # Yellow - almost there
-		_purge_bar_label.text = "Purging Totem... %.0f%%" % (clamped * 100.0)
-	elif clamped >= 0.33:
-		_purge_bar_fill.modulate = Color(1.0, 0.7, 0.1, 1.0)  # Amber - halfway
-		_purge_bar_label.text = "Purging Totem... %.0f%%" % (clamped * 100.0)
-	else:
-		_purge_bar_fill.modulate = Color(1.0, 0.5, 0.0, 1.0)  # Orange - starting
-		_purge_bar_label.text = "Purging Totem... %.0f%%" % (clamped * 100.0)
+	var ring := get_tree().get_first_node_in_group("crosshair")
+	if ring:
+		ring.set_hold(progress_ratio)
 
 
-## Hides the purge progress bar overlay.
-## Called by TotemAnchor when the player releases the interact key early
-## or when the purge completes.
 func hide_purge_progress() -> void:
-	if _purge_bar_bg:
-		_purge_bar_bg.visible = false
 	_purge_bar_visible = false
 
 
@@ -698,7 +738,8 @@ func _on_item_added(item) -> void:
 	if not item:
 		return
 	var item_name: String = item.item_name if "item_name" in item else "Item"
-	show_pickup_message("Added %s to inventory" % item_name)
+	# A short, quiet line (not a menu's "Added X to inventory").
+	show_pickup_message("+ %s" % item_name)
 
 
 ## Displays a pickup-feedback message: fades in over 0.3s, holds for 2.5s,
@@ -837,56 +878,6 @@ func _on_hint_timer_timeout() -> void:
 	
 	_hint_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 	_hint_tween.tween_property(hint_label, "modulate:a", 1.0, 0.5)
-
-
-## Creates the purge bar UI nodes programmatically on first use.
-func _create_purge_bar_nodes() -> void:
-	# Background bar (dark gray, full-width container)
-	_purge_bar_bg = ColorRect.new()
-	_purge_bar_bg.name = "PurgeBarBackground"
-	_purge_bar_bg.color = Color(0.15, 0.15, 0.15, 0.85)
-	_purge_bar_bg.anchor_left = 0.3
-	_purge_bar_bg.anchor_right = 0.7
-	_purge_bar_bg.anchor_top = 0.55
-	_purge_bar_bg.anchor_bottom = 0.58
-	_purge_bar_bg.offset_left = 0.0
-	_purge_bar_bg.offset_right = 0.0
-	_purge_bar_bg.offset_top = 0.0
-	_purge_bar_bg.offset_bottom = 0.0
-	_purge_bar_bg.z_index = 50
-	_purge_bar_bg.visible = false
-	add_child(_purge_bar_bg)
-	
-	# Fill bar (colored overlay that grows left-to-right)
-	_purge_bar_fill = ColorRect.new()
-	_purge_bar_fill.name = "PurgeBarFill"
-	_purge_bar_fill.color = Color(1.0, 0.5, 0.0, 1.0)  # Orange
-	_purge_bar_fill.anchor_left = 0.0
-	_purge_bar_fill.anchor_right = 0.0
-	_purge_bar_fill.anchor_top = 0.0
-	_purge_bar_fill.anchor_bottom = 1.0
-	_purge_bar_fill.offset_left = 2.0
-	_purge_bar_fill.offset_right = -2.0
-	_purge_bar_fill.offset_top = 2.0
-	_purge_bar_fill.offset_bottom = -2.0
-	_purge_bar_fill.size.x = 0.0
-	_purge_bar_fill.z_index = 51
-	_purge_bar_bg.add_child(_purge_bar_fill)
-	
-	# Label (centered text above the bar)
-	_purge_bar_label = Label.new()
-	_purge_bar_label.name = "PurgeBarLabel"
-	_purge_bar_label.text = "Purging Totem..."
-	_purge_bar_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_purge_bar_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_purge_bar_label.anchor_left = 0.0
-	_purge_bar_label.anchor_right = 1.0
-	_purge_bar_label.anchor_top = -1.5
-	_purge_bar_label.anchor_bottom = 0.0
-	_purge_bar_label.offset_top = -4.0
-	_purge_bar_label.offset_bottom = 4.0
-	_purge_bar_label.z_index = 52
-	_purge_bar_bg.add_child(_purge_bar_label)
 
 
 ## Shows the escape-ending screen overlay, hiding every other HUD element.

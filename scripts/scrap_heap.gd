@@ -20,6 +20,8 @@ class_name ScrapHeap
 
 ## Unique identifier for this scrap heap (used for logging and save data).
 @export var scrap_heap_id: String = "scrap_heap_01"
+## Where it is, for the stash's title ("Scrap Heap — Barn"); empty: just "Scrap Heap".
+@export var place_name: String = ""
 
 ## Internal slot array of item data structures.
 ## Each entry: { item_data: ItemData, quantity: int }
@@ -79,13 +81,13 @@ func _ready() -> void:
 
 func get_interact_text() -> String:
 	if is_spent:
-		return "[E] Search Scrap Heap (spent)"
+		return "Scrap heap (picked clean)"
 	# ─── TASK 2.1: EXHAUSTED INTERACTION PROMPT ──────────────────
 	# When exhausted, grey out the interaction prompt instead of
 	# showing the normal "Press E" text. The player is too tired.
 	var player_ref = get_tree().get_first_node_in_group("player")
 	if player_ref and "is_exhausted" in player_ref and player_ref.is_exhausted:
-		return "[color=gray]I am too tired to do this[/color]"
+		return "Too tired to do this"
 	return "[E] Search Scrap Heap"
 
 

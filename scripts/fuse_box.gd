@@ -86,6 +86,11 @@ func _ready() -> void:
 	set_collision_layer_value(1, true)
 	set_collision_layer_value(2, true)
 
+## Repair progress for the crosshair's ring (-1: not repairing).
+func get_hold_progress() -> float:
+	return _repair_progress / REPAIR_TIME if _is_repairing else -1.0
+
+
 func start_hold_interact() -> void:
 	if current_state != BoxState.BROKEN:
 		return
@@ -338,6 +343,6 @@ func get_interact_text() -> String:
 		BoxState.HAS_FUSE:
 			return "[E] Throw Switch"
 		BoxState.POWER_ON:
-			return "[E] Fuse Box (Active)"
+			return "Fuse box (working)"
 		_:
 			return ""

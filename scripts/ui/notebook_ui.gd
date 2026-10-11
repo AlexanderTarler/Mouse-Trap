@@ -320,7 +320,7 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_notebook"):
 		_is_open = !_is_open
 		visible = _is_open
-		_play_page_turn()
+		_play_toggle()
 		if _is_open:
 			current_spread = 0
 			_current_page = 0
@@ -343,7 +343,7 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if event.is_action_pressed("notebook_next_page") or event.is_action_pressed("notebook_prev_page"):
-		_play_page_turn()
+		_play_toggle()
 	if event.is_action_pressed("notebook_next_page"):
 		if current_spread == 1:
 			# Advance by 2 pages (one spread)
@@ -409,7 +409,6 @@ func _input(event: InputEvent) -> void:
 const INK := Color("#1a1a1a")
 const PENCIL := Color("#6e655a")
 var _page_numbers: Array[Label] = []
-var _page_turn: AudioStreamWAV = null
 
 
 ## The book on a dimmed screen, paper with a gutter shade and a margin
@@ -478,32 +477,21 @@ func _update_page_numbers() -> void:
 	_page_numbers[1].text = "— %d —" % (left + 2) if left + 1 < _all_pages.size() else ""
 
 
-## A short paper rustle (synthesized: there's no page sound in the kit).
-func _play_page_turn() -> void:
-	if not _page_turn:
-		var rate := 22050
-		var length := int(rate * 0.22)
-		var data := PackedByteArray()
-		data.resize(length * 2)
-		var smooth := 0.0
-		for i in length:
-			var t := float(i) / length
-			# Quick swell and fade, with a crinkle in the middle.
-			var envelope := sin(t * PI) * (0.6 + 0.4 * sin(t * 40.0))
-			smooth = smooth * 0.55 + (randf() * 2.0 - 1.0) * 0.45
-			data.encode_s16(i * 2, int(clampf(smooth * envelope * 0.5, -1.0, 1.0) * 32767.0))
-		_page_turn = AudioStreamWAV.new()
-		_page_turn.format = AudioStreamWAV.FORMAT_16_BITS
-		_page_turn.mix_rate = rate
-		_page_turn.data = data
+## Opening or closing the notebook, and turning its pages.
+const TOGGLE_SOUND := "res://assets/audio/objects/Toggle Journal.ogg"
+
+
+func _play_toggle() -> void:
+	if not ResourceLoader.exists(TOGGLE_SOUND):
+		return
 	var player := AudioStreamPlayer.new()
 	player.bus = "SFX"
-	player.stream = _page_turn
-	player.volume_db = -14.0
-	player.pitch_scale = randf_range(0.9, 1.15)
+	player.stream = load(TOGGLE_SOUND)
 	add_child(player)
 	player.play()
 	player.finished.connect(player.queue_free)
+
+
 
 
 # ============================================================

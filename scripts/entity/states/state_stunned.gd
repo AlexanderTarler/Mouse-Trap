@@ -13,6 +13,10 @@ extends EntityState
 ## buys the player their run at the totem, and the chase after it is a race.
 
 const S := Entity.State
+## The flinch as the light strikes it (Zombie Reaction Hit, sped up), before
+## the writhing (also used by STANDOFF).
+const HIT_REACT_TIME := 0.9
+const HIT_REACT_SPEED := 1.25
 
 var _left := 0.0
 
@@ -20,13 +24,18 @@ var _left := 0.0
 func enter(_from: int, data: Dictionary) -> void:
 	_left = data.get("duration", 30.0)
 	entity.totem_defense_disabled = true
+	entity.cancel_oneshot()   # the light cuts a roar short
 	entity.audio.play_scream()
 
 
 func update(delta: float) -> void:
 	_left -= delta
 	entity.stop()
-	entity.play_anim(&"entity_in_light")
+	# Struck by the light (Zombie Reaction Hit), then writhing in it.
+	if time < HIT_REACT_TIME:
+		entity.play_anim(&"HitReact", HIT_REACT_SPEED)
+	else:
+		entity.play_anim(&"entity_in_light")
 
 
 func next_state() -> int:

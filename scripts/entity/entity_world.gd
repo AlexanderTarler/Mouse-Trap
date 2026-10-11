@@ -22,8 +22,6 @@ const REPEL_MEMORY := 90.0              ## Seconds a repelled entry is avoided.
 ## this time constant (seconds). pick_entry() subtracts GUARD_PENALTY per point.
 const GUARD_MEMORY := 600.0
 const GUARD_PENALTY := 1.5
-## Window bonus for the room it believes the player is in (seen or heard there).
-const SUSPECTED_ROOM_BONUS := 2.0
 ## Rooms that are passages, not places to search.
 const NOT_PATROLLED_ROOMS := ["Stairs"]
 const MAX_HIDING_SPOTS := 5
@@ -38,6 +36,7 @@ var _last_vantage: Node3D = null
 var _entries: Array = []                ## Array[CabinEntryLink]
 var _repelled_until: Dictionary = {}    ## CabinEntryLink -> clock time
 var _guard_score: Dictionary = {}       ## CabinEntryLink -> float
+var _spotted_until: Dictionary = {}     ## CabinEntryLink -> clock time (mark_spotted)
 var _hiding_spots: Array[Dictionary] = []   ## {"position": Vector3, "weight": float}
 var _presence_timer := 0.0
 var _presence_cooldown: Dictionary = {} ## CabinEntryLink -> clock time
@@ -136,39 +135,128 @@ func is_entry_viable(link: CabinEntryLink) -> bool:
 	return true
 
 
-## Chooses an entry to approach, or null if none is viable. Windows are
-## weighted toward unboarded, dark ones; windows of the room it believes the
-## player is in (seen there, or heard there) are favoured for the scare. An
-## unlocked door is a strong option; a locked one is occasionally chosen just
-## to rattle its handle.
+## The room an entry opens into (lower case, "" for none).
+func entry_room(link: CabinEntryLink) -> String:
+	return RoomLightDetector.get_room_name_at(link.end_position + Vector3.UP).to_lower()
+
+
+## Spotted at an entry (the player saw it there): avoided for a while.
+func mark_spotted(link: CabinEntryLink) -> void:
+	if link:
+		_spotted_until[link] = _clock + entity.config.spotted_memory
+
+
+func is_spotted(link: CabinEntryLink) -> bool:
+	return _spotted_until.get(link, -1.0) > _clock
+
+
+## Whether the player could see it standing outside this entry right now.
+func player_sees_entry(link: CabinEntryLink) -> bool:
+	var spot := (perch_position(link) if link.climb else link.start_position) + Vector3.UP * 1.2
+	return entity.perception.is_in_player_view(spot)
+
+
+## How attractive an entry is as a way in (no randomness): open beats shut,
+## unboarded beats boarded, the door only when unlocked; dark beats lit;
+## less if it was driven off there. `shy` adds its wish not to be seen: away
+## from the room it believes the player is in, from entries the player can
+## see, from where it was spotted, and towards the far side of the cabin.
+func entry_score(link: CabinEntryLink, shy: bool = true) -> float:
+	var config := entity.config
+	var score := 0.0
+	if link.kind == CabinEntryLink.Kind.DOOR:
+		score += 3.0 if not link.entry.is_locked else -1.5
+	else:
+		var window = link.entry
+		if window.is_passable():
+			score += 3.0
+		elif not window.is_boarded:
+			score += 1.5
+		else:
+			score -= window.planks_remaining * 0.5
+		if link.climb:
+			score -= config.climb_entry_penalty
+	score -= get_light_at(link.start_position) * 3.0
+	score -= guard_score(link) * GUARD_PENALTY
+	if shy:
+		var room := entity.perception.believed_player_room().to_lower()
+		if room != "" and entry_room(link) == room:
+			score -= config.shy_room_penalty
+		if player_sees_entry(link):
+			score -= config.shy_view_penalty
+		if is_spotted(link):
+			score -= config.shy_spotted_penalty
+		# Far from where it last saw or heard the player (it doesn't know
+		# where they are otherwise).
+		var lead = _player_lead()
+		if lead != null:
+			score += minf(Entity._flat_distance(lead, link.end_position) / 8.0, config.shy_distance_bonus)
+	return score
+
+
+## Where it last saw or heard the player, if that's fresh; else null.
+func _player_lead():
+	var p := entity.perception
+	if p.has_fresh_sighting():
+		return p.last_seen_position
+	if p.has_fresh_noise():
+		return p.last_heard_position
+	return null
+
+
+## Chooses an entry to approach, or null if none is viable: the best
+## entry_score() (shy), with a little randomness.
 func pick_entry() -> CabinEntryLink:
 	var best: CabinEntryLink = null
 	var best_score := -INF
-	var player_room := entity.perception.suspected_player_room().to_lower()
 	for link in entries():
 		if not is_entry_viable(link):
 			continue
-		var score := randf() * 2.0
-		if link.kind == CabinEntryLink.Kind.DOOR:
-			var door = link.entry
-			score += 3.0 if not door.is_locked else -1.5
-		else:
-			var window = link.entry
-			if window.is_passable():
-				score += 3.0
-			elif not window.is_boarded:
-				score += 1.5
-			else:
-				score -= window.planks_remaining * 0.5
-			var window_room := RoomLightDetector.get_room_name_at(link.end_position + Vector3.UP).to_lower()
-			if player_room != "" and window_room == player_room:
-				score += SUSPECTED_ROOM_BONUS
-			if link.climb:
-				score -= entity.config.climb_entry_penalty
-		score -= get_light_at(link.start_position) * 3.0
-		score -= guard_score(link) * GUARD_PENALTY
+		var score := entry_score(link) + randf() * 2.0
 		if score > best_score:
 			best_score = score
+			best = link
+	return best
+
+
+## How it means to get in: {"entry": link} to go straight for one, or
+## {"entry": link, "decoy": other} to lure the player away from `entry`
+## first. It lures when the best way in, judged without shyness, opens into
+## the room it believes the player is in, and another room has a usable
+## window it can make noise at (config.lure_chance). {} if no way in.
+func plan_entry() -> Dictionary:
+	var room := entity.perception.believed_player_room().to_lower()
+	if room != "" and randf() < entity.config.lure_chance:
+		var target: CabinEntryLink = null
+		var target_score := -INF
+		for link in entries():
+			if is_entry_viable(link) and not link.climb:
+				var score := entry_score(link, false) + randf() * 0.5
+				if score > target_score:
+					target_score = score
+					target = link
+		if target and entry_room(target) == room:
+			var decoy := _pick_decoy(target, room)
+			if decoy:
+				return {"entry": target, "decoy": decoy}
+	var entry := pick_entry()
+	return {"entry": entry} if entry else {}
+
+
+## A window of another room to make noise at: on the ground, not one the
+## player can see, as far from `target` as possible.
+func _pick_decoy(target: CabinEntryLink, player_room: String) -> CabinEntryLink:
+	var best: CabinEntryLink = null
+	var best_distance := 0.0
+	for link in entries():
+		if link == target or link.kind != CabinEntryLink.Kind.WINDOW or link.climb:
+			continue
+		var room := entry_room(link)
+		if room == "" or room == player_room or is_entry_lit(link) or player_sees_entry(link):
+			continue
+		var distance := Entity._flat_distance(link.end_position, target.end_position)
+		if distance > best_distance:
+			best_distance = distance
 			best = link
 	return best
 

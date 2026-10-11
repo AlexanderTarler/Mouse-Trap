@@ -35,13 +35,14 @@ var _container_item_buttons: Array[Button] = []
 # ─── NODE REFERENCES ───────────────────────────────────────
 
 @onready var _background: ColorRect = $Background
-@onready var _stash_panel: Panel = $StashPanel
-@onready var _player_grid: GridContainer = $StashPanel/PlayerInventoryPanel/PlayerGridContainer
-@onready var _container_grid: GridContainer = $StashPanel/ContainerPanel/ContainerGridContainer
-@onready var _close_button: Button = $StashPanel/CloseButton
-@onready var _title_label: Label = $StashPanel/TitleLabel
-@onready var _take_all_button: Button = $StashPanel/TransferButtons/TakeAllButton
-@onready var _store_all_button: Button = $StashPanel/TransferButtons/StoreAllButton
+## The panel sizes itself to its contents (containers), centred on screen.
+@onready var _stash_panel: Control = $StashPanel
+@onready var _player_grid: GridContainer = $StashPanel/Layout/Panels/PlayerInventoryPanel/Column/PlayerGridContainer
+@onready var _container_grid: GridContainer = $StashPanel/Layout/Panels/ContainerPanel/Column/ContainerGridContainer
+@onready var _close_button: Button = $StashPanel/Layout/Buttons/CloseButton
+@onready var _title_label: Label = $StashPanel/Layout/TitleLabel
+@onready var _take_all_button: Button = $StashPanel/Layout/Buttons/TakeAllButton
+@onready var _store_all_button: Button = $StashPanel/Layout/Buttons/StoreAllButton
 
 
 ## Found by its group (not by a path in the level).
@@ -61,6 +62,11 @@ func _ready() -> void:
 
 	# Listen for inventory changes to refresh the player grid
 	Inventory.inventory_changed.connect(_refresh_player_grid)
+	ItemIcons.instance().icon_ready.connect(func(_name):
+		if _is_open:
+			_refresh_player_grid()
+			if _current_scrap_heap:
+				_refresh_container_grid(_current_scrap_heap.contents))
 
 
 # ─── OPEN ──────────────────────────────────────────────────
@@ -79,7 +85,8 @@ func open_container_stash(scrap_heap: ScrapHeap, contents: Array) -> void:
 		_player = get_tree().get_first_node_in_group("player")
 
 	# Set the title to identify which scrap heap we're looting
-	_title_label.text = "Scrap Heap — %s" % scrap_heap.scrap_heap_id
+	var place: String = scrap_heap.get("place_name") if scrap_heap.get("place_name") else ""
+	_title_label.text = "Scrap Heap — %s" % place if place != "" else "Scrap Heap"
 
 	# Refresh both grids
 	_refresh_player_grid()
@@ -138,16 +145,20 @@ func _create_item_button(item_data) -> Button:
 	var btn = Button.new()
 	btn.custom_minimum_size = Vector2(64, 64)
 	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	# A long label is cut, not allowed to widen its column into the next.
+	btn.clip_text = true
+	btn.expand_icon = true
 
-	if item_data.item_icon:
-		btn.icon = item_data.item_icon
+	var picture: Texture2D = item_data.item_icon if item_data.item_icon else ItemIcons.icon_for(item_data)
+	if picture:
+		btn.icon = picture
 	else:
 		btn.text = item_data.short_label() if item_data.has_method("short_label") else item_data.item_name.left(2)
 		btn.add_theme_font_size_override("font_size", 12)
 	# A fuel can shows how full it is.
 	if item_data.has_method("is_fuel_can") and item_data.is_fuel_can():
 		btn.text = "%s
-%d%%" % [btn.text, item_data.fuel_percent()] if not item_data.item_icon else "%d%%" % item_data.fuel_percent()
+%d%%" % [btn.text, item_data.fuel_percent()] if not picture else "%d%%" % item_data.fuel_percent()
 
 	btn.tooltip_text = item_data.get_display_name() if item_data.has_method("get_display_name") else item_data.item_name
 

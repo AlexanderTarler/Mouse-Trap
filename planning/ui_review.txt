@@ -1,0 +1,227 @@
+UI REVIEW — what to improve, and why
+===================================
+Scope: everything the player reads, clicks or watches: the HUD, the
+crosshair and interaction prompts, the inventory, the stash (scrap heaps),
+notes and the notebook, tutorial hints and thoughts, the menus and settings,
+the opening, the death sequence and the endings.
+
+The goal: the game should be easy to read and hard to get stuck in, while
+the screen stays quiet and the dread stays high. Every point below is
+either a bug, a "the player is confused here" problem, or a place where the
+UI breaks the mood. They are ordered by impact within each section.
+STATUS: all three rounds are done (tests/ui_test.gd). Left for later:
+sound captions (from 2.7).
+
+
+1. BUGS AND BROKEN BITS (fix first; mostly small)
+-------------------------------------------------
+
+1.1  The UI doesn't scale with the window  [biggest one]
+     project.godot sets no stretch mode, so the UI is drawn in raw pixels for
+     a 1920x1080 screen. Now that Windowed / Borderless / Fullscreen exist,
+     anyone not on exactly 1920x1080 gets:
+       - tiny text and bars on a 1440p or 4K screen;
+       - menus cut off or crowding in a small window;
+       - the inventory off centre: its panel sits at fixed pixel offsets
+         (541, 278), not anchored to the middle.
+     Fix: display/window/stretch/mode = "canvas_items", aspect = "expand"
+     (the UI is laid out once for 1080p and scaled to any screen), and anchor
+     the inventory panel to the centre like the stash now is.
+
+1.2  Raw markup in prompts
+     The interaction prompt is a plain Label, so four prompts show their
+     formatting tags literally while the player is exhausted:
+       "[color=gray]I am too tired to do this[/color]"
+     (scrap heap, wrecks, notes, the totem). Use a RichTextLabel for the
+     prompt, or drop the tags.
+
+1.3  The stash shows an internal name
+     Its title reads "Scrap Heap — scrap_heap_01". The player should see a
+     place, e.g. "Scrap Heap — Barn", "Scrap Heap — Wreck Yard", or simply
+     "Scrap Heap".
+
+1.4  The inventory panel is half empty and half broken
+       - An empty bordered box (InfoBox) sits under the grid: its labels are
+         never filled. The item's name and description show at the top
+         instead, in 12 px text.
+       - 10 slots in an 8-column grid: a row of 8 and a row of 2, inside a
+         grid area tall enough for five rows.
+       - "Use" is enabled for every item, but only batteries and notes do
+         anything. Pressing it on a plank, fuel can or key silently does
+         nothing.
+       - The close button is a 28 px "x".
+     Fix: 5 x 2 slots, the name and description in the info box, Use greyed
+     out (or relabelled: "Read", "Swap battery") per item.
+
+1.5  Prompts offer [E] when E does nothing
+     "[E] Generator (Full)", "[E] Fuse Box (Active)", "[E] Window (Secured)",
+     "[E] Need Cable Spool", "[E] Can't board this window yet": these are
+     statuses, not actions. Show them without the key, dimmed. Holding is
+     worded four different ways: "[Hold E] Unlock Door", "[E] Hold to Refill
+     Generator", "[E] Install X (1/3) [Hold 1.5s]", "[E] Boarding... 40%".
+     One rule: "[E] Do thing" for a tap, "[Hold E] Do thing" for a hold.
+
+1.6  Note pages close on any left click
+     A stray click (players click to "use" things) throws the note away. Close
+     on Esc / E at the last page only, or put a close button.
+
+1.7  Placeholder ending text
+     "MEDIOCRE ENDING — The player escaped the cabin, but the Entity
+     remained... The player disappeared after a few days and were never seen
+     again." It speaks of "the player", in the third person, and calls the
+     ending mediocre. With "GOOD ENDING" and "Ending 1 of 2", it breaks the
+     spell at the very moment the game should land (see 3.3).
+
+1.8  Names that don't match
+       - The death screen says "Night 2" (the raw night counter) while the
+         HUD and notebook say "Day 2".
+       - NightLabel's fallback reads "Night 1 / 5": the game has three days.
+
+1.9  Emoji in the HUD
+     "🔋 100%", "⚡ 100%", "⛽ 100%", "⚠️ BATTERY LOW" rely on the system's
+     emoji font. They look out of place next to everything else, and in the
+     web build they can show as empty boxes.
+
+
+2. EASIER TO PLAY (fewer moments of "what now?" or "how?")
+----------------------------------------------------------
+
+2.1  Swap the battery with one key
+     Today, a dying flashlight means: Tab, find the battery, click it, click
+     Use, Tab, while it is dark and something is coming. A key (R: "change
+     batteries") that swaps in a spare at once, with the swap sound, removes
+     the most fiddly moment in the game. Keep the inventory route too.
+
+2.2  Notice when the objective changes
+     The objective line at the top changes silently; players miss it. When it
+     changes: a pencil-scratch sound, a brief brighten or "underline" sweep,
+     and "Notebook updated" for a moment. Small, and in keeping with the
+     notebook.
+
+2.3  One hold indicator
+     Holding E (boarding, refuelling, installing parts, unlocking, purging the
+     totem) shows progress as a percentage inside the prompt text; the totem
+     has its own bar. Use one thin ring that fills around the crosshair for
+     all of them. It's the convention players know, and it keeps the eyes
+     centred.
+
+2.4  A crosshair that tells you something
+     It's a large white shooter cross, always on, and it looks the same
+     whether you're aiming at a fuse box or a tree. A small dot that grows
+     slightly and brightens over something you can use (and dims when the
+     prompt says you can't) reads instantly and suits the genre better.
+
+2.5  Item pictures instead of abbreviations
+     No item has an icon, so slots show "BATT", "PLANK", "FUEL". Thumbnails
+     can be rendered automatically from each item's 3D model (they all have
+     one: scene_to_spawn), once, at startup. No art needed.
+
+2.6  A controls page in the pause menu
+     J (notebook), Hold F (overcharge), Ctrl (crouch), Q/E (pages), Tab, R...
+     are each shown once by a tutorial hint and then never again. A
+     "Controls" panel in the pause menu, plus a footer in the notebook and
+     inventory, lets players look things up instead of guessing.
+
+2.7  Settings players expect (and a dark game needs)
+       - Brightness / gamma: the single most important one for a game this
+         dark; without it some screens show nothing and others give it all
+         away. A "make the symbol barely visible" calibration screen on first
+         launch is the genre standard.
+       - Mouse sensitivity, and invert Y.
+       - Head bob on/off (motion sickness), and field of view.
+       - Optional sound captions for the cues that matter ("[knocking at a
+         window]", "[car alarm]", "[footsteps nearby]"): accessibility, and a
+         safety net for players with the sound low.
+
+2.8  A tip on the death screen
+     After a death, one line about what happened or how to survive it ("It
+     can't see you crouched in a bush." / "Light keeps it out of a room." /
+     "Boarded windows slow it down."). It turns a frustrating death into
+     learning, without a tutorial.
+
+2.9  Say that cutscenes can be skipped
+     The death scene can be skipped with any key, but nothing says so. The
+     opening's "[Space] Skip" is at 35% opacity in a corner. On a replay, the
+     endings should be skippable too.
+
+
+3. TRUER TO THE GENRE (quieter, more in-world)
+-----------------------------------------------
+
+3.1  A quieter HUD
+     Green/yellow/red progress bars are survival-shooter language. In this
+     game:
+       - Stamina: no bar until below 50% (it already hides when full); then
+         a thin dim line, with the breathing (already there) and a slight
+         vignette doing the talking.
+       - Battery: a small flashlight glyph with 3-4 segments, shown while the
+         light is on; it flickers at the last segment (the beam already
+         flickers).
+       - "Day 2": shown as a title card at dawn, then gone. It doesn't need
+         to sit in the corner all day.
+     What stays: the objective line, prompts, thoughts, hints.
+
+3.2  One visual language
+     Right now each screen has its own look: the default Godot font on the
+     HUD and menus, Georgia italic for thoughts, a paper notebook, a
+     Windows 95 computer, a brown "scrap" stash and a dark inventory. The
+     notebook and the PC are great as they are (they're objects in the
+     world). For the rest, bundle one font with character (a typewriter or
+     field-journal face such as Special Elite or Courier Prime, both free) for
+     the HUD, prompts, inventory and menus. Make the inventory a canvas field
+     bag and the stash its counterpart. A bundled font also removes the
+     web/emoji risk (1.9).
+
+3.3  Endings that land
+     The cutscenes ("It Follows", "Dawn") are strong; the screen after them
+     is a placeholder. Suggestion:
+       - Title them by name: "It Follows" / "Dawn", not MEDIOCRE / GOOD.
+       - Epilogue on the phone from the opening (it bookends the game):
+           It Follows: days later, the Institute texts "Lund? You haven't
+             reported in." ... "Lund?" - unread. The phone screen cracks to
+             black.
+           Dawn: signal returns on the road; a text from Arvid's number,
+             delivered late, or the player's "Arrived" finally sending.
+       - Then "Ending 1 of 2 — there is another way out." in small type, so
+         players know to look for it.
+
+3.4  A death screen in the world
+     "YOU DIED / The darkness claims another soul" is generic. The death
+     cutscene already ends under the willow. A crossed-out notebook line
+     ("Field survey suspended — researcher missing") with "Restart from
+     this morning" / "this evening" (whichever the checkpoint is) fits better
+     and tells the player exactly what restarting costs.
+
+3.5  The opening, readable
+     The phone's text is 14 px (11 px for the status line) on a 1080p screen;
+     it's the one place the story is spelled out. 18-20 px, and a slightly
+     longer hold on the office message, which is the important one. Consider
+     "press any key to continue" on the phone instead of fixed timings, so
+     slow readers aren't rushed.
+
+3.6  Pickup messages
+     "Added Fuel Can to inventory" in a bright line at the bottom is the one
+     place the game sounds like a menu. A short, dim line ("Fuel can") with a
+     soft pick-up sound does the same job.
+
+
+4. SUGGESTED ORDER
+------------------
+  Round 1, small and safe (an afternoon):
+    1.1 scaling, 1.2 markup, 1.3 stash title, 1.4 inventory layout,
+    1.5 prompt wording, 1.6 note clicks, 1.8 names, 2.2 objective notice,
+    2.9 skip hints.
+  Round 2, play feel:
+    2.1 battery key, 2.3 hold ring, 2.4 crosshair, 2.6 controls page,
+    2.7 brightness and the other settings, 2.8 death tips.
+  Round 3, mood:
+    3.1 quieter HUD, 3.2 font and styling, 3.3 endings with the phone
+    epilogue, 3.4 death screen, 3.5 opening, 3.6 pickups, 2.5 item icons.
+
+  Choices that are yours (I'd recommend the first of each):
+    - The inventory doesn't pause the game. That's good tension; keep it,
+      but the battery key (2.1) makes it fair.
+    - Captions (2.7): on by default only for the "something is at the
+      window" cues, or off entirely by default?
+    - Endings: the phone epilogue, or a short text card in the Win95 style
+      of the computer?

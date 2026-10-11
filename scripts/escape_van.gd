@@ -248,6 +248,11 @@ func _repair_complete() -> void:
 # ─── HOLD-TO-INTERACT: Car Part Installation ──────────────────────────────
 ## Called by PhysicalGrab when the player presses E while looking at the van.
 ## Starts accumulating hold progress for installing a car part.
+## Install progress for the crosshair's ring (-1: not installing).
+func get_hold_progress() -> float:
+	return _install_progress / INSTALL_TIME if _is_installing else -1.0
+
+
 func start_hold_interact() -> void:
 	if is_repaired or not van_investigated or alarm_active:
 		return
@@ -344,7 +349,7 @@ func get_interact_text() -> String:
 		return "[E] Escape"
 	if _is_installing and _pending_part_name != "":
 		var pct = int((_install_progress / INSTALL_TIME) * 100.0)
-		return "[E] Installing %s... %d%%" % [_pending_part_name, pct]
+		return "Installing %s..." % _pending_part_name
 	if not van_investigated:
 		return "[E] Examine the van"
 	# Check if there's a valid part to install
@@ -354,7 +359,7 @@ func get_interact_text() -> String:
 			var item = inventory.items[i]
 			if item and item.item_type == 7:
 				if not _installed_parts.has(item.item_name) and item.item_name in REQUIRED_PARTS:
-					return "[E] Install %s (%d/3) [Hold %.1fs]" % [item.item_name, components_collected, INSTALL_TIME]
+					return "[Hold E] Install %s (%d/3)" % [item.item_name, components_collected]
 	return "[E] Try to repair the van (%d/3)" % components_collected
 
 

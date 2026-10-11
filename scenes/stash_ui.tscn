@@ -93,30 +93,22 @@ anchor_bottom = 1.0
 mouse_filter = 2
 color = Color(0, 0, 0, 0.6)
 
-[node name="StashPanel" type="Panel" parent="." unique_id=916068098]
+[node name="StashPanel" type="PanelContainer" parent="." unique_id=916068098]
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -427.0
-offset_top = -226.0
-offset_right = -427.0
-offset_bottom = -226.0
 grow_horizontal = 2
 grow_vertical = 2
-size_flags_horizontal = 4
-size_flags_vertical = 4
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="TitleLabel" type="Label" parent="StashPanel" unique_id=322371781]
-layout_mode = 0
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -150.0
-offset_top = 10.0
-offset_right = 150.0
-offset_bottom = 35.0
+[node name="Layout" type="VBoxContainer" parent="StashPanel" unique_id=405118230]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="StashPanel/Layout" unique_id=322371781]
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.9, 0.72, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
 theme_override_constants/shadow_offset_x = 1
@@ -126,103 +118,81 @@ text = "Scrap Heap"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="PlayerInventoryPanel" type="Panel" parent="StashPanel" unique_id=1582406140]
-layout_mode = 0
-offset_left = 20.0
-offset_top = 45.0
-offset_right = 370.0
-offset_bottom = 420.0
+[node name="Panels" type="HBoxContainer" parent="StashPanel/Layout" unique_id=1880021473]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="PlayerInventoryPanel" type="PanelContainer" parent="StashPanel/Layout/Panels" unique_id=1582406140]
+layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_inner_panel")
 
-[node name="Label" type="Label" parent="StashPanel/PlayerInventoryPanel" unique_id=670132900]
-layout_mode = 0
-offset_left = 10.0
-offset_top = 10.0
-offset_right = 340.0
-offset_bottom = 35.0
+[node name="Column" type="VBoxContainer" parent="StashPanel/Layout/Panels/PlayerInventoryPanel" unique_id=1290644307]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="StashPanel/Layout/Panels/PlayerInventoryPanel/Column" unique_id=670132900]
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.9, 0.72, 1)
 theme_override_font_sizes/font_size = 14
 text = "Your Inventory"
 
-[node name="PlayerGridContainer" type="GridContainer" parent="StashPanel/PlayerInventoryPanel" unique_id=1977740351]
-layout_mode = 0
-offset_left = 10.0
-offset_top = 40.0
-offset_right = 340.0
-offset_bottom = 365.0
+[node name="PlayerGridContainer" type="GridContainer" parent="StashPanel/Layout/Panels/PlayerInventoryPanel/Column" unique_id=1977740351]
+custom_minimum_size = Vector2(352, 216)
+layout_mode = 2
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
 columns = 5
 
-[node name="ContainerPanel" type="Panel" parent="StashPanel" unique_id=1226520934]
-layout_mode = 0
-offset_left = 390.0
-offset_top = 45.0
-offset_right = 740.0
-offset_bottom = 420.0
+[node name="ContainerPanel" type="PanelContainer" parent="StashPanel/Layout/Panels" unique_id=1226520934]
+layout_mode = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_inner_panel")
 
-[node name="Label" type="Label" parent="StashPanel/ContainerPanel" unique_id=1713054609]
-layout_mode = 0
-offset_left = 10.0
-offset_top = 10.0
-offset_right = 340.0
-offset_bottom = 35.0
+[node name="Column" type="VBoxContainer" parent="StashPanel/Layout/Panels/ContainerPanel" unique_id=1730255761]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Label" type="Label" parent="StashPanel/Layout/Panels/ContainerPanel/Column" unique_id=1713054609]
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.9, 0.72, 1)
 theme_override_font_sizes/font_size = 14
 text = "Scrap Contents"
 
-[node name="ContainerGridContainer" type="GridContainer" parent="StashPanel/ContainerPanel" unique_id=148601345]
-layout_mode = 0
-offset_left = 10.0
-offset_top = 40.0
-offset_right = 340.0
-offset_bottom = 365.0
+[node name="ContainerGridContainer" type="GridContainer" parent="StashPanel/Layout/Panels/ContainerPanel/Column" unique_id=148601345]
+custom_minimum_size = Vector2(352, 216)
+layout_mode = 2
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
 columns = 5
 
-[node name="TransferButtons" type="HBoxContainer" parent="StashPanel" unique_id=178330509]
-layout_mode = 0
-offset_left = 150.0
-offset_top = 430.0
-offset_right = 650.0
-offset_bottom = 460.0
+[node name="Buttons" type="HBoxContainer" parent="StashPanel/Layout" unique_id=178330509]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
 
-[node name="TakeAllButton" type="Button" parent="StashPanel/TransferButtons" unique_id=232139173]
+[node name="TakeAllButton" type="Button" parent="StashPanel/Layout/Buttons" unique_id=232139173]
 custom_minimum_size = Vector2(120, 30)
 layout_mode = 2
-size_flags_horizontal = 4
 theme_override_colors/font_color = Color(1, 0.9, 0.72, 1)
-theme_override_colors/font_hover_color = Color(1, 0.95, 0.85, 1)
 theme_override_font_sizes/font_size = 13
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_hover")
 text = "Take All"
 
-[node name="StoreAllButton" type="Button" parent="StashPanel/TransferButtons" unique_id=752266140]
+[node name="StoreAllButton" type="Button" parent="StashPanel/Layout/Buttons" unique_id=752266140]
 custom_minimum_size = Vector2(120, 30)
 layout_mode = 2
-size_flags_horizontal = 4
 theme_override_colors/font_color = Color(1, 0.9, 0.72, 1)
-theme_override_colors/font_hover_color = Color(1, 0.95, 0.85, 1)
 theme_override_font_sizes/font_size = 13
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_btn_hover")
 text = "Store All"
 
-[node name="CloseButton" type="Button" parent="StashPanel" unique_id=1264853052]
-layout_mode = 0
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -60.0
-offset_top = 470.0
-offset_right = 60.0
-offset_bottom = 500.0
+[node name="CloseButton" type="Button" parent="StashPanel/Layout/Buttons" unique_id=1264853052]
+custom_minimum_size = Vector2(120, 30)
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.9, 0.72, 1)
-theme_override_colors/font_hover_color = Color(1, 0.96, 0.85, 1)
 theme_override_font_sizes/font_size = 13
 theme_override_styles/normal = SubResource("StyleBoxFlat_btn")
 theme_override_styles/hover = SubResource("StyleBoxFlat_btn_hover")

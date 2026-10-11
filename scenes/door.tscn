@@ -13,7 +13,7 @@
 size = Vector3(1, 2.1, 0.07)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_Interaction"]
-size = Vector3(1.2, 2.5, 2)
+size = Vector3(1.025, 2.5, 1)
 
 [node name="Door" type="AnimatableBody3D" unique_id=187910433]
 script = ExtResource("1_uvdjg")

@@ -62,8 +62,6 @@ var _is_flickering: bool = false
 ## node always exists in the tree; it only plays when a stream is assigned AND
 ## overcharge is active.
 var _hum_player: AudioStreamPlayer = null
-## The hum when overcharge_hum isn't assigned.
-const OVERCHARGE_HUM_DEFAULT := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Misc/portal_1_loop.ogg"
 
 ## ─── OVERCHARGE TUTORIAL HOLD TRACKING ────────────────────────────────────
 ## Accumulated time (seconds) the player has continuously held the F key in
@@ -103,13 +101,8 @@ func _ready() -> void:
 	_hum_player = AudioStreamPlayer.new()
 	_hum_player.bus = "SFX"
 	_hum_player.volume_db = overcharge_hum_volume_db
-	var hum: AudioStream = overcharge_hum
-	if not hum and ResourceLoader.exists(OVERCHARGE_HUM_DEFAULT):
-		# An electric hum from the kit, looped.
-		hum = (load(OVERCHARGE_HUM_DEFAULT) as AudioStream).duplicate()
-		if "loop" in hum:
-			hum.loop = true
-	_hum_player.stream = hum
+	# Silent unless a hum is assigned (the overcharge has no sound of its own).
+	_hum_player.stream = overcharge_hum
 	add_child(_hum_player)
 
 

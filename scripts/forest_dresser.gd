@@ -10,8 +10,8 @@ extends RefCounted
 ##     pebbles, saplings), kept off the walking paths (TerrainMask) and clear
 ##     of the cabin, the road, the totem and anything the player interacts
 ##     with.
-##   - the barn yard's fence line is cleared the same way (FENCE_LINES): no
-##     trunk through a fence, no shrub in it.
+##   - so are the gravel road (GravelRoad) and the barn yard's fence line
+##     (FENCE_LINES): no trunk on the road or through a fence, no shrub on them.
 ##   - the walking paths are kept clear: trees standing on one are removed
 ##     with their colliders (rebake the navmesh to drop their holes), and the
 ##     group's own ferns, grass, rocks and logs on or next to one are dropped.
@@ -61,9 +61,10 @@ const FENCE_LINES := [
 ]
 const FENCE_TREE_CLEARANCE := 1.1
 const FENCE_CLEARANCE := 0.8
-## The escape road (z, half width) and around interactable things (m).
-const ROAD_Z := -92.0
-const ROAD_HALF_WIDTH := 3.5
+## Trees closer than this to the gravel road's edge go (GravelRoad), and
+## undergrowth keeps ROAD_CLEARANCE off it; and around interactable things (m).
+const ROAD_TREE_CLEARANCE := 1.2
+const ROAD_CLEARANCE := 1.0
 const INTERACTABLE_CLEARANCE := 2.5
 
 ## model name -> Array of [Mesh, local Transform3D]
@@ -93,11 +94,12 @@ static func dress(group: Node3D, add: Callable) -> Dictionary:
 		var at := mesh_instance.global_position
 		if not source.begins_with(PINE_SOURCE):
 			# The group's own small things: off the paths.
-			if mesh_instance.mesh and (TerrainMask.near_path(at, 0.6) or near_fence(at, FENCE_CLEARANCE)):
+			if mesh_instance.mesh and (TerrainMask.near_path(at, 0.6) or near_fence(at, FENCE_CLEARANCE)
+				or GravelRoad.covers(at, ROAD_CLEARANCE)):
 				replaced[mesh_instance] = true
 			continue
 		replaced[mesh_instance] = true
-		if TerrainMask.path(at) >= TREE_ON_PATH or near_fence(at, FENCE_TREE_CLEARANCE):
+		if TerrainMask.path(at) >= TREE_ON_PATH or near_fence(at, FENCE_TREE_CLEARANCE) 				or GravelRoad.covers(at, ROAD_TREE_CLEARANCE):
 			_remove_collider_near(colliders, at)
 			trees_cleared += 1
 			continue
@@ -185,7 +187,7 @@ static func clear(spot: Vector3) -> bool:
 	for zone in CLEAR_ZONES:
 		if Vector2(spot.x - zone[0].x, spot.z - zone[0].z).length() < zone[1]:
 			return false
-	if absf(spot.z - ROAD_Z) < ROAD_HALF_WIDTH:
+	if GravelRoad.covers(spot, ROAD_CLEARANCE):
 		return false
 	for point in _interactables:
 		if Vector2(spot.x - point.x, spot.z - point.z).length() < INTERACTABLE_CLEARANCE:

@@ -47,10 +47,8 @@ func _input(event: InputEvent) -> void:
 		return
 	
 	# Close on left mouse click anywhere
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		_close_note()
-		get_viewport().set_input_as_handled()
-		return
+	# (A click no longer closes it: a stray one threw the note away. Esc, E
+	# on the last page, or the close button.)
 	
 	# ─── KEYBOARD CLOSE / PAGE NAVIGATION ─────────────────────────
 	# Escape closes the note AND prevents the pause menu from opening
@@ -112,6 +110,8 @@ func _render_current_page() -> void:
 		# Append a subtle page indicator footer so the player knows
 		# there are more pages and how to advance.
 		note_text.text += "\n\n[center][color=gray]— Page %d/%d —  [E] Next · [Q] Prev · [Esc] Close[/color][/center]" % [_current_page + 1, _pages.size()]
+	else:
+		note_text.text += "\n\n[center][color=gray][E] or [Esc] Close[/color][/center]"
 
 
 ## Splits a string into an array of CHARS_PER_PAGE-sized chunks,

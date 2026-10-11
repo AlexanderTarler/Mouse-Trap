@@ -215,6 +215,41 @@ extends Resource
 ## Time to climb through a broken window.
 @export var vault_time: float = 1.4
 
+@export_group("Shyness")
+## It would rather not be seen. Choosing a way in (EntityWorld.pick_entry),
+## it avoids the room it believes the player is in, entries the player can
+## see right now, and ones where it was spotted lately; it favours entries far
+## from the player.
+@export var shy_room_penalty: float = 5.0
+@export var shy_view_penalty: float = 3.0
+@export var shy_spotted_penalty: float = 4.0
+## Up to this much for an entry far from the player (1 per 8 m).
+@export var shy_distance_bonus: float = 1.5
+## How long it trusts its idea of which room the player is in (s).
+@export var room_memory_time: float = 45.0
+## How long it avoids an entry where the player spotted it (s).
+@export var spotted_memory: float = 45.0
+## Spotted while walking up to the cabin: the chance it slips away out of
+## sight rather than stopping to stare (bluff_chance).
+@export var shy_retreat_chance: float = 0.75
+## Confidence it loses slipping away like that.
+@export var shy_retreat_confidence: float = 6.0
+## At a window, once it has ducked as often as it will, being looked at
+## again sends it away from that window.
+@export var peek_leave_when_watched: bool = true
+@export_subgroup("Lure")
+## When the best way in is a window of the player's own room, the chance it
+## tries to draw them away first: noises at a window of another room
+## (LURE), then, once the player has moved, a quick dash to the real one.
+@export var lure_chance: float = 0.7
+## Knocks on the decoy window per round, and rounds before it gives up.
+@export var lure_knocks: int = 3
+@export var lure_rounds: int = 2
+## How long it waits, hidden, for the player to leave their room (s).
+@export var lure_wait: float = 16.0
+## Its speed to the real window once the player has gone (x approach_speed).
+@export var lure_rush_multiplier: float = 1.6
+
 @export_group("Climbing")
 ## From this night it climbs the walls to the upstairs windows.
 @export var climb_night: int = 4

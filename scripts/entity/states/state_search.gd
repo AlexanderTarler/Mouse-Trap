@@ -29,10 +29,12 @@ func update(delta: float) -> void:
 
 	if _index >= _points.size():
 		entity.stop()
+		entity.play_anim(&"LookAround")
 		return
 	if _listen_left > 0.0:
 		_listen_left -= delta
 		entity.stop()
+		entity.play_anim(&"LookAround")
 		# Turn slowly while listening.
 		var sweep := Vector3(sin(time * 0.9), 0.0, cos(time * 0.9))
 		entity.face(entity.global_position + sweep)

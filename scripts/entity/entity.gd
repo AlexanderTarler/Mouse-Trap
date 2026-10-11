@@ -34,6 +34,7 @@ enum State {
 	STUNNED,      ## Paralysed by the portable lamp's overload.
 	SABOTAGE,     ## Breaking the fuse box.
 	ATTACK_LAMP,  ## Smashing the portable lamp.
+	LURE,         ## Knocking at another room's window to draw the player away.
 }
 
 const CONFIG: EntityConfig = preload("res://resources/entity_config.tres")
@@ -91,6 +92,15 @@ var _catch_area: Area3D = null
 var _desired_velocity := Vector3.ZERO
 var _look_target = null            ## Vector3 or null: face this instead of the movement direction.
 var _anim_override: StringName = &""
+var _anim_override_speed := 1.0
+## This frame's way of moving: &"crawl" (low, on its belly) or the usual.
+var _gait: StringName = &""
+## A one-shot that holds it still for a moment (play_oneshot): the roar.
+var _oneshot_anim: StringName = &""
+var _oneshot_left := 0.0
+var _oneshot_speed := 1.0
+## The good ending: dying (die()).
+var _dying := false
 var _model_base_y := 0.0
 var _model_base_scale := Vector3.ONE
 var _glow_base_y := 0.0
@@ -199,6 +209,7 @@ func activate() -> void:
 func deactivate() -> void:
 	_is_active = false
 	van_chase_active = false
+	_oneshot_left = 0.0
 	_cancel_traversal()
 	_release_perch()
 	velocity = Vector3.ZERO
@@ -302,6 +313,7 @@ func on_generator_blackout() -> void:
 	is_enraged = true
 	audio.play_roar()
 	brain.force(State.STALK if perception.player_outside else State.HUNT)
+	play_oneshot(&"Roar", ROAR_TIME, ROAR_SPEED)
 
 
 ## Totem defence: appear at `position` and charge the player.
@@ -312,7 +324,8 @@ func defend_totem(position: Vector3) -> void:
 	var snapped := NavigationServer3D.map_get_closest_point(nav_map, position)
 	global_position = snapped
 	velocity = Vector3.ZERO
-	brain.force(State.CHARGE, {"committed": true})
+	# No roar first: the defence is a surprise.
+	brain.force(State.CHARGE, {"committed": true, "no_roar": true})
 
 
 ## Debug console: jump to a treeline vantage point (even if in view) and watch.
@@ -408,8 +421,66 @@ func face(target: Vector3) -> void:
 	_look_target = target
 
 
-func play_anim(anim: StringName) -> void:
+## This frame's animation, whatever it is doing (states call it every frame).
+func play_anim(anim: StringName, speed: float = 1.0) -> void:
 	_anim_override = anim
+	_anim_override_speed = speed
+
+
+## Moves low this frame (LowCrawl when it moves, Crouch when it doesn't).
+func crawl() -> void:
+	_gait = &"crawl"
+
+
+## Stops where it is, faces the player and plays `anim` for `seconds`,
+## whatever its state wants meanwhile (the state goes on underneath).
+func play_oneshot(anim: StringName, seconds: float, speed: float = 1.0) -> void:
+	_oneshot_anim = anim
+	_oneshot_left = seconds
+	_oneshot_speed = speed
+	if _anim_playback:
+		_anim_playback.start(anim)
+
+
+func is_playing_oneshot() -> bool:
+	return _oneshot_left > 0.0
+
+
+func cancel_oneshot() -> void:
+	_oneshot_left = 0.0
+
+
+## The totem burned (the good ending): it dies where it stands, then is gone.
+func die() -> void:
+	if _dying:
+		return
+	_dying = true
+	var seen := visible and not is_traversing() and not is_clinging() and _anim_playback != null
+	_is_active = false
+	_cancel_traversal()
+	_release_perch()
+	velocity = Vector3.ZERO
+	audio.stop_all()
+	if collision_shape:
+		collision_shape.set_deferred("disabled", true)
+	if _catch_area:
+		_catch_area.set_deferred("monitoring", false)
+	if seen:
+		if _player:
+			_turn_towards(_player.global_position)
+		_anim_playback.start(&"Dying")
+		if _anim_player:
+			_anim_player.speed_scale = 1.0
+		await get_tree().create_timer(DYING_TIME).timeout
+	hide()
+	process_mode = Node.PROCESS_MODE_DISABLED
+
+
+## Turns at once to face `target` (flat).
+func _turn_towards(target: Vector3) -> void:
+	var to := target - global_position
+	if Vector2(to.x, to.z).length() > 0.01:
+		rotation.y = atan2(to.x, to.z)
 
 
 ## Scales the glow around its head: 1 is normal, higher flares it (the charge
@@ -484,6 +555,8 @@ func _physics_process(delta: float) -> void:
 	_desired_velocity = Vector3.ZERO
 	_look_target = null
 	_anim_override = &""
+	_anim_override_speed = 1.0
+	_gait = &""
 
 	# The totem defence, off since the lamp's stun, comes back once the
 	# player is inside the cabin again.
@@ -494,6 +567,13 @@ func _physics_process(delta: float) -> void:
 		brain.tick(delta)
 		if not is_clinging():
 			_check_link_crossing()
+	if _oneshot_left > 0.0:
+		_oneshot_left -= delta
+		if not is_traversing() and not is_clinging():
+			_desired_velocity = Vector3.ZERO
+			_look_target = _player.global_position
+			_anim_override = _oneshot_anim
+			_anim_override_speed = _oneshot_speed
 
 	if is_traversing():
 		_update_climb_sounds(delta)
@@ -616,6 +696,12 @@ func _on_catch_area_body_entered(body: Node) -> void:
 func _catch() -> void:
 	_is_active = false
 	velocity = Vector3.ZERO
+	# At the player's throat while the camera locks on to it.
+	_turn_towards(_player.global_position)
+	if _anim_playback and not is_traversing() and not is_clinging():
+		_anim_playback.start(&"NeckBite")
+		if _anim_player:
+			_anim_player.speed_scale = 1.0
 	audio.play_roar()
 	audio.stop_chase_music()
 	caught_player.emit()
@@ -763,10 +849,14 @@ func leave_perch(scared: bool) -> void:
 	_perch_offset = Vector3.ZERO
 	_begin_climb(link)
 	if scared:
-		_traversal.tween_callback(_set_traversal_anim.bind(&"entity_in_light"))
+		# Falling To Landing: the fall, then landing in a crouch and rising.
+		_traversal.tween_callback(_set_traversal_anim.bind(&"DropLand"))
 		_traversal.tween_property(self, "global_position", base, config.drop_time) \
 			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 		_traversal.tween_callback(audio.play_drop_thud)
+		# Off the wall once it hits the ground; then it gets up.
+		_traversal.tween_callback(_set_perch.bind(null))
+		_traversal.tween_interval(DROP_LAND_TIME)
 	else:
 		_tween_climb(global_position, base, &"ClimbDown")
 	_traversal.tween_callback(_set_perch.bind(null))
@@ -879,8 +969,29 @@ const ANIM_GROUND_OFFSET := {
 	&"entity_in_light": -0.31,
 	&"AttackWindow": -0.38,
 	&"entity_running": -0.17,
+	# The Mixamo set processed by tools/process_entity_anims.gd. Positive:
+	# it crouches, crawls or lies lower than the walk, so the model is raised.
+	&"Crouch": 0.21,
+	&"LookAround": -0.24,
+	&"LowCrawl": 0.34,
+	&"Roar": -0.22,
+	&"Dying": 0.33,
+	&"NeckBite": -0.25,
+	&"Punch": -0.27,
+	&"HitReact": -0.32,
+	&"DropLand": -0.10,
 }
 const ANIM_RUN_SPEED := 6.0
+## How fast LowCrawl moves it played at normal speed (m/s).
+const ANIM_CRAWL_SPEED := 1.3
+## The roar (the part of Mutant Roaring that matters, sped up) before a
+## charge and when a blackout breaks its stun.
+const ROAR_TIME := 1.1
+const ROAR_SPEED := 1.6
+## Zombie Dying's length (s), then it is gone.
+const DYING_TIME := 3.6
+## Getting up after dropping off a wall (the rest of Falling To Landing).
+const DROP_LAND_TIME := 0.55
 
 func _update_animation(_delta: float) -> void:
 	if not _anim_playback:
@@ -899,6 +1010,13 @@ func _update_animation(_delta: float) -> void:
 		speed_scale = 0.15
 	elif _anim_override != &"":
 		anim = _anim_override
+		speed_scale = _anim_override_speed
+	elif _gait == &"crawl":
+		if horizontal_speed > 0.2:
+			anim = &"LowCrawl"
+			speed_scale = clampf(horizontal_speed / ANIM_CRAWL_SPEED, 0.6, 2.0)
+		else:
+			anim = &"Crouch"
 	elif horizontal_speed > 4.5:
 		anim = &"running_crawl"
 		speed_scale = clampf(horizontal_speed / ANIM_RUN_SPEED, 0.8, 2.0)

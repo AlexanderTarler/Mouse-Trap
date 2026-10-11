@@ -20,7 +20,7 @@ extends Node
 ##   0  — Go to the cabin
 ##   1  — Unlock the front door
 ##   2  — Log into the computer (first try — fails, auto-advances)
-##   3  — Find the flashlight
+##   3  — (unused: "Find the flashlight" is an interruption, see below)
 ##   4  — Replace the broken fuse in the fuse box
 ##   5  — Refuel the generator, then turn it on
 ##   6  — Log into the computer (successfully)
@@ -31,6 +31,10 @@ extends Node
 ##
 ## Mains 4 and 5 can be done in either order. Once BOTH are done,
 ## the system advances to main 6.
+##
+## "Find the flashlight" isn't in the chain: when Night 1 falls and the
+## player has no flashlight, it takes over whatever the objective is
+## (flashlight_needed); finding the flashlight hands the objective back.
 
 signal routine_step_changed(step: int, objective_text: String)
 
@@ -225,6 +229,8 @@ var _xray_timers: Dictionary = {}
 
 func _ready() -> void:
 	_night_manager = get_node_or_null("/root/NightManager")
+	if _night_manager and _night_manager.has_signal("night_started"):
+		_night_manager.night_started.connect(_on_night_started)
 	print("[RoutineManager] Initialized. Main-objective gating active. Waiting for Phase 1 triggers.")
 
 
@@ -516,7 +522,26 @@ func _check_power_restored() -> void:
 
 ## ─── OBJECTIVE TEXT ─────────────────────────────────────────────────
 
+## Night 1 fell and the player has no flashlight: "Find the flashlight."
+## stands in for the objective until they pick it up.
+var flashlight_needed := false
+
+
+func _on_night_started(night: int) -> void:
+	if night != 1 or is_day3_sandbox or main_objective >= 99:
+		return
+	var player := get_tree().get_first_node_in_group("player")
+	if player and player.get("_has_flashlight"):
+		return
+	flashlight_needed = true
+	print("[RoutineManager] Night 1 and no flashlight: \"Find the flashlight.\" takes over the objective.")
+	highlight_target("xray_flashlight", 5.0)
+	_update_hud()
+
+
 func get_current_objective() -> String:
+	if flashlight_needed:
+		return "Find the flashlight."
 	# ─── DAY 3+ SANDBOX MODE OVERRIDE ─────────────────────────────
 	# Sandbox mode takes priority over the Night 2.2 car-alarm van
 	# sequence. Once Day 3 begins, the objective must read
@@ -663,7 +688,9 @@ func _update_hud() -> void:
 	_update_bed_highlight(str(text))
 	var step: int = 0
 	
-	if is_day3_sandbox:
+	if flashlight_needed:
+		step = 5
+	elif is_day3_sandbox:
 		if van_fully_repaired:
 			step = 30
 		elif van_parts_installed_count > 0:
@@ -1119,14 +1146,11 @@ func on_computer_tried_no_power() -> void:
 	# skip objective 3 ("Find the flashlight") and go directly to objective 4
 	# ("Find the fuse box"). This prevents the player from getting stuck on an
 	# objective they've already completed.
-	if phase2_flashlight_early:
-		_advance_main_objective(4)
-		print("[RoutineManager] Phase 2: Player tried computer without power. Flashlight already found early — skipping to fuse objective.")
-		highlight_target("xray_fuse_box", 5.0)
-	else:
-		_advance_main_objective(3)
-		print("[RoutineManager] Phase 2: Player tried computer without power. Advancing to flashlight objective.")
-		highlight_target("xray_flashlight", 5.0)
+	# (The flashlight is no longer a step here: Night 1 asks for it if the
+	# player still hasn't found it, see flashlight_needed.)
+	_advance_main_objective(4)
+	print("[RoutineManager] Phase 2: Player tried computer without power. Advancing to the fuse box.")
+	highlight_target("xray_fuse_box", 5.0)
 	_update_hud()
 
 ## Tracks whether the player picked up the flashlight before reaching
@@ -1142,6 +1166,13 @@ var phase2_flashlight_early: bool = false
 ## (objective < 3), set a flag so on_computer_tried_no_power() can skip
 ## objective 3 entirely when it arrives.
 func on_flashlight_picked_up() -> void:
+	clear_highlight("xray_flashlight")
+	if flashlight_needed:
+		# The objective it stood in for comes back.
+		flashlight_needed = false
+		print("[RoutineManager] Flashlight found: back to \"%s\"" % get_current_objective())
+		_update_hud()
+		return
 	if phase2_flashlight_early:
 		return  # Already handled, prevent double-trigger
 	if main_objective == 3:

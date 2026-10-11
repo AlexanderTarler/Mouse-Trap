@@ -51,6 +51,7 @@ func setup(owner_entity: Entity) -> void:
 	_register(S.STUNNED, EntityStateStunned.new())
 	_register(S.SABOTAGE, EntityStateSabotage.new())
 	_register(S.ATTACK_LAMP, EntityStateAttackLamp.new())
+	_register(S.LURE, EntityStateLure.new())
 	current = _states[S.DORMANT]
 
 
