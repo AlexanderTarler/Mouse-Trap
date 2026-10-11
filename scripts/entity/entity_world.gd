@@ -412,6 +412,29 @@ func find_hidden_point(center: Vector3, min_radius: float, max_radius: float, fa
 	return best
 
 
+## Cover indoors: a walkable spot inside the cabin, on the Entity's floor,
+## between `min_radius` and `max_radius` from `center`, that the player can't
+## see. Darker and nearer the Entity is better. INF if there is none.
+func find_cover(center: Vector3, min_radius: float, max_radius: float) -> Vector3:
+	var best := Vector3.INF
+	var best_score := -INF
+	var floor_y := entity.global_position.y
+	for i in 20:
+		var angle := randf() * TAU
+		var radius := randf_range(min_radius, max_radius)
+		var candidate := snap_to_navmesh(center + Vector3(cos(angle), 0.0, sin(angle)) * radius)
+		if absf(candidate.y - floor_y) > Entity.FLOOR_GAP or not is_inside_cabin(candidate):
+			continue
+		var p := entity.perception
+		if p.is_in_player_view(candidate + Vector3.UP * 1.2) or p.is_in_player_view(candidate + Vector3.UP * 0.4):
+			continue
+		var score := -get_light_at(candidate) * 3.0 - Entity._flat_distance(candidate, entity.global_position) * 0.3
+		if score > best_score:
+			best_score = score
+			best = candidate
+	return best
+
+
 ## A dark spot roughly `distance` meters away from `threat`, for fleeing.
 func find_flee_point(from: Vector3, threat: Vector3, distance: float) -> Vector3:
 	var away := from - threat

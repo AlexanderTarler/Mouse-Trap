@@ -67,6 +67,7 @@ var _sfx: AudioStreamPlayer3D
 var _tap: AudioStreamPlayer3D
 var _growl: AudioStreamPlayer3D
 var _footstep: AudioStreamPlayer3D
+var _footstep_db := 0.0   ## its own volume (before hushing)
 var _voice_cooldown := 0.0
 var _step_timer := 0.0
 var _chase_music_on := false
@@ -94,6 +95,8 @@ func setup(owner_entity: Entity) -> void:
 	_tap.top_level = true
 	_growl = entity.get_node_or_null("GrowlAudio")
 	_footstep = entity.get_node_or_null("FootstepAudio")
+	if _footstep:
+		_footstep_db = _footstep.volume_db
 	_scrape = _make_player("Scrape", 4.0, 30.0, -2.0)
 	_scrape.top_level = true
 	_creak = _make_player("Creak", 4.0, 20.0, 0.0)
@@ -275,8 +278,19 @@ func play_tap_at(world_position: Vector3) -> void:
 	_tap.play()
 
 
+## Its footsteps. Far off it is heard (that's the tension); creeping up
+## unseen it goes quiet: fading from SILENCE_FADE m, silent within
+## SILENCE_DISTANCE. Charging, it pounds.
+const SILENCE_DISTANCE := 6.0
+const SILENCE_FADE := 11.0
+
+
 func update_footsteps(delta: float, horizontal_speed: float) -> void:
 	if horizontal_speed < 0.5 or not _footstep:
+		_step_timer = 0.0
+		return
+	var quiet := _closeness_quiet()
+	if quiet >= 1.0:
 		_step_timer = 0.0
 		return
 	_step_timer -= delta
@@ -289,7 +303,17 @@ func update_footsteps(delta: float, horizontal_speed: float) -> void:
 		return
 	_footstep.stream = streams.pick_random()
 	_footstep.pitch_scale = randf_range(FOOTSTEP_PITCH_MIN, FOOTSTEP_PITCH_MAX)
+	_footstep.volume_db = _footstep_db + linear_to_db(maxf(1.0 - quiet, 0.001))
 	_footstep.play()
+
+
+## 0 (heard as normal) .. 1 (silent): how much it hushes its steps, creeping
+## close to the player unseen. Not while charging or being watched.
+func _closeness_quiet() -> float:
+	var p := entity.perception
+	if entity.get_state() == Entity.State.CHARGE or p.in_player_view:
+		return 0.0
+	return clampf(inverse_lerp(SILENCE_FADE, SILENCE_DISTANCE, p.distance_to_player), 0.0, 1.0)
 
 
 func start_chase_music() -> void:

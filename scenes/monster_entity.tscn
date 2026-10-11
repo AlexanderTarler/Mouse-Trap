@@ -270,8 +270,8 @@ grass_footsteps = Array[AudioStream]([ExtResource("22_dy7dj"), ExtResource("23_2
 [node name="ProfileGlow" type="OmniLight3D" parent="." unique_id=1299749451]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0867403, 0.4263157)
 light_color = Color(0.12623525, 0.340033, 0.23336926, 1)
-light_energy = 0.3
-omni_range = 6.0
+light_energy = 0.7
+omni_range = 0.7
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="." unique_id=96853697]
 path_desired_distance = 0.5

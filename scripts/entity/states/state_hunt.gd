@@ -6,15 +6,21 @@ extends EntityState
 ## does not know which room the player is hiding in, but it remembers where
 ## it found them before (across nights) and checks those spots first.
 ##
-## A player sheltering in a lit room is safe from it, but not from being
-## watched: it waits in the dark nearby, staring. Seeing the player up close
-## in the dark means a charge. If nothing turns up for
-## config.hunt_give_up_time it leaves (FLEE, calm).
+## It would rather not be seen. Looked at from a distance (or by a player in
+## a lit room), it slips out of sight within a moment, into a dark spot the
+## player can't see, and crouches there for a few seconds; in the corner of
+## the player's eye it carries on. A player sheltering in a lit room is safe
+## from it, but not from being waited for: it lurks in the dark nearby, out
+## of view. Seeing the player up close in the dark means a charge. If nothing
+## turns up for config.hunt_give_up_time it leaves (FLEE, calm).
 
 const S := Entity.State
 const ARRIVE_DISTANCE := 1.0
 const CHARGE_DISTANCE := 9.0
 const REMEMBER_INTERVAL := 3.0
+## How long it remembers seeing the player in a lit room, to keep waiting
+## outside it (it can't see them from its hiding place).
+const SIEGE_MEMORY := 12.0
 
 var _patrol: Array[Vector3] = []
 var _patrol_index := 0
@@ -22,6 +28,9 @@ var _scan_left := 0.0
 var _since_contact := 0.0
 var _lead = null   ## Vector3 or null: the position being investigated.
 var _remember_cooldown := 0.0
+## Hiding: where, and for how long yet.
+var _cover := Vector3.INF
+var _cover_left := 0.0
 
 
 func enter(_from: int, _data: Dictionary) -> void:
@@ -39,6 +48,7 @@ func enter(_from: int, _data: Dictionary) -> void:
 	_patrol.append_array(rooms)
 	_patrol_index = 0
 	_remember_cooldown = 0.0
+	_cover_left = 0.0
 	entity.audio.play_voice("search")
 
 
@@ -54,9 +64,23 @@ func update(delta: float) -> void:
 		_remember_cooldown = REMEMBER_INTERVAL
 		world.remember_hiding_spot(player.global_position)
 
-	if _player_in_lit_room(player) and perception.has_fresh_sighting(4.0):
-		entity.stop()
-		entity.face(player.global_position)
+	var lit := _player_in_lit_room(player)
+	# Looked at from too far to lunge (or from the safety of a light): out
+	# of sight.
+	if perception.player_watching and _cover_left <= 0.0 			and (perception.distance_to_player >= CHARGE_DISTANCE or lit):
+		_take_cover(entity.global_position, 1.5, 6.0, randf_range(2.5, 4.5))
+	# The player is sheltering in the light: it waits in the dark near the
+	# room, out of their view.
+	if lit and perception.has_fresh_sighting(SIEGE_MEMORY) and _cover_left <= 0.0:
+		if not _take_cover(player.global_position, 3.0, 8.0, 6.0):
+			entity.stop()
+			entity.face(player.global_position)
+			return
+	if _cover_left > 0.0:
+		_cover_left -= delta
+		if entity.move_to(_cover, config.hunt_alert_speed) < 0.7:
+			entity.crawl()
+			entity.face(player.global_position)
 		return
 
 	if _lead != null:
@@ -101,6 +125,21 @@ func next_state() -> int:
 
 func can_catch() -> bool:
 	return true
+
+
+## Hides at a spot near `center` the player can't see, for `seconds`.
+## False if there is none.
+func _take_cover(center: Vector3, min_radius: float, max_radius: float, seconds: float) -> bool:
+	var spot := world.find_cover(center, min_radius, max_radius)
+	if spot == Vector3.INF:
+		return false
+	_cover = spot
+	_cover_left = seconds
+	return true
+
+
+func is_hiding() -> bool:
+	return _cover_left > 0.0
 
 
 ## The freshest lead, ignoring leads outside the cabin while the player is

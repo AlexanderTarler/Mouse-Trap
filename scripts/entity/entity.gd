@@ -87,6 +87,9 @@ var _anim_player: AnimationPlayer = null
 var _catch_area: Area3D = null
 @onready var _eye_glow: OmniLight3D = get_node_or_null("ProfileGlow") as OmniLight3D
 @onready var _eye_glow_energy: float = _eye_glow.light_energy if _eye_glow else 0.0
+## The glow is only a glint around its eyes (0.7 m): in the dark it's a shape
+## the flashlight finds, not a lamp. Flaring (the charge wind-up) it grows.
+@onready var _eye_glow_range: float = _eye_glow.omni_range if _eye_glow else 0.0
 
 # ─── Movement state (reset every physics frame by the active state) ─────────
 var _desired_velocity := Vector3.ZERO
@@ -488,6 +491,7 @@ func _turn_towards(target: Vector3) -> void:
 func set_eye_glow(multiplier: float) -> void:
 	if _eye_glow:
 		_eye_glow.light_energy = _eye_glow_energy * multiplier
+		_eye_glow.omni_range = _eye_glow_range * (1.0 + (multiplier - 1.0) * 0.6)
 
 
 ## Teleports only if neither the current position nor `target` is in the

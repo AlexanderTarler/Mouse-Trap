@@ -1,0 +1,171 @@
+THE ENTITY WHILE THE PLAYER IS INSIDE — why it wears off, and what to do
+=======================================================================
+STATUS: Round A done (3.1, 3.4, 3.2; tests/inside_test.gd).
+  3.1  ProfileGlow is now a 0.7 m eye glint (was 6 m); set_eye_glow
+       widens it for the charge flare.
+  3.4  Footsteps fade from 11 m and stop within 6 m while it's unseen
+       (not while charging or in the player's view).
+  3.2  HUNT: watched from beyond lunge range, or by a player in a lit
+       room, it slips into dark cover the player can't see
+       (EntityWorld.find_cover) for a few seconds. A lit-room siege now
+       lurks out of view near the room instead of staring in the open.
+Rounds B and C: not started.
+
+The short version: the Entity is scariest as a possibility and least scary
+as a visitor. Right now, once the player is inside, it mostly becomes a
+visitor: it shows up the same way, makes the same noises in the same order,
+walks around in plain view, and plays by rules the player learns in one
+night. Every clear look at it spends some of its power, and the player gets
+a lot of clear looks.
+
+The fixes below aim at one idea: hear it more, see it less, and never let
+the player be sure where it is or what it will do next.
+
+
+1. WHAT IT DOES NOW (player inside)
+-----------------------------------
+  OBSERVE   watches from the treeline, crouched; confidence rises.
+  APPROACH  walks to a window (shy now: avoids the player's room, slips away
+            when spotted, sometimes lures with knocks).
+  PEEK      stands at the glass, taps when unwatched, ducks when looked at.
+  BREACH    hits the glass, then the planks: loud, slow, telegraphed.
+  ENTER     climbs in.
+  HUNT      walks a fixed tour: remembered hiding spots, then every room,
+            stopping 3.5 s in each to look around. Charges if it sees the
+            player within 9 m in the dark. A player in a lit room is safe:
+            it stands in the dark and stares.
+  FLEE      leaves after 45 s without contact, usually back out of the
+            window it came in through.
+  Plus: floor creaks from the other floor, murmurs, presence flicker of lit
+  rooms (outside only), light sabotage from outside (Night 3), traces.
+
+
+2. WHY IT GETS LESS SCARY
+-------------------------
+2.1  It's seen too much, too clearly
+       - It carries its own light: ProfileGlow, a green OmniLight with a 6 m
+         range on its head. In a dark cabin that announces it from across
+         the room and lights its whole body.
+       - In HUNT it walks room to room in plain view, at walking pace,
+         stopping to "look around" in doorways. Each sighting shows the model,
+         the loop of its walk, how it turns: the things that make it a game
+         character rather than a thing in the dark.
+       - Waiting outside a lit room, it stands there staring, visible.
+2.2  It's predictable
+       - The break-in is always the same song: taps, then hits on the
+         glass, then plank after plank, then the climb. The player hears it
+         coming every time and has seconds to prepare.
+       - HUNT is a tour; FLEE is "after 45 s, leave". Once the player has
+         seen one cycle, they know the whole night.
+2.3  The rules are too safe
+       - A lit room is 100% safe. The scariest place in a horror game should
+         never be completely safe; here it is a bunker.
+       - The overcharged flashlight always drives it off indoors.
+2.4  Its sounds tell the truth
+       - Footsteps play whenever it moves, at any distance, so the player
+         can always track it by ear. It never goes quiet, and it never lies.
+       - When it leaves, it really has left.
+
+
+3. WHAT TO DO (by impact)
+-------------------------
+
+3.1  Kill the glow, keep the eyes  [small, big effect]
+     Remove ProfileGlow's body light (or shrink it to a faint 0.6 m eye
+     glint visible only when the player is close or shining a light). In the
+     dark it should be a shape, found by the flashlight, not a green lamp.
+     Keep the charge flare (set_eye_glow) as the one moment it lights up.
+
+3.2  Indoors, it hides too  [medium]
+     The shyness it now has outside, inside:
+       - Seen at a distance (not charging): it steps back out of the doorway,
+         behind a wall or the stairs, within a second. The player saw
+         "something". They'll doubt it was even there.
+       - Peripheral, not direct: it's allowed to be in the corner of the
+         view (in_player_view) but avoids the centre (player_watching). The
+         glimpse is scarier than the stare.
+       - Waiting outside a lit room: out of the line of sight, beside the
+         door frame, not standing in the open. The player knows it's there
+         (they heard it), but can't see it.
+
+3.3  Ambush instead of patrol  [medium, very effective]
+     Replace much of HUNT's tour with waiting:
+       - It picks a dark spot on the player's likely route (by the door of
+         the room it last heard them in, the top of the stairs, a corner the
+         flashlight has to sweep), crouches, and doesn't move or make a sound
+         for a long time (20-60 s).
+       - The player walks into it, or the flashlight finds it at 3 m. That's
+         a scare that works the fifth time too, because the player never
+         knows which corner.
+       - The new Crouch animation is exactly right for it.
+
+3.4  Silence means close  [small]
+     Its footsteps should fade out as it nears the player while unseen, and
+     stop entirely within ~6 m when it's creeping. Far away, it's heard
+     (good: tension). Close, nothing. The player learns that silence is the
+     worst sound in the house.
+
+3.5  It lies  [medium]
+       - Fake departure: sometimes when it "gives up", the player hears it
+         leave (the window, footsteps outside, a growl in the yard) while it
+         stays inside, in an ambush spot (3.3). The relief is the trap.
+       - Mimicry: now and then it makes the player's own sounds elsewhere in
+         the house: their footsteps upstairs, the notebook being flipped, a
+         light switch clicking, a knock on the front door in the player's
+         rhythm. Use rarely; it's a "did I just hear that?" scare.
+       - Phantom presence before it's inside: a creak or a footstep inside
+         the cabin while it's actually still at the treeline.
+
+3.6  More ways in, fewer warnings  [medium]
+       - A quiet entry: an unboarded window it opens (or an unlocked door it
+         just walks through) without breaking anything. The player can't
+         count on hearing the breach.
+       - Varied breach rhythm: a hit, a long silence, then three fast hits;
+         sometimes it stops halfway and the player doesn't know whether it
+         left.
+       - Windows of rooms the player isn't in (already, via shyness), so the
+         player often discovers it's inside rather than hearing it arrive.
+
+3.7  Safe rooms, slightly less safe  [small to medium, late game only]
+     Night 3 only, so the rule holds long enough to be learned first:
+       - It can reach in and switch off a light from inside the next room
+         (the switch click is heard), or trip the room light with the
+         presence flicker from indoors, not only from outside.
+       - It taps on the wall of the lit room from the dark side, or breathes
+         right behind it.
+       - The light still protects, but the player has to keep it on (fuel)
+         and can't stop listening.
+
+3.8  It leaves marks the player finds  [small]
+     Traces exist (prints, gouges). Add a few indoor ones that say "it was
+     right here while you were somewhere else":
+       - doors (the front door) left open that the player closed;
+       - an object knocked over (a physics prop nudged);
+       - prints that stop at a wall, or lead into a room and not out.
+
+3.9  Escalate across the nights  [small]
+     Each night should add one new behaviour rather than all at once:
+       Night 2: only peeks and taps (already); first glimpse.
+       Night 3: entry, ambush, silence-when-close, fake departure, light
+                tricks. Mimicry once or twice at most.
+     Fewer, bigger moments per night, with quiet between them (the
+     confidence rhythm already supports this).
+
+
+4. SUGGESTED ORDER
+------------------
+  Round A (the biggest return, low risk):
+    3.1 no glow, 3.4 silence when close, 3.2 hiding indoors.
+  Round B (the new scares):
+    3.3 ambush, 3.5 fake departure, 3.6 quiet entry and broken rhythm.
+  Round C (the finishing touches):
+    3.7 safe rooms less safe (Night 3), 3.5 mimicry, 3.8 marks, 3.9 pacing.
+
+  Choices that are yours:
+    - Should lit rooms stay fully safe on Night 2, and only get "less safe"
+      on Night 3? (I'd say yes.)
+    - Mimicry is the most unsettling idea here, and the easiest to overdo.
+      Once or twice a night at most?
+    - The fake departure can feel unfair if it then kills the player
+      instantly. Should an ambush give a tell (a breath, a creak) a second
+      before it lunges? (I'd say yes: a fair scare is a better scare.)
