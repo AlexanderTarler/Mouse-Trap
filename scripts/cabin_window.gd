@@ -782,6 +782,21 @@ func shatter_window() -> void:
 	_shatter_glass()
 
 
+## The Entity eases the glass out instead of smashing it (a quiet entry):
+## the window ends up just as broken, but without the crash of glass (the
+## Entity makes one dull crack itself).
+func quiet_break() -> void:
+	if is_glass_shattered:
+		return
+	var crunch := _glass_crunch_sound
+	var splinter := _break_sound
+	_glass_crunch_sound = null
+	_break_sound = null
+	_shatter_glass()
+	_glass_crunch_sound = crunch
+	_break_sound = splinter
+
+
 ## Stage 1: Shatters the glass panes and crossbars permanently.
 ## Hides PristineVisuals, shows ShatteredVisuals, plays layered audio,
 ## bursts glass shard particles, and disables the navigation blocker.

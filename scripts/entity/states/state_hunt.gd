@@ -11,8 +11,18 @@ extends EntityState
 ## player can't see, and crouches there for a few seconds; in the corner of
 ## the player's eye it carries on. A player sheltering in a lit room is safe
 ## from it, but not from being waited for: it lurks in the dark nearby, out
-## of view. Seeing the player up close in the dark means a charge. If nothing
-## turns up for config.hunt_give_up_time it leaves (FLEE, calm).
+## of view. Seeing the player up close in the dark means a charge.
+##
+## From Night 3 it lies in wait. After checking a room it may crouch in a
+## dark corner on the player's way (where it last heard them, or the next
+## room), silent and still, for config.ambush_time_min..max. If the player
+## comes within config.ambush_spring_distance, or finds it with a look, it
+## breathes (the tell), and a moment later lunges, without the roar.
+##
+## If nothing turns up for config.hunt_give_up_time it leaves (FLEE, calm).
+## From Night 3, at most once a night, it only sounds like it leaves: claws
+## on the window frame, a thud outside, a growl in the yard, while it waits
+## in ambush near the player. Only after that does it really go, quietly.
 
 const S := Entity.State
 const ARRIVE_DISTANCE := 1.0
@@ -21,6 +31,10 @@ const REMEMBER_INTERVAL := 3.0
 ## How long it remembers seeing the player in a lit room, to keep waiting
 ## outside it (it can't see them from its hiding place).
 const SIEGE_MEMORY := 12.0
+## Hunting time (outside ambushes) before it will lie in wait again.
+const AMBUSH_COOLDOWN := 15.0
+## Ambushes on the way of a noise heard this recently; otherwise ahead.
+const AMBUSH_NOISE_MEMORY := 30.0
 
 var _patrol: Array[Vector3] = []
 var _patrol_index := 0
@@ -31,6 +45,16 @@ var _remember_cooldown := 0.0
 ## Hiding: where, and for how long yet.
 var _cover := Vector3.INF
 var _cover_left := 0.0
+## Lying in wait: where, facing which way, for how long yet.
+var _ambush := Vector3.INF
+var _ambush_watch := Vector3.ZERO
+var _ambush_left := 0.0
+var _ambush_cooldown := 0.0
+## The tell before springing from an ambush (-1: not springing).
+var _tell_left := -1.0
+## After the fake departure's ambush: leave for real (quietly).
+var _leave_after_ambush := false
+var _faked_night := -1
 
 
 func enter(_from: int, _data: Dictionary) -> void:
@@ -49,15 +73,25 @@ func enter(_from: int, _data: Dictionary) -> void:
 	_patrol_index = 0
 	_remember_cooldown = 0.0
 	_cover_left = 0.0
+	_ambush = Vector3.INF
+	_ambush_cooldown = AMBUSH_COOLDOWN * 0.5
+	_tell_left = -1.0
+	_leave_after_ambush = false
 	entity.audio.play_voice("search")
 
 
 func update(delta: float) -> void:
 	var player := entity.get_player()
+	if _tell_left >= 0.0:
+		_tell_left = maxf(_tell_left - delta, 0.0)
+		entity.stop()
+		entity.face(player.global_position)
+		return
 	if perception.can_see_player or perception.has_fresh_noise(1.0):
 		_since_contact = 0.0
-		_lead = _indoor_lead()
-	else:
+		if not is_ambushing():
+			_lead = _indoor_lead()
+	elif not is_ambushing():
 		_since_contact += delta
 	_remember_cooldown -= delta
 	if perception.can_see_player and perception.player_inside and _remember_cooldown <= 0.0:
@@ -65,9 +99,14 @@ func update(delta: float) -> void:
 		world.remember_hiding_spot(player.global_position)
 
 	var lit := _player_in_lit_room(player)
+	if is_ambushing():
+		if _update_ambush(delta, player, lit):
+			return
+	else:
+		_ambush_cooldown -= delta
 	# Looked at from too far to lunge (or from the safety of a light): out
 	# of sight.
-	if perception.player_watching and _cover_left <= 0.0 			and (perception.distance_to_player >= CHARGE_DISTANCE or lit):
+	if perception.player_watching and _cover_left <= 0.0 and (perception.distance_to_player >= CHARGE_DISTANCE or lit):
 		_take_cover(entity.global_position, 1.5, 6.0, randf_range(2.5, 4.5))
 	# The player is sheltering in the light: it waits in the dark near the
 	# room, out of their view.
@@ -95,6 +134,9 @@ func update(delta: float) -> void:
 		entity.stop()
 		var sweep := Vector3(sin(time * 1.1), 0.0, cos(time * 1.1))
 		entity.face(entity.global_position + sweep)
+		# Done looking around: maybe wait here for them instead.
+		if _scan_left <= 0.0:
+			_maybe_ambush()
 		return
 
 	if _patrol.is_empty():
@@ -106,11 +148,89 @@ func update(delta: float) -> void:
 		_scan_left = config.room_scan_time
 
 
+## Lying in wait. True while it is (this frame is handled).
+func _update_ambush(delta: float, player: Node3D, lit: bool) -> bool:
+	var close := perception.distance_to_player < config.ambush_spring_distance and absf(player.global_position.y - entity.global_position.y) < Entity.FLOOR_GAP
+	var found := perception.player_watching and perception.distance_to_player < CHARGE_DISTANCE
+	if not lit and (close or found):
+		_spring()
+		return true
+	_ambush_left -= delta
+	# Found from too far to reach: the ambush is spoiled, it slips away.
+	if _ambush_left <= 0.0 or (perception.player_watching and not close):
+		_ambush = Vector3.INF
+		_ambush_cooldown = AMBUSH_COOLDOWN
+		return false
+	if entity.move_to(_ambush, config.hunt_alert_speed) < 0.7:
+		entity.crawl()
+		entity.face(player.global_position if perception.can_see_player else _ambush_watch)
+	return true
+
+
+## The tell: a breath, then (next_state) the lunge.
+func _spring() -> void:
+	_ambush = Vector3.INF
+	_ambush_cooldown = AMBUSH_COOLDOWN
+	_leave_after_ambush = false
+	_tell_left = config.ambush_tell_time
+	entity.audio.play_tell()
+
+
+func _maybe_ambush() -> void:
+	if not entity.can_break_planks() or _ambush_cooldown > 0.0 or randf() >= config.ambush_chance:
+		return
+	var watch: Vector3
+	if perception.has_fresh_noise(AMBUSH_NOISE_MEMORY) and world.is_inside_cabin(perception.last_heard_position):
+		watch = perception.last_heard_position
+	elif not _patrol.is_empty():
+		watch = _patrol[_patrol_index]
+	else:
+		return
+	_lie_in_wait(watch, 1.5, 6.0, randf_range(config.ambush_time_min, config.ambush_time_max))
+
+
+## Waits, hidden, near `watch` (facing it) for `seconds`. False if there is
+## no hidden spot.
+func _lie_in_wait(watch: Vector3, min_radius: float, max_radius: float, seconds: float) -> bool:
+	var spot := world.find_cover(watch, min_radius, max_radius)
+	if spot == Vector3.INF:
+		return false
+	_ambush = spot
+	_ambush_watch = watch
+	_ambush_left = seconds
+	_cover_left = 0.0
+	return true
+
+
+## Giving up: from Night 3, once a night, it only sounds like it leaves.
+func _fake_departure() -> bool:
+	var night := entity.current_night()
+	if not entity.can_break_planks() or _faked_night == night or randf() >= config.fake_departure_chance:
+		return false
+	var exit := world.nearest_exit()
+	if not exit:
+		return false
+	var player := entity.get_player()
+	if not _lie_in_wait(player.global_position, 3.0, 8.0, randf_range(config.ambush_time_min, config.ambush_time_max) + 10.0):
+		return false
+	_faked_night = night
+	_leave_after_ambush = true
+	entity.audio.play_departure(exit, world.outside_of(exit, 12.0))
+	return true
+
+
 func next_state() -> int:
 	if entity.is_traversing():
 		return NO_CHANGE
+	if _tell_left >= 0.0:
+		if _tell_left > 0.0:
+			return NO_CHANGE
+		_tell_left = -1.0
+		return go(S.CHARGE, {"no_roar": true})
 	if not perception.entity_inside:
 		return S.STALK if perception.can_see_player else S.OBSERVE
+	if is_ambushing():
+		return NO_CHANGE
 	var player := entity.get_player()
 	if perception.can_see_player and perception.distance_to_player < CHARGE_DISTANCE and not _player_in_lit_room(player):
 		return S.CHARGE
@@ -118,6 +238,10 @@ func next_state() -> int:
 	if perception.player_outside and _since_contact > 2.0:
 		return go(S.FLEE, {"calm": true})
 	if _since_contact > config.hunt_give_up_time:
+		if _leave_after_ambush:
+			return go(S.FLEE, {"calm": true})
+		if _fake_departure():
+			return NO_CHANGE
 		entity.audio.play_grunt(0.9)
 		return go(S.FLEE, {"calm": true})
 	return NO_CHANGE
@@ -140,6 +264,11 @@ func _take_cover(center: Vector3, min_radius: float, max_radius: float, seconds:
 
 func is_hiding() -> bool:
 	return _cover_left > 0.0
+
+
+## Lying in wait (or on its way there): silent and still.
+func is_ambushing() -> bool:
+	return _ambush != Vector3.INF
 
 
 ## The freshest lead, ignoring leads outside the cabin while the player is

@@ -9,7 +9,22 @@ STATUS: Round A done (3.1, 3.4, 3.2; tests/inside_test.gd).
        room, it slips into dark cover the player can't see
        (EntityWorld.find_cover) for a few seconds. A lit-room siege now
        lurks out of view near the room instead of staring in the open.
-Rounds B and C: not started.
+STATUS: Round B done (3.3, 3.5 fake departure, 3.6; tests/inside_test.gd).
+  3.3  HUNT, Night 3: after checking a room, it may lie in wait
+       (config.ambush_chance) in a dark spot on the player's way, silent
+       (no footsteps, creaks or murmurs) for 20-45 s. Close up (3 m), or
+       found by a look, it breathes (the tell), waits 1 s, then lunges
+       without the roar.
+  3.5  Giving up, Night 3, at most once a night: claws on the exit window,
+       a thud outside, a growl in the yard, while it waits in ambush near
+       the player. Then it really leaves, quietly.
+  3.6  Breach blows come in rushes and long silences; once per break-in
+       it may stop halfway, step aside out of view, and go quiet for
+       8-16 s. Night 3: an unboarded window of a room the player isn't in
+       may be eased open with one dull crack, straight in, no peeking.
+Your decisions: lit rooms stay fully safe on Night 2; mimicry at most
+once or twice a night; ambushes give a tell before the lunge.
+Round C: not started.
 
 The short version: the Entity is scariest as a possibility and least scary
 as a visitor. Right now, once the player is inside, it mostly becomes a

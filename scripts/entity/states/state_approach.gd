@@ -15,6 +15,11 @@ extends EntityState
 ##   broken-open window / unlocked door -> ENTER
 ##   intact window                      -> PEEK
 ##   locked door                        -> PEEK (rattles the handle, then leaves)
+##
+## From Night 3 (config.quiet_entry_chance), at an unboarded window of a room
+## the player isn't in and can't see: it eases the glass out with one dull
+## crack and climbs straight in (no peeking, no smashing). The player finds
+## out it's inside later.
 
 const S := Entity.State
 const ARRIVE_DISTANCE := 0.8
@@ -30,6 +35,8 @@ var _rush := false
 ## Spotted on the way: slipping away instead (config.shy_retreat_chance).
 var _retreating := false
 var _was_watched := false
+## Rolled once per approach: may ease the window open quietly.
+var _quiet := false
 
 
 func enter(_from: int, data: Dictionary) -> void:
@@ -40,6 +47,7 @@ func enter(_from: int, data: Dictionary) -> void:
 	_rush = data.get("rush", false)
 	_retreating = false
 	_was_watched = false
+	_quiet = randf() < config.quiet_entry_chance
 	_bluff_point = randf_range(0.4, 0.65) if randf() < config.bluff_chance and not _rush else -1.0
 	_start_distance = Entity._flat_distance(entity.global_position, _entry.start_position) if _entry else 0.0
 
@@ -90,4 +98,22 @@ func next_state() -> int:
 		return go(S.ENTER, {"entry": _entry})
 	if _entry.entry.is_passable():
 		return go(S.ENTER, {"entry": _entry})
+	if _can_enter_quietly():
+		_entry.entry.quiet_break()
+		entity.audio.play_crack(_entry.entry.global_position + Vector3.UP)
+		return go(S.ENTER, {"entry": _entry})
 	return go(S.PEEK, {"entry": _entry})
+
+
+## A quiet way in: an intact, unboarded ground-floor window, Night 3, in a
+## room the player isn't believed to be in, unwatched.
+func _can_enter_quietly() -> bool:
+	var window = _entry.entry
+	if not _quiet or _entry.climb or window.is_glass_shattered or window.is_boarded:
+		return false
+	if not entity.can_break_planks() or not window.has_method("quiet_break"):
+		return false
+	if perception.in_player_view or world.player_sees_entry(_entry):
+		return false
+	var room := perception.believed_player_room().to_lower()
+	return room == "" or room != world.entry_room(_entry)

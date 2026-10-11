@@ -208,8 +208,14 @@ extends Resource
 @export var hit_interval: float = 2.0
 ## Delay from the start of the AttackWindow swing to the impact.
 @export var hit_impact_delay: float = 0.5
-## Gives up on a window after this long.
+## Gives up on a window after this long (not counting pauses).
 @export var breach_max_time: float = 45.0
+## Chance, once per break-in, to stop halfway and go quiet for a while
+## (the player can't tell whether it left).
+@export var breach_pause_chance: float = 0.4
+## From Night 3: chance to ease out the glass of an unboarded window in a
+## room the player isn't in, with one dull crack, instead of smashing it.
+@export var quiet_entry_chance: float = 0.4
 ## Minimum time between turning off a room light from outside.
 @export var light_sabotage_cooldown: float = 45.0
 ## Time to climb through a broken window.
@@ -270,6 +276,18 @@ extends Resource
 ## Leaves the cabin after this long without finding the player.
 @export var hunt_give_up_time: float = 45.0
 @export var room_scan_time: float = 3.5
+## From Night 3: after checking a room, chance to wait in ambush instead,
+## crouched in the dark, silent, for ambush_time_min..max seconds.
+@export var ambush_chance: float = 0.45
+@export var ambush_time_min: float = 20.0
+@export var ambush_time_max: float = 45.0
+## It springs when the player comes this close (or finds it with a look).
+@export var ambush_spring_distance: float = 3.0
+## The tell before it lunges from an ambush: a breath, then this long.
+@export var ambush_tell_time: float = 1.0
+## From Night 3, at most once a night: giving up, it sounds like it leaves
+## (the window, a thud outside, a growl in the yard) but stays, in ambush.
+@export var fake_departure_chance: float = 0.5
 
 @export_group("Flee")
 @export var flee_distance: float = 18.0
