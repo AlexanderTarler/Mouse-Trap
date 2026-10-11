@@ -612,6 +612,7 @@ func _physics_process(delta: float) -> void:
 	audio.update_footsteps(delta, ground_speed)
 	audio.update_floor_creaks(delta, ground_speed)
 	audio.update_murmurs(delta)
+	audio.update_mimicry(delta)
 	_update_animation(delta)
 
 

@@ -30,6 +30,10 @@ const HIDING_SPOT_MERGE := 2.5
 const PRESENCE_RADIUS := 3.5
 const PRESENCE_COOLDOWN := 20.0
 const PRESENCE_CHECK_INTERVAL := 0.25
+## Fewer, bigger moments: after one of its tricks (a copied sound, a light
+## killed from inside, a prop knocked over, an ambush sprung, the fake
+## departure) the others wait this long.
+const TRICK_GAP := 60.0
 
 var _vantage_points: Array[Node3D] = []
 var _last_vantage: Node3D = null
@@ -48,6 +52,7 @@ var _fuse_box: Node = null
 var _fuse_box_searched := false
 var _cabin_center := Vector3.ZERO
 var _last_light_sabotage := -INF
+var _last_trick := -INF
 var _footprint := PackedVector2Array()
 var _footprint_searched := false
 
@@ -288,6 +293,33 @@ func nearest_exit() -> CabinEntryLink:
 			best_length = length
 			best = link
 	return best
+
+
+## Whether enough quiet has passed since its last trick (TRICK_GAP).
+func trick_ready() -> bool:
+	return _clock - _last_trick > TRICK_GAP
+
+
+func note_trick() -> void:
+	_last_trick = _clock
+
+
+## A loose physics prop (a RigidBody3D light enough to tip over: a
+## KnockableProp or a pickup lying about, not the portable lamp) within
+## `radius` of `pos`, inside the cabin, or null.
+func loose_prop_near(pos: Vector3, radius: float) -> RigidBody3D:
+	var shape := SphereShape3D.new()
+	shape.radius = radius
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = shape
+	query.transform = Transform3D(Basis.IDENTITY, pos + Vector3.UP * 0.6)
+	query.exclude = [entity.get_rid()]
+	for hit in entity.get_world_3d().direct_space_state.intersect_shape(query, 16):
+		var body = hit.get("collider")
+		if body is RigidBody3D and not body.freeze and body.mass <= 15.0 \
+				and not body.is_in_group("player") and not body.has_method("pick_up") and is_inside_cabin(body.global_position):
+			return body
+	return null
 
 
 ## Room lights can be killed from outside at most once per cooldown.

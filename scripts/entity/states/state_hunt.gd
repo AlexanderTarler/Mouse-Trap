@@ -19,6 +19,13 @@ extends EntityState
 ## comes within config.ambush_spring_distance, or finds it with a look, it
 ## breathes (the tell), and a moment later lunges, without the roar.
 ##
+## From Night 3 the light isn't a bunker any more: waiting outside a lit
+## room, it taps on the wall from the dark side, and after
+## config.siege_light_time it kills the light from inside (a stutter, then
+## dark; the player can switch it back on). Passing a loose prop while
+## unseen, it may knock it over (once a night): a thud from somewhere.
+## These tricks keep apart (EntityWorld.trick_ready).
+##
 ## If nothing turns up for config.hunt_give_up_time it leaves (FLEE, calm).
 ## From Night 3, at most once a night, it only sounds like it leaves: claws
 ## on the window frame, a thud outside, a growl in the yard, while it waits
@@ -35,6 +42,8 @@ const SIEGE_MEMORY := 12.0
 const AMBUSH_COOLDOWN := 15.0
 ## Ambushes on the way of a noise heard this recently; otherwise ahead.
 const AMBUSH_NOISE_MEMORY := 30.0
+## Knocks over props this close to it.
+const PROP_REACH := 1.2
 
 var _patrol: Array[Vector3] = []
 var _patrol_index := 0
@@ -55,6 +64,11 @@ var _tell_left := -1.0
 ## After the fake departure's ambush: leave for real (quietly).
 var _leave_after_ambush := false
 var _faked_night := -1
+## Waiting outside a lit room: for how long, and the next tap on the wall.
+var _siege_time := 0.0
+var _wall_tap_left := 0.0
+var _prop_check := 0.0
+var _prop_night := -1
 
 
 func enter(_from: int, _data: Dictionary) -> void:
@@ -77,6 +91,8 @@ func enter(_from: int, _data: Dictionary) -> void:
 	_ambush_cooldown = AMBUSH_COOLDOWN * 0.5
 	_tell_left = -1.0
 	_leave_after_ambush = false
+	_siege_time = 0.0
+	_wall_tap_left = randf_range(3.0, 6.0)
 	entity.audio.play_voice("search")
 
 
@@ -99,6 +115,10 @@ func update(delta: float) -> void:
 		world.remember_hiding_spot(player.global_position)
 
 	var lit := _player_in_lit_room(player)
+	if lit and perception.has_fresh_sighting(SIEGE_MEMORY):
+		_update_siege(delta, player)
+	else:
+		_siege_time = 0.0
 	if is_ambushing():
 		if _update_ambush(delta, player, lit):
 			return
@@ -142,6 +162,7 @@ func update(delta: float) -> void:
 	if _patrol.is_empty():
 		entity.stop()
 		return
+	_knock_props(delta)
 	var remaining := entity.move_to(_patrol[_patrol_index], config.hunt_speed)
 	if remaining < ARRIVE_DISTANCE:
 		_patrol_index = (_patrol_index + 1) % _patrol.size()
@@ -174,6 +195,7 @@ func _spring() -> void:
 	_leave_after_ambush = false
 	_tell_left = config.ambush_tell_time
 	entity.audio.play_tell()
+	world.note_trick()
 
 
 func _maybe_ambush() -> void:
@@ -215,8 +237,59 @@ func _fake_departure() -> bool:
 		return false
 	_faked_night = night
 	_leave_after_ambush = true
+	world.note_trick()
 	entity.audio.play_departure(exit, world.outside_of(exit, 12.0))
 	return true
+
+
+## Outside a lit room (Night 3): taps on the wall from the dark side, then
+## the light goes. Night 2 the light is a safe haven.
+func _update_siege(delta: float, player: Node3D) -> void:
+	if not entity.can_break_planks():
+		return
+	_siege_time += delta
+	if is_hiding():
+		_wall_tap_left -= delta
+		if _wall_tap_left <= 0.0:
+			_wall_tap_left = randf_range(5.0, 9.0)
+			var toward := player.global_position - entity.global_position
+			toward.y = 0.0
+			entity.audio.play_tap_at(entity.global_position + toward.limit_length(1.0) + Vector3.UP * 1.2)
+	if _siege_time >= config.siege_light_time and world.trick_ready() and world.can_sabotage_light():
+		if kill_room_light(player.global_position):
+			_siege_time = 0.0
+
+
+## Kills the light of the room at `pos` from inside (a stutter, then dark).
+func kill_room_light(pos: Vector3) -> bool:
+	var room = RoomLightDetector.get_room_at(pos + Vector3.UP)
+	var light = room.get("room_light") if room else null
+	if light == null or not light.has_method("entity_sabotage") or light.is_faulty or not light.is_room_lit():
+		return false
+	light.entity_sabotage()
+	world.note_light_sabotaged()
+	world.note_trick()
+	return true
+
+
+## Passing a loose prop unseen (Night 3, once a night): knocks it over.
+func _knock_props(delta: float) -> void:
+	_prop_check -= delta
+	if _prop_check > 0.0:
+		return
+	_prop_check = 0.5
+	var night := entity.current_night()
+	if not entity.can_break_planks() or _prop_night == night or perception.in_player_view or not world.trick_ready():
+		return
+	var prop := world.loose_prop_near(entity.global_position, PROP_REACH)
+	if prop == null:
+		return
+	var away := prop.global_position - entity.global_position
+	away.y = 0.0
+	prop.apply_central_impulse((away.normalized() * 1.5 + Vector3.UP * 0.8) * prop.mass)
+	entity.audio.play_thud_at(prop.global_position)
+	_prop_night = night
+	world.note_trick()
 
 
 func next_state() -> int:

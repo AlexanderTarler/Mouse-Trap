@@ -288,6 +288,12 @@ extends Resource
 ## From Night 3, at most once a night: giving up, it sounds like it leaves
 ## (the window, a thud outside, a growl in the yard) but stays, in ambush.
 @export var fake_departure_chance: float = 0.5
+## From Night 3: it makes the player's own sounds elsewhere in the house
+## (footsteps, the notebook, a light switch, a knock) at most this often a night.
+@export var mimic_per_night: int = 2
+## From Night 3: waiting outside a lit room this long, it kills the light
+## from inside (flicker, then dark). Night 2 the light stays a safe haven.
+@export var siege_light_time: float = 12.0
 
 @export_group("Flee")
 @export var flee_distance: float = 18.0

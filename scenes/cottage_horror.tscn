@@ -272,6 +272,12 @@
 [ext_resource type="PackedScene" uid="uid://lu1me2ghwk7r" path="res://assets/Fixed .fbx/SM_EC_Rock_14.tscn" id="site_57_23osx"]
 [ext_resource type="PackedScene" uid="uid://da8kujhnohejb" path="res://assets/Fixed .fbx/SM_EC_Rock_15.tscn" id="site_58_j2tuv"]
 [ext_resource type="PackedScene" uid="uid://cqt4tuoxs6to6" path="res://assets/Fixed .fbx/SM_EC_Rock_16.tscn" id="site_59_bujus"]
+[ext_resource type="Script" path="res://scripts/knockable_prop.gd" id="knock_prop_s1"]
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/tv_remote_mp_1.glb" id="knock_m_remote"]
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/tin_can_mp_1_rusty.glb" id="knock_m_tin"]
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/vhs_tape_1.glb" id="knock_m_vhs"]
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/plate_mp_1.glb" id="knock_m_plate"]
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/open_book_mp_1.glb" id="knock_m_obook"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_50dpl"]
 sky_top_color = Color(0.4, 0.6, 1, 1)
@@ -2580,8 +2586,10 @@ script = ExtResource("84_vkvfg")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
 shape = SubResource("Shape_computer")
 
-[node name="walkie_talkie_22" parent="Details/Inside Cabin" unique_id=386430228 instance=ExtResource("86_ik5fn")]
+[node name="walkie_talkie_22" type="RigidBody3D" parent="Details/Inside Cabin" unique_id=386430228]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.219491, 1.6431003, 16.353786)
+script = ExtResource("knock_prop_s1")
+model = ExtResource("86_ik5fn")
 
 [node name="sofa_1_32" parent="Details/Inside Cabin" unique_id=158399199 groups=["navmesh_interior"] instance=ExtResource("87_j4q18")]
 transform = Transform3D(-0.9997398, 0, -0.022809586, 0, 1, 0, 0.022809586, 0, -0.9997398, 11.896852, 0.68310034, 20.297552)
@@ -2592,11 +2600,15 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.856962, 0.6831003, 16.9987
 [node name="carpet_mp_12" parent="Details/Inside Cabin" unique_id=1780931632 instance=ExtResource("89_8ttrh")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.276798, 0.6831006, 18.377388)
 
-[node name="ashtray_12" parent="Details/Inside Cabin" unique_id=1741046402 instance=ExtResource("90_tdsb5")]
+[node name="ashtray_12" type="RigidBody3D" parent="Details/Inside Cabin" unique_id=1741046402]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.226273, 1.6431003, 15.970861)
+script = ExtResource("knock_prop_s1")
+model = ExtResource("90_tdsb5")
 
-[node name="book_mp_12" parent="Details/Inside Cabin" unique_id=1371649262 instance=ExtResource("91_8ev78")]
+[node name="book_mp_12" type="RigidBody3D" parent="Details/Inside Cabin" unique_id=1371649262]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.766294, 1.6431003, 16.392626)
+script = ExtResource("knock_prop_s1")
+model = ExtResource("91_8ev78")
 
 [node name="Bed" parent="Details/Inside Cabin" unique_id=501505394 groups=["navmesh_interior"] instance=ExtResource("92_tijv0")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.85, 3.73, 17.3)
@@ -2604,6 +2616,31 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.85, 3.73, 17.3)
 [node name="PsxLowPolyHomeInteriorPropsPackCylinder254" type="MeshInstance3D" parent="Details/Inside Cabin" unique_id=627951403]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.410667, 0, 15.104008)
 mesh = ExtResource("93_o8m4h")
+
+[node name="KnockRemote" type="RigidBody3D" parent="Details/Inside Cabin" unique_id=1987650101]
+transform = Transform3D(0.96, 0, 0.28, 0, 1, 0, -0.28, 0, 0.96, 5.5, 1.42, 12.18)
+script = ExtResource("knock_prop_s1")
+model = ExtResource("knock_m_remote")
+
+[node name="KnockTinCan" type="RigidBody3D" parent="Details/Inside Cabin" unique_id=1987650102]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.05, 1.43, 10.78)
+script = ExtResource("knock_prop_s1")
+model = ExtResource("knock_m_tin")
+
+[node name="KnockVhs" type="RigidBody3D" parent="Details/Inside Cabin" unique_id=1987650103]
+transform = Transform3D(0.87, 0, -0.5, 0, 1, 0, 0.5, 0, 0.87, 11.98, 1.6431, 16.2)
+script = ExtResource("knock_prop_s1")
+model = ExtResource("knock_m_vhs")
+
+[node name="KnockPlate" type="RigidBody3D" parent="Details/Inside Cabin" unique_id=1987650104]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4, 1.535, 20.05)
+script = ExtResource("knock_prop_s1")
+model = ExtResource("knock_m_plate")
+
+[node name="KnockOpenBook" type="RigidBody3D" parent="Details/Inside Cabin" unique_id=1987650105]
+transform = Transform3D(0.71, 0, 0.71, 0, 1, 0, -0.71, 0, 0.71, 6.02, 1.4, 12.22)
+script = ExtResource("knock_prop_s1")
+model = ExtResource("knock_m_obook")
 
 [node name="Battery" parent="Details/Inside Cabin" unique_id=1309299401 instance=ExtResource("94_pf7hi")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.252367, 1.6431003, 16.123476)
@@ -3050,26 +3087,38 @@ transform = Transform3D(-0.99945426, 0, 0.033033177, 0, 1, 0, -0.033033177, 0, -
 [node name="glass_bottle_12" parent="." unique_id=955670800 instance=ExtResource("130_1jgf1")]
 transform = Transform3D(-0.99945426, 0, 0.033033177, 0, 1, 0, -0.033033177, 0, -0.99945426, 6.625236, 0.73310065, 10.882769)
 
-[node name="glass_bottle_22" parent="." unique_id=493902971 instance=ExtResource("131_1xcvp")]
+[node name="glass_bottle_22" type="RigidBody3D" parent="." unique_id=493902971]
 transform = Transform3D(-0.99945426, 0, 0.033033177, 0, 1, 0, -0.033033177, 0, -0.99945426, 6.025412, 1.4182314, 11.108625)
+script = ExtResource("knock_prop_s1")
+model = ExtResource("131_1xcvp")
 
-[node name="glass_bottle_23" parent="." unique_id=1270012381 instance=ExtResource("131_1xcvp")]
+[node name="glass_bottle_23" type="RigidBody3D" parent="." unique_id=1270012381]
 transform = Transform3D(-0.99945426, 0, 0.033033177, 0, 1, 0, -0.033033177, 0, -0.99945426, 5.8166165, 1.4221439, 10.961842)
+script = ExtResource("knock_prop_s1")
+model = ExtResource("131_1xcvp")
 
-[node name="matchbox_12" parent="." unique_id=935799843 instance=ExtResource("132_77y7p")]
+[node name="matchbox_12" type="RigidBody3D" parent="." unique_id=935799843]
 transform = Transform3D(-0.999454, 0, 0.033033, 0, 1, 0, -0.033033, 0, -0.999454, 5.17104, 1.41901, 12.0105)
+script = ExtResource("knock_prop_s1")
+model = ExtResource("132_77y7p")
 
-[node name="screwdriver_mp_12" parent="." unique_id=631734169 instance=ExtResource("133_gujg1")]
+[node name="screwdriver_mp_12" type="RigidBody3D" parent="." unique_id=631734169]
 transform = Transform3D(-0.983644, 0, 0.180124, 0, 1, 0, -0.180124, 0, -0.983644, 4.97, 1.44, 11)
+script = ExtResource("knock_prop_s1")
+model = ExtResource("133_gujg1")
 
 [node name="carpet_mp_12" parent="." unique_id=1279884125 instance=ExtResource("89_8ttrh")]
 transform = Transform3D(-0.999454, 0, 0.033033, 0, 1, 0, -0.033033, 0, -0.999454, 6.2047, 0.733101, 12.1186)
 
-[node name="ashtray_12" parent="." unique_id=1019189233 instance=ExtResource("90_tdsb5")]
+[node name="ashtray_12" type="RigidBody3D" parent="." unique_id=1019189233]
 transform = Transform3D(-0.999454, 0, 0.033033, 0, 1, 0, -0.033033, 0, -0.999454, 5.25084, 1.3931, 12.2193)
+script = ExtResource("knock_prop_s1")
+model = ExtResource("90_tdsb5")
 
-[node name="book_mp_12" parent="." unique_id=1320984612 instance=ExtResource("91_8ev78")]
+[node name="book_mp_12" type="RigidBody3D" parent="." unique_id=1320984612]
 transform = Transform3D(-0.999454, 0, 0.033033, 0, 1, 0, -0.033033, 0, -0.999454, 6.43753, 1.3931, 12.2306)
+script = ExtResource("knock_prop_s1")
+model = ExtResource("91_8ev78")
 
 [node name="ScrapHeap" parent="." unique_id=1453943959 instance=ExtResource("134_e28y4")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.1273384, 0.36285233, 22.323414)

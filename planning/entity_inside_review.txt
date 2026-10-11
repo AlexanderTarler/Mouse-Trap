@@ -24,7 +24,24 @@ STATUS: Round B done (3.3, 3.5 fake departure, 3.6; tests/inside_test.gd).
        may be eased open with one dull crack, straight in, no peeking.
 Your decisions: lit rooms stay fully safe on Night 2; mimicry at most
 once or twice a night; ambushes give a tell before the lunge.
-Round C: not started.
+STATUS: Round C done (3.7, 3.5 mimicry, 3.8, 3.9; tests/inside_test.gd).
+  3.7  Night 3, outside a lit room: taps on the wall from the dark side,
+       then after 12 s (config.siege_light_time) the light stutters and
+       dies from inside; the player can switch it back on. Night 2 the
+       light is still a safe haven.
+  3.5  Mimicry, Night 3, at most twice a night, only while the player is
+       inside and can't see it: their footsteps in another room, the
+       notebook, a light switch, a knock on the front door.
+  3.8  Passing a loose prop unseen, once a night, it knocks it over: a
+       thud from somewhere. Props: KnockableProp (scripts/knockable_prop.gd)
+       on the cabin's table decor (ashtrays, books, bottles, matchbox,
+       screwdriver, walkie-talkie) plus a TV remote, tin can, VHS tape,
+       plate and open book. Pickups lying about can be knocked too (not
+       the portable lamp). Doors it walks through already
+       stay open. (Prints that stop at a wall: not done.)
+  3.9  Tricks keep at least 60 s apart (EntityWorld.trick_ready): a
+       copied sound, a light killed, a prop, an ambush sprung, the fake
+       departure. Everything new is Night 3 only; Night 2 is unchanged.
 
 The short version: the Entity is scariest as a possibility and least scary
 as a visitor. Right now, once the player is inside, it mostly becomes a

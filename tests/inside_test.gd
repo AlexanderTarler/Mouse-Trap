@@ -53,6 +53,10 @@ func _run() -> void:
 	await _test_fake_departure()
 	await _test_breach_rhythm()
 	await _test_quiet_entry()
+	_test_pacing()
+	await _test_mimicry()
+	await _test_light_trick()
+	await _test_props()
 
 	print("[INSIDE TEST] %s" % ("ALL PASSED" if _failures == 0 else "%d FAILED" % _failures))
 	_scene.queue_free()
@@ -295,3 +299,131 @@ func _test_quiet_entry() -> void:
 	var other_room: bool = link.climb or approach._can_enter_quietly() or _entity.world.player_sees_entry(link)
 	_check("quiet entry: only into a room the player isn't in", not own_room and other_room,
 		"own room %s, other room %s" % [own_room, other_room])
+
+
+## Round C, 3.9: its tricks keep apart (fewer, bigger moments).
+func _test_pacing() -> void:
+	var world = _entity.world
+	world._last_trick = -INF
+	var ready_before: bool = world.trick_ready()
+	world.note_trick()
+	var ready_after: bool = world.trick_ready()
+	world._clock += world.TRICK_GAP + 1.0
+	_check("pacing: after one trick the others wait a minute", ready_before and not ready_after and world.trick_ready())
+
+
+## Round C, 3.5: Night 3, it makes the player's own sounds elsewhere, at most
+## twice a night.
+func _test_mimicry() -> void:
+	_player.global_position = COMPUTER_ROOM
+	await _frames(5)
+	_entity._teleport(_entity.world.snap_to_navmesh(HALL))
+	var hunt = _hunt_by_hand()
+	var audio = _entity.audio
+	var p = _entity.perception
+	p.player_inside = true
+	p.in_player_view = false
+	audio._mimic_night = _entity.current_night()
+	audio._mimics_tonight = 0
+	_entity.world._last_trick = -INF
+	var could: bool = audio.can_mimic()
+	var played: bool = audio.mimic("steps")
+	await _frames(2)
+	var far: bool = audio._decoy.global_position.distance_to(_player.global_position) >= audio.MIMIC_MIN_DISTANCE - 1.0
+	_check("mimicry: the player's own footsteps, from a room away from them",
+		could and played and audio._decoy_tween.is_valid() and far and audio.last_mimic == "steps",
+		"%.1f m away" % audio._decoy.global_position.distance_to(_player.global_position))
+	var paced: bool = not audio.can_mimic()
+	_entity.world._last_trick = -INF
+	audio.mimic("knock")
+	_entity.world._last_trick = -INF
+	_check("mimicry: at most twice a night, and not right after another trick",
+		paced and audio._mimics_tonight == 2 and not audio.can_mimic())
+	var nm: Node = root.get_node("NightManager")
+	nm.current_night = 2
+	audio._mimics_tonight = 0
+	_check("mimicry: not before Night 3", not audio.can_mimic())
+	nm.current_night = 3
+	_entity._is_active = true
+	_entity.deactivate()
+
+
+## Round C, 3.7: Night 3, waiting outside a lit room it taps on the wall and
+## then kills the light from inside. Night 2 the light stays safe.
+func _test_light_trick() -> void:
+	var nm: Node = root.get_node("NightManager")
+	var light: Node = _scene.get_node("Cabin Lights/CabinLightHall")
+	nm.is_generator_on = true
+	light.is_switched_on = true
+	light._update_light_state()
+	_player.global_position = HALL
+	await _frames(5)
+	_entity._teleport(_entity.world.snap_to_navmesh(COMPUTER_ROOM))
+	await _frames(3)
+	var hunt = _hunt_by_hand()
+	var p = _entity.perception
+	p.last_seen_position = _player.global_position
+	p._last_seen_clock = p._clock
+	p.player_watching = false
+	_entity.world._last_trick = -INF
+	_entity.world._last_light_sabotage = -INF
+
+	nm.current_night = 2
+	hunt._siege_time = 0.0
+	for i in 200:
+		hunt.update(0.1)
+	var safe_night2: bool = light.is_switched_on and hunt._siege_time == 0.0
+	nm.current_night = 3
+
+	hunt._wall_tap_left = 0.0
+	hunt.update(0.1)
+	var tapped: bool = _entity.audio._tap.playing
+	hunt._siege_time = _entity.config.siege_light_time
+	hunt.update(0.1)
+	await _frames(150)
+	_check("lit room, Night 2: still a safe haven (no tricks)", safe_night2)
+	_check("lit room, Night 3: it taps on the wall, then the light stutters and dies",
+		tapped and not light.is_switched_on, "tapped=%s light on=%s" % [tapped, light.is_switched_on])
+	_entity._is_active = true
+	_entity.deactivate()
+
+
+## Round C, 3.8: the cabin's small loose things (KnockableProp) rest where
+## they were placed; passing one unseen, it knocks it over (once a night).
+## Pickups lying about can be knocked over too.
+func _test_props() -> void:
+	var props := get_nodes_in_group("knockable")
+	# Awake, they must settle on something (not float where placed).
+	for prop in props:
+		prop.sleeping = false
+	await _frames(120)
+	var resting := true
+	var shaped := true
+	for prop in props:
+		shaped = shaped and prop.get_child_count() >= 2 and _entity.world.is_inside_cabin(prop.global_position)
+		resting = resting and prop.global_position.y > 1.2
+		if prop.get_child_count() < 2 or prop.global_position.y <= 1.2 or not _entity.world.is_inside_cabin(prop.global_position):
+			print("[INSIDE TEST]   prop off: %s at %s, %d children" % [prop.name, prop.global_position.snapped(Vector3.ONE * 0.01), prop.get_child_count()])
+	_check("props: %d small loose things in the cabin, with colliders, still on their tables" % props.size(),
+		props.size() >= 14 and shaped and resting)
+	var key = _scene.find_child("Key", true, false)
+	var pickup_ok: bool = _entity.world.loose_prop_near(key.global_position - Vector3.UP * 0.6, 0.4) != null
+
+	_player.global_position = COMPUTER_ROOM
+	await _frames(5)
+	var table := Vector3(5.6, 0.8, 11.6)
+	_entity._teleport(_entity.world.snap_to_navmesh(table))
+	await _frames(3)
+	var hunt = _hunt_by_hand()
+	_entity.perception.in_player_view = false
+	_entity.world._last_trick = -INF
+	hunt._prop_night = -1
+	hunt._prop_check = 0.0
+	var target = _entity.world.loose_prop_near(_entity.global_position, hunt.PROP_REACH)
+	hunt._knock_props(0.1)
+	await _frames(2)
+	var knocked: bool = target != null and target.linear_velocity.length() > 0.5 and hunt._prop_night == _entity.current_night()
+	_check("marks: passing a loose prop unseen, it knocks it over (a thud somewhere); pickups too",
+		knocked and pickup_ok, "%s, speed %.2f, pickup %s" % [target.name if target else "none", target.linear_velocity.length() if target else 0.0, pickup_ok])
+	_entity._is_active = true
+	_entity.deactivate()

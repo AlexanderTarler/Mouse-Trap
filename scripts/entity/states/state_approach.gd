@@ -115,5 +115,6 @@ func _can_enter_quietly() -> bool:
 		return false
 	if perception.in_player_view or world.player_sees_entry(_entry):
 		return false
-	var room := perception.believed_player_room().to_lower()
-	return room == "" or room != world.entry_room(_entry)
+	# Not the room they're in (the point is that they find it later).
+	var room := RoomLightDetector.get_room_name_at(entity.get_player().global_position + Vector3.UP).to_lower()
+	return room != world.entry_room(_entry)

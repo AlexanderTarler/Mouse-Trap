@@ -58,6 +58,18 @@ const MURMUR_INTERVAL_MAX := 45.0
 const MURMUR_STATES := [Entity.State.HUNT, Entity.State.SEARCH, Entity.State.STALK, Entity.State.PEEK]
 
 const VOICE_COOLDOWN := 10.0
+## Its copies of the player's own sounds (update_mimicry).
+const SWITCH_STREAM := preload("res://assets/audio/objects/light_switch.wav")
+const NOTEBOOK_STREAM := preload("res://assets/audio/objects/Toggle Journal.ogg")
+const MIMIC_KINDS := ["steps", "steps", "switch", "notebook", "knock"]
+const MIMIC_STATES := [Entity.State.HUNT, Entity.State.OBSERVE, Entity.State.STALK,
+		Entity.State.SEARCH, Entity.State.APPROACH, Entity.State.PEEK]
+const MIMIC_FIRST_MIN := 60.0
+const MIMIC_FIRST_MAX := 150.0
+const MIMIC_GAP_MIN := 90.0
+const MIMIC_GAP_MAX := 200.0
+## Copied sounds come from a room at least this far from the player.
+const MIMIC_MIN_DISTANCE := 7.0
 const FOOTSTEP_PITCH_MIN := 0.7
 const FOOTSTEP_PITCH_MAX := 0.95
 
@@ -86,6 +98,10 @@ var _knock_streams: Array[AudioStream] = []
 var _murmur_streams: Array[AudioStream] = []
 var _creak_left := 0.0
 var _murmur_left := 30.0
+var _mimic_left := 0.0
+var _mimic_night := -1
+var _mimics_tonight := 0
+var last_mimic := ""   ## The last sound it copied (for tests and the overlay).
 
 
 func setup(owner_entity: Entity) -> void:
@@ -307,7 +323,7 @@ func play_departure(link: CabinEntryLink, yard: Vector3) -> void:
 	_decoy_tween.tween_callback(_decoy_play.bind(yard + Vector3.UP, _growl_streams, 0.9))
 
 
-func _decoy_play(at: Vector3, streams: Array[AudioStream], pitch: float) -> void:
+func _decoy_play(at: Vector3, streams: Array, pitch: float) -> void:
 	if streams.is_empty():
 		return
 	_decoy.global_position = at
@@ -322,6 +338,99 @@ func play_crack(world_position: Vector3) -> void:
 	_tap.stream = WINDOW_KNOCK
 	_tap.pitch_scale = 0.55
 	_tap.play()
+
+
+## Something knocked over: a thud where it fell.
+func play_thud_at(world_position: Vector3) -> void:
+	_decoy_play(world_position, _thud_streams, 1.15)
+
+
+## Now and then (Night 3, at most config.mimic_per_night times) it makes the
+## player's own sounds somewhere else in the house: their footsteps in
+## another room, the notebook, a light switch, a knock on the front door.
+## Only while the player is inside and can't see it, and not right after
+## another of its tricks (EntityWorld.trick_ready).
+func update_mimicry(delta: float) -> void:
+	var night := entity.current_night()
+	if night != _mimic_night:
+		_mimic_night = night
+		_mimics_tonight = 0
+		_mimic_left = randf_range(MIMIC_FIRST_MIN, MIMIC_FIRST_MAX)
+	_mimic_left -= delta
+	if _mimic_left > 0.0 or not can_mimic():
+		return
+	_mimic_left = randf_range(MIMIC_GAP_MIN, MIMIC_GAP_MAX)
+	mimic()
+
+
+func can_mimic() -> bool:
+	var p := entity.perception
+	return entity.can_break_planks() and _mimics_tonight < entity.config.mimic_per_night \
+			and p.player_inside and not p.in_player_view and entity.get_state() in MIMIC_STATES \
+			and entity.world.trick_ready()
+
+
+## Plays one of the player's own sounds (`kind`, or any) in a room away
+## from them. False if there is nowhere to put it.
+func mimic(kind: String = "") -> bool:
+	var player := entity.get_player()
+	var spot := _mimic_spot(player.global_position)
+	if spot == Vector3.INF:
+		return false
+	if kind == "":
+		kind = MIMIC_KINDS.pick_random()
+	var door := _front_door()
+	if kind == "knock" and door == null:
+		kind = "switch"
+	match kind:
+		"steps":
+			_mimic_steps(spot, player)
+		"switch":
+			_decoy_play(spot + Vector3.UP * 1.3, [SWITCH_STREAM], 1.0)
+		"notebook":
+			_decoy_play(spot + Vector3.UP, [NOTEBOOK_STREAM], 1.0)
+		"knock":
+			play_knocks(door.entry.global_position + Vector3.UP * 1.2)
+	_mimics_tonight += 1
+	last_mimic = kind
+	entity.world.note_trick()
+	return true
+
+
+## A room centre far enough from the player (preferably on the other floor).
+func _mimic_spot(player_position: Vector3) -> Vector3:
+	var far: Array[Vector3] = []
+	var other_floor: Array[Vector3] = []
+	for center in entity.world.room_centers():
+		if center.distance_to(player_position) < MIMIC_MIN_DISTANCE:
+			continue
+		far.append(center)
+		if absf(center.y - player_position.y) >= Entity.FLOOR_GAP:
+			other_floor.append(center)
+	if not other_floor.is_empty():
+		return other_floor.pick_random()
+	return far.pick_random() if not far.is_empty() else Vector3.INF
+
+
+## Five of the player's own footsteps, crossing a room.
+func _mimic_steps(spot: Vector3, player: Node) -> void:
+	var streams: Array = player.get("wood_footsteps") if player.get("wood_footsteps") else []
+	if streams.is_empty():
+		streams = _creak_streams
+	if _decoy_tween and _decoy_tween.is_valid():
+		_decoy_tween.kill()
+	var heading := Vector3.FORWARD.rotated(Vector3.UP, randf() * TAU)
+	_decoy_tween = create_tween()
+	for i in 5:
+		_decoy_tween.tween_callback(_decoy_play.bind(spot + heading * (i * 0.6) + Vector3.UP * 0.1, streams, randf_range(0.95, 1.05)))
+		_decoy_tween.tween_interval(randf_range(0.45, 0.55))
+
+
+func _front_door() -> CabinEntryLink:
+	for link in entity.world.entries():
+		if link.kind == CabinEntryLink.Kind.DOOR:
+			return link
+	return null
 
 
 ## Knocking on the glass at a world position (a window).
