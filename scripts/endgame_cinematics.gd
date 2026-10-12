@@ -127,8 +127,8 @@ var _e_pos := Vector3.ZERO
 var _e_leap_from := Vector3.ZERO
 var _e_leap_start := 0.0
 ## How high its lowest hand/foot sits above its origin in the frozen roof
-## pose (measured once it's frozen; -1 = not yet).
-var _e_roof_lift := -1.0
+## pose (measured once it's frozen; INF = not yet).
+var _e_roof_lift := INF
 var _e_roof_frames := 0
 
 # The empty ground.
@@ -543,7 +543,7 @@ func _escape_mediocre() -> void:
 	_e_leap_from = _van_position() - _v_dir * (_v_half_length + 6.0)
 	_e_leap_from.y = _ground_y(_e_leap_from)
 	_e_leap_start = _clock
-	_e_roof_lift = -1.0
+	_e_roof_lift = INF
 	_e_roof_frames = 0
 	_e_mode = EntityMode.LEAP
 	await _wait(0.7)
@@ -725,7 +725,28 @@ func _setup_van() -> bool:
 	_v_moving = false
 	_v_cam_snap = true
 	_van.global_transform = Transform3D(_v_basis, _v_origin)
+	# Where it lands: the visible roof there (the body's highest point is
+	# higher, at the front, so the box top left it hovering).
+	var roof := _roof_at(_v_origin - _v_dir * 0.8)
+	if roof > -INF:
+		_v_roof = roof - _van.global_position.y
 	return true
+
+
+## The van's visible top (its body's triangles) right above `at`, or -INF.
+func _roof_at(at: Vector3) -> float:
+	var best := -INF
+	for mesh: MeshInstance3D in _van.find_children("*", "MeshInstance3D", true, false):
+		if mesh.mesh == null or "wheel" in mesh.name:
+			continue
+		var faces := mesh.mesh.get_faces()
+		var xform := mesh.global_transform
+		for i in range(0, faces.size(), 3):
+			var hit = Geometry3D.ray_intersects_triangle(at + Vector3.UP * 10.0, Vector3.DOWN,
+					xform * faces[i], xform * faces[i + 1], xform * faces[i + 2])
+			if hit != null:
+				best = maxf(best, hit.y)
+	return best
 
 
 func _van_position() -> Vector3:
@@ -793,13 +814,13 @@ func _van_shot(delta: float, entity: Node3D) -> void:
 			entity.cinematic_pose(Transform3D(_facing(_v_dir), arc), &"running_crawl", 2.0)
 		EntityMode.ROOF:
 			var roof := pos - _v_dir * 0.8 + Vector3.UP * _v_roof
-			# Crouched on the roof in the charge crawl, frozen mid-stride (the
-			# climb animation lifted it up off the roof), lowered so its
-			# lowest hand or foot rests on the roof.
+			# Crouched on the roof in the charge crawl, frozen mid-stride
+			# (anim speed 0 stops its AnimationTree), lowered so its lowest
+			# hand or foot rests on the roof (measured once the pose holds).
 			_e_roof_frames += 1
-			if _e_roof_lift < 0.0 and _e_roof_frames == 3:
-				_e_roof_lift = maxf(_lowest_contact(entity) - entity.global_position.y, 0.0)
-			var lift := maxf(_e_roof_lift, 0.0)
+			if _e_roof_lift == INF and _e_roof_frames == 3:
+				_e_roof_lift = _lowest_contact(entity) - entity.global_position.y
+			var lift := _e_roof_lift if _e_roof_lift != INF else 0.0
 			entity.cinematic_pose(Transform3D(_facing(_v_dir), roof - Vector3.UP * lift), &"running_crawl", 0.0)
 
 

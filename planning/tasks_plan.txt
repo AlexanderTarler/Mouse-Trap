@@ -21,7 +21,24 @@ STATUS: Round 2 done (8, 9, 11, 13; tests/tasks7_test.gd).
   13 Door.story_locked: inside after the chase with the door shut ->
      "There is no way I'm going outside now." until Day 3 (night_ended);
      not set again after a restart at the van until the chase.
-Rounds 3-4: not started.
+STATUS: Round 3 done (2, 7, 14; tests/tasks8_test.gd).
+  2  SleepCinematic (scripts/sleep_cinematic.gd), used by all four bed
+     paths: a camera of its own to sitting on the bed, then lying back on
+     the pillow, eyelids closing (soft-edged, a blink or two), breathing,
+     to black (~4.5 s). Waking: eyelids open (blink, half-shut, open), sit
+     up, stand off the foot of the bed facing the room (~4.4 s). Night 2.2:
+     eyes snap open with a jolt, up in ~1.2 s.
+  7  WindowPeeker rewritten: the Entity's idle (breathing) and crouch on the
+     model's own AnimationPlayer; a LookAtModifier3D on the Head bone
+     follows the player (limited, with lag) and twitches now and then;
+     the Entity's eye glint at its eyes; leans in from beside the frame
+     (quick: up from below the sill); seen, it crouches away sideways.
+     The old library (no "Peek" animation, so it never moved) is gone.
+  14 The roof is the van's visible top under the Entity (2.62 m), not its
+     highest point (3.10 m, at the front): it hovered ~0.5 m. Speed 0 now
+     stops the Entity's AnimationTree (it kept playing); activate()
+     restores it.
+Round 4: not started.
 
 For each task: what's there now, the best way
 to do it, and the risks. The suggested order (four rounds) and the questions

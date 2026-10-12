@@ -81,6 +81,8 @@ var _is_active: bool = false
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
 @onready var model: Node3D = get_node_or_null("MonsterModel")
 @onready var _anim_tree: AnimationTree = get_node_or_null("AnimationTree")
+## How its AnimationTree normally advances (cinematic_pose can stop it).
+var _anim_tree_mode := AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE
 
 var _anim_playback: AnimationNodeStateMachinePlayback = null
 var _anim_player: AnimationPlayer = null
@@ -149,6 +151,7 @@ func _ready() -> void:
 	if _eye_glow:
 		_glow_base_y = _eye_glow.position.y
 	if _anim_tree:
+		_anim_tree_mode = _anim_tree.callback_mode_process
 		_anim_playback = _anim_tree.get("parameters/playback")
 		_anim_player = _anim_tree.get_node_or_null(_anim_tree.anim_player) as AnimationPlayer
 
@@ -207,6 +210,11 @@ func activate() -> void:
 	is_enraged = false
 	_set_hidden(false)
 	velocity = Vector3.ZERO
+	# Moving again after a frozen cinematic pose.
+	if _anim_tree:
+		_anim_tree.callback_mode_process = _anim_tree_mode
+	if _anim_player:
+		_anim_player.speed_scale = 1.0
 
 
 func deactivate() -> void:
@@ -257,6 +265,13 @@ func cinematic_pose(xform: Transform3D, anim: StringName, anim_speed: float = 1.
 		_anim_playback.start(anim)
 	if _anim_player:
 		_anim_player.speed_scale = anim_speed
+	# Speed 0: the pose holds. The AnimationTree drives the skeleton (not the
+	# player's speed), so it stops advancing altogether.
+	if _anim_tree:
+		var frozen := anim_speed <= 0.0
+		var mode := AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL if frozen else _anim_tree_mode
+		if _anim_tree.callback_mode_process != mode:
+			_anim_tree.callback_mode_process = mode
 
 
 func get_state() -> State:

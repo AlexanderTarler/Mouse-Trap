@@ -22,6 +22,7 @@ func _ready() -> void:
 ## (handled by PhysicalGrab, which the sequence doesn't freeze) pressed again
 ## mid-fade would start a second one and advance the night twice.
 var _busy := false
+var _cinematic: SleepCinematic = null
 
 
 func interact(player: Node3D = null) -> void:
@@ -84,10 +85,7 @@ func _interact(player: Node3D = null) -> void:
 				player.set_process_input(false)
 			
 			var hud = get_tree().get_first_node_in_group("hud")
-			if hud and hud.has_method("fade_to_black"):
-				await hud.fade_to_black(3.0)
-			else:
-				await get_tree().create_timer(1.5).timeout
+			await _sleep_cinematic().fall_asleep(player)
 			
 			# ─── FREEZE CLOCK BEFORE ADVANCE ───────────────────────
 			# Must freeze BEFORE advance_night() so the clock can't tick
@@ -113,8 +111,7 @@ func _interact(player: Node3D = null) -> void:
 				if obj_label and obj_label is Label:
 					obj_label.text = DAY2_OBJECTIVE
 			
-			if hud and hud.has_method("fade_from_black"):
-				await hud.fade_from_black(2.0)
+			await _sleep_cinematic().wake_up(player)
 			
 			# ─── UNFREEZE CLOCK ────────────────────────────────────
 			# Time was frozen before and after advance_night() so the HUD
@@ -203,10 +200,7 @@ func _interact(player: Node3D = null) -> void:
 			player.set_process_input(false)
 		
 		var hud = get_tree().get_first_node_in_group("hud")
-		if hud and hud.has_method("fade_to_black"):
-			await hud.fade_to_black(3.0)
-		else:
-			await get_tree().create_timer(3.0).timeout
+		await _sleep_cinematic().fall_asleep(player)
 		
 		_night_manager.is_van_sequence_active = true
 		_night_manager.van_sequence_started = true
@@ -245,8 +239,8 @@ func _interact(player: Node3D = null) -> void:
 			if obj_label and obj_label is Label:
 				obj_label.text = INTRO_OBJECTIVE
 		
-		if hud and hud.has_method("fade_from_black"):
-			await hud.fade_from_black(2.0)
+		# Woken by the alarm: eyes snap open, up and out of bed.
+		await _sleep_cinematic().wake_up(player, true)
 		
 		if player.has_method("set_physics_process"):
 			player.set_physics_process(true)
@@ -276,10 +270,7 @@ func _interact(player: Node3D = null) -> void:
 			player.set_physics_process(false)
 			player.set_process_input(false)
 		var hud = get_tree().get_first_node_in_group("hud")
-		if hud and hud.has_method("fade_to_black"):
-			await hud.fade_to_black(3.0)
-		else:
-			await get_tree().create_timer(3.0).timeout
+		await _sleep_cinematic().fall_asleep(player)
 		# ─── FREEZE CLOCK BEFORE ADVANCE ───────────────────────
 		if _game_time:
 			_game_time.is_time_paused = true
@@ -299,8 +290,7 @@ func _interact(player: Node3D = null) -> void:
 			var obj_label = scene_root.get_node_or_null("HUD/ObjectiveLabel")
 			if obj_label and obj_label is Label:
 				obj_label.text = DAY2_OBJECTIVE
-		if hud and hud.has_method("fade_from_black"):
-			await hud.fade_from_black(2.0)
+		await _sleep_cinematic().wake_up(player)
 		
 		# ─── UNFREEZE CLOCK ────────────────────────────────────
 		if _game_time:
@@ -329,9 +319,7 @@ func _interact(player: Node3D = null) -> void:
 ## ─── DAY 3+ EXHAUSTION SLEEP ────────────────────────────────────────────────
 func _trigger_exhaustion_sleep(player: Node3D) -> void:
 	var hud = get_tree().get_first_node_in_group("hud")
-	if hud and hud.has_method("fade_to_black"):
-		hud.fade_to_black(1.5)
-		await get_tree().create_timer(1.5).timeout
+	await _sleep_cinematic().fall_asleep(player)
 
 	var gt = get_node_or_null("/root/GameTime")
 	if gt and gt.has_method("set_progress"):
@@ -392,9 +380,7 @@ func _trigger_exhaustion_sleep(player: Node3D) -> void:
 	if hud and hud.has_method("_sync_all_displays"):
 		hud._sync_all_displays()
 
-	if hud and hud.has_method("fade_from_black"):
-		hud.fade_from_black(2.0)
-		await get_tree().create_timer(2.0).timeout
+	await _sleep_cinematic().wake_up(player)
 
 	var day_after = rm_exh.get_current_day_string() if rm_exh and rm_exh.has_method("get_current_day_string") else "?"
 	print("[BED DEBUG] Waking up! current_night=%d, is_day=%s, cycle=%.3f, day_label='%s'" % [
@@ -416,6 +402,15 @@ func _advance_to_next_night() -> void:
 	
 	if _night_manager.has_method("advance_night"):
 		_night_manager.advance_night()
+
+
+## Lying down and getting up again, in first person (SleepCinematic).
+func _sleep_cinematic() -> SleepCinematic:
+	if not _cinematic:
+		_cinematic = SleepCinematic.new().setup(get_parent())
+		_cinematic.name = "SleepCinematic"
+		add_child(_cinematic)
+	return _cinematic
 
 
 func _show_hud_message(msg: String) -> void:
