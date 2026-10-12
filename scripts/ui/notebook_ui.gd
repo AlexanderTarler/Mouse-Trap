@@ -477,6 +477,20 @@ func _update_page_numbers() -> void:
 	_page_numbers[1].text = "— %d —" % (left + 2) if left + 1 < _all_pages.size() else ""
 
 
+## Shuts the notebook (Escape, from pause_menu.gd). False if it wasn't open.
+func close() -> bool:
+	if not _is_open:
+		return false
+	_is_open = false
+	visible = false
+	_play_toggle()
+	return true
+
+
+func is_open() -> bool:
+	return _is_open
+
+
 ## Opening or closing the notebook, and turning its pages.
 const TOGGLE_SOUND := "res://assets/audio/objects/Toggle Journal.ogg"
 

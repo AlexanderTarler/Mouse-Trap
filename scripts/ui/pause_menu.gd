@@ -44,6 +44,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _close_inventory_ui():
 			get_viewport().set_input_as_handled()
 			return
+		# ─── NOTEBOOK PRIORITY ───────────────────────────────────────────
+		# An open notebook closes first (also over the computer: the next
+		# Escape then leaves the computer).
+		var notebook := get_tree().get_first_node_in_group("notebook_ui")
+		if notebook and notebook.has_method("close") and notebook.close():
+			get_viewport().set_input_as_handled()
+			return
 		# ─── COMPUTER UI PRIORITY ─────────────────────────────────────────
 		# If the computer UI is open, pressing Escape closes it instead of
 		# toggling the pause menu. This prevents the player from accidentally

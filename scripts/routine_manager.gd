@@ -493,7 +493,7 @@ func _advance_main_objective(target: int) -> void:
 		# "Lock the front door" done, however it completed (locked on the
 		# objective, or locked earlier and ticked off when it came up).
 		if was <= 8 and target >= 9:
-			_spawn_peeker_at.call_deferred("Landing_Window")
+			_spawn_peeker_at.call_deferred("Bedroom_Right")
 		if was < 4 and target == 4:
 			_think_fuse_box.call_deferred()
 

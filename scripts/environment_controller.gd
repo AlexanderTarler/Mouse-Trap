@@ -382,7 +382,7 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 	var night_sky_horizon: Color = Color(0.05, 0.05, 0.08)
 	var night_ground_bottom: Color = Color(0.01, 0.01, 0.01)
 	
-	var storm_grey := Color(0.16, 0.17, 0.19) * lerpf(0.25, 1.0, p_day_factor)
+	var storm_grey := Color(0.12, 0.13, 0.15) * lerpf(0.25, 1.0, p_day_factor)
 	# Dusk and dawn: the sun near the horizon.
 	var dusk := clampf(1.0 - absf(p_sun_height) / 0.35, 0.0, 1.0)
 	var dusk_top := Color(0.22, 0.24, 0.42)

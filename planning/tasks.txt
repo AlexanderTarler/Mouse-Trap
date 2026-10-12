@@ -1,9 +1,16 @@
-1. The "Find the flashlight" objective should be treated in a special way - it should trigger and replace the current objective as soon as Night 1 starts. When the player has completed the "Find the flashlight" objective, the objective that the "flashlight objective" replaced should be triggered again.
-2. Walking upstairs should use the same footstep sounds as walking downstairs. Use the sound for the stairs as well. 
-3. Remove the "overcharged flashlight" sound effect.
-4. The "page flip" sound in the journal should use the "toggle journal" sound.
-5. Please create a proper "gravel road" that the player drove on to the cabin/drives out on in the endings. The current solution looks bad. 
-6. The HallRoom window's sound that plays when it gets boarded up is odd - it sounds as if it is far away.
-7. The stash inventory menu and the player's inventory when the aforemented menu is open looks odd - the sizing is not great and things overlap. 
-8. The player should not be able to loot the car parts until they have interacted with the van again during Day 3 (aka the "Investigate the car again" objective is completed).
-9. I want the Entity to be more shy, and to prioritise having the player not see it. For example, if the player is in room x, it will try to target windows in other rooms if possible. If the window that the player is in is the "best breach target", the Entity can try to trick the player to go to another room. Essentially, make the Entity "smarter" if possible. 
+1. The Day 1 / Night 1 Peeker appearance should be moved from the LandingRoom to the BedRoom.
+2. Add a "going to sleep" camera cinematic when the player goes to bed, and add a "waking up" cinematic that returns the camera to normal. During Night 2.2, make the "waking up" cinematic sudden and fast - the played wakes up from an alarm, after all! 
+3. Make the rain clouds darker. 
+4. After the rain starts during Day 2, wait 10 seconds and then display an inner thought saying "Glad I'm not hydrophobic".
+5. If the player presses the Escape key when the notebook is opened while they are using the computer, have the notebook close instead of the player exiting the computer. 
+6. After the player has logged the data into the computer and night has fallen (aka when the logging is "done"), display the inner thought "One more night in this luxurious cottage and then back to my own place."
+7. The Peeker feels off somehow - should we animate it? What can we do to improve it?
+8. When the player wakes up during Night 2.2, display the inner thought "Why is the car alarm blaring?". Also, when the "growling sound" plays short thereafter, add an inner though saying "What the fuck was that?!". 3 seconds after that, add an inner thought saying "If I don't turn off that alarm, that shitty car might run out of power. Fuck me."
+9. During Night 2.2, have the "night ambiance" muted - having the wildlife be quiet would be unsettling in a good way. Keep the rain and its sound, of course, as well as the lightning and the thunder. 
+10. Bug to fix: If the player dies during Night 2.2 and restarts from checkpoint, the cabin door is suddenly locked. Have the door be unlocked and open. 
+11. During Night 2.2, when the Entity starts chasing the player, display the inner thought "Oh fuck!" and "fuck!" but again and again, in different places over the screen, representing the panic the player character is feeling as he is being hunted. 
+12. During Night 2.2, after entering the cabin, display the inner thought saying "What the FUCK was that?!".
+13. During Night 2.2, after the player has entered the cabin and if they have closed the door, make it so that the player cannot open it again until Day 3, and if they try, to display the inner thought "There is no way I'm going outside now."
+14. During the "mediocre" ending cinematic, have the Entity "land" about 1 meter lower on the van. Right now it hovers above the van. Also, have its animation freeze in place (while keeping the Entity model still following on top of the van) if possible. 
+15. Restarting the game after an ending should reset both the player inventory and the world inventory to how it was at the "checkpoint" point in time that the player replays from. In fact, we should keep "save states" that updates every new Day or new Night to keep track of the "world state" so to speak. This includes items, if the door is opened/closed, generator fuel etc. All things that can change, basically. 
+16. During Night 3+ and onward, the Nights are too bright - or at least the fog is. 

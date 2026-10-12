@@ -634,8 +634,8 @@ func _process(delta: float) -> void:
 	# COMPLETELY REMOVED so the peeker can NEVER appear randomly during
 	# Night 1. The ONLY trigger is RoutineManager.on_door_locked() when
 	# the Day 1 "Lock the door" objective completes, which forces the
-	# peeker specifically to the landing window via
-	# PeekerManager.force_spawn_at_window("Landing_Window").
+	# peeker specifically to the bedroom window (right of the bed) via
+	# PeekerManager.force_spawn_at_window("Bedroom_Right").
 
 
 
@@ -1188,6 +1188,11 @@ func _restart_van_alarm() -> bool:
 			player.reset_camera()
 		if player.has_method("reset_health"):
 			player.reset_health()
+	# The snapshot was taken in bed, behind the locked front door, but the
+	# player went out through it to the van: unlocked and open.
+	for door in get_tree().get_nodes_in_group("Door"):
+		if door.has_method("set_state_quietly"):
+			door.set_state_quietly(true, false)
 	_set_objective("Investigate the car alarm outside.")
 	print("[NightManager] Night 2.2 restart: back at the van, the alarm blaring.")
 	return true

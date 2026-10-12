@@ -1,0 +1,286 @@
+PLAN FOR planning/tasks.txt (16 tasks)
+=====================================
+STATUS: Round 1 done (1, 3, 4, 5, 6, 10, 12; tests/tasks6_test.gd).
+  1  Peeker at Bedroom_Right (right of the bed as you walk in).
+  3  Storm clouds: dark slate grey, darker overhead; darker storm sky.
+  4  Nest Gamma's storm: "Glad I'm not hydrophobic." 10 s later.
+  5  Escape closes the notebook first (everywhere), then the computer.
+  6  ComputerUI._on_logging_done(): the chime, then the thought (1.5 s).
+  10 Night 2.2 restart: front door unlocked and open (Door.set_state_quietly).
+  12 NightTwoStory (new autoload, scripts/managers/night_two_story.gd):
+     inside during the chase -> "What the FUCK was that?!" (1 s later).
+Rounds 2-4: not started.
+
+For each task: what's there now, the best way
+to do it, and the risks. The suggested order (four rounds) and the questions
+for you are at the end.
+
+
+1. Day 1 Peeker: Landing -> Bedroom
+-----------------------------------
+Now:  RoutineManager._advance_main_objective() spawns it at "Landing_Window"
+      when "Lock the front door" is done (routine_manager.gd ~496).
+Do:   Change the window id to a bedroom one ("Bedroom_Left" or
+      "Bedroom_Right"). Both are upstairs, like the landing window, so the
+      Peeker's height works the same way. I'd pick the one you see first
+      walking into the bedroom (the player goes up to bed right after
+      locking the door, so it's waiting there).
+Also: the comment in night_manager.gd:638 and two tests (bugs2 #9,
+      bugs4 #2) expect Landing_Window; update them.
+Size: tiny.
+
+
+2. Going-to-sleep and waking-up cinematics
+------------------------------------------
+Now:  bed_interactable.gd has four sleep paths (Night 1 -> Day 2,
+      Day 2 -> Night 2.2, the Day 1 fallback, exhaustion sleep). Each just
+      fades to black and back; the player stays standing where they were.
+Do:   One shared helper, SleepCinematic (scripts/sleep_cinematic.gd), used
+      by all four paths so they can't drift apart:
+        Going to sleep (about 4 s): input off. The camera eases from where
+        the player stands onto the pillow (a marker on the bed), turning to
+        look up at the ceiling, with a slight roll as they lie down. Then
+        the eyes close: two eyelid bars (black, soft edge) close from top
+        and bottom with a blink or two, then black. Breathing slows (the
+        existing Player Breathing.ogg, quieter).
+        Waking up (normal, about 3.5 s): starts lying down looking at the
+        ceiling, black. Eyelids open slowly, a blink, a soft blur
+        fading out, then the camera sits up and turns to the room, and
+        hands control back standing beside the bed.
+        Waking up, Night 2.2 (alarm): eyes snap open (0.15 s), a jolt
+        (small camera shake), sit up fast (0.5 s), the alarm loud right away.
+Where the player stands after waking: beside the bed (a marker), facing
+      the room, which also fixes waking up wherever they were standing.
+Risks: the fades are awaited by the night/day logic (start_night, the
+      clock); the cinematic must run in exactly the same places so nothing
+      else changes. The HUD and crosshair hide during it.
+Size: medium.
+
+
+3. Darker rain clouds
+---------------------
+Now:  shaders/day_night_sky.gdshader colours the clouds from the sky light
+      ("lit"), only a little darker in their dense parts.
+Do:   A storm_darkness uniform (EnvironmentController sets it from the
+      storm amount) that pulls the cloud colour down towards a dark slate
+      grey, with darker undersides (by height). Also lower the storm grey
+      used for the horizon so the sky and clouds match.
+Size: small. Worth a look in the editor (Weather's debug toggle) to tune.
+
+
+4. "Glad I'm not hydrophobic" (Day 2, 10 s after the rain starts)
+-----------------------------------------------------------------
+Now:  The Day 2 storm starts when Nest Gamma is documented
+      (hasselmus_nest.gd ~387, Weather.start_storm).
+Do:   Weather emits storm_started; a 10 s timer then Monologue.think(...,
+      key "hydrophobic"). Only on Day 2, and only once (Monologue keys
+      already make it once). Not if the player is already back inside by
+      then? I'd still show it; it's a joke either way.
+Size: tiny.
+
+
+5. Escape closes the notebook while at the computer
+---------------------------------------------------
+Now:  pause_menu.gd catches Escape and closes the computer first
+      (_close_computer_ui); the notebook ignores Escape.
+Do:   In pause_menu.gd, before the computer check: if the notebook is open,
+      close it and stop there. That also makes Escape close the notebook
+      everywhere (not only at the computer), which feels right; the next
+      Escape then exits the computer, or pauses.
+Size: tiny. Test: notebook open at the computer + Escape = notebook shut,
+      computer still open.
+
+
+6. "One more night in this luxurious cottage..." after logging
+--------------------------------------------------------------
+Now:  computer_ui.gd: once the loading bar finishes and night has fallen it
+      plays logging_complete.ogg (~918).
+Do:   Right after that sound, Monologue.think(...) (about 1.5 s later). The
+      thought layer (150) sits above the computer screen, so it shows even
+      while the computer is open.
+Size: tiny.
+
+
+7. The Peeker feels off
+-----------------------
+Why: the Peeker (window_peeker.tscn) uses the old locomotion library, which
+     has no "Peek" animation, so it plays nothing at all: the model stands
+     in its rest pose, stiff as a statue, slides straight up out of the
+     ground behind the window (1.5 s), then slides back down when seen. It
+     has no breathing, no head movement, no eyes. The Entity now does all
+     of that, so next to it the Peeker reads as a prop.
+Do (in order of effect):
+  a. Animate it with the Entity's own animations (the processed library in
+     monster_entity.tscn): a slow Idle/Crouch breathing loop, so it's alive.
+  b. Its head follows the player (a LookAt modifier on the neck/head
+     bones, limited and slow, with a slight lag). Being watched back is the
+     scariest thing it can do, and costs very little.
+  c. It leans in from the side of the window frame instead of rising out of
+     the ground (it's already there, looking in, when you notice it), or
+     rises slowly from below the sill, never through the floor.
+  d. When seen: it holds your gaze a beat, then pulls back sideways and
+     down (Crouch), quick, instead of sinking straight through the ground.
+  e. The eye glint (as the Entity's 0.7 m glow), so at night you see the
+     eyes before the shape.
+  f. Now and then a slow head tilt or a twitch (randomised), so a second
+     look never shows exactly the same thing.
+Size: medium (a and b are most of it). Optional: breath fogging the glass
+      (a small decal that fades), maybe later.
+
+
+8. Night 2.2 wake-up thoughts and the growl
+-------------------------------------------
+Do:   "Why is the car alarm blaring?" about 1.5 s after waking (after the
+      cinematic, task 2).
+      The noise: in Night 2.2 the clock is set straight to 04:00, so the
+      first event check (about 5 s after the night starts, just after
+      waking) fires two Night 2 horror events at once: "entity_glimpse"
+      (a wooden footstep and a low monster murmur, monster_talking_*.ogg)
+      and "door_creak" (a floor creak). That's the noise.
+      Hook: a small Night 2.2 story listener on NightManager.horror_event
+      ("entity_glimpse" while is_van_sequence_active):
+        "What the fuck was that?!" (key "n22_noise"), and 3 s later
+        "If I don't turn off that alarm, that shitty car might run out of
+        power. Fuck me."
+      If the wake-up cinematic (task 2) is still running when it fires, the
+      thoughts wait for it to end, so the order is always: alarm thought,
+      noise, the two thoughts.
+Size: small.
+
+
+9. Night 2.2: the wildlife falls silent
+---------------------------------------
+Now:  HorrorSoundManager plays the forest night bed (Forest_night_ambience)
+      and distant forest calls (_update_distant) at night.
+Do:   While NightManager.is_van_sequence_active: night bed volume to
+      silence (it already has a silence level for when the Entity is near),
+      no distant calls or roars. Rain, thunder and lightning (Weather) and
+      the wind stay. Restored when the van sequence ends (Night 3, or on
+      restart).
+Size: small.
+
+
+10. Bug: door locked after dying in Night 2.2
+---------------------------------------------
+Why:  the Night 2.2 checkpoint ("van_alarm") is captured the moment the
+      alarm goes off, while the player is still in bed behind the door they
+      locked; a restart restores that, so the door is locked though they
+      restart outside by the van.
+Do:   In NightManager._restart_van_alarm(), after the restore: unlock and
+      open the front door (without the unlock sound), since the player
+      went out through it. Test: die in Night 2.2, restart, door unlocked
+      and open.
+Size: tiny.
+
+
+11. Night 2.2 chase: "Oh fuck!" panic
+-------------------------------------
+Do:   A PanicThoughts overlay (its own CanvasLayer, same warm Monologue
+      style but bolder): from the moment the chase starts
+      (NightManager.first_chase_started) until the player is inside the
+      cabin, "Oh fuck!", "fuck!", "Fuck!", "oh fuck oh fuck" pop up at
+      random places on screen:
+        - never over the centre (the crosshair and the path ahead stay
+          clear), never off screen;
+        - each one quick: in fast (0.1 s), a small shake, out (0.8 s);
+          random size and a slight tilt; at most 3 or 4 at once;
+        - more often the closer the Entity is (every 1.4 s far, 0.5 s close).
+      Stops the moment the player gets inside (then task 12).
+Size: small/medium.
+
+
+12. "What the FUCK was that?!" after reaching the cabin
+-------------------------------------------------------
+Do:   When the player gets inside during the chase (the Entity's van chase
+      ending / RoutineManager's cabin entry check), stop the panic and
+      think it, about 1 s later. Its own key, so it isn't blocked by the
+      "What the fuck was that?!" from task 8 (Monologue dedups by text).
+Size: tiny.
+
+
+13. Night 2.2: the door stays shut once closed
+----------------------------------------------
+Now:  door.gd: locked/unlocked/open state; RoutineManager gates some
+      objectives.
+Do:   A "story lock" on the front door: during Night 2.2, once the player
+      is inside and the door is closed, the door refuses to open until
+      Day 3 begins; trying shows (via Monologue.say)
+      "There is no way I'm going outside now." It's a plain bool on the
+      door, so the checkpoint system already saves it, and it's cleared when
+      the day starts. The Entity can't use the door then either (fine:
+      Night 2.2 ends in about a minute anyway).
+Size: small.
+
+
+14. Mediocre ending: the Entity hovers over the van
+---------------------------------------------------
+Why:  endgame_cinematics.gd already tries both: it lowers the Entity by its
+      lowest hand/foot and freezes the animation with speed 0. But the
+      freeze sets the AnimationPlayer's speed, while the Entity is driven
+      by its AnimationTree, which keeps playing; and the crawl pose it
+      measures is taken before the pose settles, so the drop comes out
+      short. The roof height also includes the van's tallest mesh.
+Do:   Freeze through the AnimationTree (stop its processing once the pose
+      is in place); measure the contact after the frozen pose is applied;
+      plus a fixed correction so it sits about 1 m lower, as you saw, and
+      check it in a test (its lowest bone within a few cm of the roof).
+Size: small.
+
+
+15. Save states: restart after an ending, and the world state
+-------------------------------------------------------------
+Now:  There is already a snapshot system (Checkpoint autoload), taken at
+      every new day and night, which a death restart restores: inventory,
+      battery, fuel, story progress, evidence, windows, scrap heaps, the
+      van, doors, lights, fuse box, nests, items in the world, the
+      portable light and its cable. But "Play Again" after an ending
+      doesn't use it: it reloads the scene while the autoloads (Inventory,
+      RoutineManager, NightManager...) keep their end-of-game state, so the
+      world and the inventory don't match.
+Do:
+  a. Play Again after an ending = restart from the last checkpoint: reload
+     the scene, then restore the checkpoint into it (Checkpoint keeps
+     node paths, which a fresh scene has too), exactly like a death
+     restart. Main Menu -> New Game still starts over from scratch (resets
+     every autoload).
+  b. Audit what the snapshot misses, and add it: the knockable props'
+     places, the Monologue thoughts had (so thoughts after the checkpoint
+     come again), tutorial hints, sanity, the player's health/stamina, the
+     Entity's traces, the Peeker, the generator's running state, weather.
+  c. A test that changes everything, restores, and compares, so new
+     things that can change are caught later.
+  Not asked, but possible afterwards: write the snapshot to disk (a real
+  "Continue" in the main menu).
+Size: large (a is medium, b and c are most of the work).
+
+
+16. Night 3+ too bright (the fog)
+---------------------------------
+Now:  EnvironmentController: night fog colour (0.02, 0.02, 0.04), distance
+      fog plus a ground FogVolume; the sky still lights the fog
+      (fog_sky_affect 0.35) and the volumetric fog scatters the moonlight.
+      Night 2.2 uses force_true_night (no fog), so normal nights look much
+      brighter next to it.
+Do:   Darker fog for Nights 3+: lower the volumetric fog albedo and its
+      ambient light, less sky in the fog, a dimmer moon on the fog, and a
+      darker ground fog. Tune by looking at it (screenshots side by side,
+      Night 2.2 vs Night 3) rather than by numbers alone.
+Size: small to tune, but it needs eyes on it (question below).
+
+
+SUGGESTED ORDER
+---------------
+Round 1 (quick wins):        1, 3, 4, 5, 6, 10, 12
+Round 2 (Night 2.2):         8, 9, 11, 13 (plus 12 if not done)
+Round 3 (cinematics, feel):  2, 7, 14
+Round 4 (systems, visuals):  15, 16
+
+DECISIONS (answered)
+--------------------
+1. Task 1: the bedroom window you see first walking in.
+2. Task 8: no new growl; the thoughts hang on the existing noise (the
+   "entity_glimpse" murmur and creak, about 5 s into Night 2.2).
+3. Task 15: Play Again restarts from the last checkpoint. A saved
+   "Continue" on disk is not part of this (can come later if wanted).
+4. Task 16: screenshots of the running game are OK for tuning.
+5. Task 9: the wind stays on Night 2.2.

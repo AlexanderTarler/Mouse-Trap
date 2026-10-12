@@ -210,7 +210,7 @@ func _test_peeker_window() -> void:
 	rm.main_objective = 8
 	rm.on_door_locked()
 	await _frames(2)
-	_check("#9 the Day 1 door-lock Peeker shows at the landing window (moved there in round 4)", pm._last_peeker_window_id == "Landing_Window",
+	_check("#9 the Day 1 door-lock Peeker shows at the bedroom window", pm._last_peeker_window_id == "Bedroom_Right",
 		pm._last_peeker_window_id)
 	if pm.has_method("remove_active_peeker"):
 		pm.remove_active_peeker()

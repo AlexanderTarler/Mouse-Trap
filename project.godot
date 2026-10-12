@@ -37,6 +37,7 @@ TutorialManager="*res://scripts/managers/tutorial_manager.gd"
 Checkpoint="*res://scripts/managers/checkpoint_manager.gd"
 Weather="*res://scripts/managers/weather.gd"
 Monologue="*res://scripts/managers/monologue.gd"
+NightTwoStory="*res://scripts/managers/night_two_story.gd"
 
 [debug]
 

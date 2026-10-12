@@ -386,6 +386,9 @@ func interact() -> void:
 		var weather := get_node_or_null("/root/Weather")
 		if weather and weather.has_method("start_storm"):
 			weather.start_storm(0.0, true)
+			# Ten seconds into the downpour.
+			get_tree().create_timer(10.0).timeout.connect(
+				Monologue.think.bind("Glad I'm not hydrophobic.", null, 4.0, "hydrophobic"))
 	
 	# Notify RoutineManager
 	var rm = get_node_or_null("/root/RoutineManager")

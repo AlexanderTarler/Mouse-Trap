@@ -203,6 +203,14 @@ func _on_checkpoint_restored() -> void:
 	rotation_degrees.y = default_rotation_y + (open_angle if is_open else 0.0)
 
 
+## Open or shut, locked or not, at once and without a sound (a restart
+## putting the world back as it should be).
+func set_state_quietly(open: bool, locked: bool) -> void:
+	is_locked = locked
+	is_open = open
+	_on_checkpoint_restored()
+
+
 func toggle_lock() -> void:
 	if is_animating:
 		return

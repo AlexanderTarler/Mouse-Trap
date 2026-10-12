@@ -915,7 +915,7 @@ func _on_nest_correlation_success() -> void:
 		# ─── TASK: LOGGING COMPLETE SOUND ─────────────────────────────
 		# The loading bar hit 100%, the data was processed, and Night 2
 		# has fallen. Play logging_complete.ogg at this exact moment.
-		_play_logging_complete_sound()
+		_on_logging_done()
 		
 		# ─── RE-HIDE THE HUD ─────────────────────────────────────────
 		# The computer UI is still open, so the game HUD must be hidden
@@ -1019,6 +1019,13 @@ func _play_login_success_sound() -> void:
 	if stream:
 		var p = AudioStreamPlayer.new(); p.bus = "SFX"; p.stream = stream; add_child(p)
 		p.play(); p.finished.connect(p.queue_free)
+
+## The data is logged and night has fallen: the chime, then a thought.
+func _on_logging_done() -> void:
+	_play_logging_complete_sound()
+	get_tree().create_timer(1.5).timeout.connect(Monologue.think.bind(
+		"One more night in this luxurious cottage and then back to my own place.", null, 5.0, "one_more_night"))
+
 
 ## Plays logging_complete.ogg when the nest-data loading bar reaches 100%.
 func _play_logging_complete_sound() -> void:

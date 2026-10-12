@@ -87,8 +87,8 @@ func _test_peeker() -> void:
 	_rm.main_objective = 8
 	_rm.get_current_objective()
 	await _frames(3)
-	_check("#2 the Day 1 Peeker is at the landing window (door locked before the objective)",
-		pm._last_peeker_window_id == "Landing_Window", pm._last_peeker_window_id)
+	_check("#2 the Day 1 Peeker is at the bedroom window (door locked before the objective)",
+		pm._last_peeker_window_id == "Bedroom_Right", pm._last_peeker_window_id)
 	pm.remove_active_peeker()
 	_rm.main_objective = 99
 	_rm.day2_step = 6
