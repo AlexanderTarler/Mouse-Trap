@@ -252,6 +252,7 @@ func _interact(player: Node3D = null) -> void:
 			player.set_physics_process(true)
 			player.set_process_input(true)
 		
+		NightTwoStory.on_woke_to_alarm()
 		print("[Bed Scene] Day 2 ended! Night 2 started with car alarm.")
 		return
 	

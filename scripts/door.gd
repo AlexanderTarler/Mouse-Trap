@@ -42,6 +42,9 @@ var _original_scene_stream: AudioStream = null
 
 var is_open: bool = false
 var is_animating: bool = false
+## Night 2.2: back inside after the chase with the door shut, the player
+## won't open it again until Day 3 (set and cleared by NightTwoStory).
+var story_locked: bool = false
 var default_rotation_y: float
 ## Whether this door is currently locked (only used when required_key_name is set).
 ## Keeps the door's navigation link in sync, so the Entity can only path through
@@ -129,6 +132,9 @@ func interact() -> void:
 	if _is_player_exhausted():
 		_show_exhaustion_message("I'm not leaving the cabin until I've had some sleep.")
 		return
+	if story_locked and not is_open:
+		Monologue.say("There is no way I'm going outside now.")
+		return
 	
 	# If locked, always rattle — no quick unlock
 	# TASK 3 FIX: The locked condition must ONLY play a rattle sound.
@@ -207,6 +213,7 @@ func _on_checkpoint_restored() -> void:
 ## putting the world back as it should be).
 func set_state_quietly(open: bool, locked: bool) -> void:
 	is_locked = locked
+	story_locked = false
 	is_open = open
 	_on_checkpoint_restored()
 
