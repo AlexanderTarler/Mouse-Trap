@@ -477,6 +477,16 @@ func _update_page_numbers() -> void:
 	_page_numbers[1].text = "— %d —" % (left + 2) if left + 1 < _all_pages.size() else ""
 
 
+## Checkpoint restored the unlocked nests and notes: the pages again, shut.
+func _on_checkpoint_restored() -> void:
+	_is_open = false
+	visible = false
+	current_spread = 0
+	_current_page = 0
+	_rebuild_all_pages()
+	_update_spread()
+
+
 ## Shuts the notebook (Escape, from pause_menu.gd). False if it wasn't open.
 func close() -> bool:
 	if not _is_open:

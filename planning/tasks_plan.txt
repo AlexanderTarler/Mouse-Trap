@@ -38,7 +38,22 @@ STATUS: Round 3 done (2, 7, 14; tests/tasks8_test.gd).
      highest point (3.10 m, at the front): it hovered ~0.5 m. Speed 0 now
      stops the Entity's AnimationTree (it kept playing); activate()
      restores it.
-Round 4: not started.
+STATUS: Round 4 done (15, 16; tests/tasks9_test.gd). All rounds done.
+  16 The glow was the ground fog's own emission (0.3, 0.3, 0.42), denser
+     (x1.5) from Night 3. From Night 3 it's 0.22 now
+     (EnvironmentController.night3_ground_fog_emission; under ~0.18 the
+     fog vanishes). Nights 1-2 unchanged. The scene's override of
+     night_fog_color (from August) removed. Tuned by screenshots
+     (tools/night_shot.gd): Night 3 about 3x darker.
+  15 "Play Again" / "Retry" after an ending: NightManager.reload_from_
+     checkpoint(); the scene reloads and is put back to the last
+     checkpoint (as a death restart), no opening or new-game setup. Before,
+     the reloaded scene was never set up at all (NightManager only did that
+     once, at boot), so the world was new but the inventory and story were
+     from the end. The snapshot now also keeps: the notebook's pages, the
+     thoughts had, the knockable props' places, the night and story flags.
+     Not kept (on purpose): tutorial hints learned, sanity/stamina (reset
+     by the restart), the Entity's traces.
 
 For each task: what's there now, the best way
 to do it, and the risks. The suggested order (four rounds) and the questions

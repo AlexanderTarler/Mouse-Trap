@@ -61,6 +61,11 @@ extends Node
 @export var night_fog_fluctuation_max: float = 1.5
 ## Night fog color.
 @export var night_fog_color: Color = Color(0.02, 0.02, 0.04)
+## The ground fog's own glow (its FogMaterial emission) from Night 3, when
+## the fog is thicker: dimmer, so the thicker fog hides more instead of
+## lighting the forest up. Nights 1-2 keep the material's own emission.
+## (Very sensitive: under ~0.18 the fog no longer shows at all.)
+@export var night3_ground_fog_emission: Color = Color(0.22, 0.22, 0.3)
 
 ## The ProceduralSkyMaterial to modify at runtime
 ## The sky: shaders/day_night_sky.gdshader (dusk, dawn, sun, moon, stars).
@@ -135,6 +140,9 @@ var _cached_fog_color: Color = Color()
 var _cached_vfog_enabled: bool = false
 var _cached_vfog_density: float = 0.0
 var _cached_fog_depth_end: float = 0.0
+
+## The ground fog material's own emission (Nights 1-2).
+var _base_fog_emission := Color(-1, -1, -1)
 
 ## Current distance at which the fog is fully opaque (INF when there is none).
 var _fog_visibility: float = INF
@@ -471,6 +479,7 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 			night_multiplier = 1.5
 		
 		var thickness: float = fog_factor * fog_fluctuation * _night_fog_base * night_multiplier
+		_set_ground_fog_emission(night3_ground_fog_emission if night_multiplier > 1.0 else _base_fog_emission)
 
 		# Distance fog: clear up to fog_clear_distance, fully opaque at the
 		# visibility distance (closer when the fog is thicker). In depth mode
@@ -537,6 +546,19 @@ func _set_sky(param: String, value) -> void:
 		(_sky_material as ShaderMaterial).set_shader_parameter(param, value)
 	elif _sky_material and param in _sky_material:
 		_sky_material.set(param, value)
+
+
+## The ground fog's glow (Nights 1-2: the material's own, as first seen).
+func _set_ground_fog_emission(value: Color) -> void:
+	if not ground_fog or not ground_fog.material is FogMaterial:
+		return
+	var material := ground_fog.material as FogMaterial
+	if _base_fog_emission.r < 0.0:
+		_base_fog_emission = material.emission
+		if value.r < 0.0:
+			value = _base_fog_emission
+	if not material.emission.is_equal_approx(value):
+		material.emission = value
 
 
 func _set_ground_fog_density(value: float) -> void:

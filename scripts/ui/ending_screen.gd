@@ -4,7 +4,7 @@ class_name EndingScreen
 ## EndingScreen — Overlay displayed when the game ends.
 ##
 ## Shows the ending title, subtitle, and two buttons:
-##   - Retry: Reloads the main game scene
+##   - Retry / Play Again: back to the last checkpoint (the scene reloads)
 ##   - Main Menu: Returns to the main menu
 ##
 ## The screen is designed to overlay on top of the game world (semi-transparent
@@ -73,7 +73,7 @@ func setup_ending(ending_type: int) -> void:
 	GameFonts.use_title(title_label)
 	title_label.add_theme_color_override("font_color", Color(0.85, 0.82, 0.75))
 
-	# The escapes start a new game, and say which ending this was (so the
+	# The escapes play again from the last checkpoint, and say which ending this was (so the
 	# player knows there is another one).
 	if ending_type == 1 or ending_type == 2:
 		retry_button.text = "Play Again"
@@ -190,15 +190,21 @@ func _wait(seconds: float) -> void:
 
 
 ## Called when the Retry button is pressed.
-## Reloads the main game scene.
+## Reloads the game scene, put back to the last checkpoint (the start of
+## this day or night).
 func _on_retry_pressed() -> void:
 	print("[EndingScreen] Retry pressed. Reloading game scene.")
 	retry_pressed.emit()
-	
+
 	# Reset the EndgameManager so endings can trigger again
 	var em = get_node_or_null("/root/EndgameManager")
 	if em and em.has_method("reset"):
 		em.reset()
+	# Back to the last checkpoint (the start of this day or night): the
+	# scene reloads fresh and NightManager restores the snapshot into it.
+	var nm = get_node_or_null("/root/NightManager")
+	if nm and nm.has_method("reload_from_checkpoint"):
+		nm.reload_from_checkpoint()
 	
 	# Unpause and reload
 	get_tree().paused = false

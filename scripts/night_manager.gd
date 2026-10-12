@@ -430,6 +430,33 @@ func setup_player_spawn() -> void:
 		first_checkpoint.capture_deferred("night" if is_night_active else "day")
 
 
+## "Play Again" after an ending (ending_screen.gd): the game scene is about
+## to be loaded fresh; once it is, it's put back to the last checkpoint.
+func reload_from_checkpoint() -> bool:
+	var checkpoint := get_node_or_null("/root/Checkpoint")
+	if not checkpoint or not checkpoint.has_checkpoint():
+		return false
+	checkpoint.restore_on_load = true
+	_spawn_setup_done = false
+	return true
+
+
+## The freshly loaded scene, back to the last checkpoint, as a death restart
+## would put it (not the new game's opening, onboarding or broken fuse box).
+func _restore_loaded_scene() -> void:
+	var checkpoint := get_node_or_null("/root/Checkpoint")
+	# Let the new scene finish setting itself up first (spawned contents).
+	await get_tree().process_frame
+	await get_tree().process_frame
+	checkpoint.restore_on_load = false
+	_start_time_running()
+	checkpoint.apply_story(self)
+	is_night_active = checkpoint.kind == "night"
+	is_day_active = not is_night_active
+	restart_from_checkpoint()
+	print("[NightManager] Play Again: the scene reloaded and put back to the %s checkpoint (night %d)." % [checkpoint.kind, current_night])
+
+
 ## Recursively searches for a Marker3D with the given name in the node tree.
 func _find_marker_recursive(root: Node, name: String) -> Marker3D:
 	for child in root.get_children():
@@ -548,6 +575,10 @@ func _process(delta: float) -> void:
 		var player = get_tree().get_first_node_in_group("player")
 		if player:
 			_spawn_setup_done = true
+			var checkpoint := get_node_or_null("/root/Checkpoint")
+			if checkpoint and checkpoint.restore_on_load:
+				_restore_loaded_scene()
+				return
 			_start_time_running()
 			setup_player_spawn()
 			_apply_dev_mode_settings()
