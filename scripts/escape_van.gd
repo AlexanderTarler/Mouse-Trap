@@ -25,6 +25,9 @@ class_name EscapeVan
 
 ## Total car components needed to repair the van.
 const COMPONENTS_NEEDED: int = 3
+## Examining the van before Night 2.2 (it still runs, as far as they know).
+const BEFORE_ALARM_MESSAGE := "My ride home. Not before the survey's done, though."
+
 
 ## The exact part names required for a complete repair.
 const REQUIRED_PARTS: Array[String] = ["Car Battery", "Radiator", "Ignition Wiring"]
@@ -148,6 +151,14 @@ func interact() -> void:
 		_trigger_ending()
 		return
 	
+	# ─── BEFORE NIGHT 2.2: nothing wrong with it yet ───────────────
+	# The van is found wrecked (the ignition torn out) only when the alarm
+	# goes off in Night 2.2. Before that it's just the player's ride: no
+	# "this van is busted", no repair checklist in the notebook.
+	if not van_investigated:
+		_show_hud_message(BEFORE_ALARM_MESSAGE)
+		return
+
 	# ─── PRIORITY 3: First time inspecting a non-repaired van ───────
 	# Notify RoutineManager to activate the van checklist in the notebook.
 	_ensure_van_inspected()
@@ -578,7 +589,7 @@ func _teleport_entity_to_van() -> void:
 		var tm_sprint := get_node_or_null("/root/TutorialManager")
 		if tm_sprint and tm_sprint.has_method("trigger"):
 			# Forced: it replaces any other hint, and stays until the player
-			# has run their stamina down to 70% (player_controller).
+			# has sprinted for 3 s (player_controller).
 			tm_sprint.trigger("sprint", true)
 
 

@@ -16,7 +16,7 @@ signal overcharge_activated
 signal overcharge_deactivated
 
 @export var max_battery: float = 100.0
-@export var drain_rate: float = 0.5  # per second when on (halved from 1.0)
+@export var drain_rate: float = 0.25  # per second when on (halved twice from 1.0: playtesters ran out fast)
 @export var low_battery_threshold: float = 15.0
 
 ## ─── OVERCHARGE TUNING ─────────────────────────────────────────────────────
@@ -126,6 +126,11 @@ func _process(delta: float) -> void:
 		if battery_level <= 0.0:
 			# Battery died mid-standoff — cleanly reset overcharge state.
 			_turn_off()
+			# Out: the swap-a-battery hint again, if it hasn't been shown (it
+			# can't come up over another hint, at 30%).
+			var tm_empty := get_node_or_null("/root/TutorialManager")
+			if tm_empty and tm_empty.has_method("trigger"):
+				tm_empty.trigger("low_battery")
 			return
 		
 		# ─── OVERCHARGE TUTORIAL HOLD TRACKING ────────────────────────

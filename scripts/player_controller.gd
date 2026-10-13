@@ -162,6 +162,9 @@ var sprint_unlocked: bool = true
 # Prevents calling mark_learned("sprint") every physics frame while
 # running. Learning is only marked once the player genuinely sprints.
 var _sprint_tutorial_marked: bool = false
+## Seconds sprinted (SHIFT held, moving): the hint goes after SPRINT_HINT_TIME.
+var _sprint_hold_time := 0.0
+const SPRINT_HINT_TIME := 3.0
 
 
 # --- STANDOFF / CHARGE MECHANIC ---
@@ -331,9 +334,16 @@ func _ready() -> void:
 		_physical_grab.set("_camera", _camera)
 	
 	# ─── NOTEBOOK UI ───────────────────────────────────────────────
-	# Load and instance the notebook scene into the NotebookLayer CanvasLayer
+	# The notebook in the player scene (NotebookLayer/NotebookUI); one is made
+	# only if it's missing. (A second one was always made here: J opened
+	# that one, while Escape and everything that looks the notebook up found
+	# the other, closed one, so Escape at the computer left the computer.)
 	var notebook_scene = load("res://scenes/ui/notebook_ui.tscn")
-	if notebook_scene:
+	var existing := get_node_or_null("NotebookLayer/NotebookUI")
+	if existing:
+		_notebook = existing
+		existing.visible = false
+	elif notebook_scene:
 		var notebook_instance = notebook_scene.instantiate()
 		$NotebookLayer.add_child(notebook_instance)
 		_notebook = notebook_instance
@@ -710,11 +720,13 @@ func _physics_process(delta: float) -> void:
 	_is_running = Input.is_key_pressed(KEY_SHIFT) and sprint_unlocked and not _is_crouching and _stamina > 0.0 and not _stamina_exhausted and _is_moving_forward
 	
 	# ─── BUG 3 FIX: MARK SPRINT TUTORIAL LEARNED ON ACTUAL USE ──────
-	# The sprint hint (triggered by escape_van.gd during Night 2.2) is now
-	# dismissed only when the player genuinely sprints — NOT when sprint is
-	# merely unlocked (that premature mark consumed the one-shot before the
-	# hint could show). Marking is one-shot via _sprint_tutorial_marked.
-	if _is_running and not _sprint_tutorial_marked and _stamina < 70.0:
+	# The sprint hint (triggered by escape_van.gd during Night 2.2) is
+	# dismissed once the player has sprinted for SPRINT_HINT_TIME (3 s) in
+	# all, not when sprint is merely unlocked (that consumed the one-shot
+	# before the hint could show). One-shot via _sprint_tutorial_marked.
+	if _is_running:
+		_sprint_hold_time += delta
+	if not _sprint_tutorial_marked and _sprint_hold_time >= SPRINT_HINT_TIME:
 		_sprint_tutorial_marked = true
 		var tm_sprint := get_node_or_null("/root/TutorialManager")
 		if tm_sprint and tm_sprint.has_method("mark_learned"):

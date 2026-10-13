@@ -155,7 +155,7 @@ layout_mode = 0
 [node name="PrevHint" type="Label" parent="CenterContainer/BookBackground/CoverMargin/HBoxContainer/LeftPage" unique_id=923054948]
 unique_name_in_owner = true
 layout_mode = 0
-anchor_left = 0.0
+anchor_left = 0.1
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -180,7 +180,7 @@ unique_name_in_owner = true
 layout_mode = 0
 anchor_left = 0.0
 anchor_top = 1.0
-anchor_right = 1.0
+anchor_right = 0.9
 anchor_bottom = 1.0
 offset_left = 16.0
 offset_top = -40.0
