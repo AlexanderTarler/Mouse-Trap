@@ -84,6 +84,9 @@ extends Node
 ## thickness.
 @export var compat_ground_fog_height: float = 1.5
 @export var compat_ground_fog_density: float = 0.15
+## Its shadows striped the ground in rings (shadow acne) at the scene's low
+## normal bias: the sun's and moon's are raised to at least this there.
+@export var compat_shadow_normal_bias: float = 1.5
 
 ## The ProceduralSkyMaterial to modify at runtime
 ## The sky: shaders/day_night_sky.gdshader (dusk, dawn, sun, moon, stars).
@@ -169,6 +172,18 @@ var _base_fog_emission := Color(-1, -1, -1)
 var _fog_visibility: float = INF
 
 
+## The sun's and moon's shadow normal bias (raised on the web).
+func _shadow_normal_bias() -> float:
+	return compat_shadow_normal_bias if _compat else 0.1
+
+
+## The web: the sun's and moon's shadows without the ground stripes.
+func apply_compat_shadows() -> void:
+	for light in [sun, moon]:
+		if light:
+			light.shadow_normal_bias = maxf(light.shadow_normal_bias, compat_shadow_normal_bias)
+
+
 ## How far the player can see through the fog right now: the distance at
 ## which the distance fog becomes fully opaque, or INF when there is no fog.
 func get_fog_visibility() -> float:
@@ -178,6 +193,8 @@ func get_fog_visibility() -> float:
 func _ready() -> void:
 	add_to_group("environment_controller")
 	_compat = RenderingServer.get_current_rendering_method() == "gl_compatibility"
+	if _compat:
+		apply_compat_shadows()
 	# Get the Environment resource from the WorldEnvironment
 	if world_environment:
 		_environment = world_environment.environment
@@ -614,7 +631,7 @@ func _update_light_appearance(p_day_factor: float, p_sun_height: float) -> void:
 			_cached_sun_shadow_enabled = sun_shadow_enabled
 			if sun.shadow_enabled:
 				sun.shadow_bias = 0.1
-				sun.shadow_normal_bias = 0.1
+				sun.shadow_normal_bias = _shadow_normal_bias()
 	
 	# --- Moon light energy: smoothly scales as sun goes down ---
 	if moon:
@@ -634,4 +651,4 @@ func _update_light_appearance(p_day_factor: float, p_sun_height: float) -> void:
 			_cached_moon_shadow_enabled = moon_shadow_enabled
 			if moon.shadow_enabled:
 				moon.shadow_bias = 0.1
-				moon.shadow_normal_bias = 0.1
+				moon.shadow_normal_bias = _shadow_normal_bias()

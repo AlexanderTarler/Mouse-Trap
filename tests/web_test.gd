@@ -34,12 +34,35 @@ func _run() -> void:
 	root.add_child(_scene)
 	current_scene = _scene
 	await _frames(60)
+	_test_shadows()
 	await _test_night()
 	await _test_marks()
 	print("[WEB TEST] %s" % ("ALL PASSED" if _failures == 0 else "%d FAILED" % _failures))
 	_scene.queue_free()
 	await _frames(2)
 	quit(1 if _failures > 0 else 0)
+
+
+## The web's shadows don't stripe the ground: the sun's and moon's normal
+## bias raised there (EnvironmentController._ready, on gl_compatibility).
+func _test_shadows() -> void:
+	var ec: Node = get_first_node_in_group("environment_controller")
+	var sun: DirectionalLight3D = ec.sun
+	var desktop_bias := sun.shadow_normal_bias
+	ec.apply_compat_shadows()
+	_check("web shadows: the sun's normal bias raised (%.1f, desktop %.1f)" % [sun.shadow_normal_bias, desktop_bias],
+		sun.shadow_normal_bias >= 1.5 and desktop_bias < 1.5 and ec.moon.shadow_normal_bias >= 1.5)
+	# ...and kept when the shadows switch back on (at sunrise).
+	ec._compat = true
+	ec._cached_sun_shadow_enabled = not sun.shadow_enabled
+	sun.shadow_normal_bias = desktop_bias
+	ec._apply_cycle()
+	_check("web shadows: still raised when the controller turns the sun's shadows on (%.1f)" % sun.shadow_normal_bias,
+		not sun.shadow_enabled or sun.shadow_normal_bias >= 1.5)
+	ec._compat = false
+	ec._cached_sun_shadow_enabled = not sun.shadow_enabled
+	ec._apply_cycle()
+	sun.shadow_normal_bias = desktop_bias
 
 
 func _test_night() -> void:

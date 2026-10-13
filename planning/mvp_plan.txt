@@ -18,6 +18,18 @@ STATUS: 1-3 done. 4-8 not started.
      export built and ran (--autoplay, headless, 90 s): menu, new game,
      Day 1 setup and checkpoint, no errors from the game.
 
+WEB BUILD (the web runs Godot's Compatibility renderer):
+  - Night: no volumetric fog there (no ground fog, and the night went pure
+    black): its own ambient light and a height fog instead, tuned to the
+    desktop's darkness by screenshot (EnvironmentController compat_*).
+  - The Entity's marks: no decals there; flat quads on the surface.
+  - Ground stripes: shadow acne at the scene's low shadow normal bias
+    (0.1); raised to 1.5 on the web only.
+  - The web build loads and runs the menu, reset, Day 1 setup (one
+    expected fog-shader error). Frame rate: to check in a real browser
+    (python tools/serve_web.py, http://localhost:8060). Never in a
+    headless browser: software WebGL froze the PC.
+
 Decided: the MVP is for both Windows and the web. Save/Continue (4) is
 skipped for now (a run isn't long).
 
