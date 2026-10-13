@@ -26,6 +26,8 @@ const TUTORIAL_PATHS: Array[String] = [
 	"res://resources/tutorial/tutorial_inventory.tres",
 	"res://resources/tutorial/tutorial_pc_login.tres",
 	"res://resources/tutorial/tutorial_pickup_drop.tres",
+	# Day 1: the key under the bucket by the door.
+	"res://resources/tutorial/tutorial_move_objects.tres",
 	"res://resources/tutorial/tutorial_low_battery.tres",
 	# ─── DAY 2 NEST TUTORIALS ────────────────────────────────────────
 	# These teach the survival mechanics required to document the nests:

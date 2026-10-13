@@ -110,8 +110,11 @@ extends Resource
 @export var standoff_retreat_time: float = 2.0
 ## After a standoff a standard beam can't freeze it again for this long.
 @export var standoff_cooldown: float = 5.0
-## Overcharged beam held on it for this long: it flees.
+## Overcharged beam held on it for this long: it flees (driven off).
 @export var overcharge_repel_time: float = 0.9
+## It hardens: each time it's been driven off tonight, the beam must be
+## held this much longer (0.9, 2.15, 3.4 s...), so the battery is the clock.
+@export var overcharge_repel_growth: float = 1.25
 ## Brief beam drop-outs shorter than this don't reset the overcharge timer.
 @export var overcharge_grace: float = 0.35
 ## A lost beam must stay lost this long before a standoff ends.

@@ -2,8 +2,11 @@ class_name EntityStateStandoff
 extends EntityState
 
 ## Held by the flashlight.
-##   Overcharged beam: it writhes in the light; after
-##   config.overcharge_repel_time it flees.
+##   Overcharged beam: it writhes in the light; held on it for
+##   Entity.repel_time() it flees, driven off (out of the house, indoors).
+##   That time grows each time it's driven off in a night (it hardens).
+##   Indoors, let go too soon and it doesn't back off: it lunges, no roar.
+##   (A flick of the beam used to stop every charge, all night.)
 ##   Standard beam (both outside): it freezes and stares back while stare
 ##   pressure builds (perception.stare_pressure). When it is full it winds up:
 ##   crouches, growls, its eyes flare, for config.charge_windup_time. Look
@@ -67,8 +70,9 @@ func update(delta: float) -> void:
 
 
 func next_state() -> int:
-	# The overcharged beam always wins, in any phase.
-	if perception.overcharge_time >= config.overcharge_repel_time:
+	# The overcharged beam always wins, in any phase, if held long enough.
+	if perception.overcharge_time >= entity.repel_time():
+		entity.times_driven_off += 1
 		return S.FLEE
 	if perception.overcharged and perception.entity_inside != perception.player_inside:
 		return S.FLEE
@@ -84,6 +88,9 @@ func next_state() -> int:
 				entity.audio.play_voice("angry", true)
 				entity.audio.play_growl()
 			elif _lost_time > config.standoff_release_time:
+				# Indoors a beam let go too soon is a chance, not a defeat.
+				if perception.entity_inside and perception.player_inside:
+					return go(S.CHARGE, {"no_roar": true})
 				_start_back_off()
 		Phase.WINDUP:
 			if _lost_time > config.windup_release_time:

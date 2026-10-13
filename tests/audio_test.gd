@@ -238,6 +238,23 @@ func _test_footsteps() -> void:
 	_check("footsteps: the stairs and the upper floor sound like the ground floor; crouching is quieter than walking",
 		on_stairs and upstairs and crouch_db < walk_db - 5.0,
 		"stairs=%s, upstairs=%s, walk %.1f dB, crouch %.1f dB" % [on_stairs, upstairs, walk_db, crouch_db])
+	# ...and the same, not washed in a room's echo: which room's reverb a 3D
+	# sound gets is found at its source, which upstairs lies in the room
+	# below. Steps take none (area_mask 0), as downstairs.
+	var fa: AudioStreamPlayer3D = _player.footstep_audio
+	var echoes := []
+	for spot in [STAIRS, LANDING]:
+		_stand(spot)
+		await _frames(3)
+		var q := PhysicsPointQueryParameters3D.new()
+		q.position = fa.global_position
+		q.collide_with_areas = true
+		q.collide_with_bodies = false
+		q.collision_mask = fa.area_mask
+		for hit in _player.get_world_3d().direct_space_state.intersect_point(q, 8):
+			if hit.collider.get("reverb_bus_enabled"):
+				echoes.append(hit.collider.name)
+	_check("footsteps: no room echo on the stairs or upstairs (it muffled them, far away)", fa.area_mask == 0 and echoes.is_empty(), str(echoes))
 
 
 func _test_chase_music() -> void:

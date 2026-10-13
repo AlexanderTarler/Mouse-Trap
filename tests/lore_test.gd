@@ -99,8 +99,8 @@ func _test_opening() -> void:
 	for row in opening._phone._thread.get_children():
 		for label in row.find_children("*", "Label", true, false):
 			thread_text += (label as Label).text + " | "
-	_check("the opening freezes the player; the phone has no service and the message fails",
-		frozen and "No service" in opening._phone.service.text and "Not delivered" in thread_text and "terminal" in thread_text, thread_text)
+	_check("the opening freezes the player; the office says where the key is; no service, the message fails",
+		frozen and "No service" in opening._phone.service.text and "Not delivered" in thread_text and "terminal" in thread_text and "under the bucket" in thread_text, thread_text)
 	var key := InputEventKey.new()
 	key.keycode = KEY_SPACE
 	key.pressed = true

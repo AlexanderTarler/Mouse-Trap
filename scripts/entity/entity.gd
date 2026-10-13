@@ -63,6 +63,8 @@ var can_kill: bool = true
 var totem_defense_disabled: bool = false
 ## True during the Night 2 van chase (a scripted, fully aware pursuit).
 var van_chase_active: bool = false
+## Driven off by the overcharged beam tonight (it hardens each time).
+var times_driven_off := 0
 var is_enraged: bool = false
 
 var config: EntityConfig = CONFIG
@@ -272,6 +274,11 @@ func cinematic_pose(xform: Transform3D, anim: StringName, anim_speed: float = 1.
 		var mode := AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL if frozen else _anim_tree_mode
 		if _anim_tree.callback_mode_process != mode:
 			_anim_tree.callback_mode_process = mode
+
+
+## How long the overcharged beam must be held on it to drive it off now.
+func repel_time() -> float:
+	return config.overcharge_repel_time + times_driven_off * config.overcharge_repel_growth
 
 
 func get_state() -> State:
@@ -1064,6 +1071,7 @@ func _set_hidden(hidden: bool) -> void:
 # ═════════════════════════════════════════════════════════════════════════════
 
 func _on_night_started(night: int) -> void:
+	times_driven_off = 0
 	# Nights 1 and 2 belong to the story: the Entity only appears for the
 	# Night 2 van chase (start_van_chase).
 	if night <= 2 and not is_dev_mode():

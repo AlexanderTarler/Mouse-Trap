@@ -3,21 +3,31 @@ extends RigidBody3D
 
 ## A small loose thing (a book, an ashtray, a bottle) that can be knocked
 ## over: by the Entity passing it unseen (EntityWorld.loose_prop_near), or
-## picked up and moved with the grab. `model` is any scene; a box collider
-## is sized to it when the prop loads. It starts asleep, so it stays exactly
-## where it was placed until something touches it.
+## picked up and moved with the grab. `model` is any scene (or `mesh`, a
+## plain mesh); a box collider is sized to it when the prop loads. It starts
+## asleep, so it stays exactly where it was placed until something touches
+## it.
 
 @export var model: PackedScene
+## Or a plain mesh, for props placed as a MeshInstance3D (the bucket).
+@export var mesh: Mesh
 @export var prop_mass: float = 0.6
 
 
 func _ready() -> void:
 	mass = prop_mass
 	add_to_group("knockable")
+	# Layer 2 (Interactable) too: the grab (PhysicalGrab) only looks there.
+	set_collision_layer_value(2, true)
 	if model and get_node_or_null("Model") == null:
 		var instance := model.instantiate()
 		instance.name = "Model"
 		add_child(instance)
+	elif mesh and get_node_or_null("Model") == null:
+		var plain := MeshInstance3D.new()
+		plain.name = "Model"
+		plain.mesh = mesh
+		add_child(plain)
 	var box := _bounds()
 	if box.size != Vector3.ZERO:
 		var shape := BoxShape3D.new()

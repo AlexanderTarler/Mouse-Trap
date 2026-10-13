@@ -223,6 +223,13 @@ var _noise_timer: float = 0.0
 func _ready() -> void:
 	if footstep_audio:
 		_footstep_base_db = footstep_audio.volume_db
+		# Our own steps stay dry and close everywhere. The rooms' echo
+		# (CabinRoom, the "Interior" reverb bus) is picked by where the sound
+		# starts: at the player's middle, upstairs that's inside the room
+		# below (and on the stairs, the stairwell), so steps there were
+		# washed in reverb, muffled and far away, while downstairs they
+		# started under the rooms and stayed dry.
+		footstep_audio.area_mask = 0
 	# Add starting items to the Inventory autoload
 	for item in starting_items:
 		if item:

@@ -987,8 +987,25 @@ func on_door_tried_locked() -> void:
 	phase1_tried_door = true
 	print("[RoutineManager] Phase 1: Player tried the locked door.")
 	_update_hud()
+	# The key is under the bucket by the door: the moment to learn that
+	# loose things can be lifted and moved.
+	_hint_move_objects()
 	# ─── X-RAY HIGHLIGHT: Cabin Key after 5 seconds ──
 	highlight_target("xray_key", 5.0)
+
+## The lift-and-move hint, until it's been on screen, learned, or the key is
+## found. (Another hint still up, the "interact" one from the door, blocks it,
+## and a blocked hint isn't tried again on its own.)
+func _hint_move_objects() -> void:
+	var tm := get_node_or_null("/root/TutorialManager")
+	if not tm or not tm.has_method("trigger") or tm.is_learned("move_objects"):
+		return
+	if tm._shown.has("move_objects") or _player_has_item("Cabin Key"):
+		return
+	tm.trigger("move_objects")
+	if not tm._shown.has("move_objects"):
+		get_tree().create_timer(2.0).timeout.connect(_hint_move_objects)
+
 
 func on_key_picked_up() -> void:
 	if phase1_found_key:

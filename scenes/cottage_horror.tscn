@@ -169,7 +169,6 @@
 [ext_resource type="PackedScene" uid="uid://88vo1kag080g" path="res://assets/PSX Nature/Models/GLB/mushroom_n_4_1.glb" id="169_nk2ib"]
 [ext_resource type="ArrayMesh" uid="uid://b60vd8dal7gu3" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Board.res" id="170_3atrq"]
 [ext_resource type="ArrayMesh" uid="uid://debnuljo0f3hv" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Torus_011.res" id="171_3ku5o"]
-[ext_resource type="ArrayMesh" uid="uid://b3tueiwoc87ad" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Tray.res" id="172_rrpj0"]
 [ext_resource type="ArrayMesh" uid="uid://dud3ffath5572" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Vase_02.res" id="173_d3ann"]
 [ext_resource type="ArrayMesh" uid="uid://drtnh78u5qdm1" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Mop_01.res" id="174_3hol8"]
 [ext_resource type="ArrayMesh" uid="uid://b3kpyfu48ilnf" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_303.res" id="175_sy6xp"]
@@ -181,6 +180,7 @@
 [ext_resource type="PackedScene" uid="uid://qvsaj7eewk6b" path="res://assets/PSX Nature/Models/GLB/mushroom_n_1.glb" id="181_1xqyj"]
 [ext_resource type="PackedScene" uid="uid://csna1byx7sv5g" path="res://assets/PSX Nature/Models/GLB/mushroom_n_1_0.glb" id="182_ukteh"]
 [ext_resource type="PackedScene" uid="uid://bqdfltmrtk2vv" path="res://assets/PSX Nature/Models/GLB/mushroom_n_1_1.glb" id="183_xgpin"]
+[ext_resource type="PackedScene" uid="uid://16vmq6dvwe3" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/bucket_mx_2.glb" id="184_7j7p6"]
 [ext_resource type="PackedScene" uid="uid://cqxiky5o3tcl6" path="res://assets/PSX Nature/Models/GLB/grass_3.glb" id="184_g6b3s"]
 [ext_resource type="ArrayMesh" uid="uid://b2hcl8o8yl0g4" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_359.res" id="185_5rpi5"]
 [ext_resource type="ArrayMesh" uid="uid://bt1rnqqrm3hbv" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_214.res" id="186_x46r0"]
@@ -218,7 +218,7 @@
 [ext_resource type="PackedScene" uid="uid://dg3mcl4mpd067" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/tv_remote_mp_1.glb" id="knock_m_remote"]
 [ext_resource type="PackedScene" uid="uid://dicgqc2hf5c2u" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/tin_can_mp_1_rusty.glb" id="knock_m_tin"]
 [ext_resource type="PackedScene" uid="uid://dwqtk76caltw4" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/vhs_tape_1.glb" id="knock_m_vhs"]
-[ext_resource type="Script" path="res://scripts/knockable_prop.gd" id="knock_prop_s1"]
+[ext_resource type="Script" uid="uid://1c510ovdmq8d" path="res://scripts/knockable_prop.gd" id="knock_prop_s1"]
 [ext_resource type="PackedScene" uid="uid://cdijf2u1nrq7b" path="res://assets/Fixed .fbx/SM_EC_BarnShelf_3.tscn" id="site_1_hkk1j"]
 [ext_resource type="PackedScene" uid="uid://cbw7prnl01xsq" path="res://assets/Fixed .fbx/SM_EC_BarnShelf_0.tscn" id="site_2_xwygb"]
 [ext_resource type="PackedScene" uid="uid://dbmpqwq2cnmqo" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_03.tscn" id="site_3_vyx7t"]
@@ -841,9 +841,9 @@ ground_fog = NodePath("../WorldEnvironment/GroundFog")
 
 [node name="Player" parent="." unique_id=92687399 instance=ExtResource("6_6ky15")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.5, 15.2)
-starting_items = Array[ExtResource("7_sk1dd")]([ExtResource("8_e4cs6"), ExtResource("8_e4cs6"), ExtResource("9_e8dqn"), ExtResource("10_aqgm5"), ExtResource("8_e4cs6"), ExtResource("11_g5wn0"), ExtResource("12_rsymc"), ExtResource("13_76fuj")])
 start_with_sprint = false
 start_with_flashlight = false
+starting_items = Array[ExtResource("7_sk1dd")]([ExtResource("8_e4cs6"), ExtResource("8_e4cs6"), ExtResource("9_e8dqn"), ExtResource("10_aqgm5"), ExtResource("8_e4cs6"), ExtResource("11_g5wn0"), ExtResource("12_rsymc"), ExtResource("13_76fuj")])
 
 [node name="HUD" parent="." unique_id=1086543120 instance=ExtResource("14_j1dq7")]
 
@@ -860,28 +860,28 @@ fuse_box_node = NodePath("../Fuse Box")
 fuse_waypoint = NodePath("../EntityWaypoints/EntityFuseWaypoint")
 
 [node name="GeneralSkeleton" parent="TheEntity/MonsterModel/Armature" parent_id_path=PackedInt32Array(133456140, 1066769687, 719992929) index="0" unique_id=519438561]
-bones/1/rotation = Quaternion(0.09661384, -0.16666959, -0.014424592, 0.9811621)
-bones/3/rotation = Quaternion(0.14328718, 0.35056725, 0.91129696, -0.16158383)
-bones/4/rotation = Quaternion(-0.04000916, 0.9258761, -0.370593, 0.061754394)
-bones/5/rotation = Quaternion(-0.10720941, 0.6507136, -0.74206203, 0.12009142)
-bones/7/rotation = Quaternion(2.1582967e-08, 0.9999715, 0.0075596683, -3.5458118e-08)
-bones/18/rotation = Quaternion(-0.14141354, 0.29398412, 0.93882716, 0.110359654)
-bones/21/rotation = Quaternion(0.035675436, 0.93237424, -0.3537459, -0.06534097)
-bones/22/rotation = Quaternion(0.09725329, 0.6318387, -0.76131445, -0.10826872)
-bones/23/rotation = Quaternion(-1.8081954e-08, 1, 0.00010410518, 2.4325404e-08)
-bones/33/rotation = Quaternion(0.020879742, -0.005531073, 0.015261961, 0.9996503)
-bones/34/rotation = Quaternion(0.06630445, -0.0123912925, 0.010430281, 0.99766797)
-bones/35/rotation = Quaternion(0.066417746, -0.01133742, 0.010921992, 0.9976678)
-bones/36/rotation = Quaternion(-0.051980227, 0.028407782, -0.021963023, 0.99800235)
-bones/38/rotation = Quaternion(-0.19161433, 0.12357414, -0.037252165, 0.9729469)
-bones/49/rotation = Quaternion(0.567142, 0.42633742, 0.52454484, -0.4705732)
-bones/50/rotation = Quaternion(0.18562967, 0.8769597, -0.44168976, -0.037328407)
-bones/51/rotation = Quaternion(0.47411287, -0.5246112, 0.47411346, 0.52461094)
-bones/55/rotation = Quaternion(-0.14858963, 0.80284876, 0.18617989, 0.5465274)
-bones/58/rotation = Quaternion(0.518162, -0.4574439, -0.5731202, -0.44021195)
-bones/59/rotation = Quaternion(-0.20811716, 0.8399136, -0.4993648, -0.04321073)
-bones/62/rotation = Quaternion(0.49196434, 0.50790817, -0.4919653, 0.50790805)
-bones/66/rotation = Quaternion(0.06238477, -0.8454924, -0.021937354, 0.5298767)
+bones/1/rotation = Quaternion(0.10098696, -0.17602895, -0.018920315, 0.97900844)
+bones/3/rotation = Quaternion(0.14725044, 0.35600773, 0.9076998, -0.1663033)
+bones/4/rotation = Quaternion(-0.03853931, 0.92005485, -0.38445947, 0.06484387)
+bones/5/rotation = Quaternion(-0.10740968, 0.64217484, -0.7494446, 0.120031565)
+bones/7/rotation = Quaternion(5.5732727e-08, 0.999967, 0.008130479, -6.234197e-08)
+bones/18/rotation = Quaternion(-0.13519935, 0.29549983, 0.93966526, 0.10691217)
+bones/21/rotation = Quaternion(0.039613787, 0.9344984, -0.34814084, -0.06278201)
+bones/22/rotation = Quaternion(0.100977756, 0.63665974, -0.7561913, -0.11244009)
+bones/23/rotation = Quaternion(-6.107076e-08, 0.99999994, 0.00052138173, 6.8674e-08)
+bones/33/rotation = Quaternion(0.021299554, -0.004924336, 0.016008578, 0.99963284)
+bones/34/rotation = Quaternion(0.0666084, -0.009675199, 0.009358004, 0.9976885)
+bones/35/rotation = Quaternion(0.06668773, -0.008664178, 0.009799638, 0.99768823)
+bones/36/rotation = Quaternion(-0.052802574, 0.02767295, -0.018569589, 0.9980488)
+bones/38/rotation = Quaternion(-0.1950651, 0.12160765, -0.033722993, 0.9726377)
+bones/49/rotation = Quaternion(0.56274104, 0.43071848, 0.5247751, -0.47160915)
+bones/50/rotation = Quaternion(0.18197767, 0.87739694, -0.4426936, -0.032880984)
+bones/51/rotation = Quaternion(0.47586504, -0.52302223, 0.4758658, 0.523022)
+bones/55/rotation = Quaternion(-0.14865501, 0.7980385, 0.18324652, 0.55448806)
+bones/58/rotation = Quaternion(0.51944643, -0.45496932, -0.5753519, -0.4383476)
+bones/59/rotation = Quaternion(-0.20506065, 0.8395967, -0.5006667, -0.048584945)
+bones/62/rotation = Quaternion(0.49379054, 0.506133, -0.49379125, 0.5061329)
+bones/66/rotation = Quaternion(0.062610194, -0.8509679, -0.020680996, 0.5210623)
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1000000002]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.015592637, 0, -0.084306605)
@@ -3070,7 +3070,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -38.48555, 0.7856896, -77.401
 transform = Transform3D(-0.049424924, 0, -0.99877787, 0, 1, 0, 0.99877787, 0, -0.049424924, 11.014986, 2.0117297, 15.382271)
 
 [node name="Key" parent="." unique_id=1309299402 instance=ExtResource("126_wvgby")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.641135, 0.980777, 9.110605)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.097445, 0.035, 7.6179333)
 
 [node name="coffee_table_1_22" parent="." unique_id=909135444 groups=["navmesh_interior"] instance=ExtResource("127_a368d")]
 transform = Transform3D(-0.999454, 0, 0.033033, 0, 1, 0, -0.033033, 0, -0.999454, 5.85, 0.733101, 12.2066)
@@ -3961,9 +3961,11 @@ mesh = ExtResource("170_3atrq")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.600327, 0.7385011, 8.331305)
 mesh = ExtResource("171_3ku5o")
 
-[node name="PsxLowPolyHomeInteriorPropsPackTray" type="MeshInstance3D" parent="." unique_id=1309562117]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.186833, 0.100000314, 10.997683)
-mesh = ExtResource("172_rrpj0")
+[node name="Bucket" type="RigidBody3D" parent="." unique_id=1309562117]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.097445, 0.075, 7.6179333)
+script = ExtResource("knock_prop_s1")
+model = ExtResource("184_7j7p6")
+prop_mass = 1.5
 
 [node name="PsxLowPolyHomeInteriorPropsPackVase02" type="MeshInstance3D" parent="." unique_id=1250891999]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.058481, 2.849768, 8.743816)

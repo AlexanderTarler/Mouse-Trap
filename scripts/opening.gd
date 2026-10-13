@@ -20,6 +20,8 @@ const ERROR_SOUND := ECHOES + "SFX/Electronics/analog_computer_beep_5.ogg"
 const KEY_SOUND := ECHOES + "SFX/Electronics/analog_computer_press_key_1.ogg"
 
 const OFFICE_MESSAGE := "Welcome to the field, Lund. Heads up: the phone network doesn't reach the cabin. Use the terminal there for every report. And stay inside after dark."
+## A second message, a moment later: where the key is (Day 1's first task).
+const KEY_MESSAGE := "The key to the cabin should be under the bucket."
 const PLAYER_MESSAGE := "Arrived at the cabin. Will report in tonight."
 const THOUGHT := "No signal. They did say it was remote."
 
@@ -83,6 +85,10 @@ func _phone_scene() -> void:
 	_phone.bubble(OFFICE_MESSAGE, false, "Svea Naturinstitut · 12:41")
 	_sound(BEEP_SOUND, -12.0)
 	await _wait(5.5)
+	if _skipped: return
+	_phone.bubble(KEY_MESSAGE, false, "Svea Naturinstitut · 12:42")
+	_sound(BEEP_SOUND, -12.0)
+	await _wait(3.0)
 	if _skipped: return
 	# Typing a reply.
 	for i in PLAYER_MESSAGE.length():

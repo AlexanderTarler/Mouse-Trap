@@ -458,6 +458,10 @@ func _grab_object(body: RigidBody3D) -> void:
 	# Stop any existing motion
 	body.linear_velocity = Vector3.ZERO
 	body.angular_velocity = Vector3.ZERO
+	# Lifting something is what the "move objects" hint teaches.
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("mark_learned"):
+		tm.mark_learned("move_objects")
 
 
 func _drop_object() -> void:

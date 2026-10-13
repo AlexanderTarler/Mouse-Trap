@@ -57,6 +57,7 @@ func _run() -> void:
 	await _test_mimicry()
 	await _test_light_trick()
 	await _test_props()
+	await _test_driven_off()
 
 	print("[INSIDE TEST] %s" % ("ALL PASSED" if _failures == 0 else "%d FAILED" % _failures))
 	_scene.queue_free()
@@ -392,7 +393,8 @@ func _test_light_trick() -> void:
 ## they were placed; passing one unseen, it knocks it over (once a night).
 ## Pickups lying about can be knocked over too.
 func _test_props() -> void:
-	var props := get_nodes_in_group("knockable")
+	# The cabin's (the bucket outside, over the Day 1 key, has its own test).
+	var props := get_nodes_in_group("knockable").filter(func(p): return p.name != "Bucket")
 	# Awake, they must settle on something (not float where placed).
 	for prop in props:
 		prop.sleeping = false
@@ -406,8 +408,8 @@ func _test_props() -> void:
 			print("[INSIDE TEST]   prop off: %s at %s, %d children" % [prop.name, prop.global_position.snapped(Vector3.ONE * 0.01), prop.get_child_count()])
 	_check("props: %d small loose things in the cabin, with colliders, still on their tables" % props.size(),
 		props.size() >= 14 and shaped and resting)
-	var key = _scene.find_child("Key", true, false)
-	var pickup_ok: bool = _entity.world.loose_prop_near(key.global_position - Vector3.UP * 0.6, 0.4) != null
+	var fuse = _scene.find_child("Fuse", true, false)
+	var pickup_ok: bool = _entity.world.loose_prop_near(fuse.global_position - Vector3.UP * 0.6, 0.4) != null
 
 	_player.global_position = COMPUTER_ROOM
 	await _frames(5)
@@ -425,5 +427,44 @@ func _test_props() -> void:
 	var knocked: bool = target != null and target.linear_velocity.length() > 0.5 and hunt._prop_night == _entity.current_night()
 	_check("marks: passing a loose prop unseen, it knocks it over (a thud somewhere); pickups too",
 		knocked and pickup_ok, "%s, speed %.2f, pickup %s" % [target.name if target else "none", target.linear_velocity.length() if target else 0.0, pickup_ok])
+	_entity._is_active = true
+	_entity.deactivate()
+
+
+## Night 3 difficulty (planning/night3_review.txt): the overcharged beam
+## drives it off only if held long enough, longer each time tonight; let go
+## too soon indoors and it lunges (a flick used to stop every charge).
+func _test_driven_off() -> void:
+	_player.global_position = COMPUTER_ROOM
+	await _frames(5)
+	_entity._teleport(_entity.world.snap_to_navmesh(COMPUTER_ROOM + Vector3(-3.0, 0.0, 0.0)))
+	await _frames(3)
+	_entity.times_driven_off = 0
+	var first: float = _entity.repel_time()
+	_entity.times_driven_off = 2
+	var third: float = _entity.repel_time()
+	_entity._on_night_started(3)
+	var reset: bool = _entity.times_driven_off == 0
+	_check("driven off: the beam must be held longer each time tonight (%.2f s, then %.2f s by the third), reset at nightfall" % [first, third],
+		third > first + 2.0 and reset)
+	var standoff = _entity.brain.get_state(_entity.State.STANDOFF)
+	_entity.activate()
+	_entity.brain.force(_entity.State.STANDOFF)
+	_entity._is_active = false
+	var p = _entity.perception
+	p.entity_inside = true
+	p.player_inside = true
+	p.overcharge_time = first + 0.1
+	var driven: int = standoff.next_state()
+	_check("held long enough: driven off (FLEE), counted", driven == _entity.State.FLEE and _entity.times_driven_off == 1)
+	_entity.brain.force(_entity.State.STANDOFF)
+	p.overcharge_time = 0.0
+	p.illuminated = false
+	p.overcharged = false
+	standoff._lost_time = _entity.config.standoff_release_time + 0.1
+	standoff.next_state()
+	var charge = _entity.brain.current
+	_check("let go too soon indoors: it lunges, no roar (%s)" % _entity.get_state_name(),
+		_entity.get_state() == _entity.State.CHARGE and is_equal_approx(charge._max_time, _entity.config.charge_max_time))
 	_entity._is_active = true
 	_entity.deactivate()
