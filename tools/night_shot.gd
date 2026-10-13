@@ -4,7 +4,9 @@ extends SceneTree
 ## <out_prefix>_n<night>_<view>.png and prints each one's mean luminance.
 ##   godot --path . --resolution 1280x720 --script res://tools/night_shot.gd -- <out_prefix>
 ## Env overrides for trying values: NIGHT_DENSITY (ground fog density),
-## NIGHT_FOG_LIGHT (distance fog colour). Night 2 comes out at dusk (the
+## NIGHT_FOG_LIGHT (distance fog colour), EC_SET="name=value;..." (any
+## EnvironmentController number). Add --rendering-method gl_compatibility
+## to see the web build's renderer. Night 2 comes out at dusk (the
 ## NightManager restarts that night at 00:00); Night 3 is the one to look at.
 func _initialize() -> void:
 	_go()
@@ -48,6 +50,14 @@ func _go() -> void:
 			if flc != "":
 				ec.night_fog_color = Color(float(flc), float(flc), float(flc) * 1.46)
 				ec._cached_fog_color = Color(-1, -1, -1)
+			# EC_SET="name=value;name=value": EnvironmentController values to try.
+			for pair in OS.get_environment("EC_SET").split(";", false):
+				var kv := pair.split("=")
+				var parts := kv[1].split(",")
+				ec.set(kv[0], float(kv[1]) if parts.size() == 1 else Color(float(parts[0]), float(parts[1]), float(parts[2])))
+			ec._cached_fog_color = Color(-1, -1, -1)
+			ec._cached_vfog_density = -1.0
+			ec._on_game_time_changed(0.75, true)
 			for layer in root.find_children("*", "CanvasLayer", true, false):
 				layer.visible = false
 			ec._night_fog_base = 1.0
@@ -65,5 +75,5 @@ func _go() -> void:
 					lum += img.get_pixel(x, y).get_luminance()
 					n += 1
 			var fm = ec.ground_fog.material
-			print("[SHOT] %s mean luminance %.4f  (time %.2f, fog density %.3f, fog light %s)" % [path, lum / n, gt.cycle_progress, fm.density, ec._environment.fog_light_color])
+			print("[SHOT] %s mean luminance %.4f  (time %.2f, fog density %.3f, fog light %s, ambient %.3f %s, exposure %.2f, compat %s)" % [path, lum / n, gt.cycle_progress, fm.density, ec._environment.fog_light_color, ec._environment.ambient_light_energy, ec._environment.ambient_light_color, ec._environment.tonemap_exposure, ec._compat])
 	quit()
