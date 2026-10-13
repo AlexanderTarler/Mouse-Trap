@@ -55,6 +55,11 @@ func _ready() -> void:
 ## Loads the main game scene.
 func _on_play_pressed() -> void:
 	print("[MainMenu] Attempting to load: ", GAME_SCENE_PATH)
+	# A new game: every game-wide manager as it was at boot (a second game
+	# would otherwise carry the first one's inventory, story and night).
+	var reset := get_node_or_null("/root/GameReset")
+	if reset:
+		reset.new_game()
 	
 	# Try loading via ResourceLoader first to get a meaningful error
 	var packed_scene = load(GAME_SCENE_PATH) as PackedScene

@@ -1258,6 +1258,13 @@ func on_window_patched() -> void:
 # PHASE 3 TRIGGERS
 # ═══════════════════════════════════════════════════════════════════════
 
+## "Lock the door" came up with the front door already locked: done.
+func _tick_off_locked_door() -> void:
+	var door := get_tree().get_first_node_in_group("Door")
+	if door and door.get("is_locked"):
+		on_door_locked()
+
+
 func on_door_locked() -> void:
 	# ─── DAY 2 STEP 6 → 7: Lock the door ───────────────────────────
 	# On Day 2, after the nest data is uploaded, the player must lock
@@ -1579,6 +1586,9 @@ func on_nest_data_uploaded() -> void:
 		nests_uploaded = true
 		day2_step = 6
 		print("[RoutineManager] Day 2 Step 5 COMPLETE: Nest data uploaded to terminal!")
+		# Night has fallen with the upload, and the game may have locked the
+		# front door for them already: then "Lock the door" is done.
+		_tick_off_locked_door.call_deferred()
 	else:
 		# Player attempted to upload before documenting all nests.
 		# Keep the flag false so they can retry after documenting.

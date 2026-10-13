@@ -38,6 +38,7 @@ Checkpoint="*res://scripts/managers/checkpoint_manager.gd"
 Weather="*res://scripts/managers/weather.gd"
 Monologue="*res://scripts/managers/monologue.gd"
 NightTwoStory="*res://scripts/managers/night_two_story.gd"
+GameReset="*res://scripts/managers/game_reset.gd"
 
 [debug]
 

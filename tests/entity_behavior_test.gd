@@ -167,9 +167,17 @@ func _test_break_in() -> void:
 	_entity.config.shy_retreat_chance = 0.0
 	_entity.config.bluff_chance = 0.0
 	_entity.config.confidence_drift = 0.0
+	# The break-in itself, every time (the quiet entry and the pause
+	# halfway have their own tests: inside_test).
+	var quiet: float = _entity.config.quiet_entry_chance
+	var pause: float = _entity.config.breach_pause_chance
+	_entity.config.quiet_entry_chance = 0.0
+	_entity.config.breach_pause_chance = 0.0
 	_entity.confidence.set_confidence(80.0)
 	_entity.request_state(_entity.State.OBSERVE)
 	var inside: bool = await _wait_for_state(["HUNT", "CHARGE"], 120.0)
+	_entity.config.quiet_entry_chance = quiet
+	_entity.config.breach_pause_chance = pause
 	_entity.config.bluff_chance = bluff_chance
 	_entity.config.confidence_drift = drift
 	_entity.config.lure_chance = lure

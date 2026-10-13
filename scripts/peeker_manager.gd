@@ -62,7 +62,7 @@ func _process(delta: float) -> void:
 	var nm_cleanup = get_node_or_null("/root/NightManager")
 	if _active_peeker and is_instance_valid(_active_peeker):
 		if nm_cleanup:
-			if nm_cleanup.get("is_van_sequence_active") == true:
+			if nm_cleanup.get("is_van_sequence_active") == true or nm_cleanup.get("van_sequence_started") == true:
 				print("[PeekerManager] Van sequence active with lingering peeker. Removing peeker.")
 				remove_active_peeker()
 			elif nm_cleanup.get("current_night") != null and int(nm_cleanup.current_night) >= 3:
@@ -107,7 +107,9 @@ func _is_night_1_active() -> bool:
 	# daytime (playtest bug). The peeker is a NIGHT-ONLY visual event.
 	# Excluded when is_van_sequence_active (Night 2.2) — the peeker must
 	# never appear during the car-alarm chase narrative.
-	if nm.current_night == 2 and nm.is_night_active and not nm.is_van_sequence_active:
+	# Night 2.1 only: not from the car alarm on (van_sequence_started stays
+	# set after the chase ends, which clears is_van_sequence_active).
+	if nm.current_night == 2 and nm.is_night_active and not nm.is_van_sequence_active and not nm.van_sequence_started:
 		return true
 	
 	# Night 2.2+ and everything onwards: peeker disabled.

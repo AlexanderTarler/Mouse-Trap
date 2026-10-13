@@ -386,7 +386,14 @@ func close_and_lock() -> void:
 				door_audio.stream = target_stream
 				door_audio.pitch_scale = randf_range(0.9, 1.1)
 				door_audio.play()
+	var was_locked := is_locked
 	is_locked = true
+	# The game locking it for them counts as locking it (the "Lock the
+	# door" objectives).
+	if not was_locked:
+		var rm = get_node_or_null("/root/RoutineManager")
+		if rm and rm.has_method("on_door_locked"):
+			rm.on_door_locked()
 
 
 ## Public API: Unlocks the door WITHOUT opening it. The door stays closed
