@@ -7,28 +7,20 @@
 [resource]
 script = ExtResource("1_item_data")
 item_name = "Field Journal"
-item_description = "A worn leather journal with handwritten notes."
+item_description = "A logging foreman's journal, the leather gone stiff with damp. The last entries are from 1974."
 item_type = 1
-note_text = "Day 1 - Arrival
+note_text = "Field Journal — forestry camp, autumn 1974
 
-The cabin is exactly as described in the listing. Remote, quiet, surrounded by pine forest. Perfect for a weekend of bird watching and sketching.
+The Institute men came up again today with their stakes and their orange tape. Seventeen stakes, in the hollow stumps all around the old cabin. I asked what for. \"Dormice,\" the tall one said, and wrote something down.
 
-But something feels... off.
+Three men gone since August. Not run off: gone, boots still by the bunks. The crew won't work past four now, and nobody walks out to the latrine alone.
 
-The previous tenant left in a hurry. I found this journal in a drawer, along with some scattered notes. They mention a creature they call 'Hasselmus' — a shadow entity that stalks the forest at night.
+Every night something comes to the edge of the lamplight and stands there. Tall, and crowned like an old bull elk. The lamps keep it back. Wave a torch at it and it screams and comes on.
 
-According to their notes:
-- It only moves when you're not looking directly at it.
-- It feeds on fear, growing stronger each night.
-- The flashlight is your only defense. Keep it charged.
-- Batteries can be found scattered around the property.
-- DO NOT follow it into the dark.
+The old man who built the cabin used to feed it, they say, at the willow. His son told me so before he left, and told me to keep the fires lit.
 
-I thought it was the ramblings of a paranoid mind. But last night, I saw something moving between the trees. A tall, thin figure with too many joints.
+Board meeting Friday. I will tell them we are done here. Let the Institute have the cabin, and whatever it is they really came to count.
 
-I'm staying one more night to investigate. If you're reading this... be careful. And keep the flashlight on.
-
-— Elias
-
-P.S. There are more notes hidden around the cabin. Find them. They might help you survive."
+— K. Holm, foreman"
+read_thought = "1974. Seventeen stakes, three men gone, and the Institute counting dormice."
 scene_to_spawn = ExtResource("2_note_scene")

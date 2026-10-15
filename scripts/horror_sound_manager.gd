@@ -182,7 +182,8 @@ var _stalk_chase_streams: Array[AudioStream] = []
 var _stalk_chase_playing: bool = false
 var _stalk_chase_fade_tween: Tween = null
 ## The chase loop ("monster_stalk_mx.ogg" never existed; this is the kit's).
-const STALK_CHASE_PATH: String = ECHOES_DIR + "Soundtracks/death close by (loop).ogg"
+## The Entity hunting the player (EntityAudio.update_hunt_music).
+const STALK_CHASE_PATH: String = ECHOES_DIR + "Soundtracks/too late (loop).ogg"
 const STALK_CHASE_FADE_TIME: float = 0.5
 
 # Day/Night forest ambience players

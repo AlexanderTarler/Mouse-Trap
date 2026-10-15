@@ -16,6 +16,11 @@ extends Node
 ## Sudden (Night 2.2, woken by the car alarm): eyes snap open with a jolt,
 ## up and out of bed in about a second.
 ##
+## Dozing off where the player is (the Day 2 data upload, computer_ui.gd):
+## only the eyelids and the breathing, no bed, no camera of its own.
+##   await cinematic.doze_off()      # heavy blinks, to shut
+##   await cinematic.open_eyes()     # and open again; then free it
+##
 ## The bed's head end is its pillow (a child named "pillow*"); the rest is
 ## measured from the bed's meshes, so it works for any bed.
 
@@ -328,6 +333,27 @@ func _breathe(on: bool) -> void:
 
 func lids_amount() -> float:
 	return _lids
+
+
+## Eyelids only (see the top): heavy blinks, then shut.
+func doze_off() -> void:
+	if not is_instance_valid(_layer):
+		_make_lids()
+	_set_lids(0.0)
+	_breathe(true)
+	await _lid_tween(FALL_ASLEEP_LIDS).finished
+
+
+## Eyelids only: open again (slowly, a blink), and gone.
+func open_eyes() -> void:
+	if not is_instance_valid(_layer):
+		_make_lids()
+		_set_lids(1.0)
+	_breathe(false)
+	await _lid_tween(WAKE_LIDS).finished
+	if is_instance_valid(_layer):
+		_layer.queue_free()
+	_layer = null
 
 
 func is_running() -> bool:

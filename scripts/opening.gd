@@ -13,8 +13,11 @@ extends CanvasLayer
 signal finished
 
 const ECHOES := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/"
-const ENGINE_SOUND := ECHOES + "SFX/Machines/machine_3_loop.ogg"
-const DOOR_SOUND := ECHOES + "SFX/Doors & Drawers/heavy_door_open-close_1.ogg"
+const VAN_SOUNDS := "res://assets/audio/objects/van/"
+const ENGINE_SOUND := VAN_SOUNDS + "Car_Engine_Loop.ogg"
+const ENGINE_OFF_SOUND := VAN_SOUNDS + "Car_Engine_Turning_Off.ogg"
+const DOOR_OPEN_SOUND := VAN_SOUNDS + "Car_Door_Open.ogg"
+const DOOR_CLOSE_SOUND := VAN_SOUNDS + "Car_Door_Close.ogg"
 const BEEP_SOUND := ECHOES + "SFX/Electronics/analog_computer_beep_2.ogg"
 const ERROR_SOUND := ECHOES + "SFX/Electronics/analog_computer_beep_5.ogg"
 const KEY_SOUND := ECHOES + "SFX/Electronics/analog_computer_press_key_1.ogg"
@@ -49,23 +52,25 @@ func _ready() -> void:
 func play() -> void:
 	playing = true
 	_lock_player(true)
-	_engine = _sound(ENGINE_SOUND, -14.0, 0.8, true)
+	_engine = _sound(ENGINE_SOUND, -14.0, 1.0, true)
 	await _wait(0.8)
 	await _card(_title, "SVEA NATURINSTITUT", 2.2)
 	if _skipped: return
 	await _card(_subtitle, "Field survey, phase 2\nMuscardinus avellanarius", 2.6)
 	if _skipped: return
-	# The engine winds down and dies; a door.
+	# The engine's turned off; a door.
 	if _engine:
-		var wind := create_tween().set_parallel()
-		wind.tween_property(_engine, "pitch_scale", 0.45, 1.6)
-		wind.tween_property(_engine, "volume_db", -40.0, 1.6)
+		create_tween().tween_property(_engine, "volume_db", -40.0, 0.3)
+		_sound(ENGINE_OFF_SOUND, -14.0)
 	await _card(_title, "Day 1", 1.8)
 	if _skipped: return
 	if _engine:
 		_engine.stop()
-	_sound(DOOR_SOUND, -6.0, 1.25)
-	await _wait(1.0)
+	_sound(DOOR_OPEN_SOUND, -6.0)
+	await _wait(0.7)
+	if _skipped: return
+	_sound(DOOR_CLOSE_SOUND, -6.0)
+	await _wait(0.8)
 	if _skipped: return
 	# Up comes the forest, and the phone.
 	create_tween().tween_property(_black, "color:a", 0.0, 2.0)

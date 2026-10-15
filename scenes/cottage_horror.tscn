@@ -841,9 +841,9 @@ ground_fog = NodePath("../WorldEnvironment/GroundFog")
 
 [node name="Player" parent="." unique_id=92687399 instance=ExtResource("6_6ky15")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.5, 15.2)
+starting_items = Array[ExtResource("7_sk1dd")]([ExtResource("8_e4cs6"), ExtResource("8_e4cs6"), ExtResource("9_e8dqn"), ExtResource("10_aqgm5"), ExtResource("8_e4cs6"), ExtResource("11_g5wn0"), ExtResource("12_rsymc"), ExtResource("13_76fuj")])
 start_with_sprint = false
 start_with_flashlight = false
-starting_items = Array[ExtResource("7_sk1dd")]([ExtResource("8_e4cs6"), ExtResource("8_e4cs6"), ExtResource("9_e8dqn"), ExtResource("10_aqgm5"), ExtResource("8_e4cs6"), ExtResource("11_g5wn0"), ExtResource("12_rsymc"), ExtResource("13_76fuj")])
 
 [node name="HUD" parent="." unique_id=1086543120 instance=ExtResource("14_j1dq7")]
 
@@ -860,28 +860,28 @@ fuse_box_node = NodePath("../Fuse Box")
 fuse_waypoint = NodePath("../EntityWaypoints/EntityFuseWaypoint")
 
 [node name="GeneralSkeleton" parent="TheEntity/MonsterModel/Armature" parent_id_path=PackedInt32Array(133456140, 1066769687, 719992929) index="0" unique_id=519438561]
-bones/1/rotation = Quaternion(0.10037964, -0.17061621, -0.018111037, 0.98004395)
-bones/3/rotation = Quaternion(0.1463998, 0.3578249, 0.907478, -0.16435428)
-bones/4/rotation = Quaternion(-0.036731467, 0.92076385, -0.38350576, 0.061386608)
-bones/5/rotation = Quaternion(-0.106488094, 0.64375806, -0.7483387, 0.11926897)
-bones/7/rotation = Quaternion(-3.2727105e-08, 0.9999621, 0.008715549, -3.6311505e-08)
-bones/18/rotation = Quaternion(-0.13966091, 0.29653805, 0.93838316, 0.10953105)
-bones/21/rotation = Quaternion(0.037046522, 0.93338215, -0.35154948, -0.061955236)
-bones/22/rotation = Quaternion(0.10141173, 0.63339466, -0.75880504, -0.11288031)
-bones/23/rotation = Quaternion(-1.1873035e-08, 1, 0.0003933822, -3.5363396e-08)
-bones/33/rotation = Quaternion(0.020451901, -0.0038836752, 0.015295698, 0.99966633)
-bones/34/rotation = Quaternion(0.06557633, -0.010022544, 0.008470775, 0.99776137)
-bones/35/rotation = Quaternion(0.065545134, -0.009220781, 0.009409792, 0.9977626)
-bones/36/rotation = Quaternion(-0.050711125, 0.027258717, -0.017900508, 0.99818087)
-bones/38/rotation = Quaternion(-0.18845451, 0.121344365, -0.03484663, 0.97393334)
-bones/49/rotation = Quaternion(0.56354314, 0.42985559, 0.52499944, -0.47118887)
-bones/50/rotation = Quaternion(0.18437831, 0.877047, -0.44205403, -0.037171442)
-bones/51/rotation = Quaternion(0.4726976, -0.52588654, 0.47269866, 0.5258863)
-bones/55/rotation = Quaternion(-0.14020932, 0.80041134, 0.19426233, 0.54949546)
-bones/58/rotation = Quaternion(0.51982445, -0.45443016, -0.5756033, -0.43812865)
-bones/59/rotation = Quaternion(-0.20445627, 0.83919847, -0.50154716, -0.048929613)
-bones/62/rotation = Quaternion(0.49185556, 0.5080136, -0.49185652, 0.50801337)
-bones/66/rotation = Quaternion(0.06338633, -0.84941936, -0.020261722, 0.5235059)
+bones/1/rotation = Quaternion(0.09714364, -0.16476227, -0.015223819, 0.98141974)
+bones/3/rotation = Quaternion(0.14848791, 0.35045937, 0.90980685, -0.16547243)
+bones/4/rotation = Quaternion(-0.036349513, 0.9299832, -0.3609396, 0.059435703)
+bones/5/rotation = Quaternion(-0.11146005, 0.6551894, -0.73669195, 0.124854304)
+bones/7/rotation = Quaternion(2.7656608e-08, 0.9999847, 0.0055431565, 2.6013739e-08)
+bones/18/rotation = Quaternion(-0.13964, 0.29450622, 0.93942535, 0.10605224)
+bones/21/rotation = Quaternion(0.034508824, 0.9324082, -0.3526783, -0.0710078)
+bones/22/rotation = Quaternion(0.094532974, 0.63115364, -0.7626403, -0.10530188)
+bones/23/rotation = Quaternion(-1.8553314e-08, 0.9999999, 0.00054963294, -4.117233e-08)
+bones/33/rotation = Quaternion(0.020642942, -0.004795043, 0.0133782085, 0.9996859)
+bones/34/rotation = Quaternion(0.06624046, -0.010850751, 0.008686584, 0.9977069)
+bones/35/rotation = Quaternion(0.066415094, -0.009896499, 0.008975486, 0.99770266)
+bones/36/rotation = Quaternion(-0.053069066, 0.027312713, -0.01852912, 0.9980453)
+bones/38/rotation = Quaternion(-0.1913365, 0.1212355, -0.034713283, 0.9733896)
+bones/49/rotation = Quaternion(0.5646692, 0.4289407, 0.52411205, -0.47166213)
+bones/50/rotation = Quaternion(0.184053, 0.87634045, -0.4434615, -0.038651854)
+bones/51/rotation = Quaternion(0.4727335, -0.52585423, 0.47273427, 0.52585435)
+bones/55/rotation = Quaternion(-0.13681795, 0.80886877, 0.18861023, 0.5398504)
+bones/58/rotation = Quaternion(0.51984286, -0.4550662, -0.57431114, -0.43914115)
+bones/59/rotation = Quaternion(-0.2125047, 0.83763254, -0.5010924, -0.046044163)
+bones/62/rotation = Quaternion(0.48676467, 0.5128935, -0.48676562, 0.5128935)
+bones/66/rotation = Quaternion(0.06650625, -0.84652954, -0.025538597, 0.5275534)
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1000000002]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.015592637, 0, -0.084306605)
@@ -2814,9 +2814,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -65.966675, 0.352, 67.70582)
 nest_id = "nest_03"
 nest_name = "Nest Gamma"
 nest_label = "Nest Gamma"
-lock_type = "stillness"
-lock_clue_text = "Dead quiet. I'm making too much noise."
-tutorial_id = "stillness"
+lock_type = "mimic"
+lock_clue_text = "Something in there is listening."
 
 [node name="NestMarkerGamma" type="Marker3D" parent="NestLocations/HasselmusNestGamma" unique_id=1047537985]
 
@@ -2923,10 +2922,7 @@ transform = Transform3D(0.009145446, -0.99995816, 0, 0.99995816, 0.009145446, 0,
 [node name="Lightswitches" type="Node" parent="." unique_id=125359164]
 
 [node name="LightSwitchHall" parent="Lightswitches" unique_id=1967675267 instance=ExtResource("119_35q84")]
-transform = Transform3D(0.010244848, 0, -0.9999475, 0, 1, 0, 0.9999475, 0, 0.010244848, 8.982027, 2.1498153, 8.823446)
-
-[node name="LightswitchModel" parent="Lightswitches/LightSwitchHall" index="0" unique_id=1576820909]
-transform = Transform3D(1, 0, 1.8626451e-09, 0, 1, 0, -1.8626451e-09, 0, 1, 2.262125, 0, 0.02317524)
+transform = Transform3D(0.010244848, 0, -0.9999475, 0, 1, 0, 0.9999475, 0, 0.010244848, 8.982028, 2.149815, 11.08569)
 
 [node name="InteractionArea" parent="Lightswitches/LightSwitchHall" index="2" unique_id=1106359011 node_paths=PackedStringArray("target_light")]
 target_light = NodePath("../../../Cabin Lights/CabinLightHall")
@@ -2938,16 +2934,10 @@ transform = Transform3D(0.010244848, 0, -0.9999475, 0, 1, 0, 0.9999475, 0, 0.010
 target_light = NodePath("../../../Cabin Lights/CabinLightLivingRoom")
 
 [node name="LightSwitchKitchen" parent="Lightswitches" unique_id=1191598126 instance=ExtResource("119_35q84")]
-transform = Transform3D(-0.99975485, 0, -0.022146225, 0, 1, 0, 0.022146225, 0, -0.99975485, 9.92777, 2.1498153, 20.404377)
-
-[node name="LightswitchModel" parent="Lightswitches/LightSwitchKitchen" index="0" unique_id=1576820909]
-transform = Transform3D(0.9999998, 0, 0, 0, 1, 0, 0, 0, 0.9999998, -0.13229275, 0, 5.9721413)
+transform = Transform3D(-0.99975485, 0, -0.022146225, 0, 1, 0, 0.022146225, 0, -0.99975485, 9.92777, 2.149815, 14.43077)
 
 [node name="InteractionArea" parent="Lightswitches/LightSwitchKitchen" index="2" unique_id=1106359011 node_paths=PackedStringArray("target_light")]
 target_light = NodePath("../../../Cabin Lights/CabinLightKitchen")
-
-[node name="CollisionShape3D" parent="Lightswitches/LightSwitchKitchen/InteractionArea" index="0" unique_id=1451090991]
-transform = Transform3D(1, 0, 1.8626451e-09, 0, 1, 0, -1.8626451e-09, 0, 1, 0, 0, 0)
 
 [node name="LightSwitchUpperHall" parent="Lightswitches" unique_id=225898873 instance=ExtResource("119_35q84")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 8.45, 5.13, 14.11)

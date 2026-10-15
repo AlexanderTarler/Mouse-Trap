@@ -168,7 +168,7 @@ func _dawn(phone: Phone, view: Vector2) -> void:
 	first.status.text = "Delivered"
 	first.status.remove_theme_color_override("font_color")
 	await _wait(1.6)
-	var line := "Leaving the site. The nests are empty. Arvidsson was right."
+	var line := "Leaving the site. The nests are empty. Stenberg was right."
 	for i in line.length():
 		phone.input_line.text = line.substr(0, i + 1)
 		await _wait(0.04)

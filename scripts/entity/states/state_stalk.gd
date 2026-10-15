@@ -35,13 +35,11 @@ func enter(_from: int, _data: Dictionary) -> void:
 	_player_inside_time = 0.0
 	_watched_time = 0.0
 	_reposition_cooldown = REPOSITION_COOLDOWN
-	if entity.van_chase_active:
-		entity.audio.start_chase_music()
+	# (The hunting music: EntityAudio.update_hunt_music.)
 
 
 func exit(_to: int) -> void:
-	if entity.van_chase_active:
-		entity.audio.stop_chase_music()
+	pass
 
 
 func update(delta: float) -> void:

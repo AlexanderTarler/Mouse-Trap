@@ -47,6 +47,10 @@ const EVENT_STRINGS: Dictionary = {
 }
 
 @export var is_dev_mode: bool = false
+## Dev: the point of the story the game starts at (DevStart.Start; 0: none).
+var dev_start := 0
+## The DevStart playing the story through to it (null when done).
+var dev_start_runner: DevStart = null
 
 ## Current night (0 = Day 1 pre-night, 1-5 = Night 1 through Night 5)
 ## Starts at 0 representing Day 1 (before any night begins).
@@ -454,6 +458,7 @@ func _restore_loaded_scene() -> void:
 	is_night_active = checkpoint.kind == "night"
 	is_day_active = not is_night_active
 	restart_from_checkpoint()
+	_lift_start_cover()
 	print("[NightManager] Play Again: the scene reloaded and put back to the %s checkpoint (night %d)." % [checkpoint.kind, current_night])
 
 
@@ -469,10 +474,51 @@ func _find_marker_recursive(root: Node, name: String) -> Marker3D:
 
 
 
+## Black over everything from the moment a new game is started (the main
+## menu's Play) until the game is set up and the opening is on screen: the
+## scene would otherwise show for a moment as it was saved (the player in
+## the cabin) before the player is put at the van.
+var _start_cover: CanvasLayer = null
+
+
+## The dev start (Player.dev_start): the story played through to it.
+func _run_dev_start() -> void:
+	dev_start_runner = DevStart.new()
+	dev_start_runner.name = "DevStart"
+	dev_start_runner.target = dev_start
+	get_tree().current_scene.add_child(dev_start_runner)
+	await dev_start_runner.run()
+	dev_start_runner = null
+
+
+func show_start_cover() -> void:
+	if _start_cover:
+		return
+	_start_cover = CanvasLayer.new()
+	_start_cover.name = "StartCover"
+	_start_cover.layer = 1000
+	var black := ColorRect.new()
+	black.color = Color.BLACK
+	black.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	black.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_start_cover.add_child(black)
+	add_child(_start_cover)
+
+
+func has_start_cover() -> bool:
+	return _start_cover != null
+
+
+func _lift_start_cover() -> void:
+	if _start_cover:
+		_start_cover.queue_free()
+		_start_cover = null
+
+
 ## The opening (Opening): the van, the title card, the phone with no
 ## service. Once per new game; not in headless runs (the tests).
 func _play_opening() -> void:
-	if DisplayServer.get_name() == "headless":
+	if DisplayServer.get_name() == "headless" or dev_start > 0:
 		return
 	var scene := get_tree().current_scene
 	if not scene or scene.find_child("Opening", false, false):
@@ -583,6 +629,10 @@ func _process(delta: float) -> void:
 			setup_player_spawn()
 			_apply_dev_mode_settings()
 			start_onboarding_sequence()
+			if dev_start > 0:
+				_run_dev_start()
+			# (The opening or the dev start, if any, is up now with its own black.)
+			_lift_start_cover()
 		return
 	
 	if not is_night_active and not is_day_active:
@@ -737,6 +787,9 @@ func _apply_dawn_exhaustion() -> void:
 
 	_set_objective("I'm exhausted, I need to go to bed.")
 	print("[NightManager] Day %d dawn exhaustion applied. Time is frozen." % current_night)
+	var monologue := get_node_or_null("/root/Monologue")
+	if monologue:
+		monologue.think_when_free("Morning. I actually made it to morning.", 4.0, "made_it_to_dawn", 1.5)
 
 
 ## Starts a specific night.

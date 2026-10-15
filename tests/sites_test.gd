@@ -35,11 +35,12 @@ func _run() -> void:
 	current_scene = _scene
 	await _frames(30)
 	# The props are in the level ("Sites", written by tools/bake_sites.gd),
-	# so SiteDresser doesn't place them again at runtime.
+	# so SiteDresser doesn't place them again at runtime (it only adds the
+	# cabin's, its yard's and the trails' details: extras_only).
 	var sites: Node = _scene.get_node_or_null("Sites")
 	var props := sites.get_child_count() if sites else 0
 	_check("the four places are furnished, in the level itself (%d props)" % props,
-		props >= 100 and _scene.find_child("SiteDresser", true, false) == null)
+		props >= 100 and _scene.find_child("SiteDresser", true, false).extras_only)
 	var bare := 0
 	for prop in sites.get_children():
 		if prop is Node3D and prop.find_children("*", "CollisionShape3D", true, false).is_empty():

@@ -30,6 +30,17 @@ extends StaticBody3D
 ##                              track, lerping from inaudible (-80 dB) up to
 ##                              a quiet peak as the timer completes. Breaking
 ##                              stillness fades the audio out immediately.
+##   lock_type = "mimic":      (Nest Gamma) The nest copies the player's
+##                              sounds: stopping after walking up to it, a
+##                              few more steps come from the stump; a click
+##                              of the flashlight, the notebook opened, and
+##                              it clicks or rustles back a moment later, a
+##                              little off. Once it has copied
+##                              mimic_echoes_needed sounds it can be
+##                              documented. It shows (without saying so)
+##                              what the Entity does at night
+##                              (EntityAudio.mimic): a familiar sound isn't
+##                              always the player's own.
 ##   lock_type = "none":       Unlocked always (no mechanic required).
 ##
 ## While the lock is NOT satisfied, get_interact_text() returns a dimmed
@@ -90,6 +101,25 @@ signal nest_documented(nest_id: String)
 
 ## Whisper peak volume (dB) — reached exactly as the stillness timer completes.
 @export var whisper_peak_volume_db: float = -24.0
+
+## ─── MIMIC (Nest Gamma) ───────────────────────────────────────────────
+## How many of the player's sounds it copies before it can be documented.
+@export var mimic_echoes_needed: int = 2
+## Seconds before it answers.
+const MIMIC_DELAY := 0.9
+const MIMIC_PITCH := Vector2(0.86, 0.93)
+const FLASHLIGHT_ON_SOUND := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Buttons & Levers/button_flashlight_1.ogg"
+const FLASHLIGHT_OFF_SOUND := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Buttons & Levers/button_flashlight_2.ogg"
+const NOTEBOOK_SOUND := "res://assets/audio/objects/Toggle Journal.ogg"
+## How many sounds it has copied.
+var mimic_echoes := 0
+## Seconds walked within reach, and stood still since.
+var _mimic_walked := 0.0
+var _mimic_still := 0.0
+var _flashlight_was_on := false
+var _notebook_was_open := false
+var _echo_player: AudioStreamPlayer3D = null
+var _echo_tween: Tween = null
 
 ## Whether this nest has been documented
 var is_documented: bool = false
@@ -170,6 +200,8 @@ func _process(delta: float) -> void:
 		# so they must re-satisfy the condition from scratch on re-entry.
 		lock_timer = 0.0
 		lock_satisfied = false
+		if lock_type == "mimic":
+			_mimic_baseline()
 		if _stealth_failed:
 			_stealth_failed = false
 			print("[HasselmusNest] %s: Stealth failure reset — player left the nest's territory." % nest_label)
@@ -245,9 +277,91 @@ func _process(delta: float) -> void:
 					_fade_out_whisper()
 				lock_satisfied = false
 		
+		"mimic":
+			_update_mimic(delta)
+			lock_satisfied = mimic_echoes >= mimic_echoes_needed
+		
 		_:
 			# "none" or unknown — always unlocked.
 			lock_satisfied = true
+
+
+## ─── MIMIC (Nest Gamma) ───────────────────────────────────────────────
+
+## Outside its reach: what the player's things are doing now (a click made
+## out there isn't heard).
+func _mimic_baseline() -> void:
+	_mimic_walked = 0.0
+	_mimic_still = 0.0
+	var flashlight := _get_flashlight()
+	_flashlight_was_on = flashlight != null and flashlight.is_on
+	var notebook := get_tree().get_first_node_in_group("notebook_ui")
+	_notebook_was_open = notebook != null and notebook.is_open()
+
+
+func _update_mimic(delta: float) -> void:
+	var speed := 0.0
+	if _player is CharacterBody3D:
+		var velocity: Vector3 = (_player as CharacterBody3D).velocity
+		speed = Vector2(velocity.x, velocity.z).length()
+	# Walking up, then stopping: a few more steps.
+	if speed > 0.5:
+		_mimic_walked += delta
+		_mimic_still = 0.0
+	else:
+		_mimic_still += delta
+		if _mimic_walked > 0.8 and _mimic_still > 0.35:
+			_mimic_walked = 0.0
+			var steps: Array = _player.get("grass_footsteps") if _player.get("grass_footsteps") else []
+			mimic_sound(steps, 3)
+	var flashlight := _get_flashlight()
+	if flashlight and flashlight.is_on != _flashlight_was_on:
+		_flashlight_was_on = flashlight.is_on
+		mimic_sound([load(FLASHLIGHT_ON_SOUND if flashlight.is_on else FLASHLIGHT_OFF_SOUND)])
+	var notebook := get_tree().get_first_node_in_group("notebook_ui")
+	if notebook and notebook.is_open() != _notebook_was_open:
+		_notebook_was_open = notebook.is_open()
+		if _notebook_was_open:
+			mimic_sound([load(NOTEBOOK_SOUND)])
+
+
+## Copies a sound from inside the stump, MIMIC_DELAY s later (`count`
+## times, half a second apart: footsteps). One at a time.
+func mimic_sound(streams: Array, count: int = 1) -> void:
+	if streams.is_empty() or (_echo_tween and _echo_tween.is_valid()):
+		return
+	if _echo_player == null:
+		_echo_player = AudioStreamPlayer3D.new()
+		_echo_player.name = "EchoAudio"
+		_echo_player.bus = &"SFX"
+		_echo_player.unit_size = 4.0
+		_echo_player.position = Vector3.UP * 0.3
+		add_child(_echo_player)
+	_echo_tween = create_tween()
+	_echo_tween.tween_interval(MIMIC_DELAY)
+	for i in count:
+		_echo_tween.tween_callback(_play_echo.bind(streams.pick_random()))
+		_echo_tween.tween_interval(randf_range(0.45, 0.55))
+	_echo_tween.tween_callback(_echoed)
+
+
+func _play_echo(stream: AudioStream) -> void:
+	_echo_player.stream = stream
+	_echo_player.pitch_scale = randf_range(MIMIC_PITCH.x, MIMIC_PITCH.y)
+	_echo_player.play()
+
+
+func _echoed() -> void:
+	if is_documented:
+		return
+	mimic_echoes += 1
+	var monologue := get_node_or_null("/root/Monologue")
+	if not monologue:
+		return
+	if mimic_echoes == 1:
+		monologue.think("...That wasn't me.", self, 4.0, "gamma_echo_1")
+	elif mimic_echoes == mimic_echoes_needed:
+		monologue.think("It's copying me.", self, 4.0, "gamma_echo_2")
 
 
 ## Returns true if the player is currently crouching.

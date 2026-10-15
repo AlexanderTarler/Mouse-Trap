@@ -6,7 +6,8 @@
 [resource]
 script = ExtResource("1_item_data")
 item_name = "Half-withered note"
-item_description = "A torn scrap of paper, yellowed with age. The ink is smudged but legible."
+item_description = "A yellowed journal page, weighed down under a stone at the willow."
 item_type = 1
-note_text = "...the horn-crowned watcher does not tread where the flames dance. It stalks the dark borders where the pine needles turn black. Keep the oil burning, keep the hearth bright. If the room falls to shadow, it will claim what belongs to the wood. It has watched this cabin since my grandfather laid the logs..."
+note_text = "...the horn-crowned watcher does not tread where the flames dance. It stalks the dark borders where the pine needles turn black. Keep the oil burning, keep the hearth bright. If the room falls to shadow, it will claim what belongs to the wood. It has watched this cabin since my grandfather laid the logs. Father still ties straw to the stakes by the willow every autumn and wets it with blood, and says the year we stop is the year it comes to the door. The men from the forestry board laughed at him. They are not laughing now..."
+read_thought = "Straw and blood on the stakes. They fed it, every year. And then everyone left."
 scene_to_spawn = ExtResource("2_note_scene")

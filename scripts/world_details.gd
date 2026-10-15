@@ -64,12 +64,13 @@ var spots := PackedVector3Array()
 func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
-	# The man-made places get furnished too (SiteDresser), unless the level
-	# has them already (tools/bake_sites.gd writes them into it).
-	if not (owner and owner.has_node("Sites")):
-		var sites := SiteDresser.new()
-		sites.name = "SiteDresser"
-		add_child(sites)
+	# The man-made places get furnished too (SiteDresser); if the level has
+	# them already (tools/bake_sites.gd writes them into it), only the
+	# cabin, its yard and the trails.
+	var sites := SiteDresser.new()
+	sites.name = "SiteDresser"
+	sites.extras_only = owner != null and owner.has_node("Sites")
+	add_child(sites)
 	# Crows at the willow (Crows).
 	var crows := Crows.new()
 	crows.name = "Crows"

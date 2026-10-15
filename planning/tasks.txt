@@ -1,6 +1,5 @@
-1. THe "Hold Shift to run" tutorial message that is displayed during Night 2.2 should disappear after the player has held shift for 3 seconds. 
-2. The van displays as "broken" before Night 2.2 - this should not be able to happen.
-3. We need to reduce the drain of the flashlight by 50% - playtesters run out of juice quick!
-4. When the player runs out of flashlight battery, the tutorial message that tells the player to replace the battery should also mention to press TAB to open the inventory.
-5. If the player is using the computer (aka computer_ui.tscn is displayed) and they open the notebook (by pressing "J"), the player should be able to close the notebook (WITHOUT exiting the computer UI) by pressing ESC.
-6. The "Next page" and "Previous page" text elements in the notebook should be moved 10% towards the middle. 
+1. The "Hold shift to sprint" tutorial hint is not being removed after the player has held SHIFT for 3 seconds. Fix this.
+2. There used to be an audio track that played when the Entity was actively hunting the player. Use "too late (loop).ogg" for this. 
+3. Add in more details - both for the forest (especially near the areas the player will be at) and inside and around the cabin.
+4. Add the "blinking" (that happens when the player goes to bed) to the sequence where the player has logged the documented data and is waiting for it to finish.
+5. Add in a (temporary, we will remove it later) feature where pressing F4 triggers the Entity to climb up towards and try to breach a window in the LandingRoom.  

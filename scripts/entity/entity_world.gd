@@ -126,6 +126,8 @@ func guard_score(link: CabinEntryLink) -> float:
 
 ## Whether the Entity would currently consider approaching this entry.
 func is_entry_viable(link: CabinEntryLink) -> bool:
+	if entity.debug_breach:
+		return true
 	if is_repelled(link) or is_entry_lit(link):
 		return false
 	# Upstairs windows mean climbing the wall: not before Night 4.

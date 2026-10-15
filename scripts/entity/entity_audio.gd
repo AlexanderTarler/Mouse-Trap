@@ -30,6 +30,8 @@ const THUD_PATHS: Array[String] = [OBJECTS + "Drop Thud.ogg"]
 const CREAK_PATHS: Array[String] = [OBJECTS + "Floor Creak.ogg"]
 ## Knocking on the glass while it peeks in at a window.
 const WINDOW_KNOCK := preload("res://assets/audio/objects/Window Knock.ogg")
+## The ambush tell: a breath, close by in the dark.
+const TELL_STREAM := preload("res://assets/audio/Entity/Monster_breath.wav")
 ## Knuckles on the door.
 const KNOCK_PATHS: Array[String] = [ECHOES + "SFX/Misc/hit_1.ogg", ECHOES + "SFX/Misc/hit_2.ogg", ECHOES + "SFX/Misc/hit_4.ogg"]
 ## Extra low murmurs for the "murmur" voice.
@@ -83,6 +85,17 @@ var _footstep_db := 0.0   ## its own volume (before hushing)
 var _voice_cooldown := 0.0
 var _step_timer := 0.0
 var _chase_music_on := false
+## The hunting music ("too late", HorrorSoundManager.play_stalk_chase) plays
+## while it is after the player: stalking them, charging, held off by the
+## beam, or searching / prowling the cabin with a fresh trail (seen or
+## heard within HUNT_TRAIL_TIME). Never while lying in wait (that silence
+## is the point), and not in the Night 2.2 van chase unless
+## config.van_chase_music. It lingers HUNT_MUSIC_LINGER s after.
+const HUNT_MUSIC_STATES := [Entity.State.STALK, Entity.State.CHARGE, Entity.State.STANDOFF]
+const HUNT_TRAIL_STATES := [Entity.State.SEARCH, Entity.State.HUNT]
+const HUNT_TRAIL_TIME := 6.0
+const HUNT_MUSIC_LINGER := 4.0
+var _hunt_linger := 0.0
 var _scrape: AudioStreamPlayer3D
 var _creak: AudioStreamPlayer3D
 var _knock: AudioStreamPlayer3D
@@ -299,12 +312,8 @@ func is_lying_in_wait() -> bool:
 
 ## The tell before it springs from an ambush: a low breath, close by.
 func play_tell() -> void:
-	if not _growl_streams.is_empty():
-		_sfx.stream = _growl_streams.pick_random()
-		_sfx.pitch_scale = randf_range(0.55, 0.65)
-	else:
-		_sfx.stream = GRUNT_STREAM
-		_sfx.pitch_scale = 0.5
+	_sfx.stream = TELL_STREAM
+	_sfx.pitch_scale = randf_range(0.85, 0.95)
 	_sfx.play()
 
 
@@ -480,6 +489,29 @@ func _closeness_quiet() -> float:
 	if is_lying_in_wait():
 		return 1.0
 	return clampf(inverse_lerp(SILENCE_FADE, SILENCE_DISTANCE, p.distance_to_player), 0.0, 1.0)
+
+
+## Whether it is hunting the player right now (see HUNT_MUSIC_STATES).
+func is_hunting_player() -> bool:
+	if not entity.is_active() or is_lying_in_wait():
+		return false
+	if entity.van_chase_active and not entity.config.van_chase_music:
+		return false
+	var state := entity.get_state()
+	if state in HUNT_MUSIC_STATES:
+		return true
+	var p := entity.perception
+	return state in HUNT_TRAIL_STATES and (p.has_fresh_sighting(HUNT_TRAIL_TIME) or p.has_fresh_noise(HUNT_TRAIL_TIME))
+
+
+func update_hunt_music(delta: float) -> void:
+	if is_hunting_player():
+		_hunt_linger = HUNT_MUSIC_LINGER
+		start_chase_music()
+	elif _chase_music_on:
+		_hunt_linger -= delta
+		if _hunt_linger <= 0.0:
+			stop_chase_music()
 
 
 func start_chase_music() -> void:

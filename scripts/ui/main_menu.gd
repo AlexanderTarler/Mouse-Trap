@@ -72,6 +72,10 @@ func _on_play_pressed() -> void:
 			return
 	
 	print("[MainMenu] Scene loaded successfully. Changing scene...")
+	# Black until the game is set up and the opening has begun.
+	var nm := get_node_or_null("/root/NightManager")
+	if nm and nm.has_method("show_start_cover"):
+		nm.show_start_cover()
 	var err = get_tree().change_scene_to_packed(packed_scene)
 	if err != OK:
 		printerr("[MainMenu] ERROR: change_scene_to_packed failed! Error code: ", err)

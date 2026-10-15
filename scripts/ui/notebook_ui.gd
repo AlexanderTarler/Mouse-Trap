@@ -720,8 +720,8 @@ func set_documentation(text: String) -> void:
 ## Data populates below the hint once the nest is documented.
 const NEST_HINTS: Dictionary = {
 	"Nest Alpha": "I may need a high-intensity beam to provoke them.",
-	"Nest Beta": "I should approach in silence and keep a low profile.",
-	"Nest Gamma": "I must remain perfectly still to hear them.",
+	"Nest Beta": "They watch. I should stay low and approach quietly.",
+	"Nest Gamma": "They answer back. I should make a sound, then listen.",
 }
 
 const NEST_ORDER: Array[String] = ["Nest Alpha", "Nest Beta", "Nest Gamma"]
@@ -925,11 +925,11 @@ Nest constructed inside a hollowed tree stump, but the colony displays violent p
 [b]Population:[/b] Unknown
 [b]Anomaly:[/b] Covert Observation
 [b]Notebook Observations:[/b]
-The nest is built deep within a hollowed tree stump, making an exact count impossible. Whenever I adjusted my position, eyes glinted from within the dark fissures of the wood, instantly adjusting to remain hidden behind bark. They aren't running away—they are almost spying on me, positioning themselves so they can observe my every movement without being seen.""" ,
+The nest is built deep within a hollowed tree stump, making an exact count impossible. Whenever I adjusted my position, eyes glinted from within the dark fissures of the wood, instantly adjusting to remain hidden behind bark. They aren't running away—they are almost spying on me, positioning themselves so they can observe my every movement without being seen. I had the same feeling at the cabin window last night.""" ,
 
 	"Nest Gamma": """[b]Subject: Nest Gamma[/b]
 [b]Population:[/b] 3
 [b]Anomaly:[/b] Audio-Specific Abnormalities
 [b]Notebook Observations:[/b]
-Only three specimens were present inside this tree stump nest. Their vocalizations are deeply unnatural. Instead of standard high-pitched dormouse squeaks or rustles, they emit raspy, modulated clicks and low-frequency resonance. Listening closely, the cadence is rhythmic and erratic... almost as if they are attempting to imitate human speech."""
+Only three specimens were present inside this tree stump nest. Their vocalizations are deeply unnatural: no squeaks or rustles, only raspy clicks and a low resonance. When I stopped walking, footsteps carried on inside the stump. When I clicked the flashlight, it clicked back, a moment late and slightly off. They aren't calling to each other. They are copying me, as if something taught them how."""
 }

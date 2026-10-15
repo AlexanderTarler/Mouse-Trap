@@ -18,6 +18,9 @@ const AUDIO_STING_DEFAULT := "res://assets/audio/Echoes - Audio Super Kit/OGG (r
 var _fade_rect: ColorRect = null
 var is_jumping: bool = false
 var _audio_sting_player: AudioStreamPlayer = null
+## The player's gasp as it's on them.
+const GASP_STREAM := preload("res://assets/audio/player/Gasp.wav")
+var _gasp_player: AudioStreamPlayer = null
 
 
 func _ready() -> void:
@@ -47,6 +50,11 @@ func _ready() -> void:
 	elif ResourceLoader.exists(AUDIO_STING_DEFAULT):
 		_audio_sting_player.stream = load(AUDIO_STING_DEFAULT)
 	add_child(_audio_sting_player)
+	_gasp_player = AudioStreamPlayer.new()
+	_gasp_player.bus = &"SFX"
+	_gasp_player.stream = GASP_STREAM
+	_gasp_player.volume_db = -3.0
+	add_child(_gasp_player)
 	
 	# 3. Connect to the NightManager's event bus
 	var nm = get_node_or_null("/root/NightManager")
@@ -110,6 +118,8 @@ func _execute_jumpscare() -> void:
 	
 	if _audio_sting_player and _audio_sting_player.stream:
 		_audio_sting_player.play()
+	if _gasp_player:
+		_gasp_player.play()
 	
 	if cam_holder:
 		# ─── TASK 1 FIX: PROPER LOOK_AT CAMERA LOCK ─────────────────

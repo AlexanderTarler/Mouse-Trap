@@ -91,9 +91,41 @@ var _pending_part_index: int = -1
 ## Reference to the NightManager autoload.
 var _night_manager: Node = null
 
+## The hood going up when a part's fitted, down when done; the door when
+## climbing in to leave.
+const HOOD_OPEN_STREAM := preload("res://assets/audio/objects/van/Car_Hood_Open.ogg")
+const HOOD_CLOSE_STREAM := preload("res://assets/audio/objects/van/Car_Hood_Close.ogg")
+const DOOR_OPEN_STREAM := preload("res://assets/audio/objects/van/Car_Door_Open.ogg")
+var _car_audio: AudioStreamPlayer3D = null
+var hood_open := false
+
 
 func _ready() -> void:
 	_connect_night_manager()
+	_car_audio = AudioStreamPlayer3D.new()
+	_car_audio.name = "CarAudio"
+	_car_audio.bus = &"SFX"
+	_car_audio.position = Vector3.UP
+	add_child(_car_audio)
+
+
+func _play_car(stream: AudioStream) -> void:
+	if _car_audio:
+		_car_audio.stream = stream
+		_car_audio.play()
+
+
+## Up for the first part (it stays up while the player works).
+func _open_hood() -> void:
+	if not hood_open:
+		hood_open = true
+		_play_car(HOOD_OPEN_STREAM)
+
+
+func _close_hood() -> void:
+	if hood_open:
+		hood_open = false
+		_play_car(HOOD_CLOSE_STREAM)
 
 
 ## Connects to NightManager's horror_event signal.
@@ -244,6 +276,7 @@ func _repair_complete() -> void:
 	is_repaired = true
 	
 	print("[EscapeVan] ⚡ VAN REPAIRED! All %d components installed." % COMPONENTS_NEEDED)
+	_close_hood()
 	_show_hud_message("That should do it. Time to get the hell out of here.")
 	
 	# ─── NOTIFY ROUTINEMANAGER ────────────────────────────────────
@@ -284,6 +317,7 @@ func start_hold_interact() -> void:
 	if _pending_part_index < 0:
 		return
 	_is_installing = true
+	_open_hood()
 	
 	# TASK 8: Start the repair sound the MOMENT the player holds E.
 	# Previously the audio only played when the part reached 100% installation.
@@ -350,6 +384,8 @@ func _process_hold_interact(delta: float) -> void:
 			# Try to automatically start next part
 			_is_installing = false
 			start_hold_interact()
+			if not _is_installing:
+				_close_hood()   # no more parts on hand
 
 
 ## Override get_interact_text to show installation progress.
@@ -377,6 +413,7 @@ func get_interact_text() -> String:
 ## Triggers the ending sequence via EndgameManager.
 func _trigger_ending() -> void:
 	print("[EscapeVan] Player is escaping! Triggering ending sequence.")
+	_play_car(DOOR_OPEN_STREAM)
 	
 	var endgame = get_node_or_null("/root/EndgameManager")
 	if not endgame:

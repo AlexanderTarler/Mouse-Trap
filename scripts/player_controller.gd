@@ -152,6 +152,13 @@ var _environment_controller: Node = null
 ## When false (default), the player must work through the full onboarding.
 ## Toggle this in the Player node's inspector for quick testing.
 @export var start_in_dev_mode: bool = false
+## Dev: start at this point of the story instead (DevStart): the story up to
+## it is played through behind a black screen, so objectives, inventory and
+## the night are as if it had been played. "Free roam" is start_in_dev_mode
+## as above; anything else overrides it.
+@export_enum("Free roam", "Day 1", "Day 1: power on", "Day 2", "Day 2: nests documented",
+	"Night 2", "Night 2.2: car alarm", "Day 3", "Day 3: rested - find the van parts",
+	"Night 3", "Night 3: van repaired") var dev_start: int = 0
 
 
 # Sprint unlock — enabled by default for development convenience
@@ -306,7 +313,13 @@ func _ready() -> void:
 	# entire game system knows we're in dev mode. This unlocks sprint,
 	# flashlight, key, all starting items, powers on the fuse box, fills
 	# the generator, unpauses time, and skips the Day 1 onboarding sequence.
-	if start_in_dev_mode:
+	if dev_start > 0:
+		var nm = get_node_or_null("/root/NightManager")
+		if nm:
+			nm.is_dev_mode = false
+			nm.dev_start = dev_start
+			print("[Player] Dev start: %s." % DevStart.NAMES[dev_start])
+	elif start_in_dev_mode:
 		var nm = get_node_or_null("/root/NightManager")
 		if nm:
 			nm.is_dev_mode = true
@@ -719,18 +732,22 @@ func _physics_process(delta: float) -> void:
 	var _is_moving_forward = Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_D)
 	_is_running = Input.is_key_pressed(KEY_SHIFT) and sprint_unlocked and not _is_crouching and _stamina > 0.0 and not _stamina_exhausted and _is_moving_forward
 	
-	# ─── BUG 3 FIX: MARK SPRINT TUTORIAL LEARNED ON ACTUAL USE ──────
+	# ─── MARK SPRINT TUTORIAL LEARNED ON ACTUAL USE ──────
 	# The sprint hint (triggered by escape_van.gd during Night 2.2) is
-	# dismissed once the player has sprinted for SPRINT_HINT_TIME (3 s) in
-	# all, not when sprint is merely unlocked (that consumed the one-shot
-	# before the hint could show). One-shot via _sprint_tutorial_marked.
-	if _is_running:
+	# dismissed once the player has sprinted for SPRINT_HINT_TIME (3 s)
+	# while it is up. Only sprinting since it came up counts: sprinting
+	# earlier in the game used to use up the one-shot before the hint ever
+	# showed, and then it never went away.
+	var tm_sprint := get_node_or_null("/root/TutorialManager")
+	var hint_up: bool = tm_sprint != null and tm_sprint.has_method("was_shown") and tm_sprint.was_shown("sprint")
+	if not hint_up:
+		_sprint_hold_time = 0.0
+		_sprint_tutorial_marked = false
+	elif _is_running:
 		_sprint_hold_time += delta
-	if not _sprint_tutorial_marked and _sprint_hold_time >= SPRINT_HINT_TIME:
+	if hint_up and not _sprint_tutorial_marked and _sprint_hold_time >= SPRINT_HINT_TIME:
 		_sprint_tutorial_marked = true
-		var tm_sprint := get_node_or_null("/root/TutorialManager")
-		if tm_sprint and tm_sprint.has_method("mark_learned"):
-			tm_sprint.mark_learned("sprint")
+		tm_sprint.mark_learned("sprint")
 	
 	if _is_crouching: _current_speed = crouch_speed
 	elif _is_running: _current_speed = run_speed

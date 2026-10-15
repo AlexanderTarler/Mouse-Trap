@@ -1,6 +1,7 @@
 extends Area3D
 
-## Generator refill interaction point.
+## The generator's interaction point: a tap of E switches it on or off
+## (Generator.toggle_switch), holding E with a fuel can refills it.
 ## Attach this script to an Area3D node placed on the physical generator model.
 ##
 ## HOLD-TO-REFUEL MECHANIC:
@@ -22,14 +23,8 @@ extends Area3D
 ## Default: 10.0 seconds (2s hold = 20% of a can = 10 fuel units).
 @export var refuel_duration_per_can: float = 10.0
 
-## BUG 2 FIX: The `highlight_target` export was REMOVED (was
-## NodePath("../GeneratorSwitch")). The refill objective highlights the whole
-## `xray_generator` group (generator body), so this refill Area must NOT
-## redirect the highlight to the switch subtree — that collapsed every
-## "Refill the generator" highlight onto only the GeneratorSwitch button box.
-## The post-refill "Turn on the generator" step highlights the switch via its
-## own dedicated `xray_generator_switch` group, so no switch redirect is
-## needed here.
+## The refill and "Turn on the generator" objectives both highlight the
+## whole `xray_generator` group (the generator body).
 
 ## How many fuel units one fuel can contains (matches NightManager's fuel scale).
 const FUEL_PER_CAN: float = 50.0
@@ -77,6 +72,13 @@ var _is_refueling: bool = false
 ## Shown to the player via UI to indicate how much of the current can has been used.
 var _can_progress: float = 0.0
 
+## Seconds E is held before fuel starts flowing: a tap (which switches the
+## generator on or off) doesn't spill any.
+const TAP_GRACE := 0.25
+var _held := 0.0
+## Fuel went in during this press of E (then letting go doesn't switch it).
+var _refuelled_this_press := false
+
 ## Whether on_generator_refilled() has been called for this refuel session.
 ## Ensures the objective notification fires only once per session (on first
 ## successful fuel transfer), not every frame or only when the tank is full.
@@ -98,6 +100,12 @@ func _process(delta: float) -> void:
 	if not _nm:
 		stop_refuel()
 		return
+	_held += delta
+	if _held < TAP_GRACE:
+		return
+	if not _refuelled_this_press:
+		_refuelled_this_press = true
+		_start_refuel_audio()
 	
 	# ─── GENERATOR FULL CHECK ─────────────────────────────────────────
 	if _nm.generator_fuel >= _nm.max_fuel:
@@ -252,6 +260,8 @@ func start_refuel() -> void:
 	
 	if _is_refueling:
 		return
+	_refuelled_this_press = false
+	_held = 0.0
 	
 	if _nm.generator_fuel >= _nm.max_fuel:
 		print("[Generator] Generator is already full.")
@@ -270,12 +280,10 @@ func start_refuel() -> void:
 	var rm_highlight = get_node_or_null("/root/RoutineManager")
 	if rm_highlight and rm_highlight.has_method("clear_highlight"):
 		rm_highlight.clear_highlight("xray_generator")
-		rm_highlight.clear_highlight("xray_generator_switch")
 	
 	_is_refueling = true
 	_hold_time = 0.0
 	_can_progress = 0.0
-	_start_refuel_audio()
 	print("[Generator] Refuel started. Rate: %.1f units/sec (%.1fs per can)." % [FUEL_PER_CAN / refuel_duration_per_can, refuel_duration_per_can])
 
 
@@ -379,12 +387,19 @@ func stop_refuel() -> void:
 	print("[Generator] Refuel stopped. Partial can preserved in inventory.")
 
 
-## Called by PhysicalGrab when the player quick-taps E.
-## Legacy fallback — quick-tap does nothing for the generator; the player must
-## hold E to refuel. This method exists so the InteractionManager can display
-## the prompt via get_interact_text().
+## Called by PhysicalGrab when the player quick-taps E: the generator goes
+## on or off (unless the tap was long enough to pour some fuel in).
 func interact() -> void:
-	pass
+	if _refuelled_this_press:
+		_refuelled_this_press = false
+		return
+	var generator := _generator()
+	if generator:
+		generator.toggle_switch()
+
+
+func _generator() -> Generator:
+	return get_parent() as Generator
 
 
 ## Returns the current fuel percentage from NightManager, or 0 if unavailable.
@@ -393,8 +408,22 @@ func _get_fuel_percent() -> int:
 		return int((_nm.generator_fuel / _nm.max_fuel) * 100.0)
 	return 0
 
-## Called by the InteractionManager to display the HUD prompt.
+## Called by the InteractionManager to display the HUD prompt: switching it
+## (a tap) and refilling it (a hold), as they apply.
 func get_interact_text() -> String:
+	var refill := _refill_text()
+	var generator := _generator()
+	if generator == null or (_is_refueling and _refuelled_this_press):
+		return refill
+	var switch := generator.get_interact_text()
+	var can_refill := refill.begins_with("[")
+	if switch.begins_with("["):
+		return switch + "\n" + refill if can_refill else "%s (%d%% fuel)" % [switch, _get_fuel_percent()]
+	# It can't be switched on yet: refilling it, if that's possible, else why.
+	return refill if can_refill else switch
+
+
+func _refill_text() -> String:
 	var fuel_pct: int = _get_fuel_percent()
 	if _nm and _nm.generator_fuel >= _nm.max_fuel:
 		return "Generator (full)"

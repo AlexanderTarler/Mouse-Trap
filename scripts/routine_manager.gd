@@ -77,8 +77,15 @@ var day2_hint_text: String = ""
 ## Lore-friendly hints for each Day 2 nest step, keyed by nest label.
 const DAY2_NEST_HINTS: Dictionary = {
 	"Nest Alpha": "I may need a high-intensity beam to provoke them.",
-	"Nest Beta": "I should sneak while approaching the nest.",
-	"Nest Gamma": "I must remain perfectly still to hear them.",
+	"Nest Beta": "They watch. I should stay low and approach quietly.",
+	"Nest Gamma": "They answer back. I should make a sound, then listen.",
+}
+
+## What the player makes of a nest once it's documented (Gamma has its
+## own, as it copies them: HasselmusNest).
+const NEST_THOUGHTS: Dictionary = {
+	"Nest Alpha": "They went for the light. Like they wanted it out.",
+	"Nest Beta": "They never took their eyes off me. Not once.",
 }
 
 ## Emitted when the active Day 2 hint text changes (for NotebookUI To-Do display).
@@ -400,14 +407,8 @@ func _apply_xray_to_subtree(root: Node, mat: Material, group_name: String) -> vo
 func _should_highlight_mesh(mesh: MeshInstance3D, group_name: String) -> bool:
 	if group_name == "xray_generator":
 		var n := str(mesh.name).to_lower()
-		# ─── BUG FIX: Highlight the generator_1 body, NOT the switch ──
-		# The "Refuel the generator" objective must highlight the physical
-		# generator_1 model. The GeneratorSwitch button box belongs to the
-		# separate "xray_generator_switch" group which is highlighted only
-		# in on_generator_refilled() (post-refuel "Turn on the generator").
-		# So here we EXCLUDE the button/switch meshes so they never bleed
-		# into the refuel highlight, and highlight everything else (the
-		# generator_1 body, pipe, exhaust).
+		# The generator_1 body, pipe and exhaust (it's switched on and off
+		# with a tap of E on it); any button or switch mesh is left out.
 		if "button" in n or "switch" in n:
 			return false
 		return true
@@ -494,8 +495,26 @@ func _advance_main_objective(target: int) -> void:
 		# objective, or locked earlier and ticked off when it came up).
 		if was <= 8 and target >= 9:
 			_spawn_peeker_at.call_deferred("Bedroom_Right")
+			_muse("Locked. Force of habit. There's nobody out here for miles.", "door_locked_d1", 0.8)
 		if was < 4 and target == 4:
 			_think_fuse_box.call_deferred()
+
+
+## An inner thought (once per `key`) that waits its turn: never over another
+## thought, and with the computer open, not until it's closed (as the
+## broken-window thought). Not for things the scene sets up as it loads.
+func _muse(text: String, key: String, delay: float = 0.0) -> void:
+	var monologue := get_node_or_null("/root/Monologue")
+	var scene := get_tree().current_scene
+	if not monologue or not scene or not scene.is_node_ready() or monologue.has_thought(key):
+		return
+	var pc := get_tree().get_first_node_in_group("computer_ui")
+	if pc and "is_open" in pc and pc.is_open and pc.has_signal("computer_closed"):
+		var later: Callable = monologue.think_when_free.bind(text, 5.0, key, maxf(delay, 0.8))
+		if not pc.computer_closed.is_connected(later):
+			pc.computer_closed.connect(later, CONNECT_ONE_SHOT)
+		return
+	monologue.think_when_free(text, 5.0, key, delay)
 
 
 ## As "Check the fuse box" comes up.
@@ -516,6 +535,7 @@ func _spawn_peeker_at(window_id: String) -> void:
 func _check_power_restored() -> void:
 	if phase2_fuse_fixed and phase2_gen_refilled and phase2_gen_turned_on:
 		print("[RoutineManager] Power restored! Fuse fixed, generator refueled and running.")
+		_muse("There. Power. Now let's see what the office wants from me.", "power_on", 1.0)
 		_advance_main_objective(6)
 		_update_hud()
 
@@ -528,10 +548,18 @@ var flashlight_needed := false
 
 
 func _on_night_started(night: int) -> void:
+	var player := get_tree().get_first_node_in_group("player")
+	var has_flashlight: bool = player != null and player.get("_has_flashlight") == true
+	if night == 1 and not is_day3_sandbox and main_objective < 99:
+		if has_flashlight:
+			_muse("Dark already. Not a single light for miles but mine.", "night1_dark", 1.0)
+		else:
+			_muse("Pitch black already. There was a flashlight around here somewhere.", "night1_dark", 1.0)
+	elif night >= 3:
+		_muse("Night again. It knows I'm still here.", "night3_falls", 1.0)
 	if night != 1 or is_day3_sandbox or main_objective >= 99:
 		return
-	var player := get_tree().get_first_node_in_group("player")
-	if player and player.get("_has_flashlight"):
+	if has_flashlight:
 		return
 	flashlight_needed = true
 	print("[RoutineManager] Night 1 and no flashlight: \"Find the flashlight.\" takes over the objective.")
@@ -799,7 +827,7 @@ func on_van_inspected() -> void:
 	var monologue := get_node_or_null("/root/Monologue")
 	var van := get_tree().current_scene.find_child("EscapeVan", true, false) as Node3D if get_tree().current_scene else null
 	if monologue:
-		monologue.think("The car's wrecked - I need to find parts to repair it.", van, 5.0, "van_wrecked")
+		monologue.think("Torn out. Not broken: torn out. I need parts, and the old wrecks are my best bet.", van, 5.0, "van_wrecked")
 
 func on_van_part_installed(part_name: String) -> void:
 	match part_name:
@@ -835,6 +863,7 @@ func enable_sandbox_mode() -> void:
 	windows_unlocked_for_boarding = true
 	print("[RoutineManager] DAY 3 SANDBOX MODE ACTIVATED! Windows unlocked for boarding.")
 	_update_hud()
+	_muse("Daylight. Load the van and get out of here. The survey can rot.", "day3_leave", 3.0)
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -880,6 +909,7 @@ func on_arvid_logs_read() -> void:
 		side_track_step = 3
 	print("[RoutineManager] Side-track: Arvid's logs read.")
 	side_track_changed.emit()
+	_muse("Bait. They sent Stenberg out here as bait. And then they sent me.", "logs_read", 0.5)
 
 func on_portable_light_found() -> void:
 	if arvid_portable_light_found:
@@ -924,6 +954,7 @@ func on_anchor_located() -> void:
 		side_track_step = 7
 	print("[RoutineManager] Side-track: Totem Anchor located.")
 	side_track_changed.emit()
+	_muse("A ring of stones, stakes with straw tied on... and the willow. Nothing grows near it.", "willow_found", 0.5)
 
 func on_cable_connected_to_gen() -> void:
 	if is_cable_to_gen_connected:
@@ -950,6 +981,7 @@ func on_trap_triggered() -> void:
 	side_track_step = 10
 	print("[RoutineManager] Side-track: Grid override executed!")
 	side_track_changed.emit()
+	_muse("It's holding it! The willow. Go, now!", "trap_go", 0.3)
 
 func on_anchor_destroyed() -> void:
 	if is_anchor_destroyed:
@@ -1013,6 +1045,7 @@ func on_key_picked_up() -> void:
 	phase1_found_key = true
 	print("[RoutineManager] Phase 1: Player found the Cabin Key.")
 	_update_hud()
+	_muse("Under a bucket. Top-notch security, Institute.", "key_found", 0.5)
 	# ─── X-RAY HIGHLIGHT: Clear key highlight ──
 	clear_highlight("xray_key")
 
@@ -1041,6 +1074,7 @@ func on_door_unlocked() -> void:
 	_advance_main_objective(2)
 	print("[RoutineManager] Phase 1 COMPLETE! Player unlocked and entered the cabin.")
 	_update_hud()
+	_muse("Plates still on the counter. Stenberg left in a hurry.", "cabin_inside", 3.0)
 
 func on_player_entered_cabin() -> void:
 	if phase1_entered_cabin:
@@ -1136,9 +1170,9 @@ func on_generator_refilled() -> void:
 	print("[RoutineManager] Phase 2: Generator refilled.")
 	_update_hud()
 	_check_power_restored()
-	# ─── X-RAY HIGHLIGHT: Clear generator highlight, highlight the switch ──
+	# ─── X-RAY HIGHLIGHT: the generator again, for switching it on (a tap) ──
 	clear_highlight("xray_generator")
-	highlight_target("xray_generator_switch", 3.0)
+	highlight_target("xray_generator", 3.0)
 
 
 ## Called by generator.gd when the player successfully flips the generator
@@ -1149,7 +1183,7 @@ func on_generator_turned_on() -> void:
 		return
 	phase2_gen_turned_on = true
 	print("[RoutineManager] Phase 2: Generator turned on!")
-	clear_highlight("xray_generator_switch")
+	clear_highlight("xray_generator")
 	_check_power_restored()
 	_update_hud()
 
@@ -1184,6 +1218,7 @@ var phase2_flashlight_early: bool = false
 ## objective 3 entirely when it arrives.
 func on_flashlight_picked_up() -> void:
 	clear_highlight("xray_flashlight")
+	_muse("Initials scratched into the grip: A.S. Stenberg's flashlight.", "flashlight_found", 0.5)
 	if flashlight_needed:
 		# The objective it stood in for comes back.
 		flashlight_needed = false
@@ -1269,6 +1304,7 @@ func on_window_patched() -> void:
 	_advance_main_objective(8)
 	print("[RoutineManager] Phase 2B COMPLETE! Player patched the broken window.")
 	_update_hud()
+	_muse("That'll keep the draught out. And whatever broke it, hopefully.", "window_patched", 1.0)
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -1442,6 +1478,11 @@ func on_day2_started() -> void:
 	# Lock the cabin door until the player reads the Nest Logs in the notebook.
 	_lock_cabin_door()
 	_update_hud()
+	var monologue := get_node_or_null("/root/Monologue")
+	if monologue and monologue.has_thought("peeker_seen_1"):
+		_muse("That face at the upstairs window. I was half asleep. I must have been.", "day2_morning", 4.0)
+	else:
+		_muse("Slept like the dead. Today: the nests. The reports are on the terminal.", "day2_morning", 4.0)
 
 
 ## Locks the cabin front door at the start of Day 2 (Step 1 gate).
@@ -1494,6 +1535,7 @@ func on_previous_reports_read() -> void:
 		_unlock_cabin_door()
 		_sync_day2_hint()
 		_update_hud()
+		_muse("Dormice that hiss at flashlights and copy footsteps. Stenberg's reports read like a ghost story.", "reports_read")
 		# ─── NEST ALPHA HIGHLIGHT TIMER (+15 SECONDS) ─────────────
 		# Alpha's timer is now 35.0s. This call fires EXACTLY when the
 		# "Document nest alpha" objective officially starts (Day 2 step
@@ -1539,6 +1581,8 @@ func document_nest(nest_id: String) -> void:
 			return
 	nests_documented += 1
 	print("[RoutineManager] Nest '%s' documented! (%d/3)" % [nest_id, nests_documented])
+	if NEST_THOUGHTS.has(nest_id):
+		_muse(NEST_THOUGHTS[nest_id], "nest_" + nest_id.to_lower().replace(" ", "_"), 2.0)
 	
 	# ─── X-RAY HIGHLIGHT: Sequential nest highlighting ──
 	# All nest highlight timers increased by 15 seconds.

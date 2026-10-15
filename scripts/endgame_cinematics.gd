@@ -26,7 +26,11 @@ const DRAG_SOUNDS: Array[String] = [ECHOES + "SFX/Misc/slide_1.ogg", ECHOES + "S
 const BREATHING_SOUND := "res://assets/audio/player/Breathing_slow.wav"
 const IMPALE_SOUNDS: Array[String] = [ECHOES + "SFX/Player/Misc/bones_breaking_1.ogg", ECHOES + "SFX/Impacts/impact_1.ogg"]
 const STINGER_SOUND := ECHOES + "Bonus/Pure Horror/One-shots/stinger_ph_2.ogg"
-const ENGINE_SOUND := ECHOES + "SFX/Machines/machine_3_loop.ogg"
+const VAN_SOUNDS := "res://assets/audio/objects/van/"
+const DOOR_CLOSE_SOUND := VAN_SOUNDS + "Car_Door_Close.ogg"
+const ENGINE_START_SOUND := VAN_SOUNDS + "Car_Engine_Start_Up.ogg"
+const ENGINE_SOUND := VAN_SOUNDS + "Car_Engine_Loop.ogg"
+const ACCELERATION_SOUND := VAN_SOUNDS + "Car_Acceleration.ogg"
 const ROOF_THUD_SOUND := ECHOES + "SFX/Impacts/impact_2.ogg"
 const ESCAPE_MUSIC := ECHOES + "Soundtracks/hope (complete track).ogg"
 
@@ -58,8 +62,15 @@ enum EntityMode { NONE, STAND, CHASE, LEAP, ROOF }
 @export var drag_direction := Vector3(1.0, 0.0, 0.0)
 ## How high it hoists the player into the tree (m).
 @export var hoist_height := 4.0
-## How far from the middle of the trunk the player ends up (m).
+## How far from the middle of the trunk the player ends up (m), if the
+## trunk isn't found (it's looked for: the player ends up HOIST_CLEARANCE
+## off its surface, so the camera never goes into the bark).
 @export var hoist_trunk_distance := 1.2
+const HOIST_CLEARANCE := 0.5
+## The camera's height above the ground while dragged (m), and how far it
+## looks up.
+const DRAG_EYE_HEIGHT := 0.4
+const DRAG_PITCH := 8.0
 
 var _overlay: CanvasLayer
 var _black: ColorRect
@@ -122,6 +133,8 @@ var _v_cam := VanCam.NONE
 var _v_cam_snap := true
 var _v_tripod := Vector3.ZERO
 var _v_engine: AudioStreamPlayer3D
+## The engine's loop is on (after the start-up).
+var _v_engine_running := false
 var _e_mode := EntityMode.NONE
 var _e_pos := Vector3.ZERO
 var _e_leap_from := Vector3.ZERO
@@ -322,7 +335,7 @@ func _death(full: bool) -> void:
 	_d_pos = end - _d_dir * DRAG_SPEED * drag_time
 	_d_pos.y = _ground_y(_d_pos)
 	_d_speed = 0.0
-	_d_pitch = deg_to_rad(14.0)
+	_d_pitch = deg_to_rad(DRAG_PITCH)
 	_d_hoist = 0.0
 	_d_hoisting = false
 	_d_drop = 0.0
@@ -357,7 +370,7 @@ func _death(full: bool) -> void:
 	blink.tween_property(_black, "color:a", 0.0, 0.5)
 	await _wait(1.2)
 	# Looking up past it: the willow and the totem's glow.
-	_tween().tween_property(self, "_d_pitch", deg_to_rad(26.0), 2.0)
+	_tween().tween_property(self, "_d_pitch", deg_to_rad(DRAG_PITCH + 14.0), 2.0)
 	await _wait(2.2)
 
 	# It stops, turns round and swings the player up past itself into the
@@ -366,14 +379,14 @@ func _death(full: bool) -> void:
 	if _d_entity and _d_entity.has_method("cinematic_pose"):
 		_d_entity.audio.play_growl()
 	_d_hoist_from = _drag_camera_position()
-	_d_hoist_to = _d_lair - _d_dir * hoist_trunk_distance + Vector3.UP * hoist_height
+	_d_hoist_to = _hoist_spot()
 	_d_entity_spot = _d_pos + _d_dir * 1.9
 	_d_entity_spot.y = _ground_y(_d_entity_spot)
 	_d_turn_start = _clock
 	_d_hoisting = true
 	await _wait(0.5)
 	var hoist := _tween()
-	hoist.tween_property(self, "_d_hoist", 1.0, 1.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN_OUT)
+	hoist.tween_property(self, "_d_hoist", 1.0, 1.3)
 	_shake = 0.015
 	await _wait(1.35)
 
@@ -426,9 +439,14 @@ func _drag_shot(delta: float) -> void:
 	var looking := _d_dir.rotated(Vector3.UP, PI * h)
 	var pos := _drag_camera_position()
 	if _d_hoisting:
-		# Round it on one side rather than through it.
-		pos = _d_hoist_from.lerp(_d_hoist_to, _d_hoist) + _d_dir.cross(Vector3.UP) * sin(PI * h) * 1.3
+		# Up first (over its head), then across, round it on one side rather
+		# than through it, and slammed into the trunk at the end.
+		var across := h * h * h
+		var rise := 1.0 - (1.0 - h) * (1.0 - h)
+		pos = _d_hoist_from.lerp(_d_hoist_to, across) + _d_dir.cross(Vector3.UP) * sin(PI * across) * 1.3
+		pos.y = lerpf(_d_hoist_from.y, _d_hoist_to.y, rise)
 	pos.y += _d_drop
+	pos.y = maxf(pos.y, _ground_y(pos) + 0.15)
 	var basis := Basis.looking_at(looking, Vector3.UP) * Basis(Vector3.RIGHT, pitch) * Basis(Vector3.BACK, roll)
 	_cam.global_transform = Transform3D(basis, pos)
 
@@ -450,7 +468,35 @@ func _drag_shot(delta: float) -> void:
 
 
 func _drag_camera_position() -> Vector3:
-	return _d_pos + Vector3.UP * (0.22 + _d_bounce)
+	return _d_pos + Vector3.UP * (DRAG_EYE_HEIGHT + _d_bounce)
+
+
+## Where the player ends up against the willow: hoist_height up, on the
+## side the drag came from, HOIST_CLEARANCE off the trunk's surface (found
+## with a ray along the drag at that height; the impaling drop below it is
+## allowed for).
+func _hoist_spot() -> Vector3:
+	var level := _d_lair + Vector3.UP * hoist_height
+	var fallback := level - _d_dir * hoist_trunk_distance
+	var space := get_viewport().world_3d.direct_space_state if get_viewport() else null
+	if space == null:
+		return fallback
+	var nearest := INF
+	# The trunk at the camera's height, and where the drop takes it.
+	for drop in [0.0, -0.45]:
+		var at: Vector3 = level + Vector3.UP * drop
+		var query := PhysicsRayQueryParameters3D.create(at - _d_dir * 6.0, at, 1)
+		if _d_entity:
+			query.exclude = [_d_entity.get_rid()]
+		var player := get_tree().get_first_node_in_group("player") as CollisionObject3D
+		if player:
+			query.exclude += [player.get_rid()]
+		var hit := space.intersect_ray(query)
+		if hit:
+			nearest = minf(nearest, (hit.position - (at - _d_dir * 6.0)).dot(_d_dir))
+	if nearest == INF:
+		return fallback
+	return level - _d_dir * (6.0 - nearest + HOIST_CLEARANCE)
 
 
 ## The weeping willow the Entity is anchored to (or somewhere near the
@@ -522,6 +568,7 @@ func _escape_mediocre() -> void:
 
 	await _wait(1.2)
 	_v_moving = true
+	_engine_sound(ACCELERATION_SOUND, -2.0)
 	_fade(0.0, 1.4)
 	await _wait(3.1)
 
@@ -772,8 +819,8 @@ func _van_shot(delta: float, entity: Node3D) -> void:
 		_v_side = _v_dir.cross(Vector3.UP).normalized()
 		turn = Basis(Vector3.UP, _v_dir0.signed_angle_to(_v_dir, Vector3.UP))
 	_van.global_transform = Transform3D(turn * _v_basis, pos)
-	if _v_engine:
-		_v_engine.pitch_scale = 0.7 + _v_speed / VAN_TOP_SPEED * 0.6
+	if _v_engine and _v_engine_running:
+		_v_engine.pitch_scale = 0.85 + _v_speed / VAN_TOP_SPEED * 0.45
 
 	var smooth := 1.0 if _v_cam_snap else clampf(delta * 3.0, 0.0, 1.0)
 	var look := pos + Vector3.UP * 1.0
@@ -865,22 +912,44 @@ func _add_van_lights(tail: bool) -> void:
 			_temp.append(back)
 
 
+## The door shuts, the engine turns over, then runs (looping, its pitch
+## following the van's speed).
 func _start_engine() -> void:
 	if not ResourceLoader.exists(ENGINE_SOUND):
 		return
-	_v_engine = AudioStreamPlayer3D.new()
+	_engine_sound(DOOR_CLOSE_SOUND, -4.0)
+	_v_engine_running = false
+	_v_engine = _engine_sound(ENGINE_START_SOUND, -4.0)
+	_v_engine.stop()
+	_tween().tween_callback(_v_engine.play).set_delay(0.35)
+	_v_engine.finished.connect(_engine_running, CONNECT_ONE_SHOT)
+
+
+func _engine_running() -> void:
+	if not is_instance_valid(_v_engine):
+		return
 	var stream := (load(ENGINE_SOUND) as AudioStream).duplicate()
 	if "loop" in stream:
 		stream.loop = true
 	_v_engine.stream = stream
-	_v_engine.bus = &"SFX"
-	_v_engine.volume_db = -4.0
-	_v_engine.unit_size = 8.0
-	_v_engine.max_distance = 90.0
-	_van.add_child(_v_engine)
-	_v_engine.position = Vector3.UP
+	_v_engine_running = true
 	_v_engine.play()
-	_temp.append(_v_engine)
+
+
+## A sound from the van (it moves with it).
+func _engine_sound(path: String, volume_db: float) -> AudioStreamPlayer3D:
+	var player := AudioStreamPlayer3D.new()
+	if ResourceLoader.exists(path):
+		player.stream = load(path)
+	player.bus = &"SFX"
+	player.volume_db = volume_db
+	player.unit_size = 8.0
+	player.max_distance = 90.0
+	_van.add_child(player)
+	player.position = Vector3.UP
+	player.play()
+	_temp.append(player)
+	return player
 
 
 # ─── Helpers ────────────────────────────────────────────────────────────────

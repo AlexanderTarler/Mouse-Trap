@@ -6,7 +6,8 @@
 [resource]
 script = ExtResource("1_item_data")
 item_name = "Old note"
-item_description = "Another scrap, torn from the same journal. The handwriting grows more frantic."
+item_description = "A scrap torn from an old journal. The ink has run in the damp, but it's legible."
 item_type = 1
 note_text = "...I met its gaze beneath the canopy and struck my match, thinking the flare would scatter it like a wolf. A terrible mistake. The light pained its ancient eyes, and it fell into a screaming rage, charging blindly through the brush. A passing glare only maddens the beast; only a flood of steady light will force it to halt..."
+read_thought = "A flash only makes it angry. Steady light holds it. Whoever wrote this learned that the hard way."
 scene_to_spawn = ExtResource("2_note_scene")

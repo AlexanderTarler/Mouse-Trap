@@ -58,6 +58,10 @@ signal caught_player
 
 ## When false (debug console), reaching the player doesn't kill them.
 var can_kill: bool = true
+## TEMPORARY (F4, EntityDebugOverlay.debug_landing_breach): it may climb and
+## break in tonight whatever the night, through a lit or repelled window,
+## until this break-in is over.
+var debug_breach := false
 ## Set by the overload stun and kept until the player is back in the cabin
 ## (no totem teleport meanwhile); read by totem_anchor.gd.
 var totem_defense_disabled: bool = false
@@ -390,7 +394,7 @@ func can_approach_cabin() -> bool:
 
 ## Night 2 it can break glass but not planks; from Night 3, planks too.
 func can_break_planks() -> bool:
-	return is_dev_mode() or current_night() >= 3
+	return is_dev_mode() or debug_breach or current_night() >= 3
 
 
 func speed_multiplier() -> float:
@@ -635,6 +639,7 @@ func _physics_process(delta: float) -> void:
 	audio.update_floor_creaks(delta, ground_speed)
 	audio.update_murmurs(delta)
 	audio.update_mimicry(delta)
+	audio.update_hunt_music(delta)
 	_update_animation(delta)
 
 
@@ -839,7 +844,7 @@ func _cancel_traversal() -> void:
 # window (its link) does the whole climb and vault in one go.
 
 func can_climb() -> bool:
-	return is_dev_mode() or current_night() >= config.climb_night
+	return is_dev_mode() or debug_breach or current_night() >= config.climb_night
 
 
 ## Holding on to the wall outside an upstairs window (including while ducking).
