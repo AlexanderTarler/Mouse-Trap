@@ -39,9 +39,12 @@ const VERGE := [
 	[MEADOWS + "Thistles/Thistles.fbx", 0.02, 0.7, 1.1],
 	["stone_5", 0.03, 1.0, 2.0],
 ]
+## (Blueberry carpets the floor of a Swedish pine forest; ferns where it's
+## damper.)
 const FOREST_FLOOR := [
 	[MEADOWS + "Mushrooms/Mushrooms.fbx", 0.03, 1.0, 1.8],
-	[MEADOWS + "Blueberry Bush/Blueberry Bush.fbx", 0.02, 0.8, 1.2],
+	[MEADOWS + "Blueberry Bush/Blueberry Bush.fbx", 0.06, 0.8, 1.2],
+	[MEADOWS + "Fern/Fern.fbx", 0.03, 0.7, 1.1],
 	[CARDS + "SM_EC_Plant_Card_Cross_00.tscn", 0.025, 0.8, 1.3],
 	[CARDS + "SM_EC_Plant_Card_Cross_10.tscn", 0.02, 0.8, 1.3],
 ]

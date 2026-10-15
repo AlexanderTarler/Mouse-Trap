@@ -28,6 +28,20 @@ const DEAD_TREES := ["tree_8", "tree_9"]
 ## Rare: their canopies hang at head height.
 const BROADLEAF_CHANCE := 0.04
 const BROADLEAVES := ["tree_5", "tree_6"]
+## A Swedish forest is pine with birch through it: birches here and there,
+## more of them by the road and at the edges of clearings (where the light
+## is). (No autumn birches: it's spring, the end of April.)
+const MEADOWS := "res://assets/PSX Forest Meadows by VadaCross/3D Models/"
+const BIRCH := MEADOWS + "Birch Tree/Birch Tree.fbx"
+const BIRCH_CHANCE := 0.09
+## Within this of the road, or on clearing paint, birches are this likely.
+const BIRCH_EDGE_DISTANCE := 9.0
+const BIRCH_EDGE_CHANCE := 0.3
+## The models are not all made to one scale: this brings each to a mature
+## tree's height (the pines are ~10 m; the birch model is 5.8 m): [across,
+## up]. Less across than up, or the trunk swells with the height (a birch
+## is tall and slender).
+const TREE_MODEL_SCALE := {BIRCH: Vector2(1.1, 1.8)}
 const TREE_SCALE := Vector2(0.88, 1.18)
 const TREE_LEAN_DEGREES := 2.5
 
@@ -43,7 +57,19 @@ const UNDERGROWTH := [
 	["mushroom_n_4", 0.12, 0.45, 1.3, 1.2, 2.0],
 	["stone_5", 0.25, 1.0, 5.0, 1.0, 2.2],  # pebbles
 	["tree_1", 0.05, 2.5, 5.5, 0.6, 0.9],   # sapling
+	# Head height, between the ferns and the crowns: young pines (tree_7 is
+	# an 8 m pine, here 3.5-6 m), so the eye doesn't run straight through
+	# the trunks to the edge of the map. Drawn as small things are (no
+	# shadow, gone beyond FoliageBatcher.SMALL_DRAW_DISTANCE): SMALL_MODELS.
+	["tree_7", 0.09, 2.5, 6.0, 0.42, 0.72],
+	# The forest floor: real ferns, fallen branches and now and then a fallen
+	# trunk (no stumps: the nests are the stumps).
+	[MEADOWS + "Fern/Fern.fbx", 0.2, 0.8, 4.5, 0.7, 1.2],
+	["res://assets/Fixed .fbx/SM_EC_Tree_Part_Cross_00.tscn", 0.12, 0.8, 4.5, 0.9, 1.6],
+	["tree_log_1", 0.025, 2.0, 5.0, 0.8, 1.1],
 ]
+## Models batched as small whatever their size (FoliageBatcher.draw_as_small).
+const SMALL_MODELS := ["tree_7"]
 
 ## Kept clear: [centre, radius]. The cabin and its yard, the totem's clearing.
 const CLEAR_ZONES := [
@@ -104,10 +130,12 @@ static func dress(group: Node3D, add: Callable) -> Dictionary:
 			trees_cleared += 1
 			continue
 		var base := mesh_instance.global_transform
-		var model := _tree_model(rng, source)
+		var model := _tree_model(rng, source, at)
 		var lean := Basis(Vector3(rng.randf_range(-1.0, 1.0), 0.0, rng.randf_range(-1.0, 1.0)).normalized(),
 			deg_to_rad(rng.randf_range(0.0, TREE_LEAN_DEGREES)))
-		var basis := lean * Basis(Vector3.UP, rng.randf() * TAU) * Basis.from_scale(Vector3.ONE * rng.randf_range(TREE_SCALE.x, TREE_SCALE.y))
+		var size := rng.randf_range(TREE_SCALE.x, TREE_SCALE.y)
+		var model_scale: Vector2 = TREE_MODEL_SCALE.get(model, Vector2.ONE)
+		var basis := lean * Basis(Vector3.UP, rng.randf() * TAU) 			* Basis.from_scale(Vector3(model_scale.x, model_scale.y, model_scale.x) * size)
 		_emit(model, Transform3D(basis, base.origin), add)
 		_undergrowth(rng, base.origin, add)
 	return replaced
@@ -146,15 +174,22 @@ static func _remove_collider_near(colliders: Array, at: Vector3) -> void:
 		(colliders[best][0] as CollisionShape3D).set_deferred("disabled", true)
 
 
-## The tree a pine becomes: mostly a pine of a random colouring (same size
-## variant: pine_tree_n_1_3 -> pine_tree_n_2_3), sometimes a dead tree or an
-## autumn broadleaf.
-static func _tree_model(rng: RandomNumberGenerator, source: String) -> String:
+## The tree a pine at `at` becomes: mostly a pine of a random colouring
+## (same size variant: pine_tree_n_1_3 -> pine_tree_n_2_3), some birches
+## (more by the road and clearings), the other pine shape, sometimes a dead
+## tree or an autumn broadleaf.
+static func _tree_model(rng: RandomNumberGenerator, source: String, at: Vector3) -> String:
 	var roll := rng.randf()
 	if roll < DEAD_TREE_CHANCE:
 		return DEAD_TREES[rng.randi() % DEAD_TREES.size()]
-	if roll < DEAD_TREE_CHANCE + BROADLEAF_CHANCE:
+	roll -= DEAD_TREE_CHANCE
+	if roll < BROADLEAF_CHANCE:
 		return BROADLEAVES[rng.randi() % BROADLEAVES.size()]
+	roll -= BROADLEAF_CHANCE
+	var edge := GravelRoad.covers(at, BIRCH_EDGE_DISTANCE) or TerrainMask.sample(at).r > 0.4
+	var birch := BIRCH_EDGE_CHANCE if edge else BIRCH_CHANCE
+	if roll < birch:
+		return BIRCH
 	var size_variant := source.get_basename().trim_prefix(PINE_SOURCE)
 	var pick := rng.randf()
 	var family: String = PINE_FAMILIES[0]
@@ -239,6 +274,8 @@ static func model_parts(model: String) -> Array:
 				# The model's own root may be scaled or turned (FBX imports).
 				local = Transform3D(root.basis, Vector3.ZERO) * local
 				parts.append([mesh_instance.mesh, local])
+				if model in SMALL_MODELS:
+					FoliageBatcher.draw_as_small(mesh_instance.mesh)
 		root.free()
 	else:
 		push_warning("ForestDresser: missing model %s" % path)

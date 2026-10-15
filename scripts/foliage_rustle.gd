@@ -29,6 +29,7 @@ const PLANTS := {
 	"fern_2": ["leafy", 0.42],             # flowering shrub
 	"fern_3": ["twiggy", 0.36],            # bare twigs
 	"tree_1": ["leafy", 0.25],             # sapling
+	"tree_7": ["twiggy", 0.2],             # young pine (ForestDresser)
 	"SM_EC_Plant_Bush": ["leafy", 0.4],
 	"SM_EC_Plant_Card_Cross": ["grassy", 0.9],
 	"grass_2": ["grassy", 0.45],

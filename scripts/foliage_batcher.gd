@@ -39,6 +39,10 @@ static var _flush_scheduled := false
 static var _scissor := {}
 ## mesh -> the mesh as drawn (scissor materials)
 static var _drawn := {}
+## Meshes always drawn as small (no shadows, fading out beyond
+## SMALL_DRAW_DISTANCE) whatever their size: the forest's young pines
+## (ForestDresser), which only matter up close.
+static var _always_small := {}
 
 
 func _ready() -> void:
@@ -76,6 +80,11 @@ static func add(mesh: Mesh, xform: Transform3D) -> void:
 	_add_mesh(mesh, xform)
 
 
+## Draws `mesh` as small from now on (see _always_small).
+static func draw_as_small(mesh: Mesh) -> void:
+	_always_small[mesh] = true
+
+
 ## True while the forest's own batches are still waiting to be built.
 static func is_build_scheduled() -> bool:
 	return _flush_scheduled
@@ -90,7 +99,7 @@ static func build(parent: Node, holder_name: String) -> void:
 static func _add_mesh(mesh: Mesh, xform: Transform3D) -> void:
 	var key := [mesh]
 	if not _pending.has(key):
-		var small := mesh.get_aabb().size.length() * xform.basis.get_scale().x < SMALL_SIZE
+		var small := _always_small.has(mesh) or mesh.get_aabb().size.length() * xform.basis.get_scale().x < SMALL_SIZE
 		_pending[key] = _entry(_drawn_mesh(mesh), null, GeometryInstance3D.SHADOW_CASTING_SETTING_ON, 1, small)
 	_place(key, xform)
 
