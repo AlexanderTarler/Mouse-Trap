@@ -62,14 +62,27 @@ const UNDERGROWTH := [
 	# the trunks to the edge of the map. Drawn as small things are (no
 	# shadow, gone beyond FoliageBatcher.SMALL_DRAW_DISTANCE): SMALL_MODELS.
 	["tree_7", 0.09, 2.5, 6.0, 0.42, 0.72],
-	# The forest floor: real ferns, fallen branches and now and then a fallen
-	# trunk (no stumps: the nests are the stumps).
+	# The forest floor: real ferns and fallen branches (no stumps: the nests
+	# are the stumps; no logs: these have no collider, the trails' do).
 	[MEADOWS + "Fern/Fern.fbx", 0.2, 0.8, 4.5, 0.7, 1.2],
 	["res://assets/Fixed .fbx/SM_EC_Tree_Part_Cross_00.tscn", 0.12, 0.8, 4.5, 0.9, 1.6],
-	["tree_log_1", 0.025, 2.0, 5.0, 0.8, 1.1],
 ]
 ## Models batched as small whatever their size (FoliageBatcher.draw_as_small).
 const SMALL_MODELS := ["tree_7"]
+
+## The forest the logging camp cut in 1974, east of the barn (its last
+## season: Lore): where the pines stood, their stumps (the trunk's collider
+## shrunk to the stump), and what has grown up in 25 years, young pine and
+## birch, and ferns. [centre, radius]; the edge is ragged by CLEARCUT_EDGE m.
+const CLEARCUT := [Vector3(88.0, 0.0, -92.0), 13.0]
+const CLEARCUT_EDGE := 3.0
+const CLEARCUT_STUMP_SCALE := Vector2(1.3, 1.7)
+## Per stump: up to this many young trees beside it, each this likely
+## (young pine, else birch: birch is first back after a cut).
+const CLEARCUT_REGROWTH := [2, 0.7]
+const CLEARCUT_YOUNG_PINE := 0.45
+## The stumps don't stand where the old rows were planted to the metre.
+const CLEARCUT_JITTER := 0.8
 
 ## Kept clear: [centre, radius]. The cabin and its yard, the totem's clearing.
 const CLEAR_ZONES := [
@@ -102,6 +115,8 @@ static var _models := {}
 ## (for the tests).
 static var undergrowth_spots := PackedVector3Array()
 static var trees_cleared := 0
+## The clear-cut's stumps (for the tests).
+static var clearcut_stumps := PackedVector3Array()
 static var _interactables: Array[Vector3] = []
 static var _interactables_frame := -1
 
@@ -128,6 +143,10 @@ static func dress(group: Node3D, add: Callable) -> Dictionary:
 		if TerrainMask.path(at) >= TREE_ON_PATH or near_fence(at, FENCE_TREE_CLEARANCE) 				or GravelRoad.covers(at, ROAD_TREE_CLEARANCE):
 			_remove_collider_near(colliders, at)
 			trees_cleared += 1
+			continue
+		# (After the road and the paths: no stump left on either.)
+		if in_clearcut(at):
+			_cut(rng, mesh_instance.global_transform.origin, colliders, add)
 			continue
 		var base := mesh_instance.global_transform
 		var model := _tree_model(rng, source, at)
@@ -163,15 +182,65 @@ static func near_fence(spot: Vector3, margin: float) -> bool:
 
 ## Turns off the trunk collider standing at `at` (the tree is gone).
 static func _remove_collider_near(colliders: Array, at: Vector3) -> void:
-	var best := -1
+	var shape := _collider_near(colliders, at)
+	if shape:
+		shape.set_deferred("disabled", true)
+
+
+## The trunk collider standing at `at` (or null).
+static func _collider_near(colliders: Array, at: Vector3) -> CollisionShape3D:
+	var best: CollisionShape3D = null
 	var best_distance := 1.0
-	for i in colliders.size():
-		var d := Vector2(colliders[i][1].x - at.x, colliders[i][1].z - at.z).length()
+	for entry in colliders:
+		var d := Vector2(entry[1].x - at.x, entry[1].z - at.z).length()
 		if d < best_distance:
 			best_distance = d
-			best = i
-	if best >= 0:
-		(colliders[best][0] as CollisionShape3D).set_deferred("disabled", true)
+			best = entry[0]
+	return best
+
+
+## Whether `at` is in the 1974 clear-cut (its edge ragged, not a circle).
+static func in_clearcut(at: Vector3) -> bool:
+	var ragged := (sin(at.x * 0.7) + cos(at.z * 0.9)) * 0.5 * CLEARCUT_EDGE
+	return Vector2(at.x - CLEARCUT[0].x, at.z - CLEARCUT[0].z).length() < CLEARCUT[1] + ragged
+
+
+## The pine at `base` was cut in 1974: a stump (its trunk collider cut down
+## to the stump's size; a new shape, the group's is shared), and what grew
+## up since.
+static func _cut(rng: RandomNumberGenerator, tree_at: Vector3, colliders: Array, add: Callable) -> void:
+	var trunk := _collider_near(colliders, tree_at)
+	var base := tree_at + Vector3(rng.randf_range(-1.0, 1.0), 0.0, rng.randf_range(-1.0, 1.0)) * CLEARCUT_JITTER
+	if not clear(base):
+		base = tree_at
+	var size := rng.randf_range(CLEARCUT_STUMP_SCALE.x, CLEARCUT_STUMP_SCALE.y)
+	_emit("tree_stump_1", Transform3D(Basis(Vector3.UP, rng.randf() * TAU) * Basis.from_scale(Vector3.ONE * size),
+		base + Vector3.DOWN * 0.05), add)
+	clearcut_stumps.append(base)
+	if trunk:
+		var stump := CylinderShape3D.new()
+		stump.radius = 0.4 * size
+		stump.height = 0.5 * size
+		trunk.shape = stump
+		trunk.global_position = base + Vector3.UP * stump.height * 0.5
+	for young in CLEARCUT_REGROWTH[0]:
+		if rng.randf() >= CLEARCUT_REGROWTH[1]:
+			continue
+		var angle := rng.randf() * TAU
+		var spot := base + Vector3(cos(angle), 0.0, sin(angle)) * rng.randf_range(1.2, 3.0)
+		if clear(spot):
+			var turn := Basis(Vector3.UP, rng.randf() * TAU)
+			if rng.randf() < CLEARCUT_YOUNG_PINE:
+				_emit("tree_7", Transform3D(turn * Basis.from_scale(Vector3.ONE * rng.randf_range(0.5, 0.9)), spot), add)
+			else:
+				var grown := rng.randf_range(0.8, 1.1)
+				_emit(BIRCH, Transform3D(turn * Basis.from_scale(Vector3(0.75, 1.2, 0.75) * grown), spot), add)
+	for shrub in [["fern_1", 0.5], ["fern_3", 0.35], [MEADOWS + "Fern/Fern.fbx", 0.3]]:
+		if rng.randf() < shrub[1]:
+			var angle := rng.randf() * TAU
+			var spot := base + Vector3(cos(angle), 0.0, sin(angle)) * rng.randf_range(0.8, 3.5)
+			if clear(spot):
+				_emit(shrub[0], Transform3D(Basis(Vector3.UP, rng.randf() * TAU) * Basis.from_scale(Vector3.ONE * rng.randf_range(0.8, 1.2)), spot), add)
 
 
 ## The tree a pine at `at` becomes: mostly a pine of a random colouring

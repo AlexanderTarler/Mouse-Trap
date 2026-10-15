@@ -107,6 +107,8 @@ func build() -> void:
 	_dress_cabin()
 	_dress_cabin_yard()
 	_dress_trails()
+	_dress_boulders()
+	_dress_clearcut()
 	built = true
 	print("[SiteDresser] %d props placed, %d skipped, %d existing props given colliders." % [placed, skipped.size(), fixed_colliders])
 	finished.emit()
@@ -410,6 +412,70 @@ func _dress_trails() -> void:
 						_survey_stake(at, trail_rng.randf_range(-6.0, 6.0))
 						break
 					angle += 0.35
+
+
+## Boulders through the forest (what the ice left behind, all over a Swedish
+## forest): BOULDERS of them, some with a smaller one beside, on the forest
+## floor, off the paths and the road, clear of the cabin and of what the
+## player uses. Solid (the navmesh walks around them: tools/bake_navmesh.gd).
+const BOULDERS := 40
+const BOULDER_MODELS := ["SM_EC_Rock_01", "SM_EC_Rock_02", "SM_EC_Rock_26", "SM_EC_Rock_27"]
+const BOULDER_HEIGHT := Vector2(1.6, 3.2)
+const BOULDER_PATH_MARGIN := 2.5
+const BOULDER_ROAD_MARGIN := 3.0
+const BOULDER_CABIN_CLEAR := 25.0
+
+
+func _dress_boulders() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 20261016
+	var count := 0
+	for attempt in 1200:
+		if count >= BOULDERS:
+			break
+		var spot := Vector3(rng.randf_range(-115.0, 115.0), 0.0, rng.randf_range(-115.0, 115.0))
+		if TerrainMask.sample(spot).b < 0.5 or TerrainMask.near_path(spot, BOULDER_PATH_MARGIN) 				or GravelRoad.covers(spot, BOULDER_ROAD_MARGIN) or not ForestDresser.clear(spot) 				or Vector2(spot.x - 9.0, spot.z - 14.0).length() < BOULDER_CABIN_CLEAR:
+			continue
+		var tall := rng.randf_range(BOULDER_HEIGHT.x, BOULDER_HEIGHT.y)
+		# A spot that doesn't fit (a trunk in the way) is just a try: not a
+		# skipped prop.
+		var tried := skipped.size()
+		var boulder := _put(F + BOULDER_MODELS[rng.randi() % BOULDER_MODELS.size()], "z", Vector2(spot.x, spot.z),
+			rng.randf_range(0.0, 360.0), {"height": tall, "lean": 10.0, "lift": -0.12 * tall, "ground_only": true, "clear": 3.0})
+		if boulder == null:
+			skipped.resize(tried)
+			continue
+		count += 1
+		if rng.randf() < 0.35:
+			var angle := rng.randf() * TAU
+			var beside := Vector2(spot.x, spot.z) + Vector2(cos(angle), sin(angle)) * tall * 0.9
+			tried = skipped.size()
+			if not _put(F + BOULDER_MODELS[rng.randi() % BOULDER_MODELS.size()], "z", beside, rng.randf_range(0.0, 360.0),
+					{"height": tall * rng.randf_range(0.35, 0.6), "lean": 15.0, "lift": -0.1 * tall, "ground_only": true, "clear": 3.0}):
+				skipped.resize(tried)
+
+
+## By the 1974 clear-cut (ForestDresser.CLEARCUT): the logging camp's last
+## pile, never collected, greying where it lies. At the first of a few
+## spots on its edge where it fits.
+const CLEARCUT_PILES := [Vector2(76.0, -86.0), Vector2(78.0, -99.0), Vector2(92.0, -80.0), Vector2(86.0, -92.0)]
+
+
+func _dress_clearcut() -> void:
+	for at in CLEARCUT_PILES:
+		var yaw := 20.0
+		var tried := skipped.size()
+		var bottom := _put(N + "tree_log_1", "y", at, yaw, {"ground_only": true, "clear": 3.0})
+		if bottom == null:
+			skipped.resize(tried)
+			continue
+		var across := Vector2(cos(deg_to_rad(-yaw)), sin(deg_to_rad(-yaw))).orthogonal()
+		_put(N + "tree_log_1", "y", at + across * 0.55, yaw + 3.0, {"ground_only": true, "clear": 3.0})
+		_put(N + "tree_log_1", "y", at - across * 0.55, yaw - 2.0, {"ground_only": true, "clear": 3.0})
+		_put(N + "tree_log_1", "y", at + across * 0.25, yaw + 1.0, {"clear": 3.0, "allow_overlap": true})
+		_put(N + "tree_log_1", "y", at - across * 0.3, yaw - 4.0, {"clear": 3.0, "allow_overlap": true})
+		_put(F + "SM_EC_55L_Drum_03", "z", at + across * 2.4 + Vector2(1.0, 0.5), 0.0, {"lean": 8.0, "clear": 3.0})
+		return
 
 
 ## Takes `instance` away again if any of its footprint is on a walking path

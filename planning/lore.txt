@@ -9,6 +9,12 @@ THE PLACE
   Svea Naturinstitut took over the cabin, its generator and the old
   forestry archive terminal (it still boots as SVENSKA
   SKOGSBRUKSARKIVET), and staked the stumps around it with orange tape.
+  Season: spring, late April (the dormice should still be asleep; the
+  birches are green, none turning). The forest is pine with birch through
+  it, boulders left by the ice. East of the barn, the camp's last cut
+  (1974): grey stumps, grown up since with young birch and pine, and the
+  log pile nobody came back for (ForestDresser.CLEARCUT,
+  SiteDresser._dress_clearcut).
   Directions (level -Z is north): Nest Alpha east of the cabin, Nest Beta
   west, Nest Gamma far south-west by the sunken tunnel, the willow in its
   own clearing south-east, the barn north-east, the wreck yard west.
