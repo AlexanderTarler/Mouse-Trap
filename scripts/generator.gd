@@ -190,12 +190,12 @@ func get_interact_text() -> String:
 			for node in get_tree().get_nodes_in_group("interactable"):
 				if node is FuseBox: fuse_box = node; break
 		if not fuse_box or not fuse_box.has_method("is_powered") or not fuse_box.is_powered():
-			return "[E] Turn Generator On (Repair Fuse Box First)"
+			return "Generator (fix the fuse box first)"
 		if nm.generator_fuel <= 0.0:
-			return "[E] Turn Generator On (No Fuel)"
+			return "Generator (no fuel)"
 		var fuel_pct: float = (nm.generator_fuel / nm.max_fuel) * 100.0
 		if fuel_pct < MIN_START_FUEL_PERCENT:
-			return "[E] Turn Generator On (Need > 10% Fuel)"
+			return "Generator (needs more than 10% fuel)"
 	return "[E] Turn Generator On"
 
 func _show_hud_msg(msg: String) -> void:

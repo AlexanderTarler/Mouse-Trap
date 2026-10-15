@@ -58,6 +58,18 @@ const MURMUR_INTERVAL_MAX := 45.0
 const MURMUR_STATES := [Entity.State.HUNT, Entity.State.SEARCH, Entity.State.STALK, Entity.State.PEEK]
 
 const VOICE_COOLDOWN := 10.0
+## Its copies of the player's own sounds (update_mimicry).
+const SWITCH_STREAM := preload("res://assets/audio/objects/light_switch.wav")
+const NOTEBOOK_STREAM := preload("res://assets/audio/objects/Toggle Journal.ogg")
+const MIMIC_KINDS := ["steps", "steps", "switch", "notebook", "knock"]
+const MIMIC_STATES := [Entity.State.HUNT, Entity.State.OBSERVE, Entity.State.STALK,
+		Entity.State.SEARCH, Entity.State.APPROACH, Entity.State.PEEK]
+const MIMIC_FIRST_MIN := 60.0
+const MIMIC_FIRST_MAX := 150.0
+const MIMIC_GAP_MIN := 90.0
+const MIMIC_GAP_MAX := 200.0
+## Copied sounds come from a room at least this far from the player.
+const MIMIC_MIN_DISTANCE := 7.0
 const FOOTSTEP_PITCH_MIN := 0.7
 const FOOTSTEP_PITCH_MAX := 0.95
 
@@ -67,12 +79,15 @@ var _sfx: AudioStreamPlayer3D
 var _tap: AudioStreamPlayer3D
 var _growl: AudioStreamPlayer3D
 var _footstep: AudioStreamPlayer3D
+var _footstep_db := 0.0   ## its own volume (before hushing)
 var _voice_cooldown := 0.0
 var _step_timer := 0.0
 var _chase_music_on := false
 var _scrape: AudioStreamPlayer3D
 var _creak: AudioStreamPlayer3D
 var _knock: AudioStreamPlayer3D
+var _decoy: AudioStreamPlayer3D
+var _decoy_tween: Tween = null
 var _shriek: AudioStreamPlayer3D
 var _shriek_streams: Array[AudioStream] = []
 var _growl_streams: Array[AudioStream] = []
@@ -83,6 +98,10 @@ var _knock_streams: Array[AudioStream] = []
 var _murmur_streams: Array[AudioStream] = []
 var _creak_left := 0.0
 var _murmur_left := 30.0
+var _mimic_left := 0.0
+var _mimic_night := -1
+var _mimics_tonight := 0
+var last_mimic := ""   ## The last sound it copied (for tests and the overlay).
 
 
 func setup(owner_entity: Entity) -> void:
@@ -94,12 +113,17 @@ func setup(owner_entity: Entity) -> void:
 	_tap.top_level = true
 	_growl = entity.get_node_or_null("GrowlAudio")
 	_footstep = entity.get_node_or_null("FootstepAudio")
+	if _footstep:
+		_footstep_db = _footstep.volume_db
 	_scrape = _make_player("Scrape", 4.0, 30.0, -2.0)
 	_scrape.top_level = true
 	_creak = _make_player("Creak", 4.0, 20.0, 0.0)
 	_creak.top_level = true
 	_knock = _make_player("Knock", 5.0, 35.0, 2.0)
 	_knock.top_level = true
+	# Sounds placed away from it (the fake departure).
+	_decoy = _make_player("Decoy", 5.0, 40.0, 0.0)
+	_decoy.top_level = true
 	# A child of this node (at its eye height), so it moves with it.
 	_shriek = _make_player("Shriek", 8.0, 60.0, 4.0)
 	_shriek_streams = _load_paths(SHRIEK_PATHS)
@@ -240,7 +264,7 @@ func _knock_once() -> void:
 ## when the player is inside on the floor below (or above) and close.
 func update_floor_creaks(delta: float, horizontal_speed: float) -> void:
 	if horizontal_speed < 0.5 or _creak_streams.is_empty() or not entity.perception.entity_inside \
-			or not entity.perception.player_inside:
+			or not entity.perception.player_inside or is_lying_in_wait():
 		return
 	var player := entity.get_player()
 	var rise := absf(player.global_position.y - entity.global_position.y)
@@ -263,8 +287,150 @@ func update_murmurs(delta: float) -> void:
 		return
 	_murmur_left = randf_range(MURMUR_INTERVAL_MIN, MURMUR_INTERVAL_MAX)
 	if entity.get_state() in MURMUR_STATES and not entity.perception.in_player_view \
-			and entity.perception.distance_to_player < MURMUR_DISTANCE:
+			and entity.perception.distance_to_player < MURMUR_DISTANCE and not is_lying_in_wait():
 		play_voice("murmur", true)
+
+
+## Waiting in ambush (HUNT): it makes no sound at all.
+func is_lying_in_wait() -> bool:
+	var state = entity.brain.current if entity.brain else null
+	return state != null and state.has_method("is_ambushing") and state.is_ambushing()
+
+
+## The tell before it springs from an ambush: a low breath, close by.
+func play_tell() -> void:
+	if not _growl_streams.is_empty():
+		_sfx.stream = _growl_streams.pick_random()
+		_sfx.pitch_scale = randf_range(0.55, 0.65)
+	else:
+		_sfx.stream = GRUNT_STREAM
+		_sfx.pitch_scale = 0.5
+	_sfx.play()
+
+
+## The sound of it leaving through `link` (while it stays inside): claws on
+## the frame, a thud on the ground outside, then a growl out in the yard.
+func play_departure(link: CabinEntryLink, yard: Vector3) -> void:
+	if _decoy_tween and _decoy_tween.is_valid():
+		_decoy_tween.kill()
+	var frame := link.entry.global_position + Vector3.UP * 0.8
+	var outside := link.start_position + Vector3.UP * 0.3
+	_decoy_tween = create_tween()
+	_decoy_tween.tween_callback(_decoy_play.bind(frame, _scrape_streams, 1.0))
+	_decoy_tween.tween_interval(1.4)
+	_decoy_tween.tween_callback(_decoy_play.bind(outside, _thud_streams, 0.95))
+	_decoy_tween.tween_interval(randf_range(3.5, 5.0))
+	_decoy_tween.tween_callback(_decoy_play.bind(yard + Vector3.UP, _growl_streams, 0.9))
+
+
+func _decoy_play(at: Vector3, streams: Array, pitch: float) -> void:
+	if streams.is_empty():
+		return
+	_decoy.global_position = at
+	_decoy.stream = streams.pick_random()
+	_decoy.pitch_scale = pitch * randf_range(0.95, 1.05)
+	_decoy.play()
+
+
+## One dull crack at a window: the glass eased out of its frame.
+func play_crack(world_position: Vector3) -> void:
+	_tap.global_position = world_position
+	_tap.stream = WINDOW_KNOCK
+	_tap.pitch_scale = 0.55
+	_tap.play()
+
+
+## Something knocked over: a thud where it fell.
+func play_thud_at(world_position: Vector3) -> void:
+	_decoy_play(world_position, _thud_streams, 1.15)
+
+
+## Now and then (Night 3, at most config.mimic_per_night times) it makes the
+## player's own sounds somewhere else in the house: their footsteps in
+## another room, the notebook, a light switch, a knock on the front door.
+## Only while the player is inside and can't see it, and not right after
+## another of its tricks (EntityWorld.trick_ready).
+func update_mimicry(delta: float) -> void:
+	var night := entity.current_night()
+	if night != _mimic_night:
+		_mimic_night = night
+		_mimics_tonight = 0
+		_mimic_left = randf_range(MIMIC_FIRST_MIN, MIMIC_FIRST_MAX)
+	_mimic_left -= delta
+	if _mimic_left > 0.0 or not can_mimic():
+		return
+	_mimic_left = randf_range(MIMIC_GAP_MIN, MIMIC_GAP_MAX)
+	mimic()
+
+
+func can_mimic() -> bool:
+	var p := entity.perception
+	return entity.can_break_planks() and _mimics_tonight < entity.config.mimic_per_night \
+			and p.player_inside and not p.in_player_view and entity.get_state() in MIMIC_STATES \
+			and entity.world.trick_ready()
+
+
+## Plays one of the player's own sounds (`kind`, or any) in a room away
+## from them. False if there is nowhere to put it.
+func mimic(kind: String = "") -> bool:
+	var player := entity.get_player()
+	var spot := _mimic_spot(player.global_position)
+	if spot == Vector3.INF:
+		return false
+	if kind == "":
+		kind = MIMIC_KINDS.pick_random()
+	var door := _front_door()
+	if kind == "knock" and door == null:
+		kind = "switch"
+	match kind:
+		"steps":
+			_mimic_steps(spot, player)
+		"switch":
+			_decoy_play(spot + Vector3.UP * 1.3, [SWITCH_STREAM], 1.0)
+		"notebook":
+			_decoy_play(spot + Vector3.UP, [NOTEBOOK_STREAM], 1.0)
+		"knock":
+			play_knocks(door.entry.global_position + Vector3.UP * 1.2)
+	_mimics_tonight += 1
+	last_mimic = kind
+	entity.world.note_trick()
+	return true
+
+
+## A room centre far enough from the player (preferably on the other floor).
+func _mimic_spot(player_position: Vector3) -> Vector3:
+	var far: Array[Vector3] = []
+	var other_floor: Array[Vector3] = []
+	for center in entity.world.room_centers():
+		if center.distance_to(player_position) < MIMIC_MIN_DISTANCE:
+			continue
+		far.append(center)
+		if absf(center.y - player_position.y) >= Entity.FLOOR_GAP:
+			other_floor.append(center)
+	if not other_floor.is_empty():
+		return other_floor.pick_random()
+	return far.pick_random() if not far.is_empty() else Vector3.INF
+
+
+## Five of the player's own footsteps, crossing a room.
+func _mimic_steps(spot: Vector3, player: Node) -> void:
+	var streams: Array = player.get("wood_footsteps") if player.get("wood_footsteps") else []
+	if streams.is_empty():
+		streams = _creak_streams
+	if _decoy_tween and _decoy_tween.is_valid():
+		_decoy_tween.kill()
+	var heading := Vector3.FORWARD.rotated(Vector3.UP, randf() * TAU)
+	_decoy_tween = create_tween()
+	for i in 5:
+		_decoy_tween.tween_callback(_decoy_play.bind(spot + heading * (i * 0.6) + Vector3.UP * 0.1, streams, randf_range(0.95, 1.05)))
+		_decoy_tween.tween_interval(randf_range(0.45, 0.55))
+
+
+func _front_door() -> CabinEntryLink:
+	for link in entity.world.entries():
+		if link.kind == CabinEntryLink.Kind.DOOR:
+			return link
+	return null
 
 
 ## Knocking on the glass at a world position (a window).
@@ -275,8 +441,19 @@ func play_tap_at(world_position: Vector3) -> void:
 	_tap.play()
 
 
+## Its footsteps. Far off it is heard (that's the tension); creeping up
+## unseen it goes quiet: fading from SILENCE_FADE m, silent within
+## SILENCE_DISTANCE. Charging, it pounds.
+const SILENCE_DISTANCE := 6.0
+const SILENCE_FADE := 11.0
+
+
 func update_footsteps(delta: float, horizontal_speed: float) -> void:
 	if horizontal_speed < 0.5 or not _footstep:
+		_step_timer = 0.0
+		return
+	var quiet := _closeness_quiet()
+	if quiet >= 1.0:
 		_step_timer = 0.0
 		return
 	_step_timer -= delta
@@ -289,7 +466,20 @@ func update_footsteps(delta: float, horizontal_speed: float) -> void:
 		return
 	_footstep.stream = streams.pick_random()
 	_footstep.pitch_scale = randf_range(FOOTSTEP_PITCH_MIN, FOOTSTEP_PITCH_MAX)
+	_footstep.volume_db = _footstep_db + linear_to_db(maxf(1.0 - quiet, 0.001))
 	_footstep.play()
+
+
+## 0 (heard as normal) .. 1 (silent): how much it hushes its steps, creeping
+## close to the player unseen. Not while charging or being watched.
+func _closeness_quiet() -> float:
+	var p := entity.perception
+	if entity.get_state() == Entity.State.CHARGE or p.in_player_view:
+		return 0.0
+	# Creeping to an ambush (or after the fake departure): not a sound.
+	if is_lying_in_wait():
+		return 1.0
+	return clampf(inverse_lerp(SILENCE_FADE, SILENCE_DISTANCE, p.distance_to_player), 0.0, 1.0)
 
 
 func start_chase_music() -> void:
@@ -309,7 +499,9 @@ func stop_chase_music() -> void:
 
 
 func stop_all() -> void:
-	for player in [_voice, _sfx, _tap, _growl, _footstep, _scrape, _creak, _knock, _shriek]:
+	for player in [_voice, _sfx, _tap, _growl, _footstep, _scrape, _creak, _knock, _shriek, _decoy]:
 		if player:
 			player.stop()
+	if _decoy_tween and _decoy_tween.is_valid():
+		_decoy_tween.kill()
 	stop_chase_music()

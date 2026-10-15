@@ -5,6 +5,8 @@ extends Node3D
 ##   - muddy claw prints wherever it walks inside the cabin or close to it
 ##   - gouges in the wall under windows it peeked into or broke
 ## Traces persist through the day and are cleared when the next night starts.
+## On the web (the Compatibility renderer has no decals) each mark is a flat
+## textured quad laid on the surface the decal would have projected onto.
 ## Textures are small pixel-art images generated at startup (PSX style, no
 ## asset files needed).
 
@@ -21,8 +23,10 @@ const GOUGE := Color(0.1, 0.08, 0.06)
 var entity: Entity
 var _footprint_texture: ImageTexture
 var _scratch_texture: ImageTexture
-var _footprints: Array[Decal] = []
-var _scratches: Array[Decal] = []
+var _footprints: Array[Node3D] = []   ## Decals (or mark quads, on the web)
+var _scratches: Array[Node3D] = []
+## The Compatibility renderer (the web build): no decals.
+var compat := RenderingServer.get_current_rendering_method() == "gl_compatibility"
 var _scratch_count: Dictionary = {}   ## CabinEntryLink -> scratches left there
 var _climb_marked: Dictionary = {}    ## CabinEntryLink -> true once climbed tonight
 var _distance_since_print := 0.0
@@ -133,7 +137,9 @@ func _leave_footprint(pos: Vector3) -> void:
 	_push(_footprints, decal, MAX_FOOTPRINTS)
 
 
-func _make_decal(texture: Texture2D, color: Color, size: Vector3) -> Decal:
+func _make_decal(texture: Texture2D, color: Color, size: Vector3) -> Node3D:
+	if compat:
+		return _make_mark(texture, color, size)
 	var decal := Decal.new()
 	decal.texture_albedo = texture
 	decal.modulate = color
@@ -145,7 +151,45 @@ func _make_decal(texture: Texture2D, color: Color, size: Vector3) -> Decal:
 	return decal
 
 
-func _push(list: Array[Decal], decal: Decal, limit: int) -> void:
+## The web's stand-in for a decal: a quad the size of its face, moved (once
+## its owner has placed it) onto whatever its projection would have hit.
+func _make_mark(texture: Texture2D, color: Color, size: Vector3) -> Node3D:
+	var holder := Node3D.new()
+	var quad := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(size.x, size.z)
+	quad.mesh = plane
+	var material := StandardMaterial3D.new()
+	material.albedo_texture = texture
+	material.albedo_color = color
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	quad.material_override = material
+	quad.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	holder.add_child(quad)
+	holder.set_meta("depth", size.y)
+	add_child(holder)
+	_settle_mark.call_deferred(holder)
+	return holder
+
+
+## Down the mark's projection (its local -Y) to the surface, just above it.
+func _settle_mark(holder: Node3D) -> void:
+	if not is_instance_valid(holder) or not holder.is_inside_tree():
+		return
+	var down := -holder.global_basis.y.normalized()
+	var depth: float = holder.get_meta("depth")
+	var from := holder.global_position - down * depth * 0.5
+	var query := PhysicsRayQueryParameters3D.create(from, from + down * depth * 1.5, 1)
+	if entity:
+		query.exclude = [entity.get_rid()]
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if not hit.is_empty():
+		(holder.get_child(0) as Node3D).global_position = hit.position - down * 0.01
+
+
+func _push(list: Array[Node3D], decal: Node3D, limit: int) -> void:
 	list.append(decal)
 	if list.size() > limit:
 		list.pop_front().queue_free()

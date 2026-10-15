@@ -3,13 +3,23 @@ extends EntityState
 
 ## Walking up to a chosen window or the door (data {"entry": CabinEntryLink}).
 ##
-## Bluff: sometimes, if the player is watching it come, it stops partway,
-## stares, and backs off into the dark. Next time it may not stop.
+## data {"rush": true} (after LURE drew the player away): faster, and no
+## stopping for anything.
+##
+## Spotted on the way, it would rather not be seen: mostly it slips away out
+## of sight (config.shy_retreat_chance; that way in is avoided for a while,
+## EntityWorld.mark_spotted). Otherwise it may bluff: stop partway, stare, and
+## back off into the dark. Next time it may not stop.
 ##
 ## On arrival:
 ##   broken-open window / unlocked door -> ENTER
 ##   intact window                      -> PEEK
 ##   locked door                        -> PEEK (rattles the handle, then leaves)
+##
+## From Night 3 (config.quiet_entry_chance), at an unboarded window of a room
+## the player isn't in and can't see: it eases the glass out with one dull
+## crack and climbs straight in (no peeking, no smashing). The player finds
+## out it's inside later.
 
 const S := Entity.State
 const ARRIVE_DISTANCE := 0.8
@@ -20,6 +30,13 @@ var _bluff_point := -1.0
 var _bluff_left := 0.0
 var _bluffing := false
 var _arrived := false
+## Rushing (after a lure drew the player away): faster, and no stopping.
+var _rush := false
+## Spotted on the way: slipping away instead (config.shy_retreat_chance).
+var _retreating := false
+var _was_watched := false
+## Rolled once per approach: may ease the window open quietly.
+var _quiet := false
 
 
 func enter(_from: int, data: Dictionary) -> void:
@@ -27,7 +44,11 @@ func enter(_from: int, data: Dictionary) -> void:
 	brain.target_entry = _entry
 	_arrived = false
 	_bluffing = false
-	_bluff_point = randf_range(0.4, 0.65) if randf() < config.bluff_chance else -1.0
+	_rush = data.get("rush", false)
+	_retreating = false
+	_was_watched = false
+	_quiet = randf() < config.quiet_entry_chance
+	_bluff_point = randf_range(0.4, 0.65) if randf() < config.bluff_chance and not _rush else -1.0
 	_start_distance = Entity._flat_distance(entity.global_position, _entry.start_position) if _entry else 0.0
 
 
@@ -37,9 +58,17 @@ func update(delta: float) -> void:
 	if _bluffing:
 		_bluff_left -= delta
 		entity.stop()
+		entity.crawl()
 		entity.face(entity.get_player().global_position)
 		return
-	var remaining := entity.move_to(_entry.start_position, config.approach_speed)
+	# Spotted: it would rather not be seen. Mostly it slips away (and avoids
+	# this way in for a while); otherwise it may stop and stare (the bluff).
+	var watched := perception.player_watching
+	if watched and not _was_watched and not _rush and randf() < config.shy_retreat_chance:
+		_retreating = true
+	_was_watched = watched
+	var speed := config.approach_speed * (config.lure_rush_multiplier if _rush else 1.0)
+	var remaining := entity.move_to(_entry.start_position, speed)
 	if _bluff_point > 0.0 and perception.player_watching and remaining < _start_distance * (1.0 - _bluff_point):
 		_bluff_point = -1.0
 		_bluffing = true
@@ -52,6 +81,10 @@ func next_state() -> int:
 		return S.OBSERVE
 	if perception.player_outside:
 		return S.STALK if perception.can_see_player else S.OBSERVE
+	if _retreating:
+		world.mark_spotted(_entry)
+		entity.confidence.modify(-config.shy_retreat_confidence, "spotted")
+		return S.OBSERVE
 	if _bluffing:
 		return S.OBSERVE if _bluff_left <= 0.0 else NO_CHANGE
 	if not world.is_entry_viable(_entry):
@@ -65,4 +98,23 @@ func next_state() -> int:
 		return go(S.ENTER, {"entry": _entry})
 	if _entry.entry.is_passable():
 		return go(S.ENTER, {"entry": _entry})
+	if _can_enter_quietly():
+		_entry.entry.quiet_break()
+		entity.audio.play_crack(_entry.entry.global_position + Vector3.UP)
+		return go(S.ENTER, {"entry": _entry})
 	return go(S.PEEK, {"entry": _entry})
+
+
+## A quiet way in: an intact, unboarded ground-floor window, Night 3, in a
+## room the player isn't believed to be in, unwatched.
+func _can_enter_quietly() -> bool:
+	var window = _entry.entry
+	if not _quiet or _entry.climb or window.is_glass_shattered or window.is_boarded:
+		return false
+	if not entity.can_break_planks() or not window.has_method("quiet_break"):
+		return false
+	if perception.in_player_view or world.player_sees_entry(_entry):
+		return false
+	# Not the room they're in (the point is that they find it later).
+	var room := RoomLightDetector.get_room_name_at(entity.get_player().global_position + Vector3.UP).to_lower()
+	return room != world.entry_room(_entry)

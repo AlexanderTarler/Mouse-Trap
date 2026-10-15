@@ -244,5 +244,5 @@ func get_interact_text() -> String:
 	# showing the normal "Press E" text. The player is too tired.
 	var player_ref = get_tree().get_first_node_in_group("player")
 	if player_ref and "is_exhausted" in player_ref and player_ref.is_exhausted:
-		return "[color=gray]I am too tired to do this[/color]"
+		return "Too tired to read this"
 	return "[E] Read " + (item_data.item_name if item_data else "Note")

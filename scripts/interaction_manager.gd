@@ -27,6 +27,28 @@ func set_camera(cam: Camera3D) -> void:
 func _ready() -> void:
 	_create_prompt()
 
+## Prompts: "[E] Do thing" (tap) or "[Hold E] Do thing" (hold) in white;
+## anything not starting with a key is a status ("Generator (full)", "Too
+## tired to do this"): shown dimmed. Formatting tags are dropped (a Label
+## would show them as text).
+const PROMPT_COLOR := Color(1, 1, 1, 0.9)
+const STATUS_COLOR := Color(0.75, 0.72, 0.66, 0.6)
+static var _markup := RegEx.create_from_string("[[]/?(color|b|i|u)(=[^]]*)?[]]")
+
+
+## What is aimed at, for the crosshair: 0 nothing, 1 something to use,
+## 2 a status only.
+var target_kind := 0
+
+
+func _show_prompt(text: String) -> void:
+	text = _markup.sub(text, "", true)
+	_prompt_label.text = text
+	var action := text.begins_with("[")
+	_prompt_label.add_theme_color_override("font_color", PROMPT_COLOR if action else STATUS_COLOR)
+	target_kind = 0 if text == "" else (1 if action else 2)
+
+
 func _create_prompt() -> void:
 	var canvas = CanvasLayer.new()
 	canvas.layer = 5
@@ -40,8 +62,10 @@ func _create_prompt() -> void:
 	_prompt_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	_prompt_label.offset_top = -220
 	_prompt_label.offset_bottom = -180
-	_prompt_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.8))
-	_prompt_label.add_theme_font_size_override("font_size", 16)
+	_prompt_label.add_theme_color_override("font_color", PROMPT_COLOR)
+	_prompt_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	_prompt_label.add_theme_constant_override("outline_size", 5)
+	_prompt_label.add_theme_font_size_override("font_size", 17)
 	_prompt_label.text = ""
 	canvas.add_child(_prompt_label)
 
@@ -99,14 +123,15 @@ func _process(delta: float) -> void:
 				_current_target = interactable
 				# Use custom prompt text if the object provides it
 				if interactable.has_method("get_interact_text"):
-					_prompt_label.text = interactable.get_interact_text()
+					_show_prompt(interactable.get_interact_text())
 				else:
-					_prompt_label.text = prompt_text
+					_show_prompt(prompt_text)
 				
 				return
 	
 	_current_target = null
 	_prompt_label.text = ""
+	target_kind = 0
 
 # E key handling is now managed by PhysicalGrab, which delegates quick taps here.
 # This script only handles raycasting for the interaction prompt.

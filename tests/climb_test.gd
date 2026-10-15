@@ -72,6 +72,8 @@ func _run() -> void:
 	# Deterministic and quick: no bluffing or ducking, short peeks.
 	var config = _entity.config
 	config.bluff_chance = 0.0
+	config.shy_retreat_chance = 0.0
+	config.peek_leave_when_watched = false
 	config.peek_duck_chance = 0.0
 	config.peek_time_min = 1.0
 	config.peek_time_max = 1.5

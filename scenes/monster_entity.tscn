@@ -46,6 +46,15 @@
 [ext_resource type="Animation" uid="uid://dvjfu5fxn0qeu" path="res://assets/animations/entity_attack_window.anim" id="42_t7mjj"]
 [ext_resource type="Animation" uid="uid://fnrc0f1m0g3a" path="res://assets/animations/entity_in_light.anim" id="43_k5t6u"]
 [ext_resource type="Animation" uid="uid://bnyhklnswqh6x" path="res://assets/animations/entity_running.anim" id="44_k5t6u"]
+[ext_resource type="Animation" path="res://assets/animations/entity/crouching_idle.anim" id="new_anim_crouching_idle"]
+[ext_resource type="Animation" path="res://assets/animations/entity/looking_around.anim" id="new_anim_looking_around"]
+[ext_resource type="Animation" path="res://assets/animations/entity/low_crawl.anim" id="new_anim_low_crawl"]
+[ext_resource type="Animation" path="res://assets/animations/entity/mutant_roaring.anim" id="new_anim_mutant_roaring"]
+[ext_resource type="Animation" path="res://assets/animations/entity/zombie_dying.anim" id="new_anim_zombie_dying"]
+[ext_resource type="Animation" path="res://assets/animations/entity/zombie_neck_bite.anim" id="new_anim_zombie_neck_bite"]
+[ext_resource type="Animation" path="res://assets/animations/entity/zombie_punching.anim" id="new_anim_zombie_punching"]
+[ext_resource type="Animation" path="res://assets/animations/entity/zombie_reaction_hit.anim" id="new_anim_zombie_reaction_hit"]
+[ext_resource type="Animation" path="res://assets/animations/entity/falling_to_landing.anim" id="new_anim_falling_to_landing"]
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_dk27q"]
 _data = {
@@ -58,7 +67,16 @@ _data = {
 &"entry": ExtResource("9_uf1s8"),
 &"idle": ExtResource("5_yani8"),
 &"running_crawl": ExtResource("9_c7dvl"),
-&"walk": ExtResource("6_8epmc")
+&"walk": ExtResource("6_8epmc"),
+&"crouching_idle": ExtResource("new_anim_crouching_idle"),
+&"looking_around": ExtResource("new_anim_looking_around"),
+&"low_crawl": ExtResource("new_anim_low_crawl"),
+&"mutant_roaring": ExtResource("new_anim_mutant_roaring"),
+&"zombie_dying": ExtResource("new_anim_zombie_dying"),
+&"zombie_neck_bite": ExtResource("new_anim_zombie_neck_bite"),
+&"zombie_punching": ExtResource("new_anim_zombie_punching"),
+&"zombie_reaction_hit": ExtResource("new_anim_zombie_reaction_hit"),
+&"falling_to_landing": ExtResource("new_anim_falling_to_landing")
 }
 
 [sub_resource type="AnimationNodeAnimation" id="AnimationNodeAnimation_wa7gp"]
@@ -163,6 +181,37 @@ advance_mode = 0
 xfade_time = 0.3
 advance_mode = 0
 
+[sub_resource type="AnimationNodeAnimation" id="AnimNode_Crouch"]
+animation = &"locomotion/crouching_idle"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimNode_LookAround"]
+animation = &"locomotion/looking_around"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimNode_LowCrawl"]
+animation = &"locomotion/low_crawl"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimNode_Roar"]
+animation = &"locomotion/mutant_roaring"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimNode_Dying"]
+animation = &"locomotion/zombie_dying"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimNode_NeckBite"]
+animation = &"locomotion/zombie_neck_bite"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimNode_Punch"]
+animation = &"locomotion/zombie_punching"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimNode_HitReact"]
+animation = &"locomotion/zombie_reaction_hit"
+
+[sub_resource type="AnimationNodeAnimation" id="AnimNode_DropLand"]
+animation = &"locomotion/falling_to_landing"
+
+[sub_resource type="AnimationNodeStateMachineTransition" id="Transition_new_anims"]
+xfade_time = 0.25
+advance_mode = 0
+
 [sub_resource type="AnimationNodeStateMachine" id="AnimationNodeStateMachine_lkk1l"]
 states/AttackWindow/node = SubResource("AnimationNodeAnimation_wa7gp")
 states/AttackWindow/position = Vector2(180, 44)
@@ -183,7 +232,25 @@ states/entity_running/node = SubResource("AnimationNodeAnimation_k5t6u")
 states/entity_running/position = Vector2(291, 196)
 states/running_crawl/node = SubResource("AnimationNodeAnimation_lkk1l")
 states/running_crawl/position = Vector2(865, 178)
-transitions = ["Start", "Idle", SubResource("AnimationNodeStateMachineTransition_jxk6m"), "Idle", "Stalk", SubResource("AnimationNodeStateMachineTransition_dk27q"), "Stalk", "Idle", SubResource("AnimationNodeStateMachineTransition_yani8"), "Idle", "ClimbUp", SubResource("AnimationNodeStateMachineTransition_8epmc"), "ClimbUp", "ClimbDown", SubResource("AnimationNodeStateMachineTransition_8x07o"), "ClimbDown", "Idle", SubResource("AnimationNodeStateMachineTransition_c7dvl"), "Idle", "ClimbDown", SubResource("AnimationNodeStateMachineTransition_ncm4g"), "ClimbUp", "Idle", SubResource("AnimationNodeStateMachineTransition_0ftpn"), "Idle", "running_crawl", SubResource("AnimationNodeStateMachineTransition_ujlah"), "running_crawl", "Idle", SubResource("AnimationNodeStateMachineTransition_1abce"), "Stalk", "running_crawl", SubResource("AnimationNodeStateMachineTransition_uf1s8"), "running_crawl", "Stalk", SubResource("AnimationNodeStateMachineTransition_lkk1l"), "Idle", "EnterWindow", SubResource("AnimationNodeStateMachineTransition_ctfmw"), "EnterWindow", "Idle", SubResource("AnimationNodeStateMachineTransition_g3gb8"), "Idle", "AttackWindow", SubResource("AnimationNodeStateMachineTransition_hplt3"), "AttackWindow", "Idle", SubResource("AnimationNodeStateMachineTransition_7515g"), "Idle", "entity_in_light", SubResource("AnimationNodeStateMachineTransition_k5t6u"), "entity_in_light", "Idle", SubResource("AnimationNodeStateMachineTransition_wa7gp"), "Stalk", "entity_running", SubResource("AnimationNodeStateMachineTransition_jg31c"), "entity_running", "Stalk", SubResource("AnimationNodeStateMachineTransition_at8y2")]
+states/Crouch/node = SubResource("AnimNode_Crouch")
+states/Crouch/position = Vector2(120, 300)
+states/LookAround/node = SubResource("AnimNode_LookAround")
+states/LookAround/position = Vector2(215, 300)
+states/LowCrawl/node = SubResource("AnimNode_LowCrawl")
+states/LowCrawl/position = Vector2(310, 300)
+states/Roar/node = SubResource("AnimNode_Roar")
+states/Roar/position = Vector2(405, 300)
+states/Dying/node = SubResource("AnimNode_Dying")
+states/Dying/position = Vector2(500, 300)
+states/NeckBite/node = SubResource("AnimNode_NeckBite")
+states/NeckBite/position = Vector2(595, 300)
+states/Punch/node = SubResource("AnimNode_Punch")
+states/Punch/position = Vector2(690, 300)
+states/HitReact/node = SubResource("AnimNode_HitReact")
+states/HitReact/position = Vector2(785, 300)
+states/DropLand/node = SubResource("AnimNode_DropLand")
+states/DropLand/position = Vector2(880, 300)
+transitions = ["Start", "Idle", SubResource("AnimationNodeStateMachineTransition_jxk6m"), "Idle", "Stalk", SubResource("AnimationNodeStateMachineTransition_dk27q"), "Stalk", "Idle", SubResource("AnimationNodeStateMachineTransition_yani8"), "Idle", "ClimbUp", SubResource("AnimationNodeStateMachineTransition_8epmc"), "ClimbUp", "ClimbDown", SubResource("AnimationNodeStateMachineTransition_8x07o"), "ClimbDown", "Idle", SubResource("AnimationNodeStateMachineTransition_c7dvl"), "Idle", "ClimbDown", SubResource("AnimationNodeStateMachineTransition_ncm4g"), "ClimbUp", "Idle", SubResource("AnimationNodeStateMachineTransition_0ftpn"), "Idle", "running_crawl", SubResource("AnimationNodeStateMachineTransition_ujlah"), "running_crawl", "Idle", SubResource("AnimationNodeStateMachineTransition_1abce"), "Stalk", "running_crawl", SubResource("AnimationNodeStateMachineTransition_uf1s8"), "running_crawl", "Stalk", SubResource("AnimationNodeStateMachineTransition_lkk1l"), "Idle", "EnterWindow", SubResource("AnimationNodeStateMachineTransition_ctfmw"), "EnterWindow", "Idle", SubResource("AnimationNodeStateMachineTransition_g3gb8"), "Idle", "AttackWindow", SubResource("AnimationNodeStateMachineTransition_hplt3"), "AttackWindow", "Idle", SubResource("AnimationNodeStateMachineTransition_7515g"), "Idle", "entity_in_light", SubResource("AnimationNodeStateMachineTransition_k5t6u"), "entity_in_light", "Idle", SubResource("AnimationNodeStateMachineTransition_wa7gp"), "Stalk", "entity_running", SubResource("AnimationNodeStateMachineTransition_jg31c"), "entity_running", "Stalk", SubResource("AnimationNodeStateMachineTransition_at8y2"), "Idle", "Crouch", SubResource("Transition_new_anims"), "Crouch", "Idle", SubResource("Transition_new_anims"), "Stalk", "Crouch", SubResource("Transition_new_anims"), "Crouch", "Stalk", SubResource("Transition_new_anims"), "running_crawl", "Crouch", SubResource("Transition_new_anims"), "Crouch", "running_crawl", SubResource("Transition_new_anims"), "Idle", "LookAround", SubResource("Transition_new_anims"), "LookAround", "Idle", SubResource("Transition_new_anims"), "Stalk", "LookAround", SubResource("Transition_new_anims"), "LookAround", "Stalk", SubResource("Transition_new_anims"), "running_crawl", "LookAround", SubResource("Transition_new_anims"), "LookAround", "running_crawl", SubResource("Transition_new_anims"), "Idle", "LowCrawl", SubResource("Transition_new_anims"), "LowCrawl", "Idle", SubResource("Transition_new_anims"), "Stalk", "LowCrawl", SubResource("Transition_new_anims"), "LowCrawl", "Stalk", SubResource("Transition_new_anims"), "running_crawl", "LowCrawl", SubResource("Transition_new_anims"), "LowCrawl", "running_crawl", SubResource("Transition_new_anims"), "Idle", "Roar", SubResource("Transition_new_anims"), "Roar", "Idle", SubResource("Transition_new_anims"), "Stalk", "Roar", SubResource("Transition_new_anims"), "Roar", "Stalk", SubResource("Transition_new_anims"), "running_crawl", "Roar", SubResource("Transition_new_anims"), "Roar", "running_crawl", SubResource("Transition_new_anims"), "Idle", "Dying", SubResource("Transition_new_anims"), "Dying", "Idle", SubResource("Transition_new_anims"), "Stalk", "Dying", SubResource("Transition_new_anims"), "Dying", "Stalk", SubResource("Transition_new_anims"), "running_crawl", "Dying", SubResource("Transition_new_anims"), "Dying", "running_crawl", SubResource("Transition_new_anims"), "Idle", "NeckBite", SubResource("Transition_new_anims"), "NeckBite", "Idle", SubResource("Transition_new_anims"), "Stalk", "NeckBite", SubResource("Transition_new_anims"), "NeckBite", "Stalk", SubResource("Transition_new_anims"), "running_crawl", "NeckBite", SubResource("Transition_new_anims"), "NeckBite", "running_crawl", SubResource("Transition_new_anims"), "Idle", "Punch", SubResource("Transition_new_anims"), "Punch", "Idle", SubResource("Transition_new_anims"), "Stalk", "Punch", SubResource("Transition_new_anims"), "Punch", "Stalk", SubResource("Transition_new_anims"), "running_crawl", "Punch", SubResource("Transition_new_anims"), "Punch", "running_crawl", SubResource("Transition_new_anims"), "Idle", "HitReact", SubResource("Transition_new_anims"), "HitReact", "Idle", SubResource("Transition_new_anims"), "Stalk", "HitReact", SubResource("Transition_new_anims"), "HitReact", "Stalk", SubResource("Transition_new_anims"), "running_crawl", "HitReact", SubResource("Transition_new_anims"), "HitReact", "running_crawl", SubResource("Transition_new_anims"), "Idle", "DropLand", SubResource("Transition_new_anims"), "DropLand", "Idle", SubResource("Transition_new_anims"), "Stalk", "DropLand", SubResource("Transition_new_anims"), "DropLand", "Stalk", SubResource("Transition_new_anims"), "running_crawl", "DropLand", SubResource("Transition_new_anims"), "DropLand", "running_crawl", SubResource("Transition_new_anims")]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_t0r4h"]
 radius = 0.22
@@ -203,8 +270,8 @@ grass_footsteps = Array[AudioStream]([ExtResource("22_dy7dj"), ExtResource("23_2
 [node name="ProfileGlow" type="OmniLight3D" parent="." unique_id=1299749451]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0867403, 0.4263157)
 light_color = Color(0.12623525, 0.340033, 0.23336926, 1)
-light_energy = 0.3
-omni_range = 6.0
+light_energy = 0.7
+omni_range = 0.7
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="." unique_id=96853697]
 path_desired_distance = 0.5

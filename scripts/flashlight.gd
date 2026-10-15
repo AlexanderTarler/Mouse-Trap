@@ -16,7 +16,7 @@ signal overcharge_activated
 signal overcharge_deactivated
 
 @export var max_battery: float = 100.0
-@export var drain_rate: float = 0.5  # per second when on (halved from 1.0)
+@export var drain_rate: float = 0.25  # per second when on (halved twice from 1.0: playtesters ran out fast)
 @export var low_battery_threshold: float = 15.0
 
 ## ─── OVERCHARGE TUNING ─────────────────────────────────────────────────────
@@ -62,8 +62,6 @@ var _is_flickering: bool = false
 ## node always exists in the tree; it only plays when a stream is assigned AND
 ## overcharge is active.
 var _hum_player: AudioStreamPlayer = null
-## The hum when overcharge_hum isn't assigned.
-const OVERCHARGE_HUM_DEFAULT := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Misc/portal_1_loop.ogg"
 
 ## ─── OVERCHARGE TUTORIAL HOLD TRACKING ────────────────────────────────────
 ## Accumulated time (seconds) the player has continuously held the F key in
@@ -103,13 +101,8 @@ func _ready() -> void:
 	_hum_player = AudioStreamPlayer.new()
 	_hum_player.bus = "SFX"
 	_hum_player.volume_db = overcharge_hum_volume_db
-	var hum: AudioStream = overcharge_hum
-	if not hum and ResourceLoader.exists(OVERCHARGE_HUM_DEFAULT):
-		# An electric hum from the kit, looped.
-		hum = (load(OVERCHARGE_HUM_DEFAULT) as AudioStream).duplicate()
-		if "loop" in hum:
-			hum.loop = true
-	_hum_player.stream = hum
+	# Silent unless a hum is assigned (the overcharge has no sound of its own).
+	_hum_player.stream = overcharge_hum
 	add_child(_hum_player)
 
 
@@ -133,6 +126,11 @@ func _process(delta: float) -> void:
 		if battery_level <= 0.0:
 			# Battery died mid-standoff — cleanly reset overcharge state.
 			_turn_off()
+			# Out: the swap-a-battery hint again, if it hasn't been shown (it
+			# can't come up over another hint, at 30%).
+			var tm_empty := get_node_or_null("/root/TutorialManager")
+			if tm_empty and tm_empty.has_method("trigger"):
+				tm_empty.trigger("low_battery")
 			return
 		
 		# ─── OVERCHARGE TUTORIAL HOLD TRACKING ────────────────────────

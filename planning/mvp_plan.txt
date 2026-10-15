@@ -1,0 +1,92 @@
+MVP PLAN: from "works when I test it" to "works for a stranger"
+================================================================
+STATUS: 1-3 done. 4-8 not started.
+  1  GameReset (scripts/managers/game_reset.gd, the last autoload): records
+     every game-wide manager at boot; the main menu's Play puts them back.
+     tests/newgame_test.gd: play a while, quit to the menu, Play -> exactly
+     a first game.
+  2  tests/playthrough_test.gd: Day 1 to the mediocre escape through the
+     game's own interactions, 46 checks. It found two real bugs (fixed):
+       - Day 2 "Lock the door": nightfall had already locked the door for
+         the player, so they had to unlock and lock it again. Now a door
+         the game locks (close_and_lock) counts, and so does one already
+         locked when the step comes up.
+       - After the Night 2.2 chase a random Peeker could appear (the rule
+         "no Peeker from Night 2.2 on" read a flag the chase clears).
+  3  tools/check_export.py: every res:// path in the game's files exists
+     and is kept by the export (333 paths, all kept). The Windows release
+     export built and ran (--autoplay, headless, 90 s): menu, new game,
+     Day 1 setup and checkpoint, no errors from the game.
+
+WEB BUILD (the web runs Godot's Compatibility renderer):
+  - Night: no volumetric fog there (no ground fog, and the night went pure
+    black): its own ambient light and a height fog instead, tuned to the
+    desktop's darkness by screenshot (EnvironmentController compat_*).
+  - The Entity's marks: no decals there; flat quads on the surface.
+  - Ground stripes: shadow acne at the scene's low shadow normal bias
+    (0.1); raised to 1.5 on the web only.
+  - The web build loads and runs the menu, reset, Day 1 setup (one
+    expected fog-shader error). Frame rate: to check in a real browser
+    (python tools/serve_web.py, http://localhost:8060). Never in a
+    headless browser: software WebGL froze the PC.
+
+Decided: the MVP is for both Windows and the web. Save/Continue (4) is
+skipped for now (a run isn't long).
+
+
+MUST DO
+-------
+1. New Game after returning to the main menu  [bug, must fix]
+   Now:  NightManager sets the game up (spawn, Day 1 onboarding, the
+         opening) only the first time a game scene loads (_on_scene_ready
+         runs once, at boot). Main Menu -> Play a second time: the world
+         is fresh, but no setup runs, and every game-wide manager
+         (Inventory, RoutineManager, NightManager, GameTime, Monologue,
+         Checkpoint, Weather, ...) keeps the old game's state.
+   Do:   A GameReset autoload (last in the list) records every game-wide
+         manager's state at boot, before any game; the main menu's Play
+         puts them all back (plus the few that need more: the checkpoint's
+         copies freed, the weather cleared, sounds stopped) so the next
+         game starts exactly like the first one. Test: play a while, quit
+         to the menu, Play: Day 1 from scratch.
+
+2. A full playthrough test  [protects playability]
+   Every system has its own test; nothing plays the story from Day 1 to an
+   ending. A headless test that walks the main path through the real
+   interactions (enter the cabin, log in, patch the window, lock up, sleep,
+   the Peeker, the nests, the upload, the car alarm and chase, Day 3, the
+   van parts, the escape), checking the objective advances at every step,
+   so a change that breaks the story's chain fails a test, not a player.
+
+3. Test the exported build  [protects shipping]
+   The export leaves out unused assets (tools/export_list.py). A file the
+   game only loads by name (load("res://...")) could be missing in the
+   build and only fail when it's needed. Do:
+     - a test that finds every res:// path in the scripts and scenes and
+       checks the export keeps each one;
+     - build the export and launch it into the game scene for a while,
+       checking its log for missing files and script errors.
+
+
+WORTH DOING
+-----------
+4. Save and Continue (on disk)  [SKIPPED for now: a run isn't long]
+   The checkpoint already captures most of the world; write it to disk at
+   each day/night start, and a Continue button in the main menu.
+
+5. Night 3 difficulty check  [playtest]
+   Night 3 now has ambushes, the fake departure, lights killed from inside,
+   mimicry, and darker fog. Scary is the goal; survivable on a first try
+   too. A tuning pass after a playtest.
+
+6. Sound captions  [accessibility, from the UI review]
+   Optional captions for the cues that matter ("[knocking at a window]",
+   "[glass breaking upstairs]").
+
+7. Debug output  [cleanliness, a little speed]
+   ~750 print() calls, some on every hit (window breaking). Behind a debug
+   switch, so the shipped game's log is clean.
+
+8. The door's line under a thought  [small]
+   "There is no way I'm going outside now." doesn't show while another
+   thought is on screen (Monologue.say never cuts one short).

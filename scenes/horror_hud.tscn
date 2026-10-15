@@ -31,7 +31,7 @@ offset_bottom = 50.0
 theme = SubResource("Theme_hud")
 theme_override_colors/font_color = Color(1, 1, 1, 0.8)
 theme_override_font_sizes/font_size = 24
-text = "Night 1 / 5"
+text = "Day 1"
 
 [node name="TimeLabel" type="Label" parent="." unique_id=2125934328]
 offset_left = 20.0
@@ -111,7 +111,7 @@ offset_bottom = 20.0
 theme = SubResource("Theme_hud")
 theme_override_colors/font_color = Color(1, 1, 1, 0.9)
 theme_override_font_sizes/font_size = 12
-text = "🔋 100%"
+text = "100%"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -123,7 +123,7 @@ offset_bottom = 185.0
 theme = SubResource("Theme_hud")
 theme_override_colors/font_color = Color(1, 0.2, 0.2, 0)
 theme_override_font_sizes/font_size = 14
-text = "⚠️ BATTERY LOW"
+text = "Battery low"
 horizontal_alignment = 1
 
 [node name="StaminaBar" type="ProgressBar" parent="." unique_id=30032504]
@@ -142,7 +142,7 @@ offset_bottom = 20.0
 theme = SubResource("Theme_hud")
 theme_override_colors/font_color = Color(1, 1, 1, 0.9)
 theme_override_font_sizes/font_size = 12
-text = "⚡ 100%"
+text = "100%"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -160,7 +160,7 @@ offset_bottom = 40.0
 theme = SubResource("Theme_hud")
 theme_override_colors/font_color = Color(1, 1, 1, 0.9)
 theme_override_font_sizes/font_size = 12
-text = "⛽ 100%"
+text = "Fuel 100%"
 horizontal_alignment = 1
 vertical_alignment = 1
 

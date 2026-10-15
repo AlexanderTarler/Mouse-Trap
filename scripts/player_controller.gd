@@ -13,6 +13,10 @@ extends CharacterBody3D
 @export var crouch_speed: float = 1.8
 @export var mouse_sensitivity: float = 0.002
 @export var head_bob_enabled: bool = true
+## From the settings (GameSettings.apply_player): a multiplier on
+## mouse_sensitivity, and inverted mouse look.
+var look_scale := 1.0
+var invert_y := false
 @export var head_bob_frequency: float = 2.0
 @export var head_bob_amplitude: float = 0.06
 
@@ -35,17 +39,10 @@ extends CharacterBody3D
 
 @export var wood_footsteps: Array[AudioStream] = []
 @export var grass_footsteps: Array[AudioStream] = []
-## Footsteps on the stairs (the Stairs room). Left empty, single wooden stair
-## steps cut from the horror pack's stair recordings are used (the recordings
-## themselves are 8 s runs of steps: restarted every step, only their quiet
-## first half-second ever played).
-@export var stairs_footsteps: Array[AudioStream] = []
 ## Footstep loudness relative to walking (dB): crouching is hushed, sprinting
 ## thuds.
 @export var crouch_footstep_db: float = -9.0
 @export var sprint_footstep_db: float = 3.0
-const DEFAULT_STAIRS_FOOTSTEPS := "res://assets/audio/player/stair_steps/stair_step_%02d.wav"
-const DEFAULT_STAIRS_FOOTSTEP_COUNT := 16
 var _footstep_base_db := 0.0
 
 var _current_speed: float
@@ -165,6 +162,9 @@ var sprint_unlocked: bool = true
 # Prevents calling mark_learned("sprint") every physics frame while
 # running. Learning is only marked once the player genuinely sprints.
 var _sprint_tutorial_marked: bool = false
+## Seconds sprinted (SHIFT held, moving): the hint goes after SPRINT_HINT_TIME.
+var _sprint_hold_time := 0.0
+const SPRINT_HINT_TIME := 3.0
 
 
 # --- STANDOFF / CHARGE MECHANIC ---
@@ -200,26 +200,17 @@ var _stamina_exhausted_delay: float = 1.5  # Seconds before regen starts after e
 signal stamina_changed(stamina_percent: float)
 
 # ─── STAMINA BREATHING AUDIO ─────────────────────────────────────────
-## Unified pitch scale for the low-stamina breathing audio (fast + slow).
-## 0.7 was pitched down too deeply; raised 20% to 0.84. Shared so the fast
-## and slow tracks remain seamlessly matched when crossing run/not-run.
-const BREATHING_PITCH: float = 0.84
+## The breathing below 50% stamina (played as recorded, not re-pitched),
+## when breathing_sfx isn't assigned.
+const BREATHING_SOUND := "res://assets/audio/objects/Player Breathing.ogg"
 
 ## Looping audio player for heavy breathing when stamina < 50%.
 ## Created programmatically in _ready() to avoid scene node dependency.
 var _breathing_audio: AudioStreamPlayer3D = null
 var _breathing_audio_loaded: bool = false
 var _breathing_fade_tween: Tween = null
+var _fading_out_breath := false
 
-## Looping audio player for slow breathing when stamina < 50% and NOT
-## running. Plays at the same volume as the fast track.
-var _breathing_slow_audio: AudioStreamPlayer3D = null
-var _breathing_slow_loaded: bool = false
-var _breathing_slow_fade_tween: Tween = null
-
-## Looping audio stream for slow breathing when stamina < 50% and NOT running.
-## Assign Breathing_slow.wav from res://assets/audio/player/ here.
-@export var breathing_slow_sfx: AudioStream = null
 
 # Noise system
 var _noise_timer: float = 0.0
@@ -229,12 +220,19 @@ var _noise_timer: float = 0.0
 ## in the editor to give the player items at the beginning of the game.
 @export var starting_items: Array[ItemData] = []
 
-## Looping audio stream for heavy breathing when stamina < 50%.
-## Assign Breathing_fast.wav from res://assets/audio/player/ here.
+## Looping breathing when stamina < 50% (BREATHING_SOUND if not assigned).
 @export var breathing_sfx: AudioStream = null
 
 func _ready() -> void:
-	_load_default_stairs_footsteps()
+	if footstep_audio:
+		_footstep_base_db = footstep_audio.volume_db
+		# Our own steps stay dry and close everywhere. The rooms' echo
+		# (CabinRoom, the "Interior" reverb bus) is picked by where the sound
+		# starts: at the player's middle, upstairs that's inside the room
+		# below (and on the stairs, the stairwell), so steps there were
+		# washed in reverb, muffled and far away, while downstairs they
+		# started under the rooms and stayed dry.
+		footstep_audio.area_mask = 0
 	# Add starting items to the Inventory autoload
 	for item in starting_items:
 		if item:
@@ -256,50 +254,20 @@ func _ready() -> void:
 	add_to_group("player")
 	
 	# ─── BREATHING AUDIO INIT ─────────────────────────────────────────
-	# Create a looping 3D audio player for heavy breathing at low stamina.
-	# Uses the exported breathing_sfx AudioStream (assign in Inspector).
-	if breathing_sfx:
+	# A looping 3D player for the breathing at low stamina.
+	var breath: AudioStream = breathing_sfx
+	if not breath and ResourceLoader.exists(BREATHING_SOUND):
+		breath = load(BREATHING_SOUND) as AudioStream
+	if breath:
+		if "loop" in breath:
+			breath.loop = true
 		_breathing_audio = AudioStreamPlayer3D.new()
-		if breathing_sfx is AudioStreamOggVorbis or "loop" in breathing_sfx:
-			breathing_sfx.loop = true
-		_breathing_audio.stream = breathing_sfx
+		_breathing_audio.stream = breath
 		_breathing_audio.bus = "SFX"
-		# ─── TASK: FAST BREATHING −6 dB (50% amplitude reduction) ──────
-		# Was −10.0 dB. Halving the amplitude is a −6 dB cut, so the heavy
-		# exhaustion breathing now plays at −16.0 dB (same as the slow track
-		# so both sound consistent).
 		_breathing_audio.volume_db = -16.0
-		_breathing_audio.pitch_scale = BREATHING_PITCH
 		_breathing_audio.max_db = 0.0
 		add_child(_breathing_audio)
 		_breathing_audio_loaded = true
-		print("[Player] Breathing audio loaded (pitch=%s, vol=%s)." % [BREATHING_PITCH, -16.0])
-	
-	# ─── SLOW BREATHING AUDIO (stamina < 50%, NOT running) ─────────────────
-	# Loops while the player is low on stamina but recovering (walking or
-	# idle). Plays at the SAME volume (−16.0 dB) and pitch (0.7) as the fast
-	# track, so the two mix seamlessly when the player crosses the
-	# run/not-run threshold.
-	_breathing_slow_audio = AudioStreamPlayer3D.new()
-	_breathing_slow_audio.name = "BreathingSlowAudio"
-	var slow_stream: AudioStream = null
-	if breathing_slow_sfx:
-		slow_stream = breathing_slow_sfx
-	else:
-		slow_stream = load("res://assets/audio/player/Breathing_slow.wav") as AudioStream
-	if slow_stream:
-		if slow_stream is AudioStreamOggVorbis or "loop" in slow_stream:
-			slow_stream.loop = true
-		_breathing_slow_audio.stream = slow_stream
-		_breathing_slow_audio.bus = "SFX"
-		_breathing_slow_audio.volume_db = -16.0
-		_breathing_slow_audio.pitch_scale = BREATHING_PITCH
-		_breathing_slow_audio.max_db = 0.0
-		add_child(_breathing_slow_audio)
-		_breathing_slow_loaded = true
-		print("[Player] Slow breathing audio loaded (pitch=%s, vol=%s)." % [BREATHING_PITCH, -16.0])
-	else:
-		print("[Player] WARNING: Breathing_slow.wav not found. Slow breathing disabled.")
 	
 	# ─── FLASHLIGHT INIT ─────────────────────────────────────────────
 	# If start_with_flashlight is true (default), the player can toggle the
@@ -366,9 +334,16 @@ func _ready() -> void:
 		_physical_grab.set("_camera", _camera)
 	
 	# ─── NOTEBOOK UI ───────────────────────────────────────────────
-	# Load and instance the notebook scene into the NotebookLayer CanvasLayer
+	# The notebook in the player scene (NotebookLayer/NotebookUI); one is made
+	# only if it's missing. (A second one was always made here: J opened
+	# that one, while Escape and everything that looks the notebook up found
+	# the other, closed one, so Escape at the computer left the computer.)
 	var notebook_scene = load("res://scenes/ui/notebook_ui.tscn")
-	if notebook_scene:
+	var existing := get_node_or_null("NotebookLayer/NotebookUI")
+	if existing:
+		_notebook = existing
+		existing.visible = false
+	elif notebook_scene:
 		var notebook_instance = notebook_scene.instantiate()
 		$NotebookLayer.add_child(notebook_instance)
 		_notebook = notebook_instance
@@ -378,7 +353,7 @@ func _ready() -> void:
 		print("[Player] WARNING: Could not load notebook_ui.tscn!")
 	
 	_create_crosshair()
-	get_viewport().size_changed.connect(_rebuild_crosshair)
+	GameSettings.apply_player(self)
 	_step_interval = 2.0 / walk_speed
 
 ## Deferred tutorial trigger — runs after the HUD is in the scene tree.
@@ -401,86 +376,21 @@ func _enable_movement_tutorial() -> void:
 	_movement_tutorial_ready = true
 
 
+## The crosshair (scripts/ui/crosshair.gd): a dot that reacts to what is
+## aimed at, with a ring for hold progress.
 func _create_crosshair() -> void:
 	var canvas = CanvasLayer.new()
 	canvas.layer = 10
 	add_child(canvas)
-	var container = Control.new()
-	container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	canvas.add_child(container)
-	var center_x = 0.5
-	var center_y = 0.5
-	var line_length = 0.012
-	var line_width = 0.002
-	var gap = 0.004
-	var color = Color(1, 1, 1, 0.6)
-	
-	var top = ColorRect.new()
-	top.color = color
-	top.size = Vector2(get_viewport().size.x * line_width, get_viewport().size.y * line_length)
-	top.position = Vector2(get_viewport().size.x * center_x - top.size.x / 2, get_viewport().size.y * center_y - top.size.y - get_viewport().size.y * gap)
-	container.add_child(top)
-	
-	var bottom = ColorRect.new()
-	bottom.color = color
-	bottom.size = Vector2(get_viewport().size.x * line_width, get_viewport().size.y * line_length)
-	bottom.position = Vector2(get_viewport().size.x * center_x - bottom.size.x / 2, get_viewport().size.y * center_y + get_viewport().size.y * gap)
-	container.add_child(bottom)
-	
-	var left = ColorRect.new()
-	left.color = color
-	left.size = Vector2(get_viewport().size.x * line_length, get_viewport().size.y * line_width)
-	left.position = Vector2(get_viewport().size.x * center_x - left.size.x - get_viewport().size.x * gap, get_viewport().size.y * center_y - left.size.y / 2)
-	container.add_child(left)
-	
-	var right = ColorRect.new()
-	right.color = color
-	right.size = Vector2(get_viewport().size.x * line_length, get_viewport().size.y * line_width)
-	right.position = Vector2(get_viewport().size.x * center_x + get_viewport().size.x * gap, get_viewport().size.y * center_y - right.size.y / 2)
-	container.add_child(right)
-	_crosshair = container
+	_crosshair = Crosshair.new()
+	_crosshair.name = "Crosshair"
+	canvas.add_child(_crosshair)
 
-func _rebuild_crosshair() -> void:
-	if not _crosshair: return
-	for child in _crosshair.get_children():
-		_crosshair.remove_child(child)
-		child.queue_free()
-	
-	var center_x = 0.5
-	var center_y = 0.5
-	var line_length = 0.012
-	var line_width = 0.002
-	var gap = 0.004
-	var color = Color(1, 1, 1, 0.6)
-	
-	var top = ColorRect.new()
-	top.color = color
-	top.size = Vector2(get_viewport().size.x * line_width, get_viewport().size.y * line_length)
-	top.position = Vector2(get_viewport().size.x * center_x - top.size.x / 2, get_viewport().size.y * center_y - top.size.y - get_viewport().size.y * gap)
-	_crosshair.add_child(top)
-	
-	var bottom = ColorRect.new()
-	bottom.color = color
-	bottom.size = Vector2(get_viewport().size.x * line_width, get_viewport().size.y * line_length)
-	bottom.position = Vector2(get_viewport().size.x * center_x - bottom.size.x / 2, get_viewport().size.y * center_y + get_viewport().size.y * gap)
-	_crosshair.add_child(bottom)
-	
-	var left = ColorRect.new()
-	left.color = color
-	left.size = Vector2(get_viewport().size.x * line_length, get_viewport().size.y * line_width)
-	left.position = Vector2(get_viewport().size.x * center_x - left.size.x - get_viewport().size.x * gap, get_viewport().size.y * center_y - left.size.y / 2)
-	_crosshair.add_child(left)
-	
-	var right = ColorRect.new()
-	right.color = color
-	right.size = Vector2(get_viewport().size.x * line_length, get_viewport().size.y * line_width)
-	right.position = Vector2(get_viewport().size.x * center_x + get_viewport().size.x * gap, get_viewport().size.y * center_y - right.size.y / 2)
-	_crosshair.add_child(right)
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		rotate_y(-event.relative.x * mouse_sensitivity)
-		_camera_holder.rotate_x(-event.relative.y * mouse_sensitivity)
+		rotate_y(-event.relative.x * mouse_sensitivity * look_scale)
+		_camera_holder.rotate_x(-event.relative.y * mouse_sensitivity * look_scale * (-1.0 if invert_y else 1.0))
 		var rot = _camera_holder.rotation
 		rot.x = clamp(rot.x, -1.4, 1.4)
 		_camera_holder.rotation = rot
@@ -635,7 +545,7 @@ func reset_camera() -> void:
 		_camera.position = Vector3.ZERO
 		_camera.h_offset = 0.0
 		_camera.v_offset = 0.0
-		_camera.fov = 75.0
+		_camera.fov = float(GameSettings.get_value("video/fov"))
 
 
 func _toggle_flashlight() -> void:
@@ -810,11 +720,13 @@ func _physics_process(delta: float) -> void:
 	_is_running = Input.is_key_pressed(KEY_SHIFT) and sprint_unlocked and not _is_crouching and _stamina > 0.0 and not _stamina_exhausted and _is_moving_forward
 	
 	# ─── BUG 3 FIX: MARK SPRINT TUTORIAL LEARNED ON ACTUAL USE ──────
-	# The sprint hint (triggered by escape_van.gd during Night 2.2) is now
-	# dismissed only when the player genuinely sprints — NOT when sprint is
-	# merely unlocked (that premature mark consumed the one-shot before the
-	# hint could show). Marking is one-shot via _sprint_tutorial_marked.
-	if _is_running and not _sprint_tutorial_marked and _stamina < 70.0:
+	# The sprint hint (triggered by escape_van.gd during Night 2.2) is
+	# dismissed once the player has sprinted for SPRINT_HINT_TIME (3 s) in
+	# all, not when sprint is merely unlocked (that consumed the one-shot
+	# before the hint could show). One-shot via _sprint_tutorial_marked.
+	if _is_running:
+		_sprint_hold_time += delta
+	if not _sprint_tutorial_marked and _sprint_hold_time >= SPRINT_HINT_TIME:
 		_sprint_tutorial_marked = true
 		var tm_sprint := get_node_or_null("/root/TutorialManager")
 		if tm_sprint and tm_sprint.has_method("mark_learned"):
@@ -851,46 +763,23 @@ func _physics_process(delta: float) -> void:
 		stamina_changed.emit(_new_stamina_pct)
 	
 	# ─── STAMINA BREATHING AUDIO ──────────────────────────────────────
-	# Two mutually-exclusive tracks when stamina < 50%:
-	#   FAST  — low stamina AND sprinting (heavy exhaustion breathing)
-	#   SLOW  — low stamina AND NOT running (recovery breathing, same volume)
-	# Both fade in over 0.5s and fade out over 1.0s. The FAST track was
-	# lowered −6 dB (−10 → −16 dB) for a 50% amplitude reduction.
-	var low_stamina: bool = _new_stamina_pct < 50.0
-	var should_breathe_fast: bool = low_stamina and _is_running
-	var should_breathe_slow: bool = low_stamina and not _is_running
-	
+	# Below 50% stamina, running or not: fades in over 0.5 s, out over 1 s.
+	var should_breathe: bool = _new_stamina_pct < 50.0
 	if _breathing_audio_loaded and _breathing_audio:
-		if should_breathe_fast and not _breathing_audio.playing:
-			_breathing_audio.volume_db = -80.0
-			_breathing_audio.play()
-			# Fade in over 0.5s — target is −16.0 dB (50% amplitude cut).
+		if should_breathe and (not _breathing_audio.playing or _fading_out_breath):
+			if not _breathing_audio.playing:
+				_breathing_audio.volume_db = -80.0
+				_breathing_audio.play()
+			_fading_out_breath = false
 			if _breathing_fade_tween: _breathing_fade_tween.kill()
-			_breathing_fade_tween = create_tween().set_parallel(true)
+			_breathing_fade_tween = create_tween()
 			_breathing_fade_tween.tween_property(_breathing_audio, "volume_db", -16.0, 0.5).set_ease(Tween.EASE_OUT)
-		elif not should_breathe_fast and _breathing_audio.playing:
-			# Fade out over 1.0s then stop
+		elif not should_breathe and _breathing_audio.playing and not _fading_out_breath:
+			_fading_out_breath = true
 			if _breathing_fade_tween: _breathing_fade_tween.kill()
-			_breathing_fade_tween = create_tween().set_parallel(true)
+			_breathing_fade_tween = create_tween()
 			_breathing_fade_tween.tween_property(_breathing_audio, "volume_db", -80.0, 1.0).set_ease(Tween.EASE_IN)
 			_breathing_fade_tween.finished.connect(_on_breathing_fade_out)
-	
-	# ─── SLOW BREATHING (low stamina, NOT running) ──────────────────
-	# Plays at the SAME volume (−16.0 dB) as the fast track, so the two
-	# blend seamlessly when the player crosses the run/not-run threshold.
-	if _breathing_slow_loaded and _breathing_slow_audio:
-		if should_breathe_slow and not _breathing_slow_audio.playing:
-			_breathing_slow_audio.volume_db = -80.0
-			_breathing_slow_audio.play()
-			if _breathing_slow_fade_tween: _breathing_slow_fade_tween.kill()
-			_breathing_slow_fade_tween = create_tween().set_parallel(true)
-			_breathing_slow_fade_tween.tween_property(_breathing_slow_audio, "volume_db", -16.0, 0.5).set_ease(Tween.EASE_OUT)
-		elif not should_breathe_slow and _breathing_slow_audio.playing:
-			# Fade out over 1.0s then stop
-			if _breathing_slow_fade_tween: _breathing_slow_fade_tween.kill()
-			_breathing_slow_fade_tween = create_tween().set_parallel(true)
-			_breathing_slow_fade_tween.tween_property(_breathing_slow_audio, "volume_db", -80.0, 1.0).set_ease(Tween.EASE_IN)
-			_breathing_slow_fade_tween.finished.connect(_on_breathing_slow_fade_out)
 
 	var input_dir := Vector2(
 		-1.0 if Input.is_key_pressed(KEY_A) else (1.0 if Input.is_key_pressed(KEY_D) else 0.0),
@@ -1016,9 +905,8 @@ func _play_surface_footstep() -> void:
 	
 	if room == "Outside":
 		array = grass_footsteps
-	elif room == "Stairs" and not stairs_footsteps.is_empty():
-		array = stairs_footsteps
 	else:
+		# Every floor of the cabin, the stairs included, sounds the same.
 		array = wood_footsteps
 
 	if array.size() > 0:
@@ -1036,17 +924,6 @@ func _play_landing_thud() -> void:
 		footstep_audio.volume_db = _footstep_base_db + 5.0
 		footstep_audio.pitch_scale = randf_range(0.65, 0.75)
 
-
-## Stair footsteps default to the single stair steps (DEFAULT_STAIRS_FOOTSTEPS).
-func _load_default_stairs_footsteps() -> void:
-	if footstep_audio:
-		_footstep_base_db = footstep_audio.volume_db
-	if not stairs_footsteps.is_empty():
-		return
-	for i in range(1, DEFAULT_STAIRS_FOOTSTEP_COUNT + 1):
-		var path := DEFAULT_STAIRS_FOOTSTEPS % i
-		if ResourceLoader.exists(path):
-			stairs_footsteps.append(load(path) as AudioStream)
 
 func _update_crouch(delta: float) -> void:
 	var target_height = crouching_height if _is_crouching else standing_height
@@ -1369,11 +1246,6 @@ func make_noise(kind: StringName) -> void:
 ## Called when the breathing audio fade-out tween finishes.
 ## Stops the breathing audio player after the fade completes.
 func _on_breathing_fade_out() -> void:
+	_fading_out_breath = false
 	if _breathing_audio and _breathing_audio.playing:
 		_breathing_audio.stop()
-
-## Called when the SLOW breathing audio fade-out tween finishes.
-## Stops the slow breathing player after the fade completes.
-func _on_breathing_slow_fade_out() -> void:
-	if _breathing_slow_audio and _breathing_slow_audio.playing:
-		_breathing_slow_audio.stop()

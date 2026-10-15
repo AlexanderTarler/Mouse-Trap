@@ -1,7 +1,6 @@
-1. The portable_light should stop shining as soon as the generator runs out of power. 
-2. Some "inner thoughts" are more like "game messages" or tutorial hints - remember, the "inner thoughts" should be the thoughts of the protagonist, and not game tips. Also, it would be great to keep the "inner thoughts" floating in place like how it works for the broken window or the escape van. 
-3. When the Peeker appears during Night 2, make it appear a lot faster, and disappear quicker, than it does on Day 1. 
-4. Are you able to make the "purging" of the totem anchor/willow tree look better than it does now? Currently it just shrinks, which is very odd. 
-5. Keep the rainstorm going from the point where it starts (when the player documents the third nest) and have it keep going until the player wakes up during Day 3. 
-6. Make the passive power-drain of the generator have its "fuel per second" be lowered by 30-isch %.
-7. Change the objective "Check the fusebox. It's always the goddamn fuse box." to just "Check the fusebox", but add in an inner thought saying "It's always the goddamn fuse box."
+1. THe "Hold Shift to run" tutorial message that is displayed during Night 2.2 should disappear after the player has held shift for 3 seconds. 
+2. The van displays as "broken" before Night 2.2 - this should not be able to happen.
+3. We need to reduce the drain of the flashlight by 50% - playtesters run out of juice quick!
+4. When the player runs out of flashlight battery, the tutorial message that tells the player to replace the battery should also mention to press TAB to open the inventory.
+5. If the player is using the computer (aka computer_ui.tscn is displayed) and they open the notebook (by pressing "J"), the player should be able to close the notebook (WITHOUT exiting the computer UI) by pressing ESC.
+6. The "Next page" and "Previous page" text elements in the notebook should be moved 10% towards the middle. 

@@ -90,17 +90,17 @@ func _test_opening() -> void:
 	for i in 60 * 40:
 		await process_frame
 		var failed := false
-		for label in opening._thread.find_children("*", "Label", true, false):
+		for label in opening._phone._thread.find_children("*", "Label", true, false):
 			if "Not delivered" in (label as Label).text:
 				failed = true
 		if failed:
 			break
 	var thread_text := ""
-	for row in opening._thread.get_children():
+	for row in opening._phone._thread.get_children():
 		for label in row.find_children("*", "Label", true, false):
 			thread_text += (label as Label).text + " | "
-	_check("the opening freezes the player; the phone has no service and the message fails",
-		frozen and "No service" in opening._service.text and "Not delivered" in thread_text and "terminal" in thread_text, thread_text)
+	_check("the opening freezes the player; the office says where the key is; no service, the message fails",
+		frozen and "No service" in opening._phone.service.text and "Not delivered" in thread_text and "terminal" in thread_text and "under the bucket" in thread_text, thread_text)
 	var key := InputEventKey.new()
 	key.keycode = KEY_SPACE
 	key.pressed = true

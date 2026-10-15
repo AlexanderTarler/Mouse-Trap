@@ -282,7 +282,7 @@ func get_interact_text() -> String:
 	# showing the normal "Press E" text. The player is too tired.
 	var player_ref = get_tree().get_first_node_in_group("player")
 	if player_ref and "is_exhausted" in player_ref and player_ref.is_exhausted:
-		return "[color=gray]I am too tired to do this[/color]"
+		return "Too tired to do this"
 	
 	# ─── PROGRESSION LOCK CHECK ─────────────────────────────────────
 	if not _has_arvid_note_2():
@@ -761,6 +761,11 @@ func _defeat_entity() -> void:
 		print("[TotemAnchor] WARNING: Entity has no GrowlAudio node.")
 	
 	# ─── DISABLE THE ENTITY COMPLETELY ─────────────────────────────
+	# It dies where it stands (Zombie Dying), then is gone.
+	if _entity.has_method("die"):
+		_entity.die()
+		print("[TotemAnchor] Entity defeated!")
+		return
 	# Hide the visual model
 	_entity.hide()
 	

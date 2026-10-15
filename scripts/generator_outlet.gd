@@ -244,4 +244,4 @@ func get_interact_text() -> String:
 	if _player_has_cable_spool() and _player_has_portable_light():
 		return "[E] Connect Portable Light + Cable"
 	# Fallback: has the lamp but no cable — need a cable spool.
-	return "[E] Need Cable Spool"
+	return "Needs a cable spool"

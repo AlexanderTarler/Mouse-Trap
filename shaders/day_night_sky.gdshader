@@ -81,7 +81,12 @@ void sky() {
 		// Lit from above by day, near black at night; darker underneath
 		// where they're thick.
 		vec3 lit = mix(vec3(0.62, 0.64, 0.68), vec3(0.05, 0.055, 0.07), night);
-		cloud_colour = lit * (1.0 - 0.35 * smoothstep(0.4, 0.9, n));
+		// Rain clouds are heavy: dark slate grey, darkest overhead (their
+		// bellies), a little lighter towards the horizon.
+		vec3 rain = mix(vec3(0.19, 0.2, 0.23), vec3(0.03, 0.032, 0.04), night);
+		rain *= mix(1.1, 0.7, smoothstep(0.0, 0.6, h));
+		lit = mix(lit, rain, storm);
+		cloud_colour = lit * (1.0 - mix(0.35, 0.5, storm) * smoothstep(0.4, 0.9, n));
 	}
 	// What's above the clouds (the sun, the moon, the stars) shows through
 	// only where there are none.

@@ -87,8 +87,8 @@ func _test_peeker() -> void:
 	_rm.main_objective = 8
 	_rm.get_current_objective()
 	await _frames(3)
-	_check("#2 the Day 1 Peeker is at the landing window (door locked before the objective)",
-		pm._last_peeker_window_id == "Landing_Window", pm._last_peeker_window_id)
+	_check("#2 the Day 1 Peeker is at the bedroom window (door locked before the objective)",
+		pm._last_peeker_window_id == "Bedroom_Right", pm._last_peeker_window_id)
 	pm.remove_active_peeker()
 	_rm.main_objective = 99
 	_rm.day2_step = 6
@@ -134,18 +134,22 @@ func _test_hud() -> void:
 	var flashlight: Node = hud._flashlight
 	flashlight.is_on = false
 	await _frames(2)
-	var off_hidden: bool = not hud.battery_bar.visible
+	# (The quiet gauges since the UI review: HudGauges.)
+	var gauges: Node = hud._gauges
+	var off_hidden: bool = not gauges.light_on
 	flashlight.is_on = true
 	await _frames(2)
-	var on_shown: bool = hud.battery_bar.visible
+	var on_shown: bool = gauges.light_on
 	flashlight.is_on = false
 	await _frames(1)
 	hud._on_stamina_changed(100.0)
-	var stamina_hidden: bool = hud.stamina_bar.modulate.a == 0.0
-	hud._on_stamina_changed(60.0)
-	var stamina_shown: bool = hud.stamina_bar.modulate.a > 0.0
+	await _frames(40)
+	var stamina_hidden: bool = gauges._stamina_alpha == 0.0
+	hud._on_stamina_changed(40.0)
+	await _frames(40)
+	var stamina_shown: bool = gauges._stamina_alpha > 0.0
 	hud._on_stamina_changed(100.0)
-	_check("#4 the battery shows only with the flashlight on; stamina only while used",
+	_check("#4 the battery shows only with the flashlight on; stamina only when low",
 		off_hidden and on_shown and stamina_hidden and stamina_shown)
 
 

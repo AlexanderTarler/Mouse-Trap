@@ -73,8 +73,13 @@ func _build_text() -> String:
 		lines.append("last noise: %s %.1fm away, carries %.1fm (%d wall(s), %d obstacle(s), via %s) -> %s%s   %.1fs ago" % [
 			n.kind, n.distance, n.range, n.walls, n.obstacles, n.via, "HEARD" if n.heard else "missed",
 			("  off by %.1fm" % n.error) if n.heard and n.has("error") else "", p._clock - n.clock])
-	var suspected: String = p.suspected_player_room()
+	var suspected: String = p.believed_player_room()
 	lines.append("thinks the player is in: %s" % (suspected if suspected != "" else "?"))
+	if entity.get_state() == Entity.State.LURE:
+		var lure = entity.brain.current
+		lines.append("LURE: knocking at %s to draw them from %s  (phase %s)" % [
+			lure._decoy.entry.name if lure._decoy else "?", lure._target.entry.name if lure._target else "?",
+			["go", "knock", "hide"][lure._phase]])
 	lines.append("player room: %s   entity room: %s%s" % [p.player_room, p.entity_room, " (LIT)" if p.entity_in_lit_room else ""])
 	lines.append("on player's screen: %s   watched: %s" % [p.in_player_view, p.player_watching])
 	lines.append("flashlight: %s  overcharged: %s  strength %.2f  stare pressure %.2f  overcharge %.1fs  standoff cooldown %.1fs" % [

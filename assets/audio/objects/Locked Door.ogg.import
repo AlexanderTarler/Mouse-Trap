@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://0vq4q60ncy6o"
+path="res://.godot/imported/Locked Door.ogg-ccd1e65bf14eb75d1dbd3068bc92442a.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/objects/Locked Door.ogg"
+dest_files=["res://.godot/imported/Locked Door.ogg-ccd1e65bf14eb75d1dbd3068bc92442a.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

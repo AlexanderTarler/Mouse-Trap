@@ -42,6 +42,9 @@ var _original_scene_stream: AudioStream = null
 
 var is_open: bool = false
 var is_animating: bool = false
+## Night 2.2: back inside after the chase with the door shut, the player
+## won't open it again until Day 3 (set and cleared by NightTwoStory).
+var story_locked: bool = false
 var default_rotation_y: float
 ## Whether this door is currently locked (only used when required_key_name is set).
 ## Keeps the door's navigation link in sync, so the Entity can only path through
@@ -57,9 +60,8 @@ var is_locked: bool = false:
 var _entry_link: CabinEntryLink = null
 
 
-## Trying a locked door when locked_sound isn't assigned: the heavy lock
-## jiggled, pitched up.
-const LOCKED_SOUND_DEFAULT := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Doors & Drawers/heavy_door_lock-unlock_1.ogg"
+## Trying a locked door when locked_sound isn't assigned.
+const LOCKED_SOUND_DEFAULT := "res://assets/audio/objects/Locked Door.ogg"
 
 
 func _ready() -> void:
@@ -129,6 +131,9 @@ func interact() -> void:
 	# displayed as a centered event text that fades after 5 seconds.
 	if _is_player_exhausted():
 		_show_exhaustion_message("I'm not leaving the cabin until I've had some sleep.")
+		return
+	if story_locked and not is_open:
+		Monologue.say("There is no way I'm going outside now.")
 		return
 	
 	# If locked, always rattle — no quick unlock
@@ -202,6 +207,15 @@ func interact() -> void:
 func _on_checkpoint_restored() -> void:
 	is_animating = false
 	rotation_degrees.y = default_rotation_y + (open_angle if is_open else 0.0)
+
+
+## Open or shut, locked or not, at once and without a sound (a restart
+## putting the world back as it should be).
+func set_state_quietly(open: bool, locked: bool) -> void:
+	is_locked = locked
+	story_locked = false
+	is_open = open
+	_on_checkpoint_restored()
 
 
 func toggle_lock() -> void:
@@ -295,7 +309,7 @@ func _unlock_door() -> void:
 func _play_locked_sound() -> void:
 	if locked_sound and door_audio:
 		door_audio.stream = locked_sound
-		door_audio.pitch_scale = randf_range(1.2, 1.35)
+		door_audio.pitch_scale = 1.0
 		door_audio.play()
 
 
@@ -372,7 +386,14 @@ func close_and_lock() -> void:
 				door_audio.stream = target_stream
 				door_audio.pitch_scale = randf_range(0.9, 1.1)
 				door_audio.play()
+	var was_locked := is_locked
 	is_locked = true
+	# The game locking it for them counts as locking it (the "Lock the
+	# door" objectives).
+	if not was_locked:
+		var rm = get_node_or_null("/root/RoutineManager")
+		if rm and rm.has_method("on_door_locked"):
+			rm.on_door_locked()
 
 
 ## Public API: Unlocks the door WITHOUT opening it. The door stays closed

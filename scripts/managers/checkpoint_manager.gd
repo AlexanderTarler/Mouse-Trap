@@ -9,7 +9,13 @@ extends Node
 ##   - windows (glass, planks), scrap heap contents, the van's repairs,
 ##     doors, light switches, the fuse box, the nests;
 ##   - items lying in the world (picked up since: put back; dropped since:
-##     removed), and the trap: the portable light and its power cable.
+##     removed), and the trap: the portable light and its power cable;
+##   - the notebook's pages, the thoughts had (so the ones after it come
+##     again), where the knockable props stand, and the night and story
+##     flags (NightManager: used when "Play Again" reloads the scene).
+##
+## "Play Again" after an ending (ending_screen.gd) reloads the game scene and
+## restores this snapshot into it (restore_on_load, NightManager).
 ##
 ## NightManager captures (start_night, and when a day begins) and restores
 ## (restart_from_checkpoint). State is read from each object's script
@@ -19,8 +25,10 @@ extends Node
 
 const STATE_SCRIPTS := [
 	"cabin_window.gd", "scrap_heap.gd", "escape_van.gd", "door.gd", "cabin_light.gd",
-	"fuse_box.gd", "hasselmus_nest.gd", "generator_outlet.gd",
+	"fuse_box.gd", "hasselmus_nest.gd", "generator_outlet.gd", "notebook_ui.gd",
 ]
+## NightManager's night and story flags (restored when the scene reloads).
+const STORY_FLAGS := ["current_night", "van_sequence_started", "is_van_sequence_active"]
 const STATE_AUTOLOADS := ["RoutineManager", "EvidenceManager"]
 ## World items: anything whose script is a pickup (but not the flashlight and
 ## camera: having those is the player's own state, not restored).
@@ -47,6 +55,12 @@ var _lamps: Array = []
 ## [{"outlet": NodePath, "lamp": int (index in _lamps, -1 none), "state": int}]
 var _cables: Array = []
 var restoring := false
+## Set by "Play Again": the next game scene is put back to this snapshot.
+var restore_on_load := false
+var _story := {}
+var _thoughts := {}
+## knockable prop path -> Transform3D
+var _props := {}
 
 
 ## The template copies live outside the tree: free them with the game.
@@ -81,6 +95,16 @@ func capture(snapshot_kind: String, snapshot_tag: String = "") -> void:
 		_generator_on = nm.is_generator_on
 	var gt := get_node_or_null("/root/GameTime")
 	_time_progress = gt.cycle_progress if gt else 0.0
+	_story.clear()
+	if nm:
+		for flag in STORY_FLAGS:
+			_story[flag] = nm.get(flag)
+	var monologue := get_node_or_null("/root/Monologue")
+	_thoughts = monologue._had.duplicate() if monologue else {}
+	_props.clear()
+	for prop in get_tree().get_nodes_in_group("knockable"):
+		if prop is Node3D and prop.is_inside_tree():
+			_props[prop.get_path()] = (prop as Node3D).global_transform
 	var flashlight := _flashlight()
 	_battery = flashlight.battery_level if flashlight and "battery_level" in flashlight else -1.0
 
@@ -189,6 +213,16 @@ func restore() -> bool:
 		var node := get_node_or_null(path)
 		if node and node.has_method("_on_checkpoint_restored"):
 			node._on_checkpoint_restored()
+	var monologue := get_node_or_null("/root/Monologue")
+	if monologue:
+		monologue._had = _thoughts.duplicate()
+	for path in _props:
+		var prop := get_node_or_null(path) as RigidBody3D
+		if prop:
+			prop.global_transform = _props[path]
+			prop.linear_velocity = Vector3.ZERO
+			prop.angular_velocity = Vector3.ZERO
+			prop.sleeping = true
 	# The weather isn't part of the snapshot: it follows the story. From
 	# Nest Gamma until the Day 3 wake-up it rains; otherwise it's clear.
 	var weather := get_node_or_null("/root/Weather")
@@ -201,6 +235,13 @@ func restore() -> bool:
 	restoring = false
 	print("[Checkpoint] Restored the %s snapshot." % kind)
 	return true
+
+
+## The night and story flags back on NightManager (the scene was reloaded,
+## so NightManager's own may be from the end of the game).
+func apply_story(nm: Node) -> void:
+	for flag in _story:
+		nm.set(flag, _story[flag])
 
 
 ## GameTime's progress when the snapshot was taken.

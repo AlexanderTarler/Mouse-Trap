@@ -61,6 +61,32 @@ extends Node
 @export var night_fog_fluctuation_max: float = 1.5
 ## Night fog color.
 @export var night_fog_color: Color = Color(0.02, 0.02, 0.04)
+## The ground fog's own glow (its FogMaterial emission) from Night 3, when
+## the fog is thicker: dimmer, so the thicker fog hides more instead of
+## lighting the forest up. Nights 1-2 keep the material's own emission.
+## (Very sensitive: under ~0.18 the fog no longer shows at all.)
+@export var night3_ground_fog_emission: Color = Color(0.22, 0.22, 0.3)
+
+## --- The web (Compatibility renderer) ---
+## It has no volumetric fog: no ground fog, and with it went the night's
+## faint glow (the trees vanished into pure black). There, the ground fog
+## is the Environment's own height fog, and the night's ambient light is
+## raised so the forest still reads as shapes. Tuned by screenshot against
+## the desktop look (tools/night_shot.gd with --rendering-method
+## gl_compatibility): Night 3 about as dark. Very steep: an ambient a third
+## lower is pure black, a quarter higher looks like dim daylight.
+@export var compat_night_ambient_energy: float = 2.0
+@export var compat_night_ambient_color: Color = Color(0.3, 0.3, 0.45)
+## The night fog's colour there (lighter than the desktop's, so far trees
+## stand out against it as the desktop's glowing fog does).
+@export var compat_ground_fog_color: Color = Color(0.12, 0.12, 0.17)
+## Height fog up to this height (m) above the ground, this dense at normal
+## thickness.
+@export var compat_ground_fog_height: float = 1.5
+@export var compat_ground_fog_density: float = 0.15
+## Its shadows striped the ground in rings (shadow acne) at the scene's low
+## normal bias: the sun's and moon's are raised to at least this there.
+@export var compat_shadow_normal_bias: float = 1.5
 
 ## The ProceduralSkyMaterial to modify at runtime
 ## The sky: shaders/day_night_sky.gdshader (dusk, dawn, sun, moon, stars).
@@ -136,8 +162,26 @@ var _cached_vfog_enabled: bool = false
 var _cached_vfog_density: float = 0.0
 var _cached_fog_depth_end: float = 0.0
 
+## Running on the Compatibility renderer (the web build).
+var _compat := false
+
+## The ground fog material's own emission (Nights 1-2).
+var _base_fog_emission := Color(-1, -1, -1)
+
 ## Current distance at which the fog is fully opaque (INF when there is none).
 var _fog_visibility: float = INF
+
+
+## The sun's and moon's shadow normal bias (raised on the web).
+func _shadow_normal_bias() -> float:
+	return compat_shadow_normal_bias if _compat else 0.1
+
+
+## The web: the sun's and moon's shadows without the ground stripes.
+func apply_compat_shadows() -> void:
+	for light in [sun, moon]:
+		if light:
+			light.shadow_normal_bias = maxf(light.shadow_normal_bias, compat_shadow_normal_bias)
 
 
 ## How far the player can see through the fog right now: the distance at
@@ -148,6 +192,9 @@ func get_fog_visibility() -> float:
 
 func _ready() -> void:
 	add_to_group("environment_controller")
+	_compat = RenderingServer.get_current_rendering_method() == "gl_compatibility"
+	if _compat:
+		apply_compat_shadows()
 	# Get the Environment resource from the WorldEnvironment
 	if world_environment:
 		_environment = world_environment.environment
@@ -382,7 +429,7 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 	var night_sky_horizon: Color = Color(0.05, 0.05, 0.08)
 	var night_ground_bottom: Color = Color(0.01, 0.01, 0.01)
 	
-	var storm_grey := Color(0.16, 0.17, 0.19) * lerpf(0.25, 1.0, p_day_factor)
+	var storm_grey := Color(0.12, 0.13, 0.15) * lerpf(0.25, 1.0, p_day_factor)
 	# Dusk and dawn: the sun near the horizon.
 	var dusk := clampf(1.0 - absf(p_sun_height) / 0.35, 0.0, 1.0)
 	var dusk_top := Color(0.22, 0.24, 0.42)
@@ -417,12 +464,13 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 		_cached_sun_angle_max = sun_angle_max
 	
 	# --- Ambient light: smoothly dim at night ---
-	var ambient_energy: float = lerpf(night_ambient_energy, 0.7, p_day_factor) * lerpf(1.0, 0.5, weather)
+	var night_ambient: float = compat_night_ambient_energy if _compat else night_ambient_energy
+	var ambient_energy: float = lerpf(night_ambient, 0.7, p_day_factor) * lerpf(1.0, 0.5, weather)
 	if not is_equal_approx(ambient_energy, _cached_ambient_energy):
 		_environment.ambient_light_energy = ambient_energy
 		_cached_ambient_energy = ambient_energy
 	
-	var ambient_color: Color = night_ambient_color.lerp(Color(0.7, 0.75, 1.0), p_day_factor)
+	var ambient_color: Color = (compat_night_ambient_color if _compat else night_ambient_color).lerp(Color(0.7, 0.75, 1.0), p_day_factor)
 	if not _cached_ambient_color.is_equal_approx(ambient_color):
 		_environment.ambient_light_color = ambient_color
 		_cached_ambient_color = ambient_color
@@ -471,6 +519,7 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 			night_multiplier = 1.5
 		
 		var thickness: float = fog_factor * fog_fluctuation * _night_fog_base * night_multiplier
+		_set_ground_fog_emission(night3_ground_fog_emission if night_multiplier > 1.0 else _base_fog_emission)
 
 		# Distance fog: clear up to fog_clear_distance, fully opaque at the
 		# visibility distance (closer when the fog is thicker). In depth mode
@@ -498,8 +547,13 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 			_set_ground_fog_density(vfog_density)
 			_cached_vfog_density = vfog_density
 		
+		# The web: the ground fog as height fog instead.
+		if _compat:
+			_environment.fog_height = compat_ground_fog_height
+			_environment.fog_height_density = compat_ground_fog_density * thickness
 		var day_fog_color: Color = Color(0.7, 0.75, 0.8)
-		var fog_color: Color = day_fog_color.lerp(night_fog_color, fog_factor)
+		var night_color: Color = compat_ground_fog_color if _compat else night_fog_color
+		var fog_color: Color = day_fog_color.lerp(night_color, fog_factor)
 		if not _cached_fog_color.is_equal_approx(fog_color):
 			_environment.fog_light_color = fog_color
 			_cached_fog_color = fog_color
@@ -539,6 +593,19 @@ func _set_sky(param: String, value) -> void:
 		_sky_material.set(param, value)
 
 
+## The ground fog's glow (Nights 1-2: the material's own, as first seen).
+func _set_ground_fog_emission(value: Color) -> void:
+	if not ground_fog or not ground_fog.material is FogMaterial:
+		return
+	var material := ground_fog.material as FogMaterial
+	if _base_fog_emission.r < 0.0:
+		_base_fog_emission = material.emission
+		if value.r < 0.0:
+			value = _base_fog_emission
+	if not material.emission.is_equal_approx(value):
+		material.emission = value
+
+
 func _set_ground_fog_density(value: float) -> void:
 	if ground_fog and ground_fog.material is FogMaterial:
 		(ground_fog.material as FogMaterial).density = value
@@ -564,7 +631,7 @@ func _update_light_appearance(p_day_factor: float, p_sun_height: float) -> void:
 			_cached_sun_shadow_enabled = sun_shadow_enabled
 			if sun.shadow_enabled:
 				sun.shadow_bias = 0.1
-				sun.shadow_normal_bias = 0.1
+				sun.shadow_normal_bias = _shadow_normal_bias()
 	
 	# --- Moon light energy: smoothly scales as sun goes down ---
 	if moon:
@@ -584,4 +651,4 @@ func _update_light_appearance(p_day_factor: float, p_sun_height: float) -> void:
 			_cached_moon_shadow_enabled = moon_shadow_enabled
 			if moon.shadow_enabled:
 				moon.shadow_bias = 0.1
-				moon.shadow_normal_bias = 0.1
+				moon.shadow_normal_bias = _shadow_normal_bias()

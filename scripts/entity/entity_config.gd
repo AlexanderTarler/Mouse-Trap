@@ -110,8 +110,11 @@ extends Resource
 @export var standoff_retreat_time: float = 2.0
 ## After a standoff a standard beam can't freeze it again for this long.
 @export var standoff_cooldown: float = 5.0
-## Overcharged beam held on it for this long: it flees.
+## Overcharged beam held on it for this long: it flees (driven off).
 @export var overcharge_repel_time: float = 0.9
+## It hardens: each time it's been driven off tonight, the beam must be
+## held this much longer (0.9, 2.15, 3.4 s...), so the battery is the clock.
+@export var overcharge_repel_growth: float = 1.25
 ## Brief beam drop-outs shorter than this don't reset the overcharge timer.
 @export var overcharge_grace: float = 0.35
 ## A lost beam must stay lost this long before a standoff ends.
@@ -208,12 +211,53 @@ extends Resource
 @export var hit_interval: float = 2.0
 ## Delay from the start of the AttackWindow swing to the impact.
 @export var hit_impact_delay: float = 0.5
-## Gives up on a window after this long.
+## Gives up on a window after this long (not counting pauses).
 @export var breach_max_time: float = 45.0
+## Chance, once per break-in, to stop halfway and go quiet for a while
+## (the player can't tell whether it left).
+@export var breach_pause_chance: float = 0.4
+## From Night 3: chance to ease out the glass of an unboarded window in a
+## room the player isn't in, with one dull crack, instead of smashing it.
+@export var quiet_entry_chance: float = 0.4
 ## Minimum time between turning off a room light from outside.
 @export var light_sabotage_cooldown: float = 45.0
 ## Time to climb through a broken window.
 @export var vault_time: float = 1.4
+
+@export_group("Shyness")
+## It would rather not be seen. Choosing a way in (EntityWorld.pick_entry),
+## it avoids the room it believes the player is in, entries the player can
+## see right now, and ones where it was spotted lately; it favours entries far
+## from the player.
+@export var shy_room_penalty: float = 5.0
+@export var shy_view_penalty: float = 3.0
+@export var shy_spotted_penalty: float = 4.0
+## Up to this much for an entry far from the player (1 per 8 m).
+@export var shy_distance_bonus: float = 1.5
+## How long it trusts its idea of which room the player is in (s).
+@export var room_memory_time: float = 45.0
+## How long it avoids an entry where the player spotted it (s).
+@export var spotted_memory: float = 45.0
+## Spotted while walking up to the cabin: the chance it slips away out of
+## sight rather than stopping to stare (bluff_chance).
+@export var shy_retreat_chance: float = 0.75
+## Confidence it loses slipping away like that.
+@export var shy_retreat_confidence: float = 6.0
+## At a window, once it has ducked as often as it will, being looked at
+## again sends it away from that window.
+@export var peek_leave_when_watched: bool = true
+@export_subgroup("Lure")
+## When the best way in is a window of the player's own room, the chance it
+## tries to draw them away first: noises at a window of another room
+## (LURE), then, once the player has moved, a quick dash to the real one.
+@export var lure_chance: float = 0.7
+## Knocks on the decoy window per round, and rounds before it gives up.
+@export var lure_knocks: int = 3
+@export var lure_rounds: int = 2
+## How long it waits, hidden, for the player to leave their room (s).
+@export var lure_wait: float = 16.0
+## Its speed to the real window once the player has gone (x approach_speed).
+@export var lure_rush_multiplier: float = 1.6
 
 @export_group("Climbing")
 ## From this night it climbs the walls to the upstairs windows.
@@ -235,6 +279,24 @@ extends Resource
 ## Leaves the cabin after this long without finding the player.
 @export var hunt_give_up_time: float = 45.0
 @export var room_scan_time: float = 3.5
+## From Night 3: after checking a room, chance to wait in ambush instead,
+## crouched in the dark, silent, for ambush_time_min..max seconds.
+@export var ambush_chance: float = 0.45
+@export var ambush_time_min: float = 20.0
+@export var ambush_time_max: float = 45.0
+## It springs when the player comes this close (or finds it with a look).
+@export var ambush_spring_distance: float = 3.0
+## The tell before it lunges from an ambush: a breath, then this long.
+@export var ambush_tell_time: float = 1.0
+## From Night 3, at most once a night: giving up, it sounds like it leaves
+## (the window, a thud outside, a growl in the yard) but stays, in ambush.
+@export var fake_departure_chance: float = 0.5
+## From Night 3: it makes the player's own sounds elsewhere in the house
+## (footsteps, the notebook, a light switch, a knock) at most this often a night.
+@export var mimic_per_night: int = 2
+## From Night 3: waiting outside a lit room this long, it kills the light
+## from inside (flicker, then dark). Night 2 the light stays a safe haven.
+@export var siege_light_time: float = 12.0
 
 @export_group("Flee")
 @export var flee_distance: float = 18.0

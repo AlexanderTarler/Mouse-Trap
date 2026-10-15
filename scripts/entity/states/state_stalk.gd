@@ -64,6 +64,8 @@ func update(delta: float) -> void:
 	_watched_time = _watched_time + delta if perception.player_watching else 0.0
 	if config.stalk_freeze_when_watched and perception.player_watching \
 			and perception.distance_to_player > config.stalk_freeze_min_distance:
+		# Caught being watched: down low, staring back, then crawling closer.
+		entity.crawl()
 		if _watched_time < config.stalk_stare_time:
 			entity.stop()
 			entity.face(player.global_position)

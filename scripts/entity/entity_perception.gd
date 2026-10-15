@@ -41,6 +41,9 @@ var last_heard_room := ""
 ## came through), walls, obstacles, heard, clock.
 var last_noise: Dictionary = {}
 var _last_seen_clock := -INF
+## The room it last knew the player to be in, and when (believed_player_room).
+var _known_room := ""
+var _known_room_clock := -INF
 var _last_heard_clock := -INF
 
 # ─── Flashlight ──────────────────────────────────────────────────────────────
@@ -69,7 +72,7 @@ var _overcharge_lost_time := 0.0
 var _clock := 0.0
 var _camera: Camera3D = null
 
-const WATCHING_STATES := [Entity.State.OBSERVE, Entity.State.PEEK, Entity.State.APPROACH]
+const WATCHING_STATES := [Entity.State.OBSERVE, Entity.State.PEEK, Entity.State.APPROACH, Entity.State.LURE]
 const PLAYER_CHEST := Vector3(0.0, 1.0, 0.0)
 const ROOM_SAMPLE_HEIGHT := 1.0   ## Room volumes start ~0.25 m above the floor.
 const PLAYER_VIEW_DISTANCE := 60.0
@@ -96,6 +99,11 @@ func update(delta: float) -> void:
 	in_player_view = is_in_player_view(chest)
 	player_watching = in_player_view and is_player_looking_at(chest, WATCH_CONE_DEGREES)
 
+	var room := suspected_player_room()
+	if room != "":
+		_known_room = room
+		_known_room_clock = _clock
+
 	if player_inside or can_see_player or has_fresh_noise(2.0):
 		unseen_outside_time = 0.0
 	else:
@@ -108,7 +116,20 @@ func update(delta: float) -> void:
 func reset_memory() -> void:
 	_last_seen_clock = -INF
 	_last_heard_clock = -INF
+	_known_room = ""
+	_known_room_clock = -INF
 	unseen_outside_time = 0.0
+
+
+## The room it believes the player is in: what it sees or hears now, else
+## what it last knew (for config.room_memory_time). "" if it has no idea.
+func believed_player_room() -> String:
+	var now := suspected_player_room()
+	if now != "":
+		return now
+	if _clock - _known_room_clock < config.room_memory_time:
+		return _known_room
+	return ""
 
 
 # ─── Memory queries ──────────────────────────────────────────────────────────

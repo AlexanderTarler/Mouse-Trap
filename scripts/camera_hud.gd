@@ -199,8 +199,8 @@ func show_hud() -> void:
 	follow_viewport_enabled = false
 	
 	# ─── OVERRIDE 2: Force full-screen size using DisplayServer API ────────
-	var window_id = get_window().get_window_id() if is_inside_tree() else 0
-	var real_screen_size = DisplayServer.window_get_size(window_id)
+	# The canvas size (the UI is scaled from 1920x1080 to the window).
+	var real_screen_size = get_viewport().get_visible_rect().size
 	
 	var viewfinder = get_node_or_null("Viewfinder") as Control
 	if viewfinder:
@@ -326,7 +326,7 @@ func _on_viewport_resized() -> void:
 	if not is_active or not is_inside_tree():
 		return
 	
-	var vp_size = get_viewport().size
+	var vp_size = get_viewport().get_visible_rect().size
 	
 	# Reposition corner brackets
 	if bracket_tr:
@@ -369,8 +369,8 @@ func _on_viewport_resized() -> void:
 func _reposition_hud_elements() -> void:
 	# Use the Viewfinder's size (which was forced to real_screen_size in show_hud)
 	var viewfinder = get_node_or_null("Viewfinder") as Control
-	var w: float = viewfinder.size.x if viewfinder else DisplayServer.window_get_size(0).x
-	var h: float = viewfinder.size.y if viewfinder else DisplayServer.window_get_size(0).y
+	var w: float = viewfinder.size.x if viewfinder else get_viewport().get_visible_rect().size.x
+	var h: float = viewfinder.size.y if viewfinder else get_viewport().get_visible_rect().size.y
 	
 	# Top Left Group (keep near 20, 20)
 	# bracket_tl and bracket_tl_v stay at their scene defaults (20, 20)

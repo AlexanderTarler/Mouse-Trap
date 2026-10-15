@@ -225,15 +225,36 @@ func _test_footsteps() -> void:
 	_player._is_crouching = false
 	_player._is_running = false
 	_player._play_surface_footstep()
-	var on_stairs: bool = _player.stairs_footsteps.has(_player.footstep_audio.stream)
+	var on_stairs: bool = _player.wood_footsteps.has(_player.footstep_audio.stream)
 	var walk_db: float = _player.footstep_audio.volume_db
 	_player._is_crouching = true
 	_player._play_surface_footstep()
 	var crouch_db: float = _player.footstep_audio.volume_db
 	_player._is_crouching = false
-	_check("footsteps: single stair steps on the stairs; crouching is quieter than walking",
-		on_stairs and _player.stairs_footsteps.size() == 16 and _player.stairs_footsteps.all(func(s): return s.get_length() < 1.0) and crouch_db < walk_db - 5.0,
-		"stairs=%s, walk %.1f dB, crouch %.1f dB" % [on_stairs, walk_db, crouch_db])
+	_stand(LANDING)
+	await _frames(3)
+	_player._play_surface_footstep()
+	var upstairs: bool = _player.wood_footsteps.has(_player.footstep_audio.stream)
+	_check("footsteps: the stairs and the upper floor sound like the ground floor; crouching is quieter than walking",
+		on_stairs and upstairs and crouch_db < walk_db - 5.0,
+		"stairs=%s, upstairs=%s, walk %.1f dB, crouch %.1f dB" % [on_stairs, upstairs, walk_db, crouch_db])
+	# ...and the same, not washed in a room's echo: which room's reverb a 3D
+	# sound gets is found at its source, which upstairs lies in the room
+	# below. Steps take none (area_mask 0), as downstairs.
+	var fa: AudioStreamPlayer3D = _player.footstep_audio
+	var echoes := []
+	for spot in [STAIRS, LANDING]:
+		_stand(spot)
+		await _frames(3)
+		var q := PhysicsPointQueryParameters3D.new()
+		q.position = fa.global_position
+		q.collide_with_areas = true
+		q.collide_with_bodies = false
+		q.collision_mask = fa.area_mask
+		for hit in _player.get_world_3d().direct_space_state.intersect_point(q, 8):
+			if hit.collider.get("reverb_bus_enabled"):
+				echoes.append(hit.collider.name)
+	_check("footsteps: no room echo on the stairs or upstairs (it muffled them, far away)", fa.area_mask == 0 and echoes.is_empty(), str(echoes))
 
 
 func _test_chase_music() -> void:
@@ -352,8 +373,15 @@ func _test_new_sounds() -> void:
 	var door: Node = get_first_node_in_group("Door")
 	var flashlight: Node = _player._flashlight
 	var jumpscare: Node = root.get_node("JumpscareManager")
-	_check("a locked door, the overcharge hum and the capture sting have sounds",
-		door.locked_sound != null and flashlight._hum_player.stream != null and jumpscare._audio_sting_player.stream != null)
+	var breath: AudioStreamPlayer3D = _player._breathing_audio
+	var notebook: Node = get_first_node_in_group("notebook_ui")
+	_check("locked door, notebook and low-stamina breathing use their recordings, unpitched",
+		door.locked_sound.resource_path.ends_with("Locked Door.ogg")
+			and breath != null and breath.stream.resource_path.ends_with("Player Breathing.ogg") and breath.pitch_scale == 1.0
+			and notebook != null and ResourceLoader.exists(notebook.TOGGLE_SOUND),
+		"breath %s" % (breath.stream.resource_path if breath else "none"))
+	_check("a locked door and the capture sting have sounds; the overcharged flashlight is silent",
+		door.locked_sound != null and flashlight._hum_player.stream == null and jumpscare._audio_sting_player.stream != null)
 
 	var rustle: Node = get_first_node_in_group("foliage_rustle")
 	var recorded: bool = rustle != null and rustle._sounds["leafy"][0].resource_path.ends_with("Brushing Against Bushes.ogg")

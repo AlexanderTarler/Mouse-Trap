@@ -11,6 +11,9 @@ extends EntityState
 ## data {"committed": true} (totem defence, and after the lamp's stun) tracks
 ## the player directly for the whole charge instead of only while visible;
 ## {"max_time": s} lasts that long instead of config.charge_max_time.
+## It roars first (Entity.play_oneshot), standing its ground for a moment,
+## unless it wound up for it already (STANDOFF) or {"no_roar": true} (the
+## totem defence, a surprise).
 
 const S := Entity.State
 
@@ -19,10 +22,13 @@ var _lost_time := 0.0
 var _max_time := 0.0
 
 
-func enter(_from: int, data: Dictionary) -> void:
+func enter(from: int, data: Dictionary) -> void:
 	_committed = data.get("committed", false)
 	_max_time = data.get("max_time", config.charge_max_time)
 	_lost_time = 0.0
+	if from != S.STANDOFF and not data.get("no_roar", false):
+		entity.play_oneshot(&"Roar", Entity.ROAR_TIME, Entity.ROAR_SPEED)
+		_max_time += Entity.ROAR_TIME
 	# A shriek from its own head, indoors as well as out.
 	entity.audio.play_shriek()
 	entity.audio.start_chase_music()

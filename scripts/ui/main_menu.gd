@@ -33,6 +33,9 @@ func _ready() -> void:
 	# Ensure the mouse is visible and the game is unpaused
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	get_tree().paused = false
+	# The display mode chosen in the options last time.
+	OptionsMenu.apply_saved_settings()
+	GameFonts.use_title($TitleLabel)
 	
 	# Button signals are already connected in main_menu.tscn via the
 	# [connection] entries, so no programmatic connection is needed here.
@@ -52,6 +55,11 @@ func _ready() -> void:
 ## Loads the main game scene.
 func _on_play_pressed() -> void:
 	print("[MainMenu] Attempting to load: ", GAME_SCENE_PATH)
+	# A new game: every game-wide manager as it was at boot (a second game
+	# would otherwise carry the first one's inventory, story and night).
+	var reset := get_node_or_null("/root/GameReset")
+	if reset:
+		reset.new_game()
 	
 	# Try loading via ResourceLoader first to get a meaningful error
 	var packed_scene = load(GAME_SCENE_PATH) as PackedScene

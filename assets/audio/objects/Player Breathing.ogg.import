@@ -1,0 +1,19 @@
+[remap]
+
+importer="oggvorbisstr"
+type="AudioStreamOggVorbis"
+uid="uid://bqvr0f7joyccj"
+path="res://.godot/imported/Player Breathing.ogg-e694b53efdb5f53b870c1ddf7d7d4706.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/objects/Player Breathing.ogg"
+dest_files=["res://.godot/imported/Player Breathing.ogg-e694b53efdb5f53b870c1ddf7d7d4706.oggvorbisstr"]
+
+[params]
+
+loop=false
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

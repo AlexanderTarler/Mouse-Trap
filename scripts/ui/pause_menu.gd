@@ -19,6 +19,7 @@ var _is_open: bool = false
 func _ready() -> void:
 	process_mode = PROCESS_MODE_ALWAYS
 	visible = false
+	GameFonts.use_title($PanelContainer/VBoxContainer/TitleLabel)
 	_resume_button.pressed.connect(_on_resume_pressed)
 	_settings_button.pressed.connect(_on_settings_pressed)
 	_main_menu_button.pressed.connect(_on_main_menu_pressed)
@@ -41,6 +42,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		# hardware-polling in _process() and cannot consume the event, so
 		# without this guard ESC would open the pause menu on top of it.
 		if _close_inventory_ui():
+			get_viewport().set_input_as_handled()
+			return
+		# ─── NOTEBOOK PRIORITY ───────────────────────────────────────────
+		# An open notebook closes first (also over the computer: the next
+		# Escape then leaves the computer).
+		var notebook := get_tree().get_first_node_in_group("notebook_ui")
+		if notebook and notebook.has_method("close") and notebook.close():
 			get_viewport().set_input_as_handled()
 			return
 		# ─── COMPUTER UI PRIORITY ─────────────────────────────────────────

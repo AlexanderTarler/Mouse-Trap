@@ -70,6 +70,13 @@ func interact(player: Node3D = null) -> void:
 			print("[Wreck] No inner_monologue set, but before Day 3. No action.")
 		return
 	
+	# ─── DAY 3: only once the van has been looked at again ───────
+	# ("Investigate the car again."): until then there's no telling which
+	# parts it needs.
+	if not _van_checked():
+		_show_hud_message("I should take a proper look at the van first.")
+		return
+
 	# ─── DAY 3+: Salvage the car part ───────────────────────────
 	if not item_resource:
 		print("[Wreck] ERROR: item_resource is NULL!")
@@ -179,6 +186,12 @@ func _spawn_salvage_spark_particles() -> void:
 	get_tree().create_timer(1.5).timeout.connect(particles.queue_free)
 
 
+## Whether the van has been investigated on Day 3 (RoutineManager.van_inspected).
+func _van_checked() -> bool:
+	var rm := get_node_or_null("/root/RoutineManager")
+	return rm == null or bool(rm.get("van_inspected"))
+
+
 func get_interact_text() -> String:
 	if is_looted:
 		return ""
@@ -187,9 +200,9 @@ func get_interact_text() -> String:
 	# showing the normal "Press E" text. The player is too tired.
 	var player_ref = get_tree().get_first_node_in_group("player")
 	if player_ref and "is_exhausted" in player_ref and player_ref.is_exhausted:
-		return "[color=gray]I am too tired to do this[/color]"
+		return "Too tired to do this"
 	var item_name := _get_item_name()
-	if _is_before_day_3():
+	if _is_before_day_3() or not _van_checked():
 		var nm = get_node_or_null("/root/NightManager")
 		if nm and "current_night" in nm and nm.current_night == 0:
 			return ""

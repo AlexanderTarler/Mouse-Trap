@@ -20,7 +20,7 @@ extends Node
 ##   0  — Go to the cabin
 ##   1  — Unlock the front door
 ##   2  — Log into the computer (first try — fails, auto-advances)
-##   3  — Find the flashlight
+##   3  — (unused: "Find the flashlight" is an interruption, see below)
 ##   4  — Replace the broken fuse in the fuse box
 ##   5  — Refuel the generator, then turn it on
 ##   6  — Log into the computer (successfully)
@@ -31,6 +31,10 @@ extends Node
 ##
 ## Mains 4 and 5 can be done in either order. Once BOTH are done,
 ## the system advances to main 6.
+##
+## "Find the flashlight" isn't in the chain: when Night 1 falls and the
+## player has no flashlight, it takes over whatever the objective is
+## (flashlight_needed); finding the flashlight hands the objective back.
 
 signal routine_step_changed(step: int, objective_text: String)
 
@@ -225,6 +229,8 @@ var _xray_timers: Dictionary = {}
 
 func _ready() -> void:
 	_night_manager = get_node_or_null("/root/NightManager")
+	if _night_manager and _night_manager.has_signal("night_started"):
+		_night_manager.night_started.connect(_on_night_started)
 	print("[RoutineManager] Initialized. Main-objective gating active. Waiting for Phase 1 triggers.")
 
 
@@ -487,7 +493,7 @@ func _advance_main_objective(target: int) -> void:
 		# "Lock the front door" done, however it completed (locked on the
 		# objective, or locked earlier and ticked off when it came up).
 		if was <= 8 and target >= 9:
-			_spawn_peeker_at.call_deferred("Landing_Window")
+			_spawn_peeker_at.call_deferred("Bedroom_Right")
 		if was < 4 and target == 4:
 			_think_fuse_box.call_deferred()
 
@@ -516,7 +522,26 @@ func _check_power_restored() -> void:
 
 ## ─── OBJECTIVE TEXT ─────────────────────────────────────────────────
 
+## Night 1 fell and the player has no flashlight: "Find the flashlight."
+## stands in for the objective until they pick it up.
+var flashlight_needed := false
+
+
+func _on_night_started(night: int) -> void:
+	if night != 1 or is_day3_sandbox or main_objective >= 99:
+		return
+	var player := get_tree().get_first_node_in_group("player")
+	if player and player.get("_has_flashlight"):
+		return
+	flashlight_needed = true
+	print("[RoutineManager] Night 1 and no flashlight: \"Find the flashlight.\" takes over the objective.")
+	highlight_target("xray_flashlight", 5.0)
+	_update_hud()
+
+
 func get_current_objective() -> String:
+	if flashlight_needed:
+		return "Find the flashlight."
 	# ─── DAY 3+ SANDBOX MODE OVERRIDE ─────────────────────────────
 	# Sandbox mode takes priority over the Night 2.2 car-alarm van
 	# sequence. Once Day 3 begins, the objective must read
@@ -663,7 +688,9 @@ func _update_hud() -> void:
 	_update_bed_highlight(str(text))
 	var step: int = 0
 	
-	if is_day3_sandbox:
+	if flashlight_needed:
+		step = 5
+	elif is_day3_sandbox:
 		if van_fully_repaired:
 			step = 30
 		elif van_parts_installed_count > 0:
@@ -960,8 +987,25 @@ func on_door_tried_locked() -> void:
 	phase1_tried_door = true
 	print("[RoutineManager] Phase 1: Player tried the locked door.")
 	_update_hud()
+	# The key is under the bucket by the door: the moment to learn that
+	# loose things can be lifted and moved.
+	_hint_move_objects()
 	# ─── X-RAY HIGHLIGHT: Cabin Key after 5 seconds ──
 	highlight_target("xray_key", 5.0)
+
+## The lift-and-move hint, until it's been on screen, learned, or the key is
+## found. (Another hint still up, the "interact" one from the door, blocks it,
+## and a blocked hint isn't tried again on its own.)
+func _hint_move_objects() -> void:
+	var tm := get_node_or_null("/root/TutorialManager")
+	if not tm or not tm.has_method("trigger") or tm.is_learned("move_objects"):
+		return
+	if tm._shown.has("move_objects") or _player_has_item("Cabin Key"):
+		return
+	tm.trigger("move_objects")
+	if not tm._shown.has("move_objects"):
+		get_tree().create_timer(2.0).timeout.connect(_hint_move_objects)
+
 
 func on_key_picked_up() -> void:
 	if phase1_found_key:
@@ -1119,14 +1163,11 @@ func on_computer_tried_no_power() -> void:
 	# skip objective 3 ("Find the flashlight") and go directly to objective 4
 	# ("Find the fuse box"). This prevents the player from getting stuck on an
 	# objective they've already completed.
-	if phase2_flashlight_early:
-		_advance_main_objective(4)
-		print("[RoutineManager] Phase 2: Player tried computer without power. Flashlight already found early — skipping to fuse objective.")
-		highlight_target("xray_fuse_box", 5.0)
-	else:
-		_advance_main_objective(3)
-		print("[RoutineManager] Phase 2: Player tried computer without power. Advancing to flashlight objective.")
-		highlight_target("xray_flashlight", 5.0)
+	# (The flashlight is no longer a step here: Night 1 asks for it if the
+	# player still hasn't found it, see flashlight_needed.)
+	_advance_main_objective(4)
+	print("[RoutineManager] Phase 2: Player tried computer without power. Advancing to the fuse box.")
+	highlight_target("xray_fuse_box", 5.0)
 	_update_hud()
 
 ## Tracks whether the player picked up the flashlight before reaching
@@ -1142,6 +1183,13 @@ var phase2_flashlight_early: bool = false
 ## (objective < 3), set a flag so on_computer_tried_no_power() can skip
 ## objective 3 entirely when it arrives.
 func on_flashlight_picked_up() -> void:
+	clear_highlight("xray_flashlight")
+	if flashlight_needed:
+		# The objective it stood in for comes back.
+		flashlight_needed = false
+		print("[RoutineManager] Flashlight found: back to \"%s\"" % get_current_objective())
+		_update_hud()
+		return
 	if phase2_flashlight_early:
 		return  # Already handled, prevent double-trigger
 	if main_objective == 3:
@@ -1226,6 +1274,13 @@ func on_window_patched() -> void:
 # ═══════════════════════════════════════════════════════════════════════
 # PHASE 3 TRIGGERS
 # ═══════════════════════════════════════════════════════════════════════
+
+## "Lock the door" came up with the front door already locked: done.
+func _tick_off_locked_door() -> void:
+	var door := get_tree().get_first_node_in_group("Door")
+	if door and door.get("is_locked"):
+		on_door_locked()
+
 
 func on_door_locked() -> void:
 	# ─── DAY 2 STEP 6 → 7: Lock the door ───────────────────────────
@@ -1548,6 +1603,9 @@ func on_nest_data_uploaded() -> void:
 		nests_uploaded = true
 		day2_step = 6
 		print("[RoutineManager] Day 2 Step 5 COMPLETE: Nest data uploaded to terminal!")
+		# Night has fallen with the upload, and the game may have locked the
+		# front door for them already: then "Lock the door" is done.
+		_tick_off_locked_door.call_deferred()
 	else:
 		# Player attempted to upload before documenting all nests.
 		# Keep the flag false so they can retry after documenting.

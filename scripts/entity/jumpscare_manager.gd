@@ -231,6 +231,48 @@ func _apply_survival_penalties(player: Node3D) -> void:
 
 ## Triggers a hard Game Over state: pauses the game, shows a death screen,
 ## and provides an option to restart the current night.
+## Survival tips for the death screen, by where the player was caught.
+const TIPS_OUTSIDE := [
+	"It hunts by sound. Walk, or crouch: sprinting brings it to you.",
+	"Crouched in tall plants, you're hard to see, even up close.",
+	"Light makes it hesitate. The porch light and lit rooms are safer ground.",
+]
+const TIPS_INSIDE := [
+	"It won't come in through the window of a lit room.",
+	"Board up broken windows: planks hold it back for a while.",
+	"Hold F to overcharge the flashlight: the beam drives it off.",
+	"It listens. A locked door and a quiet house buy you time.",
+]
+const TIP_CHARGE := "When it roars, it's about to lunge: get out of its sight, fast."
+
+
+## One line under the death screen's buttons: how to survive what just
+## happened.
+func _add_death_tip(death_canvas: Node) -> void:
+	var player = get_tree().get_first_node_in_group("player")
+	var entity = get_tree().get_first_node_in_group("entity")
+	var tip: String
+	if entity and entity.get("brain") and entity.brain.state_id == entity.State.CHARGE and randf() < 0.5:
+		tip = TIP_CHARGE
+	elif player and player.has_method("get_player_room") and player.get_player_room() == "Outside":
+		tip = TIPS_OUTSIDE.pick_random()
+	else:
+		tip = TIPS_INSIDE.pick_random()
+	var label := Label.new()
+	label.name = "TipLabel"
+	label.text = tip
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.add_theme_font_size_override("font_size", 17)
+	label.add_theme_color_override("font_color", Color(0.85, 0.8, 0.7, 0.85))
+	label.set_anchors_preset(Control.PRESET_CENTER)
+	label.offset_left = -360.0
+	label.offset_right = 360.0
+	label.offset_top = 190.0
+	label.offset_bottom = 250.0
+	death_canvas.add_child(label)
+
+
 func _trigger_game_over() -> void:
 	print("[JumpscareManager] _trigger_game_over() called.")
 	
@@ -265,12 +307,31 @@ func _trigger_game_over() -> void:
 			print("[JumpscareManager] ERROR: RestartButton not found in death screen!")
 		
 		# Update the night label if present
+		# "Night 2" / "Day 3": the same names the HUD and notebook use.
 		var night_label = death_canvas.find_child("NightLabel", true, false) as Label
+		var rm = get_node_or_null("/root/RoutineManager")
 		if night_label:
-			var nm = get_node_or_null("/root/NightManager")
-			var night_num = nm.current_night if nm else 1
-			night_label.text = "Night %d" % night_num
-			print("[JumpscareManager] Night label set to: Night %d" % night_num)
+			var when: String
+			if rm and rm.has_method("get_current_day_string"):
+				when = rm.get_current_day_string()
+			else:
+				var nm = get_node_or_null("/root/NightManager")
+				when = "Night %d" % (nm.current_night if nm else 1)
+			night_label.text = "%s. The researcher is missing." % when
+			night_label.custom_minimum_size.x = 600.0
+		# A line in the field report, in the title typewriter face.
+		var death_label = death_canvas.find_child("DeathLabel", true, false) as Label
+		if death_label:
+			GameFonts.use_title(death_label)
+		_add_death_tip(death_canvas)
+		# Where restarting puts the player: this morning, or tonight's start.
+		if restart_btn:
+			var checkpoint = get_node_or_null("/root/Checkpoint")
+			var kind: String = checkpoint.kind if checkpoint else ""
+			if kind == "day":
+				restart_btn.text = "Restart from this morning"
+			elif kind == "night":
+				restart_btn.text = "Restart from nightfall"
 	else:
 		print("[JumpscareManager] WARNING: No death_screen_scene assigned! Cannot show game over screen.")
 		# Fallback: just unpause and restart

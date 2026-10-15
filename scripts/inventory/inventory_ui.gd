@@ -43,6 +43,7 @@ func _ready() -> void:
 	
 	# Connect to inventory changes
 	Inventory.inventory_changed.connect(_refresh_grid)
+	ItemIcons.instance().icon_ready.connect(_on_icon_ready)
 	print("[InventoryUI] Connected to Inventory.inventory_changed signal")
 	
 	# Find the flashlight
@@ -50,6 +51,12 @@ func _ready() -> void:
 	
 	# Find the NoteUI (added to the main scene)
 	_find_note_ui()
+
+
+## A picture just got rendered: show it if the inventory is open.
+func _on_icon_ready(_item_name: String) -> void:
+	if _is_open:
+		_refresh_grid()
 
 
 func _find_flashlight() -> void:
@@ -301,16 +308,19 @@ func _refresh_grid() -> void:
 		btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		
 		if item:
-			if item.item_icon:
-				btn.icon = item.item_icon
+			# Its picture: the item's own icon, or one rendered from its model.
+			var picture: Texture2D = item.item_icon if item.item_icon else ItemIcons.icon_for(item)
+			if picture:
+				btn.icon = picture
 				btn.expand_icon = true
+				btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			else:
 				btn.text = item.short_label() if item.has_method("short_label") else item.item_name.left(2)
 				btn.add_theme_font_size_override("font_size", 13)
 			# A fuel can shows how full it is on its slot.
 			if item.has_method("is_fuel_can") and item.is_fuel_can():
 				btn.text = "%s
-%d%%" % [btn.text, item.fuel_percent()] if not item.item_icon else "%d%%" % item.fuel_percent()
+%d%%" % [btn.text, item.fuel_percent()] if not picture else "%d%%" % item.fuel_percent()
 				btn.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
 			btn.tooltip_text = item.get_display_name() if item.has_method("get_display_name") else item.item_name
 			
@@ -365,17 +375,33 @@ func _update_selection() -> void:
 			is_selected
 		))
 	
+	# The selected item in the box under the grid; "Use" says what it does,
+	# and is greyed out for things that are used out in the world instead.
 	if _selected_index >= 0 and _selected_index < Inventory.items.size():
 		var item = Inventory.items[_selected_index]
-		item_name_label.text = _build_item_display_name(item)
-		item_desc_label.text = item.item_description
-		use_button.disabled = false
+		info_item_name_label.text = _build_item_display_name(item)
+		info_item_desc_label.text = item.item_description
+		var action := _use_label(item)
+		use_button.text = action if action != "" else "Use"
+		use_button.disabled = action == ""
+		use_button.tooltip_text = "" if action != "" else "Used out in the world, not from here."
 		drop_button.disabled = false
 	else:
-		item_name_label.text = ""
-		item_desc_label.text = ""
+		info_item_name_label.text = ""
+		info_item_desc_label.text = "Select an item."
+		use_button.text = "Use"
 		use_button.disabled = true
 		drop_button.disabled = true
+
+
+## What "Use" does for `item` ("" if it can't be used from the inventory).
+func _use_label(item) -> String:
+	match item.item_type:
+		0:  # ItemData.ItemType.BATTERY
+			return "Swap Battery"
+		1:  # ItemData.ItemType.NOTE
+			return "Read" if not item.note_text.is_empty() else ""
+	return ""
 
 
 func _on_use_pressed() -> void:
@@ -393,6 +419,38 @@ func _on_use_pressed() -> void:
 			print("Tool used: ", item.item_name)
 
 
+
+
+## [R] (swap_battery): a spare battery straight into the flashlight, no
+## inventory needed (the dark is no time for menus). With no spare, or the
+## flashlight still full, a thought says so.
+func _unhandled_input(event: InputEvent) -> void:
+	if not event.is_action_pressed("swap_battery") or event.is_echo():
+		return
+	if _is_stash_ui_open() or get_tree().paused:
+		return
+	var player := get_tree().get_first_node_in_group("player")
+	if player and not player.get("_has_flashlight"):
+		return
+	if not _flashlight:
+		_find_flashlight()
+	var battery = null
+	for item in Inventory.items:
+		if item and item.item_type == 0:   # ItemData.ItemType.BATTERY
+			battery = item
+			break
+	var hud := get_tree().get_first_node_in_group("hud")
+	if battery == null:
+		if hud and hud.has_method("show_message"):
+			hud.show_message("No spare batteries.")
+	elif _flashlight and _flashlight.battery_level >= _flashlight.max_battery - 1.0:
+		if hud and hud.has_method("show_message"):
+			hud.show_message("The battery's still full.")
+	else:
+		_use_battery(battery)
+		if _is_open:
+			_refresh_grid()
+	get_viewport().set_input_as_handled()
 
 
 func _use_battery(item) -> void:

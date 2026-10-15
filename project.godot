@@ -37,6 +37,8 @@ TutorialManager="*res://scripts/managers/tutorial_manager.gd"
 Checkpoint="*res://scripts/managers/checkpoint_manager.gd"
 Weather="*res://scripts/managers/weather.gd"
 Monologue="*res://scripts/managers/monologue.gd"
+NightTwoStory="*res://scripts/managers/night_two_story.gd"
+GameReset="*res://scripts/managers/game_reset.gd"
 
 [debug]
 
@@ -55,6 +57,8 @@ gdscript/warnings/confusable_local_declaration=false
 
 window/size/viewport_width=1920
 window/size/viewport_height=1080
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 
 [editor_plugins]
 
@@ -78,6 +82,10 @@ ClimbWallWaypoints=""
 cinematics=""
 hud=""
 player=""
+
+[gui]
+
+theme/custom_font="res://assets/fonts/CourierPrime-Regular.ttf"
 
 [input]
 
@@ -185,6 +193,11 @@ ui_notebook={
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":74,"key_label":0,"unicode":106,"location":0,"echo":false,"script":null)
 ]
 }
+swap_battery={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":82,"key_label":0,"unicode":114,"location":0,"echo":false,"script":null)
+]
+}
 pause_menu={
 "deadzone": 0.2,
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":4194305,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
@@ -210,5 +223,5 @@ jolt_physics_3d/limits/max_bodies=20480
 textures/vram_compression/import_etc2_astc=true
 lights_and_shadows/directional_shadow/size=1024.0
 anti_aliasing/quality/msaa_3d=0.0
-environment/volumetric_fog_enabled=false
 occlusion_culling/use_occlusion_culling=true
+environment/volumetric_fog_enabled=false

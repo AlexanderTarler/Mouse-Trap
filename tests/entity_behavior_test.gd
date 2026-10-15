@@ -161,13 +161,27 @@ func _test_break_in() -> void:
 	# Deterministic: no bluffing, and confidence stays above the threshold.
 	var bluff_chance: float = _entity.config.bluff_chance
 	var drift: float = _entity.config.confidence_drift
+	var lure: float = _entity.config.lure_chance
+	var shy: float = _entity.config.shy_retreat_chance
+	_entity.config.lure_chance = 0.0          # (LURE has its own test: shy_test)
+	_entity.config.shy_retreat_chance = 0.0
 	_entity.config.bluff_chance = 0.0
 	_entity.config.confidence_drift = 0.0
+	# The break-in itself, every time (the quiet entry and the pause
+	# halfway have their own tests: inside_test).
+	var quiet: float = _entity.config.quiet_entry_chance
+	var pause: float = _entity.config.breach_pause_chance
+	_entity.config.quiet_entry_chance = 0.0
+	_entity.config.breach_pause_chance = 0.0
 	_entity.confidence.set_confidence(80.0)
 	_entity.request_state(_entity.State.OBSERVE)
 	var inside: bool = await _wait_for_state(["HUNT", "CHARGE"], 120.0)
+	_entity.config.quiet_entry_chance = quiet
+	_entity.config.breach_pause_chance = pause
 	_entity.config.bluff_chance = bluff_chance
 	_entity.config.confidence_drift = drift
+	_entity.config.lure_chance = lure
+	_entity.config.shy_retreat_chance = shy
 	_check("break-in: reaches the interior (HUNT/CHARGE)", inside, _history())
 	_check("break-in: went through APPROACH, PEEK and BREACH",
 		"APPROACH" in _states and "PEEK" in _states and "BREACH" in _states and "ENTER" in _states, _history())

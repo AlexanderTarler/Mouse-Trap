@@ -103,6 +103,8 @@ const WIND_UPSTAIRS_DB := 3.0
 const SILENCE_DISTANCE := 14.0
 const NIGHT_AMBIENCE_DB := -12.0
 const SILENCED_AMBIENCE_DB := -30.0
+## Night 2.2 (the car alarm): the wildlife is gone altogether.
+const HUSHED_AMBIENCE_DB := -80.0
 ## Seconds between distant sounds, and how far away they are (m).
 const DISTANT_INTERVAL_MIN := 25.0
 const DISTANT_INTERVAL_MAX := 55.0
@@ -876,14 +878,27 @@ func _update_silence(player: Node3D) -> void:
 	var target := SILENCED_AMBIENCE_DB if near else NIGHT_AMBIENCE_DB
 	# Falls silent quickly, comes back slowly.
 	_silence_db = lerpf(_silence_db, target, 0.25 if near else 0.05)
+	# Night 2.2: not a sound from the forest (rain, thunder and wind stay).
+	if wildlife_hushed():
+		_silence_db = HUSHED_AMBIENCE_DB
 	if _night_ambience_player:
 		_night_ambience_player.volume_db = _silence_db
+
+
+## Night 2.2 (the car alarm and the chase): the forest has gone quiet.
+func wildlife_hushed() -> bool:
+	var nm := get_node_or_null("/root/NightManager")
+	if nm == null:
+		return false
+	# The chase ending clears is_van_sequence_active; the rest of the night
+	# (until Day 3) stays quiet too.
+	return nm.is_van_sequence_active or (nm.van_sequence_started and nm.current_night == 2 and nm.is_night_active)
 
 
 ## Something far off in the forest now and then.
 func _update_distant(step: float, player: Node3D) -> void:
 	_distant_left -= step
-	if _distant_left > 0.0 or not _distant_player:
+	if _distant_left > 0.0 or not _distant_player or wildlife_hushed():
 		return
 	_distant_left = randf_range(DISTANT_INTERVAL_MIN, DISTANT_INTERVAL_MAX)
 	var streams := _distant_forest_streams

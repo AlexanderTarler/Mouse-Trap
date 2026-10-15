@@ -25,6 +25,9 @@ class_name EscapeVan
 
 ## Total car components needed to repair the van.
 const COMPONENTS_NEEDED: int = 3
+## Examining the van before Night 2.2 (it still runs, as far as they know).
+const BEFORE_ALARM_MESSAGE := "My ride home. Not before the survey's done, though."
+
 
 ## The exact part names required for a complete repair.
 const REQUIRED_PARTS: Array[String] = ["Car Battery", "Radiator", "Ignition Wiring"]
@@ -148,6 +151,14 @@ func interact() -> void:
 		_trigger_ending()
 		return
 	
+	# ─── BEFORE NIGHT 2.2: nothing wrong with it yet ───────────────
+	# The van is found wrecked (the ignition torn out) only when the alarm
+	# goes off in Night 2.2. Before that it's just the player's ride: no
+	# "this van is busted", no repair checklist in the notebook.
+	if not van_investigated:
+		_show_hud_message(BEFORE_ALARM_MESSAGE)
+		return
+
 	# ─── PRIORITY 3: First time inspecting a non-repaired van ───────
 	# Notify RoutineManager to activate the van checklist in the notebook.
 	_ensure_van_inspected()
@@ -248,6 +259,11 @@ func _repair_complete() -> void:
 # ─── HOLD-TO-INTERACT: Car Part Installation ──────────────────────────────
 ## Called by PhysicalGrab when the player presses E while looking at the van.
 ## Starts accumulating hold progress for installing a car part.
+## Install progress for the crosshair's ring (-1: not installing).
+func get_hold_progress() -> float:
+	return _install_progress / INSTALL_TIME if _is_installing else -1.0
+
+
 func start_hold_interact() -> void:
 	if is_repaired or not van_investigated or alarm_active:
 		return
@@ -344,7 +360,7 @@ func get_interact_text() -> String:
 		return "[E] Escape"
 	if _is_installing and _pending_part_name != "":
 		var pct = int((_install_progress / INSTALL_TIME) * 100.0)
-		return "[E] Installing %s... %d%%" % [_pending_part_name, pct]
+		return "Installing %s..." % _pending_part_name
 	if not van_investigated:
 		return "[E] Examine the van"
 	# Check if there's a valid part to install
@@ -354,7 +370,7 @@ func get_interact_text() -> String:
 			var item = inventory.items[i]
 			if item and item.item_type == 7:
 				if not _installed_parts.has(item.item_name) and item.item_name in REQUIRED_PARTS:
-					return "[E] Install %s (%d/3) [Hold %.1fs]" % [item.item_name, components_collected, INSTALL_TIME]
+					return "[Hold E] Install %s (%d/3)" % [item.item_name, components_collected]
 	return "[E] Try to repair the van (%d/3)" % components_collected
 
 
@@ -573,7 +589,7 @@ func _teleport_entity_to_van() -> void:
 		var tm_sprint := get_node_or_null("/root/TutorialManager")
 		if tm_sprint and tm_sprint.has_method("trigger"):
 			# Forced: it replaces any other hint, and stays until the player
-			# has run their stamina down to 70% (player_controller).
+			# has sprinted for 3 s (player_controller).
 			tm_sprint.trigger("sprint", true)
 
 
