@@ -210,6 +210,8 @@ signal stamina_changed(stamina_percent: float)
 ## The breathing below 50% stamina (played as recorded, not re-pitched),
 ## when breathing_sfx isn't assigned.
 const BREATHING_SOUND := "res://assets/audio/objects/Player Breathing.ogg"
+## The breathing at low stamina (dB).
+const BREATHING_DB := -19.1
 
 ## Looping audio player for heavy breathing when stamina < 50%.
 ## Created programmatically in _ready() to avoid scene node dependency.
@@ -271,7 +273,7 @@ func _ready() -> void:
 		_breathing_audio = AudioStreamPlayer3D.new()
 		_breathing_audio.stream = breath
 		_breathing_audio.bus = "SFX"
-		_breathing_audio.volume_db = -16.0
+		_breathing_audio.volume_db = BREATHING_DB
 		_breathing_audio.max_db = 0.0
 		add_child(_breathing_audio)
 		_breathing_audio_loaded = true
@@ -790,7 +792,7 @@ func _physics_process(delta: float) -> void:
 			_fading_out_breath = false
 			if _breathing_fade_tween: _breathing_fade_tween.kill()
 			_breathing_fade_tween = create_tween()
-			_breathing_fade_tween.tween_property(_breathing_audio, "volume_db", -16.0, 0.5).set_ease(Tween.EASE_OUT)
+			_breathing_fade_tween.tween_property(_breathing_audio, "volume_db", BREATHING_DB, 0.5).set_ease(Tween.EASE_OUT)
 		elif not should_breathe and _breathing_audio.playing and not _fading_out_breath:
 			_fading_out_breath = true
 			if _breathing_fade_tween: _breathing_fade_tween.kill()

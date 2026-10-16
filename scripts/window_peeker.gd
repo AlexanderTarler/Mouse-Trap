@@ -289,9 +289,9 @@ func _think_seen() -> void:
 	if not monologue:
 		return
 	if not monologue.has_thought("peeker_seen_1"):
-		monologue.think_when_free("...There was someone at the window.", 4.0, "peeker_seen_1", 0.6)
+		monologue.think_when_free("...what was that?", 4.0, "peeker_seen_1", 0.6)
 	else:
-		monologue.think_when_free("Again. It wants me to see it.", 4.0, "peeker_seen_2", 0.6)
+		monologue.think_when_free("Twice now. Not imagining it.", 4.0, "peeker_seen_2", 0.6)
 
 
 func _on_duck_finished() -> void:

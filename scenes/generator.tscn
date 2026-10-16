@@ -18,8 +18,8 @@ size = Vector3(0.3, 0.3, 1)
 
 [node name="Generator" type="StaticBody3D" unique_id=125374002]
 script = ExtResource("1_rqoq6")
-cabin_light_drain_rate = 0.25
-porch_light_drain_rate = 0.15
+cabin_light_drain_rate = 0.125
+porch_light_drain_rate = 0.075
 base_drain_rate = 0.042
 generator_switch_sfx = ExtResource("2_kgmdj")
 

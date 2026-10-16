@@ -319,7 +319,7 @@ func _breathe(on: bool) -> void:
 		_breathing = AudioStreamPlayer.new()
 		_breathing.stream = load(BREATHING)
 		_breathing.bus = "SFX"
-		_breathing.volume_db = -14.0
+		_breathing.volume_db = -17.1
 		_breathing.pitch_scale = 0.85
 		add_child(_breathing)
 		_breathing.play()

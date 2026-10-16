@@ -114,6 +114,8 @@ static var _models := {}
 ## Where undergrowth was placed and how many trees were cleared off paths
 ## (for the tests).
 static var undergrowth_spots := PackedVector3Array()
+## The stones placed, (x, y, z, scale) (for the tests).
+static var stone_spots: Array[Vector4] = []
 static var trees_cleared := 0
 ## The clear-cut's stumps (for the tests).
 static var clearcut_stumps := PackedVector3Array()
@@ -158,6 +160,43 @@ static func dress(group: Node3D, add: Callable) -> Dictionary:
 		_emit(model, Transform3D(basis, base.origin), add)
 		_undergrowth(rng, base.origin, add)
 	return replaced
+
+
+## A stone this big (its scale) is kept this far (m, per unit of scale) from
+## the middle of any trunk.
+const STONE_TRUNK_CLEARANCE := 0.75
+## Trunk positions by TRUNK_CELL-metre cell (Vector2i -> PackedVector2Array).
+static var _trunks := {}
+static var _trunks_frame := -1
+const TRUNK_CELL := 2.0
+
+
+## Whether `spot` is within `margin` (m, flat) of a tree trunk of any of the
+## forest's groups (gathered once per frame from their trunk colliders).
+static func near_trunk(spot: Vector3, margin: float) -> bool:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree and Engine.get_process_frames() != _trunks_frame:
+		_trunks_frame = Engine.get_process_frames()
+		_trunks.clear()
+		for batcher in tree.root.find_children("*", "FoliageBatcher", true, false):
+			for entry in _tree_colliders(batcher):
+				# (A tree that was taken away keeps its collider, turned off.)
+				if (entry[0] as CollisionShape3D).disabled:
+					continue
+				var at: Vector3 = entry[1]
+				var cell := Vector2i(floori(at.x / TRUNK_CELL), floori(at.z / TRUNK_CELL))
+				if not _trunks.has(cell):
+					_trunks[cell] = PackedVector2Array()
+				_trunks[cell].append(Vector2(at.x, at.z))
+	var flat := Vector2(spot.x, spot.z)
+	var reach := ceili(margin / TRUNK_CELL)
+	var home := Vector2i(floori(spot.x / TRUNK_CELL), floori(spot.z / TRUNK_CELL))
+	for dx in range(-reach, reach + 1):
+		for dz in range(-reach, reach + 1):
+			for trunk in _trunks.get(home + Vector2i(dx, dz), PackedVector2Array()):
+				if flat.distance_squared_to(trunk) < margin * margin:
+					return true
+	return false
 
 
 ## The group's tree trunk colliders: [CollisionShape3D, position].
@@ -278,7 +317,16 @@ static func _undergrowth(rng: RandomNumberGenerator, at: Vector3, add: Callable)
 		var spot: Vector3 = at + Vector3(cos(angle), 0.0, sin(angle)) * rng.randf_range(entry[2], entry[3])
 		if not clear(spot):
 			continue
-		var basis := Basis(Vector3.UP, rng.randf() * TAU) * Basis.from_scale(Vector3.ONE * rng.randf_range(entry[4], entry[5]))
+		# (Drawn in the same order as always, so the rest of the forest
+		# stays where it was.)
+		var yaw := rng.randf() * TAU
+		var size := rng.randf_range(entry[4], entry[5])
+		# Stones are solid: never through a trunk (this group's or the next).
+		if String(entry[0]).begins_with("stone") and near_trunk(spot, STONE_TRUNK_CLEARANCE * size):
+			continue
+		var basis := Basis(Vector3.UP, yaw) * Basis.from_scale(Vector3.ONE * size)
+		if String(entry[0]).begins_with("stone"):
+			stone_spots.append(Vector4(spot.x, spot.y, spot.z, size))
 		_emit(entry[0], Transform3D(basis, spot), add)
 		undergrowth_spots.append(spot)
 

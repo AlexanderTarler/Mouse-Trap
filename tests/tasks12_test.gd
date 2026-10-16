@@ -136,15 +136,18 @@ func _test_hunt_music() -> void:
 
 
 func _test_details() -> void:
-	var dresser: Node = _scene.find_child("SiteDresser", true, false)
-	_check("3: the details are placed (%d, %d skipped)" % [dresser.placed, dresser.skipped.size()],
-		dresser.built and dresser.placed >= 80 and dresser.skipped.size() <= 4, str(dresser.skipped))
+	var details := _details()
+	_check("3: the details are in the level (%d)" % details.size(), details.size() >= 80)
+	var windows: Array[Vector3] = []
+	for window in get_nodes_in_group("WindowMarkers"):
+		if window.has_method("is_passable"):
+			windows.append(window.global_position)
 	var inside := 0
 	var by_window := 0
 	var on_path := 0
 	var on_path_names := []
 	var stakes := 0
-	for prop in dresser.get_children():
+	for prop in details:
 		if not prop is Node3D:
 			continue
 		var p: Vector3 = (prop as Node3D).global_position
@@ -152,16 +155,38 @@ func _test_details() -> void:
 			inside += 1
 		if String(prop.name).begins_with("SurveyStake") or prop.find_children("*", "MeshInstance3D", false, false).size() == 2 and prop.get_child_count() == 2:
 			stakes += 1
-		for window in dresser._windows:
+		for window in windows:
 			if Vector2(p.x - window.x, p.z - window.z).length() < 1.0 and absf(p.y - window.y) < 2.0:
 				by_window += 1
-		var centre: Vector3 = dresser._world_box(prop).get_center()
+		var centre: Vector3 = _box(prop).get_center()
 		if p.distance_to(Vector3(9.0, 0.0, 15.0)) > 25.0 and TerrainMask.path(centre) > 0.5:
 			on_path += 1
 			on_path_names.append("%s %s" % [prop.name, centre.snapped(Vector3.ONE * 0.1)])
 	_check("3: the cabin's rooms and yard have more in them (%d things)" % inside, inside >= 25)
 	_check("3: three survey stakes by each nest (%d)" % stakes, stakes >= 9)
 	_check("3: nothing right by a window (%d), nothing on a walking path (%d)" % [by_window, on_path], by_window == 0 and on_path == 0, str(on_path_names))
+
+
+## The details in the level (tools/bake_details.gd: CabinDetails,
+## ForestDetails).
+func _details() -> Array:
+	var found: Array = []
+	for group in ["CabinDetails", "ForestDetails"]:
+		var node := _scene.get_node_or_null(group)
+		if node:
+			found.append_array(node.get_children())
+	return found
+
+
+## A node's meshes' bounds, in world space.
+func _box(node: Node3D) -> AABB:
+	var box := AABB(node.global_position, Vector3.ZERO)
+	var first := true
+	for mesh: MeshInstance3D in node.find_children("*", "MeshInstance3D", true, false):
+		var b := mesh.global_transform * mesh.get_aabb()
+		box = b if first else box.merge(b)
+		first = false
+	return box
 
 
 func _test_landing_breach() -> void:

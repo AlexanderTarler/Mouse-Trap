@@ -53,7 +53,7 @@ ARVID STENBERG (Phase 1, the predecessor)
     2 Apr   LOG_02 (the floodlight trap, EXECUTE OVERLOAD, the willow).
             22:14: the note by the terminal (a cover story for the office),
             down to the tunnel. Note 2, written there, ends mid-word.
-  Logins: STENBERG / 1996; recovery key STENBERG_1996 (told in note 2).
+  Logins: STENBERG / 1996; recovery key Linnea_and_Maja (told in note 2).
 
 LUND (the player, Phase 2)
   ID SNI-7742-L, van Unit 12, login LUND / PASSKEY1. Dry, tired humour by

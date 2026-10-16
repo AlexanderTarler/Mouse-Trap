@@ -58,6 +58,15 @@ const SOLID_CHECK_RADIUS := 0.6
 ## for it).
 signal scattered
 
+## The other flocks: [name, centre, birds, perch, the player this close
+## sends them up, the area searched for a ridge (HIGH), Day 1 only].
+const FLOCKS := [
+	["CrowsCabinRoof", Vector3(9.0, 0.0, 17.0), 5, Crows.Perch.HIGH, 20.0, Vector2(6.0, 3.0), true],
+	["CrowsBarnRoof", Vector3(36.8, 0.0, -74.7), 6, Crows.Perch.HIGH, 16.0, Vector2(8.0, 8.0), false],
+	["CrowsWreckYard", Vector3(-84.0, 0.0, -15.0), 5, Crows.Perch.HIGH, 14.0, Vector2(9.0, 9.0), false],
+	["CrowsClearcut", Vector3(84.0, 0.4, -90.0), 6, Crows.Perch.GROUND, 14.0, Vector2(8.0, 8.0), false],
+]
+
 var placed := 0
 var is_scattered := false
 ## Where things were placed (for the tests).
@@ -70,14 +79,23 @@ func _ready() -> void:
 	# The man-made places get furnished too (SiteDresser); if the level has
 	# them already (tools/bake_sites.gd writes them into it), only the
 	# cabin, its yard and the trails.
-	var sites := SiteDresser.new()
-	sites.name = "SiteDresser"
-	sites.extras_only = owner != null and owner.has_node("Sites")
-	add_child(sites)
-	# Crows at the willow (Crows).
+	# (Once tools/bake_details.gd has written the cabin's and the trails'
+	# into the level too, "CabinDetails": nothing more.)
+	if not (owner and owner.has_node("CabinDetails")):
+		var sites := SiteDresser.new()
+		sites.name = "SiteDresser"
+		sites.extras_only = owner != null and owner.has_node("Sites")
+		add_child(sites)
+	# Crows at the willow (Crows), and other flocks by day: the cabin's roof
+	# ridge on Day 1 (up when the player is ~20 m off), the barn roof, the
+	# wreck yard, the old clear-cut.
 	var crows := Crows.new()
 	crows.name = "Crows"
 	add_child(crows)
+	for flock: Array in FLOCKS:
+		var more := Crows.new().setup(flock[1], flock[2], flock[3], flock[4], flock[5], flock[6])
+		more.name = flock[0]
+		add_child(more)
 	# Plants rustle when walked into (FoliageRustle).
 	var rustle := FoliageRustle.new()
 	rustle.name = "FoliageRustle"

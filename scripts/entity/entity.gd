@@ -808,12 +808,22 @@ func _traverse(link: CabinEntryLink, start: Vector3, end: Vector3) -> void:
 		_traversal.tween_property(self, "global_position", end, duration)
 	else:
 		audio.play_vault()
-		var apex := (start + end) * 0.5 + Vector3.UP * 1.0
+		# Leaving (from inside): it crawls out head first, low over the sill,
+		# facing the window; coming in it vaults over (EnterWindow).
+		var leaving := start.distance_to(link.end_position) < start.distance_to(link.start_position)
+		if leaving:
+			_traversal_anim = EXIT_CRAWL_ANIM
+		var apex := (start + end) * 0.5 + Vector3.UP * (EXIT_CRAWL_APEX if leaving else 1.0)
 		var half := config.vault_time * 0.5
 		_traversal.tween_property(self, "global_position", start, 0.15)
 		_traversal.tween_property(self, "global_position", apex, half).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 		_traversal.tween_property(self, "global_position", end, half).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
 	_traversal.finished.connect(_end_traversal)
+
+
+## Out through a window: crawling (the floor crawl), low over the sill.
+const EXIT_CRAWL_ANIM := &"LowCrawl"
+const EXIT_CRAWL_APEX := 0.55
 
 
 func _end_traversal() -> void:
@@ -920,8 +930,13 @@ func _traverse_climb(link: CabinEntryLink, inward: bool) -> void:
 		_tween_climb(base, perch, &"ClimbUp")
 		_tween_vault(perch, link.end_position)
 	else:
-		_tween_vault(global_position, perch)
-		_traversal.tween_callback(_face_window.bind(link))
+		# Out of the window head first (crawling, facing it), then round to
+		# face the wall and down it.
+		var outward := link.start_position - link.end_position
+		rotation.y = atan2(outward.x, outward.z)
+		_tween_vault(global_position, perch, EXIT_CRAWL_ANIM, EXIT_CRAWL_APEX)
+		var to_wall := link.end_position - link.start_position
+		_traversal.tween_property(self, "rotation:y", rotation.y + wrapf(atan2(to_wall.x, to_wall.z) - rotation.y, -PI, PI), 0.35)
 		_tween_climb(perch, base, &"ClimbDown")
 		_traversal.tween_property(self, "global_position", link.start_position, 0.3)
 
@@ -940,10 +955,10 @@ func _tween_climb(from: Vector3, to: Vector3, anim: StringName) -> void:
 	_traversal.tween_property(self, "global_position", to, maxf(from.distance_to(to) / config.climb_speed, 0.3))
 
 
-func _tween_vault(from: Vector3, to: Vector3) -> void:
-	var apex := (from + to) * 0.5 + Vector3.UP * 0.6
+func _tween_vault(from: Vector3, to: Vector3, anim: StringName = &"EnterWindow", lift: float = 0.6) -> void:
+	var apex := (from + to) * 0.5 + Vector3.UP * lift
 	var half := config.vault_time * 0.5
-	_traversal.tween_callback(_set_traversal_anim.bind(&"EnterWindow"))
+	_traversal.tween_callback(_set_traversal_anim.bind(anim))
 	_traversal.tween_callback(audio.play_vault)
 	_traversal.tween_property(self, "global_position", apex, half).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 	_traversal.tween_property(self, "global_position", to, half).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
@@ -1037,9 +1052,12 @@ func _update_animation(_delta: float) -> void:
 		else:
 			anim = &"EnterWindow" if _traversal_kind == CabinEntryLink.Kind.WINDOW else &"Stalk"
 	elif is_clinging() and _anim_override == &"":
-		# Holding still on the wall: the climb cycle, barely moving.
+		# Holding on to the wall: the climb pose, frozen (playing on in place
+		# looked like climbing on the spot); it moves only while it shifts
+		# (ducking below the sill, coming back up).
 		anim = &"ClimbUp"
-		speed_scale = 0.15
+		var hold := world.perch_position(_perch_link) + _perch_offset
+		speed_scale = 0.6 if global_position.distance_to(hold) > 0.05 else 0.0
 	elif _anim_override != &"":
 		anim = _anim_override
 		speed_scale = _anim_override_speed
@@ -1061,6 +1079,12 @@ func _update_animation(_delta: float) -> void:
 		_anim_playback.travel(anim)
 	if _anim_player:
 		_anim_player.speed_scale = speed_scale
+	# Speed 0 (clinging still): the AnimationTree drives the skeleton, not the
+	# player's speed, so it's stopped from advancing: the pose holds.
+	if _anim_tree:
+		var mode := AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL if speed_scale <= 0.0 else _anim_tree_mode
+		if _anim_tree.callback_mode_process != mode:
+			_anim_tree.callback_mode_process = mode
 
 
 func _set_hidden(hidden: bool) -> void:

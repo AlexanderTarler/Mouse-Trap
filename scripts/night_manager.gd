@@ -81,7 +81,7 @@ func can_approach_windows() -> bool:
 ## Whether the player has found Arvid's Note in the world.
 ## When true, the ComputerUI's RECOVER_DATA.EXE will auto-fill the
 ## decryption key, allowing the player to unlock Arvid's hidden logs
-## without needing to manually type "STENBERG_1996".
+## without needing to manually type "Linnea_and_Maja".
 var arvid_password_found: bool = false
 
 ## Whether the current day phase is active (between nights)
@@ -481,6 +481,24 @@ func _find_marker_recursive(root: Node, name: String) -> Marker3D:
 var _start_cover: CanvasLayer = null
 
 
+## The opening (or the dev start), then the start cover comes off.
+func _start_game() -> void:
+	start_onboarding_sequence()
+	if dev_start > 0:
+		_run_dev_start()
+	# (The opening or the dev start, if any, is up now with its own black.)
+	_lift_start_cover()
+
+
+## The web build: the shaders that would freeze the game later compiled
+## first, behind the black (ShaderWarmup).
+func _start_game_after_warmup() -> void:
+	show_start_cover()
+	var scene := get_tree().current_scene
+	await ShaderWarmup.new().run(scene)
+	_start_game()
+
+
 ## The dev start (Player.dev_start): the story played through to it.
 func _run_dev_start() -> void:
 	dev_start_runner = DevStart.new()
@@ -628,11 +646,10 @@ func _process(delta: float) -> void:
 			_start_time_running()
 			setup_player_spawn()
 			_apply_dev_mode_settings()
-			start_onboarding_sequence()
-			if dev_start > 0:
-				_run_dev_start()
-			# (The opening or the dev start, if any, is up now with its own black.)
-			_lift_start_cover()
+			if ShaderWarmup.needed():
+				_start_game_after_warmup()
+			else:
+				_start_game()
 		return
 	
 	if not is_night_active and not is_day_active:
@@ -667,40 +684,40 @@ func _process(delta: float) -> void:
 	if _game_time:
 		night_progress = _game_time.get_phase_progress()
 	
-	if is_night_active:
-		if is_generator_on:
-			# ─── TASK 2: OVERLOAD EXACT 3.0/s DRAIN ─────────────────────
-			# Drained per tick by the time since the last one (`tick`, ~0.2 s):
-			#   overload: 3.0 units/sec; baseline: current_drain_rate /sec.
+	# The generator burns fuel whenever it runs, day or night.
+	if is_generator_on:
+		# ─── TASK 2: OVERLOAD EXACT 3.0/s DRAIN ─────────────────────
+		# Drained per tick by the time since the last one (`tick`, ~0.2 s):
+		#   overload: 3.0 units/sec; baseline: current_drain_rate /sec.
+		
+		# While an overloaded portable trap lamp is active, the drain
+		# rate is FORCED to exactly 3.0 units/sec (3% of max_fuel per
+		# second → full tank in ~33.3s). The accumulated
+		# current_drain_rate (base + lights + lamp 3.0) is bypassed so
+		# baseline drains never stack on top, which previously emptied
+		# the tank faster than the intended 3%/s.
+		var overload_active: bool = false
+		for lamp in get_tree().get_nodes_in_group("portable_trap"):
+			if lamp and "is_overloaded" in lamp and lamp.is_overloaded:
+				overload_active = true
+				break
+		
+		if overload_active:
+			generator_fuel -= 3.0 * tick
+		else:
+			generator_fuel -= current_drain_rate * tick
+		generator_fuel = clampf(generator_fuel, 0.0, max_fuel)
+		fuel_changed.emit(generator_fuel)
+		
+		if generator_fuel <= 0.0:
+			is_generator_on = false
+			generator_state_changed.emit(false)
+			fuel_changed.emit(0.0)
+			print("[Power Grid] Blackout! The generator has run completely out of fuel.")
 			
-			# While an overloaded portable trap lamp is active, the drain
-			# rate is FORCED to exactly 3.0 units/sec (3% of max_fuel per
-			# second → full tank in ~33.3s). The accumulated
-			# current_drain_rate (base + lights + lamp 3.0) is bypassed so
-			# baseline drains never stack on top, which previously emptied
-			# the tank faster than the intended 3%/s.
-			var overload_active: bool = false
-			for lamp in get_tree().get_nodes_in_group("portable_trap"):
-				if lamp and "is_overloaded" in lamp and lamp.is_overloaded:
-					overload_active = true
-					break
-			
-			if overload_active:
-				generator_fuel -= 3.0 * tick
-			else:
-				generator_fuel -= current_drain_rate * tick
-			generator_fuel = clampf(generator_fuel, 0.0, max_fuel)
-			fuel_changed.emit(generator_fuel)
-			
-			if generator_fuel <= 0.0:
-				is_generator_on = false
-				generator_state_changed.emit(false)
-				fuel_changed.emit(0.0)
-				print("[Power Grid] Blackout! The generator has run completely out of fuel.")
-				
-				var entity = get_tree().get_first_node_in_group("entity")
-				if entity and entity.has_method("on_generator_blackout"):
-					entity.on_generator_blackout()
+			var entity = get_tree().get_first_node_in_group("entity")
+			if entity and entity.has_method("on_generator_blackout"):
+				entity.on_generator_blackout()
 
 	
 	if is_night_active:

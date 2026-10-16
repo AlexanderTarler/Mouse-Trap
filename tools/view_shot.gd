@@ -38,7 +38,7 @@ func _go() -> void:
 	player.set_physics_process(false)
 	player.visible = false
 	var cam := Camera3D.new()
-	cam.fov = 75.0
+	cam.fov = float(OS.get_environment("VIEW_FOV")) if OS.get_environment("VIEW_FOV") != "" else 75.0
 	cam.near = 0.05
 	s.add_child(cam)
 	cam.current = true
@@ -52,7 +52,10 @@ func _go() -> void:
 		else:
 			cam.projection = Camera3D.PROJECTION_PERSPECTIVE
 			cam.look_at(Vector3(view[2][0], view[2][1], view[2][2]))
-		player.global_position = cam.global_position + Vector3.DOWN * 1.6
+		# (VIEW_KEEP_PLAYER: leave the player where they are, e.g. not to
+		# scare the crows off.)
+		if OS.get_environment("VIEW_KEEP_PLAYER") == "":
+			player.global_position = cam.global_position + Vector3.DOWN * 1.6
 		for layer in root.find_children("*", "CanvasLayer", true, false):
 			layer.visible = false
 		for i in 40:

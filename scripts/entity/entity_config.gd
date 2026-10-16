@@ -266,8 +266,9 @@ extends Resource
 @export var climb_speed: float = 1.4
 ## Seconds to drop off the wall when it is scared off.
 @export var drop_time: float = 0.45
-## Clinging outside a window: its feet this far below the window's centre...
-@export var perch_head_height: float = 1.65
+## Clinging outside a window: its feet this far below the window's centre
+## (it "reaches" the window there)...
+@export var perch_head_height: float = 2.65
 ## ...and this far out from it (on the ledge where there is one).
 @export var perch_wall_offset: float = 0.75
 ## Ducking below the sill while peeking from the wall, this far down.

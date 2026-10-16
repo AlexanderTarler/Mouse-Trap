@@ -275,8 +275,12 @@ func _cancel_xray_timer(group_name: String) -> void:
 var _bed_highlighted := false
 
 
+## Only on Day 1 / Night 1 (the first time the player goes to bed); later
+## "go to bed" objectives leave the bed unhighlighted.
 func _update_bed_highlight(objective: String) -> void:
-	var wanted := "go to bed" in objective.to_lower()
+	var nm := get_node_or_null("/root/NightManager")
+	var first_night: bool = nm == null or nm.current_night <= 1
+	var wanted := "go to bed" in objective.to_lower() and first_night
 	if wanted == _bed_highlighted:
 		return
 	_bed_highlighted = wanted
@@ -990,6 +994,29 @@ func on_anchor_destroyed() -> void:
 	side_track_step = 11
 	print("[RoutineManager] Side-track COMPLETE! Totem Anchor destroyed!")
 	side_track_changed.emit()
+	_muse("I fucking did it. I fucking did it!", "willow_burned", 0.6)
+	_watch_for_cabin_after_willow()
+
+
+## Within this of the cabin after the willow burned: the thought of Arvid.
+const CABIN_CENTRE := Vector3(9.0, 0.0, 14.5)
+const CABIN_RETURN_DISTANCE := 25.0
+
+
+## After the willow: the first time the player comes back past the cabin,
+## "It's actually gone. Thank you, Arvid." (checked twice a second until
+## then; stops with a new game).
+func _watch_for_cabin_after_willow() -> void:
+	var monologue := get_node_or_null("/root/Monologue")
+	while is_anchor_destroyed and monologue and not monologue.has_thought("willow_gone"):
+		await get_tree().create_timer(0.5).timeout
+		var player := get_tree().get_first_node_in_group("player") as Node3D
+		if player == null or not is_anchor_destroyed:
+			continue
+		var flat := Vector2(player.global_position.x - CABIN_CENTRE.x, player.global_position.z - CABIN_CENTRE.z)
+		# (Repeating this while it waits for a free moment is harmless.)
+		if flat.length() < CABIN_RETURN_DISTANCE:
+			_muse("It's actually gone. Thank you, Arvid.", "willow_gone")
 
 
 # ═══════════════════════════════════════════════════════════════════════

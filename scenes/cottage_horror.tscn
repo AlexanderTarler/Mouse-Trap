@@ -1,281 +1,628 @@
 [gd_scene format=3 uid="uid://bc5qrh4dx4yi1"]
 
 [ext_resource type="ArrayMesh" uid="uid://c111rie3nvner" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Mesh_002.res" id="1_nho78"]
+
 [ext_resource type="ArrayMesh" uid="uid://bm2yiwwmr8jcd" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_FootBall_LOD0.res" id="2_pem31"]
+
 [ext_resource type="ArrayMesh" uid="uid://di81thm8h7q0o" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_659.res" id="3_jyuip"]
+
 [ext_resource type="ArrayMesh" uid="uid://bqk7qoinccfl6" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_662.res" id="4_mvwlp"]
+
 [ext_resource type="Script" uid="uid://tdjvmawnra6" path="res://scripts/environment_controller.gd" id="5_qra2o"]
+
 [ext_resource type="PackedScene" uid="uid://671uxsxwdrom" path="res://scenes/player.tscn" id="6_6ky15"]
+
 [ext_resource type="Script" uid="uid://baixx1fs8cosb" path="res://scripts/items/item_data.gd" id="7_sk1dd"]
+
 [ext_resource type="Resource" uid="uid://cbj5ujvtj6nrs" path="res://resources/battery_resource.tres" id="8_e4cs6"]
+
 [ext_resource type="Resource" uid="uid://d0uq0x2m2q0db" path="res://resources/plank_resource.tres" id="9_e8dqn"]
+
 [ext_resource type="Resource" uid="uid://d0q6l3m5p7k2" path="res://resources/fuel_can_resource.tres" id="10_aqgm5"]
+
 [ext_resource type="Resource" uid="uid://d2q7k3f1x6p8" path="res://resources/car_part_battery.tres" id="11_g5wn0"]
+
 [ext_resource type="Resource" uid="uid://b3nan7x2k5r1" path="res://resources/car_part_radiator.tres" id="12_rsymc"]
+
 [ext_resource type="Resource" uid="uid://c4n8m1x3k7t2" path="res://resources/car_part_wiring.tres" id="13_76fuj"]
+
 [ext_resource type="PackedScene" uid="uid://bbgosppfttoh5" path="res://scenes/horror_hud.tscn" id="14_j1dq7"]
+
 [ext_resource type="PackedScene" uid="uid://w2nhpuaugrii" path="res://scenes/inventory_ui.tscn" id="15_wgf6o"]
+
 [ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0c7" path="res://scenes/note_ui.tscn" id="16_hndby"]
+
 [ext_resource type="PackedScene" uid="uid://b2lplqj6v4bkj" path="res://scenes/computer_ui.tscn" id="17_te6gw"]
+
 [ext_resource type="PackedScene" uid="uid://dudqc5j4ccimh" path="res://scenes/monster_entity.tscn" id="18_mdnbd"]
-[ext_resource type="NavigationMesh" uid="uid://coxsy3ujw4ni6" path="res://navigation/exterior_navmesh.res" id="19_82dao"]
+
+[ext_resource type="NavigationMesh" uid="uid://bkay304jyfa54" path="res://navigation/exterior_navmesh.res" id="19_82dao"]
+
 [ext_resource type="Texture2D" uid="uid://dy3y4yrk61pwv" path="res://assets/Textures/Grass/Grass_03-512x512.png" id="19_vngc7"]
+
 [ext_resource type="Shape3D" path="res://assets/Three Cabins/cabin_three_collision.res" id="20_remd7"]
+
 [ext_resource type="Script" uid="uid://bl13537l4eohb" path="res://scripts/cabin_room.gd" id="21_eoubo"]
+
 [ext_resource type="PackedScene" uid="uid://cybvat3v7ygq" path="res://assets/Three Cabins/Mouse Trap Cabin.glb" id="22_j346f"]
+
 [ext_resource type="PackedScene" uid="uid://dpnaxk3u44vbj" path="res://scenes/door.tscn" id="23_igxyt"]
-[ext_resource type="NavigationMesh" uid="uid://cyrnm60aegsiv" path="res://navigation/cabin_interior_navmesh.res" id="23_p6n3y"]
+
+[ext_resource type="NavigationMesh" uid="uid://d2afmmg41pgda" path="res://navigation/cabin_interior_navmesh.res" id="23_p6n3y"]
+
 [ext_resource type="Script" uid="uid://dwjkqjp5uuaqn" path="res://scripts/cabin_approach_trigger.gd" id="24_4rtr1"]
+
 [ext_resource type="ArrayMesh" uid="uid://3cbfqdr7kkll" path="res://assets/grass_mesh/grass_mesh.tres" id="27_q18r1"]
+
 [ext_resource type="PackedScene" uid="uid://bu8lh214x07bh" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Grass/Grass.fbx" id="28_ati4s"]
+
 [ext_resource type="Image" uid="uid://ysmomlamdrbj" path="res://scenes/CottageHorror/Foliage_0_0_0.res" id="29_u0lux"]
+
 [ext_resource type="Image" uid="uid://c3ypy8a4sbfe8" path="res://scenes/CottageHorror/Heightmap_0_0.res" id="30_xituh"]
+
 [ext_resource type="Image" uid="uid://dl3hjgdm8tr3v" path="res://scenes/CottageHorror/Object_0_0_0.res" id="31_7yx0e"]
+
 [ext_resource type="Image" uid="uid://cw2u240lif310" path="res://scenes/CottageHorror/Splatmap_0_0_0.res" id="32_ynd18"]
+
 [ext_resource type="PackedScene" uid="uid://cg887s8br1ysp" path="res://assets/PSX Bunkers/Models/other-formats/GLB/beam_6.glb" id="33_5sah8"]
+
 [ext_resource type="PackedScene" uid="uid://bn7dmpf75txej" path="res://assets/PSX Bunkers/Models/other-formats/GLB/beam_7.glb" id="34_bc4kq"]
+
 [ext_resource type="PackedScene" uid="uid://djoptysub0pxi" path="res://assets/PSX Bunkers/Models/other-formats/GLB/machinery_2.glb" id="35_unfsv"]
+
 [ext_resource type="PackedScene" uid="uid://dqnqvwoaib6mc" path="res://scenes/trees.tscn" id="36_rlyvi"]
+
 [ext_resource type="PackedScene" uid="uid://clq01k102v26p" path="res://assets/PSX Nature/Models/GLB/tree_log_1.glb" id="37_uhsjf"]
+
 [ext_resource type="PackedScene" uid="uid://dhgrntix8ay6e" path="res://assets/PSX Nature/Models/GLB/mushroom_n_1_2.glb" id="38_uk3g0"]
+
 [ext_resource type="PackedScene" uid="uid://cg620memb2rct" path="res://assets/PSX Nature/Models/GLB/mushroom_n_2.glb" id="39_v70mu"]
+
 [ext_resource type="PackedScene" uid="uid://cl13pqutofr1l" path="res://assets/PSX Nature/Models/GLB/mushroom_n_2_1.glb" id="40_mrg66"]
+
 [ext_resource type="PackedScene" uid="uid://co1pky8s8olk0" path="res://assets/PSX Nature/Models/GLB/mushroom_n_3.glb" id="41_4d03b"]
+
 [ext_resource type="PackedScene" uid="uid://c0mv5aee1qdtg" path="res://assets/PSX Nature/Models/GLB/mushroom_n_3_1.glb" id="42_56q1t"]
+
 [ext_resource type="PackedScene" uid="uid://du7tur3ilrj3f" path="res://assets/PSX Nature/Models/GLB/grass_4.glb" id="43_b6y0i"]
+
 [ext_resource type="PackedScene" uid="uid://cfsq6j2xnoxm" path="res://assets/PSX Nature/Models/GLB/pine_tree_n_1.glb" id="44_joi0g"]
+
 [ext_resource type="PackedScene" uid="uid://drwajtnp6vl1f" path="res://assets/Fixed .fbx/SM_EU_MetalTunnel_1.tscn" id="45_igmlu"]
+
 [ext_resource type="PackedScene" uid="uid://qs0syi2k33n1" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Bush/Bush.fbx" id="46_x3xt8"]
+
 [ext_resource type="PackedScene" uid="uid://c7ic5r84g3upx" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Coral Bells/Coral Bells.fbx" id="47_qc1fo"]
+
 [ext_resource type="PackedScene" uid="uid://dmxt2yjlcbl7k" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Flowery Fern/Flowery Fern.fbx" id="48_jxrl1"]
+
 [ext_resource type="PackedScene" uid="uid://b0jc1beov6os" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Rose/Rose.fbx" id="49_3wtrt"]
+
 [ext_resource type="PackedScene" uid="uid://b1s6vxknolpe0" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Thistles/Thistles.fbx" id="50_uqx0q"]
+
 [ext_resource type="PackedScene" uid="uid://c2i7dtxuj854o" path="res://assets/PSX Nature/Models/GLB/fern_3.glb" id="51_bt8k0"]
+
 [ext_resource type="PackedScene" uid="uid://bnhdoqq6jutr1" path="res://assets/Fixed .fbx/SM_EC_ConcreteBlock_0_001.tscn" id="52_adhvd"]
+
 [ext_resource type="PackedScene" uid="uid://d06r76lhab8r7" path="res://assets/Fixed .fbx/SM_EC_ConcreteBlock_1.tscn" id="53_qx5yi"]
+
 [ext_resource type="PackedScene" uid="uid://ducowk3hdanpv" path="res://assets/Fixed .fbx/SM_EC_FridgeFreezer_0.tscn" id="54_mobas"]
+
 [ext_resource type="PackedScene" uid="uid://dh1f7ah6emgui" path="res://assets/Fixed .fbx/SM_EC_Postbox_0.tscn" id="55_rpxi8"]
+
 [ext_resource type="PackedScene" uid="uid://dkt0ctge4coii" path="res://assets/Fixed .fbx/SM_EC_ShippingContainer_0.tscn" id="56_wbdjb"]
+
 [ext_resource type="PackedScene" uid="uid://c8eqf0rju03yv" path="res://assets/Fixed .fbx/SM_EC_Traffic_Block_2.tscn" id="57_jlhro"]
+
 [ext_resource type="PackedScene" uid="uid://dcsiee4k2jy4b" path="res://assets/Fixed .fbx/SM_EC_Traffic_Pillar_0.tscn" id="58_dp1x1"]
+
 [ext_resource type="PackedScene" uid="uid://cncvu7fej325w" path="res://assets/Fixed .fbx/SM_EC_Traffic_RoacClosed_Sign_0.tscn" id="59_ifc5u"]
+
 [ext_resource type="PackedScene" uid="uid://d0ddpm465e4vp" path="res://assets/Fixed .fbx/SM_EC_TV_0.tscn" id="60_mriwd"]
+
 [ext_resource type="PackedScene" uid="uid://bwvwcjqptjom3" path="res://assets/Fixed .fbx/SM_EC_WashingMachine_0.tscn" id="61_ok856"]
+
 [ext_resource type="PackedScene" uid="uid://djelpwbnfmqo0" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Coreopsis/Coreopsis.fbx" id="62_rpiht"]
+
 [ext_resource type="PackedScene" uid="uid://6d8nsa7jb0b1" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Daisys/Daisys.fbx" id="63_ufjb0"]
+
 [ext_resource type="PackedScene" uid="uid://cicj1pkx7sn1u" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Fern/Fern.fbx" id="64_2ys1q"]
+
 [ext_resource type="ArrayMesh" uid="uid://cuuskxtdsxi3q" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Backpack_001.res" id="65_ojh7c"]
+
 [ext_resource type="ArrayMesh" uid="uid://ddt5dneeldqkx" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_basket_002.res" id="66_s16uw"]
+
 [ext_resource type="ArrayMesh" uid="uid://0an16xykgi6t" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_586.res" id="67_5nvbu"]
+
 [ext_resource type="ArrayMesh" uid="uid://bx3uo73bmlhwg" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_651.res" id="68_4ffa7"]
+
 [ext_resource type="ArrayMesh" uid="uid://bnhwsb2gsa644" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_658.res" id="69_ju1nm"]
+
 [ext_resource type="PackedScene" uid="uid://foyjpk5knjsk" path="res://assets/PSX Nature/Models/GLB/pine_tree_n_1_2.glb" id="70_1gwof"]
+
 [ext_resource type="PackedScene" uid="uid://eteur0n4coyc" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/sofa_1.glb" id="71_gccaf"]
+
 [ext_resource type="PackedScene" uid="uid://cicq0ubrwge2p" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/tv_table_1.glb" id="72_k1f3j"]
+
 [ext_resource type="PackedScene" uid="uid://cclt4hjfsubxb" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/tv_mp_1_1.glb" id="73_rct3m"]
+
 [ext_resource type="PackedScene" uid="uid://cpvhl2k7wl3jq" path="res://scenes/computer.tscn" id="74_3hlqw"]
+
 [ext_resource type="PackedScene" uid="uid://cfdgpk8w6i41n" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/pc_keyboard_mp_3.glb" id="75_3mfg6"]
+
 [ext_resource type="PackedScene" uid="uid://dbtf283ugu85g" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/mouse_pad_mp_1.glb" id="76_26f3g"]
+
 [ext_resource type="PackedScene" uid="uid://c2h48auopeuye" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/pc_mouse_mp_1.glb" id="77_kwie3"]
+
 [ext_resource type="PackedScene" uid="uid://d2q6b3m7kf7c8" path="res://scenes/flashlight.tscn" id="78_1f0lu"]
+
 [ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0de" path="res://scenes/fuse.tscn" id="79_3jdxi"]
+
 [ext_resource type="Script" uid="uid://cvaqel187lqwe" path="res://scripts/lamp_flicker.gd" id="80_rudo5"]
+
 [ext_resource type="PackedScene" uid="uid://d1nbbsranyayl" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Decals/cobweb_1.glb" id="81_2ykim"]
+
 [ext_resource type="PackedScene" uid="uid://dqk8cdcsudmp1" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/table_large_2.glb" id="82_xnh1w"]
+
 [ext_resource type="PackedScene" uid="uid://db6754hgnu8ql" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/chair_mp_4_3.glb" id="83_788ck"]
+
 [ext_resource type="Script" uid="uid://cy2xdrbwuqogc" path="res://scripts/debug_computer.gd" id="84_vkvfg"]
+
 [ext_resource type="PackedScene" uid="uid://b35tkexyh5e1r" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/pc_mp_1.glb" id="85_e5woc"]
+
 [ext_resource type="PackedScene" uid="uid://w56fc53h33lt" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/walkie_talkie_2.glb" id="86_ik5fn"]
+
 [ext_resource type="PackedScene" uid="uid://djjrpkdlgtc3w" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/sofa_1_3.glb" id="87_j4q18"]
+
 [ext_resource type="PackedScene" uid="uid://c2wx8r8v7rdcc" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/cardboard_box_1.glb" id="88_7yplo"]
+
 [ext_resource type="PackedScene" uid="uid://jgdjt1dtob7u" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/carpet_mp_1.glb" id="89_8ttrh"]
+
 [ext_resource type="PackedScene" uid="uid://dudw1h0vhblbw" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/ashtray_1.glb" id="90_tdsb5"]
+
 [ext_resource type="PackedScene" uid="uid://bu3d58c70beoj" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/book_mp_1.glb" id="91_8ev78"]
+
 [ext_resource type="PackedScene" uid="uid://myej0vcgjeoa" path="res://scenes/bed.tscn" id="92_tijv0"]
+
 [ext_resource type="ArrayMesh" uid="uid://b1u5yt2w1viax" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_254.res" id="93_o8m4h"]
+
 [ext_resource type="PackedScene" uid="uid://dkc0lfxbh7ef3" path="res://scenes/battery.tscn" id="94_pf7hi"]
+
 [ext_resource type="PackedScene" uid="uid://cbdrt6kya5tfa" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/table_large_3.glb" id="95_8i6qu"]
+
 [ext_resource type="PackedScene" uid="uid://dcr27p5udx6rv" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/chair_mp_4.glb" id="96_1h3fk"]
+
 [ext_resource type="PackedScene" uid="uid://citmkthw2ca0l" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/display_cabinet_mp_2.glb" id="97_fgkcd"]
+
 [ext_resource type="PackedScene" uid="uid://bkoa1egs0k8wx" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/shelf_mp_5.glb" id="98_2m830"]
+
 [ext_resource type="PackedScene" uid="uid://b3dhljdisfhcx" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/canned_food_mp_1.glb" id="99_rfjsp"]
+
 [ext_resource type="PackedScene" uid="uid://cgyuu5q7tkk1w" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/canned_food_mp_3.glb" id="100_fuq4d"]
+
 [ext_resource type="PackedScene" uid="uid://ddoes3x4su0v" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/tv_table_4.glb" id="101_0osmr"]
+
 [ext_resource type="PackedScene" uid="uid://bctsowjlgy4oj" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/chair_mp_4_1.glb" id="102_ewqb1"]
+
 [ext_resource type="PackedScene" uid="uid://byt22vv6fjsfp" path="res://assets/PSX Paintings/Meshes/GLB/painting_5.glb" id="103_jeicy"]
+
 [ext_resource type="PackedScene" uid="uid://bfqw1d35xnpgn" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/sofa_1_2.glb" id="104_q3ut3"]
+
 [ext_resource type="PackedScene" uid="uid://qcw15exii6di" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/coffee_table_1.glb" id="105_eu5cd"]
+
 [ext_resource type="PackedScene" uid="uid://cyp2j4x1l6f6n" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/shelf_mp_4.glb" id="106_g3nbr"]
+
 [ext_resource type="PackedScene" uid="uid://4f8lnt173up5" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/chair_mp_4_2.glb" id="107_8st7k"]
+
 [ext_resource type="PackedScene" uid="uid://b3jk7je1hqnnp" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/cardboard_box_2.glb" id="108_bqjj7"]
+
 [ext_resource type="PackedScene" uid="uid://cpr8rg6d8uhgt" path="res://assets/PSX Paintings/Meshes/GLB/painting_7.glb" id="109_rw4pm"]
+
 [ext_resource type="PackedScene" uid="uid://mqfvk135r5gl" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/old_mattress_mp_1.glb" id="110_r3kdi"]
+
 [ext_resource type="PackedScene" uid="uid://bm4o3bgejdquo" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/wooden_crate_3.glb" id="111_pnbyk"]
+
 [ext_resource type="PackedScene" uid="uid://dpeohe2il1ymh" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/wooden_crate_1.glb" id="112_h5e54"]
+
 [ext_resource type="PackedScene" uid="uid://qstcsworwlee" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/supply_crate_1_1.glb" id="113_8ryiu"]
+
 [ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0c6" path="res://scenes/note.tscn" id="114_cxb50"]
+
 [ext_resource type="Resource" uid="uid://d0uq0x2m2q0cb" path="res://resources/lore_fragment_hearth.tres" id="115_5oj0q"]
+
 [ext_resource type="PackedScene" uid="uid://d0uq0x2m2q0c8" path="res://scenes/hasselmus_nest.tscn" id="116_xiu16"]
+
 [ext_resource type="PackedScene" uid="uid://igfruechwph8" path="res://scenes/cabin_light_source.tscn" id="117_pqoe1"]
+
 [ext_resource type="PackedScene" uid="uid://porchlight01" path="res://scenes/porch_light.tscn" id="118_p20p6"]
+
 [ext_resource type="PackedScene" uid="uid://cgqts05fxlpn5" path="res://scenes/light_switch.tscn" id="119_35q84"]
+
 [ext_resource type="PackedScene" uid="uid://ber2ukknc0e3n" path="res://scenes/generator.tscn" id="120_0o3no"]
+
 [ext_resource type="PackedScene" uid="uid://cd6rau4pn5djq" path="res://scenes/fuel_can.tscn" id="121_rx4i3"]
+
 [ext_resource type="PackedScene" uid="uid://e8tu43c3ihp0" path="res://scenes/cabin_window.tscn" id="122_twesu"]
+
 [ext_resource type="PackedScene" uid="uid://bo162yynq2c0j" path="res://scenes/car_wreck_2.tscn" id="123_oo4qm"]
+
 [ext_resource type="PackedScene" uid="uid://cmxe4fxhwfwvs" path="res://scenes/car_wreck_3.tscn" id="124_dy84f"]
+
 [ext_resource type="PackedScene" uid="uid://dsgbbun0atwdq" path="res://scenes/escape_van.tscn" id="125_yr3w0"]
+
 [ext_resource type="PackedScene" uid="uid://l101wfdbbfth" path="res://scenes/key.tscn" id="126_wvgby"]
+
 [ext_resource type="PackedScene" uid="uid://c1cbq04lfrmh6" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/coffee_table_1_2.glb" id="127_a368d"]
+
 [ext_resource type="PackedScene" uid="uid://chomp5702sq14" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/display_cabinet_mp_1.glb" id="128_jcvo7"]
+
 [ext_resource type="PackedScene" uid="uid://c8veqd3spasgi" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/coin_mp_1.glb" id="129_do1n8"]
+
 [ext_resource type="PackedScene" uid="uid://rhlnj4o8hclw" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/glass_bottle_1.glb" id="130_1jgf1"]
+
 [ext_resource type="PackedScene" uid="uid://bp604ge3vljoy" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/glass_bottle_2.glb" id="131_1xcvp"]
+
 [ext_resource type="PackedScene" uid="uid://ctosb4mcp1ff3" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/matchbox_1.glb" id="132_77y7p"]
+
 [ext_resource type="PackedScene" uid="uid://dyqwf06b45pk7" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/screwdriver_mp_1.glb" id="133_gujg1"]
+
 [ext_resource type="PackedScene" uid="uid://cwe54kc56vwjr" path="res://scenes/scrap_heap.tscn" id="134_e28y4"]
+
 [ext_resource type="PackedScene" uid="uid://dev1jyquh31tw" path="res://scenes/fuse_box.tscn" id="135_mk4gd"]
+
 [ext_resource type="Resource" uid="uid://d0uq0x2m2q0cc" path="res://resources/lore_fragment_window.tres" id="136_fln36"]
+
 [ext_resource type="PackedScene" uid="uid://bec7ckeg5nn2q" path="res://scenes/portable_light.tscn" id="137_xa3xc"]
+
 [ext_resource type="PackedScene" uid="uid://bxbhpj8qlqrmf" path="res://scenes/cable_spool.tscn" id="138_y4d6c"]
+
 [ext_resource type="PackedScene" uid="uid://bpymnhhh56yaj" path="res://scenes/light_switch_special.tscn" id="139_88kwl"]
+
 [ext_resource type="PackedScene" uid="uid://dr1ny12noe77" path="res://scenes/totem_anchor.tscn" id="140_gtwur"]
+
 [ext_resource type="PackedScene" uid="uid://bmhnjo7ywr0yn" path="res://assets/Fixed .fbx/SM_EC_TreeLine_1_002.tscn" id="141_l0bv0"]
+
 [ext_resource type="PackedScene" uid="uid://d2q3b4f5c6e7g" path="res://scenes/wooden_plank.tscn" id="142_6hcyw"]
+
 [ext_resource type="PackedScene" uid="uid://o2o2sxrn4i67" path="res://assets/PSX Nature/Models/GLB/stone_3.glb" id="143_rln1a"]
+
 [ext_resource type="PackedScene" uid="uid://bybfenavnbot8" path="res://assets/PSX Nature/Models/GLB/stone_2.glb" id="144_wo6cc"]
+
 [ext_resource type="PackedScene" uid="uid://dx3gvrbo8csp3" path="res://assets/PSX Nature/Models/GLB/stone_1.glb" id="145_pus02"]
+
 [ext_resource type="PackedScene" uid="uid://pf3yuqggyh44" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Buildings/shed_ax_3.glb" id="146_s6pss"]
+
 [ext_resource type="PackedScene" uid="uid://tdawh0142ike" path="res://assets/Fixed .fbx/SM_EC_Fence_00.tscn" id="149_y0dcg"]
+
 [ext_resource type="PackedScene" uid="uid://btkot5ww6ydog" path="res://assets/Fixed .fbx/SM_EC_Fence_Gate_0.tscn" id="150_8orax"]
+
 [ext_resource type="Script" uid="uid://cstp1kypc2d2o" path="res://scripts/endgame_cinematics.gd" id="151_o73mq"]
+
 [ext_resource type="Script" uid="uid://b2xn8ggswjbhj" path="res://scenes/foliage.gd" id="152_qn857"]
+
 [ext_resource type="PackedScene" uid="uid://dw5it7beolnkn" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Rocks/Rocks.fbx" id="153_mtrny"]
+
 [ext_resource type="PackedScene" uid="uid://dqmksf8e7uqfe" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Rasberry Bush/Rasberry Bush.fbx" id="154_ougyq"]
+
 [ext_resource type="PackedScene" uid="uid://b6bng06cuxwjk" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Pine Tree Stumps/Pine Tree Stumps.fbx" id="155_x1x43"]
+
 [ext_resource type="PackedScene" uid="uid://bahc1oovp5b52" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Mushrooms/Mushrooms.fbx" id="156_j0al0"]
+
 [ext_resource type="PackedScene" uid="uid://bk18n20tg5td5" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_09.tscn" id="157_ig52i"]
+
 [ext_resource type="PackedScene" uid="uid://cbslwbudhhs60" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_12.tscn" id="158_3t1tr"]
+
 [ext_resource type="PackedScene" uid="uid://cqrbkhg6og02d" path="res://scenes/hint_area.tscn" id="159_7xr8o"]
+
 [ext_resource type="PackedScene" uid="uid://dw4lxe3wm0xut" path="res://scenes/ui/pause_menu.tscn" id="160_580hs"]
+
 [ext_resource type="Resource" uid="uid://d0uq0x2m2q0cd" path="res://resources/arvid_note.tres" id="161_v55xv"]
+
 [ext_resource type="Resource" uid="uid://cqpqcbmtu8s1y" path="res://resources/arvid_note_2.tres" id="162_x5blu"]
+
 [ext_resource type="PackedScene" uid="uid://bp23i2j37c3y1" path="res://assets/PSX Bunkers/Models/other-formats/GLB/bars_metal_4.glb" id="163_0mkoj"]
+
 [ext_resource type="PackedScene" uid="uid://cy1i28r7ok25t" path="res://assets/PSX Bunkers/Models/other-formats/GLB/chair_wooden_1.glb" id="164_d80v3"]
+
 [ext_resource type="PackedScene" uid="uid://xkwv1osx47ps" path="res://assets/PSX Bunkers/Models/other-formats/GLB/sign_3.glb" id="165_47cgt"]
+
 [ext_resource type="PackedScene" uid="uid://dpu3sabli0rvv" path="res://assets/PSX Nature/Models/GLB/mushroom_n_2_0.glb" id="166_dshjq"]
+
 [ext_resource type="PackedScene" uid="uid://b15dxrr25qi68" path="res://assets/PSX Nature/Models/GLB/mushroom_n_2_2.glb" id="167_d3tb7"]
+
 [ext_resource type="PackedScene" uid="uid://ce7hj3mi8ivtd" path="res://assets/PSX Nature/Models/GLB/mushroom_n_4.glb" id="168_hnb7m"]
+
 [ext_resource type="PackedScene" uid="uid://88vo1kag080g" path="res://assets/PSX Nature/Models/GLB/mushroom_n_4_1.glb" id="169_nk2ib"]
+
 [ext_resource type="ArrayMesh" uid="uid://b60vd8dal7gu3" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Board.res" id="170_3atrq"]
+
 [ext_resource type="ArrayMesh" uid="uid://debnuljo0f3hv" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Torus_011.res" id="171_3ku5o"]
+
 [ext_resource type="ArrayMesh" uid="uid://dud3ffath5572" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Vase_02.res" id="173_d3ann"]
+
 [ext_resource type="ArrayMesh" uid="uid://drtnh78u5qdm1" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Mop_01.res" id="174_3hol8"]
+
 [ext_resource type="ArrayMesh" uid="uid://b3kpyfu48ilnf" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_303.res" id="175_sy6xp"]
+
 [ext_resource type="PackedScene" uid="uid://bn4akhjb6gw00" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/bedside_table_1_1.glb" id="176_4d2fb"]
+
 [ext_resource type="ArrayMesh" uid="uid://drkbb22k61oma" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_bedside_lamp_06.res" id="177_ps3an"]
+
 [ext_resource type="PackedScene" uid="uid://bcjy0rctnxheg" path="res://assets/Fixed .fbx/SM_EC_House_Kitchen_Cupboard_Static_00.tscn" id="178_h4gya"]
+
 [ext_resource type="PackedScene" uid="uid://dqsqhnj1eauv1" path="res://assets/Fixed .fbx/SM_EC_KitchenBin_0.tscn" id="179_q4k6p"]
+
 [ext_resource type="PackedScene" uid="uid://c4s5nm5uybn1l" path="res://world_map_border_block.tscn" id="180_jdm5x"]
+
 [ext_resource type="PackedScene" uid="uid://qvsaj7eewk6b" path="res://assets/PSX Nature/Models/GLB/mushroom_n_1.glb" id="181_1xqyj"]
+
 [ext_resource type="PackedScene" uid="uid://csna1byx7sv5g" path="res://assets/PSX Nature/Models/GLB/mushroom_n_1_0.glb" id="182_ukteh"]
+
 [ext_resource type="PackedScene" uid="uid://bqdfltmrtk2vv" path="res://assets/PSX Nature/Models/GLB/mushroom_n_1_1.glb" id="183_xgpin"]
+
 [ext_resource type="PackedScene" uid="uid://16vmq6dvwe3" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/bucket_mx_2.glb" id="184_7j7p6"]
+
 [ext_resource type="PackedScene" uid="uid://cqxiky5o3tcl6" path="res://assets/PSX Nature/Models/GLB/grass_3.glb" id="184_g6b3s"]
+
 [ext_resource type="ArrayMesh" uid="uid://b2hcl8o8yl0g4" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_359.res" id="185_5rpi5"]
+
 [ext_resource type="ArrayMesh" uid="uid://bt1rnqqrm3hbv" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cylinder_214.res" id="186_x46r0"]
+
 [ext_resource type="PackedScene" uid="uid://btv6jrpkldxui" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/wardrobe_mp_1.glb" id="187_tqs38"]
+
 [ext_resource type="PackedScene" uid="uid://b4x6xdujhoya1" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Large Props/supply_crate_1.glb" id="188_8n5ii"]
+
 [ext_resource type="PackedScene" uid="uid://cknhpchurb4d7" path="res://assets/Fixed .fbx/SM_EC_Barn_02.tscn" id="189_y8nfw"]
+
 [ext_resource type="PackedScene" uid="uid://jitrui044v4i" path="res://scenes/car_wreck_1.tscn" id="190_68tk2"]
+
 [ext_resource type="PackedScene" uid="uid://dmn8sxxts78de" path="res://assets/PSX Bunkers/Models/FBX/trash_6.fbx" id="191_0j8xt"]
+
 [ext_resource type="PackedScene" uid="uid://jobpgjbmc1ss" path="res://assets/PSX Bunkers/Models/FBX/trash_4.fbx" id="192_ril42"]
+
 [ext_resource type="PackedScene" uid="uid://cx3xuismgdkpc" path="res://assets/PSX Bunkers/Models/FBX/trash_5.fbx" id="193_5fpbx"]
+
 [ext_resource type="PackedScene" uid="uid://cr7ilpttoyml5" path="res://assets/PSX Bunkers/Models/FBX/wood_pallet_2.fbx" id="194_fgj3y"]
+
 [ext_resource type="PackedScene" uid="uid://b0sglqm3q1fev" path="res://assets/PSX Bunkers/Models/FBX/wood_pallet_1.fbx" id="195_gn4tj"]
+
 [ext_resource type="PackedScene" uid="uid://oqutnhf5w38g" path="res://assets/PSX Bunkers/Models/FBX/metal_shelf_1.fbx" id="196_n8gae"]
+
 [ext_resource type="ArrayMesh" uid="uid://dgjlchmp3evi5" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_alarm_clock_002.res" id="197_f5wh8"]
+
 [ext_resource type="ArrayMesh" uid="uid://mpecjtdet3sh" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Circle_008.res" id="198_o883h"]
+
 [ext_resource type="ArrayMesh" uid="uid://drn6cei3x0hfg" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cone_008.res" id="199_lqumo"]
+
 [ext_resource type="ArrayMesh" uid="uid://c86cafjdnlyq3" path="res://assets/PSX Interior/psx-low-poly-home-interior-props-pack_Cube_045.res" id="200_psr66"]
+
 [ext_resource type="PackedScene" uid="uid://bnkjjwvm1t3gr" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_00.tscn" id="201_xk0qx"]
+
 [ext_resource type="PackedScene" uid="uid://djphm21fevcbq" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_08.tscn" id="202_jip7c"]
+
 [ext_resource type="PackedScene" uid="uid://bwt3iwlns7esx" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_14.tscn" id="203_r27kd"]
+
 [ext_resource type="PackedScene" uid="uid://d3b2qraluixda" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_13.tscn" id="204_kpswk"]
+
 [ext_resource type="PackedScene" uid="uid://b0lpilfht754m" path="res://assets/Fixed .fbx/SM_EC_Microwave_0.tscn" id="205_4mffe"]
+
 [ext_resource type="PackedScene" uid="uid://4bucm42ypn5" path="res://assets/Fixed .fbx/SM_EC_Rock_08.tscn" id="206_bsgya"]
+
 [ext_resource type="PackedScene" uid="uid://bwyxv6ythcmin" path="res://assets/Fixed .fbx/SM_EC_Rock_05.tscn" id="207_0g7uu"]
+
 [ext_resource type="Script" path="res://scripts/cabin_occluder.gd" id="900_occl"]
+
 [ext_resource type="Texture2D" uid="uid://lochl2173d5k" path="res://assets/Textures/terrain/forest_floor.png" id="901_floor"]
+
 [ext_resource type="Texture2D" uid="uid://dkr3syqq7yf1t" path="res://assets/Textures/terrain/grass.png" id="902_grass"]
+
 [ext_resource type="Texture2D" uid="uid://kr5xot4f7xsa" path="res://assets/Textures/terrain/path.png" id="903_path"]
+
 [ext_resource type="Texture2D" uid="uid://nrn74gy8en2e" path="res://assets/Textures/terrain/worn_grass.png" id="904_worn"]
+
 [ext_resource type="Script" uid="uid://rik03lxxoua7" path="res://scripts/world_details.gd" id="905_details"]
+
 [ext_resource type="Script" path="res://scripts/fence_gate.gd" id="fence_gate_script"]
+
 [ext_resource type="Script" uid="uid://bmff70ndturwm" path="res://scripts/gravel_road.gd" id="gravel_road_script"]
+
 [ext_resource type="PackedScene" uid="uid://cl5g5l530mbm2" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/open_book_mp_1.glb" id="knock_m_obook"]
+
 [ext_resource type="PackedScene" uid="uid://cpr1tuhxkjhos" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/plate_mp_1.glb" id="knock_m_plate"]
+
 [ext_resource type="PackedScene" uid="uid://dg3mcl4mpd067" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/tv_remote_mp_1.glb" id="knock_m_remote"]
+
 [ext_resource type="PackedScene" uid="uid://dicgqc2hf5c2u" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/tin_can_mp_1_rusty.glb" id="knock_m_tin"]
+
 [ext_resource type="PackedScene" uid="uid://dwqtk76caltw4" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/vhs_tape_1.glb" id="knock_m_vhs"]
+
 [ext_resource type="Script" uid="uid://1c510ovdmq8d" path="res://scripts/knockable_prop.gd" id="knock_prop_s1"]
+
 [ext_resource type="PackedScene" uid="uid://cdijf2u1nrq7b" path="res://assets/Fixed .fbx/SM_EC_BarnShelf_3.tscn" id="site_1_hkk1j"]
+
 [ext_resource type="PackedScene" uid="uid://cbw7prnl01xsq" path="res://assets/Fixed .fbx/SM_EC_BarnShelf_0.tscn" id="site_2_xwygb"]
+
 [ext_resource type="PackedScene" uid="uid://dbmpqwq2cnmqo" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_03.tscn" id="site_3_vyx7t"]
+
 [ext_resource type="PackedScene" uid="uid://dejt7g0la6h6e" path="res://assets/Fixed .fbx/SM_EC_Hay_2.tscn" id="site_4_gx6wb"]
+
 [ext_resource type="PackedScene" uid="uid://d32k0lhaixuhs" path="res://assets/Fixed .fbx/SM_EC_Hay_0.tscn" id="site_5_m2guv"]
+
 [ext_resource type="PackedScene" uid="uid://bcnvsbonmihp2" path="res://assets/Fixed .fbx/SM_EC_Hay_1.tscn" id="site_6_0hxni"]
+
 [ext_resource type="PackedScene" uid="uid://b5s4imhj7b0cl" path="res://assets/Fixed .fbx/SM_EC_Hay_4.tscn" id="site_7_mf3wr"]
+
 [ext_resource type="PackedScene" uid="uid://crtvb0gy2c7br" path="res://assets/Fixed .fbx/SM_EC_Hay_Ball_0.tscn" id="site_8_ndu2r"]
+
 [ext_resource type="PackedScene" uid="uid://dqqwhtoqpfo5l" path="res://assets/Fixed .fbx/SM_EC_Hay_Patch_0.tscn" id="site_9_kwk4h"]
+
 [ext_resource type="PackedScene" uid="uid://bf5yge1fcx5s2" path="res://assets/Fixed .fbx/SM_EC_Horror_Hay_Patch_0.tscn" id="site_10_278x4"]
+
 [ext_resource type="PackedScene" uid="uid://c5d8t5uc617d1" path="res://assets/PSX Bunkers/Models/other-formats/GLB/table_large_3.glb" id="site_11_xfk5o"]
+
 [ext_resource type="PackedScene" uid="uid://cvw3fbav03vj8" path="res://assets/PSX Bunkers/Models/other-formats/GLB/supply_box_1.glb" id="site_12_ds5nw"]
+
 [ext_resource type="PackedScene" uid="uid://d0d7xsuqe2b3h" path="res://assets/PSX Bunkers/Models/other-formats/GLB/lamp_0.glb" id="site_13_8lmbb"]
+
 [ext_resource type="PackedScene" uid="uid://cinsmn0q6y2rq" path="res://assets/PSX Bunkers/Models/other-formats/GLB/canned_food_3.glb" id="site_14_hwt25"]
+
 [ext_resource type="PackedScene" uid="uid://cmprj7sl20y2f" path="res://assets/PSX Bunkers/Models/other-formats/GLB/wooden_crate_8.glb" id="site_15_4wqyj"]
+
 [ext_resource type="PackedScene" uid="uid://jifid7iwgajx" path="res://assets/PSX Bunkers/Models/other-formats/GLB/wooden_crate_9.glb" id="site_16_fde7g"]
+
 [ext_resource type="PackedScene" uid="uid://2i74mh0okmkf" path="res://assets/PSX Bunkers/Models/other-formats/GLB/wood_pallet_1.glb" id="site_17_dw4m6"]
+
 [ext_resource type="PackedScene" uid="uid://bc8ulccsml4bv" path="res://assets/PSX Bunkers/Models/other-formats/GLB/wood_pallet_2.glb" id="site_18_bkt01"]
+
 [ext_resource type="PackedScene" uid="uid://bul12uj03qrvd" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_10.tscn" id="site_19_1xe85"]
+
 [ext_resource type="PackedScene" uid="uid://cnxf5yvvltabk" path="res://assets/Fixed .fbx/SM_EC_LR90_Broken_Down_00.tscn" id="site_20_wpmlc"]
+
 [ext_resource type="PackedScene" uid="uid://bsyvuj0jxbav2" path="res://assets/Fixed .fbx/SM_EC_Crop_0.tscn" id="site_22_gfnmx"]
+
 [ext_resource type="PackedScene" uid="uid://cdvcntfp7gqvh" path="res://assets/Fixed .fbx/SM_EC_WoodenPole_Large_00.tscn" id="site_23_f3wlk"]
+
 [ext_resource type="PackedScene" uid="uid://bq3j8abeblfwp" path="res://assets/Fixed .fbx/SM_EC_ShippingContainer_3.tscn" id="site_24_denmw"]
+
 [ext_resource type="PackedScene" uid="uid://cldgmq8yjco0a" path="res://assets/Fixed .fbx/SM_EC_Cooker_0.tscn" id="site_25_jwc4x"]
+
 [ext_resource type="PackedScene" uid="uid://c6yxgud2gyjtg" path="res://assets/Fixed .fbx/SM_EC_WashingMachine_Complete_0.tscn" id="site_26_4hey4"]
+
 [ext_resource type="PackedScene" uid="uid://bewtet012x5p2" path="res://assets/Fixed .fbx/SM_EC_Mattress_3.tscn" id="site_27_k454v"]
+
 [ext_resource type="PackedScene" uid="uid://c3rxrcvn78ywb" path="res://assets/Fixed .fbx/SM_EC_Sofa_1.tscn" id="site_28_kidub"]
+
 [ext_resource type="PackedScene" uid="uid://chqcs5yt0ulce" path="res://assets/Fixed .fbx/SM_EC_KitchenBin_TrashBag_0.tscn" id="site_29_yc3sh"]
+
 [ext_resource type="PackedScene" uid="uid://dnjs3iupa77lj" path="res://assets/Fixed .fbx/SM_EC_55L_Drum_05.tscn" id="site_30_kxy14"]
+
 [ext_resource type="PackedScene" uid="uid://bvdold2f2mqc7" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Debris & Misc/bricks_stacked_mx_1.glb" id="site_31_x7p1a"]
+
 [ext_resource type="PackedScene" uid="uid://biogqhg4wcm0a" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Debris & Misc/gravel_pile_hr_1.glb" id="site_32_7vfo5"]
+
 [ext_resource type="PackedScene" uid="uid://dp1e5u6ibbyqh" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Debris & Misc/debris_bricks_mx_1.glb" id="site_33_2a7bx"]
+
 [ext_resource type="PackedScene" uid="uid://tnu7b4ok58ma" path="res://assets/Fixed .fbx/SM_EC_Traffic_Cone_0.tscn" id="site_34_1k6dx"]
+
 [ext_resource type="PackedScene" uid="uid://clj15h2dciiyc" path="res://assets/Fixed .fbx/SM_EC_Lampost_0.tscn" id="site_35_et2w0"]
+
 [ext_resource type="PackedScene" uid="uid://7prjj8p2mwoh" path="res://assets/Fixed .fbx/SM_EC_ChainFence_0.tscn" id="site_36_8ha5y"]
+
 [ext_resource type="PackedScene" uid="uid://f5cgq7duvjap" path="res://assets/PSX Bunkers/Models/other-formats/GLB/trash_4.glb" id="site_37_2jhoe"]
+
 [ext_resource type="PackedScene" uid="uid://bnm70axq76rvk" path="res://assets/PSX Bunkers/Models/other-formats/GLB/trash_1.glb" id="site_38_0gpa8"]
+
 [ext_resource type="PackedScene" uid="uid://yljyw1sommyo" path="res://assets/Fixed .fbx/SM_EC_ConcreteBlock_0.tscn" id="site_40_48ck2"]
+
 [ext_resource type="PackedScene" uid="uid://bf2an4n2ynt7m" path="res://assets/Fixed .fbx/SM_EC_BarbwireFence_00.tscn" id="site_41_orgvh"]
+
 [ext_resource type="PackedScene" uid="uid://b3002ig1fpbff" path="res://assets/PSX Bunkers/Models/other-formats/GLB/pipe_1.glb" id="site_42_cuaq3"]
+
 [ext_resource type="PackedScene" uid="uid://dnkmevvrod88k" path="res://assets/Fixed .fbx/SM_EC_Rock_85.tscn" id="site_43_3pcqk"]
+
 [ext_resource type="PackedScene" uid="uid://bj8hp4i421i1q" path="res://assets/Fixed .fbx/SM_EC_Rock_50.tscn" id="site_44_1dk1k"]
+
 [ext_resource type="PackedScene" uid="uid://qf2ex4mrygfq" path="res://assets/Fixed .fbx/SM_EC_Rock_52.tscn" id="site_45_usue0"]
+
 [ext_resource type="PackedScene" uid="uid://d1sk2mev0n8v7" path="res://assets/Fixed .fbx/SM_EC_Rock_75.tscn" id="site_46_6urki"]
+
 [ext_resource type="PackedScene" uid="uid://b8f2tnkxpp8a0" path="res://assets/Fixed .fbx/SM_EC_Rock_60.tscn" id="site_47_1crha"]
+
 [ext_resource type="PackedScene" uid="uid://bq6eimlnsvl22" path="res://assets/Fixed .fbx/SM_EC_Rock_27.tscn" id="site_48_le4x6"]
+
 [ext_resource type="PackedScene" uid="uid://b13767taom3r8" path="res://assets/Fixed .fbx/SM_EC_Rock_48.tscn" id="site_49_y7m1h"]
+
 [ext_resource type="PackedScene" uid="uid://dlnhhtu1jtadm" path="res://assets/Fixed .fbx/SM_EC_Rock_90.tscn" id="site_50_uwbdt"]
+
 [ext_resource type="PackedScene" uid="uid://b1kwmpx0luxer" path="res://assets/Fixed .fbx/SM_EC_Rock_49.tscn" id="site_51_dl3ek"]
+
 [ext_resource type="PackedScene" uid="uid://nt1828fjhn6a" path="res://assets/Fixed .fbx/SM_EC_HorrorHay_Ball_0.tscn" id="site_52_npuo4"]
+
 [ext_resource type="PackedScene" uid="uid://hohycaxfrcv4" path="res://assets/Fixed .fbx/SM_EC_Rock_10.tscn" id="site_53_j8eco"]
+
 [ext_resource type="PackedScene" uid="uid://b1aanwubbx434" path="res://assets/Fixed .fbx/SM_EC_Rock_11.tscn" id="site_54_ic42w"]
+
 [ext_resource type="PackedScene" uid="uid://yedxf8hwd6n1" path="res://assets/Fixed .fbx/SM_EC_Rock_12.tscn" id="site_55_hxdvd"]
+
 [ext_resource type="PackedScene" uid="uid://c8xl8is13gc1b" path="res://assets/Fixed .fbx/SM_EC_Rock_13.tscn" id="site_56_wequj"]
+
 [ext_resource type="PackedScene" uid="uid://lu1me2ghwk7r" path="res://assets/Fixed .fbx/SM_EC_Rock_14.tscn" id="site_57_23osx"]
+
 [ext_resource type="PackedScene" uid="uid://da8kujhnohejb" path="res://assets/Fixed .fbx/SM_EC_Rock_15.tscn" id="site_58_j2tuv"]
+
 [ext_resource type="PackedScene" uid="uid://cqt4tuoxs6to6" path="res://assets/Fixed .fbx/SM_EC_Rock_16.tscn" id="site_59_bujus"]
+
+[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_House_Rug_01.tscn" id="cabindetails_1_pxofj"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/clock_1.glb" id="cabindetails_2_vfysm"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/painting_1.glb" id="cabindetails_3_xae0r"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/jam_jar_mp_1_small.glb" id="cabindetails_6_vresc"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/pickles_jar_mp_1_medium.glb" id="cabindetails_7_xkwml"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Items & Weapons/canned_food_mp_2.glb" id="cabindetails_8_d244r"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/stool_mx_1.glb" id="cabindetails_9_40egg"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/book_mp_2.glb" id="cabindetails_10_otrg6"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/book_mp_5.glb" id="cabindetails_11_q4fex"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/clock_2.glb" id="cabindetails_12_rlj7w"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/book_mp_3.glb" id="cabindetails_13_ry5jd"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/book_mp_7.glb" id="cabindetails_14_401ae"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/map_mx_1.glb" id="cabindetails_15_scnbc"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/cardboard_box_1.glb" id="cabindetails_16_rjtsv"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/cardboard_box_2.glb" id="cabindetails_17_hkrjk"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/handheld_fm_radio_etx_1.glb" id="cabindetails_18_u2ljf"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/toolbox_mx_1.glb" id="cabindetails_20_kjh8b"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/book_mp_4.glb" id="cabindetails_21_2f8px"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/book_mp_8.glb" id="cabindetails_22_dvle6"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Light Sources/lamp_mx_1_a_off.glb" id="cabindetails_23_uhlpt"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/luggage_mp_1.glb" id="cabindetails_24_ba0vj"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/book_mp_6.glb" id="cabindetails_25_mj7av"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/chair_mp_1.glb" id="cabindetails_27_crfjq"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/tree_stump_1.glb" id="cabindetails_29_jgthd"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Weapons & Tools/axe_mx_1.glb" id="cabindetails_30_sldr1"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Bunkers/Models/other-formats/GLB/water_barrel_1.glb" id="cabindetails_31_dxqu4"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/bench_mx_1.glb" id="cabindetails_34_31siv"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/jerrycan_mx_1.glb" id="cabindetails_35_sf5mo"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/tire_1.glb" id="cabindetails_36_1rsms"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/tire_2.glb" id="cabindetails_37_hhmjs"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Mega Pack II/Models/GLB (recommended)/Props/gas_cylinder_mx_1.glb" id="cabindetails_38_cq3kh"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/stone_5.glb" id="forestdetails_3_aolrv"]
+
+[ext_resource type="PackedScene" path="res://assets/PSX Nature/Models/GLB/stone_4.glb" id="forestdetails_5_snhes"]
+
+[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_Rock_01.tscn" id="forestdetails_8_gibte"]
+
+[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_Rock_02.tscn" id="forestdetails_10_03svw"]
+
+[ext_resource type="PackedScene" path="res://assets/Fixed .fbx/SM_EC_Rock_26.tscn" id="forestdetails_11_xetct"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_50dpl"]
 sky_top_color = Color(0.4, 0.6, 1, 1)
@@ -775,6 +1122,285 @@ size = Vector3(0.33129707, 7.1635313, 0.36516473)
 [sub_resource type="BoxShape3D" id="BoxShape3D_site_sst0c"]
 size = Vector3(1.8995799, 2.215531, 2.2158933)
 
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_h7r82"]
+size = Vector3(0.3276, 0.03, 0.3276)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_pk30a"]
+size = Vector3(0.32759994, 0.03, 0.32759994)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_mwiwh"]
+size = Vector3(0.12937357, 0.19819516, 0.12937342)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_33scu"]
+size = Vector3(0.14554487, 0.24526648, 0.1455454)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_ywmlu"]
+size = Vector3(0.112, 0.16800003, 0.11200005)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_3rhom"]
+size = Vector3(0.66650766, 0.33, 0.3199997)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_q5fh4"]
+size = Vector3(0.18001299, 0.048000015, 0.26999998)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_58lhq"]
+size = Vector3(0.18001296, 0.048000015, 0.26999992)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_6k7qr"]
+size = Vector3(0.18001299, 0.06800001, 0.26999998)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_yho41"]
+size = Vector3(0.18001299, 0.048000015, 0.26999998)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_a6b4n"]
+size = Vector3(0.53000003, 0.33000004, 0.33000004)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_y32vl"]
+size = Vector3(0.39499998, 0.12500004, 0.25)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_tfnn8"]
+size = Vector3(0.17700009, 0.40331605, 0.089369565)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_l44io"]
+size = Vector3(0.14319743, 0.036000006, 0.14319742)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_xgst8"]
+size = Vector3(0.6, 0.4500006, 0.34000096)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_sd44r"]
+size = Vector3(0.53, 0.33000004, 0.33)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_ew60u"]
+size = Vector3(0.18001299, 0.048000015, 0.26999998)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_hqqkf"]
+size = Vector3(0.18001299, 0.048000015, 0.26999998)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_hb1f7"]
+size = Vector3(0.39499998, 0.12500004, 0.25000003)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_0c4hk"]
+size = Vector3(0.77264166, 0.52684623, 0.20000014)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_aprp7"]
+size = Vector3(0.18001299, 0.038000014, 0.26999995)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_sw3rf"]
+size = Vector3(0.42001635, 0.045817845, 0.27)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_o0ymc"]
+size = Vector3(0.47065207, 0.594, 0.47000006)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_rse3g"]
+size = Vector3(1.7071433, 0.57960004, 0.4029597)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_n82tt"]
+size = Vector3(0.4521678, 0.6172618, 0.24000143)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_1mwca"]
+size = Vector3(0.73599994, 0.21767443, 0.73599994)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_gmar0"]
+size = Vector3(0.5888, 0.17413954, 0.5888)
+
+[sub_resource type="BoxShape3D" id="CabinDetails_BoxShape3D_7swha"]
+size = Vector3(0.30154398, 1.4569218, 0.30154398)
+
+[sub_resource type="StandardMaterial3D" id="ForestDetails_StandardMaterial3D_7narf"]
+albedo_color = Color(0.42, 0.32, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="ForestDetails_BoxMesh_xhxp7"]
+material = SubResource("ForestDetails_StandardMaterial3D_7narf")
+size = Vector3(0.04, 0.9, 0.04)
+
+[sub_resource type="StandardMaterial3D" id="ForestDetails_StandardMaterial3D_0245s"]
+cull_mode = 2
+albedo_color = Color(0.85, 0.36, 0.1, 1)
+roughness = 0.8
+
+[sub_resource type="QuadMesh" id="ForestDetails_QuadMesh_mx1a8"]
+material = SubResource("ForestDetails_StandardMaterial3D_0245s")
+size = Vector2(0.05, 0.32)
+
+[sub_resource type="StandardMaterial3D" id="ForestDetails_StandardMaterial3D_0hj5h"]
+albedo_color = Color(0.42, 0.32, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="ForestDetails_BoxMesh_rsdps"]
+material = SubResource("ForestDetails_StandardMaterial3D_0hj5h")
+size = Vector3(0.04, 0.9, 0.04)
+
+[sub_resource type="StandardMaterial3D" id="ForestDetails_StandardMaterial3D_wjnq7"]
+cull_mode = 2
+albedo_color = Color(0.85, 0.36, 0.1, 1)
+roughness = 0.8
+
+[sub_resource type="QuadMesh" id="ForestDetails_QuadMesh_iltty"]
+material = SubResource("ForestDetails_StandardMaterial3D_wjnq7")
+size = Vector2(0.05, 0.32)
+
+[sub_resource type="StandardMaterial3D" id="ForestDetails_StandardMaterial3D_84kx8"]
+albedo_color = Color(0.42, 0.32, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="ForestDetails_BoxMesh_jq22i"]
+material = SubResource("ForestDetails_StandardMaterial3D_84kx8")
+size = Vector3(0.04, 0.9, 0.04)
+
+[sub_resource type="StandardMaterial3D" id="ForestDetails_StandardMaterial3D_oudi3"]
+cull_mode = 2
+albedo_color = Color(0.85, 0.36, 0.1, 1)
+roughness = 0.8
+
+[sub_resource type="QuadMesh" id="ForestDetails_QuadMesh_k8v1q"]
+material = SubResource("ForestDetails_StandardMaterial3D_oudi3")
+size = Vector2(0.05, 0.32)
+
+[sub_resource type="StandardMaterial3D" id="ForestDetails_StandardMaterial3D_qtokj"]
+albedo_color = Color(0.42, 0.32, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="ForestDetails_BoxMesh_l3vgf"]
+material = SubResource("ForestDetails_StandardMaterial3D_qtokj")
+size = Vector3(0.04, 0.9, 0.04)
+
+[sub_resource type="StandardMaterial3D" id="ForestDetails_StandardMaterial3D_3c0m1"]
+cull_mode = 2
+albedo_color = Color(0.85, 0.36, 0.1, 1)
+roughness = 0.8
+
+[sub_resource type="QuadMesh" id="ForestDetails_QuadMesh_p3u5p"]
+material = SubResource("ForestDetails_StandardMaterial3D_3c0m1")
+size = Vector2(0.05, 0.32)
+
+[sub_resource type="StandardMaterial3D" id="ForestDetails_StandardMaterial3D_pjryo"]
+albedo_color = Color(0.42, 0.32, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="ForestDetails_BoxMesh_4utfa"]
+material = SubResource("ForestDetails_StandardMaterial3D_pjryo")
+size = Vector3(0.04, 0.9, 0.04)
+
+[sub_resource type="StandardMaterial3D" id="ForestDetails_StandardMaterial3D_unav8"]
+cull_mode = 2
+albedo_color = Color(0.85, 0.36, 0.1, 1)
+roughness = 0.8
+
+[sub_resource type="QuadMesh" id="ForestDetails_QuadMesh_6hebi"]
+material = SubResource("ForestDetails_StandardMaterial3D_unav8")
+size = Vector2(0.05, 0.32)
+
+[sub_resource type="StandardMaterial3D" id="ForestDetails_StandardMaterial3D_qrikm"]
+albedo_color = Color(0.42, 0.32, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="ForestDetails_BoxMesh_rcrq2"]
+material = SubResource("ForestDetails_StandardMaterial3D_qrikm")
+size = Vector3(0.04, 0.9, 0.04)
+
+[sub_resource type="StandardMaterial3D" id="ForestDetails_StandardMaterial3D_wwxqb"]
+cull_mode = 2
+albedo_color = Color(0.85, 0.36, 0.1, 1)
+roughness = 0.8
+
+[sub_resource type="QuadMesh" id="ForestDetails_QuadMesh_vi80y"]
+material = SubResource("ForestDetails_StandardMaterial3D_wwxqb")
+size = Vector2(0.05, 0.32)
+
+[sub_resource type="StandardMaterial3D" id="ForestDetails_StandardMaterial3D_0msgf"]
+albedo_color = Color(0.42, 0.32, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="ForestDetails_BoxMesh_8i7ap"]
+material = SubResource("ForestDetails_StandardMaterial3D_0msgf")
+size = Vector3(0.04, 0.9, 0.04)
+
+[sub_resource type="StandardMaterial3D" id="ForestDetails_StandardMaterial3D_740tw"]
+cull_mode = 2
+albedo_color = Color(0.85, 0.36, 0.1, 1)
+roughness = 0.8
+
+[sub_resource type="QuadMesh" id="ForestDetails_QuadMesh_1odc4"]
+material = SubResource("ForestDetails_StandardMaterial3D_740tw")
+size = Vector2(0.05, 0.32)
+
+[sub_resource type="StandardMaterial3D" id="ForestDetails_StandardMaterial3D_6qw4h"]
+albedo_color = Color(0.42, 0.32, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="ForestDetails_BoxMesh_deqjo"]
+material = SubResource("ForestDetails_StandardMaterial3D_6qw4h")
+size = Vector3(0.04, 0.9, 0.04)
+
+[sub_resource type="StandardMaterial3D" id="ForestDetails_StandardMaterial3D_msqhm"]
+cull_mode = 2
+albedo_color = Color(0.85, 0.36, 0.1, 1)
+roughness = 0.8
+
+[sub_resource type="QuadMesh" id="ForestDetails_QuadMesh_7thxu"]
+material = SubResource("ForestDetails_StandardMaterial3D_msqhm")
+size = Vector2(0.05, 0.32)
+
+[sub_resource type="StandardMaterial3D" id="ForestDetails_StandardMaterial3D_kwhfs"]
+albedo_color = Color(0.42, 0.32, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="ForestDetails_BoxMesh_jyef5"]
+material = SubResource("ForestDetails_StandardMaterial3D_kwhfs")
+size = Vector3(0.04, 0.9, 0.04)
+
+[sub_resource type="StandardMaterial3D" id="ForestDetails_StandardMaterial3D_jhdjq"]
+cull_mode = 2
+albedo_color = Color(0.85, 0.36, 0.1, 1)
+roughness = 0.8
+
+[sub_resource type="QuadMesh" id="ForestDetails_QuadMesh_o32ql"]
+material = SubResource("ForestDetails_StandardMaterial3D_jhdjq")
+size = Vector2(0.05, 0.32)
+
+[sub_resource type="BoxShape3D" id="ForestDetails_BoxShape3D_paps8"]
+size = Vector3(1.8860261, 1.9219474, 1.9061306)
+
+[sub_resource type="BoxShape3D" id="ForestDetails_BoxShape3D_8lua7"]
+size = Vector3(1.6894077, 1.7275343, 1.7923254)
+
+[sub_resource type="BoxShape3D" id="ForestDetails_BoxShape3D_ai2xt"]
+size = Vector3(1.6894076, 1.7275343, 1.7923256)
+
+[sub_resource type="BoxShape3D" id="ForestDetails_BoxShape3D_j7qqo"]
+size = Vector3(1.8860257, 1.9219471, 1.9061308)
+
+[sub_resource type="BoxShape3D" id="ForestDetails_BoxShape3D_g611o"]
+size = Vector3(1.6894078, 1.7275345, 1.7923256)
+
+[sub_resource type="BoxShape3D" id="ForestDetails_BoxShape3D_ui5rm"]
+size = Vector3(1.8860261, 1.9219476, 1.906131)
+
+[sub_resource type="BoxShape3D" id="ForestDetails_BoxShape3D_byj6x"]
+size = Vector3(1.6894078, 1.7275345, 1.7923259)
+
+[sub_resource type="BoxShape3D" id="ForestDetails_BoxShape3D_7j6h5"]
+size = Vector3(1.8860259, 1.9219471, 1.9061308)
+
+[sub_resource type="BoxShape3D" id="ForestDetails_BoxShape3D_ed43w"]
+size = Vector3(1.8860261, 1.9219474, 1.9061308)
+
+[sub_resource type="BoxShape3D" id="ForestDetails_BoxShape3D_mv043"]
+size = Vector3(1.8860259, 1.9219476, 1.906131)
+
+[sub_resource type="BoxShape3D" id="ForestDetails_BoxShape3D_doasr"]
+size = Vector3(1.8860259, 1.9219476, 1.9061306)
+
+[sub_resource type="BoxShape3D" id="ForestDetails_BoxShape3D_apooy"]
+size = Vector3(1.8860257, 1.9219471, 1.9061306)
+
+[sub_resource type="BoxShape3D" id="ForestDetails_BoxShape3D_eprid"]
+size = Vector3(1.8860259, 1.9219474, 1.9061306)
+
+[sub_resource type="BoxShape3D" id="ForestDetails_BoxShape3D_i5r54"]
+size = Vector3(1.6894078, 1.7275343, 1.7923256)
+
+[sub_resource type="BoxShape3D" id="ForestDetails_BoxShape3D_s8oad"]
+size = Vector3(1.8860259, 1.9219474, 1.9061308)
+
+[sub_resource type="BoxShape3D" id="ForestDetails_BoxShape3D_gpuo3"]
+size = Vector3(1.689408, 1.7275343, 1.7923255)
+
+[sub_resource type="BoxShape3D" id="ForestDetails_BoxShape3D_tujrr"]
+size = Vector3(0.5519993, 0.55199796, 0.9200013)
+
 [node name="CottageHorror" type="Node3D" unique_id=110475989]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=715701991]
@@ -799,8 +1425,9 @@ material = SubResource("FogMaterial_ground")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.48612, 0.84798, 11.77265)
 mesh = ExtResource("1_nho78")
 
-[node name="PsxLowPolyHomeInteriorPropsPackFootBallLod0" type="MeshInstance3D" parent="." unique_id=1687336345]
+[node name="PsxLowPolyHomeInteriorPropsPackFootBallLod0" type="RigidBody3D" parent="." unique_id=1687336345]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.51056, 0.85197, 12.39344)
+script = ExtResource("knock_prop_s1")
 mesh = ExtResource("2_pem31")
 
 [node name="Sun" type="DirectionalLight3D" parent="." unique_id=379801970]
@@ -841,9 +1468,9 @@ ground_fog = NodePath("../WorldEnvironment/GroundFog")
 
 [node name="Player" parent="." unique_id=92687399 instance=ExtResource("6_6ky15")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0.5, 15.2)
-starting_items = Array[ExtResource("7_sk1dd")]([ExtResource("8_e4cs6"), ExtResource("8_e4cs6"), ExtResource("9_e8dqn"), ExtResource("10_aqgm5"), ExtResource("8_e4cs6"), ExtResource("11_g5wn0"), ExtResource("12_rsymc"), ExtResource("13_76fuj")])
 start_with_sprint = false
 start_with_flashlight = false
+starting_items = Array[ExtResource("7_sk1dd")]([ExtResource("8_e4cs6"), ExtResource("8_e4cs6"), ExtResource("9_e8dqn"), ExtResource("10_aqgm5"), ExtResource("8_e4cs6"), ExtResource("11_g5wn0"), ExtResource("12_rsymc"), ExtResource("13_76fuj")])
 
 [node name="HUD" parent="." unique_id=1086543120 instance=ExtResource("14_j1dq7")]
 
@@ -860,28 +1487,28 @@ fuse_box_node = NodePath("../Fuse Box")
 fuse_waypoint = NodePath("../EntityWaypoints/EntityFuseWaypoint")
 
 [node name="GeneralSkeleton" parent="TheEntity/MonsterModel/Armature" parent_id_path=PackedInt32Array(133456140, 1066769687, 719992929) index="0" unique_id=519438561]
-bones/1/rotation = Quaternion(0.09714364, -0.16476227, -0.015223819, 0.98141974)
-bones/3/rotation = Quaternion(0.14848791, 0.35045937, 0.90980685, -0.16547243)
-bones/4/rotation = Quaternion(-0.036349513, 0.9299832, -0.3609396, 0.059435703)
-bones/5/rotation = Quaternion(-0.11146005, 0.6551894, -0.73669195, 0.124854304)
-bones/7/rotation = Quaternion(2.7656608e-08, 0.9999847, 0.0055431565, 2.6013739e-08)
-bones/18/rotation = Quaternion(-0.13964, 0.29450622, 0.93942535, 0.10605224)
-bones/21/rotation = Quaternion(0.034508824, 0.9324082, -0.3526783, -0.0710078)
-bones/22/rotation = Quaternion(0.094532974, 0.63115364, -0.7626403, -0.10530188)
-bones/23/rotation = Quaternion(-1.8553314e-08, 0.9999999, 0.00054963294, -4.117233e-08)
-bones/33/rotation = Quaternion(0.020642942, -0.004795043, 0.0133782085, 0.9996859)
-bones/34/rotation = Quaternion(0.06624046, -0.010850751, 0.008686584, 0.9977069)
-bones/35/rotation = Quaternion(0.066415094, -0.009896499, 0.008975486, 0.99770266)
-bones/36/rotation = Quaternion(-0.053069066, 0.027312713, -0.01852912, 0.9980453)
-bones/38/rotation = Quaternion(-0.1913365, 0.1212355, -0.034713283, 0.9733896)
-bones/49/rotation = Quaternion(0.5646692, 0.4289407, 0.52411205, -0.47166213)
-bones/50/rotation = Quaternion(0.184053, 0.87634045, -0.4434615, -0.038651854)
-bones/51/rotation = Quaternion(0.4727335, -0.52585423, 0.47273427, 0.52585435)
-bones/55/rotation = Quaternion(-0.13681795, 0.80886877, 0.18861023, 0.5398504)
-bones/58/rotation = Quaternion(0.51984286, -0.4550662, -0.57431114, -0.43914115)
-bones/59/rotation = Quaternion(-0.2125047, 0.83763254, -0.5010924, -0.046044163)
-bones/62/rotation = Quaternion(0.48676467, 0.5128935, -0.48676562, 0.5128935)
-bones/66/rotation = Quaternion(0.06650625, -0.84652954, -0.025538597, 0.5275534)
+bones/1/rotation = Quaternion(0.09640457, -0.17044397, -0.015791439, 0.980513)
+bones/3/rotation = Quaternion(0.14799711, 0.35161972, 0.9093774, -0.16581102)
+bones/4/rotation = Quaternion(-0.03784637, 0.9247234, -0.37450323, 0.056583304)
+bones/5/rotation = Quaternion(-0.11041341, 0.64665735, -0.74453056, 0.1237632)
+bones/7/rotation = Quaternion(1.0900429e-08, 0.9999794, 0.006435075, 1.8993607e-08)
+bones/18/rotation = Quaternion(-0.13566677, 0.2948261, 0.9398341, 0.10669613)
+bones/21/rotation = Quaternion(0.038083006, 0.931299, -0.35601932, -0.06695008)
+bones/22/rotation = Quaternion(0.09789571, 0.6271802, -0.76498663, -0.10888952)
+bones/23/rotation = Quaternion(-4.8242402e-08, 0.9999993, 0.0012440567, -6.698893e-08)
+bones/33/rotation = Quaternion(0.021108182, -0.0045445464, 0.015395284, 0.99964833)
+bones/34/rotation = Quaternion(0.06595025, -0.010920854, 0.01169416, 0.9976946)
+bones/35/rotation = Quaternion(0.06604127, -0.009851639, 0.012154927, 0.9976942)
+bones/36/rotation = Quaternion(-0.05347396, 0.028123358, -0.021281525, 0.9979463)
+bones/38/rotation = Quaternion(-0.19667724, 0.12267927, -0.03106625, 0.9722668)
+bones/49/rotation = Quaternion(0.5669705, 0.42710072, 0.5241403, -0.47053844)
+bones/50/rotation = Quaternion(0.18267518, 0.8748306, -0.44713822, -0.036994446)
+bones/51/rotation = Quaternion(0.4740942, -0.5246276, 0.4740954, 0.5246276)
+bones/55/rotation = Quaternion(-0.1395164, 0.807934, 0.18859184, 0.5405654)
+bones/58/rotation = Quaternion(0.5168757, -0.45871896, -0.57326263, -0.44021192)
+bones/59/rotation = Quaternion(-0.2056659, 0.84076196, -0.49897075, -0.04300229)
+bones/62/rotation = Quaternion(0.49066848, 0.5091603, -0.4906693, 0.50916004)
+bones/66/rotation = Quaternion(0.06429104, -0.85002077, -0.025820537, 0.5221731)
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1000000002]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.015592637, 0, -0.084306605)
@@ -3083,11 +3710,15 @@ transform = Transform3D(-0.999454, 0, 0.033033, 0, 1, 0, -0.033033, 0, -0.999454
 [node name="display_cabinet_mp_12" parent="." unique_id=1470894841 groups=["navmesh_interior"] instance=ExtResource("128_jcvo7")]
 transform = Transform3D(0.99975944, 0, -0.021937225, 0, 1, 0, 0.021937225, 0, 0.99975944, 5.0573516, 0.73310137, 8.6538725)
 
-[node name="coin_mp_12" parent="." unique_id=817500643 instance=ExtResource("129_do1n8")]
+[node name="coin_mp_12" type="RigidBody3D" parent="." unique_id=817500643]
 transform = Transform3D(-0.99945426, 0, 0.033033177, 0, 1, 0, -0.033033177, 0, -0.99945426, 5.891322, 0.73310065, 10.657229)
+script = ExtResource("knock_prop_s1")
+model = ExtResource("129_do1n8")
 
-[node name="glass_bottle_12" parent="." unique_id=955670800 instance=ExtResource("130_1jgf1")]
+[node name="glass_bottle_12" type="RigidBody3D" parent="." unique_id=955670800]
 transform = Transform3D(-0.99945426, 0, 0.033033177, 0, 1, 0, -0.033033177, 0, -0.99945426, 6.625236, 0.73310065, 10.882769)
+script = ExtResource("knock_prop_s1")
+model = ExtResource("130_1jgf1")
 
 [node name="glass_bottle_22" type="RigidBody3D" parent="." unique_id=493902971]
 transform = Transform3D(-0.99945426, 0, 0.033033177, 0, 1, 0, -0.033033177, 0, -0.99945426, 6.025412, 1.4182314, 11.108625)
@@ -3839,7 +4470,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 102.22013, -0.084282756, 83.2
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 103.85867, -0.084282756, 83.219284)
 
 [node name="SM_EC_55L_Drum_09" parent="." unique_id=52300302 instance=ExtResource("157_ig52i")]
-transform = Transform3D(-0.7919167, -0.61062914, -2.6691447e-08, 0, -4.371139e-08, 1, -0.61062914, 0.7919167, 3.461578e-08, 29.922304, 0.20587552, -81.57626)
+transform = Transform3D(-0.7919167, -0.61062914, -2.6691447e-08, 0, -4.371139e-08, 1, -0.61062914, 0.7919167, 3.461578e-08, 29.922304, 0.0006225705, -81.57626)
 
 [node name="SiteCollider" type="StaticBody3D" parent="SM_EC_55L_Drum_09" unique_id=712214885]
 
@@ -3848,7 +4479,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 1.7763568e-15, -1.7763568e-15, 1.7763568e
 shape = SubResource("BoxShape3D_sitefix5")
 
 [node name="SM_EC_55L_Drum_12" parent="." unique_id=2134674505 instance=ExtResource("158_3t1tr")]
-transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 29.979254, 0.20587564, -80.8121)
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 29.979254, 0.0006226897, -80.8121)
 
 [node name="SiteCollider" type="StaticBody3D" parent="SM_EC_55L_Drum_12" unique_id=977212165]
 
@@ -5566,8 +6197,797 @@ transform = Transform3D(0.4698463, -0.17101006, -7.475087e-09, 0, -2.1855694e-08
 [node name="tree_log_1_5" parent="Sites" unique_id=1062471391 instance=ExtResource("37_uhsjf")]
 transform = Transform3D(0.8660254, 0, 0.5, 0, 1, 0, -0.5, 0, 0.8660254, 98.469025, 0.04068338, 80.34409)
 
-[node name="road_ending" type="Node3D" parent="." unique_id=1709202445]
+[node name="road_ending" type="Marker3D" parent="." unique_id=1337288735]
 transform = Transform3D(0.34202015, -0.9396926, -4.1075268e-08, 0, -4.371139e-08, 1, -0.9396926, -0.34202015, -1.4950176e-08, 104.58003, -0.36862034, -118.78837)
+
+[node name="CabinDetails" parent="." type="Node3D" unique_id=1844445538 groups=["navmesh_source"]]
+
+[node name="SM_EC_House_Rug_01" type="Node3D" parent="CabinDetails" unique_id=110840804 instance=ExtResource("cabindetails_1_pxofj")]
+transform = Transform3D(-4.371139e-08, -1, -4.371139e-08, 0, -4.371139e-08, 1, -1, 4.371139e-08, 1.9106855e-15, 8.25, 0.7231, 9.6)
+
+[node name="clock_1" type="Node3D" parent="CabinDetails" unique_id=1437755325 instance=ExtResource("cabindetails_2_vfysm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.800004, 2.55, 8.16)
+
+[node name="painting_1" type="Node3D" parent="CabinDetails" unique_id=541788894 instance=ExtResource("cabindetails_3_xae0r")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 5.3, 2.092, 14.089999)
+
+[node name="plate_mp_1" type="RigidBody3D" parent="CabinDetails" unique_id=723013810]
+transform = Transform3D(0.9999806, -0.0034121168, 0.0052097896, 0.003524928, 0.99975616, -0.021800255, -0.0051341346, 0.021818196, 0.99974877, 5.2492046, 1.5136333, 20.100538)
+collision_layer = 3
+mass = 0.6
+linear_velocity = Vector3(-0.00035378902, 9.750912e-05, -0.00069927797)
+angular_velocity = Vector3(-0.016160332, -0.0032640223, 0.016370472)
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/plate_mp_1" unique_id=359830959 instance=ExtResource("knock_m_plate")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/plate_mp_1" unique_id=346819635]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3411045e-06, 0.010852264, 0)
+shape = SubResource("CabinDetails_BoxShape3D_h7r82")
+
+[node name="plate_mp_1_2" type="RigidBody3D" parent="CabinDetails" unique_id=835536109]
+transform = Transform3D(0.98226297, -0.031976048, 0.18476185, 0.029609965, 0.99944055, 0.015551826, -0.18515578, -0.009805191, 0.9826603, 5.2685523, 1.5411067, 20.101181)
+collision_layer = 3
+mass = 0.6
+linear_velocity = Vector3(-0.00087702094, 0.00027983123, -0.0013486688)
+angular_velocity = Vector3(-0.027233401, -0.0057253367, 0.031580992)
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/plate_mp_1_2" unique_id=1360650446 instance=ExtResource("knock_m_plate")]
+transform = Transform3D(0.9999999, 0, 0, 0, 1, 0, 0, 0, 0.9999999, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/plate_mp_1_2" unique_id=319556121]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3411045e-06, 0.010852264, 0)
+shape = SubResource("CabinDetails_BoxShape3D_pk30a")
+
+[node name="jam_jar_mp_1_small" type="RigidBody3D" parent="CabinDetails" unique_id=946264960]
+transform = Transform3D(0.9999877, 0.0049385447, -0.0004564413, -0.0049393503, 0.99998623, -0.001780339, 0.00044764276, 0.0017825717, 0.99999833, 5.74995, 1.5111372, 20.149904)
+collision_layer = 3
+mass = 0.6
+sleeping = true
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/jam_jar_mp_1_small" unique_id=1564352246 instance=ExtResource("cabindetails_6_vresc")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/jam_jar_mp_1_small" unique_id=1582674659]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.1606684e-07, 0.09909739, 1.2665987e-07)
+shape = SubResource("CabinDetails_BoxShape3D_mwiwh")
+
+[node name="pickles_jar_mp_1_medium" type="RigidBody3D" parent="CabinDetails" unique_id=206745184]
+transform = Transform3D(0.98029697, 0.00871687, 0.19733697, -0.008210659, 0.99996054, -0.0033832635, -0.19735867, 0.0016963365, 0.9803299, 5.979226, 0.7327512, 20.199734)
+collision_layer = 3
+mass = 0.6
+sleeping = true
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/pickles_jar_mp_1_medium" unique_id=536575066 instance=ExtResource("cabindetails_7_xkwml")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/pickles_jar_mp_1_medium" unique_id=397368348]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12263303, 3.1292439e-07)
+shape = SubResource("CabinDetails_BoxShape3D_33scu")
+
+[node name="canned_food_mp_2" type="RigidBody3D" parent="CabinDetails" unique_id=1108953290]
+transform = Transform3D(0.9999876, 0.004919821, -0.0007890273, -0.0049211984, 0.99998635, -0.0017528381, 0.0007803929, 0.0017566994, 0.99999815, 4.0499487, 1.5260047, 20.149918)
+collision_layer = 3
+mass = 0.6
+sleeping = true
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/canned_food_mp_2" unique_id=1211888483 instance=ExtResource("cabindetails_8_d244r")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/canned_food_mp_2" unique_id=1926910132]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.084, 2.2351742e-08)
+shape = SubResource("CabinDetails_BoxShape3D_ywmlu")
+
+[node name="stool_mx_1" type="RigidBody3D" parent="CabinDetails" unique_id=26216480]
+transform = Transform3D(0.9396926, 0, 0.34202012, 0, 1, 0, -0.34202012, 0, 0.9396926, 6.700136, 0.7333565, 19.349953)
+collision_layer = 3
+mass = 0.6
+sleeping = true
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/stool_mx_1" unique_id=1149417122 instance=ExtResource("cabindetails_9_40egg")]
+transform = Transform3D(0.9999999, 0, -2.9802322e-08, 0, 1, 0, 2.9802322e-08, 0, 0.9999999, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/stool_mx_1" unique_id=2054473172]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.00014448166, 0.16474356, 0)
+shape = SubResource("CabinDetails_BoxShape3D_3rhom")
+
+[node name="book_mp_2" type="RigidBody3D" parent="CabinDetails" unique_id=647673521]
+transform = Transform3D(0.0004325509, -0.1187886, 0.99291945, 6.509945e-05, 0.99291956, 0.118788585, -0.9999999, 1.32620335e-05, 0.00043720007, 3.251438, 2.4165087, 18.100033)
+collision_layer = 3
+mass = 0.6
+sleeping = true
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/book_mp_2" unique_id=760498888 instance=ExtResource("cabindetails_10_otrg6")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/book_mp_2" unique_id=1545188751]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2957406e-06, 0.024003306, -1.0281801e-06)
+shape = SubResource("CabinDetails_BoxShape3D_q5fh4")
+
+[node name="book_mp_5" type="RigidBody3D" parent="CabinDetails" unique_id=386718240]
+transform = Transform3D(0.2102083, 0.054193474, 0.97615343, -0.06923559, 0.99678075, -0.040429216, -0.975202, -0.059086006, 0.21328372, 3.2444963, 0.71247774, 18.456842)
+collision_layer = 3
+mass = 0.6
+sleeping = true
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/book_mp_5" unique_id=1641478657 instance=ExtResource("cabindetails_11_q4fex")]
+transform = Transform3D(0.9999999, 0, 0, 0, 1, 0, 0, 0, 0.9999999, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/book_mp_5" unique_id=579132521]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2957406e-06, 0.024003306, -1.0281801e-06)
+shape = SubResource("CabinDetails_BoxShape3D_58lhq")
+
+[node name="clock_2" type="Node3D" parent="CabinDetails" unique_id=813136852 instance=ExtResource("cabindetails_12_rlj7w")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.3000026, 2.54, 14.451)
+
+[node name="painting_1_2" type="Node3D" parent="CabinDetails" unique_id=518902158 instance=ExtResource("cabindetails_3_xae0r")]
+transform = Transform3D(-4.371139e-08, 0, 1, 0, 1, 0, -1, 0, -4.371139e-08, 3.0000002, 2.142, 17.6)
+
+[node name="book_mp_3" type="RigidBody3D" parent="CabinDetails" unique_id=357329953]
+transform = Transform3D(0.8660214, 9.287943e-05, 0.500007, -4.763315e-06, 1, -0.00017750614, -0.500007, 0.00015134244, 0.8660214, 8.450006, 0.73307204, 17.60004)
+collision_layer = 3
+mass = 0.6
+sleeping = true
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/book_mp_3" unique_id=1366573779 instance=ExtResource("cabindetails_13_ry5jd")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/book_mp_3" unique_id=10075639]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2957406e-06, 0.034003302, -1.0281801e-06)
+shape = SubResource("CabinDetails_BoxShape3D_6k7qr")
+
+[node name="book_mp_7" type="RigidBody3D" parent="CabinDetails" unique_id=1284492041]
+transform = Transform3D(0.2588442, 9.006352e-05, 0.9659191, 0.00012404383, 1, -0.00012648218, -0.9659191, 0.00015255548, 0.2588442, 8.450009, 0.80107164, 17.600056)
+collision_layer = 3
+mass = 0.6
+sleeping = true
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/book_mp_7" unique_id=1240198595 instance=ExtResource("cabindetails_14_401ae")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/book_mp_7" unique_id=1379608146]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2957406e-06, 0.024003306, -1.0281801e-06)
+shape = SubResource("CabinDetails_BoxShape3D_yho41")
+
+[node name="map_mx_1" type="Node3D" parent="CabinDetails" unique_id=305042075 instance=ExtResource("cabindetails_15_scnbc")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 11.6, 1.6000018, 19.89)
+
+[node name="cardboard_box_1" type="RigidBody3D" parent="CabinDetails" unique_id=2061045189]
+transform = Transform3D(0.996195, 9.972476e-05, 0.087152086, -0.00010045192, 1, 3.9579268e-06, -0.087152086, -1.2697461e-05, 0.996195, 9.854579, 0.7330714, 19.84456)
+collision_layer = 3
+mass = 0.6
+sleeping = true
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/cardboard_box_1" unique_id=1264686879 instance=ExtResource("cabindetails_16_rjtsv")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/cardboard_box_1" unique_id=1596669221]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0049999654, 0.16500004, 0.0049999803)
+shape = SubResource("CabinDetails_BoxShape3D_a6b4n")
+
+[node name="cardboard_box_2" type="RigidBody3D" parent="CabinDetails" unique_id=1150684487]
+transform = Transform3D(0.9902663, 0.0001038847, -0.13918528, -0.00010110288, 1, 2.705686e-05, 0.13918528, -1.2721466e-05, 0.9902664, 9.898283, 1.0630655, 19.794682)
+collision_layer = 3
+mass = 0.6
+sleeping = true
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/cardboard_box_2" unique_id=228416242 instance=ExtResource("cabindetails_17_hkrjk")]
+transform = Transform3D(0.9999999, 0, 1.4901161e-08, 0, 1, 0, -1.4901161e-08, 0, 0.9999999, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/cardboard_box_2" unique_id=98279962]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0024999976, 0.06250002, 0.004999995)
+shape = SubResource("CabinDetails_BoxShape3D_y32vl")
+
+[node name="handheld_fm_radio_etx_1" type="StaticBody3D" parent="CabinDetails" unique_id=576698269]
+transform = Transform3D(-0.93969107, 2.1321284e-08, 0.34202406, -2.216332e-05, 1, -6.0954764e-05, -0.34202406, -6.485904e-05, -0.93969107, 12.501662, 0.73309505, 17.705667)
+collision_layer = 3
+
+[node name="Model" type="Node3D" parent="CabinDetails/handheld_fm_radio_etx_1" unique_id=1267399204 instance=ExtResource("cabindetails_18_u2ljf")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/handheld_fm_radio_etx_1" unique_id=156251569]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0034957975, 0.20165831, 0.00468478)
+shape = SubResource("CabinDetails_BoxShape3D_tfnn8")
+
+[node name="ashtray_1" type="RigidBody3D" parent="CabinDetails" unique_id=90608916]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.9, 0.7330997, 17.2)
+collision_layer = 3
+mass = 0.6
+sleeping = true
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/ashtray_1" unique_id=1582621014 instance=ExtResource("90_tdsb5")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/ashtray_1" unique_id=977075809]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.450581e-09, 0.018, -1.4901161e-08)
+shape = SubResource("CabinDetails_BoxShape3D_l44io")
+
+[node name="toolbox_mx_1" type="RigidBody3D" parent="CabinDetails" unique_id=1549513503]
+transform = Transform3D(0.9659258, 0, 0.25881907, 0, 1, 0, -0.25881907, 0, 0.9659258, 14.5, 0.7331005, 20)
+collision_layer = 3
+mass = 0.6
+sleeping = true
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/toolbox_mx_1" unique_id=487203436 instance=ExtResource("cabindetails_20_kjh8b")]
+transform = Transform3D(1, 0, -2.9802322e-08, 0, 1, 0, 2.9802322e-08, 0, 1, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/toolbox_mx_1" unique_id=2120917990]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.22499974, 4.61936e-07)
+shape = SubResource("CabinDetails_BoxShape3D_xgst8")
+
+[node name="cardboard_box_1_2" type="RigidBody3D" parent="CabinDetails" unique_id=760235028]
+transform = Transform3D(0.97814745, 2.4851667e-07, 0.20791233, -1.5380576e-07, 1, -4.7169857e-07, -0.20791233, 4.2941264e-07, 0.97814745, 8.403851, 3.7329998, 13.494071)
+collision_layer = 3
+mass = 0.6
+linear_velocity = Vector3(2.6056346e-09, -4.2147747e-17, 7.876493e-10)
+angular_velocity = Vector3(4.77363e-09, 1.2955399e-15, -1.5791722e-08)
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/cardboard_box_1_2" unique_id=718524189 instance=ExtResource("cabindetails_16_rjtsv")]
+transform = Transform3D(0.99999994, 0, 0, 0, 1, 0, 0, 0, 0.99999994, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/cardboard_box_1_2" unique_id=1443294470]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0049999654, 0.16500004, 0.0049999803)
+shape = SubResource("CabinDetails_BoxShape3D_sd44r")
+
+[node name="painting_1_3" type="Node3D" parent="CabinDetails" unique_id=444252747 instance=ExtResource("cabindetails_3_xae0r")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.6, 5.342, 8.13)
+
+[node name="book_mp_4" type="RigidBody3D" parent="CabinDetails" unique_id=836511770]
+transform = Transform3D(-0.00012588501, -0.02147822, 0.99976933, -2.9555522e-05, 0.99976933, 0.021478217, -1, -2.684351e-05, -0.00012648106, 3.30114, 3.7300997, 17.200016)
+collision_layer = 3
+mass = 0.6
+sleeping = true
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/book_mp_4" unique_id=12008820 instance=ExtResource("cabindetails_21_2f8px")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/book_mp_4" unique_id=270064648]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2957406e-06, 0.024003306, -1.0281801e-06)
+shape = SubResource("CabinDetails_BoxShape3D_ew60u")
+
+[node name="book_mp_8" type="RigidBody3D" parent="CabinDetails" unique_id=1966001943]
+transform = Transform3D(-0.08575165, -0.029277548, 0.9958863, -0.019552432, 0.9994251, 0.027698003, -0.99612474, -0.017096851, -0.08627486, 3.3011637, 3.7309794, 17.550417)
+collision_layer = 3
+mass = 0.6
+sleeping = true
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/book_mp_8" unique_id=924289836 instance=ExtResource("cabindetails_22_dvle6")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/book_mp_8" unique_id=1583157200]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2957406e-06, 0.024003306, -1.0281801e-06)
+shape = SubResource("CabinDetails_BoxShape3D_hqqkf")
+
+[node name="lamp_mx_1_a_off" type="Node3D" parent="CabinDetails" unique_id=887499497 instance=ExtResource("cabindetails_23_uhlpt")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, 4.9790497, 19.774145)
+
+[node name="cardboard_box_2_2" type="RigidBody3D" parent="CabinDetails" unique_id=1103869748]
+transform = Transform3D(0.9396926, 0, 0.34202012, 0, 1, 0, -0.34202012, 0, 0.9396926, 3.4959407, 3.7329998, 14.9461565)
+collision_layer = 3
+mass = 0.6
+sleeping = true
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/cardboard_box_2_2" unique_id=1482585266 instance=ExtResource("cabindetails_17_hkrjk")]
+transform = Transform3D(0.9999999, 0, -2.9802322e-08, 0, 1, 0, 2.9802322e-08, 0, 0.9999999, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/cardboard_box_2_2" unique_id=1387913733]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0024999976, 0.06250002, 0.004999995)
+shape = SubResource("CabinDetails_BoxShape3D_hb1f7")
+
+[node name="clock_1_2" type="Node3D" parent="CabinDetails" unique_id=1229208190 instance=ExtResource("cabindetails_2_vfysm")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 4.5999966, 5.5, 20.359999)
+
+[node name="luggage_mp_1" type="RigidBody3D" parent="CabinDetails" unique_id=830879230]
+transform = Transform3D(0.9999981, 0.001963195, 8.405323e-06, -0.0019632014, 0.9999684, 0.007701073, 6.7136493e-06, -0.0077010747, 0.9999703, 11.999994, 3.7329874, 14.529976)
+collision_layer = 3
+mass = 0.6
+sleeping = true
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/luggage_mp_1" unique_id=2086597080 instance=ExtResource("cabindetails_24_ba0vj")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/luggage_mp_1" unique_id=143581377]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.874302e-07, 0.26342312, -3.501773e-07)
+shape = SubResource("CabinDetails_BoxShape3D_0c4hk")
+
+[node name="book_mp_6" type="RigidBody3D" parent="CabinDetails" unique_id=1678708172]
+transform = Transform3D(0.9396926, 0, 0.34202012, 0, 1, 0, -0.34202012, 0, 0.9396926, 12.999994, 4.7899966, 19.950005)
+collision_layer = 3
+mass = 0.6
+sleeping = true
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/book_mp_6" unique_id=1521032091 instance=ExtResource("cabindetails_25_mj7av")]
+transform = Transform3D(0.9999999, 0, -2.9802322e-08, 0, 1, 0, 2.9802322e-08, 0, 0.9999999, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/book_mp_6" unique_id=1469000600]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.2957406e-06, 0.019003306, -1.0281801e-06)
+shape = SubResource("CabinDetails_BoxShape3D_aprp7")
+
+[node name="open_book_mp_1" type="RigidBody3D" parent="CabinDetails" unique_id=263217561]
+transform = Transform3D(0.9659258, 0, -0.25881907, 0, 1, 0, 0.25881907, 0, 0.9659258, 13.4, 3.7335908, 19.900002)
+collision_layer = 3
+mass = 0.6
+sleeping = true
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/open_book_mp_1" unique_id=1549247810 instance=ExtResource("knock_m_obook")]
+transform = Transform3D(1, 0, 2.9802322e-08, 0, 1, 0, -2.9802322e-08, 0, 1, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/open_book_mp_1" unique_id=2113370832]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.682209e-07, 0.0223178, -1.0281801e-06)
+shape = SubResource("CabinDetails_BoxShape3D_sw3rf")
+
+[node name="chair_mp_1" type="RigidBody3D" parent="CabinDetails" unique_id=718040976]
+transform = Transform3D(-0.81227064, 0.21657549, 0.54158235, 0.051818922, 0.9516336, -0.30283397, -0.58097434, -0.21791895, -0.78420675, 11.270689, 3.9530168, 21.767578)
+collision_layer = 3
+mass = 0.6
+linear_velocity = Vector3(-0.05180756, -0.55008423, 0.15170638)
+angular_velocity = Vector3(-0.00067172275, 0.00040778698, 0.001249259)
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/chair_mp_1" unique_id=239454310 instance=ExtResource("cabindetails_27_crfjq")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/chair_mp_1" unique_id=1404680208]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.002931282, 0.2970002, -4.0233135e-07)
+shape = SubResource("CabinDetails_BoxShape3D_o0ymc")
+
+[node name="painting_1_4" type="Node3D" parent="CabinDetails" unique_id=1842218307 instance=ExtResource("cabindetails_3_xae0r")]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 15.259999, 5.692, 17.4)
+
+[node name="tree_log_1" type="Node3D" parent="CabinDetails" unique_id=1705335308 instance=ExtResource("37_uhsjf")]
+transform = Transform3D(0.57405496, 0, 0, 0, 0.57405496, 0, 0, 0, 0.57405496, 9.80834, 0.034002688, 21.28518)
+
+[node name="tree_log_1_2" type="Node3D" parent="CabinDetails" unique_id=903880229 instance=ExtResource("37_uhsjf")]
+transform = Transform3D(0.57405496, 0, 0, 0, 0.57405496, 0, 0, 0, 0.57405496, 10.508339, 0.034002688, 21.28518)
+
+[node name="tree_log_1_3" type="Node3D" parent="CabinDetails" unique_id=432684206 instance=ExtResource("37_uhsjf")]
+transform = Transform3D(0.57405496, 0, 0, 0, 0.57405496, 0, 0, 0, 0.57405496, 11.20834, 0.034002688, 21.28518)
+
+[node name="tree_log_1_4" type="Node3D" parent="CabinDetails" unique_id=193496470 instance=ExtResource("37_uhsjf")]
+transform = Transform3D(0.57405496, 0, 0, 0, 0.57405496, 0, 0, 0, 0.57405496, 10.158339, 0.034002688, 21.28518)
+
+[node name="tree_log_1_5" type="Node3D" parent="CabinDetails" unique_id=941501012 instance=ExtResource("37_uhsjf")]
+transform = Transform3D(0.57405496, 0, 0, 0, 0.57405496, 0, 0, 0, 0.57405496, 10.858339, 0.034002688, 21.28518)
+
+[node name="tree_log_1_6" type="Node3D" parent="CabinDetails" unique_id=1961086244 instance=ExtResource("37_uhsjf")]
+transform = Transform3D(0.57405496, 0, 0, 0, 0.57405496, 0, 0, 0, 0.57405496, 10.508339, 0.034002688, 21.28518)
+
+[node name="tree_stump_1" type="Node3D" parent="CabinDetails" unique_id=1506322183 instance=ExtResource("cabindetails_29_jgthd")]
+transform = Transform3D(0.95415086, 0, 0, 0, 0.95415086, 0, 0, 0, 0.95415086, 11.2220335, 0.024999391, 23.402672)
+
+[node name="axe_mx_1" type="Node3D" parent="CabinDetails" unique_id=124846903 instance=ExtResource("cabindetails_30_sldr1")]
+transform = Transform3D(0.81915206, 0.57357645, -2.5071824e-08, 0, -4.371139e-08, -1, -0.57357645, 0.81915206, -3.5806274e-08, 11.142729, 0.2373066, 23.440102)
+
+[node name="water_barrel_1" type="Node3D" parent="CabinDetails" unique_id=1164323848 instance=ExtResource("cabindetails_31_dxqu4")]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 16.35, 0.3885679, 20.788055)
+
+[node name="wooden_crate_8" type="Node3D" parent="CabinDetails" unique_id=1121590869 instance=ExtResource("site_15_4wqyj")]
+transform = Transform3D(0.99026805, 0.1391731, -6.0834497e-09, 0, -4.371139e-08, -1, -0.1391731, 0.99026805, -4.328599e-08, 1.6720631, 0.57499975, 19.39545)
+
+[node name="wooden_crate_9" type="Node3D" parent="CabinDetails" unique_id=2023548109 instance=ExtResource("site_16_fde7g")]
+transform = Transform3D(0.9945219, -0.104528464, 4.5690842e-09, 0, -4.371139e-08, -1, 0.104528464, 0.9945219, -4.3471935e-08, 1.8085359, 0.57499975, 19.393068)
+
+[node name="bench_mx_1" type="Node3D" parent="CabinDetails" unique_id=372194325 instance=ExtResource("cabindetails_34_31siv")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.601365, 0.025256075, 13.61)
+
+[node name="SiteCollider" type="StaticBody3D" parent="CabinDetails/bench_mx_1" unique_id=1740972430]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/bench_mx_1/SiteCollider" unique_id=381042185]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0013646483, 0.31474358, 0.0010000169)
+shape = SubResource("CabinDetails_BoxShape3D_rse3g")
+
+[node name="jerrycan_mx_1" type="RigidBody3D" parent="CabinDetails" unique_id=1121653451]
+transform = Transform3D(0.9063064, 2.3571616e-08, 0.4226212, 4.2019428e-07, 1, -9.568768e-07, -0.4226212, 1.0448065e-06, 0.9063064, 14.474379, 0.025000006, 13.315288)
+collision_layer = 3
+mass = 0.6
+sleeping = true
+script = ExtResource("knock_prop_s1")
+
+[node name="Model" type="Node3D" parent="CabinDetails/jerrycan_mx_1" unique_id=1941338765 instance=ExtResource("cabindetails_35_sf5mo")]
+transform = Transform3D(0.9999999, 0, 0, 0, 1, 0, 0, 0, 0.9999999, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/jerrycan_mx_1" unique_id=1777709619]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.08208358, 0.3086305, 7.301569e-07)
+shape = SubResource("CabinDetails_BoxShape3D_n82tt")
+
+[node name="tire_1" type="Node3D" parent="CabinDetails" unique_id=1948236149 instance=ExtResource("cabindetails_36_1rsms")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.8, 0.02530099, 18.6)
+
+[node name="SiteCollider" type="StaticBody3D" parent="CabinDetails/tire_1" unique_id=1613401349]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/tire_1/SiteCollider" unique_id=1958911189]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.11799994, 0)
+shape = SubResource("CabinDetails_BoxShape3D_1mwca")
+
+[node name="tire_2" type="Node3D" parent="CabinDetails" unique_id=317330181 instance=ExtResource("cabindetails_37_hhmjs")]
+transform = Transform3D(0.8660254, 0, 0.5, 0, 1, 0, -0.5, 0, 0.8660254, 21.8, 0.25237828, 18.6)
+
+[node name="SiteCollider" type="StaticBody3D" parent="CabinDetails/tire_2" unique_id=477548663]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/tire_2/SiteCollider" unique_id=1416355280]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.09439995, 0)
+shape = SubResource("CabinDetails_BoxShape3D_gmar0")
+
+[node name="gas_cylinder_mx_1" type="Node3D" parent="CabinDetails" unique_id=1842049737 instance=ExtResource("cabindetails_38_cq3kh")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.900696, 0.026005805, 18.899303)
+
+[node name="SiteCollider" type="StaticBody3D" parent="CabinDetails/gas_cylinder_mx_1" unique_id=1472948585]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CabinDetails/gas_cylinder_mx_1/SiteCollider" unique_id=547817641]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.00069741905, 0.79079914, 0.00069741905)
+shape = SubResource("CabinDetails_BoxShape3D_7swha")
+
+[node name="ForestDetails" parent="." type="Node3D" unique_id=1428351760 groups=["navmesh_source"]]
+
+[node name="stone_2" type="Node3D" parent="ForestDetails" unique_id=1269762603 instance=ExtResource("144_wo6cc")]
+transform = Transform3D(0.033220623, 0, -0.19971533, 0, 0.20245944, 0, 0.19971533, 0, 0.033220623, -26.841404, 0.042799246, -88.585335)
+
+[node name="stone_1" type="Node3D" parent="ForestDetails" unique_id=125339081 instance=ExtResource("145_pus02")]
+transform = Transform3D(-0.2837606, 0, 0.51983774, 0, 0.59224266, 0, -0.51983774, 0, -0.2837606, -27.362331, 0.034702323, -88.04897)
+
+[node name="stone_2_2" type="Node3D" parent="ForestDetails" unique_id=455280621 instance=ExtResource("144_wo6cc")]
+transform = Transform3D(0.11378429, 0, 0.059756525, 0, 0.12852123, 0, -0.059756525, 0, 0.11378429, -27.797035, 0.018038817, -87.91225)
+
+[node name="stone_2_3" type="Node3D" parent="ForestDetails" unique_id=2027815771 instance=ExtResource("144_wo6cc")]
+transform = Transform3D(-0.090679616, 0, -0.09086057, 0, 0.12836836, 0, 0.09086057, 0, -0.090679616, -30.576267, 0.017987624, -77.27374)
+
+[node name="stone_1_2" type="Node3D" parent="ForestDetails" unique_id=1824765397 instance=ExtResource("145_pus02")]
+transform = Transform3D(0.3455115, 0, -0.44803897, 0, 0.5657889, 0, 0.44803897, 0, 0.3455115, -29.891872, 0.03203558, -76.18634)
+
+[node name="stone_5" type="Node3D" parent="ForestDetails" unique_id=1689207486 instance=ExtResource("forestdetails_3_aolrv")]
+transform = Transform3D(-2.3421595, 0, 1.0001581, 0, 2.546768, 0, -1.0001581, 0, -2.3421595, -29.91961, -0.025000352, -76.41321)
+
+[node name="stone_2_4" type="Node3D" parent="ForestDetails" unique_id=51672468 instance=ExtResource("144_wo6cc")]
+transform = Transform3D(0.043419573, 0, -0.22666654, 0, 0.23078774, 0, 0.22666654, 0, 0.043419573, -15.549637, 0.05228583, -70.50543)
+
+[node name="stone_2_5" type="Node3D" parent="ForestDetails" unique_id=761189179 instance=ExtResource("144_wo6cc")]
+transform = Transform3D(-0.06832471, 0, -0.20477258, 0, 0.2158705, 0, 0.20477258, 0, -0.06832471, -15.567793, 0.047290344, -69.98734)
+
+[node name="stone_2_6" type="Node3D" parent="ForestDetails" unique_id=155503684 instance=ExtResource("144_wo6cc")]
+transform = Transform3D(-0.11996869, 0, 0.0519117, 0, 0.13071844, 0, -0.0519117, 0, -0.11996869, -15.466494, 0.018774617, -69.884094)
+
+[node name="tree_stump_1_2" type="Node3D" parent="ForestDetails" unique_id=1506322183 instance=ExtResource("cabindetails_29_jgthd")]
+transform = Transform3D(-0.31763572, 0, 0.7848823, 0, 0.8467188, 0, -0.7848823, 0, -0.31763572, -60.255127, 0.024999417, -68.046776)
+
+[node name="stone_4" type="Node3D" parent="ForestDetails" unique_id=2124382903 instance=ExtResource("forestdetails_5_snhes")]
+transform = Transform3D(-1.7087333, 0, 0.2846938, 0, 1.7322875, 0, -0.2846938, 0, -1.7087333, -71.26972, -0.025000349, -63.626305)
+
+[node name="stone_1_3" type="Node3D" parent="ForestDetails" unique_id=959628063 instance=ExtResource("145_pus02")]
+transform = Transform3D(0.08826135, 0, 0.26255924, 0, 0.27699715, 0, -0.26255924, 0, 0.08826135, -70.31721, 0.0029231037, -64.22321)
+
+[node name="tree_stump_1_3" type="Node3D" parent="ForestDetails" unique_id=1610870439 instance=ExtResource("cabindetails_29_jgthd")]
+transform = Transform3D(-0.47293407, 0, 0.59695125, 0, 0.76158875, 0, -0.59695125, 0, -0.47293407, -80.38944, 0.024999438, -55.94729)
+
+[node name="stone_5_2" type="Node3D" parent="ForestDetails" unique_id=1890109481 instance=ExtResource("forestdetails_3_aolrv")]
+transform = Transform3D(0.14937074, 0, 1.3698674, 0, 1.3779871, 0, -1.3698674, 0, 0.14937074, -5.191066, -0.025000365, -49.913055)
+
+[node name="stone_3" type="Node3D" parent="ForestDetails" unique_id=426409000 instance=ExtResource("143_rln1a")]
+transform = Transform3D(-0.0734078, 0, 0.0822866, 0, 0.11027143, 0, -0.0822866, 0, -0.0734078, -5.012985, 0.018491026, -49.646614)
+
+[node name="tree_stump_1_4" type="Node3D" parent="ForestDetails" unique_id=1538461992 instance=ExtResource("cabindetails_29_jgthd")]
+transform = Transform3D(-0.77708125, 0, -0.7013669, 0, 1.0467907, 0, 0.7013669, 0, -0.77708125, -76.17551, 0.024999369, -47.447693)
+
+[node name="tree_log_1_7" type="Node3D" parent="ForestDetails" unique_id=1705335308 instance=ExtResource("37_uhsjf")]
+transform = Transform3D(-0.33054516, 0, 0.5636951, 0, 0.65346175, 0, -0.5636951, 0, -0.33054516, -7.915674, 0.03524805, -44.662315)
+
+[node name="tree_stump_1_5" type="Node3D" parent="ForestDetails" unique_id=1969656294 instance=ExtResource("cabindetails_29_jgthd")]
+transform = Transform3D(0.6484802, 0, 0.46334648, 0, 0.7970047, 0, -0.46334648, 0, 0.6484802, -96.34215, 0.024999429, -44.996777)
+
+[node name="stone_5_3" type="Node3D" parent="ForestDetails" unique_id=1714091825 instance=ExtResource("forestdetails_3_aolrv")]
+transform = Transform3D(-0.6561182, 0, 1.4552329, 0, 1.5963063, 0, -1.4552329, 0, -0.6561182, -19.361916, -0.025000364, -29.5582)
+
+[node name="stone_3_2" type="Node3D" parent="ForestDetails" unique_id=741176796 instance=ExtResource("143_rln1a")]
+transform = Transform3D(-0.19750662, 0, -0.11409122, 0, 0.22809137, 0, 0.11409122, 0, -0.19750662, -18.708931, 0.06495959, -29.5752)
+
+[node name="stone_3_3" type="Node3D" parent="ForestDetails" unique_id=1755066516 instance=ExtResource("143_rln1a")]
+transform = Transform3D(0.05814485, 0, 0.08410217, 0, 0.102244794, 0, -0.08410217, 0, 0.05814485, -18.35798, 0.015325294, -29.541859)
+
+[node name="stone_3_4" type="Node3D" parent="ForestDetails" unique_id=1921425124 instance=ExtResource("143_rln1a")]
+transform = Transform3D(-0.20114668, 0, -0.070699915, 0, 0.21320991, 0, 0.070699915, 0, -0.20114668, -88.63714, 0.05909029, -34.447166)
+
+[node name="stone_2_7" type="Node3D" parent="ForestDetails" unique_id=1341539279 instance=ExtResource("144_wo6cc")]
+transform = Transform3D(-0.17424645, 0, 0.07418695, 0, 0.18938196, 0, -0.07418695, 0, -0.17424645, -10.654522, 0.03841986, -30.256897)
+
+[node name="stone_4_2" type="Node3D" parent="ForestDetails" unique_id=829333594 instance=ExtResource("forestdetails_5_snhes")]
+transform = Transform3D(0.6242928, 0, -1.723642, 0, 1.8332165, 0, 1.723642, 0, 0.6242928, -10.614342, -0.025000347, -29.442383)
+
+[node name="stone_4_3" type="Node3D" parent="ForestDetails" unique_id=2051328382 instance=ExtResource("forestdetails_5_snhes")]
+transform = Transform3D(0.25933906, 0, -1.4134978, 0, 1.4370918, 0, 1.4134978, 0, 0.25933906, -10.439893, -0.025000354, -29.746681)
+
+[node name="tree_stump_1_6" type="Node3D" parent="ForestDetails" unique_id=728954961 instance=ExtResource("cabindetails_29_jgthd")]
+transform = Transform3D(0.650858, 0, -0.4712308, 0, 0.8035388, 0, 0.4712308, 0, 0.650858, -11.897495, 0.024999427, -22.506056)
+
+[node name="stone_1_4" type="Node3D" parent="ForestDetails" unique_id=2147126077 instance=ExtResource("145_pus02")]
+transform = Transform3D(-0.20475303, 0, -0.1785437, 0, 0.2716646, 0, 0.1785437, 0, -0.20475303, -8.988079, 0.0023855406, -21.674786)
+
+[node name="stone_1_5" type="Node3D" parent="ForestDetails" unique_id=1476362977 instance=ExtResource("145_pus02")]
+transform = Transform3D(0.057122108, 0, -0.42859, 0, 0.43237984, 0, 0.42859, 0, 0.057122108, -8.891585, 0.018586896, -21.042465)
+
+[node name="stone_5_4" type="Node3D" parent="ForestDetails" unique_id=915235430 instance=ExtResource("forestdetails_3_aolrv")]
+transform = Transform3D(-0.4259602, 0, -1.9434015, 0, 1.9895355, 0, 1.9434015, 0, -0.4259602, -9.14684, -0.02500036, -21.105633)
+
+[node name="stone_4_4" type="Node3D" parent="ForestDetails" unique_id=669212459 instance=ExtResource("forestdetails_5_snhes")]
+transform = Transform3D(-0.55539584, 0, 2.3425274, 0, 2.4074674, 0, -2.3425274, 0, -0.55539584, 33.229187, -0.025000336, 39.524952)
+
+[node name="stone_1_6" type="Node3D" parent="ForestDetails" unique_id=984132841 instance=ExtResource("145_pus02")]
+transform = Transform3D(0.3913342, 0, -0.22488853, 0, 0.45135054, 0, 0.22488853, 0, 0.3913342, 33.760284, 0.020499293, 40.641796)
+
+[node name="stone_4_5" type="Node3D" parent="ForestDetails" unique_id=1031182079 instance=ExtResource("forestdetails_5_snhes")]
+transform = Transform3D(1.5399052, 0, -1.631608, 0, 2.2435358, 0, 1.631608, 0, 1.5399052, 34.030594, -0.02500034, 40.43258)
+
+[node name="SurveyStake" type="Node3D" parent="ForestDetails" unique_id=225621098]
+transform = Transform3D(0.99579364, 0.091614224, 0.0013514728, -0.091614224, 0.9953594, 0.029434975, 0.0013514728, -0.029434975, 0.9995658, 49.793976, -0.025000382, -16.364965)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ForestDetails/SurveyStake" unique_id=497859993]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+mesh = SubResource("ForestDetails_BoxMesh_xhxp7")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="ForestDetails/SurveyStake" unique_id=1642743888]
+transform = Transform3D(-0.91386604, 0.19424823, 0.35653406, 0.2079117, 0.9781476, 0, -0.34874296, 0.0741276, -0.9342823, 0.03, 0.68, 0)
+mesh = SubResource("ForestDetails_QuadMesh_mx1a8")
+
+[node name="Detail" type="Node3D" parent="ForestDetails" unique_id=806924815]
+transform = Transform3D(0.99995875, 0.009076462, 2.6455107e-05, -0.009076462, 0.9999418, 0.005831274, 2.6455107e-05, -0.005831274, 0.999983, 45.535435, -0.025000382, -15.399536)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ForestDetails/Detail" unique_id=961882821]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+mesh = SubResource("ForestDetails_BoxMesh_rsdps")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="ForestDetails/Detail" unique_id=398852815]
+transform = Transform3D(-0.9317562, 0.1980509, 0.30431277, 0.2079117, 0.9781476, 0, -0.2976628, 0.06327018, -0.95257217, 0.03, 0.68, 0)
+mesh = SubResource("ForestDetails_QuadMesh_iltty")
+
+[node name="Detail_2" type="Node3D" parent="ForestDetails" unique_id=1354213824]
+transform = Transform3D(0.99940115, -0.03457442, -0.0013905001, 0.03457442, 0.9961724, 0.0802816, -0.0013905001, -0.0802816, 0.9967712, 46.40652, -0.025000382, -21.276878)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ForestDetails/Detail_2" unique_id=1141622399]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+mesh = SubResource("ForestDetails_BoxMesh_jq22i")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="ForestDetails/Detail_2" unique_id=850592152]
+transform = Transform3D(-0.42134443, 0.089559525, 0.9024677, 0.2079117, 0.9781476, 0, -0.88274664, 0.1876336, -0.4307575, 0.03, 0.68, 0)
+mesh = SubResource("ForestDetails_QuadMesh_k8v1q")
+
+[node name="Detail_3" type="Node3D" parent="ForestDetails" unique_id=907412651]
+transform = Transform3D(0.99813294, 0.061075345, 0.0006481613, -0.061075345, 0.99790794, 0.021202806, 0.0006481613, -0.021202806, 0.999775, -29.993666, -0.025000382, -11.84378)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ForestDetails/Detail_3" unique_id=942553802]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+mesh = SubResource("ForestDetails_BoxMesh_l3vgf")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="ForestDetails/Detail_3" unique_id=173008342]
+transform = Transform3D(0.7594127, -0.16141815, 0.6302671, 0.2079117, 0.9781476, 0, -0.61649424, 0.1310399, 0.7763784, 0.03, 0.68, 0)
+mesh = SubResource("ForestDetails_QuadMesh_p3u5p")
+
+[node name="Detail_4" type="Node3D" parent="ForestDetails" unique_id=605863335]
+transform = Transform3D(0.99956656, -0.029441135, -0.00013682066, 0.029441135, 0.99952334, 0.009292761, -0.00013682066, -0.009292761, 0.99995685, -35.234222, -0.025000382, -13.908511)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ForestDetails/Detail_4" unique_id=1065710211]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+mesh = SubResource("ForestDetails_BoxMesh_4utfa")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="ForestDetails/Detail_4" unique_id=1449100325]
+transform = Transform3D(0.9775259, -0.20777954, 0.035648767, 0.2079117, 0.9781476, 0, -0.034869757, 0.0074117957, 0.9993644, 0.03, 0.68, 0)
+mesh = SubResource("ForestDetails_QuadMesh_6hebi")
+
+[node name="Detail_5" type="Node3D" parent="ForestDetails" unique_id=2047357964]
+transform = Transform3D(0.9999787, -0.006521668, -2.9643761e-05, 0.006521668, 0.9999374, 0.00908949, -2.9643761e-05, -0.00908949, 0.9999587, -29.81609, -0.025000382, -16.57407)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ForestDetails/Detail_5" unique_id=588931481]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+mesh = SubResource("ForestDetails_BoxMesh_rcrq2")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="ForestDetails/Detail_5" unique_id=632574382]
+transform = Transform3D(0.6511563, -0.13840756, 0.7462163, 0.2079117, 0.9781476, 0, -0.7299097, 0.1551471, 0.66570354, 0.03, 0.68, 0)
+mesh = SubResource("ForestDetails_QuadMesh_vi80y")
+
+[node name="Detail_6" type="Node3D" parent="ForestDetails" unique_id=1690237566]
+transform = Transform3D(0.9986757, -0.051415455, 0.0018210232, 0.051415455, 0.99617165, -0.0706998, 0.0018210232, 0.0706998, 0.99749595, -63.20726, -0.025000382, 69.3262)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ForestDetails/Detail_6" unique_id=1534506552]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+mesh = SubResource("ForestDetails_BoxMesh_8i7ap")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="ForestDetails/Detail_6" unique_id=1665878139]
+transform = Transform3D(-0.2744948, 0.05834567, 0.9598169, 0.2079117, 0.9781476, 0, -0.9388426, 0.19955716, -0.28062716, 0.03, 0.68, 0)
+mesh = SubResource("ForestDetails_QuadMesh_1odc4")
+
+[node name="Detail_7" type="Node3D" parent="ForestDetails" unique_id=735839804]
+transform = Transform3D(0.9996953, -0.02468233, -0.00019248683, 0.02468233, 0.9995737, 0.015593014, -0.00019248683, -0.015593014, 0.9998784, -69.10711, -0.025000382, 68.32036)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ForestDetails/Detail_7" unique_id=1061823446]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+mesh = SubResource("ForestDetails_BoxMesh_deqjo")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="ForestDetails/Detail_7" unique_id=849109271]
+transform = Transform3D(0.90888345, -0.19318914, 0.3696064, 0.2079117, 0.9781476, 0, -0.36152962, 0.0768455, 0.92918843, 0.03, 0.68, 0)
+mesh = SubResource("ForestDetails_QuadMesh_7thxu")
+
+[node name="Detail_8" type="Node3D" parent="ForestDetails" unique_id=45177761]
+transform = Transform3D(0.99764293, -0.06860475, 0.0014115971, 0.06860475, 0.99679756, -0.041086026, 0.0014115971, 0.041086026, 0.9991546, -64.28192, -0.025000382, 64.98523)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ForestDetails/Detail_8" unique_id=1887515757]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+mesh = SubResource("ForestDetails_BoxMesh_jyef5")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="ForestDetails/Detail_8" unique_id=39763931]
+transform = Transform3D(-0.8945591, 0.1901444, 0.40448627, 0.2079117, 0.9781476, 0, -0.3956473, 0.08409743, -0.91454405, 0.03, 0.68, 0)
+mesh = SubResource("ForestDetails_QuadMesh_o32ql")
+
+[node name="SM_EC_Rock_01" type="Node3D" parent="ForestDetails" unique_id=1790154756 instance=ExtResource("forestdetails_8_gibte")]
+transform = Transform3D(-0.32483774, 0.82323337, 0.10063184, 0.14657193, -0.04939023, 0.8771755, 0.8163067, 0.3364624, -0.117456205, -85.46394, 0.8461436, 82.619705)
+
+[node name="SiteCollider" type="StaticBody3D" parent="ForestDetails/SM_EC_Rock_01" unique_id=989282741]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ForestDetails/SM_EC_Rock_01/SiteCollider" unique_id=39597148]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.010242224, -0.0024453402, 0.024210453)
+shape = SubResource("ForestDetails_BoxShape3D_paps8")
+
+[node name="SM_EC_Rock_27" type="Node3D" parent="ForestDetails" unique_id=680513168 instance=ExtResource("site_48_le4x6")]
+transform = Transform3D(0.65636015, -0.26558465, 0.111311935, -0.12400808, -0.010629133, 0.7058635, -0.2598991, -0.66564715, -0.055683345, -59.064133, 0.63085425, 59.090546)
+
+[node name="SiteCollider" type="StaticBody3D" parent="ForestDetails/SM_EC_Rock_27" unique_id=505335685]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ForestDetails/SM_EC_Rock_27/SiteCollider" unique_id=1223260013]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00053054094, 0.00152421, 0.015443623)
+shape = SubResource("ForestDetails_BoxShape3D_8lua7")
+
+[node name="SM_EC_Rock_02" type="Node3D" parent="ForestDetails" unique_id=1972214219 instance=ExtResource("forestdetails_10_03svw")]
+transform = Transform3D(-0.05267156, 0.6915854, 0.061690792, -0.099471815, -0.06874588, 0.6857477, 0.6871692, 0.04305867, 0.103994645, 114.14924, 0.6406963, 15.62429)
+
+[node name="SiteCollider" type="StaticBody3D" parent="ForestDetails/SM_EC_Rock_02" unique_id=1273304512]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ForestDetails/SM_EC_Rock_02/SiteCollider" unique_id=1843005538]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00053054094, 0.00152421, 0.015443623)
+shape = SubResource("ForestDetails_BoxShape3D_ai2xt")
+
+[node name="SM_EC_Rock_26" type="Node3D" parent="ForestDetails" unique_id=1168879578 instance=ExtResource("forestdetails_11_xetct")]
+transform = Transform3D(-0.7972008, -0.22866671, -0.052882183, -0.0130662415, -0.14371446, 0.81840664, -0.23433793, 0.7859209, 0.13426857, -2.518198, 0.77357787, -105.36496)
+
+[node name="SiteCollider" type="StaticBody3D" parent="ForestDetails/SM_EC_Rock_26" unique_id=134376943]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ForestDetails/SM_EC_Rock_26/SiteCollider" unique_id=2096623316]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.010242224, -0.0024453402, 0.024210453)
+shape = SubResource("ForestDetails_BoxShape3D_j7qqo")
+
+[node name="SM_EC_Rock_02_2" type="Node3D" parent="ForestDetails" unique_id=889492188 instance=ExtResource("forestdetails_10_03svw")]
+transform = Transform3D(0.92379886, -0.3586792, 0.15816422, -0.120227344, 0.12614389, 0.9882834, -0.37311137, -0.92871314, 0.07315037, 69.24478, 0.915147, -7.7342343)
+
+[node name="SiteCollider" type="StaticBody3D" parent="ForestDetails/SM_EC_Rock_02_2" unique_id=639099432]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ForestDetails/SM_EC_Rock_02_2/SiteCollider" unique_id=638268607]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00053054094, 0.00152421, 0.015443623)
+shape = SubResource("ForestDetails_BoxShape3D_g611o")
+
+[node name="SM_EC_Rock_01_2" type="Node3D" parent="ForestDetails" unique_id=1548686357 instance=ExtResource("forestdetails_8_gibte")]
+transform = Transform3D(-0.69386894, 0.40430447, -0.11780794, -0.1406851, -0.008531953, 0.79933083, 0.39692378, 0.70374715, 0.077371724, -69.19431, 0.7527608, -75.708595)
+
+[node name="SiteCollider" type="StaticBody3D" parent="ForestDetails/SM_EC_Rock_01_2" unique_id=186032009]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ForestDetails/SM_EC_Rock_01_2/SiteCollider" unique_id=1421899411]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.010242224, -0.0024453402, 0.024210453)
+shape = SubResource("ForestDetails_BoxShape3D_ui5rm")
+
+[node name="SM_EC_Rock_02_3" type="Node3D" parent="ForestDetails" unique_id=1085950382 instance=ExtResource("forestdetails_10_03svw")]
+transform = Transform3D(-0.3180759, -0.73147595, -0.049207013, 0.09985709, -0.09636517, 0.78701526, -0.72629666, 0.30709505, 0.12975498, 28.680939, 0.73401445, 97.43039)
+
+[node name="SiteCollider" type="StaticBody3D" parent="ForestDetails/SM_EC_Rock_02_3" unique_id=1925130324]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ForestDetails/SM_EC_Rock_02_3/SiteCollider" unique_id=1937749111]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00053054094, 0.00152421, 0.015443623)
+shape = SubResource("ForestDetails_BoxShape3D_byj6x")
+
+[node name="SM_EC_Rock_26_2" type="Node3D" parent="ForestDetails" unique_id=1287112999 instance=ExtResource("forestdetails_11_xetct")]
+transform = Transform3D(-0.5638182, -1.0698737, -0.11459002, 0.10453175, -0.18321972, 1.196309, -1.0709032, 0.545392, 0.17710303, -47.437458, 1.1632696, -46.28756)
+
+[node name="SiteCollider" type="StaticBody3D" parent="ForestDetails/SM_EC_Rock_26_2" unique_id=1137683822]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ForestDetails/SM_EC_Rock_26_2/SiteCollider" unique_id=1767664727]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.010242224, -0.0024453402, 0.024210453)
+shape = SubResource("ForestDetails_BoxShape3D_7j6h5")
+
+[node name="SM_EC_Rock_26_3" type="Node3D" parent="ForestDetails" unique_id=1735671944 instance=ExtResource("forestdetails_11_xetct")]
+transform = Transform3D(0.002566959, -0.8946768, -0.12282459, -0.09806066, -0.12237498, 0.8893523, -0.89772856, 0.010809045, -0.097496904, -78.308784, 0.87791085, 57.624557)
+
+[node name="SiteCollider" type="StaticBody3D" parent="ForestDetails/SM_EC_Rock_26_3" unique_id=37700691]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ForestDetails/SM_EC_Rock_26_3/SiteCollider" unique_id=1095829143]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.010242224, -0.0024453402, 0.024210453)
+shape = SubResource("ForestDetails_BoxShape3D_ed43w")
+
+[node name="SM_EC_Rock_01_3" type="Node3D" parent="ForestDetails" unique_id=1636438243 instance=ExtResource("forestdetails_8_gibte")]
+transform = Transform3D(0.7433968, -0.20839053, -0.036765322, 2.0927333e-05, -0.1342175, 0.7611851, -0.21160887, -0.73210394, -0.12908389, -57.23615, 0.7120995, 74.3031)
+
+[node name="SiteCollider" type="StaticBody3D" parent="ForestDetails/SM_EC_Rock_01_3" unique_id=1194045929]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ForestDetails/SM_EC_Rock_01_3/SiteCollider" unique_id=727113870]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.010242224, -0.0024453402, 0.024210453)
+shape = SubResource("ForestDetails_BoxShape3D_mv043")
+
+[node name="SM_EC_Rock_01_4" type="Node3D" parent="ForestDetails" unique_id=1929068668 instance=ExtResource("forestdetails_8_gibte")]
+transform = Transform3D(0.7589469, -0.94414645, -0.16315466, 0.20834427, -0.04053714, 1.2037367, -0.93521374, -0.7752269, 0.13576138, 112.444016, 1.1358262, 10.172533)
+
+[node name="SiteCollider" type="StaticBody3D" parent="ForestDetails/SM_EC_Rock_01_4" unique_id=1009759152]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ForestDetails/SM_EC_Rock_01_4/SiteCollider" unique_id=1580675620]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.010242224, -0.0024453402, 0.024210453)
+shape = SubResource("ForestDetails_BoxShape3D_doasr")
+
+[node name="SM_EC_Rock_26_4" type="Node3D" parent="ForestDetails" unique_id=64723876 instance=ExtResource("forestdetails_11_xetct")]
+transform = Transform3D(0.6981595, 0.47298002, 0.0059655593, -0.086932, 0.11784434, 0.8304986, 0.46496072, -0.6881678, 0.14631772, -67.35695, 0.82120675, 4.4117727)
+
+[node name="SiteCollider" type="StaticBody3D" parent="ForestDetails/SM_EC_Rock_26_4" unique_id=2033796363]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ForestDetails/SM_EC_Rock_26_4/SiteCollider" unique_id=603853262]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.010242224, -0.0024453402, 0.024210453)
+shape = SubResource("ForestDetails_BoxShape3D_apooy")
+
+[node name="SM_EC_Rock_01_5" type="Node3D" parent="ForestDetails" unique_id=1926353454 instance=ExtResource("forestdetails_8_gibte")]
+transform = Transform3D(0.70177805, -0.6141002, -0.094047956, 0.15797058, 0.0391663, 0.923021, -0.60084057, -0.7069678, 0.13282953, -50.395817, 0.88199174, -56.998398)
+
+[node name="SiteCollider" type="StaticBody3D" parent="ForestDetails/SM_EC_Rock_01_5" unique_id=1255436723]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ForestDetails/SM_EC_Rock_01_5/SiteCollider" unique_id=853177692]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.010242224, -0.0024453402, 0.024210453)
+shape = SubResource("ForestDetails_BoxShape3D_eprid")
+
+[node name="SM_EC_Rock_02_4" type="Node3D" parent="ForestDetails" unique_id=625200788 instance=ExtResource("forestdetails_10_03svw")]
+transform = Transform3D(0.30207473, -1.2625579, 0.18440458, 0.08851696, 0.20978121, 1.2913027, -1.2728792, -0.28503683, 0.1335603, 102.41153, 1.1721084, 103.016975)
+
+[node name="SiteCollider" type="StaticBody3D" parent="ForestDetails/SM_EC_Rock_02_4" unique_id=1843395538]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ForestDetails/SM_EC_Rock_02_4/SiteCollider" unique_id=716775920]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00053054094, 0.00152421, 0.015443623)
+shape = SubResource("ForestDetails_BoxShape3D_i5r54")
+
+[node name="SM_EC_Rock_26_5" type="Node3D" parent="ForestDetails" unique_id=672748147 instance=ExtResource("forestdetails_11_xetct")]
+transform = Transform3D(1.0094925, 0.21404092, -0.12819788, 0.09787487, 0.15174448, 1.0240691, 0.22949672, -1.0062224, 0.12716597, -31.305828, 1.0025475, 104.15405)
+
+[node name="SiteCollider" type="StaticBody3D" parent="ForestDetails/SM_EC_Rock_26_5" unique_id=735873648]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ForestDetails/SM_EC_Rock_26_5/SiteCollider" unique_id=902558897]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.010242224, -0.0024453402, 0.024210453)
+shape = SubResource("ForestDetails_BoxShape3D_s8oad")
+
+[node name="SM_EC_Rock_27_2" type="Node3D" parent="ForestDetails" unique_id=1902554335 instance=ExtResource("site_48_le4x6")]
+transform = Transform3D(0.739652, 0.7089876, 0.12568575, -0.00092600513, -0.17924644, 1.0165703, 0.7200414, -0.7285278, -0.12780152, -85.67269, 0.8906962, 98.12006)
+
+[node name="SiteCollider" type="StaticBody3D" parent="ForestDetails/SM_EC_Rock_27_2" unique_id=2040475786]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ForestDetails/SM_EC_Rock_27_2/SiteCollider" unique_id=2107813723]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.00053054094, 0.00152421, 0.015443623)
+shape = SubResource("ForestDetails_BoxShape3D_gpuo3")
+
+[node name="tree_log_1_8" type="Node3D" parent="ForestDetails" unique_id=1930094096 instance=ExtResource("37_uhsjf")]
+transform = Transform3D(0.9396926, 0, 0.34202012, 0, 1, 0, -0.34202012, 0, 0.9396926, 85.91545, 0.040682904, -92.274765)
+
+[node name="tree_log_1_9" type="Node3D" parent="ForestDetails" unique_id=1831216270 instance=ExtResource("37_uhsjf")]
+transform = Transform3D(0.92050487, 0, 0.39073113, 0, 1, 0, -0.39073113, 0, 0.92050487, 85.71307, 0.040682904, -92.786804)
+
+[node name="tree_log_1_10" type="Node3D" parent="ForestDetails" unique_id=725383529 instance=ExtResource("37_uhsjf")]
+transform = Transform3D(0.95105654, 0, 0.309017, 0, 1, 0, -0.309017, 0, 0.95105654, 86.113205, 0.040682904, -91.76072)
+
+[node name="tree_log_1_11" type="Node3D" parent="ForestDetails" unique_id=1600785840 instance=ExtResource("37_uhsjf")]
+transform = Transform3D(0.9335804, 0, 0.35836795, 0, 1, 0, -0.35836795, 0, 0.9335804, 85.825165, 0.040682904, -92.50817)
+
+[node name="tree_log_1_12" type="Node3D" parent="ForestDetails" unique_id=2140990557 instance=ExtResource("37_uhsjf")]
+transform = Transform3D(0.9612617, 0, 0.27563736, 0, 1, 0, -0.27563736, 0, 0.9612617, 86.03743, 0.040682904, -91.99809)
+
+[node name="SM_EC_55L_Drum_03" type="Node3D" parent="ForestDetails" unique_id=2142596980 instance=ExtResource("site_3_vyx7t")]
+transform = Transform3D(0.99966, -0.0017870037, -0.02601379, 0.02601379, 0.13672024, 0.99026805, 0.0017870049, -0.99060804, 0.13672024, 86.19216, 0.07381939, -93.823616)
+
+[node name="SiteCollider" type="StaticBody3D" parent="ForestDetails/SM_EC_55L_Drum_03" unique_id=1832998283]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ForestDetails/SM_EC_55L_Drum_03/SiteCollider" unique_id=1061334970]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.23872e-07, 6.4074993e-06, 0.50000006)
+shape = SubResource("ForestDetails_BoxShape3D_tujrr")
 
 [editable path="TheEntity"]
 [editable path="TheEntity/MonsterModel"]

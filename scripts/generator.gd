@@ -5,9 +5,9 @@ class_name Generator
 ## Attach this script to the root node of generator.tscn.
 
 ## Fuel drain rate per cabin light (fuel units per second).
-@export var cabin_light_drain_rate: float = 0.5
+@export var cabin_light_drain_rate: float = 0.125
 ## Fuel drain rate for the porch light (fuel units per second).
-@export var porch_light_drain_rate: float = 0.3
+@export var porch_light_drain_rate: float = 0.075
 ## Base fuel drain rate (fuel units per second).
 @export var base_drain_rate: float = 0.12
 ## Starting fuel percentage (0.0 to 100.0).

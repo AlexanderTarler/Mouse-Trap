@@ -572,6 +572,8 @@ func _toggle() -> void:
 		current_spread = 0
 		_current_page = 0
 		_update_spread()
+		if not _paged_by_size:
+			_repage_when_laid_out()
 
 
 # ============================================================
@@ -884,9 +886,110 @@ func _play_scribble_sfx() -> void:
 	player.finished.connect(player.queue_free)
 
 
-## Splits a string into an array of CHARS_PER_PAGE-sized chunks,
-## with word-wrap awareness. Does NOT modify _all_pages.
+## Splits a text into pages that fit the page as it's drawn (measured in a
+## hidden copy of the page's label): as many whole paragraphs as fit, then a
+## paragraph that doesn't fit at all is split between words. Until the
+## notebook has a size (before it's first laid out) it falls back to
+## CHARS_PER_PAGE characters; it's paged again, measured, when it's opened.
+## Does NOT modify _all_pages.
 func _split_into_pages(text: String) -> Array[String]:
+	var page := _page_size()
+	if page.x < 50.0 or page.y < 50.0:
+		return _split_by_chars(text)
+	_paged_by_size = true
+	var result: Array[String] = []
+	var remaining := text
+	while remaining != "":
+		if _fits(remaining, page):
+			result.append(remaining)
+			break
+		# The longest run of whole paragraphs that fits...
+		var cut := _longest_fit(remaining, page, "\n")
+		# ...or of words, if not even the first paragraph does.
+		if cut <= 0:
+			cut = _longest_fit(remaining, page, " ")
+		if cut <= 0:
+			cut = mini(remaining.length(), CHARS_PER_PAGE)
+		result.append(remaining.substr(0, cut).strip_edges(false, true))
+		remaining = remaining.substr(cut).strip_edges(true, false)
+	return result
+
+
+## Paged by character count so far (it had no size yet): once it's laid
+## out (a frame after it first opens), paged again by what fits.
+func _repage_when_laid_out() -> void:
+	await get_tree().process_frame
+	if _paged_by_size or not _is_open or _page_size().y < 50.0:
+		return
+	_rebuild_all_pages()
+	_update_spread()
+
+
+## Whether the text pages were measured (else they're paged again on opening).
+var _paged_by_size := false
+var _measure: RichTextLabel = null
+
+
+## Room left at the foot of a page for the "Prev Page"/"Next Page" hints.
+const PAGE_FOOT := 26.0
+
+
+## The size the text has on a page: the left page inside its margins (the
+## page's own label may be hidden, on the index spread, and have no size).
+func _page_size() -> Vector2:
+	if not _doc_label:
+		return Vector2.ZERO
+	var margin := _doc_label.get_parent().get_parent() as MarginContainer
+	if margin == null or margin.size.y < 1.0:
+		return _doc_label.size
+	var inner := margin.size - Vector2(
+		margin.get_theme_constant("margin_left") + margin.get_theme_constant("margin_right"),
+		margin.get_theme_constant("margin_top") + margin.get_theme_constant("margin_bottom") + PAGE_FOOT)
+	return inner
+
+
+## Whether `text` fits on a page `page` big.
+func _fits(text: String, page: Vector2) -> bool:
+	if _measure == null:
+		_measure = _doc_label.duplicate() as RichTextLabel
+		_measure.name = "PageMeasure"
+		_measure.visible = true
+		_measure.modulate.a = 0.0
+		_measure.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_measure.fit_content = false
+		_measure.scroll_active = false
+		_measure.top_level = true
+		_measure.position = Vector2(-10000.0, -10000.0)
+		add_child(_measure)
+	_measure.size = Vector2(page.x, page.y)
+	_measure.text = text
+	return _measure.get_content_height() <= page.y
+
+
+## Where to cut `text` (after one of `breaks`) for the most of it that fits
+## on a page; 0 if not even the first piece does.
+func _longest_fit(text: String, page: Vector2, breaks: String) -> int:
+	var cuts: Array[int] = []
+	var at := text.find(breaks)
+	while at > 0:
+		cuts.append(at + 1)
+		at = text.find(breaks, at + 1)
+	# Binary search for the last cut that still fits.
+	var low := 0
+	var high := cuts.size() - 1
+	var best := 0
+	while low <= high:
+		var middle := (low + high) / 2
+		if _fits(text.substr(0, cuts[middle]), page):
+			best = cuts[middle]
+			low = middle + 1
+		else:
+			high = middle - 1
+	return best
+
+
+## The old way: CHARS_PER_PAGE characters a page, cut at a line or a word.
+func _split_by_chars(text: String) -> Array[String]:
 	var result: Array[String] = []
 	var remaining = text
 	

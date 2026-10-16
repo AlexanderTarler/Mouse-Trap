@@ -162,7 +162,7 @@ func _test_climb_in() -> void:
 	var perched: bool = await _wait_for(func(): return _entity.is_perched_at(link), 20.0)
 	var perch_y: float = _entity.global_position.y
 	_check("climb in: walks to the wall and climbs up to the window",
-		perched and perch_y > 3.0 and not _entity.perception.entity_inside, "perched=%s at y %.2f, %s" % [perched, perch_y, _history()])
+		perched and perch_y > 2.4 and perch_y < 3.2 and not _entity.perception.entity_inside, "perched=%s at y %.2f, %s" % [perched, perch_y, _history()])
 	var inside: bool = await _wait_for(func(): return _entity.get_state_name() == "HUNT" and _entity.perception.entity_inside, 40.0)
 	_check("climb in: peeks and breaks the glass from the wall, then climbs in",
 		inside and "PEEK" in _states and "BREACH" in _states and "ENTER" in _states, _history())
@@ -215,7 +215,7 @@ func _test_climb_down() -> void:
 		_check("climb down: precondition (clinging at the landing window)", false, _history())
 		return
 	_check("climb down: it clings to the bare wall where there is no ledge",
-		_entity.global_position.y > 3.0, "y %.2f" % _entity.global_position.y)
+		_entity.global_position.y > 2.4, "y %.2f" % _entity.global_position.y)
 	# The player steps out into the back yard, in its view: it comes down to
 	# stalk them (stalking never teleports, so the descent is really climbed).
 	var perch: Vector3 = _entity.global_position

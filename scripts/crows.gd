@@ -1,23 +1,53 @@
 class_name Crows
 extends Node3D
-## Crows at the willow: a handful perched on the stakes and the ground around
-## the tree in daylight, pecking and hopping. They go up cawing when the
-## player comes close, or when the Entity does (a warning, if the player is
-## watching), and don't come back until the player is far away. None at
-## night: the clearing is silent then.
+## A flock of crows, by day: perched (on stakes, a roof ridge, the ground),
+## pecking and hopping. They go up cawing when the player comes close, or
+## when the Entity does (a warning, if the player is watching), and don't
+## come back until the player is far away. None at night: the clearing is
+## silent then.
+##
+## The flock at the willow is the default; WorldDetails adds others with
+## setup(): the cabin's roof ridge on Day 1 (up when the player is ~20 m
+## away, gone for the day), the barn roof, the wreck yard, the clear-cut.
 ##
 ## Built in code (the kit has no birds): a low-poly body with two flapping
 ## wings, and a synthesized caw.
 
-const CENTRE := Vector3(103.0, 0.4, 85.3)
-const COUNT := 7
-## The player this close: they take off.
-const FLEE_PLAYER := 12.0
-## The Entity this close: they take off too.
-const FLEE_ENTITY := 22.0
-## They settle again only once the player is this far away (and it's day).
-const RETURN_DISTANCE := 45.0
 const FLY_TIME := 7.0
+
+enum Perch {
+	WILLOW,   ## the stakes around the willow, then the ground under it
+	HIGH,     ## the highest points in `extent` around the centre (a roof ridge)
+	GROUND,   ## the ground around the centre
+}
+
+## Where the flock is, how many, where they sit.
+var centre := Vector3(103.0, 0.4, 85.3)
+var count := 7
+var perch := Perch.WILLOW
+## HIGH: the half size (x, z) of the area searched for the highest points.
+var extent := Vector2(8.0, 8.0)
+## The player this close: they take off.
+var flee_player := 12.0
+## The Entity this close: they take off too.
+var flee_entity := 22.0
+## They settle again only once the player is this far away (and it's day).
+var return_distance := 45.0
+## Only on Day 1 (the first day), and once they're up they don't come back.
+var day_one_only := false
+
+
+## A flock other than the willow's (before it enters the tree).
+func setup(at: Vector3, birds: int, sits: Perch, flee: float, area: Vector2 = Vector2(8.0, 8.0), first_day_only: bool = false) -> Crows:
+	centre = at
+	count = birds
+	perch = sits
+	flee_player = flee
+	extent = area
+	day_one_only = first_day_only
+	return_distance = maxf(flee * 3.0, 45.0)
+	return self
+
 
 enum State { PERCHED, FLYING, GONE }
 
@@ -34,14 +64,19 @@ func _ready() -> void:
 	add_to_group("crows")
 	if Engine.is_editor_hint():
 		return
-	_rng.seed = 7
+	_rng.seed = 7 + int(centre.x * 13.0 + centre.z * 7.0)
 	_build_meshes()
 	for i in 3:
 		_caws.append(_make_caw(_rng.randf_range(0.9, 1.15), 2 if i == 0 else 1))
 	await get_tree().physics_frame
-	for i in COUNT:
+	for i in count:
 		_crows.append(_make_crow())
-	_settle_all()
+	if _may_settle():
+		_settle_all()
+	else:
+		for crow in _crows:
+			crow.state = State.GONE
+			crow.node.visible = false
 
 
 func _process(delta: float) -> void:
@@ -51,6 +86,11 @@ func _process(delta: float) -> void:
 	var entity := get_tree().get_first_node_in_group("entity") as Node3D
 	var night := _is_night()
 	_check -= delta
+	# Not until the game is set up: at first the player stands where the
+	# scene has them (in the cabin, under the roof flock) for a moment.
+	var nm := get_node_or_null("/root/NightManager")
+	if nm and "_spawn_setup_done" in nm and not nm._spawn_setup_done:
+		_check = 0.25
 	if _check <= 0.0:
 		_check = 0.25
 		var all_gone := true
@@ -58,23 +98,33 @@ func _process(delta: float) -> void:
 			if crow.state != State.GONE:
 				all_gone = false
 		# Come back when nobody is around (by day).
-		if all_gone and not night and player and _flat(player.global_position, CENTRE) > RETURN_DISTANCE:
+		if all_gone and not night and not day_one_only and player and _flat(player.global_position, centre) > return_distance:
 			_settle_all()
 		# Something coming: up they go.
 		var scare := ""
-		if player and _flat(player.global_position, CENTRE) < FLEE_PLAYER + 6.0:
+		if player and _flat(player.global_position, centre) < flee_player + 6.0:
 			for crow in _crows:
-				if crow.state == State.PERCHED and _flat(player.global_position, crow.node.global_position) < FLEE_PLAYER:
+				if crow.state == State.PERCHED and _flat(player.global_position, crow.node.global_position) < flee_player:
 					scare = "player"
 		if entity and entity.visible and entity.has_method("is_active") and entity.is_active() \
-				and _flat(entity.global_position, CENTRE) < FLEE_ENTITY:
+				and _flat(entity.global_position, centre) < flee_entity:
 			scare = "entity"
-		if night:
+		if night or (day_one_only and not _is_day_one()):
 			scare = "night"
 		if scare != "":
 			_take_off(player, entity, scare)
 	for crow in _crows:
 		_animate(crow, delta)
+
+
+## By day (and on Day 1, for a Day 1 flock).
+func _may_settle() -> bool:
+	return not _is_night() and (not day_one_only or _is_day_one())
+
+
+func _is_day_one() -> bool:
+	var nm := get_node_or_null("/root/NightManager")
+	return nm == null or nm.current_night <= 0
 
 
 func _is_night() -> bool:
@@ -102,28 +152,65 @@ func _settle_all() -> void:
 		_fold(crow)
 
 
-## Where they sit: the tops of the stakes, then the ground under the tree.
+## Where they sit: the tops of the stakes, then the ground under the tree
+## (WILLOW); the highest points around (HIGH); the ground around (GROUND).
 func _perches() -> Array[Vector3]:
+	if perch == Perch.HIGH:
+		return _high_perches()
 	var spots: Array[Vector3] = []
 	var scene := get_tree().current_scene
-	var sites := scene.get_node_or_null("Sites") if scene else null
+	var sites := scene.get_node_or_null("Sites") if scene and perch == Perch.WILLOW else null
 	if sites:
 		for prop in sites.get_children():
 			if prop is Node3D and String(prop.name).begins_with("SM_EC_WoodenPole_Large_00") \
-					and _flat((prop as Node3D).global_position, CENTRE) < 10.0:
+					and _flat((prop as Node3D).global_position, centre) < 10.0:
 				spots.append(_top_of(prop as Node3D))
 	var space := get_world_3d().direct_space_state
 	var tries := 0
-	while spots.size() < COUNT and tries < 60:
+	while spots.size() < count and tries < 60:
 		tries += 1
 		var angle := _rng.randf() * TAU
-		var at := CENTRE + Vector3(cos(angle), 0.0, sin(angle)) * _rng.randf_range(2.5, 6.5)
+		var at := centre + Vector3(cos(angle), 0.0, sin(angle)) * _rng.randf_range(2.5, 6.5)
 		var query := PhysicsRayQueryParameters3D.create(at + Vector3.UP * 0.8, at + Vector3.DOWN * 4.0)
 		var hit := space.intersect_ray(query)
-		if not hit.is_empty() and (hit.position as Vector3).y < CENTRE.y + 0.6:
+		if not hit.is_empty() and (hit.position as Vector3).y < centre.y + 0.6:
 			spots.append(hit.position)
 	if spots.is_empty():
-		spots.append(CENTRE + Vector3(3, 0, 0))
+		spots.append(centre + Vector3(3, 0, 0))
+	spots.shuffle()
+	return spots
+
+
+## The highest points (a roof's ridge) in the area around the centre, at
+## least 0.7 m apart, looked down on from above.
+func _high_perches() -> Array[Vector3]:
+	var space := get_world_3d().direct_space_state
+	var hits: Array[Vector3] = []
+	var step := 0.5
+	var x := -extent.x
+	while x <= extent.x:
+		var z := -extent.y
+		while z <= extent.y:
+			var top := centre + Vector3(x, 30.0, z)
+			var query := PhysicsRayQueryParameters3D.create(top, top + Vector3.DOWN * 40.0)
+			var hit := space.intersect_ray(query)
+			# (Not a tree trunk's collider: it stands higher than the roof,
+			# and there's nothing up there to sit on.)
+			if not hit.is_empty() and not ForestDresser.near_trunk(hit.position, 0.7):
+				hits.append(hit.position)
+			z += step
+		x += step
+	hits.sort_custom(func(a: Vector3, b: Vector3) -> bool: return a.y > b.y)
+	var spots: Array[Vector3] = []
+	for hit in hits:
+		if spots.size() >= count:
+			break
+		if hit.y < hits[0].y - 0.6:
+			break
+		if spots.all(func(s: Vector3) -> bool: return s.distance_to(hit) > 0.7):
+			spots.append(hit)
+	if spots.is_empty():
+		spots.append(centre)
 	spots.shuffle()
 	return spots
 
@@ -143,7 +230,7 @@ func _take_off(player: Node3D, entity: Node3D, why: String) -> void:
 	for crow in _crows:
 		if crow.state != State.PERCHED:
 			continue
-		var away: Vector3 = crow.node.global_position - CENTRE
+		var away: Vector3 = crow.node.global_position - centre
 		var threat: Node3D = entity if why == "entity" else player
 		if threat:
 			away = crow.node.global_position - threat.global_position

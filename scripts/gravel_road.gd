@@ -17,7 +17,7 @@ extends Node3D
 ## marker in cottage_horror.tscn (move both together).
 const CENTRE_LINE := [
 	Vector2(-24.0, -90.6), Vector2(-12.0, -90.4), Vector2(0.0, -90.9), Vector2(14.0, -91.4),
-	Vector2(30.0, -91.0), Vector2(46.0, -90.6), Vector2(62.0, -91.1), Vector2(66.9, -90.5),
+	Vector2(30.0, -91.0), Vector2(46.0, -90.6), Vector2(62.0, -91.1),
 	Vector2(95.0, -91.6), Vector2(105.3, -103.5), Vector2(104.58, -118.79),
 ]
 const WIDTH := 5.0
@@ -155,7 +155,9 @@ func _build_mesh() -> ArrayMesh:
 		if i > 0:
 			var a := (i - 1) * 2
 			var b := i * 2
-			indices.append_array([a, b, a + 1, a + 1, b, b + 1])
+			# Wound to face up (Godot's front faces are clockwise seen from
+			# the front): the other way, it was culled and never seen.
+			indices.append_array([a, a + 1, b, a + 1, b + 1, b])
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = verts

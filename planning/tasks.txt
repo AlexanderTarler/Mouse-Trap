@@ -1,5 +1,20 @@
-1. The "Hold shift to sprint" tutorial hint is not being removed after the player has held SHIFT for 3 seconds. Fix this.
-2. There used to be an audio track that played when the Entity was actively hunting the player. Use "too late (loop).ogg" for this. 
-3. Add in more details - both for the forest (especially near the areas the player will be at) and inside and around the cabin.
-4. Add the "blinking" (that happens when the player goes to bed) to the sequence where the player has logged the documented data and is waiting for it to finish.
-5. Add in a (temporary, we will remove it later) feature where pressing F4 triggers the Entity to climb up towards and try to breach a window in the LandingRoom.  
+1. The objective for going to bed should only be highlighted during Day 1 / Night 1 - any other times the player should go to bed should be without highlighting the bed. 
+2. Reduce the fuel drain of the cabin_lights by 50%. 
+3. The cabin key should have a "key image" in the player inventory instead of the "fuel can image" it currently has. 
+4. Lower the "player breathing" audio by 30%. 
+5. If possible, add more "gravel road" from the van to the "road_ending" Marker3D node (to emulate a gravel car road).
+6. When the Entity is climbing a wall to breach an upper floor window, have it be noted as having "reached" the window about 1 meter lower than it currently does. Also, when it does reach the window, have its climbing animation freeze - otherwise it keeps moving in place, which looks very weird.
+7. Whenever the Entity escapes the cabin through a window, make sure that the Entity is facing said window. Also, use the "crawling" animation for escaping as well. 
+8. The note where Arvid mentions his daughters should also tell the player something like "Whatever it is, it despises light - use that to your advantage."
+9. During dawn and dusk, the fog can turn "greenish", which looks like poisonous gas. THis should not happen. Make the fog appear over 30 seconds at the start of each night, building from 0% fog to 100% (of the current value) fog. When there is 30 seconds until dawn, reduce the fog from 100% to 0%. 
+10. The generator should still drain fuel during daytime. 
+11. Change the password for restoring Arvid's data to "Linnea_and_Maja".
+12. Some of the text in the journal does not fit into the space it is given properly (for example, the second Arvid note). Any text that does not fit should be moved to the following page.
+13. Add a "I fucking did it. I fucking did it!" inner thought when the player burns down the willow.
+14. When the player arrives at the willow, the game can freeze for several seconds. Find out why and fix it. 
+15. When the player has burned the willow, and if they pass nearby the cabin again, display the inner thought "It's actually gone. Thank you, Arvid."
+16. Add in more birds (that fly away) at fitting places and times. Also add them onto the roof of the cabin during Day 1, and make sure they fly away when the player is about 20 meters away.
+17. The previously added extra items (that I believe get added by a script) should be added into the editor instead - I need to manually move some things around. 
+18. Speaking of the added things - go over the items that are in and around the cabin and add physics to the ones that fit. The player should be able to hold E and pick them up like with the bucket.
+19. Look over the ending screens and their text - some have their words split due to new lines, which looks bad.
+20. The added nature foliage can produce stones that clip through trees - this should not be able to happen.

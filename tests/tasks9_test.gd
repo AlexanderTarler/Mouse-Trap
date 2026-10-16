@@ -56,11 +56,21 @@ func _test_fog() -> void:
 	gt.cycle_progress = 0.75
 	gt._elapsed = 0.75 * gt.cycle_duration
 	ec._on_game_time_changed(0.75, true)
+	# (Setting the night puts the clock at 00:00, when the fog is only just
+	# coming in: mid-night again after each.)
+	var mid_night := func() -> void:
+		gt.cycle_progress = 0.75
+		gt._elapsed = 0.75 * gt.cycle_duration
+		ec._on_game_time_changed(0.75, true)
 	nm.current_night = 2
 	await _frames(10)
+	mid_night.call()
+	await _frames(2)
 	var night2: Color = material.emission
 	nm.current_night = 3
 	await _frames(10)
+	mid_night.call()
+	await _frames(2)
 	var night3: Color = material.emission
 	_check("16: no override of the night fog colour (the script's dark one is used)",
 		ec.night_fog_color.is_equal_approx(Color(0.02, 0.02, 0.04)), str(ec.night_fog_color))

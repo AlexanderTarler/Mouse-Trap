@@ -29,7 +29,9 @@ func _ready() -> void:
 		plain.mesh = mesh
 		add_child(plain)
 	var box := _bounds()
-	if box.size != Vector3.ZERO:
+	# (One written into the level with it, by tools/bake_details.gd: kept.)
+	var has_collider := not find_children("*", "CollisionShape3D", false, false).is_empty()
+	if box.size != Vector3.ZERO and not has_collider:
 		var shape := BoxShape3D.new()
 		shape.size = box.size.max(Vector3.ONE * 0.03)
 		var collider := CollisionShape3D.new()
@@ -37,6 +39,16 @@ func _ready() -> void:
 		collider.position = box.get_center()
 		add_child(collider)
 	sleeping = true
+	_let_entity_through.call_deferred()
+
+
+## The Entity walks through it (its navmesh doesn't know about loose things,
+## and it knocks them over its own way: EntityWorld.loose_prop_near); the
+## player still bumps into it.
+func _let_entity_through() -> void:
+	for entity in get_tree().get_nodes_in_group("entity"):
+		if entity is PhysicsBody3D:
+			(entity as PhysicsBody3D).add_collision_exception_with(self)
 
 
 ## The model's meshes, in this body's space.

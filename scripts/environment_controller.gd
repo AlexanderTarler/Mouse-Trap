@@ -486,8 +486,11 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 		_environment.tonemap_exposure = tonemap_exposure
 		_cached_tonemap_exposure = tonemap_exposure
 	
-	# --- Volumetric fog: smoothly thickens through dusk, then fluctuates at night ---
-	var fog_factor: float = clampf(1.0 - (p_sun_height + 0.1) / 0.2, 0.0, 1.0)
+	# --- Fog: night only. It comes in over the first FOG_FADE seconds of the
+	# night and goes over the last FOG_FADE before dawn (not with the sun's
+	# height, which had it thickening through dusk, lit green by the low
+	# sun); then it fluctuates. ---
+	var fog_factor: float = night_fog_amount()
 	
 	# --- Night fog fluctuation ---
 	var fog_fluctuation: float = 1.0
@@ -551,9 +554,8 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 		if _compat:
 			_environment.fog_height = compat_ground_fog_height
 			_environment.fog_height_density = compat_ground_fog_density * thickness
-		var day_fog_color: Color = Color(0.7, 0.75, 0.8)
-		var night_color: Color = compat_ground_fog_color if _compat else night_fog_color
-		var fog_color: Color = day_fog_color.lerp(night_color, fog_factor)
+		# The night's colour all the way (no tint while it's thin).
+		var fog_color: Color = compat_ground_fog_color if _compat else night_fog_color
 		if not _cached_fog_color.is_equal_approx(fog_color):
 			_environment.fog_light_color = fog_color
 			_cached_fog_color = fog_color
@@ -578,6 +580,22 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 ## outside through the walls into the cabin: a haze in the rooms that grew
 ## the more the player moved. Indoors it is off, so the FogVolume erasers keep
 ## the rooms clear; outdoors it stays on and keeps the fog smooth.
+## Seconds the fog takes to come in at nightfall, and to go before dawn.
+const FOG_FADE := 30.0
+
+
+## How much of the night's fog there is now (0-1): 0 by day, rising over the
+## first FOG_FADE seconds of the night, falling over the last FOG_FADE.
+func night_fog_amount() -> float:
+	if cycle_progress < 0.5:
+		return 0.0
+	var gt := get_node_or_null("/root/GameTime")
+	var cycle: float = gt.cycle_duration if gt and "cycle_duration" in gt else 600.0
+	var into_night := (cycle_progress - 0.5) * cycle
+	var to_dawn := (1.0 - cycle_progress) * cycle
+	return clampf(minf(into_night, to_dawn) / FOG_FADE, 0.0, 1.0)
+
+
 func _update_fog_reprojection() -> void:
 	var player := get_tree().get_first_node_in_group("player")
 	var inside: bool = player != null and player.has_method("get_player_room") and player.get_player_room() != "Outside"

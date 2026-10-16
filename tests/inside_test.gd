@@ -395,19 +395,28 @@ func _test_light_trick() -> void:
 func _test_props() -> void:
 	# The cabin's (the bucket outside, over the Day 1 key, has its own test).
 	var props := get_nodes_in_group("knockable").filter(func(p): return p.name != "Bucket")
-	# Awake, they must settle on something (not float where placed).
+	# Awake, they must settle on something where they are (not float where
+	# placed, nor fall through): whatever stood on a table or a shelf is
+	# still on it, what stood on the floor (or outside) still there.
+	var placed := {}
 	for prop in props:
+		placed[prop] = prop.global_position
 		prop.sleeping = false
 	await _frames(120)
 	var resting := true
 	var shaped := true
 	for prop in props:
-		shaped = shaped and prop.get_child_count() >= 2 and _entity.world.is_inside_cabin(prop.global_position)
-		resting = resting and prop.global_position.y > 1.2
-		if prop.get_child_count() < 2 or prop.global_position.y <= 1.2 or not _entity.world.is_inside_cabin(prop.global_position):
-			print("[INSIDE TEST]   prop off: %s at %s, %d children" % [prop.name, prop.global_position.snapped(Vector3.ONE * 0.01), prop.get_child_count()])
-	_check("props: %d small loose things in the cabin, with colliders, still on their tables" % props.size(),
+		var was: Vector3 = placed[prop]
+		var near_cabin: bool = Vector2(was.x - 9.0, was.z - 15.0).length() < 30.0
+		shaped = shaped and prop.get_child_count() >= 2 and near_cabin
+		var held := absf(prop.global_position.y - was.y) < 0.3 and Vector2(prop.global_position.x - was.x, prop.global_position.z - was.z).length() < 0.5
+		resting = resting and held
+		if prop.get_child_count() < 2 or not held or not near_cabin:
+			print("[INSIDE TEST]   prop off: %s at %s (was %s), %d children" % [prop.name, prop.global_position.snapped(Vector3.ONE * 0.01), was.snapped(Vector3.ONE * 0.01), prop.get_child_count()])
+	_check("props: %d small loose things in and around the cabin, with colliders, still where they were put" % props.size(),
 		props.size() >= 14 and shaped and resting)
+	# The Entity walks through them (it knocks them over its own way).
+	_check("props: they don't stand in the Entity's way", props.all(func(p): return _entity.get_collision_exceptions().has(p)))
 	var fuse = _scene.find_child("Fuse", true, false)
 	var pickup_ok: bool = _entity.world.loose_prop_near(fuse.global_position - Vector3.UP * 0.6, 0.4) != null
 

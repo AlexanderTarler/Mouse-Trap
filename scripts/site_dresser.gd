@@ -89,6 +89,11 @@ func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
 	await get_tree().physics_frame
+	# The forest first (ForestDresser removes trees and cuts stumps as it's
+	# batched): the trails are kept off the trunks that are really there.
+	while FoliageBatcher.is_build_scheduled():
+		await get_tree().process_frame
+	await get_tree().physics_frame
 	build()
 
 
@@ -288,42 +293,42 @@ func _dress_cabin() -> void:
 	_put(M1 + "Small Props/clock_1.glb", "y", Vector2(5.8, 8.11), 0.0, _with(g, {"y": 2.35, "back": Vector3(0, 0, 1)}))
 	_put(M1 + "Small Props/painting_1.glb", "y", Vector2(5.3, 14.11), 180.0, _with(g, {"y": 1.75, "back": Vector3(0, 0, -1)}))
 	# The kitchen: plates and jars on the counter, a stool.
-	_put(M1 + "Small Props/plate_mp_1.glb", "y", Vector2(5.25, 20.1), 0.0, g)
-	_put(M1 + "Small Props/plate_mp_1.glb", "y", Vector2(5.27, 20.1), 10.0, g)
-	_put(M2 + "Props/jam_jar_mp_1_small.glb", "y", Vector2(5.75, 20.15), 0.0, g)
-	_put(M2 + "Props/pickles_jar_mp_1_medium.glb", "y", Vector2(5.95, 20.2), 30.0, g)
-	_put(M1 + "Items & Weapons/canned_food_mp_2.glb", "y", Vector2(4.05, 20.15), 0.0, g)
-	_put(M2 + "Props/stool_mx_1.glb", "y", Vector2(6.7, 19.35), 20.0, g)
+	_put(M1 + "Small Props/plate_mp_1.glb", "y", Vector2(5.25, 20.1), 0.0, _with(g, {"loose": true}))
+	_put(M1 + "Small Props/plate_mp_1.glb", "y", Vector2(5.27, 20.1), 10.0, _with(g, {"loose": true}))
+	_put(M2 + "Props/jam_jar_mp_1_small.glb", "y", Vector2(5.75, 20.15), 0.0, _with(g, {"loose": true}))
+	_put(M2 + "Props/pickles_jar_mp_1_medium.glb", "y", Vector2(5.95, 20.2), 30.0, _with(g, {"loose": true}))
+	_put(M1 + "Items & Weapons/canned_food_mp_2.glb", "y", Vector2(4.05, 20.15), 0.0, _with(g, {"loose": true}))
+	_put(M2 + "Props/stool_mx_1.glb", "y", Vector2(6.7, 19.35), 20.0, _with(g, {"loose": true}))
 	# The living room: books on the shelf by the west wall, a clock, a
 	# painting, books on the floor.
-	_put(M1 + "Small Props/book_mp_2.glb", "y", Vector2(3.25, 18.1), 90.0, g)
-	_put(M1 + "Small Props/book_mp_5.glb", "y", Vector2(3.25, 18.45), 80.0, g)
+	_put(M1 + "Small Props/book_mp_2.glb", "y", Vector2(3.25, 18.1), 90.0, _with(g, {"loose": true}))
+	_put(M1 + "Small Props/book_mp_5.glb", "y", Vector2(3.25, 18.45), 80.0, _with(g, {"loose": true}))
 	_put(M1 + "Small Props/clock_2.glb", "y", Vector2(4.3, 14.41), 0.0, _with(g, {"y": 2.4, "back": Vector3(0, 0, 1)}))
 	_put(M1 + "Small Props/painting_1.glb", "y", Vector2(2.98, 17.6), 90.0, _with(g, {"y": 1.8, "back": Vector3(1, 0, 0)}))
-	_put(M1 + "Small Props/book_mp_3.glb", "y", Vector2(8.45, 17.6), 30.0, g)
-	_put(M1 + "Small Props/book_mp_7.glb", "y", Vector2(8.45, 17.6), 75.0, g)
+	_put(M1 + "Small Props/book_mp_3.glb", "y", Vector2(8.45, 17.6), 30.0, _with(g, {"loose": true}))
+	_put(M1 + "Small Props/book_mp_7.glb", "y", Vector2(8.45, 17.6), 75.0, _with(g, {"loose": true}))
 	# The computer room: the survey map on the wall, boxes of files in a
 	# corner, a radio and an ashtray on the table, a toolbox.
 	_put(M2 + "Props/map_mx_1.glb", "y", Vector2(11.6, 20.41), 180.0, _with(g, {"y": 1.6, "back": Vector3(0, 0, -1)}))
-	_put(M2 + "Props/cardboard_box_1.glb", "y", Vector2(9.85, 19.85), 5.0, _with(g, {"collide": true}))
-	_put(M2 + "Props/cardboard_box_2.glb", "y", Vector2(9.9, 19.8), -8.0, _with(g, {"collide": true}))
+	_put(M2 + "Props/cardboard_box_1.glb", "y", Vector2(9.85, 19.85), 5.0, _with(g, {"loose": true}))
+	_put(M2 + "Props/cardboard_box_2.glb", "y", Vector2(9.9, 19.8), -8.0, _with(g, {"loose": true}))
 	_put(M2 + "Props/handheld_fm_radio_etx_1.glb", "y", Vector2(12.5, 17.7), 160.0, g)
-	_put(M1 + "Small Props/ashtray_1.glb", "y", Vector2(11.9, 17.2), 0.0, g)
-	_put(M2 + "Props/toolbox_mx_1.glb", "y", Vector2(14.5, 20.0), 15.0, g)
+	_put(M1 + "Small Props/ashtray_1.glb", "y", Vector2(11.9, 17.2), 0.0, _with(g, {"loose": true}))
+	_put(M2 + "Props/toolbox_mx_1.glb", "y", Vector2(14.5, 20.0), 15.0, _with(g, {"loose": true}))
 	# The upper hall: boxes, a painting.
-	_put(M2 + "Props/cardboard_box_1.glb", "y", Vector2(8.4, 13.5), 12.0, _with(u, {"collide": true}))
+	_put(M2 + "Props/cardboard_box_1.glb", "y", Vector2(8.4, 13.5), 12.0, _with(u, {"loose": true}))
 	_put(M1 + "Small Props/painting_1.glb", "y", Vector2(5.6, 8.11), 0.0, _with(u, {"y": 5.0, "back": Vector3(0, 0, 1)}))
 	# The landing: books on the shelf, a lamp, a box, a clock.
-	_put(M1 + "Small Props/book_mp_4.glb", "y", Vector2(3.3, 17.2), 90.0, u)
-	_put(M1 + "Small Props/book_mp_8.glb", "y", Vector2(3.3, 17.55), 95.0, u)
+	_put(M1 + "Small Props/book_mp_4.glb", "y", Vector2(3.3, 17.2), 90.0, _with(u, {"loose": true}))
+	_put(M1 + "Small Props/book_mp_8.glb", "y", Vector2(3.3, 17.55), 95.0, _with(u, {"loose": true}))
 	_put(M2 + "Light Sources/lamp_mx_1_a_off.glb", "y", Vector2(3.5, 19.9), 0.0, u)
-	_put(M2 + "Props/cardboard_box_2.glb", "y", Vector2(3.5, 14.95), 20.0, _with(u, {"collide": true}))
+	_put(M2 + "Props/cardboard_box_2.glb", "y", Vector2(3.5, 14.95), 20.0, _with(u, {"loose": true}))
 	_put(M1 + "Small Props/clock_1.glb", "y", Vector2(4.6, 20.41), 180.0, _with(u, {"y": 5.3, "back": Vector3(0, 0, -1)}))
 	# The bedroom: the suitcase, books by the bed, a chair, a painting.
-	_put(M2 + "Props/luggage_mp_1.glb", "y", Vector2(12.0, 14.41), 0.0, _with(u, {"back": Vector3(0, 0, 1), "collide": true}))
-	_put(M1 + "Small Props/book_mp_6.glb", "y", Vector2(13.0, 19.95), 20.0, u)
-	_put(M1 + "Small Props/open_book_mp_1.glb", "y", Vector2(13.4, 19.9), -15.0, u)
-	_put(M1 + "Furniture/chair_mp_1.glb", "y", Vector2(11.0, 19.8), 200.0, u)
+	_put(M2 + "Props/luggage_mp_1.glb", "y", Vector2(12.0, 14.41), 0.0, _with(u, {"back": Vector3(0, 0, 1), "loose": true}))
+	_put(M1 + "Small Props/book_mp_6.glb", "y", Vector2(13.0, 19.95), 20.0, _with(u, {"loose": true}))
+	_put(M1 + "Small Props/open_book_mp_1.glb", "y", Vector2(13.4, 19.9), -15.0, _with(u, {"loose": true}))
+	_put(M1 + "Furniture/chair_mp_1.glb", "y", Vector2(11.0, 19.8), 200.0, _with(u, {"loose": true}))
 	_put(M1 + "Small Props/painting_1.glb", "y", Vector2(15.28, 17.4), -90.0, _with(u, {"y": 5.35, "back": Vector3(-1, 0, 0)}))
 
 
@@ -346,7 +351,7 @@ func _dress_cabin_yard() -> void:
 	_put(B + "wooden_crate_9", "-z", Vector2(1.75, 19.95), -6.0, o)
 	# The porch side: a bench against the wall, a jerrycan.
 	_put(M2 + "Props/bench_mx_1.glb", "y", Vector2(12.6, 13.85), 0.0, _with(o, {"back": Vector3(0, 0, -1), "clear": 1.0}))
-	_put(M2 + "Props/jerrycan_mx_1.glb", "y", Vector2(14.4, 13.35), 25.0, o)
+	_put(M2 + "Props/jerrycan_mx_1.glb", "y", Vector2(14.4, 13.35), 25.0, _with(o, {"loose": true}))
 	# By the generator's drums: tyres, a gas bottle.
 	_put(M2 + "Props/tire_1.glb", "y", Vector2(21.8, 18.6), 0.0, o)
 	_put(M2 + "Props/tire_2.glb", "y", Vector2(21.8, 18.6), 30.0, o)
@@ -357,6 +362,8 @@ func _dress_cabin_yard() -> void:
 ## then a fallen log, a stump or a few rocks just off the path; by the
 ## nests, the old survey's stakes with orange tape.
 const TRAIL_CHANCE := 0.07
+## A trail prop's footprint is kept this far (m) from the middle of a trunk.
+const TRUNK_CLEARANCE := 0.55
 const TRAIL_OFFSET := Vector2(2.0, 3.4)
 
 
@@ -408,7 +415,8 @@ func _dress_trails() -> void:
 				# Not on the path up to it: round a little further if so.
 				for turn in 8:
 					var at := Vector2(centre.x, centre.z) + Vector2(cos(angle), sin(angle)) * 3.2
-					if TerrainMask.path(Vector3(at.x, 0.0, at.y)) < 0.3:
+					var spot := Vector3(at.x, 0.0, at.y)
+					if TerrainMask.path(spot) < 0.3 and not ForestDresser.near_trunk(spot, TRUNK_CLEARANCE):
 						_survey_stake(at, trail_rng.randf_range(-6.0, 6.0))
 						break
 					angle += 0.35
@@ -442,6 +450,9 @@ func _dress_boulders() -> void:
 		var tried := skipped.size()
 		var boulder := _put(F + BOULDER_MODELS[rng.randi() % BOULDER_MODELS.size()], "z", Vector2(spot.x, spot.z),
 			rng.randf_range(0.0, 360.0), {"height": tall, "lean": 10.0, "lift": -0.12 * tall, "ground_only": true, "clear": 3.0})
+		# (The clip check shrinks the box: a thin trunk can slip through it.)
+		if boulder and not _clear_of_trunks(boulder):
+			boulder = null
 		if boulder == null:
 			skipped.resize(tried)
 			continue
@@ -450,8 +461,9 @@ func _dress_boulders() -> void:
 			var angle := rng.randf() * TAU
 			var beside := Vector2(spot.x, spot.z) + Vector2(cos(angle), sin(angle)) * tall * 0.9
 			tried = skipped.size()
-			if not _put(F + BOULDER_MODELS[rng.randi() % BOULDER_MODELS.size()], "z", beside, rng.randf_range(0.0, 360.0),
-					{"height": tall * rng.randf_range(0.35, 0.6), "lean": 15.0, "lift": -0.1 * tall, "ground_only": true, "clear": 3.0}):
+			var small := _put(F + BOULDER_MODELS[rng.randi() % BOULDER_MODELS.size()], "z", beside, rng.randf_range(0.0, 360.0),
+					{"height": tall * rng.randf_range(0.35, 0.6), "lean": 15.0, "lift": -0.1 * tall, "ground_only": true, "clear": 3.0})
+			if small == null or not _clear_of_trunks(small):
 				skipped.resize(tried)
 
 
@@ -478,16 +490,32 @@ func _dress_clearcut() -> void:
 		return
 
 
+## False (and `instance` taken away again) if a tree trunk stands within its
+## footprint.
+func _clear_of_trunks(instance: Node3D) -> bool:
+	_keep_off_path(instance)
+	return is_instance_valid(instance) and not instance.is_queued_for_deletion()
+
+
 ## Takes `instance` away again if any of its footprint is on a walking path
-## (a long log, a rock off to one side).
+## (a long log, a rock off to one side) or through a tree trunk (low things
+## skip the clip check).
 func _keep_off_path(instance: Node3D) -> void:
 	if instance == null:
 		return
 	var box := _world_box(instance)
-	for corner in [box.position, box.position + Vector3(box.size.x, 0, 0), box.position + Vector3(0, 0, box.size.z),
-			box.position + Vector3(box.size.x, 0, box.size.z), box.get_center()]:
+	var points: Array[Vector3] = []
+	for fx in [0.0, 0.5, 1.0]:
+		for fz in [0.0, 0.5, 1.0]:
+			points.append(box.position + Vector3(box.size.x * fx, 0.0, box.size.z * fz))
+	for corner in points:
+		var why := ""
 		if TerrainMask.path(corner) > 0.3:
-			skipped.append("%s at (%.1f, %.1f): on a path" % [instance.name, box.get_center().x, box.get_center().z])
+			why = "on a path"
+		elif ForestDresser.near_trunk(corner, TRUNK_CLEARANCE):
+			why = "through a trunk"
+		if why != "":
+			skipped.append("%s at (%.1f, %.1f): %s" % [instance.name, box.get_center().x, box.get_center().z, why])
 			instance.queue_free()
 			remove_child(instance)
 			placed -= 1
@@ -573,7 +601,8 @@ func _by_window(point: Vector3, floor_y: float) -> bool:
 ## things on this floor count), "avoid_windows", "y" (its bottom at this
 ## height instead of landing: on a wall), "back" (a direction into the
 ## room: its back against the wall at `at`'s coordinate that way), "pitch"
-## (degrees, tipped over about its own x).
+## (degrees, tipped over about its own x), "loose" (a KnockableProp: picked
+## up with a hold of E, knocked over by the Entity; no fixed collider).
 func _put(model: String, up: String, at: Vector2, yaw: float, options: Dictionary = {}) -> Node3D:
 	var path := model if model.get_extension() != "" else model + (".tscn" if model.begins_with(F) else ".glb")
 	var label := "%s at (%.1f, %.1f)" % [path.get_file(), at.x, at.y]
@@ -646,10 +675,27 @@ func _put(model: String, up: String, at: Vector2, yaw: float, options: Dictionar
 		var offset := instance.global_position - TUNNEL_C
 		var across := offset.dot(TUNNEL_S)
 		instance.global_position -= TUNNEL_S * signf(across) * 0.3
-	if options.get("collide", true):
+	if options.get("loose", false):
+		instance = _make_loose(instance)
+	elif options.get("collide", true):
 		_add_box_collider(instance)
 	placed += 1
 	return instance
+
+
+## `instance` as a KnockableProp: the body (unscaled, where the model stands)
+## with the model in it as "Model"; it sizes its own collider.
+func _make_loose(instance: Node3D) -> Node3D:
+	var xform := instance.global_transform
+	var body := KnockableProp.new()
+	body.name = instance.name
+	remove_child(instance)
+	instance.name = "Model"
+	body.add_child(instance)
+	body.transform = Transform3D(xform.basis.orthonormalized(), xform.origin)
+	instance.transform = body.transform.affine_inverse() * xform
+	add_child(body)
+	return body
 
 
 ## Placed by hand (the yard and the barn floor are painted as path: dirt),

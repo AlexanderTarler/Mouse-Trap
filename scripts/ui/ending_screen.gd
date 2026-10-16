@@ -50,7 +50,7 @@ func _ready() -> void:
 ## epilogue on the player's phone (the one from the opening): days later
 ## for "It Follows", on the road at dawn for "Dawn". Any key skips it.
 const ENDINGS := {
-	0: ["The Forest Keeps You", "No one came looking for days. By then the cabin was empty again."],
+	0: ["The Forest Keeps You", "No one came looking for days.\nBy then the cabin was empty again."],
 	1: ["It Follows", "You got away from the cabin. It came with you."],
 	2: ["Dawn", "The willow is ash, and the woods are quiet. You're going home."],
 }
