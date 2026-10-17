@@ -245,6 +245,8 @@ func _take_off(player: Node3D, entity: Node3D, why: String) -> void:
 		if why != "night" and cawed < 3:
 			cawed += 1
 			_caw(crow.node, cawed - 1)
+			if cawed == 1:
+				Caption.at(self, "crows taking off", crow.node.global_position)
 
 
 func _animate(crow: Dictionary, delta: float) -> void:

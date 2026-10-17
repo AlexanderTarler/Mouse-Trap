@@ -458,6 +458,8 @@ func _restore_loaded_scene() -> void:
 	is_night_active = checkpoint.kind == "night"
 	is_day_active = not is_night_active
 	restart_from_checkpoint()
+	# From a save (Continue): the player's own state too.
+	checkpoint.apply_saved_player()
 	_lift_start_cover()
 	print("[NightManager] Play Again: the scene reloaded and put back to the %s checkpoint (night %d)." % [checkpoint.kind, current_night])
 
@@ -493,7 +495,9 @@ func _start_game() -> void:
 ## The web build: the shaders that would freeze the game later compiled
 ## first, behind the black (ShaderWarmup).
 func _start_game_after_warmup() -> void:
-	show_start_cover()
+	# (Behind the opening's own black, if it's already on.)
+	if not get_tree().get_first_node_in_group("opening"):
+		show_start_cover()
 	var scene := get_tree().current_scene
 	await ShaderWarmup.new().run(scene)
 	_start_game()
@@ -539,6 +543,11 @@ func _play_opening() -> void:
 	if DisplayServer.get_name() == "headless" or dev_start > 0:
 		return
 	var scene := get_tree().current_scene
+	# Started already, on the main menu's Play (it brought the level in).
+	var early := get_tree().get_first_node_in_group("opening")
+	if early and early.has_method("attach_to_game"):
+		early.attach_to_game()
+		return
 	if not scene or scene.find_child("Opening", false, false):
 		return
 	var opening := Opening.new()
@@ -753,6 +762,8 @@ func _on_game_day_started() -> void:
 	if not is_night_active:
 		print("[NightManager] Ignoring spurious day_started — no night is active.")
 		return
+	# Through a night: it's gone with the sun (the journal).
+	EntityJournal.learn(self, "daylight")
 	
 	# ─── SAVE ORIGINAL NIGHT BEFORE END ──────────────────────────────
 	# end_current_night() bumps current_night by 1 after emitting

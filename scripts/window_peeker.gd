@@ -285,6 +285,7 @@ func _vanish() -> void:
 
 ## What the player makes of it: the first time, the second time.
 func _think_seen() -> void:
+	EntityJournal.learn(self, "peeker")
 	var monologue := get_node_or_null("/root/Monologue")
 	if not monologue:
 		return

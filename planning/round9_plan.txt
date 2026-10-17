@@ -1,0 +1,42 @@
+ROUND 9 PLAN — menus and options (agreed 2026-10-17: all of it)
+==============================================================
+
+A  The options menu, rebuilt (fixes 1-5, tabs 15, reset 10, shake 8,
+   caption size 11).
+   - Tabs: Audio · Video · Controls · Accessibility; the list no longer runs
+     off a 720p screen. Back and "Reset to Defaults" at the bottom.
+   - Every row the same: label left, control, value right.
+   - Toggles as switches (CheckButton): visible ticked or not (unticked
+     CheckBoxes were invisible).
+   - Volumes saved and applied at start (they were never saved). "Interior"
+     becomes "Room Echo"; the Entity bus keeps following Sound Effects.
+   - The microphone's level meter drawn (it had no style: invisible).
+   - Objective Highlights a setting like the rest (Accessibility).
+   - Screen Shake (on/off; the jumpscare and staring shakes) and Caption
+     Size (Small/Medium/Large) in Accessibility, with Head Bob.
+   - Quit hidden in the web build (main menu and pause menu).
+
+B  Rebindable keys (6).
+   - GameKeys: every key the game uses as an input action; the defaults by
+     the keys' physical positions (W A S D sits where it does on any layout:
+     Z Q S D on AZERTY), shown with the keyboard's own labels.
+   - Controls tab: each action with its key; click, press a key to change
+     it; "Reset Keys". Saved with the settings.
+   - The code reads the actions instead of hard-coded keys (the player,
+     the grab, the inventory, the notebook, the note, the totem, the watch).
+
+C  Brightness calibration (7): a screen with a symbol to adjust until it's
+   barely visible; shown on the first launch, and from Video > Calibrate.
+
+D  Graphics quality (9): Low / Medium / High: shadows, the ground fog's
+   reach, foliage draw distance. Default Medium (High on the desktop if it
+   copes?), Low suggested for the web.
+
+E  The pause menu shows where the player is: the day or night and the
+   current objective (14).
+
+F  The main menu as a scene (12): the cabin at night from the treeline,
+   fog, a lit window, wind; now and then the Entity at the treeline.
+
+G  Continue (13): the last checkpoint (the start of the day or night)
+   written to disk, read back by "Continue" on the main menu.

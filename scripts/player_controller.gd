@@ -233,6 +233,17 @@ var _noise_timer: float = 0.0
 @export var breathing_sfx: AudioStream = null
 
 func _ready() -> void:
+	# The keys (rebindable; saved with the settings).
+	if not GameKeys._applied:
+		GameKeys.apply()
+	# The wristwatch: hold [T] for the time.
+	var watch := Wristwatch.new()
+	watch.name = "Wristwatch"
+	add_child(watch)
+	# The microphone (if the player turned it on): their voice is heard.
+	var voice := PlayerVoice.new()
+	voice.name = "PlayerVoice"
+	add_child(voice)
 	if footstep_audio:
 		_footstep_base_db = footstep_audio.volume_db
 		# Our own steps stay dry and close everywhere. The rooms' echo
@@ -382,11 +393,8 @@ func _trigger_movement_tutorial() -> void:
 ## presses from the main menu don't instantly dismiss the prompt.
 func _enable_movement_tutorial() -> void:
 	_movement_keys_pressed = {
-		KEY_W: false,
-		KEY_A: false,
-		KEY_S: false,
-		KEY_D: false,
-		KEY_CTRL: false,
+		"move": false,
+		"crouch": false,
 	}
 	_movement_tutorial_ready = true
 
@@ -418,32 +426,29 @@ func _input(event: InputEvent) -> void:
 		else:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	
-	# ─── TUTORIAL: Track WASD/Ctrl key presses (edge-triggered) ─────
+	# ─── TUTORIAL: Track moving and crouching (edge-triggered) ─────
 	if _movement_tutorial_ready and not _movement_keys_pressed.is_empty():
 		if event is InputEventKey and event.pressed:
-			var keycode = event.keycode
-			if keycode in _movement_keys_pressed and not _movement_keys_pressed[keycode]:
-				_movement_keys_pressed[keycode] = true
-				# Also accept C as alias for Ctrl
-				if keycode == KEY_C and KEY_CTRL in _movement_keys_pressed:
-					_movement_keys_pressed[KEY_CTRL] = true
-				# Learned once the player has moved (any direction) and
-				# crouched: what the hint asks.
-				var moved: bool = _movement_keys_pressed[KEY_W] or _movement_keys_pressed[KEY_A] \
-					or _movement_keys_pressed[KEY_S] or _movement_keys_pressed[KEY_D]
-				if moved and _movement_keys_pressed[KEY_CTRL]:
-					var tm := get_node_or_null("/root/TutorialManager")
-					if tm and tm.has_method("mark_learned"):
-						tm.mark_learned("movement")
-					# ─── TUTORIAL FLOW: Notebook after movement (deferred) ──
-					# Delay the notebook trigger by 1 frame so the movement
-					# hint's hide animation has time to process before the
-					# notebook hint appears in the same label slot.
-					if tm and tm.has_method("trigger"):
-						tm.call_deferred("trigger", "notebook")
-					_movement_keys_pressed.clear()  # prevent re-check
+			for action in ["move_forward", "move_back", "move_left", "move_right"]:
+				if event.is_action_pressed(action):
+					_movement_keys_pressed["move"] = true
+			if event.is_action_pressed("ui_crouch"):
+				_movement_keys_pressed["crouch"] = true
+			# Learned once the player has moved (any direction) and
+			# crouched: what the hint asks.
+			if _movement_keys_pressed["move"] and _movement_keys_pressed["crouch"]:
+				var tm := get_node_or_null("/root/TutorialManager")
+				if tm and tm.has_method("mark_learned"):
+					tm.mark_learned("movement")
+				# ─── TUTORIAL FLOW: Notebook after movement (deferred) ──
+				# Delay the notebook trigger by 1 frame so the movement
+				# hint's hide animation has time to process before the
+				# notebook hint appears in the same label slot.
+				if tm and tm.has_method("trigger"):
+					tm.call_deferred("trigger", "notebook")
+				_movement_keys_pressed.clear()  # prevent re-check
 	
-	if event is InputEventKey and event.keycode == KEY_F and not event.echo:
+	if event is InputEventKey and event.is_action("flashlight") and not event.echo:
 		if event.pressed:
 			_flashlight_key_pressed()
 		else:
@@ -703,10 +708,10 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity += get_gravity() * delta
 
-	if Input.is_key_pressed(KEY_SPACE) and is_on_floor():
+	if Input.is_action_pressed("jump") and is_on_floor():
 		velocity.y = jump_velocity
 
-	if Input.is_key_pressed(KEY_CTRL) or Input.is_key_pressed(KEY_C):
+	if Input.is_action_pressed("ui_crouch"):
 		if not _is_crouching: _is_crouching = true
 		# Also when the hint comes up while already crouching.
 		_learned_if_shown("stealth")
@@ -731,8 +736,8 @@ func _physics_process(delta: float) -> void:
 	# — stamina only drains when sprinting in a forward direction.
 	# This prevents the player from sprinting backwards away from the Entity,
 	# which would feel unfair and break the horror tension.
-	var _is_moving_forward = Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_D)
-	_is_running = Input.is_key_pressed(KEY_SHIFT) and sprint_unlocked and not _is_crouching and _stamina > 0.0 and not _stamina_exhausted and _is_moving_forward
+	var _is_moving_forward = Input.is_action_pressed("move_forward") or Input.is_action_pressed("move_left") or Input.is_action_pressed("move_right")
+	_is_running = Input.is_action_pressed("ui_shift") and sprint_unlocked and not _is_crouching and _stamina > 0.0 and not _stamina_exhausted and _is_moving_forward
 	
 	# ─── MARK SPRINT TUTORIAL LEARNED ON ACTUAL USE ──────
 	# The sprint hint (triggered by escape_van.gd during Night 2.2) is
@@ -801,8 +806,8 @@ func _physics_process(delta: float) -> void:
 			_breathing_fade_tween.finished.connect(_on_breathing_fade_out)
 
 	var input_dir := Vector2(
-		-1.0 if Input.is_key_pressed(KEY_A) else (1.0 if Input.is_key_pressed(KEY_D) else 0.0),
-		-1.0 if Input.is_key_pressed(KEY_W) else (1.0 if Input.is_key_pressed(KEY_S) else 0.0)
+		-1.0 if Input.is_action_pressed("move_left") else (1.0 if Input.is_action_pressed("move_right") else 0.0),
+		-1.0 if Input.is_action_pressed("move_forward") else (1.0 if Input.is_action_pressed("move_back") else 0.0)
 	)
 	
 	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
@@ -1133,7 +1138,7 @@ func _process(delta: float) -> void:
 		# ─── AMPLIFIED HIGH-FREQUENCY SHAKE ─────────────────────────
 		# Increased from 0.04 to 0.07 radians (~4.0° max) so the shake
 		# is visibly more aggressive at peak.
-		var shake := ramped_intensity * 0.07
+		var shake := ramped_intensity * 0.07 * GameSettings.shake()
 		_camera.h_offset = randf_range(-shake, shake)
 		_camera.v_offset = randf_range(-shake, shake)
 		
@@ -1142,7 +1147,7 @@ func _process(delta: float) -> void:
 		# on top of the high-frequency jitter. This feels like the camera
 		# is physically being disturbed rather than just twitching.
 		var rumble_t := Time.get_ticks_msec() / 1000.0
-		var rumble := sin(rumble_t * TAU * 4.0) * 0.02 * shake_intensity
+		var rumble := sin(rumble_t * TAU * 4.0) * 0.02 * shake_intensity * GameSettings.shake()
 		_camera.h_offset += rumble
 		_camera.v_offset += rumble * 0.7
 	else:

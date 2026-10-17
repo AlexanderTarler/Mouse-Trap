@@ -23,7 +23,8 @@ extends Node3D
 const CELL_SIZE := 25.0
 ## Meshes smaller than this (their bounding box diagonal, m) are "small".
 const SMALL_SIZE := 5.0
-## Small meshes fade out beyond this distance (m).
+## Small meshes fade out beyond this distance (m), at Medium quality
+## (GraphicsQuality.plant_distance() is the one used).
 const SMALL_DRAW_DISTANCE := 60.0
 
 ## Off: draw every mesh separately, as authored.
@@ -169,7 +170,7 @@ static func _build(parent: Node, holder_name: String) -> void:
 			batch.cast_shadow = entry.cast_shadow
 			batch.layers = entry.layers
 			if entry.small:
-				batch.visibility_range_end = SMALL_DRAW_DISTANCE
+				batch.visibility_range_end = GraphicsQuality.plant_distance()
 				batch.visibility_range_end_margin = 8.0
 				batch.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 			batch.position = origin

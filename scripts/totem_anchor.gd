@@ -24,7 +24,7 @@ class_name TotemAnchor
 ##
 ## ─── HOLD-TO-PURGE ───────────────────────────────────────────────────────
 ## Fully autonomous — no InteractionManager dependency. _process() checks the
-## physical 'E' key (Input.is_physical_key_pressed(KEY_E)), player distance
+## Use key (E unless rebound: the "ui_interact" action), player distance
 ## (5m), and a generous camera dot-product (53-degree cone, cos=0.6) to manage
 ## its own hold-to-purge state.
 
@@ -375,7 +375,7 @@ func _process(delta: float) -> void:
 	# Player cannot interact with the totem unless they have Arvid's Note 2.
 	if not _has_arvid_note_2():
 		# Show hint if they're pressing E near it without the note
-		if Input.is_physical_key_pressed(KEY_E):
+		if Input.is_action_pressed("ui_interact"):
 			var player = get_tree().get_first_node_in_group("player")
 			if player and global_position.distance_to(player.global_position) <= 5.0:
 				_show_hud_message("I don't know what to do with this yet.")
@@ -388,7 +388,7 @@ func _process(delta: float) -> void:
 	# the totem anchor. Show a greyed-out message and abort any purge.
 	var exhausted_player = get_tree().get_first_node_in_group("player")
 	if exhausted_player and "is_exhausted" in exhausted_player and exhausted_player.is_exhausted:
-		if Input.is_physical_key_pressed(KEY_E) and global_position.distance_to(exhausted_player.global_position) <= 5.0:
+		if Input.is_action_pressed("ui_interact") and global_position.distance_to(exhausted_player.global_position) <= 5.0:
 			_show_hud_message("I am too tired to do this...")
 		if is_being_purged:
 			_abort_purge()
@@ -404,7 +404,7 @@ func _process(delta: float) -> void:
 		return
 	
 	# 1. Is the player physically holding the 'E' key?
-	if Input.is_physical_key_pressed(KEY_E):
+	if Input.is_action_pressed("ui_interact"):
 		var player = get_tree().get_first_node_in_group("player")
 		
 		# 2. Is the player within 5 meters?

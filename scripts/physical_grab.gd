@@ -132,8 +132,8 @@ func set_camera(cam: Camera3D) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	# Only handle E key
-	if not (event is InputEventKey and event.keycode == KEY_E):
+	# Only the Use key (E unless rebound)
+	if not (event is InputEventKey and event.is_action("ui_interact")):
 		return
 	
 	# ─── CARRYING LAMP: tap E to drop ────────────────────────────────────
@@ -583,9 +583,9 @@ func _update_prompt() -> void:
 		return
 	
 	if _carried_lamp:
-		_prompt_label.text = "[E] Deploy Lamp"
+		_prompt_label.text = GameKeys.keys_in("[E] Deploy Lamp")
 	elif _is_grabbing:
-		_prompt_label.text = "[E] Release"
+		_prompt_label.text = GameKeys.keys_in("[E] Release")
 	elif _e_is_held and not _has_passed_threshold and not _has_passed_door_threshold:
 
 		# Show what we're looking at while holding E

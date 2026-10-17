@@ -265,7 +265,7 @@ func _test_settings() -> void:
 	menu.queue_free()
 	await _frames(2)
 	_check("settings: brightness, FOV, sensitivity, invert Y and head bob take effect; a Controls page lists the keys",
-		applied and listed >= 10 and not root.get_node(GameSettings.BRIGHTNESS_LAYER).visible,
+		applied and listed >= 10 and root.get_node(GameSettings.BRIGHTNESS_LAYER).visible == (absf(float(saved["video/brightness"]) - 1.0) > 0.01),
 		"applied=%s, %d keys" % [applied, listed])
 
 

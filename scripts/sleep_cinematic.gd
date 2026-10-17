@@ -236,7 +236,7 @@ func _move_camera(from: Transform3D, to: Transform3D, seconds: float, easing: Tw
 		if is_instance_valid(_camera):
 			var xform := from.interpolate_with(to, t)
 			if _shake > 0.0:
-				xform.origin += Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * _shake
+				xform.origin += Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * _shake * GameSettings.shake()
 			_camera.global_transform = xform, 0.0, 1.0, seconds)
 	await tween.finished
 

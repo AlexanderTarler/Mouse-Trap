@@ -45,6 +45,9 @@ func _first_game() -> Dictionary:
 
 
 func _run() -> void:
+	# (Its saves to a test file, not the player's.)
+	SaveGame.path = "user://newgame_test_save.dat"
+	SaveGame.delete()
 	# The first game, as the main menu would start it.
 	change_scene_to_file(MENU)
 	await _frames(10)
@@ -76,6 +79,8 @@ func _run() -> void:
 	change_scene_to_file(MENU)
 	await _frames(10)
 	var menu := current_scene
+	# (Over the first game's save Play asks first: this is the second press.)
+	menu._new_game_armed = 3.0
 	menu._on_play_pressed()
 	await _frames(120)
 	var second := _first_game()
@@ -95,4 +100,5 @@ func _run() -> void:
 	print("[NEWGAME TEST] %s" % ("ALL PASSED" if _failures == 0 else "%d FAILED" % _failures))
 	current_scene.queue_free()
 	await _frames(2)
+	SaveGame.delete()
 	quit(1 if _failures > 0 else 0)

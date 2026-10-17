@@ -147,6 +147,7 @@ func _on_horror_event(event_name: String) -> void:
 		alarm_active = true
 		if _alarm_audio:
 			_alarm_audio.play()
+			Caption.at(self, "a car alarm", global_position)
 		if _alarm_light:
 			_alarm_light.visible = true
 		

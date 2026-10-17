@@ -61,7 +61,7 @@ signal scattered
 ## The other flocks: [name, centre, birds, perch, the player this close
 ## sends them up, the area searched for a ridge (HIGH), Day 1 only].
 const FLOCKS := [
-	["CrowsCabinRoof", Vector3(9.0, 0.0, 17.0), 5, Crows.Perch.HIGH, 20.0, Vector2(6.0, 3.0), true],
+	["CrowsCabinRoof", Vector3(9.0, 0.0, 17.0), 5, Crows.Perch.HIGH, 50.0, Vector2(6.0, 3.0), true],
 	["CrowsBarnRoof", Vector3(36.8, 0.0, -74.7), 6, Crows.Perch.HIGH, 16.0, Vector2(8.0, 8.0), false],
 	["CrowsWreckYard", Vector3(-84.0, 0.0, -15.0), 5, Crows.Perch.HIGH, 14.0, Vector2(9.0, 9.0), false],
 	["CrowsClearcut", Vector3(84.0, 0.4, -90.0), 6, Crows.Perch.GROUND, 14.0, Vector2(8.0, 8.0), false],
@@ -87,7 +87,7 @@ func _ready() -> void:
 		sites.extras_only = owner != null and owner.has_node("Sites")
 		add_child(sites)
 	# Crows at the willow (Crows), and other flocks by day: the cabin's roof
-	# ridge on Day 1 (up when the player is ~20 m off), the barn roof, the
+	# ridge on Day 1 (up when the player is ~50 m off), the barn roof, the
 	# wreck yard, the old clear-cut.
 	var crows := Crows.new()
 	crows.name = "Crows"
@@ -96,6 +96,16 @@ func _ready() -> void:
 		var more := Crows.new().setup(flock[1], flock[2], flock[3], flock[4], flock[5], flock[6])
 		more.name = flock[0]
 		add_child(more)
+	# The cabin, night by night: settling, creaking, a handle tried (HouseUnease).
+	var unease := HouseUnease.new()
+	unease.name = "HouseUnease"
+	add_child(unease)
+	# The hall clock ticks, louder at night (ClockTick).
+	var clock := owner.get_node_or_null("CabinDetails/clock_1") if owner else null
+	var tick := ClockTick.new()
+	tick.name = "ClockTick"
+	add_child(tick)
+	tick.global_position = (clock as Node3D).global_position if clock else ClockTick.FALLBACK
 	# Plants rustle when walked into (FoliageRustle).
 	var rustle := FoliageRustle.new()
 	rustle.name = "FoliageRustle"

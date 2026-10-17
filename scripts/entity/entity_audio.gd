@@ -193,6 +193,7 @@ func play_voice(kind: String, force: bool = false) -> void:
 
 
 func play_roar() -> void:
+	Caption.at(self, "a roar", entity.global_position)
 	if _growl:
 		_growl.pitch_scale = randf_range(0.85, 1.0)
 		_growl.play()
@@ -200,6 +201,7 @@ func play_roar() -> void:
 
 ## The shriek as it charges, from its head, wherever it is (indoors too).
 func play_shriek() -> void:
+	Caption.at(self, "a shriek", entity.global_position)
 	if not _shriek or _shriek_streams.is_empty():
 		return
 	_shriek.stream = _shriek_streams.pick_random()
@@ -237,6 +239,7 @@ func play_growl() -> void:
 
 ## Claws dragging on the logs as it climbs.
 func play_climb_scrape(world_position: Vector3) -> void:
+	Caption.at(self, "claws on the wall", world_position)
 	if _scrape_streams.is_empty():
 		play_tap_at(world_position)
 		return
@@ -258,6 +261,7 @@ func play_drop_thud() -> void:
 
 ## Three slow knocks on the door at `world_position`.
 func play_knocks(world_position: Vector3) -> void:
+	Caption.at(self, "knocking", world_position)
 	if _knock_streams.is_empty():
 		return
 	_knock.global_position = world_position
@@ -312,6 +316,8 @@ func is_lying_in_wait() -> bool:
 
 ## The tell before it springs from an ambush: a low breath, close by.
 func play_tell() -> void:
+	EntityJournal.learn(entity, "ambush")
+	Caption.at(self, "a breath", entity.global_position)
 	_sfx.stream = TELL_STREAM
 	_sfx.pitch_scale = randf_range(0.85, 0.95)
 	_sfx.play()
@@ -343,6 +349,7 @@ func _decoy_play(at: Vector3, streams: Array, pitch: float) -> void:
 
 ## One dull crack at a window: the glass eased out of its frame.
 func play_crack(world_position: Vector3) -> void:
+	Caption.at(self, "a dull crack", world_position)
 	_tap.global_position = world_position
 	_tap.stream = WINDOW_KNOCK
 	_tap.pitch_scale = 0.55
@@ -364,6 +371,7 @@ func update_mimicry(delta: float) -> void:
 	if night != _mimic_night:
 		_mimic_night = night
 		_mimics_tonight = 0
+		_voices_tonight = 0
 		_mimic_left = randf_range(MIMIC_FIRST_MIN, MIMIC_FIRST_MAX)
 	_mimic_left -= delta
 	if _mimic_left > 0.0 or not can_mimic():
@@ -383,26 +391,41 @@ func can_mimic() -> bool:
 ## from them. False if there is nowhere to put it.
 func mimic(kind: String = "") -> bool:
 	var player := entity.get_player()
+	if player == null:
+		player = get_tree().get_first_node_in_group("player") as Node3D
+	if player == null:
+		return false
 	var spot := _mimic_spot(player.global_position)
 	if spot == Vector3.INF:
 		return false
 	if kind == "":
 		kind = MIMIC_KINDS.pick_random()
+		# Their own voice, now and then (the microphone: PlayerVoice).
+		if _voice_clip() and entity.current_night() >= VOICE_FROM_NIGHT and _voices_tonight < 1 and randf() < VOICE_CHANCE:
+			kind = "voice"
 	var door := _front_door()
 	if kind == "knock" and door == null:
 		kind = "switch"
+	# (Captioned as the player would take it: their own sounds.)
+	Caption.at(self, {"steps": "footsteps", "switch": "a light switch", "notebook": "pages turning", "knock": "knocking", "voice": "a voice"}.get(kind, "a sound"),
+		door.entry.global_position if kind == "knock" and door else spot)
 	match kind:
 		"steps":
 			_mimic_steps(spot, player)
 		"switch":
-			_decoy_play(spot + Vector3.UP * 1.3, [SWITCH_STREAM], 1.0)
+			_decoy_play(spot + Vector3.UP * 1.3, [SWITCH_STREAM], MIMIC_PITCH)
 		"notebook":
-			_decoy_play(spot + Vector3.UP, [NOTEBOOK_STREAM], 1.0)
+			_decoy_play(spot + Vector3.UP, [NOTEBOOK_STREAM], MIMIC_PITCH)
 		"knock":
 			play_knocks(door.entry.global_position + Vector3.UP * 1.2)
+		"voice":
+			_voices_tonight += 1
+			_decoy_play(spot + Vector3.UP * 1.4, [_voice_clip()], MIMIC_PITCH)
 	_mimics_tonight += 1
 	last_mimic = kind
 	entity.world.note_trick()
+	# Written once it's sunk in (a few seconds on).
+	get_tree().create_timer(4.0).timeout.connect(func(): EntityJournal.learn(entity, "mimicry"))
 	return true
 
 
@@ -422,6 +445,26 @@ func _mimic_spot(player_position: Vector3) -> Vector3:
 
 
 ## Five of the player's own footsteps, crossing a room.
+## What it copies comes back slightly wrong, as Nest Gamma's copies do (the
+## nest teaches it): a little low (MIMIC_PITCH, times _decoy_play's own
+## +-5%, so never the player's own pitch), and a walk of MIMIC_STEPS with
+## one step MIMIC_LATE seconds late.
+const MIMIC_PITCH := 0.89
+## The player's voice played back (the microphone): from this night, at most
+## once a night, this likely when it copies something.
+const VOICE_FROM_NIGHT := 2
+const VOICE_CHANCE := 0.5
+var _voices_tonight := 0
+
+
+## The player's last loud moment (PlayerVoice), or null.
+func _voice_clip() -> AudioStream:
+	var voice := get_tree().get_first_node_in_group("player").get_node_or_null("PlayerVoice") if get_tree().get_first_node_in_group("player") else null
+	return voice.loud_clip if voice else null
+const MIMIC_STEPS := 4
+const MIMIC_LATE := 0.35
+
+
 func _mimic_steps(spot: Vector3, player: Node) -> void:
 	var streams: Array = player.get("wood_footsteps") if player.get("wood_footsteps") else []
 	if streams.is_empty():
@@ -430,9 +473,11 @@ func _mimic_steps(spot: Vector3, player: Node) -> void:
 		_decoy_tween.kill()
 	var heading := Vector3.FORWARD.rotated(Vector3.UP, randf() * TAU)
 	_decoy_tween = create_tween()
-	for i in 5:
-		_decoy_tween.tween_callback(_decoy_play.bind(spot + heading * (i * 0.6) + Vector3.UP * 0.1, streams, randf_range(0.95, 1.05)))
-		_decoy_tween.tween_interval(randf_range(0.45, 0.55))
+	# Four, a little low, and one of them late: almost the player's walk.
+	var late := randi_range(1, MIMIC_STEPS - 1)
+	for i in MIMIC_STEPS:
+		_decoy_tween.tween_callback(_decoy_play.bind(spot + heading * (i * 0.6) + Vector3.UP * 0.1, streams, MIMIC_PITCH))
+		_decoy_tween.tween_interval(randf_range(0.45, 0.55) + (MIMIC_LATE if i == late - 1 else 0.0))
 
 
 func _front_door() -> CabinEntryLink:
@@ -444,6 +489,7 @@ func _front_door() -> CabinEntryLink:
 
 ## Knocking on the glass at a world position (a window).
 func play_tap_at(world_position: Vector3) -> void:
+	Caption.at(self, "tapping on glass", world_position)
 	_tap.global_position = world_position
 	_tap.stream = WINDOW_KNOCK
 	_tap.pitch_scale = randf_range(0.9, 1.1)
@@ -475,6 +521,9 @@ func update_footsteps(delta: float, horizontal_speed: float) -> void:
 		return
 	_footstep.stream = streams.pick_random()
 	_footstep.pitch_scale = randf_range(FOOTSTEP_PITCH_MIN, FOOTSTEP_PITCH_MAX)
+	# Heard but not seen: worth a caption (it repeats at most every few seconds).
+	if not entity.perception.in_player_view:
+		Caption.at(self, "heavy footsteps", entity.global_position)
 	_footstep.volume_db = _footstep_db + linear_to_db(maxf(1.0 - quiet, 0.001))
 	_footstep.play()
 

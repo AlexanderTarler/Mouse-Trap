@@ -70,6 +70,9 @@ extends Resource
 	"click": 3.0,
 	"rustle": 10.0,
 	"rustle_crouch": 6.0,
+	# The player's voice (the microphone, PlayerVoice): a gasp, a shout.
+	"voice": 14.0,
+	"voice_loud": 26.0,
 }
 ## Footsteps on the cabin's wooden floors carry this much farther.
 @export var indoor_footstep_multiplier: float = 1.3

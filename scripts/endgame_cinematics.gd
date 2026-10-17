@@ -259,8 +259,8 @@ func _process(delta: float) -> void:
 	if _shot.is_valid():
 		_shot.call(delta)
 	if _cam:
-		_cam.h_offset = randf_range(-_shake, _shake)
-		_cam.v_offset = randf_range(-_shake, _shake)
+		_cam.h_offset = randf_range(-_shake, _shake) * GameSettings.shake()
+		_cam.v_offset = randf_range(-_shake, _shake) * GameSettings.shake()
 
 
 func _input(event: InputEvent) -> void:

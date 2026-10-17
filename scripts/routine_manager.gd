@@ -235,6 +235,7 @@ var _xray_timers: Dictionary = {}
 
 
 func _ready() -> void:
+	enable_object_highlights = bool(GameSettings.get_value("gameplay/objective_highlights"))
 	_night_manager = get_node_or_null("/root/NightManager")
 	if _night_manager and _night_manager.has_signal("night_started"):
 		_night_manager.night_started.connect(_on_night_started)
@@ -331,6 +332,11 @@ func _on_xray_timer_timeout(group_name: String) -> void:
 ## applied — players with visual sensitivities (or those who prefer no
 ## highlighting) can disable it. Toggle this from the Options menu.
 static var enable_object_highlights: bool = true
+
+
+## Options > Accessibility > Objective Highlights (GameSettings).
+func set_highlights(on: bool) -> void:
+	enable_object_highlights = on
 
 
 ## Internal: applies the x-ray highlight immediately to all nodes in the group.

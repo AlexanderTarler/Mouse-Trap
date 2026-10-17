@@ -103,17 +103,17 @@ func _test_crows() -> void:
 	var perched := func(flock: Node) -> bool:
 		return flock != null and not flock._crows.is_empty() and flock._crows.all(func(c): return c.state == flock.State.PERCHED)
 	_player.set_physics_process(false)
-	_player.global_position = Vector3(9.0, 1.0, -9.0)   # 26 m from the roof
+	_player.global_position = Vector3(9.0, 1.0, -50.0)   # 67 m from the roof
 	await _frames(60)
 	var still: bool = perched.call(roof)
 	var ridge: float = roof._crows[0].node.global_position.y if roof else 0.0
-	_check("16: Day 1, crows on the cabin's roof ridge (y %.1f), sitting tight with the player 26 m off" % ridge, still and ridge > 8.0)
+	_check("16: Day 1, crows on the cabin's roof ridge (y %.1f), sitting tight with the player 67 m off" % ridge, still and ridge > 8.0)
 	_check("16: and at the barn, the wreck yard, the clear-cut (and the willow)", others.all(func(f): return perched.call(f)),
 		str(others.map(func(f): return f.name if f else "missing")))
-	_player.global_position = Vector3(9.0, 1.0, -1.0)   # 18 m
+	_player.global_position = Vector3(9.0, 1.0, -26.0)   # 43 m
 	await _frames(60)
 	var up: bool = roof._crows.all(func(c): return c.state != roof.State.PERCHED)
-	_player.global_position = Vector3(9.0, 1.0, -80.0)   # far off
+	_player.global_position = Vector3(9.0, 1.0, -120.0)   # far off
 	await _frames(60 * 8)
 	var back: bool = roof._crows.any(func(c): return c.state == roof.State.PERCHED)
-	_check("16: within ~20 m they fly off, and don't come back that day", up and not back, "up %s, back %s" % [up, back])
+	_check("16: within ~50 m they fly off, and don't come back that day", up and not back, "up %s, back %s" % [up, back])

@@ -29,6 +29,8 @@ const TUTORIAL_PATHS: Array[String] = [
 	# Day 1: the key under the bucket by the door.
 	"res://resources/tutorial/tutorial_move_objects.tres",
 	"res://resources/tutorial/tutorial_low_battery.tres",
+	# The first night: the watch (Wristwatch).
+	"res://resources/tutorial/tutorial_watch.tres",
 	# ─── DAY 2 NEST TUTORIALS ────────────────────────────────────────
 	# These teach the survival mechanics required to document the nests:
 	#   overcharge → Nest Alpha, stealth → Nest Beta, stillness → Nest Gamma.
@@ -200,7 +202,7 @@ func _is_on_screen(mechanic_id: String) -> bool:
 	var tutorial := _find_tutorial(mechanic_id)
 	if not hud or not tutorial or not hud.has_method("current_hint"):
 		return false
-	return hud.current_hint() == tutorial.prompt_text
+	return hud.current_hint() == GameKeys.keys_in(tutorial.prompt_text)
 
 
 ## Checks if a mechanic has been learned (via RoutineManager persistence).

@@ -9,6 +9,13 @@ extends CanvasLayer
 ##
 ## The player can't move meanwhile. [Space] skips. NightManager plays it at
 ## the start of the first day (not in dev mode, nor in headless test runs).
+##
+## From the main menu it starts the moment Play is pressed, before the level
+## is there: its first part is on black (the engine, the title cards), and the
+## level is brought in under it (start_level, the main menu's) in a dark gap
+## between two cards, where the moment it takes to set up shows as nothing
+## more than a pause. The picture comes up once the level is ready
+## (attach_to_game, from NightManager); skipped before that, it waits on black.
 
 signal finished
 
@@ -36,10 +43,21 @@ var _black: ColorRect
 var _title: Label
 var _subtitle: Label
 var _skip_hint: Label
+## "Best played with headphones." under the first card (where things are
+## heard from is half the game).
+var _headphones: Label
+const HEADPHONES := "Best played with headphones."
 var _phone: Phone
 var _engine: AudioStreamPlayer
 var _skipped := false
 var _done := false
+## Brings the level in (the main menu's; true once it has started it), and
+## whether the level is up (attach_to_game). An opening made in the level
+## itself has it from the start.
+var start_level := Callable()
+var level_ready := true
+var _level_started := false
+var _loading: Label
 
 
 func _ready() -> void:
@@ -54,9 +72,16 @@ func play() -> void:
 	_lock_player(true)
 	_engine = _sound(ENGINE_SOUND, -14.0, 1.0, true)
 	await _wait(0.8)
+	var note := create_tween()
+	note.tween_property(_headphones, "modulate:a", 0.7, 0.7)
 	await _card(_title, "SVEA NATURINSTITUT", 2.2)
+	create_tween().tween_property(_headphones, "modulate:a", 0.0, 0.5)
+	if _skipped: return
+	await _bring_level()
 	if _skipped: return
 	await _card(_subtitle, "Field survey, phase 2\nMuscardinus avellanarius", 2.6)
+	if _skipped: return
+	await _bring_level()
 	if _skipped: return
 	# The engine's turned off; a door.
 	if _engine:
@@ -71,6 +96,9 @@ func play() -> void:
 	if _skipped: return
 	_sound(DOOR_CLOSE_SOUND, -6.0)
 	await _wait(0.8)
+	if _skipped: return
+	# (The level, if it isn't up yet, now: on black.)
+	await _level_up()
 	if _skipped: return
 	# Up comes the forest, and the phone.
 	create_tween().tween_property(_black, "color:a", 0.0, 2.0)
@@ -123,8 +151,49 @@ func _phone_scene() -> void:
 	await _wait(0.6)
 
 
+## In a dark gap between cards: the level comes in now if it's loaded (the
+## moment that takes, on black), else the cards go on.
+func _bring_level() -> void:
+	if level_ready or _level_started or not start_level.is_valid():
+		return
+	if start_level.call():
+		_level_started = true
+		await _level_up()
+
+
+## Until the level is up (bringing it in as soon as it's loaded).
+func _level_up() -> void:
+	while not level_ready:
+		if not _level_started and start_level.is_valid() and start_level.call():
+			_level_started = true
+		await get_tree().process_frame
+	# (Past the level's slow first frames.)
+	for i in 3:
+		await get_tree().process_frame
+
+
+## The level is up (NightManager, at the game's start): the player and the
+## HUD held while the opening plays on.
+func attach_to_game() -> void:
+	level_ready = true
+	_player = null
+	_hud = null
+	if not _done:
+		_lock_player(true)
+	# (Gone with the game, if the player leaves it while this still plays.)
+	var scene := get_tree().current_scene
+	if scene and not scene.tree_exiting.is_connected(queue_free):
+		scene.tree_exiting.connect(queue_free)
+
+
 func _finish() -> void:
 	if _done:
+		return
+	if not level_ready:
+		# Skipped before the level is up: black, and a word, until it is.
+		if not _loading.visible:
+			_skipped = true
+			_finish_when_ready()
 		return
 	_done = true
 	playing = false
@@ -141,6 +210,16 @@ func _finish() -> void:
 		fade.tween_callback(queue_free)
 	else:
 		queue_free()
+
+
+func _finish_when_ready() -> void:
+	for label in [_title, _subtitle, _headphones, _skip_hint]:
+		label.visible = false
+	_black.color.a = 1.0
+	_loading.visible = true
+	await _level_up()
+	_loading.visible = false
+	_finish()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -220,6 +299,30 @@ func _build() -> void:
 	_skip_hint.offset_right = -20
 	_skip_hint.offset_bottom = -14
 	add_child(_skip_hint)
+	_headphones = Label.new()
+	_headphones.text = HEADPHONES
+	_headphones.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_headphones.add_theme_font_size_override("font_size", 16)
+	_headphones.add_theme_color_override("font_color", Color(0.75, 0.73, 0.68))
+	_headphones.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	_headphones.offset_left = -300
+	_headphones.offset_right = 300
+	_headphones.offset_top = -110
+	_headphones.offset_bottom = -80
+	_headphones.modulate.a = 0.0
+	_headphones.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_headphones)
+	_loading = Label.new()
+	_loading.text = "Loading..."
+	_loading.add_theme_font_size_override("font_size", 16)
+	_loading.add_theme_color_override("font_color", Color(1, 1, 1, 0.5))
+	_loading.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	_loading.offset_left = -140
+	_loading.offset_top = -40
+	_loading.offset_right = -20
+	_loading.offset_bottom = -14
+	_loading.visible = false
+	add_child(_loading)
 	_phone = Phone.new()
 	add_child(_phone)
 	_phone.build("Svea Naturinstitut · Field office", "15:02")

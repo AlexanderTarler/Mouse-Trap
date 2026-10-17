@@ -1,7 +1,10 @@
 extends CanvasLayer
 class_name PauseMenu
 
-## PauseMenu - Standard in-game pause menu toggled by ESC.
+## PauseMenu - Standard in-game pause menu toggled by ESC. Under the title,
+## where the player is: the day or night, and what to do next (not the time:
+## that's the watch's).
+## (No Quit in a browser: there's nothing to quit to.)
 
 const MAIN_MENU_PATH: String = "res://scenes/ui/main_menu.tscn"
 const OPTIONS_MENU_SCENE: String = "res://scenes/ui/options_menu.tscn"
@@ -14,6 +17,8 @@ const OPTIONS_MENU_SCENE: String = "res://scenes/ui/options_menu.tscn"
 
 var _options_menu: OptionsMenu = null
 var _is_open: bool = false
+var _where: Label
+var _objective: Label
 
 
 func _ready() -> void:
@@ -24,6 +29,24 @@ func _ready() -> void:
 	_settings_button.pressed.connect(_on_settings_pressed)
 	_main_menu_button.pressed.connect(_on_main_menu_pressed)
 	_quit_button.pressed.connect(_on_quit_pressed)
+	_quit_button.visible = not OS.has_feature("web")
+	var box := $PanelContainer/VBoxContainer
+	var title := $PanelContainer/VBoxContainer/TitleLabel
+	_where = Label.new()
+	_where.name = "WhereLabel"
+	_where.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_where.add_theme_color_override("font_color", Color(1.0, 0.9, 0.7))
+	box.add_child(_where)
+	box.move_child(_where, title.get_index() + 1)
+	_objective = Label.new()
+	_objective.name = "ObjectiveLabel"
+	_objective.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_objective.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_objective.custom_minimum_size = Vector2(300, 0)
+	_objective.add_theme_font_size_override("font_size", 14)
+	_objective.modulate = Color(1, 1, 1, 0.75)
+	box.add_child(_objective)
+	box.move_child(_objective, _where.get_index() + 1)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -135,8 +158,29 @@ func _close_debug_console() -> bool:
 	return false
 
 
+## "Night 2" and the objective the HUD shows.
+func refresh_where() -> void:
+	var nm := get_node_or_null("/root/NightManager")
+	var where := ""
+	if nm:
+		var night := maxi(int(nm.current_night), 1)
+		where = ("Night %d" if nm.is_night_active else "Day %d") % night
+	_where.text = where
+	var objective := ""
+	var hud := get_tree().get_first_node_in_group("hud")
+	if hud and "objective_label" in hud and hud.objective_label:
+		objective = hud.objective_label.text
+	if objective == "":
+		var routine := get_node_or_null("/root/RoutineManager")
+		if routine and routine.has_method("get_current_objective"):
+			objective = routine.get_current_objective()
+	_objective.text = objective
+	_objective.visible = objective != ""
+
+
 func _open() -> void:
 	_is_open = true
+	refresh_where()
 	visible = true
 	get_tree().paused = true
 	Input.mouse_mode = Input.MOUSE_MODE_CONFINED

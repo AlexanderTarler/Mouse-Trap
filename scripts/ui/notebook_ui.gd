@@ -48,6 +48,11 @@ var _unlocked_nests: Dictionary = {}
 ## text from appearing twice when note_pickup.gd fires duplicate
 ## add_note calls.
 var _unlocked_notes: Dictionary = {}
+## Chapter 5, "The Entity": what the player has learned about it, in his own
+## words (EntityJournal), by key, in the order learned.
+var _entity_entries: Dictionary = {}
+## Where it starts in _all_pages.
+var _entity_start_page: int = 999999
 
 ## Current page index (points to the left page of the current spread).
 ## Always even. Right page is _current_page + 1.
@@ -267,11 +272,15 @@ func _rebuild_index() -> void:
 
   [b]4.[/b]  Field Notes   [color=#6e655a][i]%s[/i][/color]
 
+  [b]5.[/b]  The Entity   [color=#6e655a][i]%s[/i][/color]
+
 [center]---
-[color=#6e655a][Q] / [E] turn the pages · [J] close[/color][/center]""" % [
+[color=#6e655a]%s[/color][/center]""" % [
 		_nest_data_start_page + 1,
 		_unlocked_nests.size(),
 		"p. %d · %d %s" % [_notes_start_page + 1, _unlocked_notes.size(), "entry" if _unlocked_notes.size() == 1 else "entries"] if not _unlocked_notes.is_empty() else "none yet",
+		"p. %d · %d %s" % [_entity_start_page + 1, _entity_entries.size(), "entry" if _entity_entries.size() == 1 else "entries"] if not _entity_entries.is_empty() else "nothing yet",
+		GameKeys.keys_in("[Q] / [E] turn the pages · [J] close", {"E": "notebook_next_page"}),
 	]
 
 
@@ -762,7 +771,40 @@ func _rebuild_all_pages() -> void:
 	for note_text in _unlocked_notes.values():
 		_append_page_content(note_text)
 	
+	# Chapter 5: The Entity — what he's learned about it (EntityJournal).
+	_entity_start_page = _all_pages.size()
+	if not _entity_entries.is_empty():
+		_append_page_content(_entity_chapter_text())
+
 	_rebuild_index()
+
+
+## Chapter 5's text: a heading, then each entry in the order learned.
+func _entity_chapter_text() -> String:
+	var text := "[center][b]THE ENTITY[/b][/center]\n[center][i][color=#6e655a]What I know about it. Written as I learn it.[/color][/i][/center]\n\n"
+	for entry in _entity_entries.values():
+		text += "— %s\n\n" % entry
+	return text.strip_edges()
+
+
+## Writes (or rewrites) an entry of chapter 5. False if it was already
+## written exactly so.
+func add_entity_entry(key: String, text: String) -> bool:
+	if _entity_entries.get(key, "") == text:
+		return false
+	_entity_entries[key] = text
+	_rebuild_all_pages()
+	_update_spread()
+	_play_scribble_sfx()
+	return true
+
+
+func entity_entry_count() -> int:
+	return _entity_entries.size()
+
+
+func has_entity_entry(key: String) -> bool:
+	return _entity_entries.has(key)
 
 
 ## Builds the BBCode content for a single nest's dedicated page:

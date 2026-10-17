@@ -60,7 +60,7 @@ func _test_crows() -> void:
 	await _frames(20)
 	var perched: bool = _states(crows).all(func(s): return s == crows.State.PERCHED)
 	_check("crows perch at the willow by day (%d)" % crows._crows.size(), crows._crows.size() >= 5 and perched)
-	player.global_position = crows.CENTRE + Vector3(4, 0.6, 0)
+	player.global_position = crows.centre + Vector3(4, 0.6, 0)
 	await _frames(40)
 	var flying: bool = _states(crows).all(func(s): return s != crows.State.PERCHED)
 	_check("they take off when the player comes close", flying, str(_states(crows)))

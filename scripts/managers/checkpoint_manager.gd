@@ -15,7 +15,9 @@ extends Node
 ##     flags (NightManager: used when "Play Again" reloads the scene).
 ##
 ## "Play Again" after an ending (ending_screen.gd) reloads the game scene and
-## restores this snapshot into it (restore_on_load, NightManager).
+## restores this snapshot into it (restore_on_load, NightManager). In a game
+## started from the main menu each snapshot is also written to disk for
+## "Continue" (SaveGame).
 ##
 ## NightManager captures (start_night, and when a day begins) and restores
 ## (restart_from_checkpoint). State is read from each object's script
@@ -61,6 +63,11 @@ var _story := {}
 var _thoughts := {}
 ## knockable prop path -> Transform3D
 var _props := {}
+## Write each snapshot to disk (SaveGame): set by the main menu's Play and
+## Continue (not in tests).
+var save_to_disk := false
+## The player's own state from a save (SaveGame), put back once restored.
+var saved_player := {}
 
 
 ## The template copies live outside the tree: free them with the game.
@@ -118,6 +125,7 @@ func capture(snapshot_kind: String, snapshot_tag: String = "") -> void:
 	for node in _pickup_nodes(scene):
 		_pickups.append({
 			"template": _template(node),
+			"path": node.get_path(),
 			"parent": node.get_parent().get_path(),
 			"transform": (node as Node3D).global_transform if node is Node3D else Transform3D.IDENTITY,
 		})
@@ -128,6 +136,7 @@ func capture(snapshot_kind: String, snapshot_tag: String = "") -> void:
 		lamp_index[lamp] = _lamps.size()
 		_lamps.append({
 			"template": _template(lamp),
+			"path": lamp.get_path(),
 			"parent": lamp.get_parent().get_path(),
 			"transform": lamp.global_transform,
 			"state": _read_state(lamp),
@@ -143,6 +152,8 @@ func capture(snapshot_kind: String, snapshot_tag: String = "") -> void:
 			"state": cable.get_state(),
 		})
 	print("[Checkpoint] %s snapshot: %d objects, %d world items, %d lamps, %d cables." % [kind, _states.size(), _pickups.size(), _lamps.size(), _cables.size()])
+	if save_to_disk:
+		SaveGame.write(self)
 
 
 ## Takes the snapshot once the frame's pending changes (spawns) are done.
@@ -180,14 +191,20 @@ func restore() -> bool:
 		elif "battery_level" in flashlight:
 			flashlight.battery_level = _battery
 
-	# The trap first (objects below may refer to it), then world items.
+	# The trap first (objects below may refer to it), then world items. (From
+	# a save, items that are part of the level stay and are moved back.)
+	var kept := {}
+	for entry in _pickups + _lamps:
+		if entry.template.has("node"):
+			kept[entry.template.node] = true
 	for cable in get_tree().get_nodes_in_group("power_cable"):
 		cable.queue_free()
 	for lamp in get_tree().get_nodes_in_group("portable_trap"):
-		if lamp.has_method("drop_trap"):
+		if lamp.has_method("drop_trap") and not kept.has(lamp.get_path()):
 			lamp.queue_free()
 	for node in _pickup_nodes(scene):
-		node.queue_free()
+		if not kept.has(node.get_path()):
+			node.queue_free()
 	var restored_lamps: Array = []
 	for entry in _lamps:
 		var lamp: Node3D = _spawn(entry)
@@ -244,6 +261,25 @@ func apply_story(nm: Node) -> void:
 		nm.set(flag, _story[flag])
 
 
+## The player's own state from a save (the flashlight, sprint, exhaustion):
+## once the save is restored. The flashlight left in the world goes if the
+## player already has it.
+func apply_saved_player() -> void:
+	if saved_player.is_empty():
+		return
+	var player := get_tree().get_first_node_in_group("player")
+	if player:
+		for property in saved_player:
+			if property in player:
+				player.set(property, saved_player[property])
+		if saved_player.get("_has_flashlight", false):
+			for node in get_tree().current_scene.find_children("*", "", true, false):
+				var script: Script = node.get_script()
+				if script and script.resource_path.get_file() == "flashlight_pickup.gd":
+					node.queue_free()
+	saved_player = {}
+
+
 ## GameTime's progress when the snapshot was taken.
 func time_progress() -> float:
 	return _time_progress
@@ -267,6 +303,11 @@ func _restore_cable(entry: Dictionary, lamps: Array) -> void:
 
 
 func _spawn(entry: Dictionary) -> Node:
+	if entry.template.has("node"):
+		var placed := get_node_or_null(entry.template.node)
+		if placed is Node3D:
+			(placed as Node3D).global_transform = entry.transform
+		return placed
 	var parent := get_node_or_null(entry.parent)
 	if not parent:
 		parent = get_tree().current_scene

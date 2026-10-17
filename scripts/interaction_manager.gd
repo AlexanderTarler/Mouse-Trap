@@ -42,7 +42,7 @@ var target_kind := 0
 
 
 func _show_prompt(text: String) -> void:
-	text = _markup.sub(text, "", true)
+	text = GameKeys.keys_in(_markup.sub(text, "", true))
 	_prompt_label.text = text
 	var action := text.begins_with("[")
 	_prompt_label.add_theme_color_override("font_color", PROMPT_COLOR if action else STATUS_COLOR)

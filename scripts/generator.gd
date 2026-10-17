@@ -64,6 +64,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_update_audio(delta)
 	_update_fuel_indicator(delta)
+	_update_low_fuel(delta)
 	if is_switched_on:
 		var nm = _nm_cache if is_instance_valid(_nm_cache) else get_node_or_null("/root/NightManager")
 		if nm and nm.generator_fuel <= 0.0:
@@ -89,12 +90,57 @@ func _update_audio(_delta: float) -> void:
 		if nm.generator_fuel <= 0.0:
 			# Out of fuel: the engine sputters down instead of cutting out.
 			_winding_down = true
+			Caption.at(self, "the generator dies", global_position)
 			_wind_down = create_tween().set_parallel()
 			_wind_down.tween_property(_generator_audio, "pitch_scale", 0.35, WIND_DOWN_TIME).set_ease(Tween.EASE_IN)
 			_wind_down.tween_property(_generator_audio, "volume_db", generator_audio_volume_db - 30.0, WIND_DOWN_TIME).set_ease(Tween.EASE_IN)
 			_wind_down.chain().tween_callback(_end_wind_down)
 		else:
 			_generator_audio.stop()
+
+
+## ─── LOW FUEL ──────────────────────────────────────────────────────────
+## Below this much fuel (%) the generator coughs now and then (its hum dips)
+## and the lit rooms brown out for a moment: more often the nearer empty,
+## from LOW_FUEL_GAP.x seconds apart down to LOW_FUEL_GAP.y. The blackout is
+## no surprise then, and there's time to refuel.
+const LOW_FUEL_PERCENT := 15.0
+const LOW_FUEL_GAP := Vector2(26.0, 6.0)
+var _low_fuel_left := 8.0
+## How many coughs so far (for the tests).
+var coughs := 0
+
+
+func _update_low_fuel(delta: float) -> void:
+	var nm = _nm_cache if is_instance_valid(_nm_cache) else get_node_or_null("/root/NightManager")
+	if not nm or not nm.is_generator_on or nm.generator_fuel <= 0.0:
+		return
+	var percent: float = nm.generator_fuel / nm.max_fuel * 100.0
+	if percent >= LOW_FUEL_PERCENT:
+		_low_fuel_left = minf(_low_fuel_left, 8.0)
+		return
+	_low_fuel_left -= delta
+	if _low_fuel_left > 0.0:
+		return
+	var nearly := clampf(percent / LOW_FUEL_PERCENT, 0.0, 1.0)
+	_low_fuel_left = lerpf(LOW_FUEL_GAP.y, LOW_FUEL_GAP.x, nearly) * randf_range(0.8, 1.2)
+	cough()
+
+
+## A cough: the hum dips and stutters, and every lit room browns out.
+func cough() -> void:
+	coughs += 1
+	Caption.at(self, "the generator sputters", global_position)
+	if _generator_audio and _generator_audio.playing and not _winding_down:
+		var dip := create_tween()
+		dip.tween_property(_generator_audio, "pitch_scale", 0.62, 0.12)
+		dip.parallel().tween_property(_generator_audio, "volume_db", generator_audio_volume_db - 9.0, 0.12)
+		dip.tween_property(_generator_audio, "pitch_scale", 0.85, 0.15)
+		dip.tween_property(_generator_audio, "pitch_scale", 1.0, 0.35)
+		dip.parallel().tween_property(_generator_audio, "volume_db", generator_audio_volume_db, 0.35)
+	for light in get_tree().get_nodes_in_group("CabinLights"):
+		if light.has_method("presence_flicker"):
+			light.presence_flicker()
 
 
 ## Seconds the engine takes to die when the fuel runs out.

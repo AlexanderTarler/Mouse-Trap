@@ -258,6 +258,8 @@ func _setup_audio_buses() -> void:
 		reverb.dry = 0.0
 		reverb.wet = 1.0
 		AudioServer.add_bus_effect(interior_idx, reverb)
+	# The player's volumes (Options > Audio).
+	GameSettings.apply_volumes()
 
 
 func _bus_effect(bus_idx: int, effect_class: String) -> AudioEffect:
@@ -422,6 +424,21 @@ func _setup_forest_ambience() -> void:
 	# Start with day ambience (game starts in daytime)
 	_play_day_ambience()
 	print("HorrorSoundManager: Forest ambience set up.")
+
+
+## The main menu: the game's sounds (the forest by day, and the rest) held
+## silent while it's up, and carried on from where they were after. The menu
+## has its own wind (MenuBackdrop).
+var menu_quiet := false
+
+
+func set_menu_quiet(quiet: bool) -> void:
+	# (Always applied: GameReset may have put the flag back on its own.)
+	menu_quiet = quiet
+	process_mode = Node.PROCESS_MODE_DISABLED if quiet else Node.PROCESS_MODE_INHERIT
+	for player in find_children("*", "", true, false):
+		if player is AudioStreamPlayer or player is AudioStreamPlayer3D:
+			player.stream_paused = quiet
 
 
 ## Plays the day forest ambience on loop and stops night ambience.

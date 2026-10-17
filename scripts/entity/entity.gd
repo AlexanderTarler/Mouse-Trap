@@ -970,6 +970,8 @@ func _set_traversal_anim(anim: StringName) -> void:
 
 func _set_perch(link: CabinEntryLink) -> void:
 	_perch_link = link
+	if link != null and (perception.player_inside or EntityJournal.player_sees(self)):
+		EntityJournal.learn(self, "climb")
 
 
 ## Claws on the logs while it climbs.

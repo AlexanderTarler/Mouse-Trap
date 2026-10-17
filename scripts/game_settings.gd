@@ -7,9 +7,17 @@ extends RefCounted
 ##   video/head_bob             the camera bobbing while walking
 ##   controls/mouse_sensitivity a multiplier on the player's mouse look
 ##   controls/invert_y          mouse up looks down
-## The options menu edits them (OptionsMenu); the main menu applies them at
-## startup (apply_all), and the player picks up its own on spawn
-## (apply_player).
+##   audio/master, ambient, sfx, room_echo   bus volumes (linear; the Entity's
+##                              bus follows Sound Effects)
+##   audio/microphone, mic_threshold_db      PlayerVoice
+##   video/quality              0 Low, 1 Medium, 2 High (GraphicsQuality)
+##   video/screen_shake         the camera shakes (staring, the jumpscare)
+##   video/calibrated           the brightness screen has been seen
+##   gameplay/objective_highlights   the x-ray outline on the next objective
+##   accessibility/captions, caption_size    Captions (0 Small - 2 Large)
+## The keys are saved alongside (GameKeys). The options menu edits them
+## (OptionsMenu); the main menu applies them at startup (apply_all), and the
+## player picks up its own on spawn (apply_player).
 
 const PATH := "user://settings.cfg"
 const DEFAULTS := {
@@ -19,7 +27,29 @@ const DEFAULTS := {
 	"video/head_bob": true,
 	"controls/mouse_sensitivity": 1.0,
 	"controls/invert_y": false,
+	"accessibility/captions": false,
+	"accessibility/caption_size": 1,
+	"audio/microphone": false,
+	"audio/mic_threshold_db": -24.0,
+	"audio/master": 1.0,
+	"audio/ambient": 0.3,
+	"audio/sfx": 0.8,
+	"audio/room_echo": 1.0,
+	"video/quality": 1,
+	"video/screen_shake": true,
+	"video/calibrated": false,
+	"gameplay/objective_highlights": true,
 }
+## Volume settings -> their AudioServer bus.
+const VOLUME_BUSES := {
+	"audio/master": "Master",
+	"audio/ambient": "Ambient",
+	"audio/sfx": "SFX",
+	"audio/room_echo": "Interior",
+}
+## The Entity's bus, as loud as Sound Effects times this (0.6 to 0.8 by
+## default, as the sound manager first set them).
+const ENTITY_OF_SFX := 0.75
 const BRIGHTNESS_LAYER := "BrightnessLayer"
 
 static var _values := {}
@@ -46,6 +76,29 @@ static func set_value(key: String, value: Variant) -> void:
 static func apply_all() -> void:
 	for key in DEFAULTS:
 		_apply(key)
+	GameKeys.apply()
+
+
+## Every setting back to its default (the keys too: GameKeys.reset), bar the
+## display mode and whether the brightness screen was seen.
+static func reset_all() -> void:
+	for key in DEFAULTS:
+		if key in ["display/mode", "video/calibrated"]:
+			continue
+		set_value(key, DEFAULTS[key])
+	GameKeys.reset()
+
+
+## The camera shake's strength: 1, or 0 with Screen Shake off.
+static func shake() -> float:
+	return 1.0 if bool(get_value("video/screen_shake")) else 0.0
+
+
+## The saved volumes onto the buses that exist (the sound manager calls it
+## again once it has made them).
+static func apply_volumes() -> void:
+	for key in VOLUME_BUSES:
+		_apply(key)
 
 
 static func _load() -> void:
@@ -67,11 +120,36 @@ static func _apply(key: String) -> void:
 			apply_display_mode(int(get_value(key)))
 		"video/brightness":
 			_apply_brightness(float(get_value(key)))
+		"audio/master", "audio/ambient", "audio/sfx", "audio/room_echo":
+			var bus := AudioServer.get_bus_index(VOLUME_BUSES[key])
+			var linear := float(get_value(key))
+			if bus >= 0:
+				AudioServer.set_bus_volume_db(bus, linear_to_db(linear))
+			var entity := AudioServer.get_bus_index("Entity")
+			if key == "audio/sfx" and entity >= 0:
+				AudioServer.set_bus_volume_db(entity, linear_to_db(linear * ENTITY_OF_SFX))
+		"video/quality":
+			GraphicsQuality.apply(int(get_value(key)))
+		"gameplay/objective_highlights":
+			var routine := _autoload("RoutineManager")
+			if routine and routine.has_method("set_highlights"):
+				routine.set_highlights(bool(get_value(key)))
+		"accessibility/caption_size":
+			var captions := _autoload("Captions")
+			if captions and captions.has_method("apply_size"):
+				captions.apply_size(int(get_value(key)))
+		"accessibility/captions", "audio/microphone", "audio/mic_threshold_db", "video/calibrated", "video/screen_shake":
+			pass   # read where they're used
 		_:
 			var tree := Engine.get_main_loop() as SceneTree
 			var player := tree.get_first_node_in_group("player") if tree else null
 			if player:
 				apply_player(player)
+
+
+static func _autoload(node_name: String) -> Node:
+	var tree := Engine.get_main_loop() as SceneTree
+	return tree.root.get_node_or_null(node_name) if tree else null
 
 
 ## The player's own: look sensitivity and inversion, head bob, field of view.

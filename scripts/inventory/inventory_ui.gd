@@ -106,8 +106,8 @@ func _process(_delta: float) -> void:
 			_close_inventory()
 		return
 
-	# Hardware-poll TAB key directly — bypasses fragile _input() event consumption
-	var tab_down = Input.is_physical_key_pressed(KEY_TAB)
+	# Polled (the inventory key, Tab unless rebound) — bypasses fragile _input() event consumption
+	var tab_down = Input.is_action_pressed("ui_inventory")
 	
 	if not _tab_pressed_last_frame and tab_down:
 		_tab_pressed_last_frame = true

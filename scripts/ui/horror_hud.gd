@@ -796,6 +796,7 @@ func _timestamp() -> String:
 func show_hint(text: String, delay: float = 0.5, force: bool = false) -> bool:
 	if not hint_label:
 		return false
+	text = GameKeys.keys_in(text)   # (as the player's keys)
 	
 	# If a hint is already visible AND we've already shown one before, ignore.
 	# (The first call must pass through — HintLabel starts at alpha=1.0 in the

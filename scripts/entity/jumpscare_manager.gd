@@ -155,7 +155,7 @@ func _execute_jumpscare() -> void:
 		
 		# --- DYNAMIC CAMERA SHAKE ---
 		var shake_tween = create_tween().set_loops(12)
-		var shake_intensity = 0.05
+		var shake_intensity = 0.05 * GameSettings.shake()
 		shake_tween.tween_property(camera, "v_offset", shake_intensity, 0.05)
 		shake_tween.tween_property(camera, "h_offset", -shake_intensity, 0.05)
 		shake_tween.tween_property(camera, "v_offset", -shake_intensity, 0.05)
