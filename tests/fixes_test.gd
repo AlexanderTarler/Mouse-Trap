@@ -302,7 +302,7 @@ func _test_forest_batches(scene: Node) -> void:
 	var colliders := 0
 	for group in scene.find_children("Group of Trees*", "", true, false):
 		loose += group.find_children("*", "MeshInstance3D", true, false).size()
-		colliders += group.find_children("*", "StaticBody3D", true, false).size()
+		colliders += group.find_children("*", "CollisionShape3D", true, false).size()
 	var border_loose := 0
 	for block in scene.find_children("WorldMapBorderBlock*", "", true, false):
 		border_loose += block.find_children("*", "MeshInstance3D", true, false).size()

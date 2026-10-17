@@ -109,6 +109,21 @@ const INTERACTABLE_CLEARANCE := 2.5
 ## model name -> Array of [Mesh, local Transform3D]
 ## A tree trunk on this much path paint (or more) is in the way and goes.
 const TREE_ON_PATH := 0.3
+## The forest is baked ahead of time (ForestBake, tools/bake_forest.gd), and
+## the bake is only used while these settings are the ones it was made with.
+## Changed how the dressing works without changing a setting? Raise this, and
+## bake again.
+const BAKE_VERSION := 1
+
+
+## Every setting the dressing uses (ForestBake's check).
+static func settings() -> Array:
+	return [GLB, PINE_SOURCE, PINE_FAMILIES, PINE_FAMILY_WEIGHTS, DEAD_TREE_CHANCE, DEAD_TREES,
+		BROADLEAF_CHANCE, BROADLEAVES, BIRCH, BIRCH_CHANCE, BIRCH_EDGE_DISTANCE, BIRCH_EDGE_CHANCE,
+		TREE_MODEL_SCALE, TREE_SCALE, TREE_LEAN_DEGREES, UNDERGROWTH, SMALL_MODELS, CLEARCUT,
+		CLEARCUT_EDGE, CLEARCUT_STUMP_SCALE, CLEARCUT_REGROWTH, CLEARCUT_YOUNG_PINE, CLEARCUT_JITTER,
+		CLEAR_ZONES, FENCE_LINES, FENCE_TREE_CLEARANCE, FENCE_CLEARANCE, ROAD_TREE_CLEARANCE,
+		ROAD_CLEARANCE, INTERACTABLE_CLEARANCE, TREE_ON_PATH, STONE_TRUNK_CLEARANCE, TRUNK_CELL]
 
 static var _models := {}
 ## Where undergrowth was placed and how many trees were cleared off paths
@@ -126,31 +141,45 @@ static var _interactables_frame := -1
 ## Dresses `group`, handing every mesh to draw to add(mesh, transform).
 ## Returns the group's MeshInstance3Ds it replaced (the caller drops them).
 static func dress(group: Node3D, add: Callable) -> Dictionary:
+	var nodes := group.find_children("*", "MeshInstance3D", true, false)
+	var placed := []
+	for node in nodes:
+		placed.append([(node as MeshInstance3D).mesh, (node as MeshInstance3D).global_transform])
+	var replaced := {}
+	for i in dress_list(group, placed, add):
+		replaced[nodes[i]] = true
+	return replaced
+
+
+## dress() for a list of the group's meshes ([mesh, transform] each, in the
+## group's order): the indices of those it replaces.
+static func dress_list(group: Node3D, placed: Array, add: Callable) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(Vector3i(group.global_position.round()))
 	refresh_interactables(group)
 	var replaced := {}
 	var colliders := _tree_colliders(group)
-	for node in group.find_children("*", "MeshInstance3D", true, false):
-		var mesh_instance := node as MeshInstance3D
-		var source := mesh_instance.mesh.resource_path.get_file() if mesh_instance.mesh else ""
-		var at := mesh_instance.global_position
+	for index in placed.size():
+		var mesh: Mesh = placed[index][0]
+		var global_xform: Transform3D = placed[index][1]
+		var source := mesh.resource_path.get_file() if mesh else ""
+		var at := global_xform.origin
 		if not source.begins_with(PINE_SOURCE):
 			# The group's own small things: off the paths.
-			if mesh_instance.mesh and (TerrainMask.near_path(at, 0.6) or near_fence(at, FENCE_CLEARANCE)
+			if mesh and (TerrainMask.near_path(at, 0.6) or near_fence(at, FENCE_CLEARANCE)
 				or GravelRoad.covers(at, ROAD_CLEARANCE)):
-				replaced[mesh_instance] = true
+				replaced[index] = true
 			continue
-		replaced[mesh_instance] = true
+		replaced[index] = true
 		if TerrainMask.path(at) >= TREE_ON_PATH or near_fence(at, FENCE_TREE_CLEARANCE) 				or GravelRoad.covers(at, ROAD_TREE_CLEARANCE):
 			_remove_collider_near(colliders, at)
 			trees_cleared += 1
 			continue
 		# (After the road and the paths: no stump left on either.)
 		if in_clearcut(at):
-			_cut(rng, mesh_instance.global_transform.origin, colliders, add)
+			_cut(rng, global_xform.origin, colliders, add)
 			continue
-		var base := mesh_instance.global_transform
+		var base := global_xform
 		var model := _tree_model(rng, source, at)
 		var lean := Basis(Vector3(rng.randf_range(-1.0, 1.0), 0.0, rng.randf_range(-1.0, 1.0)).normalized(),
 			deg_to_rad(rng.randf_range(0.0, TREE_LEAN_DEGREES)))
@@ -357,8 +386,9 @@ static func refresh_interactables(node: Node) -> void:
 		for thing in node.get_tree().get_nodes_in_group(group_name):
 			if thing is Node3D:
 				_interactables.append((thing as Node3D).global_position)
-	# The nests.
-	var scene := node.get_tree().current_scene
+	# The nests. (The level the node is in: the current scene isn't set yet
+	# while a level added by hand gets ready.)
+	var scene := node.owner if node.owner else node.get_tree().current_scene
 	var nests := scene.get_node_or_null("NestLocations") if scene else null
 	if nests:
 		for nest in nests.get_children():
