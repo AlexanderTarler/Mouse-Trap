@@ -110,10 +110,10 @@ func _test_crows() -> void:
 	_check("16: Day 1, crows on the cabin's roof ridge (y %.1f), sitting tight with the player 67 m off" % ridge, still and ridge > 8.0)
 	_check("16: and at the barn, the wreck yard, the clear-cut (and the willow)", others.all(func(f): return perched.call(f)),
 		str(others.map(func(f): return f.name if f else "missing")))
-	_player.global_position = Vector3(9.0, 1.0, -26.0)   # 43 m
+	_player.global_position = Vector3(1.5, 1.0, -21.0)   # by the note stones
 	await _frames(60)
 	var up: bool = roof._crows.all(func(c): return c.state != roof.State.PERCHED)
 	_player.global_position = Vector3(9.0, 1.0, -120.0)   # far off
 	await _frames(60 * 8)
 	var back: bool = roof._crows.any(func(c): return c.state == roof.State.PERCHED)
-	_check("16: within ~50 m they fly off, and don't come back that day", up and not back, "up %s, back %s" % [up, back])
+	_check("16: passing the note stones they fly off, and don't come back that day", up and not back, "up %s, back %s" % [up, back])

@@ -711,10 +711,14 @@ func _process(delta: float) -> void:
 				overload_active = true
 				break
 		
+		var fuel_before := generator_fuel
 		if overload_active:
 			generator_fuel -= 3.0 * tick
 		else:
 			generator_fuel -= current_drain_rate * tick
+		# The failsafe until Day 3: the tank stops going down at 10%.
+		if failsafe_active():
+			generator_fuel = maxf(generator_fuel, minf(fuel_before, max_fuel * FAILSAFE_FUEL))
 		generator_fuel = clampf(generator_fuel, 0.0, max_fuel)
 		fuel_changed.emit(generator_fuel)
 		
@@ -1237,7 +1241,48 @@ func restart_from_checkpoint() -> void:
 	# restart, regardless of whether the checkpoint branch reset the night or
 	# the day. This guarantees a consistent, clean-facing spawn with a fully
 	# reset camera.
-	_spawn_player_at("PlayerSpawnDev")
+	# Day 1 (Continue, say): outside the cabin instead. Its checkpoint is the
+	# start of the game, before the key: the cabin isn't open yet.
+	if is_day_active and current_night <= 1:
+		_spawn_outside_cabin()
+	else:
+		_spawn_player_at("PlayerSpawnDev")
+
+
+## ─── FAILSAFE (Day 1 until Day 3) ─────────────────────────────────────────
+## Until Day 3 the generator can't run dry (its drain stops at FAILSAFE_FUEL
+## of the tank) and the flashlight can't die (it stops at a level where it
+## still flickers: Flashlight.FAILSAFE_BATTERY). From Day 3 both drain to
+## nothing as before.
+const FAILSAFE_FUEL := 0.1
+
+
+func failsafe_active() -> bool:
+	return current_night < 3
+
+
+## Where Day 1 is picked up again: in front of the porch, facing it (the
+## steps, and the bucket the key is under).
+const OUTSIDE_CABIN := Vector3(9.0, 0.0, 2.0)
+
+
+func _spawn_outside_cabin() -> void:
+	var player := get_tree().get_first_node_in_group("player") as Node3D
+	if not player:
+		return
+	var at := OUTSIDE_CABIN
+	var space := player.get_world_3d().direct_space_state
+	var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(at + Vector3.UP * 20.0, at + Vector3.DOWN * 20.0, 1, [player.get_rid()]))
+	if not hit.is_empty():
+		at.y = (hit.position as Vector3).y
+	# (The camera straightened first: that also turns the body to -Z.)
+	if player.has_method("reset_camera"):
+		player.reset_camera()
+	# Turned round: the player looks down -Z, the cabin is towards +Z.
+	player.global_transform = Transform3D(Basis(Vector3.UP, PI), at + Vector3.UP * 0.9)
+	if "velocity" in player:
+		player.velocity = Vector3.ZERO
+	print("[NightManager] Day 1 picked up outside the cabin: %s" % player.global_position)
 
 
 ## Teleports the player to a named PlayerSpawnpoints marker (with recursive

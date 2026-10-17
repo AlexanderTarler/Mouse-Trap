@@ -44,6 +44,10 @@ const SMALL_DRAW_DISTANCE := 60.0
 ## instanced.
 @export var template: PackedScene = null
 
+## The forest's tree group template (what a dressing group is made of if it
+## names none).
+const TREES_TEMPLATE := "res://scenes/trees_template.tscn"
+
 ## template -> what it's made of: {"meshes": [...], "trunks": [...],
 ## "others": [Node, ...]} (_read_template)
 static var _templates := {}
@@ -66,6 +70,10 @@ static var _always_small := {}
 ## them enter the tree before the first is ready, and ForestDresser looks at
 ## them all.)
 func _enter_tree() -> void:
+	# (A level saved while the template was missing has groups with no
+	# template: they get the forest's own.)
+	if dress_forest and template == null and ResourceLoader.exists(TREES_TEMPLATE):
+		template = load(TREES_TEMPLATE)
 	if template and not Engine.is_editor_hint() and not _built:
 		_built = true
 		_build_from_template()

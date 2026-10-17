@@ -70,6 +70,11 @@ func _process(delta: float) -> void:
 		var buffer := _capture.get_buffer(frames)
 		for frame in buffer:
 			peak = maxf(peak, maxf(absf(frame.x), absf(frame.y)))
+		if _recording:
+			_record.append_array(buffer)
+			if _record.size() > int(RECORD_MAX * AudioServer.get_mix_rate()):
+				_record = _record.slice(_record.size() - int(RECORD_MAX * AudioServer.get_mix_rate()))
+			record_peak_db = maxf(record_peak_db, linear_to_db(maxf(peak, 0.00001)))
 		if not meter_only:
 			_ring.append_array(buffer)
 			var keep := int(KEEP_SECONDS * AudioServer.get_mix_rate())
@@ -126,14 +131,41 @@ func _stop() -> void:
 	level_db = -80.0
 
 
+## ─── RECORDING (Nest Gamma) ───────────────────────────────────────────────
+## Everything heard from start_recording() on (the last RECORD_MAX s), kept
+## in memory only, handed back by stop_recording(). record_peak_db: the
+## loudest moment in it (was anything said at all?).
+const RECORD_MAX := 4.0
+var record_peak_db := -80.0
+var _recording := false
+var _record := PackedVector2Array()
+
+
+func start_recording() -> void:
+	_recording = true
+	_record = PackedVector2Array()
+	record_peak_db = -80.0
+
+
+func stop_recording() -> AudioStreamWAV:
+	_recording = false
+	var clip := _to_wav(_record)
+	_record = PackedVector2Array()
+	return clip
+
+
 ## The kept seconds as a sound (16-bit stereo).
 func _clip() -> AudioStreamWAV:
-	if _ring.is_empty():
+	return _to_wav(_ring)
+
+
+func _to_wav(frames: PackedVector2Array) -> AudioStreamWAV:
+	if frames.is_empty():
 		return null
 	var data := PackedByteArray()
-	data.resize(_ring.size() * 4)
+	data.resize(frames.size() * 4)
 	var at := 0
-	for frame in _ring:
+	for frame in frames:
 		data.encode_s16(at, int(clampf(frame.x, -1.0, 1.0) * 32767.0))
 		data.encode_s16(at + 2, int(clampf(frame.y, -1.0, 1.0) * 32767.0))
 		at += 4

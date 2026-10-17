@@ -113,7 +113,7 @@ const TREE_ON_PATH := 0.3
 ## the bake is only used while these settings are the ones it was made with.
 ## Changed how the dressing works without changing a setting? Raise this, and
 ## bake again.
-const BAKE_VERSION := 1
+const BAKE_VERSION := 2
 
 
 ## Every setting the dressing uses (ForestBake's check).
@@ -123,7 +123,7 @@ static func settings() -> Array:
 		TREE_MODEL_SCALE, TREE_SCALE, TREE_LEAN_DEGREES, UNDERGROWTH, SMALL_MODELS, CLEARCUT,
 		CLEARCUT_EDGE, CLEARCUT_STUMP_SCALE, CLEARCUT_REGROWTH, CLEARCUT_YOUNG_PINE, CLEARCUT_JITTER,
 		CLEAR_ZONES, FENCE_LINES, FENCE_TREE_CLEARANCE, FENCE_CLEARANCE, ROAD_TREE_CLEARANCE,
-		ROAD_CLEARANCE, INTERACTABLE_CLEARANCE, TREE_ON_PATH, STONE_TRUNK_CLEARANCE, TRUNK_CELL]
+		ROAD_CLEARANCE, INTERACTABLE_CLEARANCE, TREE_ON_PATH, STONE_TRUNK_CLEARANCE, TRUNK_CELL, TRUNK_RADIUS]
 
 static var _models := {}
 ## Where undergrowth was placed and how many trees were cleared off paths
@@ -169,6 +169,9 @@ static func dress_list(group: Node3D, placed: Array, add: Callable) -> Dictionar
 			if mesh and (TerrainMask.near_path(at, 0.6) or near_fence(at, FENCE_CLEARANCE)
 				or GravelRoad.covers(at, ROAD_CLEARANCE)):
 				replaced[index] = true
+			elif mesh and _rock_through_trunk(mesh, global_xform, colliders):
+				replaced[index] = true
+				rocks_cleared += 1
 			continue
 		replaced[index] = true
 		if TerrainMask.path(at) >= TREE_ON_PATH or near_fence(at, FENCE_TREE_CLEARANCE) 				or GravelRoad.covers(at, ROAD_TREE_CLEARANCE):
@@ -189,6 +192,27 @@ static func dress_list(group: Node3D, placed: Array, add: Callable) -> Dictionar
 		_emit(model, Transform3D(basis, base.origin), add)
 		_undergrowth(rng, base.origin, add)
 	return replaced
+
+
+## The group's own big rocks: one whose footprint reaches a trunk (they were
+## set by the original pines; the trees that grow there now are their own
+## size and lean) goes. How far a trunk reaches (m).
+const TRUNK_RADIUS := 0.45
+static var rocks_cleared := 0
+
+
+static func _rock_through_trunk(mesh: Mesh, xform: Transform3D, colliders: Array) -> bool:
+	var name := (mesh.resource_path + " " + mesh.resource_name).to_lower()
+	if not "rock" in name:
+		return false
+	var box := xform * mesh.get_aabb()
+	var centre := box.get_center()
+	var reach := maxf(box.size.x, box.size.z) * 0.5 + TRUNK_RADIUS
+	for entry in colliders:
+		var trunk: Vector3 = entry[1]
+		if Vector2(trunk.x - centre.x, trunk.z - centre.z).length() < reach:
+			return true
+	return false
 
 
 ## A stone this big (its scale) is kept this far (m, per unit of scale) from

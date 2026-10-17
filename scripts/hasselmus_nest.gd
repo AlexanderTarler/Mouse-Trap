@@ -202,6 +202,9 @@ func _process(delta: float) -> void:
 		lock_satisfied = false
 		if lock_type == "mimic":
 			_mimic_baseline()
+			# (It listens a little further out than the prompt shows.)
+			if not is_documented:
+				_update_voice_copy(delta)
 		if _stealth_failed:
 			_stealth_failed = false
 			print("[HasselmusNest] %s: Stealth failure reset — player left the nest's territory." % nest_label)
@@ -314,6 +317,7 @@ func _update_mimic(delta: float) -> void:
 			_mimic_walked = 0.0
 			var steps: Array = _player.get("grass_footsteps") if _player.get("grass_footsteps") else []
 			mimic_sound(steps, 3)
+	_update_voice_copy(delta)
 	var flashlight := _get_flashlight()
 	if flashlight and flashlight.is_on != _flashlight_was_on:
 		_flashlight_was_on = flashlight.is_on
@@ -323,6 +327,83 @@ func _update_mimic(delta: float) -> void:
 		_notebook_was_open = notebook.is_open()
 		if _notebook_was_open:
 			mimic_sound([load(NOTEBOOK_SOUND)])
+
+
+## ─── THE PLAYER, COPIED ─────────────────────────────────────────────────
+## Within VOICE_COPY_RADIUS of the stump it listens: with the microphone on,
+## what the player says over VOICE_COPY_TIME comes back from inside it,
+## lower and doubled, wrong; without (or if nothing was said), their
+## footsteps do, a beat late and off. Once per visit.
+const VOICE_COPY_RADIUS := 5.0
+const VOICE_COPY_TIME := 3.0
+## Quieter than this all the while: nothing was said.
+const VOICE_COPY_SILENT_DB := -42.0
+const VOICE_COPY_PITCH := [0.82, 0.76]
+const FALLBACK_STEP := "res://assets/audio/40 Free PSX Footsteps/Grass/"
+var _voice_copy_left := -1.0
+var _voice_copied := false
+
+
+func _update_voice_copy(delta: float) -> void:
+	var near := global_position.distance_to(_player.global_position) <= VOICE_COPY_RADIUS
+	if not near:
+		if _voice_copy_left >= 0.0:
+			var voice := _player_voice()
+			if voice:
+				voice.stop_recording()
+		_voice_copy_left = -1.0
+		_voice_copied = false
+		return
+	if _voice_copied:
+		return
+	if _voice_copy_left < 0.0:
+		_voice_copy_left = VOICE_COPY_TIME
+		var voice := _player_voice()
+		if voice:
+			voice.start_recording()
+		return
+	_voice_copy_left -= delta
+	if _voice_copy_left > 0.0:
+		return
+	_voice_copied = true
+	_voice_copy_left = -1.0
+	var voice := _player_voice()
+	var clip: AudioStreamWAV = voice.stop_recording() if voice else null
+	if clip and voice.record_peak_db > VOICE_COPY_SILENT_DB:
+		_play_voice_copy(clip)
+	else:
+		var steps: Array = _player.get("grass_footsteps") if _player.get("grass_footsteps") else []
+		if steps.is_empty():
+			for i in [1, 2, 3]:
+				var path := FALLBACK_STEP + "Footstep Grass %d.ogg" % i
+				if ResourceLoader.exists(path):
+					steps.append(load(path))
+		mimic_sound(steps, 4)
+
+
+## The player's microphone, when it's on and listening.
+func _player_voice() -> Node:
+	var voice := _player.get_node_or_null("PlayerVoice") if _player else null
+	return voice if voice and voice.has_method("is_listening") and voice.is_listening() else null
+
+
+## Their own voice from inside the stump: twice, lower each time, the second
+## a hair behind the first.
+func _play_voice_copy(clip: AudioStreamWAV) -> void:
+	for i in VOICE_COPY_PITCH.size():
+		var copy := AudioStreamPlayer3D.new()
+		copy.name = "VoiceCopy%d" % i
+		copy.bus = &"SFX"
+		copy.unit_size = 4.0
+		copy.volume_db = -2.0 - 4.0 * i
+		copy.position = Vector3.UP * 0.3
+		copy.stream = clip
+		copy.pitch_scale = VOICE_COPY_PITCH[i]
+		add_child(copy)
+		get_tree().create_timer(0.12 * i).timeout.connect(copy.play)
+		copy.finished.connect(copy.queue_free)
+	get_tree().create_timer(clip.get_length() / VOICE_COPY_PITCH[0] + 0.3).timeout.connect(_echoed)
+	print("[HasselmusNest] %s copies the player's voice (%.1f s)." % [nest_label, clip.get_length()])
 
 
 ## Copies a sound from inside the stump, MIMIC_DELAY s later (`count`
@@ -493,6 +574,11 @@ func interact() -> void:
 	
 	# Emit signal
 	nest_documented.emit(nest_id)
+	# The overcharge nest documented: the overcharge hint has done its job.
+	if lock_type == "overcharge":
+		var tm := get_node_or_null("/root/TutorialManager")
+		if tm and tm.has_method("mark_learned"):
+			tm.mark_learned("overcharge")
 
 	# The last nest: a storm breaks for the long walk back to the cabin, and
 	# rains on until the player wakes up on Day 3.

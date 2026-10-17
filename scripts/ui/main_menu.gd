@@ -112,6 +112,32 @@ func _dress() -> void:
 	box.move_child(_continue_button, 0)
 	_continue_button.pressed.connect(_on_continue_pressed)
 	_refresh_continue()
+	_add_clicks(self)
+
+
+## A click for every button pressed on the menu (and in its options).
+const CLICK := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/GUI/gui_click_1.ogg"
+var _click: AudioStreamPlayer
+
+
+func _add_clicks(under: Node) -> void:
+	if not _click:
+		_click = AudioStreamPlayer.new()
+		_click.name = "Click"
+		_click.stream = load(CLICK)
+		_click.volume_db = -8.0
+		_click.bus = &"SFX"
+		_click.process_mode = Node.PROCESS_MODE_ALWAYS
+		add_child(_click)
+	for node in under.find_children("*", "BaseButton", true, false):
+		var button := node as BaseButton
+		if not button.pressed.is_connected(_play_click):
+			button.pressed.connect(_play_click)
+
+
+func _play_click() -> void:
+	if _click and _click.is_inside_tree():
+		_click.play()
 
 
 func _refresh_continue() -> void:
@@ -272,6 +298,7 @@ func _on_settings_pressed() -> void:
 			printerr("[MainMenu] ERROR: Options menu scene did not instance correctly.")
 			return
 		add_child(_options_menu)
+		_add_clicks(_options_menu)
 		print("[MainMenu] Options menu instantiated.")
 	
 	_options_menu.show_menu()

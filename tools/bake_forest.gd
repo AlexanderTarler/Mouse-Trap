@@ -51,6 +51,7 @@ func _run() -> void:
 	for entry in bake.entries:
 		for cell in entry.cells:
 			instances += entry.cells[cell].size() / 12
+	print("[BAKE FOREST] rocks dropped off trunks: %d" % ForestDresser.rocks_cleared)
 	print("[BAKE FOREST] %s: %d groups, %d models, %d instances, %d trunks changed; inputs %d" % ["saved " + ForestBake.PATH if err == OK else "FAILED (%d)" % err,
 		groups, bake.entries.size(), instances, changed, bake.inputs])
 	ForestBake.baking = false

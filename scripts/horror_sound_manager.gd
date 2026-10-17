@@ -496,8 +496,9 @@ func _on_night_started(night: int) -> void:
 		if nm_check and nm_check.get("is_van_sequence_active") == true:
 			print("HorrorSoundManager: Van sequence active — suppressing distant monster sound.")
 		else:
-			# Play the distant monster sound when night starts
-			play_distant_monster()
+			# Play the distant monster sound when night starts (a moment in,
+			# once the Entity is out: it comes from where it is).
+			get_tree().create_timer(1.0).timeout.connect(play_distant_monster)
 
 func _on_night_ended(_night: int) -> void:
 	_is_night = false
@@ -764,6 +765,25 @@ func play_distant_monster() -> void:
 	# This provides a consistent, recognizable sound that signals the Entity is active.
 	var stream = _distant_monster_streams[0]
 	if stream:
+		# From the Entity itself, wherever it is (heard far off); without one
+		# about, as before (flat).
+		var entity := get_tree().get_first_node_in_group("entity") as Node3D
+		if entity and entity.is_inside_tree() and (not entity.has_method("is_active") or entity.is_active()):
+			var roar := AudioStreamPlayer3D.new()
+			roar.name = "DistantRoar"
+			roar.stream = stream
+			roar.bus = &"Entity"
+			roar.volume_db = 6.0
+			roar.unit_size = 30.0
+			roar.max_distance = 500.0
+			roar.attenuation_filter_cutoff_hz = 3000.0
+			entity.add_child(roar)
+			roar.position = Vector3.UP * 1.5
+			roar.play()
+			roar.finished.connect(roar.queue_free)
+			print("HorrorSoundManager: Playing distant monster sound (mx_1) from the Entity at %s." % entity.global_position)
+			sound_played.emit("distant_monster")
+			return
 		_distant_monster_player.stream = stream
 		_distant_monster_player.play()
 		print("HorrorSoundManager: Playing distant monster sound (mx_1)!")

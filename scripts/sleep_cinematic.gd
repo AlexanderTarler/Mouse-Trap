@@ -59,7 +59,26 @@ func setup(bed: Node3D) -> SleepCinematic:
 	return self
 
 
+## The player yawns as they lie down (and dozing off at the computer).
+const YAWN := "res://assets/audio/objects/Player Yawning.ogg"
+
+
+func yawn() -> void:
+	if not ResourceLoader.exists(YAWN):
+		return
+	var sound := AudioStreamPlayer.new()
+	sound.name = "Yawn"
+	sound.stream = load(YAWN)
+	sound.bus = &"SFX"
+	sound.volume_db = -4.0
+	sound.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(sound)
+	sound.play()
+	sound.finished.connect(sound.queue_free)
+
+
 func fall_asleep(player: Node3D) -> void:
+	yawn()
 	_begin(player)
 	var start := _player_camera(player).global_transform
 	_camera.global_transform = start
@@ -337,6 +356,7 @@ func lids_amount() -> float:
 
 ## Eyelids only (see the top): heavy blinks, then shut.
 func doze_off() -> void:
+	yawn()
 	if not is_instance_valid(_layer):
 		_make_lids()
 	_set_lids(0.0)

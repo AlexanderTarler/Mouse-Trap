@@ -272,14 +272,12 @@ func _rebuild_index() -> void:
 
   [b]4.[/b]  Field Notes   [color=#6e655a][i]%s[/i][/color]
 
-  [b]5.[/b]  The Entity   [color=#6e655a][i]%s[/i][/color]
-
-[center]---
+%s[center]---
 [color=#6e655a]%s[/color][/center]""" % [
 		_nest_data_start_page + 1,
 		_unlocked_nests.size(),
 		"p. %d · %d %s" % [_notes_start_page + 1, _unlocked_notes.size(), "entry" if _unlocked_notes.size() == 1 else "entries"] if not _unlocked_notes.is_empty() else "none yet",
-		"p. %d · %d %s" % [_entity_start_page + 1, _entity_entries.size(), "entry" if _entity_entries.size() == 1 else "entries"] if not _entity_entries.is_empty() else "nothing yet",
+		("  [b]5.[/b]  The Entity   [color=#6e655a][i]%s[/i][/color]\n\n" % ("p. %d · %d %s" % [_entity_start_page + 1, _entity_entries.size(), "entry" if _entity_entries.size() == 1 else "entries"] if not _entity_entries.is_empty() else "nothing yet")) if entity_chapter_open() else "",
 		GameKeys.keys_in("[Q] / [E] turn the pages · [J] close", {"E": "notebook_next_page"}),
 	]
 
@@ -578,6 +576,9 @@ func _toggle() -> void:
 			tm.mark_learned("notebook")
 	visible = _is_open
 	if _is_open:
+		# (Day 3 may have come since: the Entity chapter shows from then.)
+		if _entity_shown != entity_chapter_open():
+			_rebuild_all_pages()
 		current_spread = 0
 		_current_page = 0
 		_update_spread()
@@ -772,11 +773,23 @@ func _rebuild_all_pages() -> void:
 		_append_page_content(note_text)
 	
 	# Chapter 5: The Entity — what he's learned about it (EntityJournal).
+	# Kept from the start, shown from Day 3.
 	_entity_start_page = _all_pages.size()
-	if not _entity_entries.is_empty():
+	_entity_shown = entity_chapter_open()
+	if _entity_shown and not _entity_entries.is_empty():
 		_append_page_content(_entity_chapter_text())
 
 	_rebuild_index()
+
+
+## Whether chapter 5 is in the notebook yet: from Day 3 (before that the
+## entries are kept, unseen).
+func entity_chapter_open() -> bool:
+	var nm := get_node_or_null("/root/NightManager")
+	return nm == null or int(nm.current_night) >= 3
+
+
+var _entity_shown := false
 
 
 ## Chapter 5's text: a heading, then each entry in the order learned.
@@ -795,7 +808,8 @@ func add_entity_entry(key: String, text: String) -> bool:
 	_entity_entries[key] = text
 	_rebuild_all_pages()
 	_update_spread()
-	_play_scribble_sfx()
+	if _entity_shown:
+		_play_scribble_sfx()
 	return true
 
 

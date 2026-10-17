@@ -96,6 +96,13 @@ func _test_watch() -> void:
 func _test_journal() -> void:
 	var notebook: Node = get_first_node_in_group("notebook_ui")
 	var monologue: Node = root.get_node("Monologue")
+	# Hidden before Day 3 (kept, unseen); from Day 3 in the notebook.
+	EntityJournal.learn(_scene, "daylight")
+	var hidden_early: bool = not "The Entity" in notebook._index_label.text and notebook.entity_entry_count() == 1
+	_check("5: before Day 3 the chapter is hidden (what's learned is kept)", hidden_early)
+	notebook._entity_entries.clear()
+	_nm.current_night = 3
+	notebook._rebuild_all_pages()
 	var empty: bool = notebook.entity_entry_count() == 0
 	EntityJournal.learn(_scene, "beam")
 	var after_one: int = notebook.entity_entry_count()

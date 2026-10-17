@@ -38,7 +38,7 @@ static func learn(from: Node, key: String) -> bool:
 	if not notebook.add_entity_entry(slot, ENTRIES[key]):
 		return false
 	print("[EntityJournal] Learned: %s" % key)
-	if first:
+	if first and notebook.entity_chapter_open():
 		var monologue := from.get_node_or_null("/root/Monologue")
 		if monologue and monologue.has_method("think_when_free"):
 			monologue.think_when_free("I should write this down.", 3.5, "entity_journal_first", 1.2)

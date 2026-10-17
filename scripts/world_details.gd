@@ -61,11 +61,15 @@ signal scattered
 ## The other flocks: [name, centre, birds, perch, the player this close
 ## sends them up, the area searched for a ridge (HIGH), Day 1 only].
 const FLOCKS := [
-	["CrowsCabinRoof", Vector3(9.0, 0.0, 17.0), 5, Crows.Perch.HIGH, 50.0, Vector2(6.0, 3.0), true],
+	["CrowsCabinRoof", Vector3(9.0, 0.0, 17.0), 5, Crows.Perch.HIGH, 30.0, Vector2(6.0, 3.0), true],
 	["CrowsBarnRoof", Vector3(36.8, 0.0, -74.7), 6, Crows.Perch.HIGH, 16.0, Vector2(8.0, 8.0), false],
 	["CrowsWreckYard", Vector3(-84.0, 0.0, -15.0), 5, Crows.Perch.HIGH, 14.0, Vector2(9.0, 9.0), false],
 	["CrowsClearcut", Vector3(84.0, 0.4, -90.0), 6, Crows.Perch.GROUND, 14.0, Vector2(8.0, 8.0), false],
 ]
+
+## The Day 1 roof crows also go up when the player passes the stones by the
+## old note, on the way in.
+const ROOF_CROWS_SCARE := Vector3(1.3, 0.0, -21.0)
 
 var placed := 0
 var is_scattered := false
@@ -87,7 +91,8 @@ func _ready() -> void:
 		sites.extras_only = owner != null and owner.has_node("Sites")
 		add_child(sites)
 	# Crows at the willow (Crows), and other flocks by day: the cabin's roof
-	# ridge on Day 1 (up when the player is ~50 m off), the barn roof, the
+	# ridge on Day 1 (up when the player is ~30 m off, or passes the note
+	# stones on the way in), the barn roof, the
 	# wreck yard, the old clear-cut.
 	var crows := Crows.new()
 	crows.name = "Crows"
@@ -95,6 +100,8 @@ func _ready() -> void:
 	for flock: Array in FLOCKS:
 		var more := Crows.new().setup(flock[1], flock[2], flock[3], flock[4], flock[5], flock[6])
 		more.name = flock[0]
+		if flock[0] == "CrowsCabinRoof":
+			more.scare_spot = ROOF_CROWS_SCARE
 		add_child(more)
 	# The cabin, night by night: settling, creaking, a handle tried (HouseUnease).
 	var unease := HouseUnease.new()

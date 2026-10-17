@@ -58,6 +58,11 @@ var _material: StandardMaterial3D
 var _caws: Array[AudioStreamWAV] = []
 var _rng := RandomNumberGenerator.new()
 var _check := 0.0
+## A spot that sends them up too when the player passes it (the roof flock:
+## the stones by the old note on the way in), and how close counts (m).
+var scare_spot := Vector3.INF
+var scare_radius := 8.0
+const CAWING := "res://assets/audio/objects/Birds_Cawing.ogg"
 
 
 func _ready() -> void:
@@ -105,6 +110,10 @@ func _process(delta: float) -> void:
 		if player and _flat(player.global_position, centre) < flee_player + 6.0:
 			for crow in _crows:
 				if crow.state == State.PERCHED and _flat(player.global_position, crow.node.global_position) < flee_player:
+					scare = "player"
+		if player and scare_spot != Vector3.INF and _flat(player.global_position, scare_spot) < scare_radius:
+			for crow in _crows:
+				if crow.state == State.PERCHED:
 					scare = "player"
 		if entity and entity.visible and entity.has_method("is_active") and entity.is_active() \
 				and _flat(entity.global_position, centre) < flee_entity:
@@ -242,10 +251,10 @@ func _take_off(player: Node3D, entity: Node3D, why: String) -> void:
 		crow.state = State.FLYING
 		crow.timer = FLY_TIME + _rng.randf_range(0.0, 1.5)
 		crow.delay = _rng.randf_range(0.0, 0.5)
-		if why != "night" and cawed < 3:
+		if cawed == 0:
 			cawed += 1
-			_caw(crow.node, cawed - 1)
-			if cawed == 1:
+			_caw(crow.node, 0)
+			if why != "night":
 				Caption.at(self, "crows taking off", crow.node.global_position)
 
 
@@ -301,9 +310,10 @@ func _fold(crow: Dictionary) -> void:
 	crow.hop = 0.0
 
 
+## The flock's cawing as it goes up, from where the birds are.
 func _caw(at: Node3D, which: int) -> void:
 	var player := AudioStreamPlayer3D.new()
-	player.stream = _caws[which % _caws.size()]
+	player.stream = load(CAWING) if ResourceLoader.exists(CAWING) else _caws[which % _caws.size()]
 	player.unit_size = 8.0
 	player.max_distance = 60.0
 	player.volume_db = -2.0

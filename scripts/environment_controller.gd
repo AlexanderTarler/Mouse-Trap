@@ -493,8 +493,11 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 	var fog_factor: float = night_fog_amount()
 	
 	# --- Night fog fluctuation ---
+	# (The night's strength is picked as the fog starts to come in, and its
+	# swell blends in with it: picked only once it was all in, it arrived
+	# all at once.)
 	var fog_fluctuation: float = 1.0
-	if fog_factor >= 0.99:
+	if fog_factor > 0.01:
 		if not _fog_initialized:
 			_night_fog_base = randf_range(0.7, 1.3)
 			_fog_initialized = true
@@ -503,6 +506,7 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 		var fast_wave: float = sin(_fog_noise_time * 0.3 + 1.2) * 0.15
 		fog_fluctuation = 1.0 + slow_wave + fast_wave
 		fog_fluctuation = clampf(fog_fluctuation, night_fog_fluctuation_min, night_fog_fluctuation_max)
+		fog_fluctuation = lerpf(1.0, fog_fluctuation, fog_factor)
 	elif _fog_initialized:
 		_fog_initialized = false
 	
@@ -521,7 +525,12 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 		if fog_nm and "current_night" in fog_nm and fog_nm.current_night >= 3:
 			night_multiplier = 1.5
 		
-		var thickness: float = fog_factor * fog_fluctuation * _night_fog_base * night_multiplier
+		# How thick the night's fog is once in (the distance it closes to),
+		# and how much of it is in yet: the fog thickens over FOG_FADE
+		# seconds, from clear to the night's, instead of the distance only
+		# closing in at the very end.
+		var full_thickness: float = fog_fluctuation * _night_fog_base * night_multiplier
+		var thickness: float = full_thickness * smoothstep(0.0, 1.0, fog_factor)
 		_set_ground_fog_emission(night3_ground_fog_emission if night_multiplier > 1.0 else _base_fog_emission)
 
 		# Distance fog: clear up to fog_clear_distance, fully opaque at the
@@ -529,13 +538,14 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 		# fog_density is the opacity reached at fog_depth_end.
 		_environment.fog_mode = Environment.FOG_MODE_DEPTH
 		_environment.fog_depth_begin = fog_clear_distance
-		_fog_visibility = fog_clear_distance + (night_fog_visibility - fog_clear_distance) / maxf(thickness, 0.05)
+		_fog_visibility = fog_clear_distance + (night_fog_visibility - fog_clear_distance) / maxf(full_thickness, 0.05)
 		if not is_equal_approx(_fog_visibility, _cached_fog_depth_end):
 			_environment.fog_depth_end = _fog_visibility
 			_cached_fog_depth_end = _fog_visibility
-		if not is_equal_approx(fog_factor, _cached_fog_density):
-			_environment.fog_density = fog_factor
-			_cached_fog_density = fog_factor
+		var opacity: float = smoothstep(0.0, 1.0, fog_factor)
+		if not is_equal_approx(opacity, _cached_fog_density):
+			_environment.fog_density = opacity
+			_cached_fog_density = opacity
 
 		var vfog_enabled: bool = true
 		if _cached_vfog_enabled != vfog_enabled:

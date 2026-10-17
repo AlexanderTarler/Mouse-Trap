@@ -648,6 +648,10 @@ func _physics_process(delta: float) -> void:
 ## head under the ceiling (walking upright it is taller than the ground
 ## floor's 2.85 m, and its head poked up through the floor above).
 func _process(delta: float) -> void:
+	# The animation tree is advanced by hand (_update_animation, at the speed
+	# asked); a tick that didn't (caught, dying, set aside) plays it on as is.
+	if _anim_tree and _anim_tree.callback_mode_process == AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL 			and _anim_advanced_frame != Engine.get_physics_frames():
+		_anim_tree.advance(delta)
 	if not model or not _anim_playback or not visible:
 		return
 	_headroom_check -= delta
@@ -807,18 +811,43 @@ func _traverse(link: CabinEntryLink, start: Vector3, end: Vector3) -> void:
 		_traversal.tween_property(self, "global_position", start, 0.15)
 		_traversal.tween_property(self, "global_position", end, duration)
 	else:
-		audio.play_vault()
 		# Leaving (from inside): it crawls out head first, low over the sill,
-		# facing the window; coming in it vaults over (EnterWindow).
+		# facing the window.
 		var leaving := start.distance_to(link.end_position) < start.distance_to(link.start_position)
 		if leaving:
+			audio.play_vault()
 			_traversal_anim = EXIT_CRAWL_ANIM
-		var apex := (start + end) * 0.5 + Vector3.UP * (EXIT_CRAWL_APEX if leaving else 1.0)
-		var half := config.vault_time * 0.5
-		_traversal.tween_property(self, "global_position", start, 0.15)
-		_traversal.tween_property(self, "global_position", apex, half).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
-		_traversal.tween_property(self, "global_position", end, half).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
+			var apex := (start + end) * 0.5 + Vector3.UP * EXIT_CRAWL_APEX
+			var half := config.vault_time * 0.5
+			_traversal.tween_property(self, "global_position", start, 0.15)
+			_traversal.tween_property(self, "global_position", apex, half).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+			_traversal.tween_property(self, "global_position", end, half).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
+		else:
+			_tween_dive_in(start, end)
 	_traversal.finished.connect(_end_traversal)
+
+
+## Coming in through a ground floor window: it backs off a few metres (still
+## facing it), runs at it, and dives through (Entity Dive Through Bottom
+## Floor Windows), landing inside.
+const DIVE_BACK_OFF := 3.0
+const DIVE_RUN_SPEED := 7.0
+const DIVE_TIME := 1.2
+const DIVE_ANIM := &"DiveIn"
+
+
+func _tween_dive_in(start: Vector3, end: Vector3) -> void:
+	var outward := Vector3(start.x - end.x, 0.0, start.z - end.z).normalized()
+	var back := start + outward * DIVE_BACK_OFF
+	_traversal.tween_callback(_set_traversal_anim.bind(&"Stalk"))
+	_traversal.tween_property(self, "global_position", back, maxf(global_position.distance_to(back) / config.approach_speed, 0.3))
+	_traversal.tween_callback(_set_traversal_anim.bind(&"running_crawl"))
+	_traversal.tween_property(self, "global_position", start, DIVE_BACK_OFF / DIVE_RUN_SPEED)
+	_traversal.tween_callback(_set_traversal_anim.bind(DIVE_ANIM))
+	_traversal.tween_callback(audio.play_vault)
+	var apex := (start + end) * 0.5 + Vector3.UP * 0.7
+	_traversal.tween_property(self, "global_position", apex, DIVE_TIME * 0.45).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+	_traversal.tween_property(self, "global_position", end, DIVE_TIME * 0.55).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_SINE)
 
 
 ## Out through a window: crawling (the floor crawl), low over the sill.
@@ -910,7 +939,7 @@ func enter_from_perch(link: CabinEntryLink) -> void:
 		return
 	_begin_climb(link)
 	_traversal.tween_callback(_set_perch.bind(null))
-	_tween_vault(global_position, link.end_position)
+	_tween_vault(global_position, link.end_position, CLIMB_IN_ANIM, 0.6, CLIMB_IN_TIME)
 
 
 ## Ducks below the sill (`down`) or comes back up while clinging.
@@ -928,7 +957,7 @@ func _traverse_climb(link: CabinEntryLink, inward: bool) -> void:
 		traces.scratch_climb(link, base, perch)
 		_traversal.tween_property(self, "global_position", base, maxf(global_position.distance_to(base) / config.approach_speed, 0.2))
 		_tween_climb(base, perch, &"ClimbUp")
-		_tween_vault(perch, link.end_position)
+		_tween_vault(perch, link.end_position, CLIMB_IN_ANIM, 0.6, CLIMB_IN_TIME)
 	else:
 		# Out of the window head first (crawling, facing it), then round to
 		# face the wall and down it.
@@ -955,9 +984,15 @@ func _tween_climb(from: Vector3, to: Vector3, anim: StringName) -> void:
 	_traversal.tween_property(self, "global_position", to, maxf(from.distance_to(to) / config.climb_speed, 0.3))
 
 
-func _tween_vault(from: Vector3, to: Vector3, anim: StringName = &"EnterWindow", lift: float = 0.6) -> void:
+## In through an upstairs window from the wall (Entity Climbing Inside Upper
+## Floor), at the animation's own pace.
+const CLIMB_IN_ANIM := &"ClimbIn"
+const CLIMB_IN_TIME := 3.8
+
+
+func _tween_vault(from: Vector3, to: Vector3, anim: StringName = &"EnterWindow", lift: float = 0.6, time: float = -1.0) -> void:
 	var apex := (from + to) * 0.5 + Vector3.UP * lift
-	var half := config.vault_time * 0.5
+	var half := (config.vault_time if time <= 0.0 else time) * 0.5
 	_traversal.tween_callback(_set_traversal_anim.bind(anim))
 	_traversal.tween_callback(audio.play_vault)
 	_traversal.tween_property(self, "global_position", apex, half).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
@@ -1029,8 +1064,13 @@ const ANIM_GROUND_OFFSET := {
 	&"Punch": -0.27,
 	&"HitReact": -0.32,
 	&"DropLand": -0.10,
+	&"ClimbIn": 0.0,
+	&"DiveIn": 0.0,
 }
 const ANIM_RUN_SPEED := 6.0
+## The physics tick the animation tree was last advanced on (_process covers
+## the ones it wasn't).
+var _anim_advanced_frame := -1
 ## How fast LowCrawl moves it played at normal speed (m/s).
 const ANIM_CRAWL_SPEED := 1.3
 ## The roar (the part of Mutant Roaring that matters, sped up) before a
@@ -1063,7 +1103,9 @@ func _update_animation(_delta: float) -> void:
 	elif _anim_override != &"":
 		anim = _anim_override
 		speed_scale = _anim_override_speed
-	elif _gait == &"crawl":
+	elif _gait == &"crawl" or (perception and perception.entity_inside):
+		# Low, crawling, in the house (and wherever it creeps): the crawl
+		# played as fast as it actually moves.
 		if horizontal_speed > 0.2:
 			anim = &"LowCrawl"
 			speed_scale = clampf(horizontal_speed / ANIM_CRAWL_SPEED, 0.6, 2.0)
@@ -1081,12 +1123,13 @@ func _update_animation(_delta: float) -> void:
 		_anim_playback.travel(anim)
 	if _anim_player:
 		_anim_player.speed_scale = speed_scale
-	# Speed 0 (clinging still): the AnimationTree drives the skeleton, not the
-	# player's speed, so it's stopped from advancing: the pose holds.
+	# The AnimationTree ignores the player's speed: it's advanced here by
+	# hand, at the speed asked (0 holds the pose: clinging still).
 	if _anim_tree:
-		var mode := AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL if speed_scale <= 0.0 else _anim_tree_mode
-		if _anim_tree.callback_mode_process != mode:
-			_anim_tree.callback_mode_process = mode
+		if _anim_tree.callback_mode_process != AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL:
+			_anim_tree.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+		_anim_tree.advance(_delta * speed_scale)
+		_anim_advanced_frame = Engine.get_physics_frames()
 
 
 func _set_hidden(hidden: bool) -> void:

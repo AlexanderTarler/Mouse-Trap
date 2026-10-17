@@ -18,6 +18,9 @@ signal overcharge_deactivated
 @export var max_battery: float = 100.0
 @export var drain_rate: float = 0.25  # per second when on (halved twice from 1.0: playtesters ran out fast)
 @export var low_battery_threshold: float = 15.0
+## Until Day 3 the battery stops going down here (it flickers, below
+## low_battery_threshold, but doesn't die).
+const FAILSAFE_BATTERY := 5.0
 
 ## ─── OVERCHARGE TUNING ─────────────────────────────────────────────────────
 ## Multiplier applied to drain_rate while the overcharge beam is active.
@@ -115,8 +118,14 @@ func _process(delta: float) -> void:
 		var active_drain: float = drain_rate
 		if is_overcharged:
 			active_drain *= overcharge_drain_multiplier
+		var before := battery_level
 		battery_level -= active_drain * delta
 		battery_level = maxf(battery_level, 0.0)
+		# Until Day 3 it never dies: it stops low enough to flicker
+		# (NightManager.failsafe_active).
+		var nm := get_node_or_null("/root/NightManager")
+		if nm and nm.has_method("failsafe_active") and nm.failsafe_active():
+			battery_level = maxf(battery_level, minf(before, FAILSAFE_BATTERY))
 		# Told in 0.1% steps, not every frame (the HUD redrew its battery
 		# readout 60 times a second).
 		if absf(battery_level - _last_reported_battery) >= max_battery * 0.001 or battery_level <= 0.0:
@@ -133,16 +142,13 @@ func _process(delta: float) -> void:
 				tm_empty.trigger("low_battery")
 			return
 		
-		# ─── OVERCHARGE TUTORIAL HOLD TRACKING ────────────────────────
-		# Only accumulate while the overcharge beam is active AND the
-		# mechanic has not yet been learned. The hint stays on screen
-		# until the player has continuously held F for at least the
-		# required duration (3.0s). Once satisfied, dismiss it.
+		# ─── OVERCHARGE TUTORIAL ─────────────────────────────────────
+		# The hint stays until Nest Alpha (the overcharge nest) is
+		# documented: that's when the player has shown they can do it
+		# (HasselmusNest marks it learned). Holding the beam no longer
+		# dismisses it.
 		if is_overcharged and not _is_overcharge_tutorial_learned():
 			_overcharge_tutorial_hold_time += delta
-			if _overcharge_tutorial_hold_time >= OVERCHARGE_TUTORIAL_HOLD_REQUIRED:
-				_overcharge_tutorial_hold_time = 0.0
-				_mark_overcharge_tutorial_learned()
 		elif not is_overcharged:
 			# Overcharge not active — reset the cumulative hold timer so
 			# the player must hold continuously for the full 3 seconds.

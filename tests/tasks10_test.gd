@@ -117,9 +117,13 @@ func _test_flashlight() -> void:
 			break
 		tm.mark_learned(tm.visible_hint())
 		await _frames(1)
+	# (From Day 3: before, the failsafe keeps it from running out.)
+	var night_was: int = root.get_node("NightManager").current_night
+	root.get_node("NightManager").current_night = 3
 	flashlight.battery_level = 0.01
 	await _frames(5)
 	_check("4: out of battery: the battery hint comes up (if it hadn't yet)", tm._shown.has("low_battery"), tm.visible_hint())
+	root.get_node("NightManager").current_night = night_was
 	flashlight.battery_level = 100.0
 
 
