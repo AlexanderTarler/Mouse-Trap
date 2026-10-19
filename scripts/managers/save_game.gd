@@ -38,8 +38,11 @@ static func describe() -> String:
 	var data := _read()
 	if data.is_empty():
 		return ""
-	var night := int(data.get("story", {}).get("current_night", 1))
-	return "%s %d" % ["Night" if data.get("kind") == "night" else "Day", maxi(night, 1)]
+	var night := int(data.get("story", {}).get("current_night", 0))
+	# (As the HUD names it: RoutineManager.get_current_day_string.)
+	if data.get("kind") == "night":
+		return "Night %d" % maxi(night, 1)
+	return "Day %d" % (1 if night <= 0 else maxi(night, 2))
 
 
 ## Writes the checkpoint just taken.
@@ -49,13 +52,16 @@ static func write(checkpoint: Node) -> void:
 	for manager in MANAGERS:
 		var node := tree.root.get_node_or_null(manager)
 		if node:
-			managers[manager] = checkpoint._read_state(node)
+			managers[manager] = encode(checkpoint._read_state(node))
 	var player := {}
 	var player_node := tree.get_first_node_in_group("player")
 	if player_node:
 		for property in PLAYER_VARS:
 			if property in player_node:
 				player[property] = player_node.get(property)
+	# Saved on leaving: where the player stands (Checkpoint.capture_on_quit).
+	if checkpoint.tag == "quit" and player_node is Node3D:
+		player["$at"] = (player_node as Node3D).global_transform
 	var inventory: Array = []
 	var inventory_node := tree.root.get_node_or_null("Inventory")
 	if inventory_node and "_checkpoint_items" in inventory_node:
@@ -63,12 +69,15 @@ static func write(checkpoint: Node) -> void:
 			inventory.append(encode(item))
 	var states := {}
 	for node_path in checkpoint._states:
-		states[String(node_path)] = checkpoint._states[node_path]
+		# (Encoded: a scrap heap's contents hold item resources, which
+		# store_var would keep only as object IDs, meaningless next launch.)
+		states[String(node_path)] = encode(checkpoint._states[node_path])
 	var props := {}
 	for node_path in checkpoint._props:
 		props[String(node_path)] = checkpoint._props[node_path]
 	var data := {
 		"version": VERSION,
+		"game_version": game_version(),
 		"saved": Time.get_unix_time_from_system(),
 		"kind": checkpoint.kind,
 		"tag": checkpoint.tag,
@@ -114,7 +123,7 @@ static func read_into(checkpoint: Node) -> bool:
 	checkpoint._story = data.story
 	checkpoint._thoughts = data.thoughts
 	for node_path in data.states:
-		checkpoint._states[NodePath(node_path)] = data.states[node_path]
+		checkpoint._states[NodePath(node_path)] = _decode_state(data.states[node_path])
 	for node_path in data.props:
 		checkpoint._props[NodePath(node_path)] = data.props[node_path]
 	for entry in data.pickups:
@@ -135,11 +144,37 @@ static func read_into(checkpoint: Node) -> bool:
 	for manager in data.managers:
 		var node := checkpoint.get_node_or_null("/root/" + manager)
 		if node:
-			checkpoint._write_state(node, data.managers[manager])
+			checkpoint._write_state(node, _decode_state(data.managers[manager]))
 	checkpoint.saved_player = data.player
 	checkpoint._taken = true
 	checkpoint.restore_on_load = true
 	return true
+
+
+## A node's saved state, decoded. A value that held objects saved as bare
+## IDs (saves from before they were encoded) is left out: the fresh level's
+## own value stays (a scrap heap's contents, not a list of nulls).
+static func _decode_state(state: Dictionary) -> Dictionary:
+	var out := {}
+	for key in state:
+		if _lost_objects(state[key]):
+			continue
+		out[key] = decode(state[key])
+	return out
+
+
+static func _lost_objects(value: Variant) -> bool:
+	if value is EncodedObjectAsID:
+		return true
+	if value is Array:
+		for element in value:
+			if _lost_objects(element):
+				return true
+	elif value is Dictionary:
+		for key in value:
+			if _lost_objects(value[key]):
+				return true
+	return false
 
 
 static func _read() -> Dictionary:
@@ -152,7 +187,17 @@ static func _read() -> Dictionary:
 	file.close()
 	if not data is Dictionary or int(data.get("version", 0)) != VERSION:
 		return {}
+	# Saved by another version of the game: its level may have changed (things
+	# moved or renamed), so it's not restored onto it.
+	if str(data.get("game_version", "")) != game_version():
+		return {}
 	return data
+
+
+## The game's version (Project Settings > Application > Config > Version):
+## raise it with every upload.
+static func game_version() -> String:
+	return str(ProjectSettings.get_setting("application/config/version", ""))
 
 
 ## A world item or lamp: placed from a scene (its scene and properties), or

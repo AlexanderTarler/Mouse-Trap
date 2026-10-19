@@ -26,6 +26,10 @@ const GAME_SCENE_UID: String = "uid://bc5qrh4dx4yi1"
 ## Options menu scene path.
 const OPTIONS_MENU_SCENE: String = "res://scenes/ui/options_menu.tscn"
 
+## Buttons copied from the scene's without its signals (a copy kept Play's
+## connection: Continue also pressed Play).
+const NO_SIGNALS := Node.DUPLICATE_GROUPS | Node.DUPLICATE_SCRIPTS | Node.DUPLICATE_USE_INSTANTIATION
+
 ## Lazily-instanced options menu.
 var _options_menu: OptionsMenu = null
 ## The game's level, loaded in the background from the moment the menu is up
@@ -33,6 +37,22 @@ var _options_menu: OptionsMenu = null
 ## to the menu and playing again doesn't load it again.
 static var _game_packed: PackedScene = null
 var _starting := false
+## ─── THE LOADING SCREEN ──────────────────────────────────────────────────
+## The menu is the loading screen: while the level loads, the sun goes down
+## over the cabin (MenuBackdrop.time_of_day); it's night once it's loaded. The
+## sunset slows as it goes (Godot reports this load's progress only in coarse
+## steps), so a quick load is a short sunset and a slow one a long one.
+## Pressed before night, Play (or Continue) brings the night on quickly
+## first; whatever is left loads under the opening.
+const SUNSET_PACE := 6.0
+const SUNSET_BEFORE_LOADED := 0.85
+## How fast the last of the sunset goes (time of day per second): loaded,
+## and hurried by Play.
+const NIGHT_FALLS := 0.25
+const NIGHT_RUSHES := 0.45
+var _backdrop: MenuBackdrop
+var _load_time := 0.0
+var _rush := false
 var _continue_button: Button
 ## New Game over a save asks first (seconds left to click again).
 var _new_game_armed := 0.0
@@ -73,6 +93,7 @@ func _ready() -> void:
 		# The first launch: set the brightness before anything.
 		var calibration := BrightnessCalibration.new()
 		calibration.name = "Calibration"
+		calibration.first_launch = true   # (then the microphone and highlights)
 		add_child(calibration)
 
 
@@ -81,7 +102,10 @@ func _dress() -> void:
 	if get_parent() == get_tree().root and DisplayServer.get_name() != "headless":
 		var backdrop := MenuBackdrop.new()
 		backdrop.name = "Backdrop"
+		# Afternoon while the level loads (night already if it has).
+		backdrop.time_of_day = 1.0 if _game_packed else 0.0
 		add_child(backdrop)
+		_backdrop = backdrop
 		move_child(backdrop, 0)
 		$Background.visible = false
 		# A shadow down the middle so the words read over the picture.
@@ -110,16 +134,36 @@ func _dress() -> void:
 	$TitleLabel.add_theme_constant_override("shadow_offset_y", 4)
 	if OS.has_feature("web"):
 		quit_button.visible = false
+	# The version, small in the corner (for bug reports).
+	var version := Label.new()
+	version.name = "VersionLabel"
+	version.text = "v" + SaveGame.game_version()
+	version.add_theme_font_size_override("font_size", 14)
+	version.modulate = Color(1, 1, 1, 0.45)
+	version.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	version.offset_left = -160
+	version.offset_top = -40
+	version.offset_right = -16
+	version.offset_bottom = -12
+	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	add_child(version)
 	var box := $VBoxContainer as VBoxContainer
-	_continue_button = play_button.duplicate() as Button
+	_continue_button = play_button.duplicate(NO_SIGNALS) as Button
 	_continue_button.name = "ContinueButton"
 	box.add_child(_continue_button)
 	box.move_child(_continue_button, 0)
 	_continue_button.pressed.connect(_on_continue_pressed)
 	_refresh_continue()
+	# The credits (who made it, the assets used).
+	var credits := settings_button.duplicate(NO_SIGNALS) as Button
+	credits.name = "CreditsButton"
+	credits.text = "Credits"
+	box.add_child(credits)
+	box.move_child(credits, settings_button.get_index() + 1)
+	credits.pressed.connect(_on_credits_pressed)
 	# Development builds: producer mode (Night 3, a ghost, a replica player).
 	if OS.is_debug_build():
-		var producer := play_button.duplicate() as Button
+		var producer := play_button.duplicate(NO_SIGNALS) as Button
 		producer.name = "ProducerButton"
 		producer.text = "Producer Mode"
 		producer.modulate = Color(0.7, 0.85, 1.0)
@@ -162,6 +206,7 @@ func _refresh_continue() -> void:
 
 
 func _process(delta: float) -> void:
+	_update_sunset(delta)
 	if _new_game_armed > 0.0:
 		_new_game_armed -= delta
 		if _new_game_armed <= 0.0:
@@ -176,6 +221,31 @@ func _quiet_game_sounds(quiet: bool) -> void:
 	var sounds := get_node_or_null("/root/HorrorSoundManager")
 	if sounds and sounds.has_method("set_menu_quiet"):
 		sounds.set_menu_quiet(quiet)
+
+
+## The sun going down as the level loads.
+func _update_sunset(delta: float) -> void:
+	if not _backdrop or not is_instance_valid(_backdrop) or _backdrop.time_of_day >= 1.0:
+		return
+	var loaded := _game_packed != null or ResourceLoader.load_threaded_get_status(GAME_SCENE_PATH) == ResourceLoader.THREAD_LOAD_LOADED
+	var t := _backdrop.time_of_day
+	if _rush:
+		t = move_toward(t, 1.0, NIGHT_RUSHES * delta)
+	elif loaded:
+		t = move_toward(t, 1.0, NIGHT_FALLS * delta)
+	else:
+		_load_time += delta
+		t = maxf(t, SUNSET_BEFORE_LOADED * (1.0 - exp(-_load_time / SUNSET_PACE)))
+	_backdrop.time_of_day = t
+
+
+## Pressed before night: the night comes on quickly first.
+func _await_night() -> void:
+	if not _backdrop or not is_instance_valid(_backdrop) or _backdrop.time_of_day >= 1.0:
+		return
+	_rush = true
+	while is_instance_valid(_backdrop) and _backdrop.time_of_day < 1.0:
+		await get_tree().process_frame
 
 
 func _preload_game() -> void:
@@ -222,6 +292,9 @@ func _start(button: Button) -> void:
 	var nm := get_node_or_null("/root/NightManager")
 	if nm and nm.has_method("show_start_cover"):
 		nm.show_start_cover()
+		# (The black on screen before the level's setup holds the frame.)
+		await get_tree().process_frame
+		await get_tree().process_frame
 	var err := get_tree().change_scene_to_packed(packed_scene)
 	if err != OK:
 		printerr("[MainMenu] ERROR: change_scene_to_packed failed! Error code: ", err)
@@ -242,7 +315,16 @@ func _on_continue_pressed() -> void:
 	checkpoint.save_to_disk = true
 	print("[MainMenu] Continue: the %s checkpoint." % checkpoint.kind)
 	_starting = true
+	await _await_night()
 	_start(_continue_button)
+
+
+func _on_credits_pressed() -> void:
+	if get_node_or_null("Credits"):
+		return
+	var screen := CreditsScreen.new()
+	screen.name = "Credits"
+	add_child(screen)
 
 
 ## Producer mode: a new game, straight to Night 3 as the ghost.
@@ -277,6 +359,7 @@ func _on_play_pressed() -> void:
 	if DisplayServer.get_name() == "headless" or ProducerMode.requested:
 		_start(play_button)   # (the tests, producer mode: no opening)
 		return
+	await _await_night()
 	# The opening at once, on black; the level comes in under it.
 	var opening := Opening.new()
 	opening.name = "Opening"

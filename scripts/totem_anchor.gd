@@ -609,11 +609,7 @@ func _burn_away() -> void:
 			var source := mesh.get_active_material(i) as StandardMaterial3D
 			if not source:
 				continue
-			var burnt := source.duplicate() as StandardMaterial3D
-			burnt.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_DEPTH_PRE_PASS
-			burnt.emission_enabled = true
-			burnt.emission = EMBER_COLOR
-			burnt.emission_energy_multiplier = 0.0
+			var burnt := _burnt_material(source)
 			mesh.set_surface_override_material(i, burnt)
 			materials.append(burnt)
 	for m in materials:
@@ -628,6 +624,49 @@ func _burn_away() -> void:
 	sink.tween_interval(1.4)
 	sink.tween_property(_willow, "position:y", _willow_rest.y - 0.5, 3.2).set_ease(Tween.EASE_IN)
 	sink.tween_callback(_willow.hide)
+
+
+## The warmed effects' materials, kept for their shaders (warm_effects).
+var _warm_kept: Array[Material] = []
+
+
+## A willow surface's material, ready to char and fade (see _burn_away).
+static func _burnt_material(source: StandardMaterial3D) -> StandardMaterial3D:
+	var burnt := source.duplicate() as StandardMaterial3D
+	burnt.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_DEPTH_PRE_PASS
+	burnt.emission_enabled = true
+	burnt.emission = EMBER_COLOR
+	burnt.emission_energy_multiplier = 0.0
+	return burnt
+
+
+## For ShaderWarmup: the purge's effects made once ahead (the embers, the
+## ash, the charred willow, as copies beside it), for the shaders to be
+## compiled behind the start screen: made for the first time at the willow,
+## they froze the game there (pressing E, ~0.5 s; seconds on a fresh
+## install). The caller frees what this returns after a few frames; their
+## materials are kept (_warm_kept): Godot drops a material's shader with the
+## last material that uses it, and the purge's own would compile it again.
+func warm_effects() -> Array[Node]:
+	var made: Array[Node] = []
+	for particles in [_make_embers(60, 2.5), _make_ash()]:
+		made.append(particles)
+		_warm_kept.append(particles.process_material)
+		_warm_kept.append(particles.draw_pass_1.material)
+	if _willow:
+		for mesh in _willow.find_children("*", "MeshInstance3D", true, false):
+			var copy := MeshInstance3D.new()
+			copy.mesh = mesh.mesh
+			for i in mesh.get_surface_override_material_count():
+				var source := mesh.get_active_material(i) as StandardMaterial3D
+				if source:
+					var burnt := _burnt_material(source)
+					copy.set_surface_override_material(i, burnt)
+					_warm_kept.append(burnt)
+			add_child(copy)
+			copy.global_transform = mesh.global_transform
+			made.append(copy)
+	return made
 
 
 const BURN_WHOOSH := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Explosions/explosion_distant_1.ogg"

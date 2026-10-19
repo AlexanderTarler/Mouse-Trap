@@ -33,9 +33,38 @@ const VISIT_TIME := Vector2(4.0, 7.0)
 ## the cabin in the picture.
 const TREELINE_SPOTS := [Vector3(-11.2, 0.0, 0.0), Vector3(-12.5, 0.0, -6.0), Vector3(-14.0, 0.0, -14.0), Vector3(-10.3, 0.0, -9.0)]
 
+## ─── TIME OF DAY (the loading screen) ────────────────────────────────────
+## 0 the afternoon, 1 night: the main menu sets it as the game loads
+## (main_menu.gd), so the sun goes down over the cabin while it does. Sky,
+## light, fog, the window's lamp and the sounds follow; the visitor only
+## comes once it's dark.
+var time_of_day := 1.0:
+	set(value):
+		time_of_day = clampf(value, 0.0, 1.0)
+		if is_inside_tree():
+			_apply_time()
+const FOREST_DAY := "res://assets/audio/Ambience/Forest Ambience.ogg"
+## [afternoon, sunset, night] for each.
+const SKY := [Color(0.45, 0.62, 0.9), Color(0.62, 0.38, 0.28), Color(0.03, 0.036, 0.055)]
+const AMBIENT := [Color(0.75, 0.78, 0.85), Color(0.6, 0.42, 0.36), Color(0.16, 0.19, 0.27)]
+const AMBIENT_ENERGY := [0.9, 0.7, 0.8]
+const FOG_COLOR := [Color(0.62, 0.7, 0.8), Color(0.55, 0.36, 0.3), Color(0.07, 0.08, 0.11)]
+const FOG_DENSITY := [0.1, 0.35, 0.7]
+const SUN_COLOR := [Color(1.0, 0.94, 0.82), Color(1.0, 0.55, 0.3), Color(0.55, 0.62, 0.85)]
+const SUN_ENERGY := [1.6, 0.9, 0.45]
+## The sun's height (degrees down): high, on the horizon, the moon's.
+const SUN_PITCH := [-48.0, -6.0, -38.0]
+const GROUND := [Color(0.14, 0.18, 0.09), Color(0.14, 0.12, 0.07), Color(0.045, 0.055, 0.035)]
+var _ground_material: StandardMaterial3D
+
 var camera: Camera3D
 var entity: Node3D
 var window_light: OmniLight3D
+var _env: Environment
+var _sun: DirectionalLight3D
+var _glass: MeshInstance3D
+var _day_sound: AudioStreamPlayer
+var _wind: AudioStreamPlayer
 var _visit_left := 0.0
 var _next_visit := 0.0
 var _time := 0.0
@@ -65,6 +94,20 @@ func _ready() -> void:
 	wind.bus = "Ambient" if AudioServer.get_bus_index("Ambient") >= 0 else "Master"
 	add_child(wind)
 	wind.play()
+	_wind = wind
+	# Birdsong by day, fading as the sun goes.
+	_day_sound = AudioStreamPlayer.new()
+	_day_sound.name = "DayForest"
+	var day_stream := load(FOREST_DAY) as AudioStream if ResourceLoader.exists(FOREST_DAY) else null
+	if day_stream is AudioStreamOggVorbis:
+		day_stream = day_stream.duplicate()
+		(day_stream as AudioStreamOggVorbis).loop = true
+	_day_sound.stream = day_stream
+	_day_sound.bus = wind.bus
+	add_child(_day_sound)
+	if day_stream:
+		_day_sound.play()
+	_apply_time()
 	_next_visit = _rng.randf_range(8.0, 14.0)
 
 
@@ -73,9 +116,11 @@ func _process(delta: float) -> void:
 	# The camera breathes: a slow drift, as if someone stood there.
 	var drift := Vector3(sin(_time * 0.21) * 0.25, sin(_time * 0.33) * 0.06, 0.0)
 	camera.look_at_from_position(EYE + drift, LOOK_AT + Vector3(sin(_time * 0.13) * 0.4, 0.0, 0.0))
-	# The lamp inside flickers a little.
-	window_light.light_energy = LAMP_ENERGY + sin(_time * 7.0) * 0.05 + sin(_time * 2.3) * 0.08
-	# Something at the treeline.
+	# The lamp inside flickers a little (lit as it gets dark).
+	window_light.light_energy = (LAMP_ENERGY + sin(_time * 7.0) * 0.05 + sin(_time * 2.3) * 0.08) * _lamp()
+	# Something at the treeline (only once it's dark).
+	if time_of_day < 0.97:
+		return
 	if _visit_left > 0.0:
 		_visit_left -= delta
 		if _visit_left <= 0.0:
@@ -85,6 +130,48 @@ func _process(delta: float) -> void:
 		_next_visit -= delta
 		if _next_visit <= 0.0:
 			visit()
+
+
+## How lit the window is: off by day, on through dusk.
+func _lamp() -> float:
+	return smoothstep(0.45, 0.8, time_of_day)
+
+
+## Everything that follows the time of day.
+func _apply_time() -> void:
+	if not _env:
+		return
+	var t := time_of_day
+	_env.background_color = _three(SKY, t)
+	_env.ambient_light_color = _three(AMBIENT, t)
+	_env.ambient_light_energy = _three_f(AMBIENT_ENERGY, t)
+	_env.fog_light_color = _three(FOG_COLOR, t)
+	_env.fog_density = _three_f(FOG_DENSITY, t)
+	_sun.light_color = _three(SUN_COLOR, t)
+	if _ground_material:
+		_ground_material.albedo_color = _three(GROUND, t)
+	_sun.light_energy = _three_f(SUN_ENERGY, t)
+	# The sun sinks to the horizon; past dusk the light is the moon's, high
+	# again (it fades through the dark between).
+	var pitch := _three_f(SUN_PITCH, t)
+	_sun.rotation_degrees = Vector3(pitch, -150.0, 0.0)
+	_sun.light_energy *= 1.0 - smoothstep(0.55, 0.7, t) * (1.0 - smoothstep(0.7, 0.85, t))
+	if _glass:
+		_glass.visible = _lamp() > 0.05
+		_glass.transparency = 1.0 - _lamp()
+	if _day_sound:
+		_day_sound.volume_db = lerpf(-14.0, -60.0, smoothstep(0.3, 0.75, t))
+	if _wind:
+		_wind.volume_db = lerpf(-24.0, -14.0, smoothstep(0.4, 1.0, t))
+
+
+## The value for `t` from [afternoon, sunset, night]: sunset at 0.55.
+static func _three(values: Array, t: float) -> Color:
+	return (values[0] as Color).lerp(values[1], smoothstep(0.0, 0.55, t)) if t < 0.55 else (values[1] as Color).lerp(values[2], smoothstep(0.55, 1.0, t))
+
+
+static func _three_f(values: Array, t: float) -> float:
+	return lerpf(values[0], values[1], smoothstep(0.0, 0.55, t)) if t < 0.55 else lerpf(values[1], values[2], smoothstep(0.55, 1.0, t))
 
 
 ## It comes to the treeline for a few seconds, facing the cabin.
@@ -116,7 +203,9 @@ func _build_sky() -> void:
 	var world := WorldEnvironment.new()
 	world.environment = env
 	add_child(world)
+	_env = env
 	var moon := DirectionalLight3D.new()
+	_sun = moon
 	moon.name = "Moon"
 	moon.light_color = Color(0.55, 0.62, 0.85)
 	moon.light_energy = 0.45
@@ -132,6 +221,7 @@ func _build_ground() -> void:
 	ground.mesh = plane
 	var material := StandardMaterial3D.new()
 	material.albedo_color = Color(0.045, 0.055, 0.035)
+	_ground_material = material
 	material.roughness = 1.0
 	ground.material_override = material
 	add_child(ground)
@@ -157,6 +247,7 @@ func _build_cabin() -> void:
 	glass.material_override = warm
 	glass.position = WINDOW
 	add_child(glass)
+	_glass = glass
 	# Its bars: a cross in front of the glow.
 	var bar_material := StandardMaterial3D.new()
 	bar_material.albedo_color = Color(0.05, 0.035, 0.025)

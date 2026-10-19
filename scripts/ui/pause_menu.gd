@@ -162,7 +162,10 @@ func _close_debug_console() -> bool:
 func refresh_where() -> void:
 	var nm := get_node_or_null("/root/NightManager")
 	var where := ""
-	if nm:
+	var day_names := get_node_or_null("/root/RoutineManager")
+	if day_names and day_names.has_method("get_current_day_string"):
+		where = day_names.get_current_day_string()   # (as the HUD names it)
+	elif nm:
 		var night := maxi(int(nm.current_night), 1)
 		where = ("Night %d" if nm.is_night_active else "Day %d") % night
 	_where.text = where
@@ -176,6 +179,72 @@ func refresh_where() -> void:
 			objective = routine.get_current_objective()
 	_objective.text = objective
 	_objective.visible = objective != ""
+
+
+## ─── LOSING THE MOUSE ────────────────────────────────────────────────────
+## Leaving the window (alt-tab, another tab), or the browser letting go of
+## the mouse (its own Esc, which the game never sees), used to leave the
+## game running with a mouse that no longer turns the view and no menu. In
+## play (nothing else open that frees the mouse), that now pauses the game:
+## Resume takes the mouse back (in a browser, with the click).
+var _was_captured := false
+var _released_for := 0
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and _in_play():
+		_open()
+
+
+func _process(_delta: float) -> void:
+	var captured := Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	if captured:
+		_was_captured = true
+		_released_for = 0
+		return
+	# Hidden: the game took the mouse on purpose (a cinematic, the van's
+	# escape), not let go of it.
+	if Input.mouse_mode == Input.MOUSE_MODE_HIDDEN:
+		_was_captured = false
+		return
+	if not _was_captured:
+		return
+	# Let go of: by the game (a screen opened: give it a couple of frames to
+	# show up), or by the browser.
+	_released_for += 1
+	if _released_for < 3:
+		return
+	_was_captured = false
+	if _in_play():
+		_open()
+
+
+## The player is playing: not paused, their controls on, nothing open that
+## frees the mouse (inventory, notebook, a note, the computer, a stash, the
+## console).
+func _in_play() -> bool:
+	if _is_open or get_tree().paused:
+		return false
+	var player := get_tree().get_first_node_in_group("player")
+	# (A cinematic switches the player off with process_mode, which leaves
+	# its input flag on: the escape in the van paused itself, the menu
+	# under the cinematic's black, until Esc.)
+	if not player or not player.is_processing_input() or not player.can_process():
+		return false
+	for group in ["inventory_ui", "stash_ui"]:
+		var ui := get_tree().get_first_node_in_group(group)
+		if ui and ui.get("_is_open"):
+			return false
+	var computer := get_tree().get_first_node_in_group("computer_ui")
+	if computer and computer.get("is_open"):
+		return false
+	for group in ["notebook_ui", "note_ui", "debug_console"]:
+		var ui := get_tree().get_first_node_in_group(group)
+		if ui and "visible" in ui and ui.visible:
+			return false
+	if get_tree().get_first_node_in_group("opening"):
+		return false
+	return true
 
 
 func _open() -> void:
@@ -213,9 +282,18 @@ func _on_settings_pressed() -> void:
 
 
 func _on_main_menu_pressed() -> void:
+	_save_on_leaving()
 	get_tree().paused = false
 	get_tree().change_scene_to_file(MAIN_MENU_PATH)
 
 
 func _on_quit_pressed() -> void:
+	_save_on_leaving()
 	get_tree().quit()
+
+
+## Mid-day: Continue picks up right here (Checkpoint.capture_on_quit).
+func _save_on_leaving() -> void:
+	var checkpoint := get_node_or_null("/root/Checkpoint")
+	if checkpoint and checkpoint.has_method("capture_on_quit"):
+		checkpoint.capture_on_quit()

@@ -1,5 +1,5 @@
 extends SceneTree
-## Renders the options menu, one PNG per tab (and the brightness screen).
+## Renders the options menu, one PNG per tab (and the brightness screen, and the first launch's setup page).
 ## Run (windowed): godot --path . --rendering-method gl_compatibility --script res://tools/options_preview.gd -- <out_prefix>
 
 
@@ -28,5 +28,10 @@ func _run() -> void:
 	for i in 20:
 		await process_frame
 	root.get_texture().get_image().save_png("%s_cal.png" % prefix)
+	# The first launch's second page (the microphone, the highlights).
+	calibration._show_setup()
+	for i in 20:
+		await process_frame
+	root.get_texture().get_image().save_png("%s_setup.png" % prefix)
 	print("[OPTIONS PREVIEW] saved")
 	quit()

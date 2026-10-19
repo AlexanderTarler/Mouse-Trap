@@ -62,6 +62,11 @@ var _in_epilogue := false
 ## Configures the ending screen UI based on which ending was triggered.
 ## Called by EndgameManager when the ending sequence begins.
 func setup_ending(ending_type: int) -> void:
+	# The game is over: Continue no longer offers its last night (a game
+	# started from the menu; the tests keep whatever save there is).
+	var checkpoint := get_node_or_null("/root/Checkpoint")
+	if checkpoint and checkpoint.get("save_to_disk"):
+		SaveGame.delete()
 	var em = get_node_or_null("/root/EndgameManager")
 	var ending_name: String = "Unknown"
 	if em and em.has_method("get_ending_name"):

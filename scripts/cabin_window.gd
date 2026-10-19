@@ -191,6 +191,16 @@ func _keep_pristine_templates() -> void:
 		_pristine_templates.append(child.duplicate())
 
 
+## The kept copies of the glass go with the window (they're outside the
+## tree: left, they piled up with every level loaded).
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		for template in _pristine_templates:
+			if is_instance_valid(template):
+				template.free()
+		_pristine_templates.clear()
+
+
 ## Checkpoint restored this window's state: rebuild what it looks like.
 func _on_checkpoint_restored() -> void:
 	var pristine := get_node_or_null("PristineVisuals")

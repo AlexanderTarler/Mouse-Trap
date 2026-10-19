@@ -11,7 +11,10 @@ extends Node
 ##
 ##   if ShaderWarmup.needed(): await ShaderWarmup.new().run(scene)
 ##
-## NightManager does it before the opening (the start cover is up).
+## NightManager does it before the opening, and on Continue (the start
+## cover is up). With the totem up it also makes the purge's effects once
+## (TotemAnchor.warm_effects): made for the first time at the willow, they
+## froze the game there.
 
 const WILLOW := Vector3(103.0, 0.0, 85.3)
 ## Where the camera looks from (offsets from the willow, m) and for how many
@@ -21,11 +24,11 @@ const VIEWS := [Vector3(-24.0, 2.0, -12.0), Vector3(-12.0, 1.7, -6.0), Vector3(-
 const FRAMES_PER_VIEW := 3
 
 
-## Only for the Compatibility renderer (the web build), and not headless.
+## Not headless (nothing is drawn). Every renderer: on Windows (Forward+)
+## the purge's effects froze the game for seconds on a fresh install, as
+## the willow did in the browser.
 static func needed() -> bool:
-	if DisplayServer.get_name() == "headless":
-		return false
-	return RenderingServer.get_current_rendering_method() == "gl_compatibility"
+	return DisplayServer.get_name() != "headless"
 
 
 func run(scene: Node) -> void:
@@ -49,6 +52,18 @@ func run(scene: Node) -> void:
 			camera.look_at(WILLOW + Vector3.UP * 2.0)
 			for i in FRAMES_PER_VIEW:
 				await RenderingServer.frame_post_draw
+	# The purge, with the totem up: the embers, the ash, the charred willow
+	# (TotemAnchor.warm_effects), seen from close by for a moment.
+	if totem and totem.has_method("warm_effects"):
+		var effects: Array[Node] = totem.warm_effects()
+		var close: Vector3 = VIEWS[2]
+		camera.global_position = WILLOW + Vector3(close.x, close.y, close.z)
+		camera.look_at(WILLOW + Vector3.UP * 2.5)
+		for i in FRAMES_PER_VIEW * 3:
+			await RenderingServer.frame_post_draw
+		for node in effects:
+			if is_instance_valid(node):
+				node.queue_free()
 	if totem:
 		totem.global_position.y = totem_y
 	camera.queue_free()

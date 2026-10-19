@@ -156,6 +156,35 @@ func capture(snapshot_kind: String, snapshot_tag: String = "") -> void:
 		SaveGame.write(self)
 
 
+## Leaving the game mid-day (the pause menu's Main Menu or Quit, closing the
+## window): the day as it is now, the time and the player where they stand
+## too, for Continue. Not at night (a night is picked up from its start, as
+## after a death: the Entity's hunt isn't something to stop and resume), nor
+## while the game has the player (the opening, a cinematic, the bed, a
+## death, the car alarm). True if it saved.
+func capture_on_quit() -> bool:
+	if not save_to_disk or restoring or restore_on_load:
+		return false
+	var nm := get_node_or_null("/root/NightManager")
+	var player := get_tree().get_first_node_in_group("player") as CharacterBody3D
+	if not nm or not player or not nm._spawn_setup_done:
+		return false
+	if nm.is_night_active or not nm.is_day_active or nm.is_van_sequence_active or nm.dev_start_runner != null:
+		return false
+	if not player.is_processing_input() or not player.is_physics_processing() or not player.is_on_floor():
+		return false
+	if get_tree().get_first_node_in_group("opening"):
+		return false
+	capture("day", "quit")
+	return true
+
+
+func _notification(what: int) -> void:
+	# The window closed (alt-F4, the X) mid-game: as Quit does.
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		capture_on_quit()
+
+
 ## Takes the snapshot once the frame's pending changes (spawns) are done.
 func capture_deferred(snapshot_kind: String) -> void:
 	await get_tree().process_frame
@@ -269,6 +298,14 @@ func apply_saved_player() -> void:
 		return
 	var player := get_tree().get_first_node_in_group("player")
 	if player:
+		# Saved on leaving (capture_on_quit): where the player stood, facing
+		# the way they faced.
+		if saved_player.has("$at") and player is Node3D:
+			if player.has_method("reset_camera"):
+				player.reset_camera()
+			(player as Node3D).global_transform = saved_player["$at"]
+			if "velocity" in player:
+				player.velocity = Vector3.ZERO
 		for property in saved_player:
 			if property in player:
 				player.set(property, saved_player[property])
@@ -354,6 +391,14 @@ func _read_state(node: Object) -> Dictionary:
 func _write_state(node: Object, state: Dictionary) -> void:
 	for key in state:
 		var value = state[key]
+		var current = node.get(key)
+		# A typed array (Array[Dictionary]) takes a plain one's elements (a
+		# plain array, as a save decodes it, wouldn't be set at all).
+		if value is Array and current is Array and (current as Array).is_typed():
+			var typed: Array = (current as Array).duplicate()
+			typed.assign(value.duplicate(true))
+			node.set(key, typed)
+			continue
 		node.set(key, value.duplicate(true) if value is Array or value is Dictionary else value)
 
 

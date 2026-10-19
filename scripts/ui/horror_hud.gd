@@ -180,6 +180,9 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# (The debug readout: development only.)
+	if not OS.is_debug_build():
+		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F3:
 		debug_info_visible = not debug_info_visible
 		_apply_debug_visibility()

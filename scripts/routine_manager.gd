@@ -1704,7 +1704,9 @@ func get_current_day_string() -> String:
 		return "Day 1"
 	if nm.is_night_active:
 		return "Night " + str(night)
-	return "Day " + str(night)
+	# (Day 2 reached by going to bed on Day 1 still counts 1; through Night 1
+	# to dawn it counts 2. A day counting 1 is the second day either way.)
+	return "Day " + str(maxi(night, 2))
 
 func advance_step() -> void:
 	print("[RoutineManager] advance_step() called (deprecated).")

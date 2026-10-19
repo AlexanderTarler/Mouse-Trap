@@ -40,6 +40,9 @@ func setup(owner_entity: Entity) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# (Development only.)
+	if not OS.is_debug_build():
+		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F3:
 		visible = not visible
 	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F4:

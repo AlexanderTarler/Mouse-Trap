@@ -135,7 +135,7 @@ func _test_options() -> void:
 	await _frames(2)
 	_check("A: Reset to Defaults asks once, then puts everything back",
 		asked and bool(GameSettings.get_value("video/screen_shake")) and is_equal_approx(float(GameSettings.get_value("audio/sfx")), 0.8)
-		and routine.enable_object_highlights and int(GameSettings.get_value("accessibility/caption_size")) == 1)
+		and not routine.enable_object_highlights and int(GameSettings.get_value("accessibility/caption_size")) == 1)   # (highlights: off by default)
 	menu.queue_free()
 	await _frames(1)
 
@@ -227,15 +227,16 @@ func _test_calibration() -> void:
 
 
 func _test_quality() -> void:
+	# (Shadows and fog: set when the game starts, not while it runs.)
+	var atlas_before := root.positional_shadow_atlas_size
 	GameSettings.set_value("video/quality", 0)
-	var low := root.positional_shadow_atlas_size == GraphicsQuality.LAMP_SHADOW[0] and GraphicsQuality.plant_distance() == 40.0
+	var low := root.positional_shadow_atlas_size == atlas_before and GraphicsQuality.needs_restart() and GraphicsQuality.plant_distance() == 40.0
 	var batches := _scene.find_children("*", "MultiMeshInstance3D", true, false).filter(func(b): return b.visibility_range_end > 0.0)
 	var drawn_low := not batches.is_empty() and batches.all(func(b): return is_equal_approx(b.visibility_range_end, 40.0))
 	GameSettings.set_value("video/quality", 2)
-	var high := root.positional_shadow_atlas_size == GraphicsQuality.LAMP_SHADOW[2] and root.screen_space_aa == Viewport.SCREEN_SPACE_AA_FXAA
+	var high := root.positional_shadow_atlas_size == atlas_before and root.screen_space_aa == Viewport.SCREEN_SPACE_AA_FXAA
 	GameSettings.set_value("video/quality", 1)
-	_check("D: graphics quality Low / High change shadows, plant distance (%d batches), edges" % batches.size(), low and drawn_low and high
-		and root.positional_shadow_atlas_size == GraphicsQuality.LAMP_SHADOW[1])
+	_check("D: graphics quality: plant distance (%d batches) and edges at once; shadows and fog left for the next start" % batches.size(), low and drawn_low and high)
 
 
 func _test_pause() -> void:
@@ -267,7 +268,7 @@ func _test_backdrop() -> void:
 	await _frames(10)
 	_check("F: the menu's backdrop: the cabin, a lit window, and now and then a visitor at the treeline",
 		cabin != null and window != null and backdrop.window_light != null and hidden and shown and not backdrop.entity.visible
-		and backdrop.find_children("*", "AudioStreamPlayer", false, false).size() == 1)
+		and backdrop.find_children("*", "AudioStreamPlayer", false, false).size() >= 1)
 	viewport.queue_free()
 	await _frames(1)
 

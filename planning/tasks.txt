@@ -1,3 +1,4 @@
-1. During daytime there is a fog in the distance, which I believe is meant to allow us to hide graphics further away. However, this fog disappears suddenly when night falls. Remove the daytime fog. 
-2. Lower the sound of the wind howling by the broken window by 50%.
-3. Change the name of Arvid's daughter Maja to "Sara" instead - and do this for the Linnea_and_Maja password (so it becomes "Linnea_and_Sara") instead. 
+1. The "player_breathing" sound track still plays in the windows build when the player goes to bed - only the "player_yawning" sound should play.
+2. Add a "microphone test button" by the microphone toggle in the settings menu, which, when toggled on, plays back the sound the game gets from the player's microphone. This should be toggled of when the player presses the button again or leaves that menu. 
+3. After the "brightness check" that comes when someone starts the game for the first time, add a check for enabling the player's microphone and for enabling the "highlight system". Both should be off as default. Also mention where the player can toggle these settings if they change their mind. 
+4. Major bug: During Day 3, after having exited to main menu and then clicked Continue, I searched a scrap_heap. In there were 4 items, all showing as "null". I could add them to my inventory but do nothing with them. I added a screenshot of this called "scrap_heap_bug.npg". 

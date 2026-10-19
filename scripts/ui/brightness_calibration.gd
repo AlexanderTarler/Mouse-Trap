@@ -5,6 +5,9 @@ extends CanvasLayer
 ## and the middle one barely there: the night then reads as it was made, dark
 ## but not a black screen. Shown on the first launch (main_menu.gd) and from
 ## Options > Video > Calibrate. Saves "video/brightness" as it moves.
+## The first launch (first_launch): then a second page, the microphone and
+## the objective highlights (both off unless turned on here), and where to
+## find them again.
 
 signal closed
 
@@ -14,8 +17,11 @@ const SHADES := [0.008, 0.03, 0.085]
 const LOW := 0.6
 const HIGH := 1.8
 
+## The first launch: the microphone and highlights page after Done.
+var first_launch := false
 var _slider: HSlider
 var _figures: Control
+var _column: VBoxContainer
 
 
 func _ready() -> void:
@@ -32,6 +38,7 @@ func _ready() -> void:
 	column.custom_minimum_size = Vector2(620, 0)
 	column.add_theme_constant_override("separation", 18)
 	add_child(column)
+	_column = column
 	var title := Label.new()
 	title.text = "Brightness"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -71,9 +78,64 @@ func _ready() -> void:
 	done.name = "DoneButton"
 	done.text = "Done"
 	done.custom_minimum_size = Vector2(120, 0)
-	done.pressed.connect(close)
+	done.pressed.connect(func(): _show_setup() if first_launch else close())
 	buttons.add_child(done)
 	done.grab_focus.call_deferred()
+
+
+## The first launch's second page: two choices, both off to begin with.
+func _show_setup() -> void:
+	GameSettings.set_value("video/calibrated", true)
+	for child in _column.get_children():
+		child.queue_free()
+	var title := Label.new()
+	title.text = "Before You Start"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	GameFonts.use_title(title)
+	title.add_theme_font_size_override("font_size", 40)
+	_column.add_child(title)
+	_column.add_child(_choice("Microphone", "audio/microphone", "SetupMicrophoneCheck",
+		"The Entity can hear you: a gasp or a shout carries. Only loud moments count; nothing is recorded to disk or sent anywhere."
+		+ (" Your browser will ask for permission." if OS.has_feature("web") else "")))
+	_column.add_child(_choice("Objective Highlights", "gameplay/objective_highlights", "SetupHighlightsCheck",
+		"An outline on the next thing to do, through walls. Off: find your own way."))
+	var later := Label.new()
+	later.text = "Changed your mind? Both are in Settings: the microphone under
+Audio, the highlights under Accessibility (in the pause menu too)."
+	later.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	later.modulate = Color(1, 1, 1, 0.6)
+	_column.add_child(later)
+	var done := Button.new()
+	done.name = "SetupDoneButton"
+	done.text = "Done"
+	done.custom_minimum_size = Vector2(120, 0)
+	done.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	done.pressed.connect(close)
+	_column.add_child(done)
+	done.grab_focus.call_deferred()
+
+
+## A setting's switch (off here unless the player turns it on), and what it's for.
+func _choice(text: String, key: String, node_name: String, about: String) -> VBoxContainer:
+	GameSettings.set_value(key, false)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	var check := CheckButton.new()
+	check.name = node_name
+	check.text = text
+	check.button_pressed = false
+	check.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	check.toggled.connect(func(on): GameSettings.set_value(key, on))
+	box.add_child(check)
+	var tip := Label.new()
+	tip.text = about
+	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	tip.custom_minimum_size = Vector2(560, 0)
+	tip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tip.modulate = Color(1, 1, 1, 0.75)
+	tip.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(tip)
+	return box
 
 
 func close() -> void:

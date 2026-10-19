@@ -166,7 +166,7 @@ func _spawn_salvage_spark_particles() -> void:
 	particles.lifetime = 0.8
 	particles.explosiveness = 0.9
 	particles.randomness = 0.5
-	particles.global_position = global_position + Vector3.UP * 1.0
+	particles.position = Vector3.UP * 1.0   # (a child: placed by its parent)
 	
 	var mat := ParticleProcessMaterial.new()
 	mat.direction = Vector3.UP

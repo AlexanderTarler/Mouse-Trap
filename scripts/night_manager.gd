@@ -460,6 +460,25 @@ func _restore_loaded_scene() -> void:
 	restart_from_checkpoint()
 	# From a save (Continue): the player's own state too.
 	checkpoint.apply_saved_player()
+	# A hint that came up as the level loaded (before the restore) for
+	# something the restored game has already learned: gone.
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("visible_hint"):
+		var hint: String = tm.visible_hint()
+		if hint != "" and tm.is_learned(hint):
+			tm.mark_learned(hint)
+	# The HUD (and the notebook) showed the new game's Day 1 as the level
+	# loaded: the restored story's day and objective instead.
+	var routine_hud := get_node_or_null("/root/RoutineManager")
+	if routine_hud and routine_hud.has_method("_update_hud"):
+		routine_hud._update_hud()
+	var hud := get_tree().current_scene.get_node_or_null("HUD") if get_tree().current_scene else null
+	if hud and hud.has_method("_sync_all_displays"):
+		hud._sync_all_displays()
+	# The shaders compiled behind the black, as for a new game (a Day 3 or
+	# Night 3 save goes straight to the willow).
+	if ShaderWarmup.needed() and get_tree().current_scene:
+		await ShaderWarmup.new().run(get_tree().current_scene)
 	_lift_start_cover()
 	print("[NightManager] Play Again: the scene reloaded and put back to the %s checkpoint (night %d)." % [checkpoint.kind, current_night])
 
@@ -1105,6 +1124,11 @@ func advance_night() -> void:
 		is_day_active = true
 		night_ended.emit(1)
 		print("[NightManager] Transitioned from Day 1 to Day 2 (current_night = 1). Night 1 survived!")
+		# This way into Day 2 (to bed on Day 1) took no snapshot: a death today,
+		# or Continue, went back to the very start of the game.
+		var day2_checkpoint: Node = get_node_or_null("/root/Checkpoint")
+		if day2_checkpoint and day2_checkpoint.has_method("capture_deferred"):
+			day2_checkpoint.capture_deferred("day")
 	else:
 		end_current_night()
 	
@@ -1244,9 +1268,13 @@ func restart_from_checkpoint() -> void:
 	# restart, regardless of whether the checkpoint branch reset the night or
 	# the day. This guarantees a consistent, clean-facing spawn with a fully
 	# reset camera.
-	# Day 1 (Continue, say): outside the cabin instead. Its checkpoint is the
-	# start of the game, before the key: the cabin isn't open yet.
-	if is_day_active and current_night <= 1:
+	# The story still at its first step, the cabin not yet entered (Day 1's
+	# checkpoint is the start of the game, before the key): outside it
+	# instead. (Not by the night counter, which Day 2 reached by going to
+	# bed early still counts as 1; nor by the "entered" flag alone, which a
+	# new day clears.)
+	var routine := get_node_or_null("/root/RoutineManager")
+	if is_day_active and routine and int(routine.main_objective) <= 0 and not routine.phase1_entered_cabin:
 		_spawn_outside_cabin()
 	else:
 		_spawn_player_at("PlayerSpawnDev")

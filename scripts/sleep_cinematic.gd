@@ -8,7 +8,7 @@ extends Node
 ##
 ## Going to sleep: a camera of its own eases from the player's eyes to
 ## sitting on the bed, then lying back with the head on the pillow, looking
-## up at the ceiling; breathing slows and the eyelids close, with a heavy
+## up at the ceiling; the eyelids close, with a heavy
 ## blink or two, to black.
 ## Waking up: lying there in the dark, the eyelids open slowly (a blink,
 ## half-shut again, open), then the player sits up, gets up, and stands
@@ -17,7 +17,7 @@ extends Node
 ## up and out of bed in about a second.
 ##
 ## Dozing off where the player is (the Day 2 data upload, computer_ui.gd):
-## only the eyelids and the breathing, no bed, no camera of its own.
+## only the eyelids (and a yawn), no bed, no camera of its own.
 ##   await cinematic.doze_off()      # heavy blinks, to shut
 ##   await cinematic.open_eyes()     # and open again; then free it
 ##
@@ -27,7 +27,6 @@ extends Node
 const LIDS_LAYER := 140
 ## The soft edge of each eyelid (px).
 const LID_EDGE := 90.0
-const BREATHING := "res://assets/audio/objects/Player Breathing.ogg"
 
 ## Going to sleep: to sitting on the bed, then lying back (s).
 const TO_SIT_TIME := 1.4
@@ -48,7 +47,6 @@ var _layer: CanvasLayer = null
 var _top_lid: Control = null
 var _bottom_lid: Control = null
 var _lids := 0.0
-var _breathing: AudioStreamPlayer = null
 var _hidden_crosshairs: Array[Node] = []
 var _shake := 0.0
 
@@ -83,7 +81,6 @@ func fall_asleep(player: Node3D) -> void:
 	var start := _player_camera(player).global_transform
 	_camera.global_transform = start
 	_set_lids(0.0)
-	_breathe(true)
 	await _move_camera(start, sit_transform(), TO_SIT_TIME)
 	var lids := _lid_tween(FALL_ASLEEP_LIDS)
 	await _move_camera(sit_transform(), lie_transform(true), LIE_BACK_TIME)
@@ -92,7 +89,6 @@ func fall_asleep(player: Node3D) -> void:
 	var hud := get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("fade_to_black"):
 		await hud.fade_to_black(0.05)
-	_breathe(false)
 	_end(player, false)
 
 
@@ -211,6 +207,10 @@ func _begin(player: Node3D) -> void:
 	if player.has_method("set_physics_process"):
 		player.set_physics_process(false)
 		player.set_process_input(false)
+	# Only the yawn as the player lies down: the out-of-breath loop (run by
+	# the player's physics, just stopped) would otherwise go on under it.
+	if player.has_method("stop_breathing"):
+		player.stop_breathing()
 	var own := _player_camera(player)
 	_camera = Camera3D.new()
 	_camera.name = "SleepCamera"
@@ -331,25 +331,6 @@ func _set_lids(amount: float) -> void:
 			edge.position = Vector2(0.0, screen.y - solid_height - edge_height)
 
 
-func _breathe(on: bool) -> void:
-	if on:
-		if not ResourceLoader.exists(BREATHING):
-			return
-		_breathing = AudioStreamPlayer.new()
-		_breathing.stream = load(BREATHING)
-		_breathing.bus = "SFX"
-		_breathing.volume_db = -17.1
-		_breathing.pitch_scale = 0.85
-		add_child(_breathing)
-		_breathing.play()
-	elif is_instance_valid(_breathing):
-		var player := _breathing
-		_breathing = null
-		var tween := create_tween()
-		tween.tween_property(player, "volume_db", -60.0, 0.8)
-		tween.tween_callback(player.queue_free)
-
-
 func lids_amount() -> float:
 	return _lids
 
@@ -360,7 +341,6 @@ func doze_off() -> void:
 	if not is_instance_valid(_layer):
 		_make_lids()
 	_set_lids(0.0)
-	_breathe(true)
 	await _lid_tween(FALL_ASLEEP_LIDS).finished
 
 
@@ -369,7 +349,6 @@ func open_eyes() -> void:
 	if not is_instance_valid(_layer):
 		_make_lids()
 		_set_lids(1.0)
-	_breathe(false)
 	await _lid_tween(WAKE_LIDS).finished
 	if is_instance_valid(_layer):
 		_layer.queue_free()

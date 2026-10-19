@@ -1,6 +1,6 @@
 extends SceneTree
 ## Renders the main menu (its backdrop) to a PNG, with the visitor showing.
-## Run (windowed): godot --path . --rendering-method gl_compatibility --script res://tools/menu_preview.gd -- <out.png> [eye_x eye_y eye_z]
+## Run (windowed): godot --path . --rendering-method gl_compatibility --script res://tools/menu_preview.gd -- <out.png> [visit spot] [time of day 0-1]
 
 
 func _initialize() -> void:
@@ -22,6 +22,10 @@ func _run() -> void:
 	var backdrop: Node = menu.get_node_or_null("Backdrop")
 	if backdrop:
 		backdrop.visit(int(args[1]) if args.size() > 1 else -1)
+		# A time of day to show (0 afternoon - 1 night), held there.
+		if args.size() > 2:
+			menu._backdrop = null
+			backdrop.time_of_day = float(args[2])
 	for i in 90:
 		await process_frame
 	root.get_texture().get_image().save_png(out)

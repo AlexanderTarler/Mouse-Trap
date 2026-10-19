@@ -210,6 +210,7 @@ func _connect_night_manager() -> void:
 # ═════════════════════════════════════════════════════════════════════════════
 
 func activate() -> void:
+	_cinematic_speed = -1.0
 	if not _player:
 		_player = get_tree().get_first_node_in_group("player") as Node3D
 	_is_active = true
@@ -273,11 +274,10 @@ func cinematic_pose(xform: Transform3D, anim: StringName, anim_speed: float = 1.
 		_anim_player.speed_scale = anim_speed
 	# Speed 0: the pose holds. The AnimationTree drives the skeleton (not the
 	# player's speed), so it stops advancing altogether.
-	if _anim_tree:
-		var frozen := anim_speed <= 0.0
-		var mode := AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL if frozen else _anim_tree_mode
-		if _anim_tree.callback_mode_process != mode:
-			_anim_tree.callback_mode_process = mode
+	# (Played on by _process at the speed asked: 0 holds the pose.)
+	_cinematic_speed = anim_speed
+	if _anim_tree and _anim_tree.callback_mode_process != AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL:
+		_anim_tree.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 
 
 ## How long the overcharged beam must be held on it to drive it off now.
@@ -624,8 +624,10 @@ func _physics_process(delta: float) -> void:
 		velocity.y = 0.0
 		# On a slope (the stair ramp) move along the floor: pushing
 		# horizontally into it stalls the capsule partway up.
-		if get_floor_normal().y < 0.99:
-			velocity = velocity.slide(get_floor_normal()).normalized() * velocity.length()
+		# (A floor normal can be zero the frame after a teleport.)
+		var floor_normal := get_floor_normal()
+		if floor_normal.length_squared() > 0.01 and floor_normal.y < 0.99:
+			velocity = velocity.slide(floor_normal.normalized()).normalized() * velocity.length()
 	else:
 		velocity += get_gravity() * delta
 	move_and_slide()
@@ -651,7 +653,7 @@ func _process(delta: float) -> void:
 	# The animation tree is advanced by hand (_update_animation, at the speed
 	# asked); a tick that didn't (caught, dying, set aside) plays it on as is.
 	if _anim_tree and _anim_tree.callback_mode_process == AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL 			and _anim_advanced_frame != Engine.get_physics_frames():
-		_anim_tree.advance(delta)
+		_anim_tree.advance(delta * (_cinematic_speed if _cinematic_speed >= 0.0 else 1.0))
 	if not model or not _anim_playback or not visible:
 		return
 	_headroom_check -= delta
@@ -1091,6 +1093,9 @@ const ANIM_RUN_SPEED := 6.0
 ## The physics tick the animation tree was last advanced on (_process covers
 ## the ones it wasn't).
 var _anim_advanced_frame := -1
+## In a cinematic (cinematic_pose): the speed its animation plays at; -1
+## otherwise.
+var _cinematic_speed := -1.0
 ## How fast LowCrawl moves it played at normal speed (m/s).
 const ANIM_CRAWL_SPEED := 1.3
 ## The roar (the part of Mutant Roaring that matters, sped up) before a

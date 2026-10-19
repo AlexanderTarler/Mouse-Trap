@@ -1,0 +1,147 @@
+MVP REVIEW (2026-10-19): what stands between the game and an upload
+=====================================================================
+How it was checked: the whole test suite (45 suites, every log read for
+errors and warnings), the code (141 scripts, ~42,000 lines) for release
+risks, the export settings and the last builds, a frame-rate probe in both
+renderers, the old MVP plan's open items.
+
+State: 43 of 45 suites passed; the two failures were regressions from the
+last rounds (the van-roof freeze in the ending, a menu test) and are
+FIXED. No per-frame log spam (a whole playthrough prints ~700 lines).
+60 fps on a GTX 1080 in both renderers, day and night (vsync cap), with
+the odd 33-37 ms hitch in the Compatibility (web) renderer.
+
+
+P0  MUST FIX BEFORE UPLOAD
+--------------------------
+1. The debug computer ships.  [release blocker]
+   Details/Inside Cabin/DebugComputer: a second PC in the cabin, "[E] Open
+   Debug Console", a cheat console (jump nights, give items). Nothing hides
+   it outside development.
+   Do: remove it in release builds (debug_computer.gd: queue_free() unless
+   OS.is_debug_build()), so it stays for development.
+
+2. Debug keys in release.
+   F3 (HUD debug and the Entity overlay) and F4 work for players. (F1, the
+   test jumpscare, already needs dev mode.)
+   Do: only in debug builds.
+
+3. Losing the mouse leaves the player stuck.
+   In a browser, Esc first releases the pointer lock (the game never sees
+   that Esc); alt-tab does the same on desktop. The game carries on, the
+   mouse no longer turns the view, and no pause menu comes up.
+   Do: when the window loses focus or the mouse is released during play
+   (no menu, notebook or computer open), open the pause menu. Resume
+   recaptures the mouse (a click, which browsers require).
+
+4. The first hint can block every other hint.
+   "Use WASD to move, CTRL to crouch" stays until the player has moved
+   AND crouched; while it's up, every later hint (notebook, inventory,
+   ...) is turned away (12 times in one playthrough). A player who never
+   crouches never gets taught anything else.
+   Do: count moving alone, and teach crouching on its own when it first
+   matters (the stealth hint exists), or let the hint go after ~20 s.
+
+5. Runtime errors in the logs (small, but each one is a real fault):
+   a. cabin_approach_trigger.gd:42 switches an Area's monitoring inside
+      its own body_entered signal: Godot refuses. Use set_deferred.
+   b. wreck_salvage.gd:169 reads a particle node's global_transform before
+      it's in the tree (salvaging a wreck part): add it first, then place.
+   c. entity.gd:628 slides along a floor normal that isn't normalized
+      (rare, odd slopes): normalize it.
+   d. Two broken resource IDs (warnings on every load):
+      world_map_border_block.tscn in the level, and
+      cable_spool_resource.tres ("uid://cable_spool_scene"). Re-save both
+      or fix the UIDs.
+
+6. Fresh builds, tested.
+   The last web export is from 13 October; everything since (forest bake,
+   loading screen, producer mode, ...) has never been exported.
+   Do: export Windows and Web; tools/check_export.py; run the Windows
+   build (-- --autoplay) for a few minutes; play the web build in a real
+   browser (python tools/serve_web.py), and on a weaker machine if
+   possible: frame rate, the menu's sunset while it loads, a Day 1, a
+   save and Continue, the options.
+
+7. Web hosting needs one setting.
+   The web export uses threads (needed for loading behind the menu), which
+   browsers allow only on a "cross-origin isolated" page. On itch.io: tick
+   "SharedArrayBuffer support" in the embed options, or the game won't
+   start. (Without threads it would run anywhere, but loading would freeze
+   the menu instead of playing the sunset.)
+
+8. Credits and licences.
+   No credits screen. The game uses several bought or free packs (PSX
+   Nature, Forest Meadows, Mega Packs, Interior, Rural, Kidnapper's Van,
+   Bunkers, Traps, Paintings, Tech, Electrical, Three Cabins), Echoes Audio
+   Super Kit, horror_sfx_vol_1, 40 Free PSX Footsteps, Universal Animation
+   Library, Mixamo animations, Courier Prime (OFL) and Special Elite
+   (Apache 2.0). Several require attribution, and a few may restrict
+   redistribution in a web build.
+   Do: check each pack's licence; a Credits button on the main menu
+   listing them; ship the font licence files.
+
+
+P1  SHOULD DO (quality, for strangers playing it)
+-------------------------------------------------
+9.  Continue after an ending: the save still points at the last
+    checkpoint (e.g. "Continue · Night 3"), so a finished game offers to
+    replay its last night. Clear the save when an ending is reached.
+
+10. Old saves after an update: a save restores onto node paths in the
+    level; an update that moves or renames pickups would restore onto the
+    wrong things. Raise SaveGame.VERSION with every upload that changes
+    the level (old saves are then ignored, not misapplied).
+
+11. Leaked nodes: every level load leaves ~40 nodes behind (the
+    checkpoint's stored item copies). Harmless for one game, it grows with
+    Play Again / menu loops, and it's where the "leaked at exit" warnings
+    come from. Free them on a new game and when the level unloads.
+
+12. Night 3 difficulty: never playtested by someone new. With producer
+    mode it can be watched; one or two fresh players should try it.
+    Tune ambush and mimic rates and the Entity's speeds if it's unfair.
+
+13. First-launch stutter: the first time materials are seen, shaders
+    compile (the ~0.9 s first frame, hitches in the forest). Desktop caches
+    them after the first run; the web compiles every session. Warm the
+    main materials (pines, grass, cabin, the Entity) out of sight during
+    the menu's sunset.
+
+14. Web defaults: Graphics Quality Low on the web by default (Medium
+    now); the microphone option there should say the browser will ask for
+    permission (and it needs HTTPS: itch.io is).
+
+15. Debug output: ~750 print() calls. Not a frame-rate problem (no
+    per-frame spam), but the browser console shows them all. Behind a
+    debug flag.
+
+16. The level file holds 147 "template = null" overrides on the tree
+    groups (from the editor saving while the template was missing). The
+    code copes; opening the level and saving it once removes them.
+
+
+P2  NICE TO HAVE
+----------------
+17. A version number on the main menu, and a "report a bug" link: the
+    first thing needed when strangers start sending feedback.
+18. The itch.io page: cover image, 3-5 screenshots (the menu's dusk, the
+    cabin at night, a nest, the Entity at a window), a short description,
+    controls, "best played with headphones".
+19. A short "how to play" from the main menu (the keys are in Settings >
+    Controls; a one-screen overview helps players who skip hints).
+
+
+OPEN QUESTION
+-------------
+- The floating, 90-degree-turned "dirt details" (an earlier task): not
+  found. Their location, or a screenshot, is needed.
+
+
+SUGGESTED ORDER
+---------------
+Day 1: 1, 2, 5 (small code fixes), 3, 4, 9, 10, 11, 14, 16; full suite.
+Day 2: 8 (credits; the licence check is reading, not code), 6 (export and
+       play both builds), 7 (itch.io settings), 17-18; upload as a
+       restricted draft first and play it from itch.io itself.
+Then:  12 and 13 from the first players' feedback.

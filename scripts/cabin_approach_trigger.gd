@@ -38,6 +38,7 @@ func _on_body_entered(body: Node) -> void:
 		else:
 			print("[CabinApproachTrigger] RoutineManager not found or missing on_cabin_approached().")
 		
-		# Disable the trigger to prevent re-triggering
-		monitoring = false
-		monitorable = false
+		# Disable the trigger to prevent re-triggering (deferred: not from
+		# inside its own signal)
+		set_deferred("monitoring", false)
+		set_deferred("monitorable", false)

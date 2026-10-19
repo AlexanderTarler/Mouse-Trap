@@ -391,9 +391,34 @@ func _ready() -> void:
 
 ## Deferred tutorial trigger — runs after the HUD is in the scene tree.
 func _trigger_movement_tutorial() -> void:
+	# (A save or "Play Again" about to be restored: not the start of a game.)
+	var checkpoint := get_node_or_null("/root/Checkpoint")
+	if checkpoint and checkpoint.get("restore_on_load"):
+		return
 	var tm := get_node_or_null("/root/TutorialManager")
 	if tm and tm.has_method("trigger"):
 		tm.trigger("movement")
+
+
+## The movement hint goes this long after the player first moves, crouched
+## or not (s).
+const MOVEMENT_HINT_TIME := 10.0
+
+
+## The movement hint learned: gone, and the notebook's next.
+func _finish_movement_tutorial() -> void:
+	if _movement_keys_pressed.is_empty():
+		return
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("mark_learned"):
+		tm.mark_learned("movement")
+	# ─── TUTORIAL FLOW: Notebook after movement (deferred) ──
+	# Delay the notebook trigger by 1 frame so the movement
+	# hint's hide animation has time to process before the
+	# notebook hint appears in the same label slot.
+	if tm and tm.has_method("trigger"):
+		tm.call_deferred("trigger", "notebook")
+	_movement_keys_pressed.clear()  # prevent re-check
 
 
 ## Initializes the movement key tracker. Called deferred so stale key
@@ -427,7 +452,7 @@ func _input(event: InputEvent) -> void:
 		
 	
 	# ─── DEBUG: Toggle mouse capture with AltGr (Right Alt) ──────────────
-	if event is InputEventKey and event.physical_keycode == KEY_ALT and event.pressed and not event.echo:
+	if OS.is_debug_build() and event is InputEventKey and event.physical_keycode == KEY_ALT and event.pressed and not event.echo:
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		else:
@@ -437,23 +462,18 @@ func _input(event: InputEvent) -> void:
 	if _movement_tutorial_ready and not _movement_keys_pressed.is_empty():
 		if event is InputEventKey and event.pressed:
 			for action in ["move_forward", "move_back", "move_left", "move_right"]:
-				if event.is_action_pressed(action):
+				if event.is_action_pressed(action) and not _movement_keys_pressed["move"]:
 					_movement_keys_pressed["move"] = true
+					# Moving but never crouching: the hint goes anyway after a
+					# while (it held up every hint after it; the stealth hint
+					# teaches crouching when it matters).
+					get_tree().create_timer(MOVEMENT_HINT_TIME).timeout.connect(_finish_movement_tutorial)
 			if event.is_action_pressed("ui_crouch"):
 				_movement_keys_pressed["crouch"] = true
 			# Learned once the player has moved (any direction) and
 			# crouched: what the hint asks.
 			if _movement_keys_pressed["move"] and _movement_keys_pressed["crouch"]:
-				var tm := get_node_or_null("/root/TutorialManager")
-				if tm and tm.has_method("mark_learned"):
-					tm.mark_learned("movement")
-				# ─── TUTORIAL FLOW: Notebook after movement (deferred) ──
-				# Delay the notebook trigger by 1 frame so the movement
-				# hint's hide animation has time to process before the
-				# notebook hint appears in the same label slot.
-				if tm and tm.has_method("trigger"):
-					tm.call_deferred("trigger", "notebook")
-				_movement_keys_pressed.clear()  # prevent re-check
+				_finish_movement_tutorial()
 	
 	if event is InputEventKey and event.is_action("flashlight") and not event.echo:
 		if event.pressed:
@@ -1272,6 +1292,15 @@ func get_player_room() -> String:
 ## A noise of `kind` at the player's position (see NoiseEvent.emit).
 func make_noise(kind: StringName) -> void:
 	NoiseEvent.emit(self, global_position, kind)
+
+
+## The out-of-breath loop off at once (the bed: SleepCinematic).
+func stop_breathing() -> void:
+	if _breathing_fade_tween and _breathing_fade_tween.is_valid():
+		_breathing_fade_tween.kill()
+	_fading_out_breath = false
+	if _breathing_audio and _breathing_audio.playing:
+		_breathing_audio.stop()
 
 
 ## Called when the breathing audio fade-out tween finishes.

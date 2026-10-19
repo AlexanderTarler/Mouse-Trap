@@ -1,0 +1,251 @@
+UPLOAD CHECKLIST: what's left for you before the MVP goes up
+=============================================================
+DECIDED (2026-10-19): the MVP is a DOWNLOAD for Windows (and Linux, once
+its export templates are installed). The web build is dropped for now:
+under 10 fps in Chrome, it doesn't start in Firefox, and its brightness and
+mouse lock need work (see "LATER: THE WEB VERSION" at the end).
+
+Everything here needs you: the editor, playing the builds, the itch.io
+page, the licences, a fresh player. Do them in this order. Tick them off
+as you go ([x]).
+
+The Windows build (v0.1.0), exported 2026-10-19:
+  build/windows/MouseTrap.exe   (~218 MB, the game packed into the .exe)
+  build/windows/libterrabrush.windows.release.x86_64.dll   (the terrain
+								 plugin: MUST stay next to the .exe; copy,
+								 zip and upload the two together)
+If you change anything in the game, export again before uploading (see 6).
+
+
+[x] 1. RE-SAVE THE LEVEL IN THE EDITOR  (done 2026-10-19)
+	The 147 "template = null" overrides and the border block's stale ID
+    are gone; tests pass; builds re-exported.
+
+
+[ ] 2. PLAY THE WINDOWS BUILD  (30-60 minutes)
+	How: run build/windows/MouseTrap.exe (it doesn't need the editor or
+	the project; copy it anywhere, even another PC, TOGETHER with the. Windows may warn
+	libterrabrush ...dll next to it: without it there's no terrain).
+	"Windows protected your PC" (the .exe isn't signed): More info >
+	Run anyway.
+	Check, and note anything wrong:
+	  [X] The main menu: it opens on the cabin in daylight, the sun goes
+		  down while the game loads, night when it's ready. No long freeze.
+	  [X] The first launch shows the brightness screen; the Settings open. Bug: First launch does not show brightness screen - in fact, it goes to main menu immediatly, and has a "Continue" option, so it seems to have a save "baked in".
+		  FIXED (not baked in): the build shared its settings/save folder with
+		  the editor (%APPDATA%\Godot\app_userdata\Mouse Trap\: your settings,
+		  calibrated, and a save from my smoke test). Release builds now use
+		  their own folder, %APPDATA%\Mouse Trap\ (re-exported 2026-10-19), so
+		  the build starts like on a player's PC. Re-check this line.
+	  [X] Play: the opening starts at once; the game comes up under the
+		  title cards; Space skips it (with "Loading..." if it isn't ready
+          yet).
+      [X] Frame rate: the yard by day, the forest, inside at night (Settings
+          > Video > Graphics Quality: try Low, Medium, High).
+          BUG (Medium -> High from the pause menu: purple/red/blue garbage
+          over the picture, planning/screenshots/graphics_change_bug.PNG).
+          FIXED: the shadow maps and the fog volume are no longer resized
+		  while the game runs (that's what corrupted the picture); they're set
+          when the game starts. Detail, plants and edges still change at
+          once; shadows and fog change on the next start (the Settings say
+          so). Re-check: switch qualities from the pause menu several times
+          (no garbage), then restart the game (the new shadows show).
+      [X] Alt-tab out while playing: the game pauses; Resume takes the
+          mouse back.
+      [X] Display Mode: Windowed, Borderless, Fullscreen all work.
+          BUG (found by you): changing the display mode / resolution now and
+          then filled the picture with coloured garbage (the same as
+          graphics_change_bug.PNG: that one was this, not the quality).
+          Reproduced: the Vulkan graphics backend corrupts textures when the
+          window switches between fullscreen and windowed on this driver.
+          FIXED: the game now runs on Direct3D 12 on Windows (clean after the
+          same switching; same frame rate; Godot falls back to Vulkan on a PC
+          without D3D12). Re-check: switch display modes back and forth
+          several times, in the menu and in the game.
+      [ ] A Day 1 up to the first night; then Main Menu: "Continue · Day 1"
+          (or the night) is offered and works.
+          Bug (Day 2 showed "Day 1" / "Go to the cabin." after Continue,
+          save_state_bug_1.PNG): FIXED. The save itself was right; the HUD
+          (and the pause menu, which copies it) kept the text from before
+          the save was loaded. NEW: leaving mid-day (pause menu > Main Menu
+          or Quit, or closing the window) now saves right there: Continue
+          puts you back on the spot, facing the same way, at the same time of
+		  day, with the day's progress. At night, or during a cinematic, the
+		  bed or the car alarm, Continue still starts from the beginning of
+		  that night (as a death does).
+		  Re-check: on Day 2, walk somewhere outside, pause > Main Menu,
+		  Continue: same spot, "Day 2", the right objective. Then the same
+		  with Quit Game, and with alt-F4.
+	  [ ] Settings: change a key in Controls, the volume, the brightness;
+		  quit and start again: they're kept.
+	  [ ] Quit (main menu and pause menu) closes the game.
+	  [ ] Main menu > Credits opens and closes; the version (v0.1.0) shows
+		  in the bottom-right corner.
+	  [ ] Optional: the microphone. Turn it on in Settings > Audio; the
+		  level meter moves when you speak.
+	If you can, try it on a weaker PC or a laptop too (with a plain
+	graphics chip: is Low playable?).
+	If something's wrong: note what, where, and what you did; a
+	screenshot if it's visual (planning/screenshots/).
+
+
+[ ] 3. THE LINUX BUILD  (optional, 20 minutes)
+	The export preset is set up (build/linux/MouseTrap.x86_64), but the
+	Linux export templates aren't installed (only Windows and Web are).
+	  a. In the editor: Editor > Manage Export Templates > Download and
+		 Install (Godot 4.6.1, the official set; it includes Linux).
+	  b. Ask me to export it, or: Project > Export > Linux > Export Project
+		 (Release) to build/linux/MouseTrap.x86_64.
+	  c. If you have Linux (or a friend with Linux / a Steam Deck), try it
+		 once: chmod +x MouseTrap.x86_64, then run it. If nobody can test
+		 it, upload it marked "untested" or leave it out.
+
+
+[ ] 4. CHECK THE ASSET LICENCES, FILL IN THE CREDITS  (1-2 hours, reading)
+	Why: the game uses bought and free asset packs. Most require credit;
+	some may limit how they're distributed (inside a game is almost always
+	fine; check anyway), or require a specific credit line.
+	How: for each pack, find its licence (where you got it: itch.io page,
+	Unity/Fab/CGTrader page, the pack's readme or PDF) and check:
+	  - may it be used in a game you publish (free or paid)?
+	  - does it require credit, and how worded?
+	Packs to check (folders in assets/):
+	  [ ] PSX Nature, PSX Mega Pack, PSX Mega Pack II, PSX Interior,
+		  PSX Bunkers, PSX Kidnapper's Van, Rusty PSX Style Kidnapper's
+		  Van, PSX Traps, PSX Paintings, PSX Tech (its licence PDF is in
+		  the folder), PSX-Electrical
+	  [ ] PSX Forest Meadows by VadaCross
+	  [ ] PSX_Rural_Environment_Pack
+	  [ ] Three Cabins, Car 01, Car 06, Misc Items, Fixed .fbx (where did
+		  these come from?)
+	  [ ] Universal Animation Library by Quaternius: CC0 (done: no credit
+		  required, given anyway)
+	  [ ] Mixamo animations (character models/, animations/): Adobe allows
+		  them in games; check the Entity model's own source
+		  (character models/elkdemongodot.glb: who made it?)
+	  [ ] Echoes - Audio Super Kit (audio/)
+	  [ ] horror_sfx_vol_1 (audio/)
+	  [ ] 40 Free PSX Footsteps (audio/)
+	  [ ] Any other sounds you added yourself (audio/house, audio/objects,
+		  audio/Entity, audio/Ambience, audio/computer...): where from?
+	  [ ] TerraBrush (addons/terrabrush): the terrain plugin's licence
+	  [ ] Fonts: Courier Prime (OFL) and Special Elite (Apache 2.0): done,
+		  their licence files are in assets/fonts and ship with the game.
+	Then: edit scripts/ui/credits_screen.gd (the TEXT at the top): replace
+	every "[TODO: ...]" with the author and licence, add anything the
+	licences ask for. Check it in the game: main menu > Credits.
+
+
+[ ] 5. A FRESH PLAYER ON NIGHT 3  (an evening)
+	Why: Night 3 (ambushes, the fake departure, lights killed, mimicry,
+	darker fog) has never been played by someone new. It should be scary,
+	and survivable on a first try.
+	How: give someone the Windows build, don't explain anything, watch (or
+	ask them to note): where they got stuck, where they died and how often,
+	what they didn't understand. Producer Mode (main menu, only when run
+	from the editor) lets you watch the Entity on Night 3 yourself first.
+	After: tell me what happened; I'll tune it.
+
+
+[ ] 6. EXPORT AGAIN IF ANYTHING CHANGED  (10 minutes, or ask me)
+	After any change (the credits in 4, fixes from 2, 3 or 5):
+	  a. Raise the version: Project > Project Settings > Application >
+		 Config > Version (0.1.0 -> 0.1.1). Saves from another version are
+		 ignored, so an update never restores an old save onto a changed
+		 level. (Also Project > Export > Windows Desktop > Application >
+		 File Version and Product Version: 0.1.1.0, so the .exe says so.)
+	  b. Ask me to run the tests and export, or do it yourself:
+		 python tools/export_list.py, then Project > Export > Windows
+		 Desktop (and Linux) > Export Project (Release), then
+		 python tools/check_export.py.
+
+
+[ ] 7. SET UP THE ITCH.IO PAGE  (1-2 hours)
+	a. Create a new project on itch.io: Kind of project: "Downloadable".
+	b. Uploads:
+		 - Windows: zip BOTH files in build/windows (MouseTrap.exe and
+		   libterrabrush.windows.release.x86_64.dll), e.g. MouseTrap-
+		   v0.1.0-windows.zip, and upload it; tick "Windows".
+		 - Linux (if done in 3): zip build/linux/MouseTrap.x86_64 and
+		   upload it; tick "Linux".
+		 Tip: itch.io's "butler" tool uploads updates as small patches,
+		 handy later; for the first upload the web page is fine.
+	c. The page:
+		 [ ] Title: Mouse Trap. Short description (one line): e.g. "A field
+             researcher, a remote cabin, three nights, and something in the
+             treeline."
+		 [ ] Cover image (630 x 500): the main menu at dusk, or the cabin at
+			 night with the lit window.
+		 [ ] 3-5 screenshots: the menu's sunset, the cabin at night, a nest,
+			 the Entity at a window, the notebook.
+		 [ ] Controls: WASD move, Shift sprint, Ctrl crouch, E use (hold:
+			 board up, refuel, carry), F flashlight (hold: overcharge),
+			 R spare battery, Tab inventory, J notebook, T watch, Esc
+			 pause. (Rebindable in Settings > Controls.)
+		 [ ] "Best played with headphones."
+		 [ ] Platforms: "Windows (Linux untested)" or as it turns out.
+		 [ ] A note on the warning: "Windows may say 'Windows protected
+			 your PC' because the game isn't code-signed: click More info >
+			 Run anyway. Some antivirus tools flag unsigned games made with
+			 Godot; it's a false positive."
+		 [ ] System requirements (a guess until people report): Windows
+			 10/11 64-bit, a graphics card from the last ~8 years, 4 GB RAM,
+			 ~250 MB of disk.
+		 [ ] Genre: Horror; tags: horror, first-person, psx, survival,
+			 atmospheric, singleplayer.
+		 [ ] Content warning if you like: jump scares.
+		 [ ] A way to report bugs: the comment section, or a link.
+	d. Save it as a DRAFT (or "Restricted"), download the zip from the
+	   draft page on another PC (or after deleting your local copy),
+	   unzip, play to the first night at least.
+	e. When it works: set it to Public.
+
+
+[ ] 8. AFTER UPLOAD
+	- Read the first comments and bug reports; send me anything that comes
+	  up (what happened, the version in the menu's corner, the PC).
+	- Next steps from the review, when there's time: warm up the shaders
+	  during the menu's sunset (first-launch stutter), Night 3 tuning from
+	  the playtests.
+	- Clean out the unused assets (ask me; ~an hour of mine, a skim of yours):
+		Why: of the project's 11,488 asset files the game uses 1,121; the
+		rest (~10,400 files, ~2.7 GB in assets/ in all) only slow down the
+		editor, re-imports and OneDrive. The builds already leave them out,
+		so the game and the build don't change.
+		a. I list the unused folders and files, grouped by pack
+		   (tools/export_list.py already works them out).
+		b. You mark anything to keep (packs you may still use).
+		c. I move the rest to an archive folder OUTSIDE the project (or
+		   delete it, if you prefer; git history keeps everything either
+		   way).
+		d. I run the full test suite, re-export, and run the export check.
+
+LATER: THE WEB VERSION  (a project of its own, not for the MVP)
+---------------------------------------------------------------
+What was found trying it (2026-10-19):
+  - Under 10 fps in Chrome on a GTX 1080 (the browser can only use the
+	Compatibility renderer): needs an optimisation pass for the web (fewer
+	and nearer forest batches, simpler shadows, cheaper fog and lamps, a
+	lower resolution scale).
+  - Firefox doesn't start it ("still waiting on run dependencies:
+	loading-workers"): the threaded web template, which the TerraBrush
+	terrain plugin's web library needs; a smaller thread pool might help.
+  - Too bright: the web's own lighting values (compat_* in
+	environment_controller.gd) haven't been tuned since the lighting
+	changes.
+  - The mouse doesn't turn the view: browsers lock the mouse only during a
+	click, and Play now waits for the sunset first, so the lock comes too
+	late. Request the lock in the click itself.
+  - On itch.io it needs "SharedArrayBuffer support" ticked.
+	Local test: python tools/serve_web.py, http://localhost:8060 (Chrome).
+
+
+WHAT I'VE ALREADY DONE (for reference)
+--------------------------------------
+See planning/mvp_review.txt: the debug computer and debug keys are gone
+from release builds; losing the window pauses the game; the first hint
+can't block the others; the logged errors are fixed; an ending clears the
+save; saves carry the game version; the leaked nodes are freed; release
+builds don't print debug output; the Credits screen; the menu's buttons
+each press only themselves; the .exe carries the game's name and version.
+All 46 test suites pass; the Windows build exported and smoke-tested.

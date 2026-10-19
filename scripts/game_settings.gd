@@ -38,7 +38,7 @@ const DEFAULTS := {
 	"video/quality": 1,
 	"video/screen_shake": true,
 	"video/calibrated": false,
-	"gameplay/objective_highlights": true,
+	"gameplay/objective_highlights": false,
 }
 ## Volume settings -> their AudioServer bus.
 const VOLUME_BUSES := {
@@ -58,7 +58,14 @@ static var _loaded := false
 
 static func get_value(key: String) -> Variant:
 	_load()
-	return _values.get(key, DEFAULTS.get(key))
+	return _values.get(key, default_of(key))
+
+
+## A setting's default (the web starts at Low graphics: browsers are slower).
+static func default_of(key: String) -> Variant:
+	if key == "video/quality" and OS.has_feature("web"):
+		return 0
+	return DEFAULTS.get(key)
 
 
 ## Sets, saves and applies one setting.
@@ -85,7 +92,7 @@ static func reset_all() -> void:
 	for key in DEFAULTS:
 		if key in ["display/mode", "video/calibrated"]:
 			continue
-		set_value(key, DEFAULTS[key])
+		set_value(key, default_of(key))
 	GameKeys.reset()
 
 

@@ -47,6 +47,9 @@ var _display_mode: OptionButton = null
 var _mic_meter: ProgressBar
 var _mic_fill: StyleBoxFlat
 var _mic_listener: PlayerVoice
+## Test: what the microphone hears, played back (off again on a second
+## press, another tab, or leaving the menu).
+var _mic_test: Button
 ## The key buttons (action -> Button), and the one waiting for a key.
 var _key_buttons := {}
 var _rebinding := ""
@@ -98,6 +101,7 @@ func _ready() -> void:
 	_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(_tabs)
 	box.move_child(_tabs, $PanelContainer/VBoxContainer/HSeparator.get_index() + 1)
+	_tabs.tab_changed.connect(func(_tab): _stop_mic_test())
 	_mic_listener = PlayerVoice.new()
 	_mic_listener.name = "MicLevel"
 	_mic_listener.meter_only = true
@@ -127,6 +131,7 @@ func _build_tabs() -> void:
 		child.queue_free()
 	_key_buttons.clear()
 	_mic_meter = null
+	_stop_mic_test()
 	_build_audio(_tab("Audio"))
 	_build_video(_tab("Video"))
 	_build_controls(_tab("Controls"))
@@ -158,7 +163,20 @@ func _build_audio(column: VBoxContainer) -> void:
 			func(v): return "%d%%" % roundi(v * 100.0)))
 	column.add_child(_header("Microphone"))
 	column.add_child(_check_row("Microphone", "audio/microphone", "MicrophoneCheck"))
-	column.add_child(_tip("The Entity can hear you: a gasp or a shout carries. Only loud moments count; nothing is recorded to disk or sent anywhere."))
+	column.add_child(_tip("The Entity can hear you: a gasp or a shout carries. Only loud moments count; nothing is recorded to disk or sent anywhere."
+		+ (" Your browser will ask for permission to use the microphone." if OS.has_feature("web") else "")))
+	_mic_test = Button.new()
+	_mic_test.name = "MicTestButton"
+	_mic_test.text = "Test"
+	_mic_test.toggle_mode = true
+	var test_state := Label.new()
+	_mic_test.toggled.connect(func(on):
+		if _mic_listener:
+			_mic_listener.monitor = on
+		_mic_test.text = "Stop" if on else "Test"
+		test_state.text = "Listening" if on else "")
+	column.add_child(_row("Test Microphone", _mic_test, test_state))
+	column.add_child(_tip("Plays back what the microphone hears (use headphones, or it echoes). Works with the microphone off too: it's only a test."))
 	column.add_child(_slider_row("Mic Threshold", "audio/mic_threshold_db", -45.0, -6.0, 1.0, "MicThresholdSlider",
 		func(v): return "%d dB" % roundi(v)))
 	_mic_meter = ProgressBar.new()
@@ -191,7 +209,7 @@ func _build_video(column: VBoxContainer) -> void:
 	_display_mode.item_selected.connect(_on_display_mode_selected)
 	column.add_child(_row("Display Mode", _display_mode))
 	column.add_child(_option_row("Graphics Quality", "video/quality", GraphicsQuality.NAMES, "QualityOption"))
-	column.add_child(_tip("Shadows, ground fog, how far the small plants are drawn." + (" Low runs smoothest in a browser." if OS.has_feature("web") else "")))
+	column.add_child(_tip("Shadows, ground fog, how far the small plants are drawn. Shadows and fog change the next time the game starts." + (" Low runs smoothest in a browser." if OS.has_feature("web") else "")))
 	column.add_child(_slider_row("Brightness", "video/brightness", 0.6, 1.8, 0.05, "BrightnessSlider",
 		func(v): return "%d%%" % roundi(v * 100.0)))
 	var calibrate := Button.new()
@@ -502,6 +520,19 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+func _notification(what: int) -> void:
+	# Closed some other way (Escape, the pause menu going): the Test off too.
+	if what == NOTIFICATION_VISIBILITY_CHANGED and not is_visible_in_tree():
+		_stop_mic_test()
+
+
+func _stop_mic_test() -> void:
+	if _mic_test and is_instance_valid(_mic_test) and _mic_test.button_pressed:
+		_mic_test.button_pressed = false   # (its toggled stops the playback)
+	if _mic_listener:
+		_mic_listener.monitor = false
+
+
 func _on_back_pressed() -> void:
 	hide_menu()
 
@@ -514,6 +545,7 @@ func show_menu() -> void:
 
 func hide_menu() -> void:
 	_rebinding = ""
+	_stop_mic_test()
 	# (The brightness screen is a layer of its own: it doesn't hide with us.)
 	var calibration := get_node_or_null("Calibration")
 	if calibration:
