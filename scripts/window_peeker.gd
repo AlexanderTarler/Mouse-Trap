@@ -269,6 +269,7 @@ func _vanish() -> void:
 		return
 	_is_vanishing = true
 	_play_sfx(piano_stinger_sfx)
+	_think_seen()
 	if not _monster_model:
 		peeker_vanish_finished.emit()
 		queue_free()
@@ -280,6 +281,18 @@ func _vanish() -> void:
 	tween.set_trans(Tween.TRANS_QUAD)
 	tween.tween_property(_monster_model, "position", target, QUICK_DUCK_DURATION if quick else PULL_BACK_DURATION)
 	tween.finished.connect(_on_duck_finished)
+
+
+## What the player makes of it: the first time, the second time.
+func _think_seen() -> void:
+	EntityJournal.learn(self, "peeker")
+	var monologue := get_node_or_null("/root/Monologue")
+	if not monologue:
+		return
+	if not monologue.has_thought("peeker_seen_1"):
+		monologue.think_when_free("...what was that?", 4.0, "peeker_seen_1", 0.6)
+	else:
+		monologue.think_when_free("Twice now. Not imagining it.", 4.0, "peeker_seen_2", 0.6)
 
 
 func _on_duck_finished() -> void:

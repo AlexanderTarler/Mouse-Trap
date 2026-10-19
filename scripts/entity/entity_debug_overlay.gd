@@ -2,6 +2,8 @@ class_name EntityDebugOverlay
 extends CanvasLayer
 
 ## Developer overlay (debug builds only). F3 toggles it.
+## F4 (temporary, for testing): the Entity climbs up to the LandingRoom's
+## window and tries to break in (debug_landing_breach).
 ## Shows the Entity's state, confidence, perception and recent transitions,
 ## plus an FPS counter.
 
@@ -38,11 +40,50 @@ func setup(owner_entity: Entity) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# (Development only.)
+	if not OS.is_debug_build():
+		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F3:
 		visible = not visible
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F4:
+		debug_landing_breach()
+
+
+## TEMPORARY (F4): the Entity, put on the ground a few metres out from the
+## LandingRoom's window, walks up, climbs the wall and tries to break in
+## (APPROACH -> PEEK -> BREACH -> ENTER, as on a real night). Any night or
+## day. False if the window isn't there.
+func debug_landing_breach() -> bool:
+	var link: CabinEntryLink = null
+	for window in get_tree().get_nodes_in_group("TopFloorWindows"):
+		if window.name == "LandingWindow" and window.get("_entry_link"):
+			link = window._entry_link
+	if link == null:
+		push_warning("[Entity debug] F4: no LandingWindow entry found.")
+		return false
+	var out := link.start_position - link.end_position
+	out.y = 0.0
+	var spot := entity.world.snap_to_navmesh(link.start_position + out.normalized() * 6.0)
+	entity.request_state(Entity.State.OBSERVE)
+	entity._teleport(spot)
+	entity.debug_breach = true
+	_breach_states_seen = false
+	entity.request_state(Entity.State.APPROACH, {"entry": link})
+	print("[Entity debug] F4: climbing to the LandingRoom window from %s." % spot)
+	return true
+
+
+const BREACH_STATES := [Entity.State.APPROACH, Entity.State.PEEK, Entity.State.BREACH, Entity.State.ENTER]
+var _breach_states_seen := false
 
 
 func _process(delta: float) -> void:
+	# The F4 break-in is over (in, or given up): the night's rules again.
+	if entity and entity.debug_breach:
+		if entity.get_state() in BREACH_STATES:
+			_breach_states_seen = true
+		elif _breach_states_seen:
+			entity.debug_breach = false
 	if not visible:
 		return
 	_refresh -= delta

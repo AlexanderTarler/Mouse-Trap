@@ -155,10 +155,12 @@ var _cached_sun_shadow_enabled: bool = false
 var _cached_moon_energy: float = 0.0
 var _cached_moon_color: Color = Color()
 var _cached_moon_shadow_enabled: bool = false
-var _cached_fog_enabled: bool = false
-var _cached_fog_density: float = 0.0
+## (Start "on": the level's environment has its fog on, and the first
+## daytime update has to switch it off, or it stayed until the first night.)
+var _cached_fog_enabled: bool = true
+var _cached_fog_density: float = -1.0
 var _cached_fog_color: Color = Color()
-var _cached_vfog_enabled: bool = false
+var _cached_vfog_enabled: bool = true
 var _cached_vfog_density: float = 0.0
 var _cached_fog_depth_end: float = 0.0
 
@@ -486,12 +488,18 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 		_environment.tonemap_exposure = tonemap_exposure
 		_cached_tonemap_exposure = tonemap_exposure
 	
-	# --- Volumetric fog: smoothly thickens through dusk, then fluctuates at night ---
-	var fog_factor: float = clampf(1.0 - (p_sun_height + 0.1) / 0.2, 0.0, 1.0)
+	# --- Fog: night only. It comes in over the first FOG_FADE seconds of the
+	# night and goes over the last FOG_FADE before dawn (not with the sun's
+	# height, which had it thickening through dusk, lit green by the low
+	# sun); then it fluctuates. ---
+	var fog_factor: float = night_fog_amount()
 	
 	# --- Night fog fluctuation ---
+	# (The night's strength is picked as the fog starts to come in, and its
+	# swell blends in with it: picked only once it was all in, it arrived
+	# all at once.)
 	var fog_fluctuation: float = 1.0
-	if fog_factor >= 0.99:
+	if fog_factor > 0.01:
 		if not _fog_initialized:
 			_night_fog_base = randf_range(0.7, 1.3)
 			_fog_initialized = true
@@ -500,6 +508,7 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 		var fast_wave: float = sin(_fog_noise_time * 0.3 + 1.2) * 0.15
 		fog_fluctuation = 1.0 + slow_wave + fast_wave
 		fog_fluctuation = clampf(fog_fluctuation, night_fog_fluctuation_min, night_fog_fluctuation_max)
+		fog_fluctuation = lerpf(1.0, fog_fluctuation, fog_factor)
 	elif _fog_initialized:
 		_fog_initialized = false
 	
@@ -518,7 +527,12 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 		if fog_nm and "current_night" in fog_nm and fog_nm.current_night >= 3:
 			night_multiplier = 1.5
 		
-		var thickness: float = fog_factor * fog_fluctuation * _night_fog_base * night_multiplier
+		# How thick the night's fog is once in (the distance it closes to),
+		# and how much of it is in yet: the fog thickens over FOG_FADE
+		# seconds, from clear to the night's, instead of the distance only
+		# closing in at the very end.
+		var full_thickness: float = fog_fluctuation * _night_fog_base * night_multiplier
+		var thickness: float = full_thickness * smoothstep(0.0, 1.0, fog_factor)
 		_set_ground_fog_emission(night3_ground_fog_emission if night_multiplier > 1.0 else _base_fog_emission)
 
 		# Distance fog: clear up to fog_clear_distance, fully opaque at the
@@ -526,13 +540,14 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 		# fog_density is the opacity reached at fog_depth_end.
 		_environment.fog_mode = Environment.FOG_MODE_DEPTH
 		_environment.fog_depth_begin = fog_clear_distance
-		_fog_visibility = fog_clear_distance + (night_fog_visibility - fog_clear_distance) / maxf(thickness, 0.05)
+		_fog_visibility = fog_clear_distance + (night_fog_visibility - fog_clear_distance) / maxf(full_thickness, 0.05)
 		if not is_equal_approx(_fog_visibility, _cached_fog_depth_end):
 			_environment.fog_depth_end = _fog_visibility
 			_cached_fog_depth_end = _fog_visibility
-		if not is_equal_approx(fog_factor, _cached_fog_density):
-			_environment.fog_density = fog_factor
-			_cached_fog_density = fog_factor
+		var opacity: float = smoothstep(0.0, 1.0, fog_factor)
+		if not is_equal_approx(opacity, _cached_fog_density):
+			_environment.fog_density = opacity
+			_cached_fog_density = opacity
 
 		var vfog_enabled: bool = true
 		if _cached_vfog_enabled != vfog_enabled:
@@ -551,9 +566,8 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 		if _compat:
 			_environment.fog_height = compat_ground_fog_height
 			_environment.fog_height_density = compat_ground_fog_density * thickness
-		var day_fog_color: Color = Color(0.7, 0.75, 0.8)
-		var night_color: Color = compat_ground_fog_color if _compat else night_fog_color
-		var fog_color: Color = day_fog_color.lerp(night_color, fog_factor)
+		# The night's colour all the way (no tint while it's thin).
+		var fog_color: Color = compat_ground_fog_color if _compat else night_fog_color
 		if not _cached_fog_color.is_equal_approx(fog_color):
 			_environment.fog_light_color = fog_color
 			_cached_fog_color = fog_color
@@ -578,6 +592,22 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 ## outside through the walls into the cabin: a haze in the rooms that grew
 ## the more the player moved. Indoors it is off, so the FogVolume erasers keep
 ## the rooms clear; outdoors it stays on and keeps the fog smooth.
+## Seconds the fog takes to come in at nightfall, and to go before dawn.
+const FOG_FADE := 30.0
+
+
+## How much of the night's fog there is now (0-1): 0 by day, rising over the
+## first FOG_FADE seconds of the night, falling over the last FOG_FADE.
+func night_fog_amount() -> float:
+	if cycle_progress < 0.5:
+		return 0.0
+	var gt := get_node_or_null("/root/GameTime")
+	var cycle: float = gt.cycle_duration if gt and "cycle_duration" in gt else 600.0
+	var into_night := (cycle_progress - 0.5) * cycle
+	var to_dawn := (1.0 - cycle_progress) * cycle
+	return clampf(minf(into_night, to_dawn) / FOG_FADE, 0.0, 1.0)
+
+
 func _update_fog_reprojection() -> void:
 	var player := get_tree().get_first_node_in_group("player")
 	var inside: bool = player != null and player.has_method("get_player_room") and player.get_player_room() != "Outside"

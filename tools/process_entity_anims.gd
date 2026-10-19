@@ -25,7 +25,8 @@ const OUT := "res://assets/animations/entity/"
 const SOURCE_STANDING_HIPS := 5.6
 const NORMALIZED_STANDING_HIPS := 1.0
 
-## FBX name -> [saved name, loops]
+## FBX name -> [saved name, loops, in place (travel taken out; loops are),
+## level (its rise and fall taken out too: the hips at their first height)]
 const ANIMS := {
 	"Crouching Idle": ["crouching_idle", true],
 	"Looking Around": ["looking_around", true],
@@ -36,6 +37,12 @@ const ANIMS := {
 	"Zombie Neck Bite": ["zombie_neck_bite", false],
 	"Zombie Dying": ["zombie_dying", false],
 	"Falling To Landing": ["falling_to_landing", false],
+	# Through a window (EntityStateEnter / Entity._traverse): moved by the
+	# game, so their forward travel is taken out as a loop's is.
+	# (Its upward heave too: the game carries it up over the sill, and both
+	# lifting it put it in the ceiling.)
+	"entity/Entity Climbing Inside Upper Floor": ["climb_in_upper", false, true, true],
+	"entity/Entity Dive Through Bottom Floor Windows": ["dive_in_lower", false, true],
 }
 
 
@@ -45,6 +52,8 @@ func _initialize() -> void:
 	for source in ANIMS:
 		var out_name: String = ANIMS[source][0]
 		var loops: bool = ANIMS[source][1]
+		var in_place: bool = loops or (ANIMS[source].size() > 2 and ANIMS[source][2])
+		var level: bool = ANIMS[source].size() > 3 and ANIMS[source][3]
 		var scene: Node = load(SRC + source + ".fbx").instantiate()
 		var player := scene.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer
 		var anim := player.get_animation(player.get_animation_list()[0]).duplicate(true) as Animation
@@ -61,8 +70,10 @@ func _initialize() -> void:
 			drift.y = 0.0
 			for key in count:
 				var value: Vector3 = anim.track_get_key_value(hips, key)
-				if loops and anim.length > 0.0:
+				if in_place and anim.length > 0.0:
 					value -= drift * (anim.track_get_key_time(hips, key) / anim.length)
+				if level:
+					value.y = first.y
 				anim.track_set_key_value(hips, key, value * k)
 		anim.loop_mode = Animation.LOOP_LINEAR if loops else Animation.LOOP_NONE
 		anim.resource_name = out_name

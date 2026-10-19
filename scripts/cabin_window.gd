@@ -191,6 +191,16 @@ func _keep_pristine_templates() -> void:
 		_pristine_templates.append(child.duplicate())
 
 
+## The kept copies of the glass go with the window (they're outside the
+## tree: left, they piled up with every level loaded).
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		for template in _pristine_templates:
+			if is_instance_valid(template):
+				template.free()
+		_pristine_templates.clear()
+
+
 ## Checkpoint restored this window's state: rebuild what it looks like.
 func _on_checkpoint_restored() -> void:
 	var pristine := get_node_or_null("PristineVisuals")
@@ -361,6 +371,89 @@ func _update_window_visuals() -> void:
 		_pristine_visuals.visible = not is_glass_shattered
 	if _shattered_visuals:
 		_shattered_visuals.visible = is_glass_shattered
+	# The glass that fell in, on the floor under the window.
+	if is_glass_shattered and not _floor_shards:
+		_make_floor_shards.call_deferred()
+	if _floor_shards:
+		_floor_shards.visible = is_glass_shattered
+
+
+## ─── GLASS ON THE FLOOR ─────────────────────────────────────────────────────
+## A broken window leaves its glass on the floor inside, under it: slivers
+## and a few bigger pieces catching the light (a window broken before the game
+## began says something came in). Shown while the glass is broken.
+const SHARD_COUNT := 44
+## Where they lie: along the window (half its width, m), and how far into the
+## room (m) from the wall.
+const SHARD_SPREAD := 0.75
+const SHARD_REACH := Vector2(0.08, 0.9)
+var _floor_shards: MeshInstance3D = null
+
+
+func _make_floor_shards() -> void:
+	if _floor_shards or not is_inside_tree():
+		return
+	await get_tree().physics_frame
+	if _floor_shards or not is_inside_tree():
+		return
+	var inward := global_basis.z.normalized()
+	var along := global_basis.x.normalized()
+	var floor_y := _floor_below(global_position + inward * 0.4)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(window_id if window_id != "" else str(global_position.round()))
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for i in SHARD_COUNT:
+		# Most near the wall, fewer further in; the odd big piece.
+		var reach := lerpf(SHARD_REACH.x, SHARD_REACH.y, pow(rng.randf(), 1.8))
+		var side := rng.randf_range(-SHARD_SPREAD, SHARD_SPREAD) * (1.0 - reach * 0.3)
+		var size := rng.randf_range(0.012, 0.045) * (2.6 if rng.randf() < 0.12 else 1.0)
+		var centre := global_position + inward * reach + along * side
+		centre.y = floor_y + 0.004 + rng.randf() * 0.004
+		var yaw := rng.randf() * TAU
+		var tilt := Basis(Vector3(rng.randf_range(-1, 1), 0, rng.randf_range(-1, 1)).normalized(), rng.randf_range(0.0, 0.12))
+		var basis := tilt * Basis(Vector3.UP, yaw)
+		# A sliver: a long thin triangle, or a wider shard.
+		var points := [Vector3(size * rng.randf_range(0.8, 1.6), 0, 0), Vector3(-size * 0.6, 0, size * rng.randf_range(0.3, 0.9)),
+			Vector3(-size * 0.5, 0, -size * rng.randf_range(0.2, 0.8))]
+		for p in points:
+			st.set_normal(basis * Vector3.UP)
+			st.add_vertex(to_local(centre + basis * p))
+	_floor_shards = MeshInstance3D.new()
+	_floor_shards.name = "FloorShards"
+	_floor_shards.mesh = st.commit()
+	_floor_shards.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var glass := StandardMaterial3D.new()
+	glass.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	glass.albedo_color = Color(0.62, 0.72, 0.76, 0.3)
+	glass.metallic = 0.3
+	glass.roughness = 0.04
+	glass.metallic_specular = 1.0
+	glass.cull_mode = BaseMaterial3D.CULL_DISABLED
+	_floor_shards.material_override = glass
+	add_child(_floor_shards)
+	_floor_shards.visible = is_glass_shattered
+
+
+## The floor's height under `at` (the cabin's own floors and walls, not the
+## props or the window's own blocker); a sill's height below the window if
+## nothing is found.
+func _floor_below(at: Vector3) -> float:
+	var fallback := global_position.y - 1.75
+	var space := get_world_3d().direct_space_state if get_world_3d() else null
+	if not space:
+		return fallback
+	var query := PhysicsRayQueryParameters3D.create(at, at + Vector3.DOWN * 3.0, 1)
+	if _nav_blocker is CollisionObject3D:
+		query.exclude = [(_nav_blocker as CollisionObject3D).get_rid()]
+	for attempt in 4:
+		var hit := space.intersect_ray(query)
+		if hit.is_empty():
+			return fallback
+		if hit.collider is StaticBody3D and (hit.normal as Vector3).y > 0.7:
+			return (hit.position as Vector3).y
+		query.exclude = query.exclude + [(hit.collider as CollisionObject3D).get_rid()]
+	return fallback
 
 
 ## True when the Entity can climb through: the glass is gone and no planks
@@ -749,6 +842,10 @@ func damage_barricade() -> bool:
 		# Check if the current plank is fully broken
 		if hits_on_current_plank >= HITS_PER_PLANK:
 			planks_remaining -= 1
+			Caption.at(self, "a plank giving way", global_position)
+			var player := get_tree().get_first_node_in_group("player")
+			if player and player.has_method("get_player_room") and player.get_player_room() != "Outside":
+				EntityJournal.learn(self, "windows")
 			hits_on_current_plank = 0
 			
 			# Update plank visuals to reflect new plank count
@@ -805,6 +902,7 @@ func quiet_break() -> void:
 ## was boarded up, the planks remain at full health behind the shattered frame.
 ## The NavBlocker stays enabled because planks still block the path.
 func _shatter_glass() -> void:
+	Caption.at(self, "glass breaking", global_position)
 	is_glass_shattered = true
 	print("[SHATTER DEBUG] _shatter_glass() called on window '%s' (id=%s). is_glass_shattered now true. PristineVisuals=%s" % [name, window_id, str(_pristine_visuals)])
 	
@@ -859,6 +957,7 @@ func _shatter_glass() -> void:
 ## NavBlocker, and resets state.
 ## Only called when glass is already shattered and planks are being broken.
 func _shatter_barricade() -> void:
+	Caption.at(self, "wood splintering", global_position)
 	is_boarded = false
 	planks_remaining = 0
 	hits_on_current_plank = 0

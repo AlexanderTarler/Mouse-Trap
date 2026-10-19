@@ -1,6 +1,4 @@
-1. THe "Hold Shift to run" tutorial message that is displayed during Night 2.2 should disappear after the player has held shift for 3 seconds. 
-2. The van displays as "broken" before Night 2.2 - this should not be able to happen.
-3. We need to reduce the drain of the flashlight by 50% - playtesters run out of juice quick!
-4. When the player runs out of flashlight battery, the tutorial message that tells the player to replace the battery should also mention to press TAB to open the inventory.
-5. If the player is using the computer (aka computer_ui.tscn is displayed) and they open the notebook (by pressing "J"), the player should be able to close the notebook (WITHOUT exiting the computer UI) by pressing ESC.
-6. The "Next page" and "Previous page" text elements in the notebook should be moved 10% towards the middle. 
+1. The "player_breathing" sound track still plays in the windows build when the player goes to bed - only the "player_yawning" sound should play.
+2. Add a "microphone test button" by the microphone toggle in the settings menu, which, when toggled on, plays back the sound the game gets from the player's microphone. This should be toggled of when the player presses the button again or leaves that menu. 
+3. After the "brightness check" that comes when someone starts the game for the first time, add a check for enabling the player's microphone and for enabling the "highlight system". Both should be off as default. Also mention where the player can toggle these settings if they change their mind. 
+4. Major bug: During Day 3, after having exited to main menu and then clicked Continue, I searched a scrap_heap. In there were 4 items, all showing as "null". I could add them to my inventory but do nothing with them. I added a screenshot of this called "scrap_heap_bug.npg". 

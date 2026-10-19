@@ -50,7 +50,7 @@ func _ready() -> void:
 ## epilogue on the player's phone (the one from the opening): days later
 ## for "It Follows", on the road at dawn for "Dawn". Any key skips it.
 const ENDINGS := {
-	0: ["The Forest Keeps You", "No one came looking for days. By then the cabin was empty again."],
+	0: ["The Forest Keeps You", "No one came looking for days.\nBy then the cabin was empty again."],
 	1: ["It Follows", "You got away from the cabin. It came with you."],
 	2: ["Dawn", "The willow is ash, and the woods are quiet. You're going home."],
 }
@@ -62,6 +62,11 @@ var _in_epilogue := false
 ## Configures the ending screen UI based on which ending was triggered.
 ## Called by EndgameManager when the ending sequence begins.
 func setup_ending(ending_type: int) -> void:
+	# The game is over: Continue no longer offers its last night (a game
+	# started from the menu; the tests keep whatever save there is).
+	var checkpoint := get_node_or_null("/root/Checkpoint")
+	if checkpoint and checkpoint.get("save_to_disk"):
+		SaveGame.delete()
 	var em = get_node_or_null("/root/EndgameManager")
 	var ending_name: String = "Unknown"
 	if em and em.has_method("get_ending_name"):
@@ -168,7 +173,7 @@ func _dawn(phone: Phone, view: Vector2) -> void:
 	first.status.text = "Delivered"
 	first.status.remove_theme_color_override("font_color")
 	await _wait(1.6)
-	var line := "Leaving the site. The nests are empty. Arvidsson was right."
+	var line := "Leaving the site. The nests are empty. Stenberg was right."
 	for i in line.length():
 		phone.input_line.text = line.substr(0, i + 1)
 		await _wait(0.04)

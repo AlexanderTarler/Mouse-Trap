@@ -70,6 +70,9 @@ extends Resource
 	"click": 3.0,
 	"rustle": 10.0,
 	"rustle_crouch": 6.0,
+	# The player's voice (the microphone, PlayerVoice): a gasp, a shout.
+	"voice": 14.0,
+	"voice_loud": 26.0,
 }
 ## Footsteps on the cabin's wooden floors carry this much farther.
 @export var indoor_footstep_multiplier: float = 1.3
@@ -266,8 +269,9 @@ extends Resource
 @export var climb_speed: float = 1.4
 ## Seconds to drop off the wall when it is scared off.
 @export var drop_time: float = 0.45
-## Clinging outside a window: its feet this far below the window's centre...
-@export var perch_head_height: float = 1.65
+## Clinging outside a window: its feet this far below the window's centre
+## (it "reaches" the window there)...
+@export var perch_head_height: float = 2.65
 ## ...and this far out from it (on the ledge where there is one).
 @export var perch_wall_offset: float = 0.75
 ## Ducking below the sill while peeking from the wall, this far down.

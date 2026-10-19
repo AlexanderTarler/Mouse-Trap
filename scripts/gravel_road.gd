@@ -17,7 +17,7 @@ extends Node3D
 ## marker in cottage_horror.tscn (move both together).
 const CENTRE_LINE := [
 	Vector2(-24.0, -90.6), Vector2(-12.0, -90.4), Vector2(0.0, -90.9), Vector2(14.0, -91.4),
-	Vector2(30.0, -91.0), Vector2(46.0, -90.6), Vector2(62.0, -91.1), Vector2(66.9, -90.5),
+	Vector2(30.0, -91.0), Vector2(46.0, -90.6), Vector2(62.0, -91.1),
 	Vector2(95.0, -91.6), Vector2(105.3, -103.5), Vector2(104.58, -118.79),
 ]
 const WIDTH := 5.0
@@ -32,6 +32,13 @@ const SHADER := "res://shaders/gravel_road.gdshader"
 
 static var _line := PackedVector2Array()
 static var _along := PackedFloat32Array()
+## The centre line's segments by GRID_CELL-metre cell: those passing within
+## GRID_REACH m of it (Vector2i -> PackedInt32Array), so covers() looks at a
+## few nearby segments instead of the whole road (the forest asks tens of
+## thousands of times as the level loads).
+const GRID_CELL := 8.0
+const GRID_REACH := 14.0
+static var _grid := {}
 
 var _mesh: MeshInstance3D = null
 
@@ -102,7 +109,33 @@ static func distance_to(point: Vector3) -> float:
 
 ## Whether `point` is on the road (with `margin` m to spare).
 static func covers(point: Vector3, margin: float = 0.0) -> bool:
-	return distance_to(point) < width_at(point.x) * 0.5 + margin
+	var limit := width_at(point.x) * 0.5 + margin
+	if limit > GRID_REACH:
+		return distance_to(point) < limit
+	# Any segment closer than `limit` is listed in the point's cell, so the
+	# nearest of those is the nearest of all (when it matters): the same
+	# answer as distance_to().
+	if _grid.is_empty():
+		_build_grid()
+	var at := Vector2(point.x, point.z)
+	var line := centre_points()
+	var best := INF
+	for i in _grid.get(Vector2i(floori(at.x / GRID_CELL), floori(at.y / GRID_CELL)), PackedInt32Array()):
+		best = minf(best, at.distance_to(Geometry2D.get_closest_point_to_segment(at, line[i], line[i + 1])))
+	return best < limit
+
+
+static func _build_grid() -> void:
+	var line := centre_points()
+	for i in line.size() - 1:
+		var low := Vector2(minf(line[i].x, line[i + 1].x), minf(line[i].y, line[i + 1].y)) - Vector2.ONE * GRID_REACH
+		var high := Vector2(maxf(line[i].x, line[i + 1].x), maxf(line[i].y, line[i + 1].y)) + Vector2.ONE * GRID_REACH
+		for cx in range(floori(low.x / GRID_CELL), floori(high.x / GRID_CELL) + 1):
+			for cz in range(floori(low.y / GRID_CELL), floori(high.y / GRID_CELL) + 1):
+				var cell := Vector2i(cx, cz)
+				if not _grid.has(cell):
+					_grid[cell] = PackedInt32Array()
+				_grid[cell].append(i)
 
 
 ## How far along the road (m) the closest point to `point` is.
@@ -155,7 +188,9 @@ func _build_mesh() -> ArrayMesh:
 		if i > 0:
 			var a := (i - 1) * 2
 			var b := i * 2
-			indices.append_array([a, b, a + 1, a + 1, b, b + 1])
+			# Wound to face up (Godot's front faces are clockwise seen from
+			# the front): the other way, it was culled and never seen.
+			indices.append_array([a, a + 1, b, a + 1, b + 1, b])
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = verts

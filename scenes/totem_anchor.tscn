@@ -20,8 +20,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6515137, 0)
 shape = SubResource("6")
 
 [node name="GlowLight" type="OmniLight3D" parent="." unique_id=1098856447]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 0)
-light_color = Color(1, 0.2, 0.05, 1)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.4839783, 0)
+light_color = Color(0.4639899, 0.54453844, 0.5409329, 1)
 light_energy = 0.8
 omni_range = 4.0
 

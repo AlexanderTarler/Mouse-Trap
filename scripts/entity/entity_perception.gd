@@ -165,6 +165,10 @@ const OPENING_CLEARANCE := 0.5
 ## a broken, unboarded window lets it out. Near the edge of hearing its
 ## position is only roughly known. A noise heard from inside the cabin draws
 ## the Entity in (confidence) and tells it which room the player is in.
+## Noises the player makes (for the journal: "It hears me").
+const PLAYER_NOISES: Array[StringName] = [&"walk", &"sprint", &"land", &"door", &"drop", &"click", &"hammer"]
+
+
 func hear_noise(noise_position: Vector3, kind: StringName) -> void:
 	var radius: float = config.noise_radius.get(String(kind), 10.0)
 	var noise_room := RoomLightDetector.get_room_name_at(noise_position + Vector3.UP * ROOM_SAMPLE_HEIGHT)
@@ -198,6 +202,9 @@ func hear_noise(noise_position: Vector3, kind: StringName) -> void:
 	last_noise["error"] = offset.length()
 	last_heard_room = noise_room
 	_last_heard_clock = _clock
+	# Heard the player, and the player saw it turn to the sound.
+	if kind in PLAYER_NOISES and in_player_view and entity.is_active():
+		EntityJournal.learn(entity, "sound")
 	if noise_inside and not entity_inside:
 		entity.confidence.modify(config.noise_confidence_boost * lerpf(0.5, 1.0, clarity))
 

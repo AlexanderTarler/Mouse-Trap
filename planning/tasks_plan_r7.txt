@@ -1,0 +1,205 @@
+PLAN FOR planning/tasks.txt (round 7, 20 tasks)
+===============================================
+Looked over against the code first; what each task touches and how, grouped
+into rounds (quick fixes first, the bigger world/Entity work after). Each
+round ends with a test suite (tests/tasks13_test.gd ...) and the full run.
+
+
+STATUS: all four rounds done (tests/tasks13-16_test.gd; all 39 suites pass).
+  A  1 bed highlight Day 1/Night 1 only. 2 lights 0.125/0.075. 3 the key's
+     resource pointed (by uid) at fuel_can.tscn: icon and drop were a fuel
+     can; now ItemIcons.MODELS["Cabin Key"], key_pickup sets the drop scene
+     (the resource can't name key.tscn: they'd load each other). 4 -3.1 dB.
+     8+11 Linnea_and_Maja, note rewritten. 10 drains by day. 13+15 thoughts.
+     19 WORD_SMART, wider text. 14 not reproduced on Windows (warm or cold
+     cache); Compatibility showed first-time shader hitches there:
+     ShaderWarmup (web only, ~1.3 s behind the start cover).
+  B  9 fog by the night's clock (30 s in/out), night colour only. 5 the road
+     was wound facing down (culled, never seen): fixed, kink smoothed.
+     20 ForestDresser.near_trunk for pebbles, trails, stakes, boulders.
+     12 measured paging (tools/journal_pages.gd checks rendered).
+  C  6 perch 2.65 below the window; the AnimationTree is stopped while it
+     clings still (speed_scale alone didn't stop it). 7 out through windows
+     crawling (LowCrawl), facing them; upstairs it turns to the wall.
+  D  17 tools/bake_details.gd + merge_details.py: CabinDetails (49) and
+     ForestDetails (63) in the level; SiteDresser no longer runs. 18 24
+     KnockableProps (+ the coin, a bottle, the football); the Entity walks
+     through loose props (collision exception). 16 Crows flocks: cabin roof
+     (Day 1, 20 m, gone for the day), barn roof, wreck yard, clear-cut; no
+     scaring before the player is placed (it emptied the roof flock).
+
+
+ROUND A — quick fixes and story text (low risk)
+-----------------------------------------------
+1  Bed highlight only on Day 1 / Night 1.
+   RoutineManager._update_bed_highlight() highlights "xray_bed" whenever the
+   objective says "go to bed". Add: only while NightManager.current_night
+   <= 1. Later "go to bed" objectives (Night 2, Day 3 exhaustion) stay
+   unhighlighted.
+
+2  Cabin lights drain 50% less.
+   The generator scene overrides the script defaults: cabin_light_drain_rate
+   0.25 -> 0.125 and porch_light_drain_rate 0.15 -> 0.075 (scenes/
+   generator.tscn; the script defaults halved too so they agree).
+
+3  Cabin Key shows a fuel can in the inventory.
+   On paper it should already render its own model (key.tscn has
+   key_mp_3.glb; ItemIcons renders scene_to_spawn), so something else is
+   going on: render the inventory icons in a real (non-headless) run and
+   see what the key actually gets. Likely suspects: an icon cached under
+   the wrong name, the key model too small or framed off-screen in
+   ItemIcons, or a separate picture used somewhere (the stash, a pickup
+   popup). Fix whatever it turns out to be; failing that, give the key an
+   explicit icon (ItemIcons.MODELS "Cabin Key" -> key_mp_3.glb).
+
+4  Player breathing 30% quieter.
+   Two players use "Player Breathing.ogg": the stamina breathing
+   (player_controller.gd, -16 dB, also the -16 it fades back up to) and
+   going to sleep (sleep_cinematic.gd, -14 dB). 30% quieter = x0.7
+   amplitude = -3.1 dB: -16 -> -19.1, -14 -> -17.1. (Not the panic
+   breathing or the death cutscene's.)
+
+8 + 11  Arvid's second note (resources/arvid_note_2.tres) and the password.
+   One edit, same note:
+   - the decryption key becomes "Linnea_and_Maja"
+     (ComputerUI.ARVID_DECRYPTION_KEY; still case-insensitive);
+   - the note's password lines are rewritten to match ("The recovery tool
+     wants the girls' names: Linnea_and_Maja. I never could remember a
+     password that wasn't one of the girls."); the STENBERG / 1996 login
+     stays as it is;
+   - a line where he talks about his daughters: "Whatever it is, it
+     despises light. Use that to your advantage."
+   The lore and playthrough tests that type the old key get the new one.
+
+10 The generator drains during the day too.
+   NightManager only drains fuel inside "if is_night_active". Drain
+   whenever the generator is on (not while the clock is paused). NOTE: a
+   balance change: with the lights on all day the tank empties sooner.
+   Combined with task 2 (lights at half) it should roughly even out; I'll
+   check how long a full tank lasts on Day 2/3 and report it.
+
+13 + 15 Willow thoughts.
+   13: when the purge completes (TotemAnchor -> RoutineManager.
+       on_anchor_destroyed), Monologue: "I fucking did it. I fucking did
+       it!"
+   15: after that, the first time the player comes within ~25 m of the
+       cabin: "It's actually gone. Thank you, Arvid." (once; a key on
+       Monologue so a checkpoint doesn't repeat it).
+
+19 Ending screens split words.
+   scenes/ui/ending_screen.tscn has autowrap_mode = 1 (ARBITRARY: breaks
+   anywhere, mid-word). Make it WORD_SMART (3), and the labels built in
+   ending_screen.gd and the death screen the same; read every ending text
+   for hard line breaks that land mid-sentence. Rendered screenshots of
+   each ending screen to check.
+
+14 The freeze at the willow (investigate first, in this round).
+   Several seconds' freeze on arrival. Candidates: the Crows (built in
+   code: meshes and synthesized caws made on the spot), the totem glow /
+   ash particles compiling shaders the first time they're seen, the
+   "anchor located" side-track (notebook refresh), the willow's concave
+   collider. Plan: walk a player to the willow in a rendered run and time
+   every frame; log what starts in the long frames (and profile with
+   Godot's frame timers). Fix accordingly: build things ahead of time
+   (at load or behind the opening), pre-warm the shaders, or simplify the
+   collider.
+
+
+ROUND B — environment
+---------------------
+9  The fog: no green at dusk/dawn, and night only.
+   Today the fog thickness follows the sun's height, so it builds through
+   dusk (when the low warm light makes the volume look green). Change
+   EnvironmentController: the fog amount comes from the night's own clock
+   instead: 0 -> 100% over the first 30 s of the night (GameTime night
+   start), back to 0 over the last 30 s before dawn; none by day. The
+   nightly fluctuation and the Night 3 extra stay on top. The fog colour
+   no longer blends from a daytime colour (no tint while it's thin).
+   Screenshots at dusk, 15 s into the night, mid-night and just before
+   dawn, both renderers.
+
+5  More gravel road, van -> road_ending.
+   GravelRoad already runs from the pull-in by the van to the road_ending
+   marker (its last point). So first a screenshot of what's actually
+   there: if it's missing or hard to see, fix that; if it's there but
+   reads as a flat strip, make it read as a car road: wheel ruts and a
+   grassy middle in the shader, ragged verges, gravel spilling onto the
+   grass, and wider where it bends. (If you meant a different stretch,
+   say which.)
+
+20 Stones clipping through trees.
+   Two sources: ForestDresser's undergrowth pebbles ("stone_5", 1-5 m from
+   each tree, checked against paths but not against the other trunks) and
+   the trail rock piles I added (rocks under 0.4 m skip SiteDresser's clip
+   check). Fix: ForestDresser checks every pebble against the group's
+   trunk positions (trunk radius + the pebble's size); SiteDresser always
+   checks rocks against trunks. A test: no stone within a trunk.
+
+12 Journal text that doesn't fit its page.
+   NotebookUI splits text into pages by a character count
+   (CHARS_PER_PAGE), so long lines, line breaks and BBCode overflow (Arvid's
+   second note). Change it to split by what actually fits: lay the page's
+   text into the page's RichTextLabel and move whole lines/words to the
+   next page while it's taller than the page. A test over every note and
+   nest entry: nothing taller than its page.
+
+
+ROUND C — the Entity
+--------------------
+6  Upstairs windows: reached ~1 m lower; the climb animation freezes.
+   The perch (where it clings) is world.perch_position(): the window minus
+   config.perch_head_height: +1.0 m on that. While clinging, the ClimbUp
+   animation keeps playing in place: hold it on one frame (speed 0) while
+   it clings, resume when it moves (climbs down, ducks, vaults in).
+   climb_test checks the new height and that the animation is still.
+
+7  Leaving through a window: facing it, crawling.
+   Ground-floor windows: Entity._traverse() faces it along its route and
+   plays no animation of its own for the vault; face the window square on
+   (as _face_window does upstairs) as it reaches it and through the move,
+   and play the crawl (LowCrawl / the window-entering animation, whichever
+   reads as crawling) for the way out. Upstairs (out through the window,
+   down the wall) the same before the climb down. Tests in inside_test /
+   climb_test: facing within a few degrees, the crawl animation playing.
+
+
+ROUND D — the world's things
+----------------------------
+17 + 18 The added things into the editor, with physics.
+   17: the cabin, yard and trail details SiteDresser adds at runtime get
+       written into the level like the barn and tunnel props were (a
+       variant of tools/bake_sites.gd + merge_sites.py, into their own node,
+       e.g. "CabinDetails" and "TrailDetails"); from then on SiteDresser
+       adds nothing at runtime. Then you can move them in the editor.
+       (The level must be closed in the editor while this runs.)
+   18: the small loose things in and around the cabin become KnockableProp
+       (pick up with hold E, like the bucket; the Entity can knock them
+       over): books, plates, jars, cans, bottles, the ashtray, the radio,
+       the toolbox, the cardboard boxes, the jerrycan, the stool, the
+       chair; and the level's own loose props in the cabin (the coffee
+       table's bottles, ashtray, book, matchbox, screwdriver, coin, the
+       football...). NOT: furniture, wall things (clocks, paintings, the
+       map), the rug, anything the story uses (pickups, notes, the fuel
+       cans, the cable spool). Done as part of 17 so they're written into
+       the level as KnockableProps.
+
+16 More birds, and crows on the cabin roof on Day 1.
+   Crows (scripts/crows.gd) is hard-wired to the willow. Generalise it to
+   flocks: a centre, perches, how close the player may come, day only or
+   not. Flocks: the cabin roof ridge on Day 1 (off when the player is ~20 m
+   away; they don't come back that day), the wreck yard, the barn roof, a
+   treeline or two along the paths; the willow keeps its own. They also go
+   up when the Entity comes near (as now). Test: the Day 1 roof flock
+   takes off at 20 m.
+
+
+DECISIONS FOR YOU (I'll go with the default unless you say otherwise)
+--------------------------------------------------------------------
+- 4: "30% quieter" as -3 dB (70% of the volume). Default: yes.
+- 10: daytime drain at the same rate as at night. Default: yes, and I'll
+  report how long a tank lasts.
+- 5: the road's already there end to end; I'll check what it looks like
+  and make it read as a car road unless you meant something else.
+- 18: the list of things that get physics above.
+- 17: baking writes into cottage_horror.tscn: close it in the editor
+  before that round, reopen after.

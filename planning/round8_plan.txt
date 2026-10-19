@@ -1,0 +1,72 @@
+ROUND 8 PLAN — gameplay and UX (agreed 2026-10-16)
+==================================================
+In this order (cheap and self-contained first; the microphone last).
+
+1  Headphones line.
+   The opening's first card: "Best played with headphones." (small, under
+   the title, fades with it). Directional hearing is a core skill here.
+
+2  The mimicry has a tell.
+   EntityAudio.mimic(): what it copies comes back slightly off, as Nest
+   Gamma's do: pitched down a little (0.86-0.93, never the player's own 1.0)
+   and, for footsteps, the rhythm wrong (four steps, one late). Attentive
+   players can learn to doubt a familiar sound.
+
+3  The low-fuel warning.
+   Below 15% the generator coughs now and then (its loop dips in pitch and
+   volume for a moment) and the cabin's lit rooms brown out briefly
+   (CabinLight.presence_flicker), more often as it nears empty. Then the
+   blackout is no surprise, and there's time to refuel.
+
+4  A clock the player can read.
+   - A wristwatch: hold [T] to raise the wrist (a small analogue watch face
+     drawn in the corner, its hands at the game's time). The game's clock
+     as a believable one: dawn 06:00 (progress 0.0), dusk 20:00 (0.5),
+     dawn again 06:00 (1.0); so a night runs 20:00-06:00.
+   - The hall clock ticks (Clock.wav, imported), louder at night.
+   - Taught once (TutorialManager hint, the first night).
+
+5  The notebook's "Entity" chapter.
+   A chapter after the notes, written by the player character, empty until
+   the first entry. Each lesson writes (or updates) an entry the moment it
+   happens, in his words, e.g.:
+     the beam        "It backed off when I held the light on it." (+ "longer
+                     each time" after the second drive-off)
+     lit rooms       "It won't stay in a lit room."
+     sound           "It hears me. Running, doors, things I drop."
+     ambush          "It waits in the dark. A breath first, then it comes."
+     mimicry         "It copies sounds. Mine. They come back slightly
+                     wrong."
+     windows         "It tries the windows. Planks hold it for a while."
+     upstairs        "It climbs. The upstairs windows aren't safe."
+     the peeker      "Something at the window. Watching me."
+   The first entry: a thought ("I should write this down."). Kept by the
+   checkpoint like the other pages; the index lists the chapter.
+
+6  The cabin turns on the player, night by night.
+   A HouseUnease node: settling creaks, a cabinet shutting, a door handle
+   tried, the old house groaning; in a room away from the player, never
+   near the Entity's real position (it shouldn't lie about where it is).
+   Night 1 almost nothing, Night 2 now and then (every 60-120 s), Night 3
+   often (every 30-60 s). Off by day and during cutscenes. Uses
+   "Old House_creeky metal and wood_ambiance_7", "Cabinet_shut",
+   "Door_handle_jiggle", "Door_squeeky_2" (imported).
+
+7  Captions (optional, off by default: Options > Captions).
+   One line, bottom centre, for the sounds the game depends on: the
+   ambush breath, a copied sound, knocking, glass breaking, planks giving,
+   the crows going up, footsteps nearby unseen, the car alarm, the
+   generator dying. With a rough direction ("[a breath, close behind]",
+   "[footsteps upstairs]"). For deaf players and laptop speakers.
+
+8  The microphone (optional, off by default: Options > Microphone).
+   - Asked once (Options), with a level check ("say something").
+   - Loudness as a noise: a gasp or a shout carries like a dropped object
+     (NoiseEvent "voice", its reach tunable); quiet talk doesn't.
+   - Rarely (at most once a night, from Night 2), it plays back the last
+     loud moment it heard (the last ~2 s kept in memory, never saved),
+     slightly detuned, from another room.
+   - Without a microphone (or permission refused, or the web without
+     https) everything works as now.
+
+Each step: tests (tests/round8_test.gd ...), then all suites.

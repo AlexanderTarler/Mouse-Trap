@@ -31,11 +31,11 @@ func enter(from: int, data: Dictionary) -> void:
 		_max_time += Entity.ROAR_TIME
 	# A shriek from its own head, indoors as well as out.
 	entity.audio.play_shriek()
-	entity.audio.start_chase_music()
+	# (The hunting music: EntityAudio.update_hunt_music.)
 
 
 func exit(_to: int) -> void:
-	entity.audio.stop_chase_music()
+	pass
 
 
 func update(delta: float) -> void:

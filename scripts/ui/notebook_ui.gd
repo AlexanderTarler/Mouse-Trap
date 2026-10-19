@@ -48,6 +48,11 @@ var _unlocked_nests: Dictionary = {}
 ## text from appearing twice when note_pickup.gd fires duplicate
 ## add_note calls.
 var _unlocked_notes: Dictionary = {}
+## Chapter 5, "The Entity": what the player has learned about it, in his own
+## words (EntityJournal), by key, in the order learned.
+var _entity_entries: Dictionary = {}
+## Where it starts in _all_pages.
+var _entity_start_page: int = 999999
 
 ## Current page index (points to the left page of the current spread).
 ## Always even. Right page is _current_page + 1.
@@ -267,11 +272,13 @@ func _rebuild_index() -> void:
 
   [b]4.[/b]  Field Notes   [color=#6e655a][i]%s[/i][/color]
 
-[center]---
-[color=#6e655a][Q] / [E] turn the pages · [J] close[/color][/center]""" % [
+%s[center]---
+[color=#6e655a]%s[/color][/center]""" % [
 		_nest_data_start_page + 1,
 		_unlocked_nests.size(),
 		"p. %d · %d %s" % [_notes_start_page + 1, _unlocked_notes.size(), "entry" if _unlocked_notes.size() == 1 else "entries"] if not _unlocked_notes.is_empty() else "none yet",
+		("  [b]5.[/b]  The Entity   [color=#6e655a][i]%s[/i][/color]\n\n" % ("p. %d · %d %s" % [_entity_start_page + 1, _entity_entries.size(), "entry" if _entity_entries.size() == 1 else "entries"] if not _entity_entries.is_empty() else "nothing yet")) if entity_chapter_open() else "",
+		GameKeys.keys_in("[Q] / [E] turn the pages · [J] close", {"E": "notebook_next_page"}),
 	]
 
 
@@ -569,9 +576,14 @@ func _toggle() -> void:
 			tm.mark_learned("notebook")
 	visible = _is_open
 	if _is_open:
+		# (Day 3 may have come since: the Entity chapter shows from then.)
+		if _entity_shown != entity_chapter_open():
+			_rebuild_all_pages()
 		current_spread = 0
 		_current_page = 0
 		_update_spread()
+		if not _paged_by_size:
+			_repage_when_laid_out()
 
 
 # ============================================================
@@ -720,8 +732,8 @@ func set_documentation(text: String) -> void:
 ## Data populates below the hint once the nest is documented.
 const NEST_HINTS: Dictionary = {
 	"Nest Alpha": "I may need a high-intensity beam to provoke them.",
-	"Nest Beta": "I should approach in silence and keep a low profile.",
-	"Nest Gamma": "I must remain perfectly still to hear them.",
+	"Nest Beta": "They watch. I should stay low and approach quietly.",
+	"Nest Gamma": "They answer back. I should make a sound, then listen.",
 }
 
 const NEST_ORDER: Array[String] = ["Nest Alpha", "Nest Beta", "Nest Gamma"]
@@ -760,7 +772,53 @@ func _rebuild_all_pages() -> void:
 	for note_text in _unlocked_notes.values():
 		_append_page_content(note_text)
 	
+	# Chapter 5: The Entity — what he's learned about it (EntityJournal).
+	# Kept from the start, shown from Day 3.
+	_entity_start_page = _all_pages.size()
+	_entity_shown = entity_chapter_open()
+	if _entity_shown and not _entity_entries.is_empty():
+		_append_page_content(_entity_chapter_text())
+
 	_rebuild_index()
+
+
+## Whether chapter 5 is in the notebook yet: from Day 3 (before that the
+## entries are kept, unseen).
+func entity_chapter_open() -> bool:
+	var nm := get_node_or_null("/root/NightManager")
+	return nm == null or int(nm.current_night) >= 3
+
+
+var _entity_shown := false
+
+
+## Chapter 5's text: a heading, then each entry in the order learned.
+func _entity_chapter_text() -> String:
+	var text := "[center][b]THE ENTITY[/b][/center]\n[center][i][color=#6e655a]What I know about it. Written as I learn it.[/color][/i][/center]\n\n"
+	for entry in _entity_entries.values():
+		text += "— %s\n\n" % entry
+	return text.strip_edges()
+
+
+## Writes (or rewrites) an entry of chapter 5. False if it was already
+## written exactly so.
+func add_entity_entry(key: String, text: String) -> bool:
+	if _entity_entries.get(key, "") == text:
+		return false
+	_entity_entries[key] = text
+	_rebuild_all_pages()
+	_update_spread()
+	if _entity_shown:
+		_play_scribble_sfx()
+	return true
+
+
+func entity_entry_count() -> int:
+	return _entity_entries.size()
+
+
+func has_entity_entry(key: String) -> bool:
+	return _entity_entries.has(key)
 
 
 ## Builds the BBCode content for a single nest's dedicated page:
@@ -884,9 +942,110 @@ func _play_scribble_sfx() -> void:
 	player.finished.connect(player.queue_free)
 
 
-## Splits a string into an array of CHARS_PER_PAGE-sized chunks,
-## with word-wrap awareness. Does NOT modify _all_pages.
+## Splits a text into pages that fit the page as it's drawn (measured in a
+## hidden copy of the page's label): as many whole paragraphs as fit, then a
+## paragraph that doesn't fit at all is split between words. Until the
+## notebook has a size (before it's first laid out) it falls back to
+## CHARS_PER_PAGE characters; it's paged again, measured, when it's opened.
+## Does NOT modify _all_pages.
 func _split_into_pages(text: String) -> Array[String]:
+	var page := _page_size()
+	if page.x < 50.0 or page.y < 50.0:
+		return _split_by_chars(text)
+	_paged_by_size = true
+	var result: Array[String] = []
+	var remaining := text
+	while remaining != "":
+		if _fits(remaining, page):
+			result.append(remaining)
+			break
+		# The longest run of whole paragraphs that fits...
+		var cut := _longest_fit(remaining, page, "\n")
+		# ...or of words, if not even the first paragraph does.
+		if cut <= 0:
+			cut = _longest_fit(remaining, page, " ")
+		if cut <= 0:
+			cut = mini(remaining.length(), CHARS_PER_PAGE)
+		result.append(remaining.substr(0, cut).strip_edges(false, true))
+		remaining = remaining.substr(cut).strip_edges(true, false)
+	return result
+
+
+## Paged by character count so far (it had no size yet): once it's laid
+## out (a frame after it first opens), paged again by what fits.
+func _repage_when_laid_out() -> void:
+	await get_tree().process_frame
+	if _paged_by_size or not _is_open or _page_size().y < 50.0:
+		return
+	_rebuild_all_pages()
+	_update_spread()
+
+
+## Whether the text pages were measured (else they're paged again on opening).
+var _paged_by_size := false
+var _measure: RichTextLabel = null
+
+
+## Room left at the foot of a page for the "Prev Page"/"Next Page" hints.
+const PAGE_FOOT := 26.0
+
+
+## The size the text has on a page: the left page inside its margins (the
+## page's own label may be hidden, on the index spread, and have no size).
+func _page_size() -> Vector2:
+	if not _doc_label:
+		return Vector2.ZERO
+	var margin := _doc_label.get_parent().get_parent() as MarginContainer
+	if margin == null or margin.size.y < 1.0:
+		return _doc_label.size
+	var inner := margin.size - Vector2(
+		margin.get_theme_constant("margin_left") + margin.get_theme_constant("margin_right"),
+		margin.get_theme_constant("margin_top") + margin.get_theme_constant("margin_bottom") + PAGE_FOOT)
+	return inner
+
+
+## Whether `text` fits on a page `page` big.
+func _fits(text: String, page: Vector2) -> bool:
+	if _measure == null:
+		_measure = _doc_label.duplicate() as RichTextLabel
+		_measure.name = "PageMeasure"
+		_measure.visible = true
+		_measure.modulate.a = 0.0
+		_measure.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_measure.fit_content = false
+		_measure.scroll_active = false
+		_measure.top_level = true
+		_measure.position = Vector2(-10000.0, -10000.0)
+		add_child(_measure)
+	_measure.size = Vector2(page.x, page.y)
+	_measure.text = text
+	return _measure.get_content_height() <= page.y
+
+
+## Where to cut `text` (after one of `breaks`) for the most of it that fits
+## on a page; 0 if not even the first piece does.
+func _longest_fit(text: String, page: Vector2, breaks: String) -> int:
+	var cuts: Array[int] = []
+	var at := text.find(breaks)
+	while at > 0:
+		cuts.append(at + 1)
+		at = text.find(breaks, at + 1)
+	# Binary search for the last cut that still fits.
+	var low := 0
+	var high := cuts.size() - 1
+	var best := 0
+	while low <= high:
+		var middle := (low + high) / 2
+		if _fits(text.substr(0, cuts[middle]), page):
+			best = cuts[middle]
+			low = middle + 1
+		else:
+			high = middle - 1
+	return best
+
+
+## The old way: CHARS_PER_PAGE characters a page, cut at a line or a word.
+func _split_by_chars(text: String) -> Array[String]:
 	var result: Array[String] = []
 	var remaining = text
 	
@@ -925,11 +1084,11 @@ Nest constructed inside a hollowed tree stump, but the colony displays violent p
 [b]Population:[/b] Unknown
 [b]Anomaly:[/b] Covert Observation
 [b]Notebook Observations:[/b]
-The nest is built deep within a hollowed tree stump, making an exact count impossible. Whenever I adjusted my position, eyes glinted from within the dark fissures of the wood, instantly adjusting to remain hidden behind bark. They aren't running away—they are almost spying on me, positioning themselves so they can observe my every movement without being seen.""" ,
+The nest is built deep within a hollowed tree stump, making an exact count impossible. Whenever I adjusted my position, eyes glinted from within the dark fissures of the wood, instantly adjusting to remain hidden behind bark. They aren't running away—they are almost spying on me, positioning themselves so they can observe my every movement without being seen. I had the same feeling at the cabin window last night.""" ,
 
 	"Nest Gamma": """[b]Subject: Nest Gamma[/b]
 [b]Population:[/b] 3
 [b]Anomaly:[/b] Audio-Specific Abnormalities
 [b]Notebook Observations:[/b]
-Only three specimens were present inside this tree stump nest. Their vocalizations are deeply unnatural. Instead of standard high-pitched dormouse squeaks or rustles, they emit raspy, modulated clicks and low-frequency resonance. Listening closely, the cadence is rhythmic and erratic... almost as if they are attempting to imitate human speech."""
+Only three specimens were present inside this tree stump nest. Their vocalizations are deeply unnatural: no squeaks or rustles, only raspy clicks and a low resonance. When I stopped walking, footsteps carried on inside the stump. When I clicked the flashlight, it clicked back, a moment late and slightly off. They aren't calling to each other. They are copying me, as if something taught them how."""
 }

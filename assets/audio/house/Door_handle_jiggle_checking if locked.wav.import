@@ -1,0 +1,24 @@
+[remap]
+
+importer="wav"
+type="AudioStreamWAV"
+uid="uid://dmv4grwtqd412"
+path="res://.godot/imported/Door_handle_jiggle_checking if locked.wav-e4d4e870bdda98d2a198306a5efd17cd.sample"
+
+[deps]
+
+source_file="res://assets/audio/house/Door_handle_jiggle_checking if locked.wav"
+dest_files=["res://.godot/imported/Door_handle_jiggle_checking if locked.wav-e4d4e870bdda98d2a198306a5efd17cd.sample"]
+
+[params]
+
+force/8_bit=false
+force/mono=true
+force/max_rate=false
+force/max_rate_hz=44100
+edit/trim=false
+edit/normalize=false
+edit/loop_mode=0
+edit/loop_begin=0
+edit/loop_end=-1
+compress/mode=2

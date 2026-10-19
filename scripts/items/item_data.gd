@@ -42,6 +42,10 @@ enum ItemType {
 ## For notes: the text content to display
 @export var note_text: String = ""
 
+## For notes: what the player thinks once they've read it (Monologue),
+## in place of "I'll keep this in my notebook." Empty: no thought.
+@export_multiline var read_thought: String = ""
+
 ## Scene to spawn when dropping the item
 @export var scene_to_spawn: PackedScene
 

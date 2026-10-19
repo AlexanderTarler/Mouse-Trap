@@ -146,7 +146,7 @@ func _day1() -> void:
 	var generator: Node = _first("generator_interaction.gd")
 	await _step("refill the generator (hold)", func():
 		generator.start_refuel()
-		await _seconds(8.0)
+		await _seconds(10.0)
 		generator.stop_refuel(), "Turn on the generator")
 	await _step("switch the generator on", func(): _first("generator.gd").interact(), "Log into the computer")
 	await _step("log into the computer", func():
@@ -218,10 +218,12 @@ func _day2() -> void:
 		_nest("Nest Beta").interact()
 		_player._is_crouching = false
 		_player.set_physics_process(true), "Locate and document Nest Gamma")
-	await _step("document Nest Gamma (standing still)", func():
+	await _step("document Nest Gamma (it copies the flashlight's clicks)", func():
 		var gamma: Node = _nest("Nest Gamma")
 		await _near(gamma)
-		await _seconds(gamma.lock_duration + 1.0)
+		for i in gamma.mimic_echoes_needed:
+			flashlight.toggle()
+			await _seconds(2.0)
 		gamma.interact(), "Log the collected nest data")
 	await _step("log the nest data (the field log, from the notebook's answers)", func():
 		await _go(Vector3(11.0, 1.0, 15.0))

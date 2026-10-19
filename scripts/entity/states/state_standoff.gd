@@ -73,6 +73,7 @@ func next_state() -> int:
 	# The overcharged beam always wins, in any phase, if held long enough.
 	if perception.overcharge_time >= entity.repel_time():
 		entity.times_driven_off += 1
+		EntityJournal.learn(entity, "beam" if entity.times_driven_off <= 1 else "beam_harder")
 		return S.FLEE
 	if perception.overcharged and perception.entity_inside != perception.player_inside:
 		return S.FLEE

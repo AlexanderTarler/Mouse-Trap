@@ -51,7 +51,7 @@ var nest_data_uploaded: bool:
 
 @export var always_pass_correlation: bool = false
 
-const ARVID_DECRYPTION_KEY: String = "STENBERG_1996"
+const ARVID_DECRYPTION_KEY: String = "Linnea_and_Sara"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ONREADY NODES — Login Screen
@@ -166,24 +166,27 @@ const TACTICAL_LOG_REWARDS: Dictionary = {
 ## must read on the computer before heading out to document the nests.
 const PREVIOUS_NEST_REPORTS: String = (
 	"[b]PREVIOUS NEST REPORTS — FIELD ARCHIVE[/b]\n"
-	+ "[color=gray]Log Date: MARCH 14 — Seasonal Baseline Survey[/color]\n\n"
-	+ "[color=red]WARNING: Restricted survey data. Do not redistribute.[/color]\n\n"
-	+ "Three primary hazel mouse colonies have been charted in the surrounding "
-	+ "forest. Each exhibits abnormal behaviour inconsistent with standard "
-	+ "Muscardinus avellanarius patterns.\n\n"
-	+ "[b]NEST ALPHA — Hollow Stump, West Ridge[/b]\n"
-	+ "Population estimate: 6. Subjects display violent photophobia. They "
-	+ "retreat from focused high-intensity light and respond aggressively to "
-	+ "beam exposure.\n\n"
-	+ "[b]NEST BETA — Hollow Stump, North Clearing[/b]\n"
-	+ "Population estimate: Unknown. Subjects are hyper-vigilant. They track "
-	+ "observers and reposition to remain hidden. Direct movement within the "
-	+ "colony's sightline triggers a defensive lockdown.\n\n"
-	+ "[b]NEST GAMMA — Hollow Stump, East Gorge[/b]\n"
-	+ "Population estimate: 3. Subjects emit unnatural, rhythmic vocalizations. "
-	+ "They respond to sustained silence — remaining perfectly still is the "
-	+ "only way to observe them without breaking their fixation.\n\n"
-	+ "[color=gray]— Previous Researcher, Ecologist Field Survey Program[/color]"
+	+ "[color=gray]Phase 1 · Baseline survey · Filed 28 March[/color]\n\n"
+	+ "[color=red]RESTRICTED: Institute staff only. Do not redistribute.[/color]\n\n"
+	+ "Three active hazel dormouse (Muscardinus avellanarius) colonies have "
+	+ "been charted around the cabin, each in a hollow stump marked with the "
+	+ "old survey's orange tape. All three were awake and feeding weeks before "
+	+ "the species should leave hibernation, and each shows behaviour "
+	+ "inconsistent with the species.\n\n"
+	+ "[b]NEST ALPHA — Hollow stump, east of the cabin[/b]\n"
+	+ "Population estimate: 6. Violent photophobia. In ordinary light the "
+	+ "colony stays dormant; a high-intensity beam provokes it at once. "
+	+ "Subjects lunge at the light source instead of fleeing it.\n\n"
+	+ "[b]NEST BETA — Hollow stump, west of the cabin[/b]\n"
+	+ "Population estimate: Unknown (no full count possible). Hyper-vigilant. "
+	+ "Subjects track the observer and reposition to remain hidden. Any upright "
+	+ "movement near the stump triggers a defensive lockdown: approach low "
+	+ "and quietly.\n\n"
+	+ "[b]NEST GAMMA — Hollow stump, far south-west, by the sunken tunnel[/b]\n"
+	+ "Population estimate: 3. Abnormal vocalizations. The colony answers "
+	+ "sounds made near it (footsteps, the click of a flashlight) a moment "
+	+ "later and slightly altered. Make a sound, then stay still and listen.\n\n"
+	+ "[color=gray]— A. Stenberg, Field Researcher, Svea Naturinstitut[/color]"
 )
 
 const ARVID_LOG_01_SURVEY: String = (
@@ -191,9 +194,11 @@ const ARVID_LOG_01_SURVEY: String = (
 	+ "[color=gray]LOG DATE: MARCH 14[/color]\n\n"
 	+ "The Institute lied to me. This was never a population survey. I found "
 	+ "old land surveys in the crawlspace, dated 1974, stamped by the same "
-	+ "office that hired me. They've known about the 'Watcher' for fifty years. "
-	+ "The logging crews didn't leave because the timber ran out; they left "
-	+ "because the Institute couldn't keep them alive.\n\n"
+	+ "office that hired me. They've known about the 'Watcher' for twenty-five "
+	+ "years. The logging crews didn't leave because the timber ran out; they "
+	+ "left because the Institute couldn't keep them alive. This terminal "
+	+ "still boots as the old forestry archive. It came with the cabin, "
+	+ "like everything else here.\n\n"
 	+ "Nobody is coming to relieve me. They aren't trying to keep people away "
 	+ "from it. They're measuring how it hunts. I'm the canary in the mine, "
 	+ "and the dormice are just the paperwork."
@@ -216,6 +221,62 @@ const ARVID_LOG_02_CRITICAL: String = (
 	+ "generator dry. When the light dies, it's free again.\n\n"
 	+ "My battery is almost gone. I'm going to the tunnel to write the rest "
 	+ "down where the network can't see it."
+)
+
+## What Arvid deleted (the STENBERG Recycle Bin): a report he didn't dare
+## send, and the office's answer to his asking to go home.
+const RECYCLE_BIN_CONTENTS: String = (
+	"[b]RECYCLE BIN — 2 deleted items[/b]\n"
+	+ "[color=red]WARNING: These files are marked for permanent deletion.[/color]\n\n"
+	+ "[b]DRAFT_REPORT_ERR04.TXT[/b]\n"
+	+ "[color=gray]Deleted 28 March[/color]\n\n"
+	+ "The nests are not natural.\n\n"
+	+ "The old survey's stakes mark seventeen stumps around the cabin. Fourteen "
+	+ "are empty. Three hold colonies, awake a month before any dormouse in "
+	+ "Sweden should be. Somebody planted those stakes in 1974 knowing exactly "
+	+ "where to put them.\n\n"
+	+ "Something is watching the cabin, and the colonies are learning from it.\n\n"
+	+ "I've sent this to the office three times. Each time the terminal says "
+	+ "DELIVERED, and nobody answers.\n\n"
+	+ "My rotation ended two weeks ago. Unit 9 wouldn't start this morning: "
+	+ "something had pulled the ignition wiring out through the grille. "
+	+ "The road is right there, and I can't get down it.\n\n"
+	+ "— A. Stenberg\n"
+	+ "[color=gray][i](Not sent. They read the drafts too.)[/i][/color]\n\n"
+	+ "---\n\n"
+	+ "[b]RE_RELIEF_REQUEST.MSG[/b]\n"
+	+ "[color=gray]Received 30 March · From: Svea Naturinstitut, Field Office[/color]\n\n"
+	+ "Dr Stenberg,\n\n"
+	+ "Your request for relief has been noted. A Phase 2 researcher is being "
+	+ "prepared. Until they arrive, please continue your observations, "
+	+ "particularly after dark. Your data from the past fortnight has been of "
+	+ "exceptional value.\n\n"
+	+ "Regarding Unit 9: please do not attempt repairs yourself.\n\n"
+	+ "— Field Office"
+)
+
+## The Phase 2 welcome memo on the LUND desktop (MEMO.TXT): the Institute's
+## version of the story, polite and careful about what it leaves out.
+const LUND_MEMO: String = (
+	"[b]MEMO.TXT[/b]\n"
+	+ "[color=gray]From: Svea Naturinstitut, Field Office\n"
+	+ "To: Lund, Field Researcher (Phase 2)\n"
+	+ "Re: Hazel dormouse survey, Phase 2[/color]\n\n"
+	+ "Welcome to the site. Please read the following before you begin.\n\n"
+	+ "1. Report all observations through FIELD_LOG.EXE. The phone network "
+	+ "does not reach the cabin; this terminal is your only line to the office. "
+	+ "It runs the former forestry archive system. Ignore its legacy menus.\n\n"
+	+ "2. Your predecessor, A. Stenberg, has been reassigned. His records are "
+	+ "archived. Do not attempt to access other staff accounts.\n\n"
+	+ "3. Fieldwork is to be done between sunrise and sunset. After dark, "
+	+ "remain inside the cabin with the generator running. Any activity "
+	+ "near the cabin at night is to be logged, not investigated.\n\n"
+	+ "4. The colony sites are marked with the old survey's orange tape. "
+	+ "Do not remove or move the stakes.\n\n"
+	+ "5. The cabin, its generator and Unit 12 are Institute property. "
+	+ "Report any damage on your return.\n\n"
+	+ "Phase 2 is planned for three nights.\n\n"
+	+ "— Field Office"
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -281,7 +342,8 @@ func _ready() -> void:
 	var recover_btn = _desktop_view.find_child("RecoverDataIcon", true, false)
 	if recover_btn:
 		recover_btn.pressed.connect(_on_recover_data_open)
-	
+	_add_memo_icon()
+
 	# Check if an EXECUTE OVERLOAD button was already added (from a previous session)
 	var overload_btn = _desktop_view.find_child("OverloadExec", true, false)
 	if overload_btn and is_arvid_log_2_unlocked:
@@ -455,6 +517,32 @@ func _on_previous_reports_open() -> void:
 			print("[ComputerUI] Previous nest reports read. Day 2 Step 1 notified to RoutineManager.")
 
 
+## MEMO.TXT on the LUND desktop, right after FIELD_LOG.EXE: the office's
+## welcome to Phase 2 (LUND_MEMO).
+func _add_memo_icon() -> void:
+	if _desktop_view.find_child("MemoIcon", false, false):
+		return
+	var memo := Button.new()
+	memo.name = "MemoIcon"
+	memo.text = "MEMO.TXT"
+	memo.visible = false
+	memo.pressed.connect(_on_memo_open)
+	_desktop_view.add_child(memo)
+	if _desktop_field_log_btn:
+		_desktop_view.move_child(memo, _desktop_field_log_btn.get_index() + 1)
+
+
+func _on_memo_open() -> void:
+	_desktop_view.visible = false
+	_main_window.visible = true
+	_main_window.find_child("TitleLabel", true, false).text = "MEMO.TXT"
+	_status_label.text = "Opening: MEMO.TXT — Field Office..."
+	_data_entry_panel.visible = false
+	_recovery_panel.visible = false
+	$MainWindow/HBoxContainer/ContentPanel.visible = true
+	_content_display.text = LUND_MEMO
+
+
 func _show_desktop() -> void:
 	_login_screen.visible = false
 	_main_window.visible = false
@@ -472,6 +560,9 @@ func _show_desktop() -> void:
 	_desktop_previous_reports_btn.visible = show_reports
 	
 	_desktop_field_log_btn.visible = (current_user == "LUND")
+	var memo_btn := _desktop_view.find_child("MemoIcon", false, false) as Button
+	if memo_btn:
+		memo_btn.visible = (current_user == "LUND")
 	_desktop_recycle_btn.visible = (current_user == "STENBERG")
 	_desktop_logoff_btn.visible = true
 	
@@ -607,7 +698,7 @@ func _on_field_log_open() -> void:
 		$MainWindow/HBoxContainer/ContentPanel.visible = true
 		_data_entry_panel.visible = false
 		_content_display.text = "[b]NEST DOCUMENTATION CORRELATION COMPLETE[/b]\n\n"
-		_content_display.text += "All three Hazelnest observations have been successfully archived."
+		_content_display.text += "All three nest observations have been successfully archived."
 		return
 	
 	_status_label.text = "FIELD_LOG.EXE — Enter Nest Observation Data"
@@ -687,22 +778,7 @@ func _on_trash() -> void:
 			rm_logs.on_arvid_logs_read()
 			print("[ComputerUI] Arvid's Recycle Bin logs read — notified RoutineManager (side-track step unlocked).")
 	
-	_content_display.text = ""
-	_content_display.text += "[b]RECOVERED DELETED LOG ENTRY[/b]\n"
-	_content_display.text += "[color=red]WARNING: This file was marked for permanent deletion.[/color]\n\n"
-	_content_display.text += "LOG ERR_04:\n\nThe nests are not natural.\n\n"
-	_content_display.text += "They are arranged in a geometric pattern. "
-	_content_display.text += "I've mapped seventeen of them now, and every single "
-	_content_display.text += "one aligns to the same radial coordinates. "
-	_content_display.text += "The center point is the cabin.\n\n"
-	_content_display.text += "Something is watching the cabin.\n\n"
-	_content_display.text += "I've tried reporting this to HQ three times. "
-	_content_display.text += "No response. The radio only plays static — "
-	_content_display.text += "the same tone, over and over.\n\n"
-	_content_display.text += "I'm not supposed to be here anymore. "
-	_content_display.text += "My rotation ended two weeks ago.\n\n"
-	_content_display.text += "But the road... the road doesn't lead out anymore.\n\n"
-	_content_display.text += "[color=red]— M. Arvidsson[/color]"
+	_content_display.text = RECYCLE_BIN_CONTENTS
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -782,7 +858,7 @@ func _is_day2_nest_upload_trigger() -> bool:
 ## loading bar to 100%, swaps the text to "Data processed.", fast-forwards
 ## to Night 2.1, holds in darkness for 3 seconds, then fades back over 3s.
 ## The skip only executes if it is currently Day 2 — otherwise it no-ops.
-func _run_day2_night_skip_sequence(load_bar: ProgressBar = null, loading_label: Label = null) -> void:
+func _run_day2_night_skip_sequence(load_bar: ProgressBar = null, loading_label: Label = null, eyes: SleepCinematic = null) -> void:
 	var nm := get_node_or_null("/root/NightManager")
 	
 	# ─── 1. SNAP BAR TO 100% + SWAP TEXT DURING BLACK HOLD ────────────
@@ -817,8 +893,13 @@ func _run_day2_night_skip_sequence(load_bar: ProgressBar = null, loading_label: 
 	await get_tree().create_timer(3.0).timeout
 	
 	# ─── 4. FADE BACK OVER 3 SECONDS ─────────────────────────────────
+	# (Dozed off at the computer: the eyes open again instead.)
 	var hud := get_tree().get_first_node_in_group("hud")
-	if hud and hud.has_method("fade_from_black"):
+	if eyes:
+		if hud and hud.has_method("fade_from_black"):
+			await hud.fade_from_black(0.05)
+		await eyes.open_eyes()
+	elif hud and hud.has_method("fade_from_black"):
 		await hud.fade_from_black(3.0)
 	else:
 		await get_tree().create_timer(3.0).timeout
@@ -899,10 +980,15 @@ func _on_nest_correlation_success() -> void:
 		var slow_fill := create_tween()
 		slow_fill.tween_property(load_bar, "value", 1.5, 3.0)
 		
+		# Dozing off while it loads: heavy blinks (as going to bed does,
+		# SleepCinematic), the eyes shut, then black behind them.
+		var eyes := SleepCinematic.new()
+		eyes.name = "UploadDoze"
+		eyes.process_mode = Node.PROCESS_MODE_ALWAYS
+		add_child(eyes)
+		await eyes.doze_off()
 		if hud and hud.has_method("fade_to_black"):
-			await hud.fade_to_black(3.0)
-		else:
-			await get_tree().create_timer(3.0).timeout
+			await hud.fade_to_black(0.05)
 		
 		# Kill the slow-fill tween (should already be near 1.5%) — the
 		# black-screen phase will snap it to 100%.
@@ -910,7 +996,8 @@ func _on_nest_correlation_success() -> void:
 			slow_fill.kill()
 		
 		# ─── PHASE 2-3: BLACK HOLD + NIGHT TRANSITION + FADE BACK ────
-		await _run_day2_night_skip_sequence(load_bar, loading_label)
+		await _run_day2_night_skip_sequence(load_bar, loading_label, eyes)
+		eyes.queue_free()
 		
 		# ─── TASK: LOGGING COMPLETE SOUND ─────────────────────────────
 		# The loading bar hit 100%, the data was processed, and Night 2
@@ -1085,7 +1172,7 @@ func _on_recover_data_open() -> void:
 func _on_submit_decryption_key() -> void:
 	# ─── TASK 4 FIX: CASE-INSENSITIVE DECRYPTION KEY ────────────────
 	# The password is normalized to lowercase on both sides, so
-	# "stenberg_1996", "Stenberg_1996", and "STENBERG_1996" all work.
+	# "linnea_and_sara", "Linnea_and_Sara" and "LINNEA_AND_SARA" all work.
 	var key = _key_input.text.strip_edges().to_lower()
 	if key == ARVID_DECRYPTION_KEY.to_lower():
 		_recovery_status.text = "DECRYPTION SUCCESSFUL. Arvid Stenberg's logs restored."
@@ -1284,8 +1371,9 @@ func _on_execute_overload() -> void:
 		_main_window.visible = true
 		_content_display.text = "[b]ANCHOR GRID OVERLOAD INITIATED[/b]\n\n"
 		_content_display.text += "The portable light source is now drawing maximum voltage.\n"
-		_content_display.text += "The Entity has been paralyzed by the blinding light.\n\n"
-		_content_display.text += "[color=red]WARNING: Generator fuel is draining at catastrophic rate![/color]"
+		_content_display.text += "Lamp output: 340% of rated load.\n\n"
+		_content_display.text += "[color=red]WARNING: Generator fuel is draining at catastrophic rate![/color]\n\n"
+		_content_display.text += "[color=gray][i]If you're reading this, it worked. It can't move while the light holds. Don't stand here watching it. Run for the willow. — A.[/i][/color]"
 		$MainWindow/HBoxContainer/ContentPanel.visible = true
 		_data_entry_panel.visible = false
 		_recovery_panel.visible = false
@@ -1300,7 +1388,7 @@ func _on_execute_overload() -> void:
 const DESKTOP_ICON_KINDS := {
 	"FieldLogIcon": "exe", "RecoverDataIcon": "exe", "RecycleBinIcon": "bin",
 	"PreviousReportsIcon": "txt", "LogOffIcon": "logoff", "ShutDownIcon": "power",
-	"RestoredDataIcon": "txt", "OverloadExec": "warn",
+	"RestoredDataIcon": "txt", "OverloadExec": "warn", "MemoIcon": "txt",
 }
 var _taskbar: Panel = null
 var _start_menu: PopupMenu = null

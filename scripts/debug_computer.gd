@@ -15,8 +15,10 @@ var _is_open: bool = false
 
 
 func _ready() -> void:
-
-
+	# Development only: not in a released game.
+	if not OS.is_debug_build():
+		queue_free()
+		return
 	add_to_group("debug_computer")
 
 

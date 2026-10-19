@@ -15,7 +15,9 @@ extends Node
 ##     flags (NightManager: used when "Play Again" reloads the scene).
 ##
 ## "Play Again" after an ending (ending_screen.gd) reloads the game scene and
-## restores this snapshot into it (restore_on_load, NightManager).
+## restores this snapshot into it (restore_on_load, NightManager). In a game
+## started from the main menu each snapshot is also written to disk for
+## "Continue" (SaveGame).
 ##
 ## NightManager captures (start_night, and when a day begins) and restores
 ## (restart_from_checkpoint). State is read from each object's script
@@ -61,6 +63,11 @@ var _story := {}
 var _thoughts := {}
 ## knockable prop path -> Transform3D
 var _props := {}
+## Write each snapshot to disk (SaveGame): set by the main menu's Play and
+## Continue (not in tests).
+var save_to_disk := false
+## The player's own state from a save (SaveGame), put back once restored.
+var saved_player := {}
 
 
 ## The template copies live outside the tree: free them with the game.
@@ -118,6 +125,7 @@ func capture(snapshot_kind: String, snapshot_tag: String = "") -> void:
 	for node in _pickup_nodes(scene):
 		_pickups.append({
 			"template": _template(node),
+			"path": node.get_path(),
 			"parent": node.get_parent().get_path(),
 			"transform": (node as Node3D).global_transform if node is Node3D else Transform3D.IDENTITY,
 		})
@@ -128,6 +136,7 @@ func capture(snapshot_kind: String, snapshot_tag: String = "") -> void:
 		lamp_index[lamp] = _lamps.size()
 		_lamps.append({
 			"template": _template(lamp),
+			"path": lamp.get_path(),
 			"parent": lamp.get_parent().get_path(),
 			"transform": lamp.global_transform,
 			"state": _read_state(lamp),
@@ -143,6 +152,37 @@ func capture(snapshot_kind: String, snapshot_tag: String = "") -> void:
 			"state": cable.get_state(),
 		})
 	print("[Checkpoint] %s snapshot: %d objects, %d world items, %d lamps, %d cables." % [kind, _states.size(), _pickups.size(), _lamps.size(), _cables.size()])
+	if save_to_disk:
+		SaveGame.write(self)
+
+
+## Leaving the game mid-day (the pause menu's Main Menu or Quit, closing the
+## window): the day as it is now, the time and the player where they stand
+## too, for Continue. Not at night (a night is picked up from its start, as
+## after a death: the Entity's hunt isn't something to stop and resume), nor
+## while the game has the player (the opening, a cinematic, the bed, a
+## death, the car alarm). True if it saved.
+func capture_on_quit() -> bool:
+	if not save_to_disk or restoring or restore_on_load:
+		return false
+	var nm := get_node_or_null("/root/NightManager")
+	var player := get_tree().get_first_node_in_group("player") as CharacterBody3D
+	if not nm or not player or not nm._spawn_setup_done:
+		return false
+	if nm.is_night_active or not nm.is_day_active or nm.is_van_sequence_active or nm.dev_start_runner != null:
+		return false
+	if not player.is_processing_input() or not player.is_physics_processing() or not player.is_on_floor():
+		return false
+	if get_tree().get_first_node_in_group("opening"):
+		return false
+	capture("day", "quit")
+	return true
+
+
+func _notification(what: int) -> void:
+	# The window closed (alt-F4, the X) mid-game: as Quit does.
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		capture_on_quit()
 
 
 ## Takes the snapshot once the frame's pending changes (spawns) are done.
@@ -180,14 +220,20 @@ func restore() -> bool:
 		elif "battery_level" in flashlight:
 			flashlight.battery_level = _battery
 
-	# The trap first (objects below may refer to it), then world items.
+	# The trap first (objects below may refer to it), then world items. (From
+	# a save, items that are part of the level stay and are moved back.)
+	var kept := {}
+	for entry in _pickups + _lamps:
+		if entry.template.has("node"):
+			kept[entry.template.node] = true
 	for cable in get_tree().get_nodes_in_group("power_cable"):
 		cable.queue_free()
 	for lamp in get_tree().get_nodes_in_group("portable_trap"):
-		if lamp.has_method("drop_trap"):
+		if lamp.has_method("drop_trap") and not kept.has(lamp.get_path()):
 			lamp.queue_free()
 	for node in _pickup_nodes(scene):
-		node.queue_free()
+		if not kept.has(node.get_path()):
+			node.queue_free()
 	var restored_lamps: Array = []
 	for entry in _lamps:
 		var lamp: Node3D = _spawn(entry)
@@ -244,6 +290,33 @@ func apply_story(nm: Node) -> void:
 		nm.set(flag, _story[flag])
 
 
+## The player's own state from a save (the flashlight, sprint, exhaustion):
+## once the save is restored. The flashlight left in the world goes if the
+## player already has it.
+func apply_saved_player() -> void:
+	if saved_player.is_empty():
+		return
+	var player := get_tree().get_first_node_in_group("player")
+	if player:
+		# Saved on leaving (capture_on_quit): where the player stood, facing
+		# the way they faced.
+		if saved_player.has("$at") and player is Node3D:
+			if player.has_method("reset_camera"):
+				player.reset_camera()
+			(player as Node3D).global_transform = saved_player["$at"]
+			if "velocity" in player:
+				player.velocity = Vector3.ZERO
+		for property in saved_player:
+			if property in player:
+				player.set(property, saved_player[property])
+		if saved_player.get("_has_flashlight", false):
+			for node in get_tree().current_scene.find_children("*", "", true, false):
+				var script: Script = node.get_script()
+				if script and script.resource_path.get_file() == "flashlight_pickup.gd":
+					node.queue_free()
+	saved_player = {}
+
+
 ## GameTime's progress when the snapshot was taken.
 func time_progress() -> float:
 	return _time_progress
@@ -267,6 +340,11 @@ func _restore_cable(entry: Dictionary, lamps: Array) -> void:
 
 
 func _spawn(entry: Dictionary) -> Node:
+	if entry.template.has("node"):
+		var placed := get_node_or_null(entry.template.node)
+		if placed is Node3D:
+			(placed as Node3D).global_transform = entry.transform
+		return placed
 	var parent := get_node_or_null(entry.parent)
 	if not parent:
 		parent = get_tree().current_scene
@@ -313,6 +391,14 @@ func _read_state(node: Object) -> Dictionary:
 func _write_state(node: Object, state: Dictionary) -> void:
 	for key in state:
 		var value = state[key]
+		var current = node.get(key)
+		# A typed array (Array[Dictionary]) takes a plain one's elements (a
+		# plain array, as a save decodes it, wouldn't be set at all).
+		if value is Array and current is Array and (current as Array).is_typed():
+			var typed: Array = (current as Array).duplicate()
+			typed.assign(value.duplicate(true))
+			node.set(key, typed)
+			continue
 		node.set(key, value.duplicate(true) if value is Array or value is Dictionary else value)
 
 

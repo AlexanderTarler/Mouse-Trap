@@ -272,6 +272,11 @@ func _spawn_peeker() -> void:
 ## in lit rooms are never selected since the peeker cannot appear where the
 ## player can clearly see the window.
 ## Returns null if no valid windows are available.
+## The player is upstairs above this height (m): the ground floor is at
+## ~0.7, the upper floor at ~3.6.
+const UPSTAIRS_HEIGHT := 2.4
+
+
 func _pick_valid_window() -> Node3D:
 	var windows: Array[Node] = get_tree().get_nodes_in_group("WindowMarkers")
 	if windows.is_empty():
@@ -280,10 +285,17 @@ func _pick_valid_window() -> Node3D:
 	
 	var unlit_unboarded: Array[Node3D] = []
 	var unlit_boarded: Array[Node3D] = []
+	# Only on the player's own floor: looking in upstairs while the player is
+	# downstairs, its feet showed below the window. (The scripted Night 1
+	# bedroom peeker doesn't come through here.)
+	var player := get_tree().get_first_node_in_group("player") as Node3D
+	var player_upstairs: bool = player != null and player.global_position.y > UPSTAIRS_HEIGHT
 	
 	for w in windows:
 		var window_node = w as Node3D
 		if not window_node or not (window_node is CabinWindow):
+			continue
+		if player and bool(window_node.is_upstairs_window) != player_upstairs:
 			continue
 		if _is_player_looking_at_window(window_node):
 			continue

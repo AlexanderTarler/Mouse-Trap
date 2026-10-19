@@ -11,12 +11,11 @@ item_description = "A forest map with three marked locations. The nests must be 
 item_type = 1
 note_text = "[img]res://assets/Textures/forest_map.png[/img]
 
-Three Hasselmus nests have been identified in the surrounding forest. Each nest must be documented to track the creature's territory.
+Three active hazel dormouse colonies, each in a hollow stump marked with the old survey's orange tape.
 
-Nest locations marked on the map:
-- Nest Alpha: Deep in the eastern woods
-- Nest Beta: Near the northern ridge
-- Nest Gamma: Hidden in the western hollow
+- Nest Alpha: east of the cabin
+- Nest Beta: west of the cabin
+- Nest Gamma: far to the south-west, by the sunken tunnel
 
-Document all three nests to complete the research."
+Document all three nests, in that order, and log the data at the terminal."
 scene_to_spawn = ExtResource("2_note_scene")

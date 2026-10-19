@@ -1,0 +1,204 @@
+LISTENING POST PLAN: something to do at night that keeps you alive
+==================================================================
+STATUS: plan only. Nothing built yet.
+
+THE IDEA
+--------
+The nights are reactive: wait, and answer the Entity when it shows up.
+The listening post makes them about information. Microphones around the
+cabin feed the computer; the player reads where it is and goes there with
+the beam, a lit room, planks or the lamp.
+
+The loop:
+  a faster, quieter Entity -> you can't track it by ear -> the microphones
+  become necessary -> it learns them and goes for them -> a dead microphone
+  is a blind spot -> fixing it means going out at night (only when it's
+  necessary) -> later, flares make that trip survivable.
+
+Decided:
+  1. The portable lamp becomes an everyday light from Night 2. The Day 3
+     overload (Arvid's logs) is the twist: "you've used it as a light all
+     along; it can do more".
+  2. The microphone data shows on the computer's own monitor, in the world.
+     computer_ui.tscn IS the monitor's screen, always (also when nobody
+     sits at it). Plus a speaker in the cabin that crackles when a
+     microphone picks something up.
+  3. A handheld receiver: later (part G).
+
+Rules that keep it fair:
+  - The microphones never lie about real movement. The deception is its
+    mimicry (fake blips), never the system.
+  - Some cues only reach you in the room itself (its breath at a window, a
+    board creaking upstairs, the snuffling at the door). The screen says
+    where; your ears and the cabin say how close.
+
+
+A. THE COMPUTER SCREEN IN THE WORLD  [the foundation]
+-----------------------------------------------------
+Now: the monitor shows a static CRT texture (PCInteractable caches
+crt_screen_mp_2 and swaps in black without power). ComputerUI is a
+full-screen CanvasLayer, hidden until the player sits down (the camera
+tweens to the sit marker, the UI appears over everything).
+
+Do:
+  - ComputerUI goes into a SubViewport (about 1024x768, the 4:3 of a CRT).
+    A CanvasLayer inside a SubViewport draws into that viewport, so the
+    scene itself barely changes. The monitor's screen surface gets a
+    material with that ViewportTexture (plus a little CRT: scanlines, a
+    green-grey glow, curvature), replacing the static texture.
+  - It is always visible: the login screen, the desktop, an open window,
+    whatever was left on it. No power: black, as now (and the SubViewport
+    stops updating: UPDATE_DISABLED, so it costs nothing).
+  - Sitting down: the camera tweens to the sit marker so the monitor fills
+    the view, and input is forwarded into the SubViewport (keys as they
+    are; the mouse: a ray from the camera to the screen mesh, its UV ->
+    the viewport's pixel). Standing up: input stops, the screen stays.
+  - Far away it renders at a lower rate (UPDATE_WHEN_VISIBLE, and every
+    other frame beyond ~8 m) to keep the cost down.
+
+Watch out for:
+  - ComputerUI hides itself in _ready (visible = false) and uses
+    get_viewport() for the maximize size and the taskbar: inside the
+    SubViewport those give the screen's size, which is what we want, but
+    every use needs checking.
+  - Mouse capture and the HUD toggling on open/close stay as they are.
+  - Tests reach it by the "computer_ui" group (ui_test, bugs*, lore_test,
+    tasks13...): keep the group; a moved node path is fine.
+  - Legibility: the Win95 theme's 11-13 px text at 1024x768 must read with
+    the camera at the sit marker. Check by screenshot, and at the web
+    build's resolution.
+  - Web: SubViewport and ViewportTexture work in Compatibility.
+
+Test: the monitor shows ComputerUI with nobody seated (its texture is the
+SubViewport's); log in by forwarded input; stand up and the desktop stays
+on the screen; generator off -> black; on -> the same desktop back.
+
+
+B. THE MICROPHONES
+------------------
+What they are: the Institute's acoustic kit. Officially for the colonies'
+nocturnal activity (the memo's version); really, it's what they've wanted
+recordings of all along. The player turns their tool against it.
+
+  - A case of 5 microphones (ItemData "Microphone"), by the computer.
+  - Placed like the lamp: carried, put down outside, on a short stand, its
+    light green while it hears. Within 30 m of the cabin (the cable
+    reaches the junction box by the generator; a thin line on the ground).
+  - Each hears a circle of HEAR_RADIUS (start: 14 m) around itself.
+  - Picks up: the Entity moving (loud), its mimicry (a fake blip at the
+    sound's spot), the player moving outside (so you can test it by day),
+    deer/crows (rare, small: noise that teaches you to read the blips).
+  - Doesn't pick up: the Entity standing still. That is its counter.
+  - Introduced as a Day 1 task after the first login ("Set up the
+    microphones": the office's MEMO.TXT gets a line about it), so Night 1,
+    when it only watches from the treeline, is the tutorial: you watch it
+    circle on the screen while it can't reach you.
+
+Where it hooks in: a Microphone node per placed mic (group
+"microphones"); each physics tick (or every 0.2 s) it checks the Entity's
+distance and speed; EntityAudio.mimic reports its fake sounds to the mics
+in range; RoutineManager gets the Day 1 step; Checkpoint saves where they
+stand and whether they work.
+
+
+C. LISTEN.EXE
+-------------
+A program on the LUND desktop. Opened once, it stays open on the monitor
+(part A): you leave it running and glance at it from across the room.
+
+  - A top-down outline of the cabin, the mics as dots, and around each a
+    ring that pulses when it hears something: brighter for louder, and a
+    trail that fades over ~6 s, so you see direction of travel.
+  - Each mic: OK / NO SIGNAL. A dead mic's sector goes grey.
+  - Green phosphor on black (its own look, inside the Win95 window).
+  - A clock and a small log of the last few blips ("02:14 MIC 3").
+
+
+D. THE SPEAKER
+--------------
+A small speaker on the computer desk, wired to the mics: a crackle and a
+click when one picks something up, louder for a louder blip. Heard from
+anywhere in the cabin (it's the reason to go and look). Caption:
+"[the speaker crackles]". The player can turn it down (it can be heard
+outside too: noise_radius, a "speaker" kind, small).
+
+
+E. THE ENTITY: FASTER, QUIETER, AND AGAINST THE MICS
+----------------------------------------------------
+Only once the mics work (tuned with night3_sim).
+  - Faster while unseen: observe/approach/stalk/search speeds up (start:
+    x1.3), back to now while the player looks at it or it's in the beam.
+  - Quiet far away, clear up close: its footsteps barely heard beyond
+    ~10 m, clear within ~4 m (FootstepAudio's unit_size/max_distance, and
+    the "far off it is heard" rule in update_footsteps reversed).
+  - Learns the mics, by night:
+      Night 1: ignores them.
+      Night 2: stops still near one now and then (no blip), and its
+               mimicry can come from a mic's area.
+      Night 3: tears one or two out (a new state, like SABOTAGE on the
+               fuse box): a last loud blip, then NO SIGNAL.
+    A dead mic is fixed by going out to it with a spare (or re-setting
+    the one on the ground): the necessary trip outside.
+
+
+F. THE LAMP AS AN EVERYDAY LIGHT (the twist)
+--------------------------------------------
+Most of this exists: the lamp, the cable to the generator outlet (20 m),
+the magenta wall switch in the computer room (LightSwitchSpecial), its
+fuel drain while on (0.5/s, 4x a cabin light), and the Entity going for a
+lit lamp (ATTACK_LAMP; 3 hits pull the cable out).
+  - It's available from Night 2 (found in the barn on Day 2, with a cable
+    spool), not only on Day 3's side track. The side track's "Find
+    portable light" and "Find cable spool" tick off if they're already
+    found.
+  - On and off only from inside: the wall switch (as now), and nowhere
+    else (no switch on the lamp).
+  - Day 3, Arvid's logs: the same lamp, overloaded, is the trap. The
+    willow plan doesn't change.
+  - With the mics: you hear it go for the lamp, then decide: switch it off
+    (save fuel, lose the light) or let it take the hits. A pulled cable is
+    another necessary trip outside.
+
+
+G. LATER
+--------
+  - The handheld receiver: a battery box with 8 lights and a crackling
+    speaker (a scanner, a baby monitor). Shows the mics while you're out.
+    Runs on the flashlight's batteries; in the hand instead of the
+    flashlight.
+  - Flares: steady light, so a safe circle it won't enter (the old journal:
+    a flash maddens it, a steady flood holds it). 2-3 a night, 30-60 s;
+    the glow is seen from far (it knows you're out); when it dies you're in
+    the dark and it's angry. Resolve the old unused TACTICAL_LOG_REWARDS
+    text in computer_ui.gd (it has the Entity attacking flares): make it
+    match, or remove it.
+
+
+ORDER
+-----
+  1. A: the computer screen in the world. On its own already better (the
+     desktop on the monitor as you walk past), and everything else needs
+     it.
+  2. C with fake data (a debug button to fire blips): get the look right
+     on the monitor.
+  3. B + D: real microphones, the Day 1 step, the speaker. With today's
+     Entity (still loud): try it, tune HEAR_RADIUS and the count.
+  4. E: speed, quiet, the mic sabotage. night3_sim for the numbers, then a
+     playtest.
+  5. F: the lamp from Night 2.
+  6. G when 1-5 have been played.
+
+Each step: its own test (tests/listening_test.gd growing), the full suite,
+perf_benchmark before/after (the SubViewport is the new cost), and the
+web build checked in a real browser.
+
+
+OPEN QUESTIONS
+--------------
+  - 5 mics, or fewer (4) so there's always a blind side?
+  - Do they come with the cabin (the case by the computer), or in the van
+    (the Institute's kit, unloaded on Day 1)?
+  - Should the screen show the player's own blips at night (inside: no;
+    outside: yes, so it's clear the system hears you too)?
+  - The speaker: always on, or a switch (silence at the price of not
+    hearing it)?

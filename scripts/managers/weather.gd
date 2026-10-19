@@ -9,9 +9,9 @@ extends Node
 ## isn't lasting eases off once the player is back inside the cabin, or
 ## after STORM_DURATION.
 ##
-## The kit has no rain recording: the rain is synthesized (filtered noise
-## with droplet ticks); the thunder is the kit's distant explosions, pitched
-## down.
+## The rain is two recorded loops: a steady medium rain while the storm
+## builds or eases off, the heavy downpour at its height (crossfaded by
+## `level`). The thunder is the kit's distant explosions, pitched down.
 
 const THUNDER_PATHS: Array[String] = [
 	"res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Explosions/explosion_distant_1.ogg",
@@ -28,8 +28,12 @@ const FADE_OUT := 20.0
 const INSIDE_ENDS_AFTER := 8.0
 ## Seconds between lightning strikes.
 const THUNDER_INTERVAL := Vector2(14.0, 32.0)
+const RAIN_MEDIUM_PATH := "res://assets/audio/Ambience/Rain_Medium_2.wav"
+const RAIN_HEAVY_PATH := "res://assets/audio/Ambience/Rain_Heavy.wav"
 const RAIN_DB := -6.0
-const MIX_RATE := 22050.0
+## The heavy rain fades in over this stretch of `level` (the medium rain out).
+const HEAVY_FROM := 0.45
+const HEAVY_FULL := 0.9
 
 ## 0 = clear, 1 = full storm.
 var level := 0.0
@@ -40,13 +44,11 @@ var _lasting := false
 var _inside_time := 0.0
 var _thunder_left := 0.0
 var _rain_particles: GPUParticles3D = null
-var _rain_player: AudioStreamPlayer = null
-var _rain_playback: AudioStreamGeneratorPlayback = null
+var _rain_player: AudioStreamPlayer = null   ## the medium rain
+var _heavy_player: AudioStreamPlayer = null
 var _thunder_player: AudioStreamPlayer = null
 var _thunder_streams: Array[AudioStream] = []
 var _flash: DirectionalLight3D = null
-var _noise_state := 0.0
-var _noise_slow := 0.0
 
 
 func _ready() -> void:
@@ -116,8 +118,9 @@ func _apply(player: Node3D, delta: float) -> void:
 		_rain_particles.emitting = level > 0.05
 		_rain_particles.amount_ratio = level
 	if _rain_player:
-		_rain_player.volume_db = linear_to_db(maxf(level, 0.0001)) + RAIN_DB
-		_fill_rain()
+		var heavy := smoothstep(HEAVY_FROM, HEAVY_FULL, level)
+		_rain_player.volume_db = linear_to_db(maxf(level * (1.0 - heavy), 0.0001)) + RAIN_DB
+		_heavy_player.volume_db = linear_to_db(maxf(level * heavy, 0.0001)) + RAIN_DB
 	_thunder_left -= delta
 	if _thunder_left <= 0.0 and level > 0.5 and _target > 0.0:
 		_thunder_left = randf_range(THUNDER_INTERVAL.x, THUNDER_INTERVAL.y)
@@ -165,15 +168,23 @@ func _ensure_rain() -> void:
 		_rain_particles = _make_rain()
 		scene.add_child(_rain_particles)
 	if not _rain_player:
-		_rain_player = AudioStreamPlayer.new()
-		_rain_player.bus = &"Ambient"
-		var generator := AudioStreamGenerator.new()
-		generator.mix_rate = MIX_RATE
-		generator.buffer_length = 0.25
-		_rain_player.stream = generator
-		add_child(_rain_player)
-		_rain_player.play()
-		_rain_playback = _rain_player.get_stream_playback()
+		_rain_player = _make_rain_player("RainMedium", RAIN_MEDIUM_PATH)
+		_heavy_player = _make_rain_player("RainHeavy", RAIN_HEAVY_PATH)
+
+
+## A looping rain recording, silent until _apply() sets its volume.
+func _make_rain_player(player_name: String, path: String) -> AudioStreamPlayer:
+	var player := AudioStreamPlayer.new()
+	player.name = player_name
+	player.bus = &"Ambient"
+	player.volume_db = -80.0
+	if ResourceLoader.exists(path):
+		player.stream = load(path)
+	add_child(player)
+	if player.stream:
+		# Somewhere into the loop, so it doesn't always start the same way.
+		player.play(randf() * player.stream.get_length())
+	return player
 
 
 func _make_rain() -> GPUParticles3D:
@@ -214,29 +225,16 @@ func _make_rain() -> GPUParticles3D:
 	return rain
 
 
-## Rain: brownish noise (the hiss) with sparse sharper ticks (drops close by).
-func _fill_rain() -> void:
-	if not _rain_playback:
-		return
-	var frames := _rain_playback.get_frames_available()
-	for i in frames:
-		var white := randf() * 2.0 - 1.0
-		_noise_state = _noise_state * 0.82 + white * 0.18
-		_noise_slow = _noise_slow * 0.995 + white * 0.005
-		var sample := _noise_state * 0.6 + _noise_slow * 2.0
-		if randf() < 0.0025:
-			sample += (randf() * 2.0 - 1.0) * 0.5
-		_rain_playback.push_frame(Vector2(sample, sample) * 0.5)
-
 
 func _tear_down() -> void:
 	if is_instance_valid(_rain_particles):
 		_rain_particles.queue_free()
 	_rain_particles = null
-	if _rain_player:
-		_rain_player.queue_free()
-		_rain_player = null
-		_rain_playback = null
+	for player in [_rain_player, _heavy_player]:
+		if player:
+			player.queue_free()
+	_rain_player = null
+	_heavy_player = null
 	if is_instance_valid(_flash):
 		_flash.queue_free()
 	_flash = null

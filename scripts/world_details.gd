@@ -39,9 +39,12 @@ const VERGE := [
 	[MEADOWS + "Thistles/Thistles.fbx", 0.02, 0.7, 1.1],
 	["stone_5", 0.03, 1.0, 2.0],
 ]
+## (Blueberry carpets the floor of a Swedish pine forest; ferns where it's
+## damper.)
 const FOREST_FLOOR := [
 	[MEADOWS + "Mushrooms/Mushrooms.fbx", 0.03, 1.0, 1.8],
-	[MEADOWS + "Blueberry Bush/Blueberry Bush.fbx", 0.02, 0.8, 1.2],
+	[MEADOWS + "Blueberry Bush/Blueberry Bush.fbx", 0.06, 0.8, 1.2],
+	[MEADOWS + "Fern/Fern.fbx", 0.03, 0.7, 1.1],
 	[CARDS + "SM_EC_Plant_Card_Cross_00.tscn", 0.025, 0.8, 1.3],
 	[CARDS + "SM_EC_Plant_Card_Cross_10.tscn", 0.02, 0.8, 1.3],
 ]
@@ -55,6 +58,19 @@ const SOLID_CHECK_RADIUS := 0.6
 ## for it).
 signal scattered
 
+## The other flocks: [name, centre, birds, perch, the player this close
+## sends them up, the area searched for a ridge (HIGH), Day 1 only].
+const FLOCKS := [
+	["CrowsCabinRoof", Vector3(9.0, 0.0, 17.0), 5, Crows.Perch.HIGH, 30.0, Vector2(6.0, 3.0), true],
+	["CrowsBarnRoof", Vector3(36.8, 0.0, -74.7), 6, Crows.Perch.HIGH, 16.0, Vector2(8.0, 8.0), false],
+	["CrowsWreckYard", Vector3(-84.0, 0.0, -15.0), 5, Crows.Perch.HIGH, 14.0, Vector2(9.0, 9.0), false],
+	["CrowsClearcut", Vector3(84.0, 0.4, -90.0), 6, Crows.Perch.GROUND, 14.0, Vector2(8.0, 8.0), false],
+]
+
+## The Day 1 roof crows also go up when the player passes the stones by the
+## old note, on the way in.
+const ROOF_CROWS_SCARE := Vector3(1.3, 0.0, -21.0)
+
 var placed := 0
 var is_scattered := false
 ## Where things were placed (for the tests).
@@ -64,16 +80,39 @@ var spots := PackedVector3Array()
 func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
-	# The man-made places get furnished too (SiteDresser), unless the level
-	# has them already (tools/bake_sites.gd writes them into it).
-	if not (owner and owner.has_node("Sites")):
+	# The man-made places get furnished too (SiteDresser); if the level has
+	# them already (tools/bake_sites.gd writes them into it), only the
+	# cabin, its yard and the trails.
+	# (Once tools/bake_details.gd has written the cabin's and the trails'
+	# into the level too, "CabinDetails": nothing more.)
+	if not (owner and owner.has_node("CabinDetails")):
 		var sites := SiteDresser.new()
 		sites.name = "SiteDresser"
+		sites.extras_only = owner != null and owner.has_node("Sites")
 		add_child(sites)
-	# Crows at the willow (Crows).
+	# Crows at the willow (Crows), and other flocks by day: the cabin's roof
+	# ridge on Day 1 (up when the player is ~30 m off, or passes the note
+	# stones on the way in), the barn roof, the
+	# wreck yard, the old clear-cut.
 	var crows := Crows.new()
 	crows.name = "Crows"
 	add_child(crows)
+	for flock: Array in FLOCKS:
+		var more := Crows.new().setup(flock[1], flock[2], flock[3], flock[4], flock[5], flock[6])
+		more.name = flock[0]
+		if flock[0] == "CrowsCabinRoof":
+			more.scare_spot = ROOF_CROWS_SCARE
+		add_child(more)
+	# The cabin, night by night: settling, creaking, a handle tried (HouseUnease).
+	var unease := HouseUnease.new()
+	unease.name = "HouseUnease"
+	add_child(unease)
+	# The hall clock ticks, louder at night (ClockTick).
+	var clock := owner.get_node_or_null("CabinDetails/clock_1") if owner else null
+	var tick := ClockTick.new()
+	tick.name = "ClockTick"
+	add_child(tick)
+	tick.global_position = (clock as Node3D).global_position if clock else ClockTick.FALLBACK
 	# Plants rustle when walked into (FoliageRustle).
 	var rustle := FoliageRustle.new()
 	rustle.name = "FoliageRustle"

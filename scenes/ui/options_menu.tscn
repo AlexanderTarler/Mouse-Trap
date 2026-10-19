@@ -46,18 +46,7 @@ horizontal_alignment = 1
 [node name="HSeparator" type="HSeparator" parent="PanelContainer/VBoxContainer" unique_id=190396498]
 layout_mode = 2
 
-[node name="SliderContainer" type="VBoxContainer" parent="PanelContainer/VBoxContainer" unique_id=45154830]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 8
-
 [node name="BackButton" type="Button" parent="PanelContainer/VBoxContainer" unique_id=136241701]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Back"
-
-[node name="ObjectiveHighlightsToggle" type="CheckButton" parent="PanelContainer/VBoxContainer" unique_id=866052003]
-layout_mode = 2
-button_pressed = true
-text = "Objective Highlights"

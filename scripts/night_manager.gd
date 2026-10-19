@@ -47,6 +47,10 @@ const EVENT_STRINGS: Dictionary = {
 }
 
 @export var is_dev_mode: bool = false
+## Dev: the point of the story the game starts at (DevStart.Start; 0: none).
+var dev_start := 0
+## The DevStart playing the story through to it (null when done).
+var dev_start_runner: DevStart = null
 
 ## Current night (0 = Day 1 pre-night, 1-5 = Night 1 through Night 5)
 ## Starts at 0 representing Day 1 (before any night begins).
@@ -77,7 +81,7 @@ func can_approach_windows() -> bool:
 ## Whether the player has found Arvid's Note in the world.
 ## When true, the ComputerUI's RECOVER_DATA.EXE will auto-fill the
 ## decryption key, allowing the player to unlock Arvid's hidden logs
-## without needing to manually type "STENBERG_1996".
+## without needing to manually type "Linnea_and_Sara".
 var arvid_password_found: bool = false
 
 ## Whether the current day phase is active (between nights)
@@ -454,6 +458,28 @@ func _restore_loaded_scene() -> void:
 	is_night_active = checkpoint.kind == "night"
 	is_day_active = not is_night_active
 	restart_from_checkpoint()
+	# From a save (Continue): the player's own state too.
+	checkpoint.apply_saved_player()
+	# A hint that came up as the level loaded (before the restore) for
+	# something the restored game has already learned: gone.
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("visible_hint"):
+		var hint: String = tm.visible_hint()
+		if hint != "" and tm.is_learned(hint):
+			tm.mark_learned(hint)
+	# The HUD (and the notebook) showed the new game's Day 1 as the level
+	# loaded: the restored story's day and objective instead.
+	var routine_hud := get_node_or_null("/root/RoutineManager")
+	if routine_hud and routine_hud.has_method("_update_hud"):
+		routine_hud._update_hud()
+	var hud := get_tree().current_scene.get_node_or_null("HUD") if get_tree().current_scene else null
+	if hud and hud.has_method("_sync_all_displays"):
+		hud._sync_all_displays()
+	# The shaders compiled behind the black, as for a new game (a Day 3 or
+	# Night 3 save goes straight to the willow).
+	if ShaderWarmup.needed() and get_tree().current_scene:
+		await ShaderWarmup.new().run(get_tree().current_scene)
+	_lift_start_cover()
 	print("[NightManager] Play Again: the scene reloaded and put back to the %s checkpoint (night %d)." % [checkpoint.kind, current_night])
 
 
@@ -469,12 +495,81 @@ func _find_marker_recursive(root: Node, name: String) -> Marker3D:
 
 
 
+## Black over everything from the moment a new game is started (the main
+## menu's Play) until the game is set up and the opening is on screen: the
+## scene would otherwise show for a moment as it was saved (the player in
+## the cabin) before the player is put at the van.
+var _start_cover: CanvasLayer = null
+
+
+## The opening (or the dev start), then the start cover comes off.
+func _start_game() -> void:
+	start_onboarding_sequence()
+	if dev_start > 0:
+		_run_dev_start()
+	# (The opening or the dev start, if any, is up now with its own black.)
+	_lift_start_cover()
+
+
+## The web build: the shaders that would freeze the game later compiled
+## first, behind the black (ShaderWarmup).
+func _start_game_after_warmup() -> void:
+	# (Behind the opening's own black, if it's already on.)
+	if not get_tree().get_first_node_in_group("opening"):
+		show_start_cover()
+	var scene := get_tree().current_scene
+	await ShaderWarmup.new().run(scene)
+	_start_game()
+
+
+## The dev start (Player.dev_start): the story played through to it.
+func _run_dev_start() -> void:
+	dev_start_runner = DevStart.new()
+	dev_start_runner.name = "DevStart"
+	dev_start_runner.target = dev_start
+	get_tree().current_scene.add_child(dev_start_runner)
+	await dev_start_runner.run()
+	dev_start_runner = null
+	# Producer mode: the ghost and the replica, now that it's Night 3.
+	if ProducerMode.requested and get_tree().current_scene:
+		get_tree().current_scene.add_child(ProducerMode.new())
+
+
+func show_start_cover() -> void:
+	if _start_cover:
+		return
+	_start_cover = CanvasLayer.new()
+	_start_cover.name = "StartCover"
+	_start_cover.layer = 1000
+	var black := ColorRect.new()
+	black.color = Color.BLACK
+	black.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	black.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_start_cover.add_child(black)
+	add_child(_start_cover)
+
+
+func has_start_cover() -> bool:
+	return _start_cover != null
+
+
+func _lift_start_cover() -> void:
+	if _start_cover:
+		_start_cover.queue_free()
+		_start_cover = null
+
+
 ## The opening (Opening): the van, the title card, the phone with no
 ## service. Once per new game; not in headless runs (the tests).
 func _play_opening() -> void:
-	if DisplayServer.get_name() == "headless":
+	if DisplayServer.get_name() == "headless" or dev_start > 0:
 		return
 	var scene := get_tree().current_scene
+	# Started already, on the main menu's Play (it brought the level in).
+	var early := get_tree().get_first_node_in_group("opening")
+	if early and early.has_method("attach_to_game"):
+		early.attach_to_game()
+		return
 	if not scene or scene.find_child("Opening", false, false):
 		return
 	var opening := Opening.new()
@@ -582,7 +677,10 @@ func _process(delta: float) -> void:
 			_start_time_running()
 			setup_player_spawn()
 			_apply_dev_mode_settings()
-			start_onboarding_sequence()
+			if ShaderWarmup.needed():
+				_start_game_after_warmup()
+			else:
+				_start_game()
 		return
 	
 	if not is_night_active and not is_day_active:
@@ -617,40 +715,44 @@ func _process(delta: float) -> void:
 	if _game_time:
 		night_progress = _game_time.get_phase_progress()
 	
-	if is_night_active:
-		if is_generator_on:
-			# ─── TASK 2: OVERLOAD EXACT 3.0/s DRAIN ─────────────────────
-			# Drained per tick by the time since the last one (`tick`, ~0.2 s):
-			#   overload: 3.0 units/sec; baseline: current_drain_rate /sec.
+	# The generator burns fuel whenever it runs, day or night.
+	if is_generator_on:
+		# ─── TASK 2: OVERLOAD EXACT 3.0/s DRAIN ─────────────────────
+		# Drained per tick by the time since the last one (`tick`, ~0.2 s):
+		#   overload: 3.0 units/sec; baseline: current_drain_rate /sec.
+		
+		# While an overloaded portable trap lamp is active, the drain
+		# rate is FORCED to exactly 3.0 units/sec (3% of max_fuel per
+		# second → full tank in ~33.3s). The accumulated
+		# current_drain_rate (base + lights + lamp 3.0) is bypassed so
+		# baseline drains never stack on top, which previously emptied
+		# the tank faster than the intended 3%/s.
+		var overload_active: bool = false
+		for lamp in get_tree().get_nodes_in_group("portable_trap"):
+			if lamp and "is_overloaded" in lamp and lamp.is_overloaded:
+				overload_active = true
+				break
+		
+		var fuel_before := generator_fuel
+		if overload_active:
+			generator_fuel -= 3.0 * tick
+		else:
+			generator_fuel -= current_drain_rate * tick
+		# The failsafe until Day 3: the tank stops going down at 10%.
+		if failsafe_active():
+			generator_fuel = maxf(generator_fuel, minf(fuel_before, max_fuel * FAILSAFE_FUEL))
+		generator_fuel = clampf(generator_fuel, 0.0, max_fuel)
+		fuel_changed.emit(generator_fuel)
+		
+		if generator_fuel <= 0.0:
+			is_generator_on = false
+			generator_state_changed.emit(false)
+			fuel_changed.emit(0.0)
+			print("[Power Grid] Blackout! The generator has run completely out of fuel.")
 			
-			# While an overloaded portable trap lamp is active, the drain
-			# rate is FORCED to exactly 3.0 units/sec (3% of max_fuel per
-			# second → full tank in ~33.3s). The accumulated
-			# current_drain_rate (base + lights + lamp 3.0) is bypassed so
-			# baseline drains never stack on top, which previously emptied
-			# the tank faster than the intended 3%/s.
-			var overload_active: bool = false
-			for lamp in get_tree().get_nodes_in_group("portable_trap"):
-				if lamp and "is_overloaded" in lamp and lamp.is_overloaded:
-					overload_active = true
-					break
-			
-			if overload_active:
-				generator_fuel -= 3.0 * tick
-			else:
-				generator_fuel -= current_drain_rate * tick
-			generator_fuel = clampf(generator_fuel, 0.0, max_fuel)
-			fuel_changed.emit(generator_fuel)
-			
-			if generator_fuel <= 0.0:
-				is_generator_on = false
-				generator_state_changed.emit(false)
-				fuel_changed.emit(0.0)
-				print("[Power Grid] Blackout! The generator has run completely out of fuel.")
-				
-				var entity = get_tree().get_first_node_in_group("entity")
-				if entity and entity.has_method("on_generator_blackout"):
-					entity.on_generator_blackout()
+			var entity = get_tree().get_first_node_in_group("entity")
+			if entity and entity.has_method("on_generator_blackout"):
+				entity.on_generator_blackout()
 
 	
 	if is_night_active:
@@ -686,6 +788,8 @@ func _on_game_day_started() -> void:
 	if not is_night_active:
 		print("[NightManager] Ignoring spurious day_started — no night is active.")
 		return
+	# Through a night: it's gone with the sun (the journal).
+	EntityJournal.learn(self, "daylight")
 	
 	# ─── SAVE ORIGINAL NIGHT BEFORE END ──────────────────────────────
 	# end_current_night() bumps current_night by 1 after emitting
@@ -737,6 +841,9 @@ func _apply_dawn_exhaustion() -> void:
 
 	_set_objective("I'm exhausted, I need to go to bed.")
 	print("[NightManager] Day %d dawn exhaustion applied. Time is frozen." % current_night)
+	var monologue := get_node_or_null("/root/Monologue")
+	if monologue:
+		monologue.think_when_free("Morning. I actually made it to morning.", 4.0, "made_it_to_dawn", 1.5)
 
 
 ## Starts a specific night.
@@ -1017,6 +1124,11 @@ func advance_night() -> void:
 		is_day_active = true
 		night_ended.emit(1)
 		print("[NightManager] Transitioned from Day 1 to Day 2 (current_night = 1). Night 1 survived!")
+		# This way into Day 2 (to bed on Day 1) took no snapshot: a death today,
+		# or Continue, went back to the very start of the game.
+		var day2_checkpoint: Node = get_node_or_null("/root/Checkpoint")
+		if day2_checkpoint and day2_checkpoint.has_method("capture_deferred"):
+			day2_checkpoint.capture_deferred("day")
 	else:
 		end_current_night()
 	
@@ -1156,7 +1268,52 @@ func restart_from_checkpoint() -> void:
 	# restart, regardless of whether the checkpoint branch reset the night or
 	# the day. This guarantees a consistent, clean-facing spawn with a fully
 	# reset camera.
-	_spawn_player_at("PlayerSpawnDev")
+	# The story still at its first step, the cabin not yet entered (Day 1's
+	# checkpoint is the start of the game, before the key): outside it
+	# instead. (Not by the night counter, which Day 2 reached by going to
+	# bed early still counts as 1; nor by the "entered" flag alone, which a
+	# new day clears.)
+	var routine := get_node_or_null("/root/RoutineManager")
+	if is_day_active and routine and int(routine.main_objective) <= 0 and not routine.phase1_entered_cabin:
+		_spawn_outside_cabin()
+	else:
+		_spawn_player_at("PlayerSpawnDev")
+
+
+## ─── FAILSAFE (Day 1 until Day 3) ─────────────────────────────────────────
+## Until Day 3 the generator can't run dry (its drain stops at FAILSAFE_FUEL
+## of the tank) and the flashlight can't die (it stops at a level where it
+## still flickers: Flashlight.FAILSAFE_BATTERY). From Day 3 both drain to
+## nothing as before.
+const FAILSAFE_FUEL := 0.1
+
+
+func failsafe_active() -> bool:
+	return current_night < 3
+
+
+## Where Day 1 is picked up again: in front of the porch, facing it (the
+## steps, and the bucket the key is under).
+const OUTSIDE_CABIN := Vector3(9.0, 0.0, 2.0)
+
+
+func _spawn_outside_cabin() -> void:
+	var player := get_tree().get_first_node_in_group("player") as Node3D
+	if not player:
+		return
+	var at := OUTSIDE_CABIN
+	var space := player.get_world_3d().direct_space_state
+	var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(at + Vector3.UP * 20.0, at + Vector3.DOWN * 20.0, 1, [player.get_rid()]))
+	if not hit.is_empty():
+		at.y = (hit.position as Vector3).y
+	# (The camera straightened first: that also turns the body to -Z.)
+	if player.has_method("reset_camera"):
+		player.reset_camera()
+	# Turned round: the player looks down -Z, the cabin is towards +Z.
+	player.global_transform = Transform3D(Basis(Vector3.UP, PI), at + Vector3.UP * 0.9)
+	if "velocity" in player:
+		player.velocity = Vector3.ZERO
+	print("[NightManager] Day 1 picked up outside the cabin: %s" % player.global_position)
 
 
 ## Teleports the player to a named PlayerSpawnpoints marker (with recursive

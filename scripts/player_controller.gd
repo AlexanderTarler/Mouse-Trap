@@ -152,6 +152,16 @@ var _environment_controller: Node = null
 ## When false (default), the player must work through the full onboarding.
 ## Toggle this in the Player node's inspector for quick testing.
 @export var start_in_dev_mode: bool = false
+## Dev: start at this point of the story instead (DevStart): the story up to
+## it is played through behind a black screen, so objectives, inventory and
+## the night are as if it had been played. "Free roam" is start_in_dev_mode
+## as above; anything else overrides it.
+@export_enum("Free roam", "Day 1", "Day 1: power on", "Day 2", "Day 2: nests documented",
+	"Night 2", "Night 2.2: car alarm", "Day 3", "Day 3: rested - find the van parts",
+	"Night 3", "Night 3: van repaired") var dev_start: int = 0
+## Dev: producer mode (ProducerMode): Night 3, you a floating ghost, this
+## player a replica in the cabin for the Entity to hunt. (Overrides dev_start.)
+@export var producer_mode: bool = false
 
 
 # Sprint unlock — enabled by default for development convenience
@@ -203,6 +213,8 @@ signal stamina_changed(stamina_percent: float)
 ## The breathing below 50% stamina (played as recorded, not re-pitched),
 ## when breathing_sfx isn't assigned.
 const BREATHING_SOUND := "res://assets/audio/objects/Player Breathing.ogg"
+## The breathing at low stamina (dB).
+const BREATHING_DB := -19.1
 
 ## Looping audio player for heavy breathing when stamina < 50%.
 ## Created programmatically in _ready() to avoid scene node dependency.
@@ -224,6 +236,17 @@ var _noise_timer: float = 0.0
 @export var breathing_sfx: AudioStream = null
 
 func _ready() -> void:
+	# The keys (rebindable; saved with the settings).
+	if not GameKeys._applied:
+		GameKeys.apply()
+	# The wristwatch: hold [T] for the time.
+	var watch := Wristwatch.new()
+	watch.name = "Wristwatch"
+	add_child(watch)
+	# The microphone (if the player turned it on): their voice is heard.
+	var voice := PlayerVoice.new()
+	voice.name = "PlayerVoice"
+	add_child(voice)
 	if footstep_audio:
 		_footstep_base_db = footstep_audio.volume_db
 		# Our own steps stay dry and close everywhere. The rooms' echo
@@ -264,7 +287,7 @@ func _ready() -> void:
 		_breathing_audio = AudioStreamPlayer3D.new()
 		_breathing_audio.stream = breath
 		_breathing_audio.bus = "SFX"
-		_breathing_audio.volume_db = -16.0
+		_breathing_audio.volume_db = BREATHING_DB
 		_breathing_audio.max_db = 0.0
 		add_child(_breathing_audio)
 		_breathing_audio_loaded = true
@@ -306,7 +329,17 @@ func _ready() -> void:
 	# entire game system knows we're in dev mode. This unlocks sprint,
 	# flashlight, key, all starting items, powers on the fuse box, fills
 	# the generator, unpauses time, and skips the Day 1 onboarding sequence.
-	if start_in_dev_mode:
+	# Producer mode: the story played through to Night 3 first.
+	if ProducerMode.wanted(self):
+		ProducerMode.requested = true
+		dev_start = DevStart.Start.NIGHT_3
+	if dev_start > 0:
+		var nm = get_node_or_null("/root/NightManager")
+		if nm:
+			nm.is_dev_mode = false
+			nm.dev_start = dev_start
+			print("[Player] Dev start: %s." % DevStart.NAMES[dev_start])
+	elif start_in_dev_mode:
 		var nm = get_node_or_null("/root/NightManager")
 		if nm:
 			nm.is_dev_mode = true
@@ -358,20 +391,42 @@ func _ready() -> void:
 
 ## Deferred tutorial trigger — runs after the HUD is in the scene tree.
 func _trigger_movement_tutorial() -> void:
+	# (A save or "Play Again" about to be restored: not the start of a game.)
+	var checkpoint := get_node_or_null("/root/Checkpoint")
+	if checkpoint and checkpoint.get("restore_on_load"):
+		return
 	var tm := get_node_or_null("/root/TutorialManager")
 	if tm and tm.has_method("trigger"):
 		tm.trigger("movement")
+
+
+## The movement hint goes this long after the player first moves, crouched
+## or not (s).
+const MOVEMENT_HINT_TIME := 10.0
+
+
+## The movement hint learned: gone, and the notebook's next.
+func _finish_movement_tutorial() -> void:
+	if _movement_keys_pressed.is_empty():
+		return
+	var tm := get_node_or_null("/root/TutorialManager")
+	if tm and tm.has_method("mark_learned"):
+		tm.mark_learned("movement")
+	# ─── TUTORIAL FLOW: Notebook after movement (deferred) ──
+	# Delay the notebook trigger by 1 frame so the movement
+	# hint's hide animation has time to process before the
+	# notebook hint appears in the same label slot.
+	if tm and tm.has_method("trigger"):
+		tm.call_deferred("trigger", "notebook")
+	_movement_keys_pressed.clear()  # prevent re-check
 
 
 ## Initializes the movement key tracker. Called deferred so stale key
 ## presses from the main menu don't instantly dismiss the prompt.
 func _enable_movement_tutorial() -> void:
 	_movement_keys_pressed = {
-		KEY_W: false,
-		KEY_A: false,
-		KEY_S: false,
-		KEY_D: false,
-		KEY_CTRL: false,
+		"move": false,
+		"crouch": false,
 	}
 	_movement_tutorial_ready = true
 
@@ -397,38 +452,30 @@ func _input(event: InputEvent) -> void:
 		
 	
 	# ─── DEBUG: Toggle mouse capture with AltGr (Right Alt) ──────────────
-	if event is InputEventKey and event.physical_keycode == KEY_ALT and event.pressed and not event.echo:
+	if OS.is_debug_build() and event is InputEventKey and event.physical_keycode == KEY_ALT and event.pressed and not event.echo:
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		else:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	
-	# ─── TUTORIAL: Track WASD/Ctrl key presses (edge-triggered) ─────
+	# ─── TUTORIAL: Track moving and crouching (edge-triggered) ─────
 	if _movement_tutorial_ready and not _movement_keys_pressed.is_empty():
 		if event is InputEventKey and event.pressed:
-			var keycode = event.keycode
-			if keycode in _movement_keys_pressed and not _movement_keys_pressed[keycode]:
-				_movement_keys_pressed[keycode] = true
-				# Also accept C as alias for Ctrl
-				if keycode == KEY_C and KEY_CTRL in _movement_keys_pressed:
-					_movement_keys_pressed[KEY_CTRL] = true
-				# Learned once the player has moved (any direction) and
-				# crouched: what the hint asks.
-				var moved: bool = _movement_keys_pressed[KEY_W] or _movement_keys_pressed[KEY_A] \
-					or _movement_keys_pressed[KEY_S] or _movement_keys_pressed[KEY_D]
-				if moved and _movement_keys_pressed[KEY_CTRL]:
-					var tm := get_node_or_null("/root/TutorialManager")
-					if tm and tm.has_method("mark_learned"):
-						tm.mark_learned("movement")
-					# ─── TUTORIAL FLOW: Notebook after movement (deferred) ──
-					# Delay the notebook trigger by 1 frame so the movement
-					# hint's hide animation has time to process before the
-					# notebook hint appears in the same label slot.
-					if tm and tm.has_method("trigger"):
-						tm.call_deferred("trigger", "notebook")
-					_movement_keys_pressed.clear()  # prevent re-check
+			for action in ["move_forward", "move_back", "move_left", "move_right"]:
+				if event.is_action_pressed(action) and not _movement_keys_pressed["move"]:
+					_movement_keys_pressed["move"] = true
+					# Moving but never crouching: the hint goes anyway after a
+					# while (it held up every hint after it; the stealth hint
+					# teaches crouching when it matters).
+					get_tree().create_timer(MOVEMENT_HINT_TIME).timeout.connect(_finish_movement_tutorial)
+			if event.is_action_pressed("ui_crouch"):
+				_movement_keys_pressed["crouch"] = true
+			# Learned once the player has moved (any direction) and
+			# crouched: what the hint asks.
+			if _movement_keys_pressed["move"] and _movement_keys_pressed["crouch"]:
+				_finish_movement_tutorial()
 	
-	if event is InputEventKey and event.keycode == KEY_F and not event.echo:
+	if event is InputEventKey and event.is_action("flashlight") and not event.echo:
 		if event.pressed:
 			_flashlight_key_pressed()
 		else:
@@ -688,10 +735,10 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity += get_gravity() * delta
 
-	if Input.is_key_pressed(KEY_SPACE) and is_on_floor():
+	if Input.is_action_pressed("jump") and is_on_floor():
 		velocity.y = jump_velocity
 
-	if Input.is_key_pressed(KEY_CTRL) or Input.is_key_pressed(KEY_C):
+	if Input.is_action_pressed("ui_crouch"):
 		if not _is_crouching: _is_crouching = true
 		# Also when the hint comes up while already crouching.
 		_learned_if_shown("stealth")
@@ -716,21 +763,25 @@ func _physics_process(delta: float) -> void:
 	# — stamina only drains when sprinting in a forward direction.
 	# This prevents the player from sprinting backwards away from the Entity,
 	# which would feel unfair and break the horror tension.
-	var _is_moving_forward = Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_D)
-	_is_running = Input.is_key_pressed(KEY_SHIFT) and sprint_unlocked and not _is_crouching and _stamina > 0.0 and not _stamina_exhausted and _is_moving_forward
+	var _is_moving_forward = Input.is_action_pressed("move_forward") or Input.is_action_pressed("move_left") or Input.is_action_pressed("move_right")
+	_is_running = Input.is_action_pressed("ui_shift") and sprint_unlocked and not _is_crouching and _stamina > 0.0 and not _stamina_exhausted and _is_moving_forward
 	
-	# ─── BUG 3 FIX: MARK SPRINT TUTORIAL LEARNED ON ACTUAL USE ──────
+	# ─── MARK SPRINT TUTORIAL LEARNED ON ACTUAL USE ──────
 	# The sprint hint (triggered by escape_van.gd during Night 2.2) is
-	# dismissed once the player has sprinted for SPRINT_HINT_TIME (3 s) in
-	# all, not when sprint is merely unlocked (that consumed the one-shot
-	# before the hint could show). One-shot via _sprint_tutorial_marked.
-	if _is_running:
+	# dismissed once the player has sprinted for SPRINT_HINT_TIME (3 s)
+	# while it is up. Only sprinting since it came up counts: sprinting
+	# earlier in the game used to use up the one-shot before the hint ever
+	# showed, and then it never went away.
+	var tm_sprint := get_node_or_null("/root/TutorialManager")
+	var hint_up: bool = tm_sprint != null and tm_sprint.has_method("was_shown") and tm_sprint.was_shown("sprint")
+	if not hint_up:
+		_sprint_hold_time = 0.0
+		_sprint_tutorial_marked = false
+	elif _is_running:
 		_sprint_hold_time += delta
-	if not _sprint_tutorial_marked and _sprint_hold_time >= SPRINT_HINT_TIME:
+	if hint_up and not _sprint_tutorial_marked and _sprint_hold_time >= SPRINT_HINT_TIME:
 		_sprint_tutorial_marked = true
-		var tm_sprint := get_node_or_null("/root/TutorialManager")
-		if tm_sprint and tm_sprint.has_method("mark_learned"):
-			tm_sprint.mark_learned("sprint")
+		tm_sprint.mark_learned("sprint")
 	
 	if _is_crouching: _current_speed = crouch_speed
 	elif _is_running: _current_speed = run_speed
@@ -773,7 +824,7 @@ func _physics_process(delta: float) -> void:
 			_fading_out_breath = false
 			if _breathing_fade_tween: _breathing_fade_tween.kill()
 			_breathing_fade_tween = create_tween()
-			_breathing_fade_tween.tween_property(_breathing_audio, "volume_db", -16.0, 0.5).set_ease(Tween.EASE_OUT)
+			_breathing_fade_tween.tween_property(_breathing_audio, "volume_db", BREATHING_DB, 0.5).set_ease(Tween.EASE_OUT)
 		elif not should_breathe and _breathing_audio.playing and not _fading_out_breath:
 			_fading_out_breath = true
 			if _breathing_fade_tween: _breathing_fade_tween.kill()
@@ -782,8 +833,8 @@ func _physics_process(delta: float) -> void:
 			_breathing_fade_tween.finished.connect(_on_breathing_fade_out)
 
 	var input_dir := Vector2(
-		-1.0 if Input.is_key_pressed(KEY_A) else (1.0 if Input.is_key_pressed(KEY_D) else 0.0),
-		-1.0 if Input.is_key_pressed(KEY_W) else (1.0 if Input.is_key_pressed(KEY_S) else 0.0)
+		-1.0 if Input.is_action_pressed("move_left") else (1.0 if Input.is_action_pressed("move_right") else 0.0),
+		-1.0 if Input.is_action_pressed("move_forward") else (1.0 if Input.is_action_pressed("move_back") else 0.0)
 	)
 	
 	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
@@ -1114,7 +1165,7 @@ func _process(delta: float) -> void:
 		# ─── AMPLIFIED HIGH-FREQUENCY SHAKE ─────────────────────────
 		# Increased from 0.04 to 0.07 radians (~4.0° max) so the shake
 		# is visibly more aggressive at peak.
-		var shake := ramped_intensity * 0.07
+		var shake := ramped_intensity * 0.07 * GameSettings.shake()
 		_camera.h_offset = randf_range(-shake, shake)
 		_camera.v_offset = randf_range(-shake, shake)
 		
@@ -1123,7 +1174,7 @@ func _process(delta: float) -> void:
 		# on top of the high-frequency jitter. This feels like the camera
 		# is physically being disturbed rather than just twitching.
 		var rumble_t := Time.get_ticks_msec() / 1000.0
-		var rumble := sin(rumble_t * TAU * 4.0) * 0.02 * shake_intensity
+		var rumble := sin(rumble_t * TAU * 4.0) * 0.02 * shake_intensity * GameSettings.shake()
 		_camera.h_offset += rumble
 		_camera.v_offset += rumble * 0.7
 	else:
@@ -1241,6 +1292,15 @@ func get_player_room() -> String:
 ## A noise of `kind` at the player's position (see NoiseEvent.emit).
 func make_noise(kind: StringName) -> void:
 	NoiseEvent.emit(self, global_position, kind)
+
+
+## The out-of-breath loop off at once (the bed: SleepCinematic).
+func stop_breathing() -> void:
+	if _breathing_fade_tween and _breathing_fade_tween.is_valid():
+		_breathing_fade_tween.kill()
+	_fading_out_breath = false
+	if _breathing_audio and _breathing_audio.playing:
+		_breathing_audio.stop()
 
 
 ## Called when the breathing audio fade-out tween finishes.

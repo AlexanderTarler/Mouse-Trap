@@ -112,7 +112,7 @@ const DISTANT_RANGE_MIN := 30.0
 const DISTANT_RANGE_MAX := 45.0
 const DISTANT_ROAR_CHANCE := 0.3
 ## Whistling wind at a broken window.
-const WHISTLE_DB := -10.0
+const WHISTLE_DB := -16.0   # (half as loud as it was: -10)
 ## Stingers never closer together than this (s).
 const STINGER_COOLDOWN := 40.0
 const STINGER_DB := -4.0
@@ -182,7 +182,8 @@ var _stalk_chase_streams: Array[AudioStream] = []
 var _stalk_chase_playing: bool = false
 var _stalk_chase_fade_tween: Tween = null
 ## The chase loop ("monster_stalk_mx.ogg" never existed; this is the kit's).
-const STALK_CHASE_PATH: String = ECHOES_DIR + "Soundtracks/death close by (loop).ogg"
+## The Entity hunting the player (EntityAudio.update_hunt_music).
+const STALK_CHASE_PATH: String = ECHOES_DIR + "Soundtracks/too late (loop).ogg"
 const STALK_CHASE_FADE_TIME: float = 0.5
 
 # Day/Night forest ambience players
@@ -257,6 +258,8 @@ func _setup_audio_buses() -> void:
 		reverb.dry = 0.0
 		reverb.wet = 1.0
 		AudioServer.add_bus_effect(interior_idx, reverb)
+	# The player's volumes (Options > Audio).
+	GameSettings.apply_volumes()
 
 
 func _bus_effect(bus_idx: int, effect_class: String) -> AudioEffect:
@@ -423,6 +426,21 @@ func _setup_forest_ambience() -> void:
 	print("HorrorSoundManager: Forest ambience set up.")
 
 
+## The main menu: the game's sounds (the forest by day, and the rest) held
+## silent while it's up, and carried on from where they were after. The menu
+## has its own wind (MenuBackdrop).
+var menu_quiet := false
+
+
+func set_menu_quiet(quiet: bool) -> void:
+	# (Always applied: GameReset may have put the flag back on its own.)
+	menu_quiet = quiet
+	process_mode = Node.PROCESS_MODE_DISABLED if quiet else Node.PROCESS_MODE_INHERIT
+	for player in find_children("*", "", true, false):
+		if player is AudioStreamPlayer or player is AudioStreamPlayer3D:
+			player.stream_paused = quiet
+
+
 ## Plays the day forest ambience on loop and stops night ambience.
 func _play_day_ambience() -> void:
 	if _night_ambience_player and _night_ambience_player.playing:
@@ -478,8 +496,9 @@ func _on_night_started(night: int) -> void:
 		if nm_check and nm_check.get("is_van_sequence_active") == true:
 			print("HorrorSoundManager: Van sequence active — suppressing distant monster sound.")
 		else:
-			# Play the distant monster sound when night starts
-			play_distant_monster()
+			# Play the distant monster sound when night starts (a moment in,
+			# once the Entity is out: it comes from where it is).
+			get_tree().create_timer(1.0).timeout.connect(play_distant_monster)
 
 func _on_night_ended(_night: int) -> void:
 	_is_night = false
@@ -746,6 +765,25 @@ func play_distant_monster() -> void:
 	# This provides a consistent, recognizable sound that signals the Entity is active.
 	var stream = _distant_monster_streams[0]
 	if stream:
+		# From the Entity itself, wherever it is (heard far off); without one
+		# about, as before (flat).
+		var entity := get_tree().get_first_node_in_group("entity") as Node3D
+		if entity and entity.is_inside_tree() and (not entity.has_method("is_active") or entity.is_active()):
+			var roar := AudioStreamPlayer3D.new()
+			roar.name = "DistantRoar"
+			roar.stream = stream
+			roar.bus = &"Entity"
+			roar.volume_db = 6.0
+			roar.unit_size = 30.0
+			roar.max_distance = 500.0
+			roar.attenuation_filter_cutoff_hz = 3000.0
+			entity.add_child(roar)
+			roar.position = Vector3.UP * 1.5
+			roar.play()
+			roar.finished.connect(roar.queue_free)
+			print("HorrorSoundManager: Playing distant monster sound (mx_1) from the Entity at %s." % entity.global_position)
+			sound_played.emit("distant_monster")
+			return
 		_distant_monster_player.stream = stream
 		_distant_monster_player.play()
 		print("HorrorSoundManager: Playing distant monster sound (mx_1)!")

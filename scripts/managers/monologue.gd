@@ -27,6 +27,11 @@ var _had := {}
 ## The line say() is showing ("" while a story thought from think() is).
 var _said := ""
 var _font: Font = null
+## Thoughts think_when_free() is holding back (by key), and which game they
+## belong to (reset() starts a new one; an object, so Checkpoint and
+## GameReset, which put back plain values, leave it alone).
+var _waiting := {}
+var _game := RefCounted.new()
 
 
 ## Thinks `text` for `duration` seconds (once per `key`).
@@ -40,6 +45,28 @@ func think(text: String, _subject: Node3D = null, duration: float = 5.0, key: St
 	_show(text, duration)
 	print("[Monologue] \"%s\"" % text)
 	return true
+
+
+## Thinks `text` (once per `key`, as think()) after `delay` seconds, once
+## nothing else is on screen: it never cuts a thought or a remark short.
+## Waits at most `patience` seconds for the screen to clear, then thinks it
+## anyway. A new game in the meantime drops it.
+func think_when_free(text: String, duration: float = 5.0, key: String = "", delay: float = 0.0, patience: float = 15.0) -> void:
+	var id := key if key != "" else text
+	if _had.has(id) or _waiting.has(id):
+		return
+	_waiting[id] = true
+	var game := _game
+	if delay > 0.0:
+		await get_tree().create_timer(delay).timeout
+	var waited := 0.0
+	while is_instance_valid(_thought) and waited < patience and game == _game:
+		await get_tree().create_timer(0.25).timeout
+		waited += 0.25
+	if game != _game:
+		return
+	_waiting.erase(id)
+	think(text, null, duration, key)
 
 
 ## A passing remark (feedback like "I can't carry any more." or "I should
@@ -60,6 +87,8 @@ func say(text: String, duration: float = 3.5, _subject: Node3D = null) -> void:
 ## Forgets which thoughts were had (a new game).
 func reset() -> void:
 	_had.clear()
+	_waiting.clear()
+	_game = RefCounted.new()
 	_clear()
 
 

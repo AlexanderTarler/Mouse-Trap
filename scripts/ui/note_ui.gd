@@ -30,6 +30,8 @@ var _current_page: int = 0
 ## Maximum characters that fit on one note page before splitting.
 ## Matches notebook_ui.gd's CHARS_PER_PAGE so pagination feels consistent.
 const CHARS_PER_PAGE: int = 1000
+## In a note, [E] turns the page (GameKeys.keys_in).
+const PAGE_KEYS := {"E": "notebook_next_page"}
 
 
 ## Found by its group (not by a path in the level).
@@ -54,12 +56,20 @@ func _input(event: InputEvent) -> void:
 	# Escape closes the note AND prevents the pause menu from opening
 	# by consuming the event.
 	if event is InputEventKey and event.pressed:
-		match event.keycode:
-			KEY_ESCAPE:
+		# (The page keys: E and Q unless rebound.)
+		var key := ""
+		if event.keycode == KEY_ESCAPE:
+			key = "close"
+		elif event.is_action("notebook_next_page") or event.is_action("ui_interact"):
+			key = "next"
+		elif event.is_action("notebook_prev_page"):
+			key = "prev"
+		match key:
+			"close":
 				_close_note()
 				get_viewport().set_input_as_handled()
 				return
-			KEY_E:
+			"next":
 				# ─── TASK 2.2: E = NEXT PAGE (or close on last) ─────
 				# If there are multiple pages and we're not on the last
 				# one, advance instead of closing.
@@ -72,7 +82,7 @@ func _input(event: InputEvent) -> void:
 				_close_note()
 				get_viewport().set_input_as_handled()
 				return
-			KEY_Q:
+			"prev":
 				# ─── TASK 2.2: Q = PREV PAGE ──────────────────────
 				# Only meaningful when on page 2+.
 				if _current_page > 0:
@@ -109,9 +119,9 @@ func _render_current_page() -> void:
 	if _pages.size() > 1:
 		# Append a subtle page indicator footer so the player knows
 		# there are more pages and how to advance.
-		note_text.text += "\n\n[center][color=gray]— Page %d/%d —  [E] Next · [Q] Prev · [Esc] Close[/color][/center]" % [_current_page + 1, _pages.size()]
+		note_text.text += GameKeys.keys_in("\n\n[center][color=gray]— Page %d/%d —  [E] Next · [Q] Prev · [Esc] Close[/color][/center]" % [_current_page + 1, _pages.size()], PAGE_KEYS)
 	else:
-		note_text.text += "\n\n[center][color=gray][E] or [Esc] Close[/color][/center]"
+		note_text.text += GameKeys.keys_in("\n\n[center][color=gray][E] or [Esc] Close[/color][/center]", PAGE_KEYS)
 
 
 ## Splits a string into an array of CHARS_PER_PAGE-sized chunks,

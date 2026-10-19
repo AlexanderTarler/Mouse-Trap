@@ -17,6 +17,8 @@ signal icon_ready(item_name: String)
 const SIZE := 128
 const MODELS := {
 	"Battery": "res://scenes/battery.tscn",
+	# (Not through key_resource.tres: it and key.tscn would load each other.)
+	"Cabin Key": "res://scenes/key.tscn",
 	"Wooden Plank": "res://scenes/wooden_plank.tscn",
 	"Fuse": "res://scenes/fuse.tscn",
 	"Portable Light": "res://scenes/portable_light.tscn",

@@ -1,0 +1,82 @@
+LORE: the story as the game tells it (keep new text consistent with this)
+==========================================================================
+
+THE PLACE
+  A cabin in Swedish pine forest, end of the 1990s (a Windows 98 terminal,
+  Miljöbalken 1998 on the notebook's credentials). No phone signal.
+  Built by a logging family ("my grandfather laid the logs"). A forestry
+  camp worked the woods until 1974; three men vanished and the crews left.
+  Svea Naturinstitut took over the cabin, its generator and the old
+  forestry archive terminal (it still boots as SVENSKA
+  SKOGSBRUKSARKIVET), and staked the stumps around it with orange tape.
+  Season: spring, late April (the dormice should still be asleep; the
+  birches are green, none turning). The forest is pine with birch through
+  it, boulders left by the ice. East of the barn, the camp's last cut
+  (1974): grey stumps, grown up since with young birch and pine, and the
+  log pile nobody came back for (ForestDresser.CLEARCUT,
+  SiteDresser._dress_clearcut).
+  Directions (level -Z is north): Nest Alpha east of the cabin, Nest Beta
+  west, Nest Gamma far south-west by the sunken tunnel, the willow in its
+  own clearing south-east, the barn north-east, the wreck yard west.
+
+THE WATCHER (the Entity)
+  Tall, crowned like an elk ("the horn-crowned watcher"). Anchored to the
+  willow (the totem rises out of the ground only at night). Hunts by sound,
+  copies sounds (footsteps, knocks, the flashlight's click). A quick flash
+  of light enrages it and it charges; a steady flood of light holds it.
+  Lit rooms and the porch light are safer ground. It breaks fuses, tears
+  out ignition wiring, knocks on windows to draw you away.
+  The logging family fed it: straw tied to stakes by the willow, wet with
+  blood, every autumn.
+
+THE DORMICE (hasselmus)
+  Three colonies, awake weeks before hibernation should end. "Its little
+  echoes": each copies one of its traits. Alpha: light (photophobia,
+  provoked by the overcharged beam). Beta: watching (approach crouched).
+  Gamma: mimicry (answers your sounds). Once the anchor burns, the nests
+  are empty.
+
+THE INSTITUTE
+  Knows. Calls it a dormouse survey; sends one researcher at a time and
+  records how it hunts them ("We're the bait"). Polite, careful about what
+  it leaves out: "stay inside after dark", "Stenberg has been reassigned",
+  "Any activity near the cabin at night is to be logged, not investigated".
+
+ARVID STENBERG (Phase 1, the predecessor)
+  Daughters Linnea and Maja; passkey 1996 is Maja's year. Van: Unit 9
+  (ignition wiring pulled out through the grille). Timeline:
+    14 Mar  LOG_01: finds the 1974 land surveys; the Institute lied.
+    28 Mar  Files the nest reports (NEST_REPORTS.TXT); writes and deletes
+            DRAFT_REPORT_ERR04 (Recycle Bin); his rotation ended ~2 weeks
+            before. Asks to go home.
+    30 Mar  The office: relief "being prepared", keep observing at night.
+    2 Apr   LOG_02 (the floodlight trap, EXECUTE OVERLOAD, the willow).
+            22:14: the note by the terminal (a cover story for the office),
+            down to the tunnel. Note 2, written there, ends mid-word.
+  Logins: STENBERG / 1996; recovery key Linnea_and_Maja (told in note 2).
+
+LUND (the player, Phase 2)
+  ID SNI-7742-L, van Unit 12, login LUND / PASSKEY1. Dry, tired humour by
+  day ("Top-notch security, Institute."), rationalising at first ("I was
+  half asleep"), swearing when it's real (Night 2.2). Three nights planned.
+
+WHERE IT'S TOLD
+  Opening phone messages · MEMO.TXT (LUND desktop) · NEST_REPORTS.TXT ·
+  notebook nest pages (Lund's own words) · Arvid's notes 1 and 2 · the
+  porch light note · two old journal scraps (window, willow) · STENBERG:
+  Recycle Bin, restored logs, the overload screen's last line from Arvid ·
+  endings. Unplaced so far: resources/field_journal_note.tres (the 1974
+  foreman, K. Holm) and research_map_note.tres.
+
+INNER THOUGHTS (Monologue keys)
+  Day 1: no_signal, key_found, cabin_inside, fuse_box, power_on,
+    flashlight_found, broken_window, window_patched, door_locked_d1,
+    night1_dark, peeker_seen_1; on reading notes: read_<note name>.
+  Day 2: day2_morning, reports_read, nest_nest_alpha, nest_nest_beta,
+    gamma_echo_1/2, hydrophobic, one_more_night, peeker_seen_2,
+    Night 2.2 (n22_*), made_it_to_dawn.
+  Day 3: day3_leave, van_wrecked, logs_read, willow_found, trap_go,
+    night3_falls.
+  New beats use Monologue.think_when_free (RoutineManager._muse): they
+  wait for the screen, and for the computer to close, instead of cutting
+  another thought short.

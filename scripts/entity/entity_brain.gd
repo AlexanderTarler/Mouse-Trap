@@ -135,6 +135,8 @@ func _check_interrupts() -> int:
 
 	# It will not stay in a lit room.
 	if p.entity_inside and p.entity_in_lit_room and state_id != S.FLEE and state_id != S.STUNNED:
+		if EntityJournal.player_sees(entity):
+			EntityJournal.learn(entity, "lit_room")
 		return S.FLEE
 
 	# A lit portable lamp must be destroyed.

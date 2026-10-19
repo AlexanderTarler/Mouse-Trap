@@ -180,6 +180,9 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# (The debug readout: development only.)
+	if not OS.is_debug_build():
+		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F3:
 		debug_info_visible = not debug_info_visible
 		_apply_debug_visibility()
@@ -796,6 +799,7 @@ func _timestamp() -> String:
 func show_hint(text: String, delay: float = 0.5, force: bool = false) -> bool:
 	if not hint_label:
 		return false
+	text = GameKeys.keys_in(text)   # (as the player's keys)
 	
 	# If a hint is already visible AND we've already shown one before, ignore.
 	# (The first call must pass through — HintLabel starts at alpha=1.0 in the

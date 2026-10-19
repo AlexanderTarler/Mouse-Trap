@@ -201,7 +201,14 @@ func _add_to_notebook_and_cleanup(note_name_override: String = "", note_text_ove
 	# here never sounded: this node frees itself below, taking it along.)
 	
 	# ─── HUD FEEDBACK ──────────────────────────────────────────────
-	_show_hud_message("I'll keep this in my notebook.")
+	# What they make of it, if the note has a thought; otherwise just that
+	# it's kept.
+	var thought: String = note_item.read_thought if note_item and "read_thought" in note_item else ""
+	var monologue := get_node_or_null("/root/Monologue")
+	if not thought.is_empty() and monologue:
+		monologue.think_when_free(thought, 5.0, "read_" + note_name, 0.6)
+	else:
+		_show_hud_message("I'll keep this in my notebook.")
 	
 	# ─── ARVID'S NOTE: SET PERSISTENCE FLAG ─────────────────────────
 	if note_name == "Arvid's Note":

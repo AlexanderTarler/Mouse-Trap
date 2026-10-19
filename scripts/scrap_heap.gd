@@ -130,7 +130,7 @@ func interact(player: Node3D = null) -> void:
 		return
 
 	if _night_manager.current_night < 3:
-		_show_hud_message("It's all wedged together. Maybe in a few days I can get at it.")
+		_show_hud_message("Oh, just like my dreams - a pile of discarded junk! No reason to rummage there now though.")
 		print("[ScrapHeap] %s: Blocked — Day %d (unlocked on Night 3)." % [scrap_heap_id, _night_manager.current_night])
 		return
 

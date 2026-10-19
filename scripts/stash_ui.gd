@@ -405,16 +405,15 @@ func _input(event: InputEvent) -> void:
 
 	# E key, Tab, or Escape to close
 	if event is InputEventKey and event.pressed:
-		match event.keycode:
-			KEY_E, KEY_TAB, KEY_ESCAPE:
-				_close_stash()
-				# ─── ESC INPUT HANDLING ─────────────────────────────
-				# Mark the Escape press as handled so it does NOT bubble
-				# up to PauseMenu's _unhandled_input (which would open
-				# the pause menu on top of the stash). E/Tab cause no
-				# conflicting global handlers, so they are left alone.
-				if event.keycode == KEY_ESCAPE:
-					get_viewport().set_input_as_handled()
+		if event.keycode == KEY_ESCAPE or event.is_action("ui_interact") or event.is_action("ui_inventory"):
+			_close_stash()
+			# ─── ESC INPUT HANDLING ─────────────────────────────
+			# Mark the Escape press as handled so it does NOT bubble
+			# up to PauseMenu's _unhandled_input (which would open
+			# the pause menu on top of the stash). E/Tab cause no
+			# conflicting global handlers, so they are left alone.
+			if event.keycode == KEY_ESCAPE:
+				get_viewport().set_input_as_handled()
 
 
 # ─── UI HELPERS ────────────────────────────────────────────
