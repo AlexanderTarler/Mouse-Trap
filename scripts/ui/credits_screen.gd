@@ -10,27 +10,30 @@ A game by Alexander Tarler
 Made with Godot Engine (godotengine.org)
 
 [color=#e6d9b8]3D MODELS[/color]
-PSX Nature, PSX Mega Pack, PSX Mega Pack II, PSX Interior, PSX Bunkers,
-PSX Kidnapper's Van, PSX Traps, PSX Paintings, PSX Tech, PSX-Electrical  [TODO: authors, licences]
-PSX Forest Meadows by VadaCross  [TODO: licence]
-PSX Rural Environment Pack  [TODO: author, licence]
-Three Cabins, Car 01, Car 06  [TODO: authors, licences]
+PSX Nature, PSX Mega Pack, PSX Mega Pack II, PSX Bunkers, PSX Kidnapper's Van,
+PSX Tech by Pizza Doggy (Pizza Doggy Game Asset License)
+PSX Traps, PSX-Electrical by Wildenza  [TODO: confirm PSX-Electrical is the Wildenza pack]
+PSX Forest Meadows by VadaCross (free for commercial use, no redistribution)
+PSX Rural Environment Pack by Rob Hickman / Caliber Creations (End User Licence)
+Three Low Poly Cabins by Aaron Winter
+PSX Interior, PSX Paintings  [TODO: authors, licences]
+Car 01, Car 06  [TODO: authors, licences]
 
 [color=#e6d9b8]ANIMATION[/color]
 Universal Animation Library by Quaternius (CC0)
 Mixamo (Adobe)
 
 [color=#e6d9b8]SOUND[/color]
-Echoes - Audio Super Kit  [TODO: author, licence]
-Horror SFX Vol. 1  [TODO: author, licence]
-40 Free PSX Footsteps  [TODO: author, licence]
+Echoes - Audio Super Kit by Pizza Doggy (Pizza Doggy Game Asset License)
+Horror SFX Vol. 1 by Liminal Games (CC0)
+40 Free PSX Footsteps by Pinguis (royalty free)  [TODO: confirm pack and licence]
 
 [color=#e6d9b8]FONTS[/color]
 Courier Prime by Alan Dague-Greene (SIL Open Font License 1.1)
 Special Elite by Astigmatic (Apache License 2.0)
 
 [color=#e6d9b8]TERRAIN[/color]
-TerraBrush  [TODO: author, licence]
+TerraBrush by spimort (MIT License)
 
 Thank you for playing.[/center]"""
 
