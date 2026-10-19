@@ -58,6 +58,11 @@ func _ready() -> void:
 	# "-- --autoplay" (or "?autoplay" in the browser): straight into the
 	# game (testing an exported build).
 	var autoplay := "--autoplay" in OS.get_cmdline_user_args()
+	# "-- --producer": straight into producer mode (ProducerMode).
+	if "--producer" in OS.get_cmdline_user_args():
+		ProducerMode.requested = true
+		_new_game_armed = 3.0   # (over a save: no "start over?")
+		autoplay = true
 	# The web build: "?autoplay" on the page's address.
 	if OS.has_feature("web"):
 		var query = JavaScriptBridge.eval("window.location.search")
@@ -112,6 +117,15 @@ func _dress() -> void:
 	box.move_child(_continue_button, 0)
 	_continue_button.pressed.connect(_on_continue_pressed)
 	_refresh_continue()
+	# Development builds: producer mode (Night 3, a ghost, a replica player).
+	if OS.is_debug_build():
+		var producer := play_button.duplicate() as Button
+		producer.name = "ProducerButton"
+		producer.text = "Producer Mode"
+		producer.modulate = Color(0.7, 0.85, 1.0)
+		box.add_child(producer)
+		box.move_child(producer, settings_button.get_index())
+		producer.pressed.connect(_on_producer_pressed)
 	_add_clicks(self)
 
 
@@ -231,6 +245,15 @@ func _on_continue_pressed() -> void:
 	_start(_continue_button)
 
 
+## Producer mode: a new game, straight to Night 3 as the ghost.
+func _on_producer_pressed() -> void:
+	if _starting:
+		return
+	ProducerMode.requested = true
+	_new_game_armed = 3.0   # (no "start over?" for this)
+	_on_play_pressed()
+
+
 ## Called by the PlayButton when pressed.
 ## Loads the main game scene.
 func _on_play_pressed() -> void:
@@ -251,8 +274,8 @@ func _on_play_pressed() -> void:
 	if checkpoint:
 		checkpoint.save_to_disk = true
 	_starting = true
-	if DisplayServer.get_name() == "headless":
-		_start(play_button)   # (the tests: no opening)
+	if DisplayServer.get_name() == "headless" or ProducerMode.requested:
+		_start(play_button)   # (the tests, producer mode: no opening)
 		return
 	# The opening at once, on black; the level comes in under it.
 	var opening := Opening.new()

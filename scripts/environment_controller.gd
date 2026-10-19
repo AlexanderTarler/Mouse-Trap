@@ -155,10 +155,12 @@ var _cached_sun_shadow_enabled: bool = false
 var _cached_moon_energy: float = 0.0
 var _cached_moon_color: Color = Color()
 var _cached_moon_shadow_enabled: bool = false
-var _cached_fog_enabled: bool = false
-var _cached_fog_density: float = 0.0
+## (Start "on": the level's environment has its fog on, and the first
+## daytime update has to switch it off, or it stayed until the first night.)
+var _cached_fog_enabled: bool = true
+var _cached_fog_density: float = -1.0
 var _cached_fog_color: Color = Color()
-var _cached_vfog_enabled: bool = false
+var _cached_vfog_enabled: bool = true
 var _cached_vfog_density: float = 0.0
 var _cached_fog_depth_end: float = 0.0
 

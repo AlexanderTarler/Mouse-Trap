@@ -6,7 +6,7 @@ extends SceneTree
 ##      fuel can its resource pointed at
 ##   4  the player's breathing 30% quieter
 ##   8  Arvid's second note: "it despises light"; 11: the recovery key is
-##      Linnea_and_Maja (and the note says so)
+##      Linnea_and_Sara (and the note says so)
 ##   10 the generator drains by day too
 ##   13 burning the willow: "I fucking did it. I fucking did it!"
 ##   15 back past the cabin afterwards: "It's actually gone. Thank you, Arvid."
@@ -94,9 +94,9 @@ func _test_static() -> void:
 	var note: ItemData = load("res://resources/arvid_note_2.tres")
 	_check("8: Arvid's note, by the girls: it despises light, use that", "despises light" in note.note_text and "Use that to your advantage" in note.note_text)
 	var ui: Node = get_first_node_in_group("computer_ui")
-	_check("11: the recovery key is Linnea_and_Maja (any case), and the note gives it",
-		ui.ARVID_DECRYPTION_KEY == "Linnea_and_Maja" and "Linnea_and_Maja" in note.note_text and not "STENBERG_1996" in note.note_text)
-	ui._key_input.text = "linnea_and_maja"
+	_check("11: the recovery key is Linnea_and_Sara (any case), and the note gives it",
+		ui.ARVID_DECRYPTION_KEY == "Linnea_and_Sara" and "Linnea_and_Sara" in note.note_text and not "STENBERG_1996" in note.note_text)
+	ui._key_input.text = "linnea_and_sara"
 	ui._on_submit_decryption_key()
 	_check("11: typing it in restores Arvid's logs", ui.is_arvid_log_1_unlocked)
 

@@ -81,7 +81,7 @@ func can_approach_windows() -> bool:
 ## Whether the player has found Arvid's Note in the world.
 ## When true, the ComputerUI's RECOVER_DATA.EXE will auto-fill the
 ## decryption key, allowing the player to unlock Arvid's hidden logs
-## without needing to manually type "Linnea_and_Maja".
+## without needing to manually type "Linnea_and_Sara".
 var arvid_password_found: bool = false
 
 ## Whether the current day phase is active (between nights)
@@ -511,6 +511,9 @@ func _run_dev_start() -> void:
 	get_tree().current_scene.add_child(dev_start_runner)
 	await dev_start_runner.run()
 	dev_start_runner = null
+	# Producer mode: the ghost and the replica, now that it's Night 3.
+	if ProducerMode.requested and get_tree().current_scene:
+		get_tree().current_scene.add_child(ProducerMode.new())
 
 
 func show_start_cover() -> void:

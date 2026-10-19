@@ -660,9 +660,18 @@ func _process(delta: float) -> void:
 		_target_size = _fit_under_ceiling()
 	_size = lerpf(_size, _target_size, clampf(delta * 4.0, 0.0, 1.0))
 	model.scale = _model_base_scale * _size
+	var current := _anim_playback.get_current_node()
+	var drop: float = CLIMB_DROP.get(current, 0.0)
+	if is_clinging() and not CLIMB_DROP.has(current):
+		drop = CLINGING_DROP
+	if current == CLIMB_IN_ANIM:
+		_climb_in_time += delta
+		drop += CLIMB_IN_EXTRA_DROP * smoothstep(0.0, CLIMB_IN_EASE, _climb_in_time)
+	else:
+		_climb_in_time = 0.0
 	if _eye_glow:
-		_eye_glow.position.y = _glow_base_y * _size
-	var target: float = _model_base_y + ANIM_GROUND_OFFSET.get(_anim_playback.get_current_node(), 0.0) * _size
+		_eye_glow.position.y = _glow_base_y * _size - drop
+	var target: float = _model_base_y + ANIM_GROUND_OFFSET.get(current, 0.0) * _size - drop
 	model.position.y = lerpf(model.position.y, target, clampf(delta * 8.0, 0.0, 1.0))
 
 
@@ -1044,6 +1053,17 @@ const TALLEST := 2.9
 const HEADROOM := 0.2
 const MIN_SIZE := 0.7
 const HEADROOM_CHECK_INTERVAL := 0.15
+## On the wall (climbing up, clinging, down, in through an upstairs window)
+## the model is lowered this much more (m): it hung too high on the wall
+## for the look of it, and whatever it plays while holding on (breaking the
+## upstairs glass) as much. (Climbing in has its own lift taken out:
+## tools/process_entity_anims.gd; it's carried up over the sill instead.
+## CLIMB_IN_EXTRA_DROP eases it down more as it goes, if ever needed.)
+const CLIMB_DROP := {&"ClimbUp": 1.0, &"ClimbDown": 1.0, &"ClimbIn": 1.0}
+const CLINGING_DROP := 1.0
+const CLIMB_IN_EXTRA_DROP := 0.0
+const CLIMB_IN_EASE := 1.2
+var _climb_in_time := 0.0
 ## Most of its animations hold the body higher than the walk cycle does, so
 ## it floated above the ground in them. The model is lowered by this much
 ## (measured: each animation's lowest hand/foot against the walk's).

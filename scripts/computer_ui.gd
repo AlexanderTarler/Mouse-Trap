@@ -51,7 +51,7 @@ var nest_data_uploaded: bool:
 
 @export var always_pass_correlation: bool = false
 
-const ARVID_DECRYPTION_KEY: String = "Linnea_and_Maja"
+const ARVID_DECRYPTION_KEY: String = "Linnea_and_Sara"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ONREADY NODES — Login Screen
@@ -1172,7 +1172,7 @@ func _on_recover_data_open() -> void:
 func _on_submit_decryption_key() -> void:
 	# ─── TASK 4 FIX: CASE-INSENSITIVE DECRYPTION KEY ────────────────
 	# The password is normalized to lowercase on both sides, so
-	# "linnea_and_maja", "Linnea_and_Maja" and "LINNEA_AND_MAJA" all work.
+	# "linnea_and_sara", "Linnea_and_Sara" and "LINNEA_AND_SARA" all work.
 	var key = _key_input.text.strip_edges().to_lower()
 	if key == ARVID_DECRYPTION_KEY.to_lower():
 		_recovery_status.text = "DECRYPTION SUCCESSFUL. Arvid Stenberg's logs restored."

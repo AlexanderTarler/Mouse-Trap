@@ -159,6 +159,9 @@ var _environment_controller: Node = null
 @export_enum("Free roam", "Day 1", "Day 1: power on", "Day 2", "Day 2: nests documented",
 	"Night 2", "Night 2.2: car alarm", "Day 3", "Day 3: rested - find the van parts",
 	"Night 3", "Night 3: van repaired") var dev_start: int = 0
+## Dev: producer mode (ProducerMode): Night 3, you a floating ghost, this
+## player a replica in the cabin for the Entity to hunt. (Overrides dev_start.)
+@export var producer_mode: bool = false
 
 
 # Sprint unlock — enabled by default for development convenience
@@ -326,6 +329,10 @@ func _ready() -> void:
 	# entire game system knows we're in dev mode. This unlocks sprint,
 	# flashlight, key, all starting items, powers on the fuse box, fills
 	# the generator, unpauses time, and skips the Day 1 onboarding sequence.
+	# Producer mode: the story played through to Night 3 first.
+	if ProducerMode.wanted(self):
+		ProducerMode.requested = true
+		dev_start = DevStart.Start.NIGHT_3
 	if dev_start > 0:
 		var nm = get_node_or_null("/root/NightManager")
 		if nm:

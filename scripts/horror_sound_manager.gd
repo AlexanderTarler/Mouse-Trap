@@ -112,7 +112,7 @@ const DISTANT_RANGE_MIN := 30.0
 const DISTANT_RANGE_MAX := 45.0
 const DISTANT_ROAR_CHANCE := 0.3
 ## Whistling wind at a broken window.
-const WHISTLE_DB := -10.0
+const WHISTLE_DB := -16.0   # (half as loud as it was: -10)
 ## Stingers never closer together than this (s).
 const STINGER_COOLDOWN := 40.0
 const STINGER_DB := -4.0
