@@ -119,6 +119,10 @@ func _process(delta: float) -> void:
 		var collider = result.collider
 		if collider:
 			var interactable = _find_interactable(collider)
+			# Things outside (the fuse box) can't be used through the wall.
+			if interactable and interactable.is_in_group("outdoor_only") and player \
+					and player.has_method("get_player_room") and player.get_player_room() != "Outside":
+				interactable = null
 			if interactable:
 				_current_target = interactable
 				# Use custom prompt text if the object provides it

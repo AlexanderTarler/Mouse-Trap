@@ -316,6 +316,11 @@ func _trigger_game_over() -> void:
 		else:
 			print("[JumpscareManager] ERROR: RestartButton not found in death screen!")
 		
+		# The death screen's Main Menu button (it had no handler, so it did nothing).
+		var menu_btn = death_canvas.find_child("MainMenuButton", true, false) as Button
+		if menu_btn:
+			menu_btn.pressed.connect(_on_main_menu_from_death.bind(death_canvas))
+		
 		# Update the night label if present
 		# "Night 2" / "Day 3": the same names the HUD and notebook use.
 		var night_label = death_canvas.find_child("NightLabel", true, false) as Label
@@ -349,6 +354,21 @@ func _trigger_game_over() -> void:
 		var nm = get_node_or_null("/root/NightManager")
 		if nm and nm.has_method("restart_night"):
 			nm.restart_night()
+
+
+## Death screen -> main menu. The checkpoint stays as it was (capture_on_quit
+## doesn't save during a death anyway), so Continue still has it.
+func _on_main_menu_from_death(death_canvas: CanvasLayer) -> void:
+	if _fade_rect:
+		_fade_rect.color.a = 0.0
+	var em := get_node_or_null("/root/EndgameManager")
+	if em and em.has_method("reset"):
+		em.reset()
+	get_tree().paused = false
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	if is_instance_valid(death_canvas):
+		death_canvas.queue_free()
+	get_tree().change_scene_to_file("res://scenes/ui/main_menu.tscn")
 
 
 func _on_restart_night(death_canvas: CanvasLayer) -> void:

@@ -54,6 +54,8 @@ var _health: int = 3
 func _ready() -> void:
 	add_to_group("interactable")
 	add_to_group("xray_fuse_box")
+	# Outside the cabin: not usable through the wall from the kitchen.
+	add_to_group("outdoor_only")
 	
 	# Ensure this StaticBody3D is on collision layer 1 so the
 	# InteractionManager's center-screen raycast can detect it.
