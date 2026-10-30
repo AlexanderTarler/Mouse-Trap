@@ -48,6 +48,7 @@ Monologue="*res://scripts/managers/monologue.gd"
 NightTwoStory="*res://scripts/managers/night_two_story.gd"
 Captions="*res://scripts/managers/captions.gd"
 GameReset="*res://scripts/managers/game_reset.gd"
+GamepadInput="*res://scripts/managers/gamepad_input.gd"
 
 [debug]
 

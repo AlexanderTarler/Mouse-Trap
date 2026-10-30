@@ -81,7 +81,8 @@ func _input(event: InputEvent) -> void:
 	# on top of the inventory — exactly like computer_ui.gd / stash_ui.gd.
 	if not _is_open:
 		return
-	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+	if ((event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE) \
+			or (event is InputEventJoypadButton and event.pressed and event.is_action("ui_cancel"))):
 		_close_inventory()
 		get_viewport().set_input_as_handled()
 
@@ -119,7 +120,7 @@ func _process(_delta: float) -> void:
 		_tab_pressed_last_frame = false
 	
 	# Hardware-poll ESC to close inventory (bypasses _input() event consumption)
-	if _is_open and Input.is_physical_key_pressed(KEY_ESCAPE):
+	if _is_open and (Input.is_physical_key_pressed(KEY_ESCAPE) or Input.is_action_just_pressed("ui_cancel")):
 		_close_inventory()
 	
 	# Force the mouse to stay visible as long as inventory is open, overriding the Player's camera lock

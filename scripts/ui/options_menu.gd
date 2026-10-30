@@ -28,7 +28,25 @@ const VOLUMES := [
 ]
 ## Keys that can't be changed, listed under the rest.
 const FIXED_KEYS := [["Esc", "Pause / close"]]
+## What the gamepad's buttons do (Xbox names; see GameKeys.PAD_BUTTONS).
+const PAD_HELP := [
+	["Walk / look", "Left / right stick"],
+	["Sprint (noisy)", "Left stick click"],
+	["Crouch (quiet)", "B"],
+	["Jump", "A"],
+	["Use · hold: board, refuel, carry", "X"],
+	["Flashlight · hold: overcharge", "Y"],
+	["Field notebook", "D-pad up"],
+	["Spare battery", "D-pad down"],
+	["Check your watch (hold)", "D-pad left"],
+	["Inventory", "View"],
+	["Notebook: pages", "LB / RB"],
+	["Pause / close", "Menu / B"],
+]
 const CAPTION_SIZES := ["Small", "Medium", "Large"]
+## A display change (mode, graphics quality) is reverted unless kept within
+## this many seconds: a picture that can't be read can't be set right.
+const CONFIRM_SECONDS := 10.0
 const ACCENT := Color(1.0, 0.9, 0.7)
 const CLASH := Color(1.0, 0.55, 0.35)
 const CONTROL_WIDTH := 240.0
@@ -56,6 +74,13 @@ var _rebinding := ""
 var _key_note: Label
 var _reset_button: Button
 var _reset_armed := 0.0
+## "Keep these settings?": the overlay, how long is left, what puts things
+## back (the first change's, if more come while it is up).
+var _confirm: Control = null
+var _confirm_label: Label
+var _confirm_keep: Button
+var _confirm_left := 0.0
+var _confirm_revert := Callable()
 
 
 ## The saved display mode (Windowed if nothing is saved).
@@ -208,7 +233,7 @@ func _build_video(column: VBoxContainer) -> void:
 	_display_mode.select(maxi(_display_mode.get_item_index(saved_display_mode()), 0))
 	_display_mode.item_selected.connect(_on_display_mode_selected)
 	column.add_child(_row("Display Mode", _display_mode))
-	column.add_child(_option_row("Graphics Quality", "video/quality", GraphicsQuality.NAMES, "QualityOption"))
+	column.add_child(_option_row("Graphics Quality", "video/quality", GraphicsQuality.NAMES, "QualityOption", true))
 	column.add_child(_tip("Shadows, ground fog, how far the small plants are drawn. Shadows and fog change the next time the game starts." + (" Low runs smoothest in a browser." if OS.has_feature("web") else "")))
 	column.add_child(_slider_row("Brightness", "video/brightness", 0.6, 1.8, 0.05, "BrightnessSlider",
 		func(v): return "%d%%" % roundi(v * 100.0)))
@@ -225,6 +250,27 @@ func _build_controls(column: VBoxContainer) -> void:
 	column.add_child(_slider_row("Mouse Sensitivity", "controls/mouse_sensitivity", 0.25, 3.0, 0.05, "SensitivitySlider",
 		func(v): return "%.2fx" % v))
 	column.add_child(_check_row("Invert Mouse Y", "controls/invert_y", "InvertYCheck"))
+	column.add_child(_header("Controller"))
+	column.add_child(_slider_row("Stick Sensitivity", "controls/stick_sensitivity", 0.25, 3.0, 0.05, "StickSensitivitySlider",
+		func(v): return "%.2fx" % v))
+	column.add_child(_tip("A gamepad works as it is plugged in: hints and prompts switch to its buttons. The right stick also moves the cursor on screens that need a mouse (right trigger clicks). Typing, on the computer, still takes a keyboard. Pad buttons aren't rebindable:"))
+	var pad := GridContainer.new()
+	pad.name = "PadButtons"
+	pad.columns = 2
+	pad.add_theme_constant_override("h_separation", 16)
+	pad.add_theme_constant_override("v_separation", 4)
+	for entry in PAD_HELP:
+		var what := Label.new()
+		what.text = entry[0]
+		what.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		pad.add_child(what)
+		var button := Label.new()
+		button.text = entry[1]
+		button.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		button.custom_minimum_size.x = 150
+		button.add_theme_color_override("font_color", ACCENT)
+		pad.add_child(button)
+	column.add_child(pad)
 	column.add_child(_header("Keys"))
 	column.add_child(_tip("Click a key, then press the new one (Esc to cancel)."))
 	var grid := GridContainer.new()
@@ -284,6 +330,12 @@ func _build_accessibility(column: VBoxContainer) -> void:
 
 
 func _process(delta: float) -> void:
+	if _confirm and _confirm.visible:
+		_confirm_left -= delta
+		if _confirm_left <= 0.0:
+			_revert_change()
+		else:
+			_update_confirm_text()
 	if _reset_armed > 0.0:
 		_reset_armed -= delta
 		if _reset_armed <= 0.0:
@@ -390,13 +442,20 @@ static func _switch_icon(on: bool) -> Texture2D:
 	return ImageTexture.create_from_image(image)
 
 
-func _option_row(text: String, key: String, names: Array, node_name: String) -> HBoxContainer:
+func _option_row(text: String, key: String, names: Array, node_name: String, confirm := false) -> HBoxContainer:
 	var option := OptionButton.new()
 	option.name = node_name
 	for i in names.size():
 		option.add_item(names[i], i)
 	option.select(clampi(int(GameSettings.get_value(key)), 0, names.size() - 1))
-	option.item_selected.connect(func(index): GameSettings.set_value(key, option.get_item_id(index)))
+	option.item_selected.connect(func(index):
+		var before := int(GameSettings.get_value(key))
+		var now := option.get_item_id(index)
+		GameSettings.set_value(key, now)
+		if confirm and now != before:
+			_ask_to_keep(func():
+				GameSettings.set_value(key, before)
+				option.select(maxi(option.get_item_index(before), 0))))
 	return _row(text, option)
 
 
@@ -466,8 +525,102 @@ func _show_controls() -> void:
 
 func _on_display_mode_selected(index: int) -> void:
 	var mode := _display_mode.get_item_id(index)
+	var before := saved_display_mode()
 	save_display_mode(mode)
 	print("[OptionsMenu] Display mode: %s." % DISPLAY_MODE_NAMES[mode])
+	if mode != before:
+		_ask_to_keep(func():
+			save_display_mode(before)
+			_display_mode.select(maxi(_display_mode.get_item_index(before), 0)))
+
+
+# ─── KEEP THESE SETTINGS? ──────────────────────────────────────
+
+## After a display change (applied at once): a countdown to keep it. Not kept
+## in time (or Revert, or leaving the menu), `revert` puts it back. A second
+## change while it is up restarts the clock and still reverts to the first
+## one's old value.
+func _ask_to_keep(revert: Callable) -> void:
+	if not _confirm:
+		_build_confirm()
+	if not _confirm.visible:
+		_confirm_revert = revert
+	_confirm_left = CONFIRM_SECONDS
+	_update_confirm_text()
+	_confirm.visible = true
+	_confirm_keep.grab_focus()
+
+
+func _build_confirm() -> void:
+	_confirm = Control.new()
+	_confirm.name = "KeepSettings"
+	_confirm.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_confirm.mouse_filter = Control.MOUSE_FILTER_STOP
+	_confirm.visible = false
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.75)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_confirm.add_child(dim)
+	var panel := PanelContainer.new()
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+	var frame := StyleBoxFlat.new()
+	frame.bg_color = Color(0.07, 0.07, 0.065, 1.0)
+	frame.border_color = Color(ACCENT, 0.4)
+	frame.set_border_width_all(1)
+	frame.set_content_margin_all(22)
+	panel.add_theme_stylebox_override("panel", frame)
+	_confirm.add_child(panel)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 16)
+	panel.add_child(column)
+	_confirm_label = Label.new()
+	_confirm_label.name = "Question"
+	_confirm_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_confirm_label.custom_minimum_size.x = 420
+	_confirm_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(_confirm_label)
+	var buttons := HBoxContainer.new()
+	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
+	buttons.add_theme_constant_override("separation", 16)
+	column.add_child(buttons)
+	_confirm_keep = Button.new()
+	_confirm_keep.name = "KeepButton"
+	_confirm_keep.text = "Keep"
+	_confirm_keep.custom_minimum_size = Vector2(140, 0)
+	_confirm_keep.pressed.connect(_keep_change)
+	buttons.add_child(_confirm_keep)
+	var revert := Button.new()
+	revert.name = "RevertButton"
+	revert.text = "Revert"
+	revert.custom_minimum_size = Vector2(140, 0)
+	revert.pressed.connect(_revert_change)
+	buttons.add_child(revert)
+	add_child(_confirm)
+
+
+func _update_confirm_text() -> void:
+	_confirm_label.text = "Keep these display settings?\nReverting in %d..." % ceili(_confirm_left)
+
+
+func _keep_change() -> void:
+	_confirm_left = 0.0
+	_confirm_revert = Callable()
+	_confirm.visible = false
+	if _back_button:
+		_back_button.grab_focus()
+
+
+func _revert_change() -> void:
+	_confirm_left = 0.0
+	if _confirm_revert.is_valid():
+		_confirm_revert.call()
+	_confirm_revert = Callable()
+	if _confirm:
+		_confirm.visible = false
+	if _back_button and visible:
+		_back_button.grab_focus()
 
 
 func _calibrate() -> void:
@@ -544,6 +697,9 @@ func show_menu() -> void:
 
 
 func hide_menu() -> void:
+	# Leaving with a display change still unconfirmed puts it back.
+	if _confirm and _confirm.visible:
+		_revert_change()
 	_rebinding = ""
 	_stop_mic_test()
 	# (The brightness screen is a layer of its own: it doesn't hide with us.)

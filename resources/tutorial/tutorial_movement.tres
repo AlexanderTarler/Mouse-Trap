@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_o8i3c")
 mechanic_id = "movement"
-prompt_text = "Use [W][A][S][D] to move, [CTRL] to crouch. Crouching makes you silent."
+prompt_text = "Use [W][A][S][D] to move."
 trigger_moment = "first_spawn"
 prerequisite = ""
 one_shot = true

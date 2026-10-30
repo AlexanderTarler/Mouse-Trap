@@ -55,10 +55,10 @@ func _input(event: InputEvent) -> void:
 	# ─── KEYBOARD CLOSE / PAGE NAVIGATION ─────────────────────────
 	# Escape closes the note AND prevents the pause menu from opening
 	# by consuming the event.
-	if event is InputEventKey and event.pressed:
-		# (The page keys: E and Q unless rebound.)
+	if (event is InputEventKey or event is InputEventJoypadButton) and event.is_pressed():
+		# (The page keys: E and Q unless rebound; X, LB and RB on a pad.)
 		var key := ""
-		if event.keycode == KEY_ESCAPE:
+		if (event is InputEventKey and event.keycode == KEY_ESCAPE) or event.is_action("ui_cancel"):
 			key = "close"
 		elif event.is_action("notebook_next_page") or event.is_action("ui_interact"):
 			key = "next"
