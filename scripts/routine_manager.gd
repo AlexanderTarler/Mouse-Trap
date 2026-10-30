@@ -432,28 +432,35 @@ func _should_highlight_mesh(mesh: MeshInstance3D, group_name: String) -> bool:
 ## wiping a material the scene had given the mesh, and the 400 m culling
 ## box that lets the outline show through walls was never taken off.)
 func _apply_xray_to_mesh(mesh: MeshInstance3D, xray_mat: Material) -> void:
-	if mesh.get_surface_override_material_count() == 0:
+	var surfaces := mesh.get_surface_override_material_count()
+	if surfaces == 0:
 		return
 	if not mesh.has_meta("_xray_saved"):
+		var overrides: Array = []
+		for i in surfaces:
+			overrides.append(mesh.get_surface_override_material(i))
 		mesh.set_meta("_xray_saved", {
-			"override": mesh.get_surface_override_material(0),
+			"overrides": overrides,
 			"margin": mesh.extra_cull_margin,
 			"aabb": mesh.custom_aabb,
 		})
 	var saved: Dictionary = mesh.get_meta("_xray_saved")
-	var base: Material = saved.override
-	if not base and mesh.mesh and mesh.mesh.get_surface_count() > 0:
-		base = mesh.mesh.surface_get_material(0)
-	var highlighted: Material
-	if base:
-		highlighted = base.duplicate()
-	else:
-		var invisible := StandardMaterial3D.new()
-		invisible.albedo_color = Color.TRANSPARENT
-		invisible.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		highlighted = invisible
-	highlighted.next_pass = xray_mat.duplicate()
-	mesh.set_surface_override_material(0, highlighted)
+	# Every surface (the bed's frame is surface 0, its mattress surface 1:
+	# only the first used to light up).
+	for i in surfaces:
+		var base: Material = saved.overrides[i]
+		if not base and mesh.mesh and i < mesh.mesh.get_surface_count():
+			base = mesh.mesh.surface_get_material(i)
+		var highlighted: Material
+		if base:
+			highlighted = base.duplicate()
+		else:
+			var invisible := StandardMaterial3D.new()
+			invisible.albedo_color = Color.TRANSPARENT
+			invisible.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			highlighted = invisible
+		highlighted.next_pass = xray_mat.duplicate()
+		mesh.set_surface_override_material(i, highlighted)
 	# Seen through walls from anywhere: never culled while highlighted.
 	mesh.extra_cull_margin = 100.0
 	mesh.custom_aabb = AABB(Vector3(-200, -200, -200), Vector3(400, 400, 400))
@@ -476,7 +483,9 @@ func _clear_xray_from_mesh(mesh: MeshInstance3D) -> void:
 	if not mesh.has_meta("_xray_saved"):
 		return
 	var saved: Dictionary = mesh.get_meta("_xray_saved")
-	mesh.set_surface_override_material(0, saved.override)
+	var overrides: Array = saved.overrides
+	for i in overrides.size():
+		mesh.set_surface_override_material(i, overrides[i])
 	mesh.extra_cull_margin = saved.margin
 	mesh.custom_aabb = saved.aabb
 	mesh.remove_meta("_xray_saved")

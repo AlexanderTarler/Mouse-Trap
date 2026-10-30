@@ -6192,7 +6192,7 @@ transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 16.3
 transform = Transform3D(0.99026805, 0.1391731, -6.0834497e-09, 0, -4.371139e-08, -1, -0.1391731, 0.99026805, -4.328599e-08, 1.6720631, 0.57499975, 19.39545)
 
 [node name="wooden_crate_9" parent="CabinDetails" unique_id=1060430091 instance=ExtResource("site_16_fde7g")]
-transform = Transform3D(0.9945219, -0.104528464, 4.5690842e-09, 0, -4.371139e-08, -1, 0.104528464, 0.9945219, -4.3471935e-08, 1.8085359, 0.57499975, 19.393068)
+transform = Transform3D(0.9945219, -0.104528464, 4.5690842e-09, 0, -4.371139e-08, -1, 0.104528464, 0.9945219, -4.3471935e-08, 1.7285359, 1.675, 19.393068)
 
 [node name="bench_mx_1" parent="CabinDetails" unique_id=372194325 instance=ExtResource("cabindetails_34_31siv")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.601365, 0.025256075, 13.61)

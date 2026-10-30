@@ -105,7 +105,7 @@ func setup_ending(ending_type: int) -> void:
 
 func _input(event: InputEvent) -> void:
 	if _in_epilogue and event.is_pressed() and not event.is_echo() \
-			and (event is InputEventKey or event is InputEventMouseButton):
+			and (event is InputEventKey or event is InputEventMouseButton or event is InputEventJoypadButton):
 		_epilogue_skipped = true
 		get_viewport().set_input_as_handled()
 

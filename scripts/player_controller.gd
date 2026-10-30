@@ -17,6 +17,10 @@ extends CharacterBody3D
 ## mouse_sensitivity, and inverted mouse look.
 var look_scale := 1.0
 var invert_y := false
+## The right stick's look speed at full tilt (rad/s), times the setting
+## "Stick Sensitivity" (GameSettings.apply_player).
+const STICK_LOOK_SPEED := 3.2
+var stick_scale := 1.0
 @export var head_bob_frequency: float = 2.0
 @export var head_bob_amplitude: float = 0.06
 
@@ -79,8 +83,8 @@ var _crosshair: Control
 var _was_on_floor: bool = false
 
 # ─── TUTORIAL: Movement key detection ─────────────────────────────────
-## Tracks which WASD/Ctrl keys the player has pressed so the tutorial
-## only dismisses once each key has been pressed at least once.
+## Tracks whether the player has moved yet so the tutorial
+## only dismisses after the first step.
 ## Uses edge-triggered detection via _input() rather than polling, so
 ## stale key presses from the main menu don't instantly dismiss the hint.
 var _movement_keys_pressed: Dictionary = {}
@@ -400,8 +404,7 @@ func _trigger_movement_tutorial() -> void:
 		tm.trigger("movement")
 
 
-## The movement hint goes this long after the player first moves, crouched
-## or not (s).
+## The movement hint goes this long after the player first moves (s).
 const MOVEMENT_HINT_TIME := 10.0
 
 
@@ -426,7 +429,6 @@ func _finish_movement_tutorial() -> void:
 func _enable_movement_tutorial() -> void:
 	_movement_keys_pressed = {
 		"move": false,
-		"crouch": false,
 	}
 	_movement_tutorial_ready = true
 
@@ -458,25 +460,17 @@ func _input(event: InputEvent) -> void:
 		else:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	
-	# ─── TUTORIAL: Track moving and crouching (edge-triggered) ─────
+	# ─── TUTORIAL: Track moving (edge-triggered) ─────────────────────
+	# (Crouching is taught at the second nest, where it matters: the stealth hint.)
 	if _movement_tutorial_ready and not _movement_keys_pressed.is_empty():
-		if event is InputEventKey and event.pressed:
-			for action in ["move_forward", "move_back", "move_left", "move_right"]:
-				if event.is_action_pressed(action) and not _movement_keys_pressed["move"]:
-					_movement_keys_pressed["move"] = true
-					# Moving but never crouching: the hint goes anyway after a
-					# while (it held up every hint after it; the stealth hint
-					# teaches crouching when it matters).
-					get_tree().create_timer(MOVEMENT_HINT_TIME).timeout.connect(_finish_movement_tutorial)
-			if event.is_action_pressed("ui_crouch"):
-				_movement_keys_pressed["crouch"] = true
-			# Learned once the player has moved (any direction) and
-			# crouched: what the hint asks.
-			if _movement_keys_pressed["move"] and _movement_keys_pressed["crouch"]:
-				_finish_movement_tutorial()
+		for action in ["move_forward", "move_back", "move_left", "move_right"]:
+			if event.is_action_pressed(action) and not _movement_keys_pressed["move"]:
+				_movement_keys_pressed["move"] = true
+				# The hint goes a little after the first step.
+				get_tree().create_timer(MOVEMENT_HINT_TIME).timeout.connect(_finish_movement_tutorial)
 	
-	if event is InputEventKey and event.is_action("flashlight") and not event.echo:
-		if event.pressed:
+	if (event is InputEventKey or event is InputEventJoypadButton) and event.is_action("flashlight") and not event.is_echo():
+		if event.is_pressed():
 			_flashlight_key_pressed()
 		else:
 			_flashlight_key_released()
@@ -497,6 +491,24 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		return  # Block all further input processing
 	
+
+## Looking around with the right stick (a gamepad). Only while the player has
+## the camera (the cursor captured, not a cinematic or a screen), eased so a
+## small push turns slowly.
+func _stick_look(delta: float) -> void:
+	if Input.mouse_mode != Input.MOUSE_MODE_CAPTURED or not is_processing_input() or not is_physics_processing():
+		return
+	var look := Input.get_vector("look_left", "look_right", "look_up", "look_down")
+	if look == Vector2.ZERO:
+		return
+	look *= look.length()
+	var turn := STICK_LOOK_SPEED * stick_scale * delta
+	rotate_y(-look.x * turn)
+	_camera_holder.rotate_x(-look.y * turn * (-1.0 if invert_y else 1.0))
+	var rot = _camera_holder.rotation
+	rot.x = clamp(rot.x, -1.4, 1.4)
+	_camera_holder.rotation = rot
+
 
 ## Called by flashlight_pickup.gd when the player picks up the flashlight item.
 ## Enables the player's built-in flashlight so they can toggle it with F.
@@ -832,12 +844,13 @@ func _physics_process(delta: float) -> void:
 			_breathing_fade_tween.tween_property(_breathing_audio, "volume_db", -80.0, 1.0).set_ease(Tween.EASE_IN)
 			_breathing_fade_tween.finished.connect(_on_breathing_fade_out)
 
-	var input_dir := Vector2(
-		-1.0 if Input.is_action_pressed("move_left") else (1.0 if Input.is_action_pressed("move_right") else 0.0),
-		-1.0 if Input.is_action_pressed("move_forward") else (1.0 if Input.is_action_pressed("move_back") else 0.0)
-	)
+	# Analog: a stick walks slower the less it is pushed (keys give 1 as before,
+	# diagonals included).
+	var input_dir := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	
-	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	var direction := transform.basis * Vector3(input_dir.x, 0, input_dir.y)
+	if direction.length() > 1.0:
+		direction = direction.normalized()
 	
 	if direction:
 		velocity.x = direction.x * _current_speed
@@ -871,7 +884,7 @@ func _physics_process(delta: float) -> void:
 		_stair_step_frame_counter += 1
 		if _stair_step_frame_counter >= STAIR_STEP_CHECK_INTERVAL:
 			_stair_step_frame_counter = 0
-			_try_step_up(direction)
+			_try_step_up(direction.normalized())
 
 	var landed = not _was_on_floor and is_on_floor()
 	if landed:
@@ -1033,6 +1046,7 @@ var _routine_manager: Node = null
 
 # --- STANDOFF / CHARGE: LOOK TIMER & CAMERA SHAKE ---
 func _process(delta: float) -> void:
+	_stick_look(delta)
 	# ─── FLASHLIGHT OVERCHARGE HOLD DETECTION ─────────────────────────
 	# While F is held and the flashlight is ON, accumulate toward the
 	# overcharge threshold. Runs in _process (not _physics_process) so

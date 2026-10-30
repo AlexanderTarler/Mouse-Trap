@@ -12,6 +12,10 @@ extends StaticBody3D
 ## Tracks whether the player has already looted this specific car.
 var is_looted: bool = false
 
+## Tracks whether a wreck with no part has been searched (it says so, once
+## and then as a status, instead of looking like it can't be used).
+var _searched_empty: bool = false
+
 ## Tracks whether the inner monologue has been shown (so it doesn't repeat).
 var _monologue_shown: bool = false
 
@@ -79,8 +83,9 @@ func interact(player: Node3D = null) -> void:
 
 	# ─── DAY 3+: Salvage the car part ───────────────────────────
 	if not item_resource:
-		print("[Wreck] ERROR: item_resource is NULL!")
-		_show_hud_message("Nothing useful here.")
+		# Not every wreck has a part: searching one says so.
+		_searched_empty = true
+		_show_hud_message("Found no parts.")
 		return
 	
 	var inventory: Node = _get_inventory()
@@ -194,7 +199,9 @@ func _van_checked() -> bool:
 
 func get_interact_text() -> String:
 	if is_looted:
-		return ""
+		return "Wreck (stripped)"
+	if _searched_empty:
+		return "Wreck (no parts)"
 	# ─── TASK 2.1: EXHAUSTED INTERACTION PROMPT ──────────────────
 	# When exhausted, grey out the interaction prompt instead of
 	# showing the normal "Press E" text. The player is too tired.
@@ -207,6 +214,8 @@ func get_interact_text() -> String:
 		if nm and "current_night" in nm and nm.current_night == 0:
 			return ""
 		return "[E] Examine the wreck"
+	if not item_resource:
+		return "[E] Search the wreck"
 	return "[E] Salvage " + item_name
 
 

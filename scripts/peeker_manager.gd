@@ -69,6 +69,14 @@ func _process(delta: float) -> void:
 				print("[PeekerManager] Night %s — peeker disabled. Removing lingering peeker." % str(nm_cleanup.current_night))
 				remove_active_peeker()
 	
+	# ─── FLOOR RULE ──────────────────────────────────────────────────
+	# A Peeker upstairs while the player is on the ground floor showed its
+	# legs through the ceiling: it despawns the moment the player is down.
+	if _active_peeker and is_instance_valid(_active_peeker):
+		if _is_upstairs(_active_peeker.global_position.y) and not _is_player_upstairs():
+			print("[PeekerManager] Player on the ground floor with an upstairs peeker. Removing peeker.")
+			remove_active_peeker()
+	
 	# ─── CABIN-EXIT CHECK ────────────────────────────────────────────
 	# If the peeker is active but the player has left the cabin,
 	# immediately remove it. This prevents the peeker from being visible
@@ -187,6 +195,10 @@ func force_spawn_at_window(window_id: String) -> void:
 	if not target_window:
 		print("[PeekerManager] force_spawn_at_window: No window found with ID '%s'." % window_id)
 		return
+	# Hard rule: nothing upstairs while the player is on the ground floor.
+	if _is_upstairs(target_window.global_position.y) and not _is_player_upstairs():
+		print("[PeekerManager] force_spawn_at_window: '%s' is upstairs and the player is not. Skipping." % window_id)
+		return
 	
 	# If a peeker is already active, check which window it is at.
 	if _active_peeker and is_instance_valid(_active_peeker):
@@ -275,6 +287,16 @@ func _spawn_peeker() -> void:
 ## The player is upstairs above this height (m): the ground floor is at
 ## ~0.7, the upper floor at ~3.6.
 const UPSTAIRS_HEIGHT := 2.4
+
+
+## True when a world height (m) is on the upper floor.
+func _is_upstairs(y: float) -> bool:
+	return y > UPSTAIRS_HEIGHT
+
+
+func _is_player_upstairs() -> bool:
+	var player := get_tree().get_first_node_in_group("player") as Node3D
+	return player != null and _is_upstairs(player.global_position.y)
 
 
 func _pick_valid_window() -> Node3D:

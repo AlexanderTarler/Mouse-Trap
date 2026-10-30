@@ -101,6 +101,14 @@ func _process(delta: float) -> void:
 		time_changed.emit(cycle_progress)
 		print("[GameTime] Night 1 reached 02:00 (progress=0.7). Time frozen for narrative events.")
 	
+	# ─── DAY 2: NO DUSK BEFORE THE SURVEY IS DONE ────────────────────
+	# Night must not fall on Day 2 until all three nests are documented
+	# (it left players at night with the work undone). The clock waits at
+	# late afternoon; it runs on once the third nest is in.
+	if cycle_progress >= DAY2_HOLD_PROGRESS and cycle_progress < 0.5 and _day2_survey_pending():
+		cycle_progress = DAY2_HOLD_PROGRESS
+		_elapsed = cycle_progress * cycle_duration
+	
 	# Determine current phase (always evaluated, even when paused,
 	# so set_progress() updates propagate correctly)
 	is_day = cycle_progress < 0.5
@@ -117,6 +125,18 @@ func _process(delta: float) -> void:
 	
 	# Emit time changed signal
 	time_changed.emit(cycle_progress)
+
+
+## Where the clock waits on Day 2 while nests remain (dusk is 0.5).
+const DAY2_HOLD_PROGRESS := 0.47
+
+
+## True on Day 2 (the nest survey), until all three nests are documented.
+func _day2_survey_pending() -> bool:
+	var rm = get_node_or_null("/root/RoutineManager")
+	if not rm or rm.is_day3_sandbox:
+		return false
+	return rm.main_objective >= 99 and rm.nests_documented < 3
 
 
 ## Returns the progress within the current phase (0.0 to 1.0).

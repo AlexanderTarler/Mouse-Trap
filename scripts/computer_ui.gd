@@ -489,8 +489,8 @@ func _on_login_submit() -> void:
 # ─────────────────────────────────────────────────────────────────────────────
 
 ## Whether the Day 2 previous-reports file has been fully read (opened once).
-## When true, RoutineManager.on_previous_reports_read() has been fired and the
-## desktop icon can be hidden so the player cannot re-read it accidentally.
+## When true, RoutineManager.on_previous_reports_read() has been fired (the
+## icon stays, so the report can be read again).
 var _previous_reports_read: bool = false
 
 ## Opens the NEST_REPORTS.TXT archive containing the previous researcher's
@@ -550,12 +550,14 @@ func _show_desktop() -> void:
 	_reflow_desktop_icons.call_deferred()
 
 	# ─── PREVIOUS NEST REPORTS (Day 2 Step 1 gate) ──────────────────
-	# The NEST_REPORTS.TXT icon is only available to the LUND profile and
-	# only while the Day 2 report-reading objective is still pending.
+	# The NEST_REPORTS.TXT icon is only available to the LUND profile, from
+	# the Day 2 report-reading objective on. It stays after being read: the
+	# player needs it again for where Alpha is (reading it twice is harmless,
+	# RoutineManager only reacts at step 1).
 	var show_reports := false
 	if current_user == "LUND":
 		var rm := get_node_or_null("/root/RoutineManager")
-		if rm and "day2_step" in rm and rm.day2_step == 1:
+		if rm and "day2_step" in rm and rm.day2_step >= 1:
 			show_reports = true
 	_desktop_previous_reports_btn.visible = show_reports
 	

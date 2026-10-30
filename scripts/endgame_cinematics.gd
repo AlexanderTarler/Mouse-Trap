@@ -266,7 +266,7 @@ func _process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if not _running or not _skippable or _skipped or _clock < 0.5:
 		return
-	if (event is InputEventKey or event is InputEventMouseButton) and event.pressed:
+	if (event is InputEventKey or event is InputEventMouseButton or event is InputEventJoypadButton) and event.pressed:
 		_skipped = true
 		get_viewport().set_input_as_handled()
 

@@ -223,7 +223,9 @@ func _finish_when_ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if playing and event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_SPACE:
+	var skip: bool = (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_SPACE) \
+		or (event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_A)
+	if playing and skip:
 		_skipped = true
 		get_viewport().set_input_as_handled()
 		_finish()
@@ -290,7 +292,7 @@ func _build() -> void:
 	_title = _card_label(40, Color(0.92, 0.9, 0.85))
 	_subtitle = _card_label(22, Color(0.75, 0.73, 0.68))
 	_skip_hint = Label.new()
-	_skip_hint.text = "[Space] Skip"
+	_skip_hint.text = GameKeys.keys_in("[Space] Skip")
 	_skip_hint.add_theme_font_size_override("font_size", 16)
 	_skip_hint.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
 	_skip_hint.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)

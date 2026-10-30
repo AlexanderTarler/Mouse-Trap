@@ -132,8 +132,8 @@ func set_camera(cam: Camera3D) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	# Only the Use key (E unless rebound)
-	if not (event is InputEventKey and event.is_action("ui_interact")):
+	# Only the Use key (E unless rebound) or button (X on a pad)
+	if not ((event is InputEventKey or event is InputEventJoypadButton) and event.is_action("ui_interact")):
 		return
 	
 	# ─── CARRYING LAMP: tap E to drop ────────────────────────────────────

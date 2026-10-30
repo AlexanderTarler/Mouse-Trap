@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_stealth")
 mechanic_id = "stealth"
-prompt_text = "Hold [CTRL] to crouch."
+prompt_text = "Hold [CTRL] to crouch. Crouching makes you silent."
 trigger_moment = ""
 prerequisite = ""
 one_shot = true

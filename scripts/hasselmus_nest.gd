@@ -136,6 +136,8 @@ var _player: Node = null
 
 ## Whether the proximity tutorial has already been triggered for this nest.
 var _tutorial_triggered: bool = false
+## When (ticks, ms) the proximity tutorial may be tried again.
+var _tutorial_retry_at: int = 0
 
 ## ─── STEALTH FAIL STATE (Nest Beta) ───────────────────────────────────
 ## Set true when the player performs any non-crouch movement inside
@@ -213,12 +215,18 @@ func _process(delta: float) -> void:
 	# ─── PROXIMITY TUTORIAL ─────────────────────────────────────────
 	# First time the player enters the radius, fire the TutorialManager
 	# trigger for this nest's mechanic. One-shot per nest.
-	if not _tutorial_triggered and not tutorial_id.is_empty():
-		_tutorial_triggered = true
+	if not _tutorial_triggered and not tutorial_id.is_empty() and Time.get_ticks_msec() >= _tutorial_retry_at:
+		_tutorial_retry_at = Time.get_ticks_msec() + 1000
 		var tm := get_node_or_null("/root/TutorialManager")
 		if tm and tm.has_method("trigger"):
 			tm.trigger(tutorial_id)
-			print("[HasselmusNest] Tutorial '%s' triggered for %s." % [tutorial_id, nest_label])
+			# Done only once the hint made it onto the screen (or was learned
+			# already): another hint up at that moment used to eat it for good,
+			# so the stump's "hold F" never showed. Tried again next frame.
+			_tutorial_triggered = tm.was_shown(tutorial_id) or tm.is_learned(tutorial_id)
+			print("[HasselmusNest] Tutorial '%s' triggered for %s (shown: %s)." % [tutorial_id, nest_label, _tutorial_triggered])
+		else:
+			_tutorial_triggered = true
 	
 	# ─── LOCK CONDITION EVALUATION ──────────────────────────────────
 	match lock_type:

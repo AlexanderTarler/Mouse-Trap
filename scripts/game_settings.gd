@@ -7,6 +7,7 @@ extends RefCounted
 ##   video/head_bob             the camera bobbing while walking
 ##   controls/mouse_sensitivity a multiplier on the player's mouse look
 ##   controls/invert_y          mouse up looks down
+##   controls/stick_sensitivity a multiplier on the right stick's look speed
 ##   audio/master, ambient, sfx, room_echo   bus volumes (linear; the Entity's
 ##                              bus follows Sound Effects)
 ##   audio/microphone, mic_threshold_db      PlayerVoice
@@ -27,6 +28,7 @@ const DEFAULTS := {
 	"video/head_bob": true,
 	"controls/mouse_sensitivity": 1.0,
 	"controls/invert_y": false,
+	"controls/stick_sensitivity": 1.0,
 	"accessibility/captions": false,
 	"accessibility/caption_size": 1,
 	"audio/microphone": false,
@@ -165,6 +167,8 @@ static func apply_player(player: Node) -> void:
 		player.look_scale = float(get_value("controls/mouse_sensitivity"))
 	if "invert_y" in player:
 		player.invert_y = bool(get_value("controls/invert_y"))
+	if "stick_scale" in player:
+		player.stick_scale = float(get_value("controls/stick_sensitivity"))
 	if "head_bob_enabled" in player:
 		player.head_bob_enabled = bool(get_value("video/head_bob"))
 	var camera := player.get_node_or_null("CameraHolder/Camera3D") as Camera3D
