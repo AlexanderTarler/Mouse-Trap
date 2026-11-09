@@ -513,7 +513,13 @@ func _on_drop_pressed() -> void:
 		if "item_data" in dropped and item.has_method("is_fuel_can") and item.is_fuel_can():
 			dropped.item_data = item
 		get_tree().current_scene.add_child(dropped)
-		dropped.global_position = drop_pos
+		# Never through a wall or a door: it lands this side of what is in the way.
+		var exclude: Array[RID] = []
+		if player is CollisionObject3D:
+			exclude.append(player.get_rid())
+		dropped.global_position = DropGuard.sweep(player.get_world_3d(), player.global_position + Vector3.UP * 1.0, drop_pos, exclude)
+		if dropped is RigidBody3D:
+			DropGuard.watch(dropped)
 		print("[InventoryUI] Spawned dropped item at: ", drop_pos)
 		
 		# If it's a RigidBody3D, give it a slight push forward

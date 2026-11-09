@@ -296,8 +296,20 @@ func _update_grab(delta: float) -> void:
 	var target_pos = _get_target_position()
 	var current_pos = _grabbed_body.global_position
 	
+	# What is held never goes through anything: the hold point stops at the
+	# first wall, door or floor between the eyes and it, and so does each
+	# step (it was teleported, and let go on the far side of a door).
+	var exclude: Array[RID] = [_grabbed_body.get_rid()]
+	var player := _find_player() as CollisionObject3D
+	if player:
+		exclude.append(player.get_rid())
+	var world := get_world_3d()
+	if _camera:
+		target_pos = DropGuard.sweep(world, _camera.global_position, target_pos, exclude)
+	
 	# Smoothly interpolate toward the target
 	var new_pos = current_pos.lerp(target_pos, min(1.0, delta * 15.0))
+	new_pos = DropGuard.sweep(world, current_pos, new_pos, exclude)
 	
 	# Use move_and_collide style: set position directly but freeze physics
 	_grabbed_body.global_position = new_pos
@@ -458,6 +470,8 @@ func _grab_object(body: RigidBody3D) -> void:
 	# Stop any existing motion
 	body.linear_velocity = Vector3.ZERO
 	body.angular_velocity = Vector3.ZERO
+	# Kept in the world however it is carried and dropped.
+	DropGuard.watch(body)
 	# Lifting something is what the "move objects" hint teaches.
 	var tm := get_node_or_null("/root/TutorialManager")
 	if tm and tm.has_method("mark_learned"):
@@ -467,6 +481,14 @@ func _grab_object(body: RigidBody3D) -> void:
 func _drop_object() -> void:
 	if not _is_grabbing or not _grabbed_body:
 		return
+	
+	# Let go on the near side of whatever is in front of it (never through).
+	if _camera:
+		var exclude: Array[RID] = [_grabbed_body.get_rid()]
+		var player := _find_player() as CollisionObject3D
+		if player:
+			exclude.append(player.get_rid())
+		_grabbed_body.global_position = DropGuard.sweep(get_world_3d(), _camera.global_position, _grabbed_body.global_position, exclude)
 	
 	# Unfreeze the body and restore gravity
 	_grabbed_body.freeze = false
