@@ -16,6 +16,9 @@ extends Node3D
 # them) and are marked with layer 1|2 = 3 in their own scripts.
 const INTERACTABLE_LAYER_MASK: int = 2  # Layer 2 (name: "Interactable")
 
+## How far above or below the eyes a target may be (m): a floor is ~3 m.
+const MAX_REACH_HEIGHT: float = 2.2
+
 # Camera reference is set by the player controller when this node is created
 var _camera: Camera3D = null
 var _current_target: Node = null
@@ -122,6 +125,10 @@ func _process(delta: float) -> void:
 			# Things outside (the fuse box) can't be used through the wall.
 			if interactable and interactable.is_in_group("outdoor_only") and player \
 					and player.has_method("get_player_room") and player.get_player_room() != "Outside":
+				interactable = null
+			# Nor from another floor: the ray only sees layer 2, so it went
+			# through the floor to a door below (from the upstairs crate).
+			if interactable and absf(result.position.y - from.y) > MAX_REACH_HEIGHT:
 				interactable = null
 			if interactable:
 				_current_target = interactable

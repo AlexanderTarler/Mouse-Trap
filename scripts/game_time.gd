@@ -101,12 +101,14 @@ func _process(delta: float) -> void:
 		time_changed.emit(cycle_progress)
 		print("[GameTime] Night 1 reached 02:00 (progress=0.7). Time frozen for narrative events.")
 	
-	# ─── DAY 2: NO DUSK BEFORE THE SURVEY IS DONE ────────────────────
-	# Night must not fall on Day 2 until all three nests are documented
-	# (it left players at night with the work undone). The clock waits at
-	# late afternoon; it runs on once the third nest is in.
-	if cycle_progress >= DAY2_HOLD_PROGRESS and cycle_progress < 0.5 and _day2_survey_pending():
-		cycle_progress = DAY2_HOLD_PROGRESS
+	# ─── NO DUSK BEFORE ITS TIME (DAY 1 AND DAY 2) ──────────────────
+	# Night doesn't fall by the clock on Day 1 or Day 2: it left players in
+	# the dark looking for the cabin, or out in it with the survey undone.
+	# The clock waits at late afternoon (see _dusk_hold_at for what it waits
+	# for); on Day 2 the night then comes with the data upload.
+	var hold_at := _dusk_hold_at()
+	if hold_at > 0.0 and cycle_progress >= hold_at and cycle_progress < 0.5:
+		cycle_progress = hold_at
 		_elapsed = cycle_progress * cycle_duration
 	
 	# Determine current phase (always evaluated, even when paused,
@@ -127,16 +129,29 @@ func _process(delta: float) -> void:
 	time_changed.emit(cycle_progress)
 
 
-## Where the clock waits on Day 2 while nests remain (dusk is 0.5).
+## Where the clock waits while dusk is held (dusk is 0.5): Day 1 a minute of
+## daylight short of it (the player is in the cabin by then and has a minute
+## before dark), Day 2 close to it.
+const DAY1_HOLD_PROGRESS := 0.40
 const DAY2_HOLD_PROGRESS := 0.47
 
 
-## True on Day 2 (the nest survey), until all three nests are documented.
-func _day2_survey_pending() -> bool:
+## Where the clock is being held now, or 0 for no hold:
+##   Day 1: until the player has been inside the cabin (it was dark before some
+##          had found it);
+##   Day 2: until the nest data is logged on the computer, whose upload runs
+##          the transition into Night 2 (NightManager.start_night(2) puts the
+##          clock at dusk itself, so the hold never gets in its way).
+func _dusk_hold_at() -> float:
 	var rm = get_node_or_null("/root/RoutineManager")
 	if not rm or rm.is_day3_sandbox:
-		return false
-	return rm.main_objective >= 99 and rm.nests_documented < 3
+		return 0.0
+	if rm.main_objective >= 99:
+		return 0.0 if rm.nests_uploaded else DAY2_HOLD_PROGRESS
+	var nm = get_node_or_null("/root/NightManager")
+	if nm != null and nm.current_night <= 0 and not rm.phase1_entered_cabin:
+		return DAY1_HOLD_PROGRESS
+	return 0.0
 
 
 ## Returns the progress within the current phase (0.0 to 1.0).
