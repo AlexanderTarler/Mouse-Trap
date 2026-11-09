@@ -542,6 +542,21 @@ func _think_fuse_box() -> void:
 	var box := get_tree().get_first_node_in_group("xray_fuse_box") as Node3D
 	if monologue:
 		monologue.think("It's always the goddamn fuse box.", box, 4.0, "fuse_box")
+	# Where it is: outside, on the cabin wall (a player searched an hour).
+	_muse("I think the fuse box is on a cabin wall outside.", "fuse_box_where", 5.0)
+	# Still not touched a while later: once more.
+	get_tree().create_timer(FUSE_BOX_REMINDER_AFTER).timeout.connect(_remind_fuse_box)
+
+
+## How long (s) after "Check the fuse box" comes up, with the box untouched,
+## the reminder of where it is.
+const FUSE_BOX_REMINDER_AFTER := 120.0
+
+
+func _remind_fuse_box() -> void:
+	if phase2_fuse_box_interacted or phase2_fuse_fixed or is_day3_sandbox or main_objective >= 99:
+		return
+	_muse("The fuse box. A cabin wall, outside. Walk round the house.", "fuse_box_where_again")
 
 
 ## The scripted Peeker after a door-lock objective.
