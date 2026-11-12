@@ -226,6 +226,14 @@ func pick_entry() -> CabinEntryLink:
 	return best
 
 
+## Whether there is any way in it would consider (no scoring, no dice).
+func has_viable_entry() -> bool:
+	for link in entries():
+		if is_entry_viable(link):
+			return true
+	return false
+
+
 ## How it means to get in: {"entry": link} to go straight for one, or
 ## {"entry": link, "decoy": other} to lure the player away from `entry`
 ## first. It lures when the best way in, judged without shyness, opens into

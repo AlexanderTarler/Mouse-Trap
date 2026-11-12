@@ -69,6 +69,10 @@ var _siege_time := 0.0
 var _wall_tap_left := 0.0
 var _prop_check := 0.0
 var _prop_night := -1
+## After finding no cover: not looked for again until this runs out (it was
+## searched for every frame: 20 navmesh lookups and up to 40 rays each).
+var _cover_retry := 0.0
+const COVER_RETRY := 0.5
 
 
 func enter(_from: int, _data: Dictionary) -> void:
@@ -92,6 +96,7 @@ func enter(_from: int, _data: Dictionary) -> void:
 	_tell_left = -1.0
 	_leave_after_ambush = false
 	_siege_time = 0.0
+	_cover_retry = 0.0
 	_wall_tap_left = randf_range(3.0, 6.0)
 	entity.audio.play_voice("search")
 
@@ -110,6 +115,7 @@ func update(delta: float) -> void:
 	elif not is_ambushing():
 		_since_contact += delta
 	_remember_cooldown -= delta
+	_cover_retry -= delta
 	if perception.can_see_player and perception.player_inside and _remember_cooldown <= 0.0:
 		_remember_cooldown = REMEMBER_INTERVAL
 		world.remember_hiding_spot(player.global_position)
@@ -327,8 +333,11 @@ func can_catch() -> bool:
 ## Hides at a spot near `center` the player can't see, for `seconds`.
 ## False if there is none.
 func _take_cover(center: Vector3, min_radius: float, max_radius: float, seconds: float) -> bool:
+	if _cover_retry > 0.0:
+		return false
 	var spot := world.find_cover(center, min_radius, max_radius)
 	if spot == Vector3.INF:
+		_cover_retry = COVER_RETRY
 		return false
 	_cover = spot
 	_cover_left = seconds

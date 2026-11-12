@@ -62,10 +62,7 @@ func _register(id: int, state: EntityState) -> void:
 
 
 func tick(delta: float) -> void:
-	entity.perception.update(delta)
-	entity.confidence.update(delta)
-	entity.world.update(delta)
-	standoff_cooldown = maxf(standoff_cooldown - delta, 0.0)
+	sense(delta)
 
 	current.time += delta
 	var interrupt := _check_interrupts()
@@ -76,6 +73,16 @@ func tick(delta: float) -> void:
 	var next := current.next_state()
 	if next != EntityState.NO_CHANGE and next != state_id:
 		_transition(next, {})
+
+
+## What it knows, refreshed: runs every physics frame, also while the body is
+## busy with a move (climbing, diving through a window) and no state decides
+## anything. The beam on it mid-climb counts (Entity._traversal_driven_off).
+func sense(delta: float) -> void:
+	entity.perception.update(delta)
+	entity.confidence.update(delta)
+	entity.world.update(delta)
+	standoff_cooldown = maxf(standoff_cooldown - delta, 0.0)
 
 
 ## Switches state immediately, from outside the normal flow.

@@ -114,7 +114,7 @@ func _start_watching() -> void:
 func _update_frustration(delta: float) -> void:
 	var wants_in := perception.player_inside and entity.can_approach_cabin() \
 		and entity.confidence.get_confidence() >= config.approach_threshold
-	if wants_in and world.pick_entry() == null:
+	if wants_in and not world.has_viable_entry():
 		_blocked_time += delta
 	else:
 		_blocked_time = maxf(_blocked_time - delta, 0.0)

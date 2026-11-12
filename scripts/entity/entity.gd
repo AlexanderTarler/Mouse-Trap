@@ -130,6 +130,10 @@ var _traversal: Tween = null
 var _traversal_kind := -1
 ## Animation for the current leg of a traversal (empty: pick from the kind).
 var _traversal_anim: StringName = &""
+## The link being crossed or climbed, and whether the move was abandoned
+## (driven off mid-move: _bail_out).
+var _traversal_link: CabinEntryLink = null
+var _bailing := false
 
 # ─── Clinging to the wall outside an upstairs window ────────────────────────
 var _perch_link: CabinEntryLink = null
@@ -283,6 +287,13 @@ func cinematic_pose(xform: Transform3D, anim: StringName, anim_speed: float = 1.
 ## How long the overcharged beam must be held on it to drive it off now.
 func repel_time() -> float:
 	return config.overcharge_repel_time + times_driven_off * config.overcharge_repel_growth
+
+
+## Driven off by the overcharged beam: it hardens (repel_time), and the
+## journal learns of it.
+func note_driven_off() -> void:
+	times_driven_off += 1
+	EntityJournal.learn(self, "beam" if times_driven_off <= 1 else "beam_harder")
 
 
 func get_state() -> State:
@@ -597,6 +608,11 @@ func _physics_process(delta: float) -> void:
 		brain.tick(delta)
 		if not is_clinging():
 			_check_link_crossing()
+	else:
+		# Busy with a move (climbing, through a window): no state decides
+		# anything, but it still sees, hears and feels the beam.
+		brain.sense(delta)
+		_traversal_driven_off()
 	if _oneshot_left > 0.0:
 		_oneshot_left -= delta
 		if not is_traversing() and not is_clinging():
@@ -607,6 +623,7 @@ func _physics_process(delta: float) -> void:
 
 	if is_traversing():
 		_update_climb_sounds(delta)
+		audio.update_hunt_music(delta)
 		_update_animation(delta)
 		return
 	if is_clinging():
@@ -808,6 +825,8 @@ func _traverse(link: CabinEntryLink, start: Vector3, end: Vector3) -> void:
 		_traverse_climb(link, start.distance_to(link.start_position) < start.distance_to(link.end_position))
 		return
 	_traversal_kind = link.kind
+	_traversal_link = link
+	_bailing = false
 	collision_mask = 0
 	velocity = Vector3.ZERO
 	var dir := end - start
@@ -869,6 +888,8 @@ const EXIT_CRAWL_APEX := 0.55
 func _end_traversal() -> void:
 	_traversal = null
 	_traversal_kind = -1
+	_traversal_link = null
+	_bailing = false
 	_traversal_anim = &""
 	if not is_clinging():
 		collision_mask = MOVE_MASK
@@ -882,6 +903,56 @@ func _cancel_traversal() -> void:
 	if _traversal:
 		_traversal.kill()
 		_end_traversal()
+
+
+## The overcharged beam held on it for repel_time() in the middle of a move
+## (up the wall, over a sill, through the door): it is driven off there and
+## then. (Its senses used to stop for the whole move, up to four seconds of
+## climbing in with the beam on it doing nothing.) The door's walk-through
+## is left to finish: a moment, and it flees from the far side.
+func _traversal_driven_off() -> void:
+	if _bailing or not _traversal_link or brain.state_id == State.FLEE or brain.state_id == State.STUNNED \
+			or van_chase_active or perception.overcharge_time < repel_time():
+		return
+	note_driven_off()
+	audio.play_scream()
+	_bail_out()
+	brain.force(State.FLEE)
+
+
+## Abandons the move it is in the middle of for the nearest footing: past the
+## wall already, it lands inside; still outside, it drops to the ground below
+## (off the wall) or goes back out to where it started. Collision stays off
+## until it is there (_end_traversal), so it never ends up inside a wall.
+func _bail_out() -> void:
+	var link := _traversal_link
+	if not _traversal or not link:
+		return
+	_traversal.kill()
+	_bailing = true
+	_perch_link = null
+	_perch_offset = Vector3.ZERO
+	var here := global_position
+	var target: Vector3
+	var falling := false
+	if world.is_inside_cabin(here):
+		target = link.end_position
+	elif link.climb:
+		target = Vector3(here.x, link.start_position.y, here.z)
+		falling = here.y - target.y > 0.5
+	else:
+		target = link.start_position
+	_traversal = create_tween()
+	_traversal.finished.connect(_end_traversal)
+	if falling:
+		_traversal.tween_callback(_set_traversal_anim.bind(&"DropLand"))
+		_traversal.tween_property(self, "global_position", target, config.drop_time) \
+			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+		_traversal.tween_callback(audio.play_drop_thud)
+		_traversal.tween_interval(DROP_LAND_TIME)
+	else:
+		_traversal.tween_callback(_set_traversal_anim.bind(&"LowCrawl"))
+		_traversal.tween_property(self, "global_position", target, clampf(here.distance_to(target) / config.flee_speed, 0.25, 1.2))
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -983,6 +1054,8 @@ func _traverse_climb(link: CabinEntryLink, inward: bool) -> void:
 
 func _begin_climb(link: CabinEntryLink) -> void:
 	_traversal_kind = link.kind
+	_traversal_link = link
+	_bailing = false
 	collision_mask = 0
 	velocity = Vector3.ZERO
 	_climb_tap_left = 0.0
