@@ -14,6 +14,20 @@ extends RefCounted
 
 const NO_CHANGE := -1
 
+# ─── Transition data keys (enter()'s `data`, Entity.request_state) ───────────
+# Named, so a mistyped key is an error instead of a default silently used.
+const ENTRY := "entry"          ## CabinEntryLink: the window or door it is for.
+const DECOY := "decoy"          ## CabinEntryLink: the window to make noise at (LURE).
+const RUSH := "rush"            ## APPROACH: fast, no stopping (after a lure).
+const RATTLE := "rattle"        ## PEEK: a locked door, try the handle and leave.
+const CALM := "calm"            ## FLEE: leaving on its own (walks, no penalty).
+const VANISH := "vanish"        ## FLEE: the van chase ends, gone when done.
+const COMMITTED := "committed"  ## CHARGE: tracks the player the whole way.
+const NO_ROAR := "no_roar"      ## CHARGE: no roar first.
+const MAX_TIME := "max_time"    ## CHARGE: lasts this long (s).
+const DURATION := "duration"    ## STUNNED: for this long (s).
+const TARGET := "target"        ## SEARCH: Vector3, where to look.
+
 var entity: Entity
 var brain: EntityBrain
 var perception: EntityPerception
@@ -66,8 +80,6 @@ func on_stuck() -> void:
 	entity.unstick()
 
 
-## Switches to `to` with `data` (for transitions that need to pass something,
-## such as an entry point). Use as `return go(State.X, {...})` from next_state().
 ## Keeps it at `link`'s outside spot: on the ground in front of a door or a
 ## ground-floor window, or clinging to the wall outside an upstairs window
 ## (climbing up first). True once it is there.
@@ -85,16 +97,27 @@ func hold_at_entry(link: CabinEntryLink, speed: float) -> bool:
 	return false
 
 
+## Switches to `to` with `data` (for transitions that need to pass something,
+## such as an entry point). Use as `return go(State.X, {ENTRY: link})` from
+## next_state().
 func go(to: int, data: Dictionary = {}) -> int:
 	brain.go(to, data)
 	return NO_CHANGE
 
 
-## Where to go looking for the player, based on memory: last sighting if it's
-## fresh, otherwise the last noise, otherwise null.
-func freshest_lead():
-	if perception.has_fresh_sighting():
-		return perception.last_seen_position
-	if perception.has_fresh_noise():
-		return perception.last_heard_position
-	return null
+## The player has left the cabin while it was busy at it (walking up, at a
+## window, luring): after them if it can see them, else back to watching.
+## NO_CHANGE while the player is inside.
+func player_left_cabin() -> int:
+	if not perception.player_outside:
+		return NO_CHANGE
+	return Entity.State.STALK if perception.can_see_player else Entity.State.OBSERVE
+
+
+## A spot beside `link` on the outside, `distance` m along the wall (either
+## way): out of view of the glass (ducking away from a look, a pause in
+## breaking in).
+func beside_entry(link: CabinEntryLink, distance: float) -> Vector3:
+	var across := link.end_position - link.start_position
+	var side := Vector3(-across.z, 0.0, across.x).normalized() * (distance if randf() < 0.5 else -distance)
+	return world.snap_to_navmesh(link.start_position + side)

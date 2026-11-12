@@ -174,7 +174,7 @@ func _test_night_soundscape() -> void:
 	entity.can_kill = false
 	entity.activate()
 	entity.request_state(entity.State.STUNNED)
-	entity._teleport(_player.global_position + Vector3(6.0, 0.0, 0.0))
+	entity.teleport(_player.global_position + Vector3(6.0, 0.0, 0.0))
 	await _frames(120)
 	var quiet: float = _hsm._night_ambience_player.volume_db
 	entity.deactivate()
@@ -290,7 +290,7 @@ func _test_floor_creaks() -> void:
 	_stand(HALL)
 	entity.activate()
 	entity.request_state(entity.State.STUNNED)
-	entity._teleport(LANDING)
+	entity.teleport(LANDING)
 	await _frames(10)
 	var audio = entity.audio
 	audio._creak_left = 0.0
@@ -298,7 +298,7 @@ func _test_floor_creaks() -> void:
 	var above: bool = audio._creak.playing
 	audio._creak.stop()
 	# On the same floor: no creaks.
-	entity._teleport(HALL + Vector3(3.0, 0.0, 0.0))
+	entity.teleport(HALL + Vector3(3.0, 0.0, 0.0))
 	await _frames(10)
 	audio._creak_left = 0.0
 	audio.update_floor_creaks(0.1, 2.0)
@@ -340,10 +340,10 @@ func _test_tension() -> void:
 	_hsm._on_night_started(3)
 	entity.activate()
 	entity.request_state(entity.State.STUNNED)
-	entity._teleport(_player.global_position + Vector3(40.0, 0.0, 0.0))
+	entity.teleport(_player.global_position + Vector3(40.0, 0.0, 0.0))
 	await _frames(60)
 	var far_db: float = _hsm._tension_player.volume_db
-	entity._teleport(_player.global_position + Vector3(5.0, 0.0, 0.0))
+	entity.teleport(_player.global_position + Vector3(5.0, 0.0, 0.0))
 	await _frames(240)
 	var near_db: float = _hsm._tension_player.volume_db
 	var near_playing: bool = _hsm._tension_player.playing

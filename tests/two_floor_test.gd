@@ -221,7 +221,7 @@ func _test_entity_walk(scene: Node) -> void:
 	walker.entity = entity
 	var real_brain = entity.brain
 	entity.brain = walker
-	entity._teleport(HALL)
+	entity.teleport(HALL)
 	await _frames(30)
 
 	var legs: Array = []

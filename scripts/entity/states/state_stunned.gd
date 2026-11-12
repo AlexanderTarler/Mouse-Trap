@@ -1,7 +1,7 @@
 class_name EntityStateStunned
 extends EntityState
 
-## Paralysed by the portable lamp's overload (data {"duration": seconds}).
+## Paralysed by the portable lamp's overload (data {DURATION: seconds}).
 ## A generator blackout breaks the stun early and enrages it
 ## (Entity.on_generator_blackout).
 ## Afterwards: a committed, fast charge at a player who is outside
@@ -22,7 +22,7 @@ var _left := 0.0
 
 
 func enter(_from: int, data: Dictionary) -> void:
-	_left = data.get("duration", 30.0)
+	_left = data.get(DURATION, 30.0)
 	entity.totem_defense_disabled = true
 	entity.cancel_oneshot()   # the light cuts a roar short
 	entity.audio.play_scream()
@@ -42,7 +42,7 @@ func next_state() -> int:
 	if _left > 0.0:
 		return NO_CHANGE
 	if perception.player_outside:
-		return go(S.CHARGE, {"committed": true, "max_time": config.post_stun_chase_time})
+		return go(S.CHARGE, {COMMITTED: true, MAX_TIME: config.post_stun_chase_time})
 	var box := world.fuse_box()
 	if box and box.is_powered():
 		return S.SABOTAGE

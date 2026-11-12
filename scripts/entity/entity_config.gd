@@ -262,9 +262,24 @@ extends Resource
 ## Its speed to the real window once the player has gone (x approach_speed).
 @export var lure_rush_multiplier: float = 1.6
 
-@export_group("Climbing")
+@export_group("Nights")
+## What it does from which night, in one place (Entity.can_*() read these;
+## dev mode allows everything). The first night it is out there on its own:
+## before it, the nights belong to the story (only the Night 2 van chase).
+@export var active_night: int = 3
+## From this night it comes up to the windows and the door (when something
+## puts it in the world earlier than active_night: the debug console, tests).
+@export var approach_night: int = 2
+## From this night it breaks planks as well as glass.
+@export var break_planks_night: int = 3
+## From this night it plays its tricks: lying in wait, the fake departure,
+## killing a room's light, tapping from the dark, knocking props over, easing
+## a window open quietly, copying the player's sounds, the fuse box.
+@export var tricks_night: int = 3
 ## From this night it climbs the walls to the upstairs windows.
 @export var climb_night: int = 4
+
+@export_group("Climbing")
 ## Speed up and down the wall (m/s).
 @export var climb_speed: float = 1.4
 ## Seconds to drop off the wall when it is scared off.

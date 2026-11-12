@@ -1,9 +1,9 @@
 class_name EntityStateApproach
 extends EntityState
 
-## Walking up to a chosen window or the door (data {"entry": CabinEntryLink}).
+## Walking up to a chosen window or the door (data {ENTRY: CabinEntryLink}).
 ##
-## data {"rush": true} (after LURE drew the player away): faster, and no
+## data {RUSH: true} (after LURE drew the player away): faster, and no
 ## stopping for anything.
 ##
 ## Spotted on the way, it would rather not be seen: mostly it slips away out
@@ -40,11 +40,11 @@ var _quiet := false
 
 
 func enter(_from: int, data: Dictionary) -> void:
-	_entry = data.get("entry", world.pick_entry())
+	_entry = data.get(ENTRY, world.pick_entry())
 	brain.target_entry = _entry
 	_arrived = false
 	_bluffing = false
-	_rush = data.get("rush", false)
+	_rush = data.get(RUSH, false)
 	_retreating = false
 	_was_watched = false
 	_quiet = randf() < config.quiet_entry_chance
@@ -79,8 +79,9 @@ func update(delta: float) -> void:
 func next_state() -> int:
 	if not _entry:
 		return S.OBSERVE
-	if perception.player_outside:
-		return S.STALK if perception.can_see_player else S.OBSERVE
+	var left := player_left_cabin()
+	if left != NO_CHANGE:
+		return left
 	if _retreating:
 		world.mark_spotted(_entry)
 		entity.confidence.modify(-config.shy_retreat_confidence, "spotted")
@@ -94,15 +95,15 @@ func next_state() -> int:
 		return NO_CHANGE
 	if _entry.kind == CabinEntryLink.Kind.DOOR:
 		if _entry.entry.is_locked:
-			return go(S.PEEK, {"entry": _entry, "rattle": true})
-		return go(S.ENTER, {"entry": _entry})
+			return go(S.PEEK, {ENTRY: _entry, RATTLE: true})
+		return go(S.ENTER, {ENTRY: _entry})
 	if _entry.entry.is_passable():
-		return go(S.ENTER, {"entry": _entry})
+		return go(S.ENTER, {ENTRY: _entry})
 	if _can_enter_quietly():
 		_entry.entry.quiet_break()
 		entity.audio.play_crack(_entry.entry.global_position + Vector3.UP)
-		return go(S.ENTER, {"entry": _entry})
-	return go(S.PEEK, {"entry": _entry})
+		return go(S.ENTER, {ENTRY: _entry})
+	return go(S.PEEK, {ENTRY: _entry})
 
 
 ## A quiet way in: an intact, unboarded ground-floor window, Night 3, in a
@@ -111,7 +112,7 @@ func _can_enter_quietly() -> bool:
 	var window = _entry.entry
 	if not _quiet or _entry.climb or window.is_glass_shattered or window.is_boarded:
 		return false
-	if not entity.can_break_planks() or not window.has_method("quiet_break"):
+	if not entity.can_use_tricks() or not window.has_method("quiet_break"):
 		return false
 	if perception.in_player_view or world.player_sees_entry(_entry):
 		return false

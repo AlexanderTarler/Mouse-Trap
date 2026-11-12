@@ -67,8 +67,16 @@ var debug_breach := false
 var totem_defense_disabled: bool = false
 ## True during the Night 2 van chase (a scripted, fully aware pursuit).
 var van_chase_active: bool = false
+# ─── Tonight (reset when a night starts: _reset_tonight) ────────────────────
 ## Driven off by the overcharged beam tonight (it hardens each time).
 var times_driven_off := 0
+## Its once-a-night tricks, done: the fake departure, a prop knocked over.
+var faked_departure_tonight := false
+var prop_knocked_tonight := false
+## Sounds of the player's it has copied tonight, and how many were the
+## player's own voice (EntityAudio).
+var mimics_tonight := 0
+var voices_tonight := 0
 var is_enraged: bool = false
 
 var config: EntityConfig = CONFIG
@@ -342,7 +350,7 @@ func trigger_overload_stun(trap_position: Vector3, duration: float = 30.0) -> vo
 		return
 	if global_position.distance_to(trap_position) > 25.0:
 		return
-	brain.force(State.STUNNED, {"duration": duration})
+	brain.force(State.STUNNED, {EntityState.DURATION: duration})
 
 
 ## The generator died. If it was stunned, the stun breaks and it is enraged
@@ -365,7 +373,7 @@ func defend_totem(position: Vector3) -> void:
 	global_position = snapped
 	velocity = Vector3.ZERO
 	# No roar first: the defence is a surprise.
-	brain.force(State.CHARGE, {"committed": true, "no_roar": true})
+	brain.force(State.CHARGE, {EntityState.COMMITTED: true, EntityState.NO_ROAR: true})
 
 
 ## Debug console: jump to a treeline vantage point (even if in view) and watch.
@@ -374,7 +382,7 @@ func debug_relocate() -> void:
 		activate()
 	var spot := world.pick_vantage_point(true)
 	if spot:
-		_teleport(world.snap_to_navmesh(spot.global_position))
+		teleport(world.snap_to_navmesh(spot.global_position))
 	brain.force(State.OBSERVE)
 
 
@@ -398,14 +406,23 @@ func is_dev_mode() -> bool:
 	return _night_manager != null and _night_manager.get("is_dev_mode") == true
 
 
-## Night 1 is watch-only; from Night 2 it may come to the windows.
+# What it does from which night: EntityConfig's "Nights" group. (It is only
+# out there on its own from config.active_night; the earlier gates matter
+# when the debug console or a test puts it in the world before that.)
+
+## It may come to the windows and the door.
 func can_approach_cabin() -> bool:
-	return is_dev_mode() or current_night() >= 2
+	return is_dev_mode() or current_night() >= config.approach_night
 
 
-## Night 2 it can break glass but not planks; from Night 3, planks too.
+## It can break planks (before that, only glass).
 func can_break_planks() -> bool:
-	return is_dev_mode() or debug_breach or current_night() >= 3
+	return is_dev_mode() or debug_breach or current_night() >= config.break_planks_night
+
+
+## It plays its tricks (see EntityConfig.tricks_night for the list).
+func can_use_tricks() -> bool:
+	return is_dev_mode() or debug_breach or current_night() >= config.tricks_night
 
 
 func speed_multiplier() -> float:
@@ -539,11 +556,13 @@ func try_teleport(target: Vector3) -> bool:
 		return false
 	if perception.is_in_player_view(global_position) or perception.is_in_player_view(target):
 		return false
-	_teleport(target)
+	teleport(target)
 	return true
 
 
-func _teleport(target: Vector3) -> void:
+## Puts it at `target` at once, seen or not (scripted moments, the debug
+## console, tests). Behaviour uses try_teleport(), which refuses in view.
+func teleport(target: Vector3) -> void:
 	_cancel_traversal()
 	_release_perch()
 	global_position = target
@@ -1242,11 +1261,20 @@ func _set_hidden(hidden: bool) -> void:
 # NIGHT EVENTS
 # ═════════════════════════════════════════════════════════════════════════════
 
-func _on_night_started(night: int) -> void:
+func _reset_tonight() -> void:
 	times_driven_off = 0
-	# Nights 1 and 2 belong to the story: the Entity only appears for the
+	faked_departure_tonight = false
+	prop_knocked_tonight = false
+	mimics_tonight = 0
+	voices_tonight = 0
+
+
+func _on_night_started(night: int) -> void:
+	_reset_tonight()
+	audio.night_started()
+	# The first nights belong to the story: the Entity only appears for the
 	# Night 2 van chase (start_van_chase).
-	if night <= 2 and not is_dev_mode():
+	if night < config.active_night and not is_dev_mode():
 		deactivate()
 		return
 	# Last night's traces were there to be found during the day.
@@ -1256,12 +1284,12 @@ func _on_night_started(night: int) -> void:
 	activate()
 	var spot := world.pick_vantage_point(true)
 	if spot:
-		_teleport(spot.global_position)
+		teleport(spot.global_position)
 	brain.force(State.OBSERVE)
 
 
 func _on_first_chase_started() -> void:
-	var marker := world._level_root().find_child("EntityVanSpawn", true, false) as Node3D
+	var marker := world.level_root().find_child("EntityVanSpawn", true, false) as Node3D
 	var spawn := marker.global_position if marker else _player.global_position - _player.global_transform.basis.z * 15.0
 	start_van_chase(spawn)
 

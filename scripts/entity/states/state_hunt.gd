@@ -49,7 +49,7 @@ var _patrol: Array[Vector3] = []
 var _patrol_index := 0
 var _scan_left := 0.0
 var _since_contact := 0.0
-var _lead = null   ## Vector3 or null: the position being investigated.
+var _lead := Vector3.INF   ## The position being investigated (INF: none).
 var _remember_cooldown := 0.0
 ## Hiding: where, and for how long yet.
 var _cover := Vector3.INF
@@ -63,12 +63,10 @@ var _ambush_cooldown := 0.0
 var _tell_left := -1.0
 ## After the fake departure's ambush: leave for real (quietly).
 var _leave_after_ambush := false
-var _faked_night := -1
 ## Waiting outside a lit room: for how long, and the next tap on the wall.
 var _siege_time := 0.0
 var _wall_tap_left := 0.0
 var _prop_check := 0.0
-var _prop_night := -1
 ## After finding no cover: not looked for again until this runs out (it was
 ## searched for every frame: 20 navmesh lookups and up to 40 rays each).
 var _cover_retry := 0.0
@@ -148,10 +146,10 @@ func update(delta: float) -> void:
 			entity.face(player.global_position)
 		return
 
-	if _lead != null:
+	if _lead != Vector3.INF:
 		var remaining := entity.move_to(_lead, config.hunt_alert_speed)
 		if remaining < ARRIVE_DISTANCE:
-			_lead = null
+			_lead = Vector3.INF
 			_scan_left = config.room_scan_time
 		return
 
@@ -205,7 +203,7 @@ func _spring() -> void:
 
 
 func _maybe_ambush() -> void:
-	if not entity.can_break_planks() or _ambush_cooldown > 0.0 or randf() >= config.ambush_chance:
+	if not entity.can_use_tricks() or _ambush_cooldown > 0.0 or randf() >= config.ambush_chance:
 		return
 	var watch: Vector3
 	if perception.has_fresh_noise(AMBUSH_NOISE_MEMORY) and world.is_inside_cabin(perception.last_heard_position):
@@ -232,8 +230,7 @@ func _lie_in_wait(watch: Vector3, min_radius: float, max_radius: float, seconds:
 
 ## Giving up: from Night 3, once a night, it only sounds like it leaves.
 func _fake_departure() -> bool:
-	var night := entity.current_night()
-	if not entity.can_break_planks() or _faked_night == night or randf() >= config.fake_departure_chance:
+	if not entity.can_use_tricks() or entity.faked_departure_tonight or randf() >= config.fake_departure_chance:
 		return false
 	var exit := world.nearest_exit()
 	if not exit:
@@ -241,7 +238,7 @@ func _fake_departure() -> bool:
 	var player := entity.get_player()
 	if not _lie_in_wait(player.global_position, 3.0, 8.0, randf_range(config.ambush_time_min, config.ambush_time_max) + 10.0):
 		return false
-	_faked_night = night
+	entity.faked_departure_tonight = true
 	_leave_after_ambush = true
 	world.note_trick()
 	entity.audio.play_departure(exit, world.outside_of(exit, 12.0))
@@ -251,7 +248,7 @@ func _fake_departure() -> bool:
 ## Outside a lit room (Night 3): taps on the wall from the dark side, then
 ## the light goes. Night 2 the light is a safe haven.
 func _update_siege(delta: float, player: Node3D) -> void:
-	if not entity.can_break_planks():
+	if not entity.can_use_tricks():
 		return
 	_siege_time += delta
 	if is_hiding():
@@ -284,8 +281,7 @@ func _knock_props(delta: float) -> void:
 	if _prop_check > 0.0:
 		return
 	_prop_check = 0.5
-	var night := entity.current_night()
-	if not entity.can_break_planks() or _prop_night == night or perception.in_player_view or not world.trick_ready():
+	if not entity.can_use_tricks() or entity.prop_knocked_tonight or perception.in_player_view or not world.trick_ready():
 		return
 	var prop := world.loose_prop_near(entity.global_position, PROP_REACH)
 	if prop == null:
@@ -294,7 +290,7 @@ func _knock_props(delta: float) -> void:
 	away.y = 0.0
 	prop.apply_central_impulse((away.normalized() * 1.5 + Vector3.UP * 0.8) * prop.mass)
 	entity.audio.play_thud_at(prop.global_position)
-	_prop_night = night
+	entity.prop_knocked_tonight = true
 	world.note_trick()
 
 
@@ -305,7 +301,7 @@ func next_state() -> int:
 		if _tell_left > 0.0:
 			return NO_CHANGE
 		_tell_left = -1.0
-		return go(S.CHARGE, {"no_roar": true})
+		return go(S.CHARGE, {NO_ROAR: true})
 	if not perception.entity_inside:
 		return S.STALK if perception.can_see_player else S.OBSERVE
 	if is_ambushing():
@@ -315,14 +311,14 @@ func next_state() -> int:
 		return S.CHARGE
 	# The player got out: leave and pick up the trail outside.
 	if perception.player_outside and _since_contact > 2.0:
-		return go(S.FLEE, {"calm": true})
+		return go(S.FLEE, {CALM: true})
 	if _since_contact > config.hunt_give_up_time:
 		if _leave_after_ambush:
-			return go(S.FLEE, {"calm": true})
+			return go(S.FLEE, {CALM: true})
 		if _fake_departure():
 			return NO_CHANGE
 		entity.audio.play_grunt(0.9)
-		return go(S.FLEE, {"calm": true})
+		return go(S.FLEE, {CALM: true})
 	return NO_CHANGE
 
 
@@ -355,10 +351,10 @@ func is_ambushing() -> bool:
 
 ## The freshest lead, ignoring leads outside the cabin while the player is
 ## known to be inside (a stale sighting from the yard shouldn't walk it out).
-func _indoor_lead():
-	var lead = freshest_lead()
-	if lead != null and perception.player_inside and not world.is_inside_cabin(lead):
-		return null
+func _indoor_lead() -> Vector3:
+	var lead := perception.freshest_lead()
+	if lead != Vector3.INF and perception.player_inside and not world.is_inside_cabin(lead):
+		return Vector3.INF
 	return lead
 
 

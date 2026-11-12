@@ -90,9 +90,9 @@ func force(to: int, data: Dictionary = {}) -> void:
 	_transition(to, data)
 
 
-## Switches state from inside a state's update(), passing data along.
+## The same, by the name states use (EntityState.go).
 func go(to: int, data: Dictionary = {}) -> void:
-	_transition(to, data)
+	force(to, data)
 
 
 func get_state(id: int) -> EntityState:

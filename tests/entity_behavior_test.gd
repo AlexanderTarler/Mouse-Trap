@@ -118,7 +118,7 @@ func _run() -> void:
 func _test_grounding() -> void:
 	_entity.activate()
 	_place_player(HALL)
-	_entity._teleport(YARD + Vector3.UP * 1.5)
+	_entity.teleport(YARD + Vector3.UP * 1.5)
 	_entity.request_state(_entity.State.OBSERVE)
 	await _frames(90)
 	var floor_y := _floor_below(_entity.global_position)
@@ -223,7 +223,7 @@ func _test_indoor_charge_stays_inside() -> void:
 	if not hall_link:
 		_check("indoor charge: precondition (an open window)", false, "none open")
 		return
-	_entity._teleport(hall_link.end_position)
+	_entity.teleport(hall_link.end_position)
 	_place_player(HALL)
 	_entity.request_state(_entity.State.HUNT)
 	await _frames(30)
@@ -243,7 +243,7 @@ func _test_outdoor_stalk_and_standoff() -> void:
 	_entity.request_state(_entity.State.DORMANT)
 	_entity.activate()
 	var spot := _clear_sightline(YARD, 6.0)
-	_entity._teleport(spot)
+	_entity.teleport(spot)
 	_place_player(spot + Vector3(0.0, 0.0, 6.0))
 	_entity.rotation.y = 0.0   # facing +Z, toward the player
 	await _frames(3)
@@ -262,7 +262,7 @@ func _setup_outdoor_face_off() -> bool:
 	_entity.request_state(_entity.State.DORMANT)
 	_entity.activate()
 	var spot := _clear_sightline(YARD, 6.0)
-	_entity._teleport(spot)
+	_entity.teleport(spot)
 	_place_player(spot + Vector3(0.0, 0.0, 6.0))
 	_entity.rotation.y = 0.0
 	_entity.brain.standoff_cooldown = 0.0
@@ -286,7 +286,7 @@ func _test_beam_reach() -> void:
 	_entity.activate()
 	_entity.request_state(_entity.State.OBSERVE)
 	var spot := _clear_sightline(YARD, 13.0)
-	_entity._teleport(spot)
+	_entity.teleport(spot)
 	await _frames(2)
 	var flashlight = _player._flashlight
 	var had_flashlight: bool = _player._has_flashlight
@@ -380,7 +380,7 @@ func _test_locked_door_stays_shut() -> void:
 			link.entry.is_boarded = true
 			link.entry.planks_remaining = 3
 	_place_player(HALL)
-	_entity._teleport(YARD)
+	_entity.teleport(YARD)
 	_entity.confidence.set_confidence(80.0)
 	_entity.request_state(_entity.State.OBSERVE)
 	await _frames(60 * 40)
@@ -421,7 +421,7 @@ func _test_presence_flicker() -> void:
 	var light = window_link.entry.room_light
 	light.is_switched_on = true
 	_entity.activate()
-	_entity._teleport(window_link.start_position)
+	_entity.teleport(window_link.start_position)
 	_entity.request_state(_entity.State.DORMANT)   # active but standing still outside the window
 	_entity.world._presence_cooldown.clear()   # earlier scenarios may have used this window's cooldown
 	var flickered := false

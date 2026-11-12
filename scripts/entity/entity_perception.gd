@@ -150,6 +150,16 @@ func has_fresh_noise(max_age: float = -1.0) -> bool:
 	return time_since_heard() < (config.memory_time if max_age < 0.0 else max_age)
 
 
+## Where to go looking for the player, from memory: the last sighting if
+## it's fresh, otherwise the last noise, otherwise Vector3.INF (no idea).
+func freshest_lead() -> Vector3:
+	if has_fresh_sighting():
+		return last_seen_position
+	if has_fresh_noise():
+		return last_heard_position
+	return Vector3.INF
+
+
 # ─── Hearing ─────────────────────────────────────────────────────────────────
 
 const FOOTSTEPS: Array[StringName] = [&"walk", &"sprint", &"crouch"]

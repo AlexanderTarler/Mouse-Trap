@@ -8,11 +8,11 @@ extends EntityState
 ## config.charge_max_time. Indoors it goes back to hunting the cabin (never to
 ## the treeline); outdoors it searches where it last saw them.
 ##
-## data {"committed": true} (totem defence, and after the lamp's stun) tracks
+## data {COMMITTED: true} (totem defence, and after the lamp's stun) tracks
 ## the player directly for the whole charge instead of only while visible;
-## {"max_time": s} lasts that long instead of config.charge_max_time.
+## {MAX_TIME: s} lasts that long instead of config.charge_max_time.
 ## It roars first (Entity.play_oneshot), standing its ground for a moment,
-## unless it wound up for it already (STANDOFF) or {"no_roar": true} (the
+## unless it wound up for it already (STANDOFF) or {NO_ROAR: true} (the
 ## totem defence, a surprise).
 
 const S := Entity.State
@@ -23,10 +23,10 @@ var _max_time := 0.0
 
 
 func enter(from: int, data: Dictionary) -> void:
-	_committed = data.get("committed", false)
-	_max_time = data.get("max_time", config.charge_max_time)
+	_committed = data.get(COMMITTED, false)
+	_max_time = data.get(MAX_TIME, config.charge_max_time)
 	_lost_time = 0.0
-	if from != S.STANDOFF and not data.get("no_roar", false):
+	if from != S.STANDOFF and not data.get(NO_ROAR, false):
 		entity.play_oneshot(&"Roar", Entity.ROAR_TIME, Entity.ROAR_SPEED)
 		_max_time += Entity.ROAR_TIME
 	# A shriek from its own head, indoors as well as out.
@@ -54,7 +54,7 @@ func next_state() -> int:
 	if perception.entity_inside:
 		return S.HUNT
 	if perception.player_outside:
-		return go(S.SEARCH, {"target": perception.last_seen_position})
+		return go(S.SEARCH, {TARGET: perception.last_seen_position})
 	return S.OBSERVE
 
 

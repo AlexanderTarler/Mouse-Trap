@@ -90,7 +90,7 @@ func next_state() -> int:
 			elif _lost_time > config.standoff_release_time:
 				# Indoors a beam let go too soon is a chance, not a defeat.
 				if perception.entity_inside and perception.player_inside:
-					return go(S.CHARGE, {"no_roar": true})
+					return go(S.CHARGE, {NO_ROAR: true})
 				_start_back_off()
 		Phase.WINDUP:
 			if _lost_time > config.windup_release_time:

@@ -85,7 +85,7 @@ func update(delta: float) -> void:
 func next_state() -> int:
 	if entity.van_chase_active:
 		if _player_inside_time > VAN_SAFE_TIME:
-			return go(S.FLEE, {"vanish": true})
+			return go(S.FLEE, {VANISH: true})
 		return NO_CHANGE
 	if perception.player_inside:
 		return S.OBSERVE
@@ -93,7 +93,7 @@ func next_state() -> int:
 			and not perception.player_watching:
 		return S.CHARGE
 	if _lost_time > config.stalk_lose_time:
-		return go(S.SEARCH, {"target": perception.last_seen_position})
+		return go(S.SEARCH, {TARGET: perception.last_seen_position})
 	return NO_CHANGE
 
 

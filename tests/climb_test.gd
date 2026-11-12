@@ -121,7 +121,7 @@ func _place_player(floor_pos: Vector3) -> void:
 # ─── Scenarios ───────────────────────────────────────────────────────────────
 
 func _test_floor_aware() -> void:
-	_entity._teleport(_ground(LIVING))
+	_entity.teleport(_ground(LIVING))
 	await _frames(2)
 	var to_landing: float = _entity.move_to(_ground(LANDING), 2.0)
 	var to_living: float = _entity.move_to(_ground(LIVING + Vector3(0.3, 0.0, 0.0)), 2.0)
@@ -158,7 +158,7 @@ func _test_climb_in() -> void:
 	_states.clear()
 	_place_player(BEDROOM)
 	var link = _link("BedroomWindowLeft")
-	_entity._teleport(_ground(EAST_YARD))
+	_entity.teleport(_ground(EAST_YARD))
 	await _frames(2)
 	_entity.request_state(_entity.State.APPROACH, {"entry": link})
 	var perched: bool = await _wait_for(func(): return _entity.is_perched_at(link), 20.0)
@@ -180,7 +180,7 @@ func _test_driven_off_mid_climb() -> void:
 	_states.clear()
 	_place_player(BEDROOM)
 	var link = _link("BedroomWindowRight")
-	_entity._teleport(_ground(EAST_YARD))
+	_entity.teleport(_ground(EAST_YARD))
 	_entity.confidence.reset()
 	_entity.world._repelled_until.clear()
 	var config = _entity.config
@@ -228,7 +228,7 @@ func _test_driven_off_mid_dive() -> void:
 	var link = window._entry_link
 	window.is_glass_shattered = true
 	window.is_boarded = false
-	_entity._teleport(_ground(BACK_YARD))
+	_entity.teleport(_ground(BACK_YARD))
 	_entity.confidence.reset()
 	_entity.world._repelled_until.clear()
 	_entity.times_driven_off = 0
@@ -263,7 +263,7 @@ func _test_drop_off() -> void:
 	_states.clear()
 	_place_player(BEDROOM)
 	var link = _link("BedroomWindowRight")
-	_entity._teleport(_ground(EAST_YARD))
+	_entity.teleport(_ground(EAST_YARD))
 	_entity.confidence.reset()
 	await _frames(2)
 	_entity.request_state(_entity.State.APPROACH, {"entry": link})
@@ -291,7 +291,7 @@ func _test_climb_down() -> void:
 	_states.clear()
 	_place_player(LANDING)
 	var link = _link("LandingWindow")
-	_entity._teleport(_ground(BACK_YARD))
+	_entity.teleport(_ground(BACK_YARD))
 	_entity.world._repelled_until.clear()
 	_entity.confidence.reset()
 	await _frames(2)
@@ -328,7 +328,7 @@ func _test_leave_through_upstairs_window() -> void:
 		_check("leave: precondition (bedroom window broken open)", false)
 		return
 	_place_player(Vector3(40.0, 0.3, -20.0))
-	_entity._teleport(_ground(BEDROOM))
+	_entity.teleport(_ground(BEDROOM))
 	await _frames(5)
 	_entity.request_state(_entity.State.FLEE, {"calm": true})
 	var out: bool = await _wait_for(func(): return not _entity.perception.entity_inside and not _entity.is_traversing() \

@@ -113,7 +113,7 @@ func _test_hunt_music() -> void:
 	var hsm: Node = root.get_node("HorrorSoundManager")
 	var audio: Node = _entity.audio
 	_entity.can_kill = false
-	_entity._teleport(Vector3(20.0, 0.3, 30.0))
+	_entity.teleport(Vector3(20.0, 0.3, 30.0))
 	_entity.request_state(_entity.State.CHARGE, {"no_roar": true})
 	await _frames(5)
 	var charging: bool = hsm._stalk_chase_playing and hsm._stalk_chase_player.stream.resource_path.ends_with("too late (loop).ogg")

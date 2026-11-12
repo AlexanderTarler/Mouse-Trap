@@ -154,7 +154,7 @@ func _test_death() -> void:
 	var totem: Node3D = get_first_node_in_group("totem_anchor")
 	_em.death_cutscenes_seen = 0
 	entity.activate()
-	entity._teleport(player.global_position + Vector3(0, 0, -2.0))
+	entity.teleport(player.global_position + Vector3(0, 0, -2.0))
 	jumpscare._execute_jumpscare()
 
 	# Jumpscare 3.2 s + fade 0.5 s, then the cutscene: ~4 s in, being dragged.

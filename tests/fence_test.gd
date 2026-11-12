@@ -145,7 +145,7 @@ func _test_entity_opens_gate() -> void:
 	var entity = get_first_node_in_group("entity")
 	entity.can_kill = false
 	entity.activate()
-	entity._teleport(Vector3(33.4, 0.1, -89.0))
+	entity.teleport(Vector3(33.4, 0.1, -89.0))
 	await _frames(10)
 	_check("the Entity bursts the shut gate open when it comes to it", gate.is_open)
 	entity.deactivate()

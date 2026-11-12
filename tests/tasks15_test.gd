@@ -96,7 +96,7 @@ func _leave_through(window: Node, from_inside: float) -> Array:
 	var link: CabinEntryLink = window._entry_link
 	_entity.debug_breach = false
 	var inward: Vector3 = (link.end_position - link.start_position) * Vector3(1, 0, 1)
-	_entity._teleport(link.end_position + inward.normalized() * from_inside)
+	_entity.teleport(link.end_position + inward.normalized() * from_inside)
 	_entity.request_state(_entity.State.FLEE, {"calm": true})
 	var crawled := false
 	var worst := 0.0

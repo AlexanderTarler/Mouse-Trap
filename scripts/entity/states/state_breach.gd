@@ -1,7 +1,7 @@
 class_name EntityStateBreach
 extends EntityState
 
-## Breaking in through a window (data {"entry": CabinEntryLink}): the glass
+## Breaking in through a window (data {ENTRY: CabinEntryLink}): the glass
 ## first, then one plank at a time. Once the window is passable its link
 ## switches on and the Entity climbs in (ENTER).
 ##
@@ -29,7 +29,7 @@ var _aside := Vector3.ZERO
 
 
 func enter(_from: int, data: Dictionary) -> void:
-	_entry = data.get("entry")
+	_entry = data.get(ENTRY)
 	brain.target_entry = _entry
 	_swing = EntitySwing.new(config.hit_interval, config.hit_impact_delay)
 	_hits = 0
@@ -79,9 +79,7 @@ func _start_pause() -> void:
 	_paused = true
 	_burst_left = 0
 	_pause_left = randf_range(PAUSE_MIN, PAUSE_MAX)
-	var across := _entry.end_position - _entry.start_position
-	var side := Vector3(-across.z, 0.0, across.x).normalized() * (SIDESTEP if randf() < 0.5 else -SIDESTEP)
-	_aside = world.snap_to_navmesh(_entry.start_position + side)
+	_aside = beside_entry(_entry, SIDESTEP)
 
 
 ## Quiet, beside the window (or below the sill), out of view of the glass.
@@ -103,9 +101,10 @@ func is_pausing() -> bool:
 func next_state() -> int:
 	var window = _entry.entry
 	if window.is_passable():
-		return go(S.ENTER, {"entry": _entry})
-	if perception.player_outside:
-		return S.STALK if perception.can_see_player else S.OBSERVE
+		return go(S.ENTER, {ENTRY: _entry})
+	var left := player_left_cabin()
+	if left != NO_CHANGE:
+		return left
 	if world.is_entry_lit(_entry):
 		entity.audio.play_grunt(1.3)
 		return S.OBSERVE

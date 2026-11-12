@@ -1,7 +1,7 @@
 class_name EntityStateEnter
 extends EntityState
 
-## Getting inside through an open entry (data {"entry": CabinEntryLink}).
+## Getting inside through an open entry (data {ENTRY: CabinEntryLink}).
 ## It paths to the entry's inside point: the route crosses the entry link,
 ## and Entity._traverse() plays the climb (window) or opens the door and
 ## walks through it. Once standing at the link's outside end it crosses
@@ -16,7 +16,7 @@ var _entry: CabinEntryLink = null
 
 
 func enter(_from: int, data: Dictionary) -> void:
-	_entry = data.get("entry")
+	_entry = data.get(ENTRY)
 	brain.target_entry = _entry
 
 

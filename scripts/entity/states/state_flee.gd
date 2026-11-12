@@ -10,8 +10,8 @@ extends EntityState
 ## It is done once it has arrived somewhere the player can't see it.
 ##
 ## data:
-##   {"calm": true}   leaving on its own: no confidence penalty, walks.
-##   {"vanish": true} end of the van chase: deactivates when done.
+##   {CALM: true}   leaving on its own: no confidence penalty, walks.
+##   {VANISH: true} end of the van chase: deactivates when done.
 
 const S := Entity.State
 const ARRIVE_DISTANCE := 1.5
@@ -28,9 +28,9 @@ const SLIP_RETRY := 0.5
 
 
 func enter(from: int, data: Dictionary) -> void:
-	_calm = data.get("calm", false)
+	_calm = data.get(CALM, false)
 	entity.cancel_oneshot()   # driven off mid-roar
-	_vanish = data.get("vanish", false)
+	_vanish = data.get(VANISH, false)
 	_arrived = false
 	if not _calm and not _vanish:
 		entity.confidence.repelled()

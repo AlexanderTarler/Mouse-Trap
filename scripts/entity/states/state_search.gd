@@ -17,7 +17,7 @@ var _heard_at := Vector3.INF
 
 
 func enter(_from: int, data: Dictionary) -> void:
-	var target: Vector3 = data.get("target", perception.last_seen_position)
+	var target: Vector3 = data.get(TARGET, perception.last_seen_position)
 	_plan(target)
 	entity.audio.play_voice("search")
 

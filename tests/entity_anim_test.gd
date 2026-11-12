@@ -69,7 +69,7 @@ func _run() -> void:
 
 func _start(at: Vector3) -> void:
 	_entity.activate()
-	_entity._teleport(at)
+	_entity.teleport(at)
 
 
 func _test_library() -> void:
