@@ -120,11 +120,11 @@ Or one directly:
 godot --headless --path . --fixed-fps 60 --script res://tests/climb_test.gd
 ```
 
-## Credits
+## Credits and licence
 
-Code and design by Alexander Tarler. The full list of asset packs, sounds
-and fonts, with their authors and licences, is on the in-game Credits
-screen (`scripts/ui/credits_screen.gd`).
+Code and design by Alexander Tarler. © 2026 Alexander Tarler, all rights
+reserved. The full list of asset packs, sounds and fonts, with their authors
+and licences, is on the in-game Credits screen (`scripts/ui/credits_screen.gd`).
 
 Third-party Godot add-ons in `addons/`, each under its own licence:
 [TerraBrush](https://github.com/spimort/TerraBrush) (MIT),
