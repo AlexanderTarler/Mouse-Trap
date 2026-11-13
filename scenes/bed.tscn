@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://cn54gliuph0vx" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Furniture/bed_1.glb" id="1_fqty4"]
 [ext_resource type="PackedScene" uid="uid://b2xkqw7gli4qw" path="res://assets/PSX Mega Pack/Models/other-formats/FBX/Furniture/pillow_mp_1.fbx" id="2_raxto"]
-[ext_resource type="Script" uid="uid://bkr2xvmjfr0xc" path="res://scripts/bed_interactable.gd" id="3_raxto"]
+[ext_resource type="Script" uid="uid://bkr2xvmjfr0xc" path="res://scripts/cabin/bed_interactable.gd" id="3_raxto"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_853xm"]
 size = Vector3(3, 1.5, 1.5)

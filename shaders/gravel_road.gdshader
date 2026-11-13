@@ -1,5 +1,5 @@
 shader_type spatial;
-// The gravel road (scripts/gravel_road.gd): tiled gravel, two compacted wheel
+// The gravel road (scripts/world/gravel_road.gd): tiled gravel, two compacted wheel
 // ruts, a patchy grassy ridge down the middle, and ragged edges fading into
 // the terrain. UV.x runs along the road (m), UV.y across it (-1 to 1).
 render_mode blend_mix, depth_draw_never, cull_back, specular_disabled;

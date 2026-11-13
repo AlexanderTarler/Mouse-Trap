@@ -108,7 +108,7 @@ func _test_generator() -> void:
 		generator.is_switched_on and _nm.generator_fuel > 52.0, "%.2f" % _nm.generator_fuel)
 	inventory.clear()
 
-	var source := FileAccess.get_file_as_string("res://scripts/routine_manager.gd")
+	var source := FileAccess.get_file_as_string("res://scripts/managers/routine_manager.gd")
 	_check("1: refilled, the generator itself is highlighted for switching on (no switch group left)",
 		not source.contains("xray_generator_switch") and get_nodes_in_group("xray_generator_switch").is_empty())
 

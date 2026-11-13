@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://d4m5lq0f7k3x2"]
 
-[ext_resource type="Script" uid="uid://breh4bg8kji14" path="res://scripts/window_peeker.gd" id="1_3q6q2"]
+[ext_resource type="Script" uid="uid://breh4bg8kji14" path="res://scripts/peeker/window_peeker.gd" id="1_3q6q2"]
 [ext_resource type="AudioStream" uid="uid://bxww8ac8qk1rg" path="res://assets/audio/Entity/Piano_stinger_dissonent.wav" id="2_8k8na"]
 [ext_resource type="PackedScene" uid="uid://bcqrmxmkjwbhc" path="res://assets/character models/elkdemongodot.glb" id="2_krxyj"]
 

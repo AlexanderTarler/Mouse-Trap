@@ -339,7 +339,7 @@ func _test_endings() -> void:
 
 
 func _test_phone_and_icons() -> void:
-	var opening_src := FileAccess.get_file_as_string("res://scripts/opening.gd")
+	var opening_src := FileAccess.get_file_as_string("res://scripts/cinematics/opening.gd")
 	var phone := Phone.new()
 	_scene.add_child(phone)
 	phone.build("Test", "12:00")

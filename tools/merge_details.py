@@ -15,7 +15,7 @@ from pathlib import Path
 # (MERGE_LEVEL: another copy of the level, to try it on.)
 LEVEL = Path(os.environ.get("MERGE_LEVEL") or Path(__file__).resolve().parent.parent / "scenes" / "cottage_horror.tscn")
 GROUPS = ["CabinDetails", "ForestDetails"]
-KNOCKABLE = "res://scripts/knockable_prop.gd"
+KNOCKABLE = "res://scripts/interactables/knockable_prop.gd"
 # The level's own things in the cabin that become loose: instanced scenes...
 LOOSE_INSTANCES = ["coin_mp_12", "glass_bottle_12"]
 # ...and plain meshes (KnockableProp.mesh).

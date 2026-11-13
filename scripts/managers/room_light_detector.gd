@@ -20,7 +20,7 @@ extends Node
 ##
 ## SETUP IN PROJECT SETTINGS:
 ##   Add this script as an autoload in Project → Project Settings → Autoload:
-##     Path: res://scripts/room_light_detector.gd
+##     Path: res://scripts/managers/room_light_detector.gd
 ##     Name: RoomLightDetector
 ##
 ## SETUP IN THE SCENE EDITOR:

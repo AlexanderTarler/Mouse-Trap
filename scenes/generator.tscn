@@ -1,10 +1,10 @@
 [gd_scene format=3 uid="uid://ber2ukknc0e3n"]
 
 [ext_resource type="PackedScene" uid="uid://ciuslcp5b0twm" path="res://assets/PSX Bunkers/Models/FBX/generator_1.fbx" id="1_5yxne"]
-[ext_resource type="Script" uid="uid://batgnoo2rflnk" path="res://scripts/generator.gd" id="1_rqoq6"]
+[ext_resource type="Script" uid="uid://batgnoo2rflnk" path="res://scripts/power/generator.gd" id="1_rqoq6"]
 [ext_resource type="AudioStream" uid="uid://csxrkjyxqmuw5" path="res://assets/audio/objects/generator_switch.ogg" id="2_kgmdj"]
-[ext_resource type="Script" uid="uid://c83w5oahgle2v" path="res://scripts/generator_interaction.gd" id="2_w5vnv"]
-[ext_resource type="Script" uid="uid://dcskrxu6772q2" path="res://scripts/generator_outlet.gd" id="3_outlet"]
+[ext_resource type="Script" uid="uid://c83w5oahgle2v" path="res://scripts/power/generator_interaction.gd" id="2_w5vnv"]
+[ext_resource type="Script" uid="uid://dcskrxu6772q2" path="res://scripts/power/generator_outlet.gd" id="3_outlet"]
 [ext_resource type="AudioStream" uid="uid://7lhq87cfe0a5" path="res://assets/audio/objects/refuel_generator.ogg" id="6_ionxw"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_5yxne"]

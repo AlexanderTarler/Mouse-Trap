@@ -22,7 +22,7 @@ STATUS: Round 2 done (8, 9, 11, 13; tests/tasks7_test.gd).
      "There is no way I'm going outside now." until Day 3 (night_ended);
      not set again after a restart at the van until the chase.
 STATUS: Round 3 done (2, 7, 14; tests/tasks8_test.gd).
-  2  SleepCinematic (scripts/sleep_cinematic.gd), used by all four bed
+  2  SleepCinematic (scripts/cinematics/sleep_cinematic.gd), used by all four bed
      paths: a camera of its own to sitting on the bed, then lying back on
      the pillow, eyelids closing (soft-edged, a blink or two), breathing,
      to black (~4.5 s). Waking: eyelids open (blink, half-shut, open), sit
@@ -79,7 +79,7 @@ Size: tiny.
 Now:  bed_interactable.gd has four sleep paths (Night 1 -> Day 2,
       Day 2 -> Night 2.2, the Day 1 fallback, exhaustion sleep). Each just
       fades to black and back; the player stays standing where they were.
-Do:   One shared helper, SleepCinematic (scripts/sleep_cinematic.gd), used
+Do:   One shared helper, SleepCinematic (scripts/cinematics/sleep_cinematic.gd), used
       by all four paths so they can't drift apart:
         Going to sleep (about 4 s): input off. The camera eases from where
         the player stands onto the pillow (a marker on the bed), turning to
