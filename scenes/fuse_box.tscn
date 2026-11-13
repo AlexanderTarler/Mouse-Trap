@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://dev1jyquh31tw"]
 
 [ext_resource type="PackedScene" uid="uid://bhtpwl205ntv4" path="res://assets/PSX Tech/Models/GLB (recommended)/fuse_box_etx_1.glb" id="1_7ap5c"]
-[ext_resource type="Script" uid="uid://bh20lnj2howlq" path="res://scripts/fuse_box.gd" id="1_wlh5m"]
+[ext_resource type="Script" uid="uid://bh20lnj2howlq" path="res://scripts/power/fuse_box.gd" id="1_wlh5m"]
 [ext_resource type="AudioStream" uid="uid://cuc7y7bjxwbt5" path="res://assets/audio/objects/check_fusebox.ogg" id="2_7201f"]
 [ext_resource type="AudioStream" uid="uid://ccrv0eqof3b4y" path="res://assets/audio/objects/repair_fusebox.ogg" id="3_xxgsi"]
 

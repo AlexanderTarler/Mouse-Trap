@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://b2lplqj6v4bkj"]
 
-[ext_resource type="Script" uid="uid://bteeabtnr50ik" path="res://scripts/computer_ui.gd" id="1_computer_ui"]
+[ext_resource type="Script" uid="uid://bteeabtnr50ik" path="res://scripts/ui/computer_ui.gd" id="1_computer_ui"]
 [ext_resource type="Shader" uid="uid://c1s66g87uyhi5" path="res://shaders/crt_monitor.gdshader" id="2_a82rf"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_terminal"]

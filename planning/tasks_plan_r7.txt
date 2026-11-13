@@ -184,7 +184,7 @@ ROUND D — the world's things
        the level as KnockableProps.
 
 16 More birds, and crows on the cabin roof on Day 1.
-   Crows (scripts/crows.gd) is hard-wired to the willow. Generalise it to
+   Crows (scripts/world/crows.gd) is hard-wired to the willow. Generalise it to
    flocks: a centre, perches, how close the player may come, day only or
    not. Flocks: the cabin roof ridge on Day 1 (off when the player is ~20 m
    away; they don't come back that day), the wreck yard, the barn roof, a

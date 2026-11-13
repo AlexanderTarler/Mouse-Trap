@@ -33,7 +33,7 @@ STATUS: Round C done (3.7, 3.5 mimicry, 3.8, 3.9; tests/inside_test.gd).
        inside and can't see it: their footsteps in another room, the
        notebook, a light switch, a knock on the front door.
   3.8  Passing a loose prop unseen, once a night, it knocks it over: a
-       thud from somewhere. Props: KnockableProp (scripts/knockable_prop.gd)
+       thud from somewhere. Props: KnockableProp (scripts/interactables/knockable_prop.gd)
        on the cabin's table decor (ashtrays, books, bottles, matchbox,
        screwdriver, walkie-talkie) plus a TV remote, tin can, VHS tape,
        plate and open book. Pickups lying about can be knocked too (not

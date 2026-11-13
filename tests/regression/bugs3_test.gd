@@ -147,7 +147,7 @@ func _test_hints() -> void:
 
 
 func _test_peeker() -> void:
-	var script: Script = load("res://scripts/window_peeker.gd")
+	var script: Script = load("res://scripts/peeker/window_peeker.gd")
 	var delay: float = script.get_script_constant_map().get("SPOTTED_VANISH_DELAY", 0.0)
 	_check("#3 the Peeker stays 1 s longer once seen (%.3f s)" % delay, is_equal_approx(delay, 1.325))
 

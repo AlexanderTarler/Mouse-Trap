@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dr1ny12noe77"]
 
-[ext_resource type="Script" uid="uid://svukbyp51e" path="res://scripts/totem_anchor.gd" id="1"]
+[ext_resource type="Script" uid="uid://svukbyp51e" path="res://scripts/interactables/totem_anchor.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://bqqixmq03dwo8" path="res://assets/PSX Forest Meadows by VadaCross/3D Models/Weeping Willow/Weeping Willow.fbx" id="2_yxyoh"]
 
 [sub_resource type="CylinderShape3D" id="6"]

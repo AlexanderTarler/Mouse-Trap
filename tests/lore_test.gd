@@ -112,7 +112,7 @@ func _test_opening() -> void:
 func _test_story() -> void:
 	var note_1: String = (load("res://resources/arvid_note.tres") as Resource).note_text
 	var note_2: String = (load("res://resources/arvid_note_2.tres") as Resource).note_text
-	var ui := load("res://scripts/computer_ui.gd") as Script
+	var ui := load("res://scripts/ui/computer_ui.gd") as Script
 	var consts := ui.get_script_constant_map()
 	var logs: String = consts.ARVID_LOG_01_SURVEY + consts.ARVID_LOG_02_CRITICAL
 	_check("Arvid's notes: no signal, the tunnel; the bait, the willow, his login",

@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dqnqvwoaib6mc"]
 
-[ext_resource type="Script" uid="uid://cmarytrqa5tj1" path="res://scripts/foliage_batcher.gd" id="1_batch"]
+[ext_resource type="Script" uid="uid://cmarytrqa5tj1" path="res://scripts/world/foliage_batcher.gd" id="1_batch"]
 [ext_resource type="PackedScene" path="res://scenes/trees_template.tscn" id="2_template"]
 
 [node name="Group of Trees" type="Node3D" unique_id=335884299]

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cpvhl2k7wl3jq"]
 
 [ext_resource type="PackedScene" uid="uid://b1ebaa7job4uu" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/pc_monitor_mp_1.glb" id="1_om4aa"]
-[ext_resource type="Script" uid="uid://dlhgo2k48r3ky" path="res://scripts/pc_interactable.gd" id="3_8pqrt"]
+[ext_resource type="Script" uid="uid://dlhgo2k48r3ky" path="res://scripts/interactables/pc_interactable.gd" id="3_8pqrt"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_8pqrt"]
 size = Vector3(0.5, 0.5, 0.5)

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://dsgbbun0atwdq"]
 
 [ext_resource type="PackedScene" uid="uid://bexuimcekf3lb" path="res://assets/PSX Kidnapper's Van/Meshes/other-formats/GLB/van_1.glb" id="1_halmf"]
-[ext_resource type="Script" uid="uid://b5jjve3a1t501" path="res://scripts/escape_van.gd" id="1_ywdun"]
+[ext_resource type="Script" uid="uid://b5jjve3a1t501" path="res://scripts/interactables/escape_van.gd" id="1_ywdun"]
 [ext_resource type="AudioStream" uid="uid://bkv43ed3j4llq" path="res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Electronics/alarm_distant_1.ogg" id="2_hxwsh"]
 [ext_resource type="AudioStream" uid="uid://b57jdorbnfhf5" path="res://assets/audio/objects/van_repair.ogg" id="4_6ho6p"]
 

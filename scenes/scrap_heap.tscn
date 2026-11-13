@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cwe54kc56vwjr"]
 
-[ext_resource type="Script" uid="uid://nmccgbcos1je" path="res://scripts/scrap_heap.gd" id="1_4n8q2"]
+[ext_resource type="Script" uid="uid://nmccgbcos1je" path="res://scripts/interactables/scrap_heap.gd" id="1_4n8q2"]
 [ext_resource type="PackedScene" uid="uid://b5xsgcqy0ld85" path="res://assets/PSX Bunkers/Models/other-formats/GLB/military_radio_1.glb" id="2_feo4i"]
 [ext_resource type="PackedScene" uid="uid://sjvs7pfwyc6n" path="res://assets/PSX Bunkers/Models/other-formats/GLB/pcb_1.glb" id="3_ykhyd"]
 [ext_resource type="PackedScene" uid="uid://drxgftys84red" path="res://assets/PSX Bunkers/Models/other-formats/GLB/pcb_2.glb" id="4_br7pj"]

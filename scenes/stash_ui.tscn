@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://ccu3unhb8jprv"]
 
-[ext_resource type="Script" uid="uid://crocjd5vo1fmm" path="res://scripts/stash_ui.gd" id="1_3m8q2"]
+[ext_resource type="Script" uid="uid://crocjd5vo1fmm" path="res://scripts/ui/stash_ui.gd" id="1_3m8q2"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
 content_margin_left = 12.0

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cgqts05fxlpn5"]
 
 [ext_resource type="PackedScene" uid="uid://d4mimvhkfa6yv" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Electronics & Misc/light_switch_1.glb" id="1_ldygq"]
-[ext_resource type="Script" uid="uid://dbj6d6cqy56sp" path="res://scripts/light_switch_trigger.gd" id="2_e7wg2"]
+[ext_resource type="Script" uid="uid://dbj6d6cqy56sp" path="res://scripts/cabin/light_switch_trigger.gd" id="2_e7wg2"]
 [ext_resource type="AudioStream" uid="uid://bn5qkupfydein" path="res://assets/audio/objects/light_switch.wav" id="3_h4oh8"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_e7wg2"]

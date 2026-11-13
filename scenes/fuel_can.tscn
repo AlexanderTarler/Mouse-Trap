@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://cd6rau4pn5djq"]
 
-[ext_resource type="Script" uid="uid://dq6ip8kp2w5rq" path="res://scripts/fuel_can_pickup.gd" id="1_6k3lm"]
+[ext_resource type="Script" uid="uid://dq6ip8kp2w5rq" path="res://scripts/items/fuel_can_pickup.gd" id="1_6k3lm"]
 [ext_resource type="PackedScene" uid="uid://gxtbrp8e7ry2" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Small Props/jerrycan_1.glb" id="3_7k3lm"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_1"]

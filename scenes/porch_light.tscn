@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://porchlight01"]
 
-[ext_resource type="Script" uid="uid://fhnh2jdw6g3g" path="res://scripts/cabin_light.gd" id="1_rtkov"]
+[ext_resource type="Script" uid="uid://fhnh2jdw6g3g" path="res://scripts/cabin/cabin_light.gd" id="1_rtkov"]
 [ext_resource type="PackedScene" uid="uid://dhjcp3ddki8uv" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Lighting/ceiling_lamp_mp_1_on.glb" id="2_5egqy"]
 [ext_resource type="PackedScene" uid="uid://c1k1ih7g3glkl" path="res://assets/PSX Mega Pack/Models/GLB (recommended)/Lighting/ceiling_lamp_mp_1_off.glb" id="3_oad5f"]
 

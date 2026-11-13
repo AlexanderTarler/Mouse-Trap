@@ -30,16 +30,16 @@ driver/enable_input=true
 
 [autoload]
 
-GameTime="*res://scripts/game_time.gd"
-NightManager="*res://scripts/night_manager.gd"
-HorrorSoundManager="*res://scripts/horror_sound_manager.gd"
+GameTime="*res://scripts/managers/game_time.gd"
+NightManager="*res://scripts/managers/night_manager.gd"
+HorrorSoundManager="*res://scripts/managers/horror_sound_manager.gd"
 Inventory="*uid://bjx17mr4lkv1w"
 JumpscareManager="*uid://br0tle13g7vbi"
-RoutineManager="*res://scripts/routine_manager.gd"
-EvidenceManager="*res://scripts/evidence_manager.gd"
+RoutineManager="*res://scripts/managers/routine_manager.gd"
+EvidenceManager="*res://scripts/managers/evidence_manager.gd"
 RoomLightDetector="*uid://lqer7d8tsn72"
 EndgameManager="*res://scripts/managers/endgame_manager.gd"
-PeekerManager="*res://scripts/peeker_manager.gd"
+PeekerManager="*res://scripts/peeker/peeker_manager.gd"
 MCPRuntime="*uid://d0d44kj7mgnoo"
 TutorialManager="*res://scripts/managers/tutorial_manager.gd"
 Checkpoint="*res://scripts/managers/checkpoint_manager.gd"

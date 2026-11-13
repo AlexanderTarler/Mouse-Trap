@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://d0uq0x2m2q0c8"]
 
-[ext_resource type="Script" uid="uid://blub4eo2nx7lv" path="res://scripts/hasselmus_nest.gd" id="1_nest_script"]
+[ext_resource type="Script" uid="uid://blub4eo2nx7lv" path="res://scripts/interactables/hasselmus_nest.gd" id="1_nest_script"]
 [ext_resource type="PackedScene" uid="uid://ohh0uo3cit5r" path="res://assets/PSX Nature/Models/GLB/tree_stump_1.glb" id="2_catae"]
 
 [sub_resource type="BoxShape3D" id="Shape_nest"]

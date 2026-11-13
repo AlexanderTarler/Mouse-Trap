@@ -146,7 +146,7 @@ func _test_sleep() -> void:
 	await sleep.wake_up(_player, true)
 	var sudden_time := (_frames_now() - t0) / 60.0
 	_check("2: Night 2.2, the alarm: awake and out of bed fast (%.1f s)" % sudden_time, sudden_time < 1.6 and cam.current)
-	var bed_script := (load("res://scripts/bed_interactable.gd") as Script).source_code
+	var bed_script := (load("res://scripts/cabin/bed_interactable.gd") as Script).source_code
 	_check("2: every way to bed uses it (sleep and wake), Night 2.2 wakes suddenly",
 		bed_script.count("fall_asleep(player)") == 4 and bed_script.count("wake_up(player") == 4 and bed_script.contains("wake_up(player, true)"))
 

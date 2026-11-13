@@ -205,7 +205,7 @@ func _test_storm() -> void:
 	await _frames(60 * int(weather.INSIDE_ENDS_AFTER + weather.FADE_OUT + 2.0))
 	# It rains on (indoors too) until the Day 3 wake-up clears it.
 	var still: bool = weather.is_raining()
-	var bed_clears := "weather.clear_now()" in FileAccess.get_file_as_string("res://scripts/bed_interactable.gd")
+	var bed_clears := "weather.clear_now()" in FileAccess.get_file_as_string("res://scripts/cabin/bed_interactable.gd")
 	weather.clear_now()
 	_check("#5 storm: documenting Nest Gamma brings rain, a darker sky and fog; it lasts until the Day 3 wake-up",
 		started and raining and still and bed_clears and not weather.is_raining() and environment.weather == 0.0,

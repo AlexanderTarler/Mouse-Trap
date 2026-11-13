@@ -67,17 +67,26 @@ All keys can be rebound under Settings > Controls.
 
 ```
 scripts/
-  entity/            The Entity (see below)
-    states/          One class per behaviour
-  managers/          Autoloads: checkpoints, saves, tutorial, captions, ...
-  ui/                Menus, HUD, notebook, options
-  items/, objects/, interactables/
-  night_manager.gd   Night and day flow
-  routine_manager.gd Objectives
-  game_time.gd       The clock (and when it holds for the story)
+  entity/          The Entity (see below); states/ holds one class per behaviour
+  peeker/          The scripted face at the windows on the first nights
+  player/          Movement, the flashlight, using and carrying things
+  cabin/           Windows, doors, lights, rooms, the bed
+  power/           The generator and the fuse box
+  interactables/   Nests, the van, the totem, scrap heaps, the computer
+  items/           Pickups, and keeping dropped items in the world
+  objects/         The portable lamp and its cable
+  inventory/       The inventory and its screen
+  ui/              Menus, HUD, notebook, options, the computer's desktop
+  managers/        Autoloads: night and day, objectives, the clock, sound,
+                   checkpoints, saves, tutorial, captions
+  settings/        Settings, key bindings, graphics quality
+  cinematics/      The opening, going to sleep, the endings
+  world/           Day/night lighting, the forest, dressing the map
+  navigation/      The Entity's ways in and out of the cabin
+  import/          Post-import scripts for the asset packs
 resources/entity_config.tres   Every Entity tuning value, in one place
-tests/               Headless test scenes (see below)
-tools/               Bakers and diagnostics (navmesh, forest, export checks)
+tests/             Headless test scenes (see below)
+tools/             Bakers and diagnostics (navmesh, forest, export checks)
 ```
 
 ### The Entity
