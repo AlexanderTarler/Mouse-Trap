@@ -133,8 +133,6 @@ var _env_tick_timer: float = 0.0
 ## Only updates that actually change the value will trigger a GPU pipeline flush.
 var _cached_sun_sky_mode: int = -1
 var _cached_moon_sky_mode: int = -1
-var _cached_sun_rotation_x: float = 0.0
-var _cached_moon_rotation_x: float = 0.0
 var _cached_sky_top_color: Color = Color()
 var _cached_sky_horizon_color: Color = Color()
 var _cached_ground_bottom_color: Color = Color()

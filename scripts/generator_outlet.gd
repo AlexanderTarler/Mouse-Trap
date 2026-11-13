@@ -3,7 +3,7 @@ class_name GeneratorOutlet
 
 ## GeneratorOutlet — Cable connection point on the generator.
 ##
-## AUTO-CONNECT FLOW (Request 3):
+## AUTO-CONNECT FLOW:
 ##   When the player interacts with this outlet while holding BOTH a
 ##   "Cable Spool" AND a "Portable Light" in their inventory, the outlet:
 ##     1. Consumes the Cable Spool from inventory
@@ -236,8 +236,7 @@ func get_interact_text() -> String:
 		return "[E] Disconnect Cable"
 	if not _player_has_cable_spool() and not _player_has_portable_light():
 		return ""
-	# If the player has a cable spool but no portable light, still allow the
-	# legacy cable-only connection.
+	# A cable spool alone: just the cable.
 	if _player_has_cable_spool() and not _player_has_portable_light():
 		return "[E] Connect Power Cable"
 	# If the player has both, show the auto-connect prompt.

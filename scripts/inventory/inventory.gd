@@ -168,34 +168,9 @@ func remove_at(index: int) -> void:
 		inventory_changed.emit()
 
 
-func has_item(item) -> bool:
-	return items.find(item) >= 0
-
-
-func has_item_of_type(type) -> bool:
-	for item in items:
-		if item != null and item.item_type == type:
-			return true
-	return false
-
-
-func get_items_of_type(type) -> Array:
-	var result: Array = []
-	for item in items:
-		if item != null and item.item_type == type:
-			result.append(item)
-	return result
-
-
 func get_item_count() -> int:
 	return items.size()
 
-
-## Marks the inventory as fully initialized. Called by NightManager after
-## clearing the inventory in normal mode, so the inventory tutorial only
-## fires for items the player actually picks up in-game.
-func mark_initialized() -> void:
-	_initialization_done = true
 
 func clear() -> void:
 	items.clear()

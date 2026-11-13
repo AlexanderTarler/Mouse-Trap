@@ -292,15 +292,6 @@ func _update_bed_highlight(objective: String) -> void:
 
 
 func highlight_target(group_name: String, delay: float = 0.0) -> void:
-	# ─── DEBUG LOG: Trace every highlight call for nest debugging ─────
-	# Always print when a nest-group highlight is scheduled so we can verify
-	# that the call actually reaches this function. The call chain is:
-	#   RoutineManager.on_previous_reports_read()
-	#   → highlight_target("xray_nest_alpha", 35.0)
-	#   → Timer fires → _on_xray_timer_timeout → _do_highlight_target
-	if "nest" in group_name:
-		print("[RoutineManager] NEST HIGHLIGHT CALLED: group='%s', delay=%.1fs" % [group_name, delay])
-	
 	# Cancel any existing timer for this group first
 	_cancel_xray_timer(group_name)
 	
@@ -838,19 +829,6 @@ func on_car_part_collected(part_name: String) -> void:
 		# Duplicate signal (same part picked up twice) — still refresh UI.
 		van_checklist_changed.emit()
 
-## Returns the number of car parts the player has COLLECTED (0–3),
-## regardless of whether they have been installed in the van yet.
-## Used by the HUD objective text to show collection progress.
-func get_collected_parts_count() -> int:
-	var count: int = 0
-	if van_battery_collected:
-		count += 1
-	if van_radiator_collected:
-		count += 1
-	if van_wiring_collected:
-		count += 1
-	return count
-
 func on_van_inspected() -> void:
 	if van_inspected:
 		return
@@ -1113,11 +1091,6 @@ func _force_dismiss_notebook_tutorial() -> void:
 	var tm := get_node_or_null("/root/TutorialManager")
 	if tm and tm.has_method("mark_learned"):
 		tm.mark_learned("notebook")
-
-func _trigger_notebook_tutorial() -> void:
-	var tm := get_node_or_null("/root/TutorialManager")
-	if tm and tm.has_method("trigger"):
-		tm.trigger("notebook")
 
 func _trigger_interact_tutorial() -> void:
 	var tm := get_node_or_null("/root/TutorialManager")
@@ -1731,10 +1704,6 @@ func get_current_day_string() -> String:
 	# (Day 2 reached by going to bed on Day 1 still counts 1; through Night 1
 	# to dawn it counts 2. A day counting 1 is the second day either way.)
 	return "Day " + str(maxi(night, 2))
-
-func advance_step() -> void:
-	print("[RoutineManager] advance_step() called (deprecated).")
-	_update_hud()
 
 func mark_mechanic_learned(mechanic_id: String) -> void:
 	_learned_mechanics[mechanic_id] = true

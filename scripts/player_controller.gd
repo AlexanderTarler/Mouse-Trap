@@ -721,17 +721,6 @@ func _flashlight_key_released() -> void:
 	# else: tap that just turned the light ON → it stays ON.
 
 
-func _toggle_inventory() -> void:
-	# ─── TUTORIAL: Inventory learned ───────────────────────────────────
-	var tm := get_node_or_null("/root/TutorialManager")
-	if tm and tm.has_method("mark_learned"):
-		tm.mark_learned("inventory")
-	
-	var inv_ui = get_tree().get_first_node_in_group("inventory_ui")
-	if inv_ui and inv_ui.has_method("_open_inventory") and inv_ui.has_method("_close_inventory"):
-		if inv_ui.get("_is_open"): inv_ui._close_inventory()
-		else: inv_ui._open_inventory()
-
 var _still_time := 0.0
 
 
@@ -1043,7 +1032,6 @@ var _room_check_timer: float = 0.0
 var _routine_manager: Node = null
 
 
-
 # --- STANDOFF / CHARGE: LOOK TIMER & CAMERA SHAKE ---
 func _process(delta: float) -> void:
 	_stick_look(delta)
@@ -1299,7 +1287,6 @@ func get_player_room() -> String:
 				return area.name
 	
 	return "Outside"
-
 
 
 # --- NEW NOISE SYSTEM EMITTER ---

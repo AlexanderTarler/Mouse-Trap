@@ -6,15 +6,8 @@ extends Node3D
 @export var interaction_distance: float = 3.0
 @export var prompt_text: String = "[E] Interact"
 
-# ─── INTERACTABLE COLLISION LAYER ─────────────────────────────────
-# Layer 2 ("Interactable") is dedicated to interactable targets.
-# The interaction ray ONLY raycasts against layer 2, so invisible
-# environment geometry (porch roof overhang, stairs, cabin bounding
-# bodies) on the default layer 1 can never absorb the ray before it
-# reaches the door/key/switch collider. Bodies that are interactable
-# keep layer 1 as well (so the player and Entity still collide with
-# them) and are marked with layer 1|2 = 3 in their own scripts.
-const INTERACTABLE_LAYER_MASK: int = 2  # Layer 2 (name: "Interactable")
+# The interaction ray sees only the interaction layer (see Interactable).
+const INTERACTABLE_LAYER_MASK := Interactable.LAYER_MASK
 
 ## How far above or below the eyes a target may be (m): a floor is ~3 m.
 const MAX_REACH_HEIGHT: float = 2.2

@@ -100,17 +100,6 @@ func is_entity_in_lit_room() -> bool:
 	return is_position_in_lit_room(entity.global_position)
 
 
-## Returns the name of the lit room at the given position, or an empty string
-## if the position is not in a lit room. Useful for debug overlays and
-## AI decision logging.
-func get_lit_room_name_at(position: Vector3) -> String:
-	var room := get_room_at(position)
-	if room and room.has_method("is_lit") and room.is_lit():
-		if room.has_method("get_room_name"):
-			return room.get_room_name()
-	return ""
-
-
 ## Returns the name of the room at the given position regardless of lighting,
 ## or "Outside" if the position is not inside any registered room.
 func get_room_name_at(position: Vector3) -> String:
@@ -146,19 +135,3 @@ func _get_entity() -> Node3D:
 
 
 ## ─── DEBUG ───────────────────────────────────────────────────────────────────
-
-## Prints the current lighting state of all registered rooms to the console.
-## Useful for debugging light detection issues.
-func debug_print_all_rooms() -> void:
-	if _cabin_rooms.is_empty():
-		_refresh_cabin_rooms()
-	
-	print("=== RoomLightDetector: All Rooms ===")
-	for room in _cabin_rooms:
-		var name_str = room.get_room_name() if room.has_method("get_room_name") else room.name
-		var lit_str = "LIT" if (room.has_method("is_lit") and room.is_lit()) else "DARK"
-		var light_ref = "no_light"
-		if "room_light" in room and room.room_light:
-			light_ref = room.room_light.light_name if "light_name" in room.room_light else str(room.room_light)
-		print("  %s → %s (light: %s)" % [name_str, lit_str, light_ref])
-	print("=== End ===")

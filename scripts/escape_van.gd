@@ -550,10 +550,6 @@ func _find_objective_label() -> Label:
 	return null
 
 
-# ─── NOTE: get_interact_text() is now defined in the HOLD-TO-INTERACT section
-# ─── near the @export variables. The old version was removed
-# ─── to fix duplicate function error.
-
 # ─── ENVIRONMENT & ENTITY HELPERS ──────────────────────────
 
 func _darken_environment_for_van_sequence() -> void:

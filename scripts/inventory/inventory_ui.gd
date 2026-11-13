@@ -9,9 +9,6 @@ extends CanvasLayer
 @onready var close_button: Button = $Panel/CloseButton
 @onready var use_button: Button = $Panel/UseButton
 @onready var drop_button: Button = $Panel/DropButton
-@onready var info_box: Panel = $Panel/InfoBox
-@onready var item_name_label: Label = $Panel/ItemNameLabel
-@onready var item_desc_label: Label = $Panel/ItemDescLabel
 @onready var info_item_name_label: Label = $Panel/InfoBox/InfoItemName
 @onready var info_item_desc_label: Label = $Panel/InfoBox/InfoItemDesc
 @onready var tooltip_label: Label = $TooltipLabel
@@ -418,8 +415,6 @@ func _on_use_pressed() -> void:
 			_read_note(item)
 		2:  # ItemData.ItemType.TOOL
 			print("Tool used: ", item.item_name)
-
-
 
 
 ## [R] (swap_battery): a spare battery straight into the flashlight, no

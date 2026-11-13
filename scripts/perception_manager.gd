@@ -5,7 +5,6 @@ class_name PerceptionManager
 @export var intensity_fall_rate: float = 0.1
 @export var fov_cos_threshold: float = 0.5
 @export var max_detection_distance: float = 40.0
-@export var blindness_duration: float = 2.0
 
 # Frame-skip throttling — perception (watched intensity) only needs ~10Hz.
 # The _process() loop runs every rendering frame (~60Hz), but we only

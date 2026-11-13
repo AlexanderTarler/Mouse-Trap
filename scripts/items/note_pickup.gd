@@ -99,7 +99,6 @@ func interact() -> void:
 		_show_hud_message("This note is blank...")
 		return
 	
-	print("[NotePickup] interact() called! Displaying note: ", item_data.item_name)
 	
 	# ─── BIND THIS NOTE'S DATA TO THE SIGNAL ──────────────────────
 	# Before connecting to note_closed, capture the current note's

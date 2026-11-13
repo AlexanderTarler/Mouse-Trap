@@ -29,13 +29,6 @@ class_name CabinLight
 ## The light is permanently stuck ON whenever the generator has power.
 @export var is_faulty: bool = false
 
-## [DEPRECATED] — Overload trap logic has been migrated to the Portable
-## High-Voltage Lamp (scripts/objects/portable_lamp.gd).
-## This flag is retained as a simple export for scene compatibility only.
-## It no longer gates any overload behavior in this script.
-@export var is_overload_target: bool = false
-
-
 
 ## The physical light emitter child (OmniLight3D or SpotLight3D).
 ## Resolved by _find_light_node() — see that function for why the `or`-based
@@ -120,7 +113,6 @@ func toggle_light() -> void:
 			# The scene's hall lamp still uses the default "Room Light" name,
 			# so the display name alone is NOT enough to gate the objective.
 			rm.on_light_toggled_off(light_name, get_path())
-
 
 
 ## Updates the light's visibility based on the switch state and generator power.

@@ -28,7 +28,6 @@ const MIN_START_FUEL_PERCENT: float = 10.0
 var _fuel_light: OmniLight3D = null
 var _blink_timer: float = 0.0
 var _light_visible: bool = true
-var _audio_was_playing: bool = false
 var _nm_cache: Node = null
 
 

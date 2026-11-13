@@ -35,8 +35,6 @@ var _container_item_buttons: Array[Button] = []
 # ─── NODE REFERENCES ───────────────────────────────────────
 
 @onready var _background: ColorRect = $Background
-## The panel sizes itself to its contents (containers), centred on screen.
-@onready var _stash_panel: Control = $StashPanel
 @onready var _player_grid: GridContainer = $StashPanel/Layout/Panels/PlayerInventoryPanel/Column/PlayerGridContainer
 @onready var _container_grid: GridContainer = $StashPanel/Layout/Panels/ContainerPanel/Column/ContainerGridContainer
 @onready var _close_button: Button = $StashPanel/Layout/Buttons/CloseButton

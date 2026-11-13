@@ -162,9 +162,6 @@ func _find_door_breach_waypoint() -> Marker3D:
 @onready var _nav_blocker: Node3D = $NavBlocker if has_node("NavBlocker") else null
 
 # --- DEFERRED VISUAL SWAP STATE ---
-## When true, a glass shatter visual swap is pending (delayed by _deferred_swap_timer).
-## Set by _shatter_glass(), consumed by _process() when the timer expires.
-var _deferred_glass_swap: bool = false
 
 ## When true, a plank break visual swap is pending (delayed by _deferred_swap_timer).
 ## Set by _shatter_barricade(), consumed by _process() when the timer expires.
@@ -318,16 +315,6 @@ func _process(delta: float) -> void:
 				elif _hammer_sound:
 					_hammer_sound.play()
 				
-
-
-## Returns the global position of the IndoorBreachWayPoint marker.
-## This is the landing position the Entity navigates to after breaking through
-## the window barricade, placing it ~1.5 meters inside the room.
-func get_indoor_landing_position() -> Vector3:
-	if _indoor_breach_waypoint:
-		return _indoor_breach_waypoint.global_position
-	# Fallback: estimate a position 1.5m behind the window facing inward
-	return global_position + global_transform.basis.z * 1.5
 
 
 ## Updates the visibility of Plank1, Plank2, Plank3 based on planks_remaining.
@@ -764,20 +751,6 @@ func get_interact_text() -> String:
 	return "[Hold E] Board Window"
 
 
-## Returns the type of security active on this window.
-## Returns "light" if protected by room light, "planks" if boarded,
-## "glass" if glass is intact, "" if unsecured.
-func get_secure_type() -> String:
-	if room_light and room_light.is_room_lit():
-		return "light"
-
-	if is_boarded:
-		return "planks"
-	if not is_glass_shattered:
-		return "glass"
-	return ""
-
-
 ## Blows on the planks: a dull thud, and a wood crack when one gives way.
 const PLANK_SFX_DIR := "res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Misc/"
 const PLANK_HIT_PATHS: Array[String] = [
@@ -817,13 +790,6 @@ func _play_plank_sound(broken: bool) -> void:
 ## CRITICAL: Phase 1 hard-returns before Phase 2 can execute. Planks are
 ## NEVER touched while glass is intact.
 func damage_barricade() -> bool:
-	print("[SHATTER DEBUG] damage_barricade() called on '%s' (id=%s). is_glass_shattered=%s is_boarded=%s" % [name, window_id, is_glass_shattered, is_boarded])
-	# ─── DEBUG LOG: Track every damage call ─────────────────────────
-	print("[Barricade Debug] damage_barricade() called. is_glass_shattered=", is_glass_shattered,
-		  " | is_boarded=", is_boarded,
-		  " | planks_remaining=", planks_remaining,
-		  " | hits_on_current_plank=", hits_on_current_plank,
-		  " | HITS_PER_PLANK=", HITS_PER_PLANK)
 	
 	# ===== PHASE 1: GLASS SHATTER (Outside Layer) =====
 	# If the glass is still intact, the Entity smashes through it FIRST.
@@ -875,7 +841,6 @@ func damage_barricade() -> bool:
 ## was boarded up, the planks remain at full health behind the shattered frame.
 ## The NavBlocker stays enabled because planks still block the path.
 func shatter_window() -> void:
-	print("[SHATTER DEBUG] shatter_window() called on '%s' (id=%s). is_glass_shattered=%s" % [name, window_id, is_glass_shattered])
 	_shatter_glass()
 
 
@@ -904,7 +869,6 @@ func quiet_break() -> void:
 func _shatter_glass() -> void:
 	Caption.at(self, "glass breaking", global_position)
 	is_glass_shattered = true
-	print("[SHATTER DEBUG] _shatter_glass() called on window '%s' (id=%s). is_glass_shattered now true. PristineVisuals=%s" % [name, window_id, str(_pristine_visuals)])
 	
 	# ─── IMMEDIATE VISUAL SWAP ───────────────────────────────────────────
 	# The visual swap (pristine → shattered), glass shard particles, layered
@@ -972,26 +936,9 @@ func _shatter_barricade() -> void:
 	
 
 
-## Player interaction: board up this window using a Wooden Plank from inventory.
-## Consumes 1 plank item, sets is_boarded to true, restores plank_health to 100.
-##
-## IMPORTANT: If the glass has been shattered (is_glass_shattered = true),
-## the core window remains permanently hollow. The planks cover the opening
-## but the glass and crossbars are gone forever. ShatteredVisuals remains
-## visible behind/between the planks.
+## A tap of the Use key (the window is boarded up by holding it instead).
 func interact() -> void:
-	# ─── INSTANT-PLANK EXPLOIT REMOVED ─────────────────────────
-	# Legacy debug code previously consumed 1 plank and instantly set
-	# is_boarded = true with planks_remaining = 3, bypassing the inventory
-	# hold-to-interact pipeline AND the story unlock gate. Boarding now
-	# goes strictly through start_hold_interact() → _process_hold_interact()
-	# (4s per plank, one Wooden Plank deducted per stage, gated by
-	# RoutineManager.windows_unlocked_for_boarding). This quick-tap entry
-	# is intentionally a no-op.
-	print("[Window Boarding] Quick-tap E ignored — hold E to board planks (Task 3 exploit lock).")
-	
-	
-
-
-## NOTICE: get_interact_text() is now defined in the HOLD-TO-INTERACT section
-## near is_secure(). The old version was removed to fix duplicate function error.
+	# A tap does nothing: boarding is a hold, one plank at a time
+	# (start_hold_interact), and only once the story allows it
+	# (RoutineManager.windows_unlocked_for_boarding).
+	pass

@@ -144,7 +144,6 @@ var _wood_crack_streams: Array[AudioStream] = []
 var _monster_growl_streams: Array[AudioStream] = []
 
 # Whether sound is muted
-var _muted: bool = false
 
 var _whisper_streams: Array[AudioStream] = []
 var _distant_forest_streams: Array[AudioStream] = []
@@ -600,56 +599,6 @@ func _stop_entity_sounds() -> void:
 	if _entity_whisper:
 		_entity_whisper.stop()
 
-## Called by player controller for footstep sounds at a specific position
-func play_footstep_at(surface_type: String = "wooden", position: Vector3 = Vector3.ZERO) -> void:
-	if _muted:
-		return
-	
-	var stream: AudioStream = null
-	# Wooden and grass only (the other surfaces' sounds were loaded at start
-	# and never played; the player plays its own footsteps).
-	match surface_type:
-		"grass":
-			stream = _get_random_stream(_grass_footstep_streams)
-		_:
-			stream = _get_random_stream(_wooden_footstep_streams)
-	
-	if stream:
-		var player = _get_available_event_player()
-		if player:
-			player.stream = stream
-			player.global_position = position
-			player.play()
-			sound_played.emit("footstep_" + surface_type)
-
-func _get_available_event_player() -> AudioStreamPlayer3D:
-	for player in _event_players:
-		if not player.playing:
-			player.pitch_scale = 1.0
-			return player
-	return null
-
-## Scales monster growl volume and pitch based on watched_intensity.
-## Called by PerceptionManager when the player is looking at the entity.
-func set_watched_intensity(level: float) -> void:
-	if level <= 0.0:
-		_stop_entity_sounds()
-		return
-	
-	# Scale whisper volume with watched intensity
-	if _entity_whisper:
-		_entity_whisper.volume_db = linear_to_db(level * 0.3)
-		_entity_whisper.pitch_scale = 1.0 + level * 0.2
-		if not _entity_whisper.playing and _whisper_streams.size() > 0:
-			var stream := _get_random_stream(_whisper_streams)
-			if stream:
-				_entity_whisper.stream = stream
-				_entity_whisper.play()
-	
-	# At high intensity, play a monster growl as a one-shot event
-	if level > 0.7 and _monster_growl_streams.size() > 0:
-		_play_event_sound_3d(_get_random_stream(_monster_growl_streams), Vector3(0, 1, -4))
-
 ## ─── STALK CHASE AUDIO SETUP ────────────────────────────────────
 ## Creates a dedicated 2D AudioStreamPlayer for the STALK chase track.
 ## Tries to load a dedicated `monster_stalk_mx.ogg`; falls back to the
@@ -816,11 +765,6 @@ func play_car_alarm_telegraph() -> void:
 	# "car_alarm.ogg" this used to look for never existed, and playing a 2D
 	# copy on top would double it, so there is nothing to add here.
 	sound_played.emit("car_alarm_telegraph")
-
-
-func toggle_mute() -> void:
-	_muted = not _muted
-	AudioServer.set_bus_mute(AudioServer.get_bus_index("Ambient"), _muted)
 
 
 # ═════════════════════════════════════════════════════════════════════════════

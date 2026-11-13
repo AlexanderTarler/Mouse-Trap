@@ -35,7 +35,7 @@ const STATE_AUTOLOADS := ["RoutineManager", "EvidenceManager"]
 ## World items: anything whose script is a pickup (but not the flashlight and
 ## camera: having those is the player's own state, not restored).
 const PICKUP_SCRIPT_HINT := "pickup"
-const PICKUP_EXCLUDED := ["flashlight_pickup.gd", "camera_pickup.gd"]
+const PICKUP_EXCLUDED := ["flashlight_pickup.gd"]
 
 ## "day" or "night": which kind of start the snapshot was taken at.
 var kind := ""
