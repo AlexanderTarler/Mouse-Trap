@@ -6,7 +6,6 @@ extends Node3D
 @export var light_node_path: NodePath = NodePath("OmniLight3D")
 @export var normal_energy: float = 3.0
 @export var flicker_min_energy: float = 0.5
-@export var flicker_max_energy: float = 4.0
 @export var flicker_duration: float = 0.1
 
 var _light: OmniLight3D = null

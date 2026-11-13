@@ -7,7 +7,7 @@ extends SceneTree
 ##   14 the mediocre ending: the Entity sits on the van's roof (not above
 ##      it), frozen mid-stride
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/tasks8_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/tasks8_test.gd
 
 var _failures := 0
 var _scene: Node

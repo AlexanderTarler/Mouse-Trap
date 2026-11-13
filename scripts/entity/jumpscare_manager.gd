@@ -62,27 +62,6 @@ func _ready() -> void:
 		nm.horror_event.connect(_on_horror_event)
 
 func _input(event: InputEvent) -> void:
-	# DEBUG: Log every left-click and what was clicked
-	# (Debug builds only: in an exported game it raycast on every click.)
-	if OS.is_debug_build() and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		var mouse_pos = get_viewport().get_mouse_position()
-		# Use raycasting from the current camera to find what's under the cursor
-		var camera = get_viewport().get_camera_3d()
-		var clicked_node = null
-		if camera:
-			var from = camera.project_ray_origin(mouse_pos)
-			var dir = camera.project_ray_normal(mouse_pos)
-			var space_state = camera.get_world_3d().direct_space_state
-			if space_state:
-				var params = PhysicsRayQueryParameters3D.new()
-				params.from = from
-				params.to = from + dir * 1000.0
-				var result = space_state.intersect_ray(params)
-				if result and result.has("collider"):
-					clicked_node = result.collider
-		var clicked_name = clicked_node.name if clicked_node else "nothing (UI)"
-		print("[DEBUG] Left-click at (%d, %d) — clicked: %s" % [mouse_pos.x, mouse_pos.y, clicked_name])
-	
 	# Press F1 to instantly trigger the jumpscare (debug only — requires dev mode)
 	if event is InputEventKey and event.keycode == KEY_F1 and event.pressed and not event.is_echo():
 		if not is_jumping:
@@ -95,7 +74,6 @@ func _on_horror_event(event_name: String) -> void:
 		_execute_jumpscare()
 
 func _execute_jumpscare() -> void:
-	print("[JumpscareManager] _execute_jumpscare() called.")
 	is_jumping = true
 	var player = get_tree().get_first_node_in_group("player") as Node3D
 	var entity = get_tree().get_first_node_in_group("entity") as Node3D
@@ -204,41 +182,6 @@ func _play_death_cinematic() -> void:
 	cinematics.clear_overlay()
 
 
-func _apply_survival_penalties(player: Node3D) -> void:
-	var nm = get_node_or_null("/root/NightManager")
-	var current_night = nm.current_night if nm else 1
-	
-	# --- NIGHTS 3-5: HARD GAME OVER ---
-	# On later nights, being caught is fatal. No second chances.
-	if current_night >= 3:
-		print("[Jumpscare] Night %d — HARD GAME OVER! Player was caught." % current_night)
-		_trigger_game_over()
-		return
-	
-	# --- NIGHTS 1-2: SURVIVAL PENALTY (wake up, lose time & flashlight) ---
-	player.global_position = Vector3(9.0, 1.0, 0.4)
-	
-	var gt = get_node_or_null("/root/GameTime")
-	if gt:
-		# Dynamic penalty: Night 1 is ~0.10, Night 5 is massive (0.25)
-		var penalty: float = 0.05 + (current_night * 0.04)
-		# Use set_progress() to keep GameTime's internal _elapsed in sync
-		if gt.has_method("set_progress"):
-			gt.set_progress(minf(1.0, gt.cycle_progress + penalty))
-		else:
-			gt.cycle_progress = minf(1.0, gt.cycle_progress + penalty)
-			gt.time_changed.emit(gt.cycle_progress)
-		print("[Jumpscare] Time penalty applied: ", penalty)
-	
-	var flashlight = player.find_child("*Flashlight*", true, false)
-	if flashlight:
-		if flashlight.has_method("set_battery_level"):
-			flashlight.set_battery_level(0.0)
-		elif "battery_level" in flashlight:
-			flashlight.battery_level = 0.0
-		print("[Jumpscare] Battery drained.")
-
-
 ## Triggers a hard Game Over state: pauses the game, shows a death screen,
 ## and provides an option to restart the current night.
 ## Survival tips for the death screen, by where the player was caught.
@@ -284,7 +227,6 @@ func _add_death_tip(death_canvas: Node) -> void:
 
 
 func _trigger_game_over() -> void:
-	print("[JumpscareManager] _trigger_game_over() called.")
 	
 	# Pause the game
 	get_tree().paused = true
@@ -372,7 +314,6 @@ func _on_main_menu_from_death(death_canvas: CanvasLayer) -> void:
 
 
 func _on_restart_night(death_canvas: CanvasLayer) -> void:
-	print("[JumpscareManager] _on_restart_night() called — \"Restart from Checkpoint\" button was clicked.")
 	
 	# Fade the jumpscare overlay back to transparent so the player can see
 	if _fade_rect:

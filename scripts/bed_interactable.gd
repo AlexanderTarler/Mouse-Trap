@@ -47,14 +47,6 @@ func _interact(player: Node3D = null) -> void:
 			push_warning("[Bed] No player found.")
 			return
 
-	# ─── DEBUG: Log bed interaction state ─────────────────────────
-	var rm_debug = get_node_or_null("/root/RoutineManager")
-	var day_str = rm_debug.get_current_day_string() if rm_debug and rm_debug.has_method("get_current_day_string") else "?"
-	print("[BED DEBUG] Bed interacted! current_night=%d, is_day=%s, cycle=%.3f, is_exhausted=%s, day_label='%s'" % [
-		_night_manager.current_night, _game_time.is_day, _game_time.cycle_progress,
-		str(player.is_exhausted) if "is_exhausted" in player else "N/A", day_str
-	])
-
 	# ─── DAY 3+ EXHAUSTION SLEEP (BEFORE all other conditions) ──
 	if player and "is_exhausted" in player and player.is_exhausted:
 		await _trigger_exhaustion_sleep(player)
@@ -382,11 +374,7 @@ func _trigger_exhaustion_sleep(player: Node3D) -> void:
 
 	await _sleep_cinematic().wake_up(player)
 
-	var day_after = rm_exh.get_current_day_string() if rm_exh and rm_exh.has_method("get_current_day_string") else "?"
-	print("[BED DEBUG] Waking up! current_night=%d, is_day=%s, cycle=%.3f, day_label='%s'" % [
-		_night_manager.current_night, gt.is_day if gt else -1, gt.cycle_progress if gt else -1, day_after
-	])
-	print("[Bed Scene] Exhaustion sleep complete. Player restored. Door unlocked. Time unpaused. Objective refreshed. Day label: %s" % day_after)
+	print("[Bed Scene] Exhaustion sleep complete. Player restored. Door unlocked. Time unpaused. Objective refreshed. Day label: %s" % (rm_exh.get_current_day_string() if rm_exh else "?"))
 
 
 func _advance_to_next_night() -> void:

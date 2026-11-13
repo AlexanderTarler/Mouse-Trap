@@ -10,7 +10,7 @@ extends SceneTree
 ##   trees, the escape drive follows its bend, and the display mode setting.
 ## (2-4: audio_test; 9: shy_test.)
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/tasks5_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/tasks5_test.gd
 
 var _failures := 0
 var _scene: Node

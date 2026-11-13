@@ -36,7 +36,6 @@ func _ready() -> void:
 
 ## Triggered when the player looks at the car and presses the interact key.
 func interact(player: Node3D = null) -> void:
-	print("[Wreck] interact() CALLED — is_looted=", is_looted, " | item_resource=", item_resource)
 	
 	# ─── EXHAUSTED GATE ────────────────────────────────
 	# When the player is exhausted (Day 3+), they are too tired to salvage

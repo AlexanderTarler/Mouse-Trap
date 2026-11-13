@@ -389,11 +389,6 @@ func get_ending_name(ending: Ending) -> String:
 	return ENDING_NAMES.get(ending, "Unknown")
 
 
-## Returns true if the given ending has been triggered.
-func has_ending_triggered(ending: Ending) -> bool:
-	return is_ending_active and current_ending == ending
-
-
 ## Resets the EndgameManager to its initial state.
 ## Called when the game is restarted from the main menu.
 func reset() -> void:

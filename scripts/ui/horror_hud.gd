@@ -29,8 +29,6 @@ extends CanvasLayer
 
 # Ending screen nodes (escape endings)
 @onready var ending_screen: Panel = $EndingScreen
-@onready var mediocre_ending_label: Label = $EndingScreen/MediocreEndingLabel
-@onready var good_ending_label: Label = $EndingScreen/GoodEndingLabel
 @onready var main_menu_button: Button = $EndingScreen/MainMenuButton
 
 ## Reference to the EnvironmentController (set in the scene)
@@ -44,8 +42,6 @@ var _warning_flicker_timer: float = 0.0
 var _warning_visible: bool = false
 
 # Message queue for event labels — ensures each message gets its full display time
-var _message_queue: Array[String] = []
-var _message_busy: bool = false
 
 # ─── PURGE PROGRESS ─────────────────────────────────────────────────────
 # While the totem is being purged, its progress goes to the crosshair's ring.
@@ -221,43 +217,6 @@ func fade_from_black(duration: float = 2.0) -> void:
 	tween.tween_property(_fade_overlay, "color:a", 0.0, duration)
 	await tween.finished
 	_fade_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE  # Restore click-through
-
-
-## ─── CAMERA FLASH SNAP ─────────────────────────────────────────────────────
-## High-priority white flash overlay for the photo camera's shutter.
-##
-## freeze_duration: How long the screen stays fully white (default 0.3s).
-## decay_duration:  How long the white flash takes to fade to transparent (default 1.0s).
-##
-## The flash overlay is created programmatically (like _fade_overlay) so it
-## works independently of the CameraHUD scene. This ensures the flash always
-## renders, even if the CameraHUD has rendering issues.
-var _camera_flash_overlay: ColorRect = null
-
-func trigger_camera_flash_snap(freeze_duration: float = 0.3, decay_duration: float = 1.0) -> void:
-	# Lazily create the camera flash overlay (same pattern as _fade_overlay)
-	if not _camera_flash_overlay:
-		_camera_flash_overlay = ColorRect.new()
-		_camera_flash_overlay.color = Color(1, 1, 1, 0)  # Start transparent
-		_camera_flash_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_camera_flash_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		_camera_flash_overlay.z_index = 101  # Above _fade_overlay (100)
-		add_child(_camera_flash_overlay)
-	
-	# Phase 1: Instant white flash
-	_camera_flash_overlay.color = Color(1, 1, 1, 1.0)
-	_camera_flash_overlay.visible = true
-	
-	# Phase 2: Hold the freeze for freeze_duration seconds
-	await get_tree().create_timer(freeze_duration).timeout
-	
-	# Phase 3: Elegant Tween decay over decay_duration seconds
-	var tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	tween.tween_property(_camera_flash_overlay, "color:a", 0.0, decay_duration)
-	await tween.finished
-	
-	# Cleanup
-	_camera_flash_overlay.visible = false
 
 
 func _connect_routine_manager() -> void:
@@ -643,11 +602,6 @@ func _show_event(text: String) -> void:
 	pass
 
 
-func _display_next_message() -> void:
-	# Event messages removed per design direction
-	_message_busy = false
-
-
 func _on_event_timer_timeout() -> void:
 	# Event messages removed per design direction
 	pass
@@ -882,29 +836,6 @@ func _on_hint_timer_timeout() -> void:
 	
 	_hint_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 	_hint_tween.tween_property(hint_label, "modulate:a", 1.0, 0.5)
-
-
-## Shows the escape-ending screen overlay, hiding every other HUD element.
-## Called by EndgameManager for ESCAPE_GOOD (good_ending = true) and
-## ESCAPE_MEDIOCRE (good_ending = false). Toggles the correct label and
-## leaves the MainMenuButton to return to the main menu.
-func show_ending_screen(good_ending: bool) -> void:
-	# Hide all other HUD visuals (Labels, ProgressBars, ColorRects, CanvasLayers).
-	for child in get_children():
-		if child == ending_screen:
-			continue
-		if child is CanvasItem or child is CanvasLayer:
-			child.visible = false
-	
-	# Show the panel and the correct label.
-	if ending_screen:
-		ending_screen.visible = true
-	if mediocre_ending_label:
-		mediocre_ending_label.visible = not good_ending
-	if good_ending_label:
-		good_ending_label.visible = good_ending
-	
-	print("[HorrorHUD] Ending screen shown (good_ending=%s)." % good_ending)
 
 
 ## MainMenuButton handler: unpause, reset EndgameManager, return to menu.

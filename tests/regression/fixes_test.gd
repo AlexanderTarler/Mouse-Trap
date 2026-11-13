@@ -16,7 +16,7 @@ extends SceneTree
 ##   - The walking paths stay clear: no undergrowth, world detail or tree on
 ##     them; no stumps added (the nests keep theirs).
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/fixes_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/fixes_test.gd
 
 var _failures := 0
 

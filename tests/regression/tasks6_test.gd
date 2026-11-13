@@ -8,7 +8,7 @@ extends SceneTree
 ##   10 a Night 2.2 restart leaves the front door unlocked and open
 ##   12 "What the FUCK was that?!" on reaching the cabin in the chase
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/tasks6_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/tasks6_test.gd
 
 var _failures := 0
 var _scene: Node

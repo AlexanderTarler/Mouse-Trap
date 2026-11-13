@@ -28,7 +28,6 @@ func _ready() -> void:
 
 
 func interact() -> void:
-	print("[FlashlightPickup] interact() called!")
 	
 	# Find the player and enable their flashlight
 	var player = get_tree().get_first_node_in_group("player")

@@ -412,19 +412,6 @@ func move_to(target: Vector3, speed: float) -> float:
 	return reach_distance(global_position, target)
 
 
-## Moves straight toward `target`, ignoring the navmesh (short hops only).
-func move_direct(target: Vector3, speed: float) -> float:
-	_set_move_direction(target - global_position, speed * speed_multiplier())
-	return reach_distance(global_position, target)
-
-
-## True when the navmesh has no route closer than `tolerance` to `target`.
-func is_unreachable(target: Vector3, tolerance: float = 1.5) -> bool:
-	var map := get_world_3d().navigation_map
-	var path := NavigationServer3D.map_get_path(map, global_position, target, true)
-	return path.is_empty() or reach_distance(path[path.size() - 1], target) > tolerance
-
-
 func stop() -> void:
 	_desired_velocity = Vector3.ZERO
 

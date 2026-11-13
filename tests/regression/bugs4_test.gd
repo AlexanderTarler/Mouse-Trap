@@ -12,7 +12,7 @@ extends SceneTree
 ##   7. The Night 2.2 chase stops at the edge of the porch light.
 ##   8. A thought when the car is first inspected on Day 3.
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/bugs4_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/bugs4_test.gd
 
 var _failures := 0
 var _scene: Node

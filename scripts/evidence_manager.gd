@@ -40,19 +40,3 @@ func collect_evidence(evidence_id: String) -> bool:
 func has_evidence(evidence_id: String) -> bool:
 	return collected_evidence.has(evidence_id)
 
-
-## Removes a piece of evidence (e.g., if used up).
-func remove_evidence(evidence_id: String) -> void:
-	if collected_evidence.erase(evidence_id):
-		evidence_removed.emit(evidence_id)
-		print("[EvidenceManager] Evidence removed: %s" % evidence_id)
-
-
-## Returns an array of all collected evidence IDs.
-func get_all_collected() -> Array:
-	return collected_evidence.keys()
-
-
-## Returns the number of distinct evidence types collected.
-func get_collected_count() -> int:
-	return collected_evidence.size()

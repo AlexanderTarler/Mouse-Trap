@@ -277,11 +277,6 @@ func refill(amount: float) -> void:
 		pass  # Don't auto-turn on, let player decide
 
 
-## Alias for refill, called by inventory when using a battery item.
-func refill_battery(amount: float) -> void:
-	refill(amount)
-
-
 func set_battery_level(level: float) -> void:
 	battery_level = clampf(level, 0.0, max_battery)
 	battery_changed.emit(battery_level)
@@ -291,10 +286,6 @@ func get_battery_percent() -> float:
 	return (battery_level / max_battery) * 100.0
 
 
-func is_low_battery() -> bool:
-	return battery_level <= low_battery_threshold
-
-
 ## Returns true if the "overcharge" tutorial mechanic has already been learned
 ## (i.e. the hint was previously dismissed via mark_learned).
 func _is_overcharge_tutorial_learned() -> bool:
@@ -302,15 +293,6 @@ func _is_overcharge_tutorial_learned() -> bool:
 	if tm and tm.has_method("is_learned"):
 		return tm.is_learned("overcharge")
 	return true  # If TutorialManager unavailable, assume learned to avoid stuck hints
-
-
-## Dismisses the "Hold F to overcharge" tutorial hint via TutorialManager.
-## Called once the player has continuously held overcharge for 3.0 seconds.
-func _mark_overcharge_tutorial_learned() -> void:
-	var tm := get_node_or_null("/root/TutorialManager")
-	if tm and tm.has_method("mark_learned"):
-		tm.mark_learned("overcharge")
-		print("[Flashlight] Overcharge tutorial complete — player held overcharge for %.1fs." % OVERCHARGE_TUTORIAL_HOLD_REQUIRED)
 
 
 ## ─── OVERCHARGE HUM AUDIO ──────────────────────────────────────────────────

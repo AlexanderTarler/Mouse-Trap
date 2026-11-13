@@ -110,10 +110,6 @@ var _normal_rect: Rect2
 # DATA & ANSWER KEYS
 # ─────────────────────────────────────────────────────────────────────────────
 
-const NIGHT_ANSWER_KEY: Dictionary = {
-	1: [0, 0, 0],
-	2: [2, 2, 1],
-}
 
 const NEST_ANSWER_KEY: Dictionary = {
 	"Nest Alpha":  { "pop": "6",      "anomaly": "Photophobia" },
@@ -1071,24 +1067,9 @@ func _on_correlation_success(night: int) -> void:
 		_content_display.text = "[b]NIGHT " + str(night) + " — DATA CORRELATION ACCEPTED[/b]\n\nNo additional intelligence available."
 
 
-func _on_correlation_failure() -> void:
-	_play_error_sound()
-	_status_label.text = "CRITICAL ERROR: DATA ANOMALY DETECTED"
-	$MainWindow/HBoxContainer/ContentPanel.visible = true
-	_data_entry_panel.visible = false
-	_content_display.text = "[color=red][b]CRITICAL ERROR: DATA ANOMALY DETECTED.[/b][/color]\n\nCORRELATION REJECTED.\n\n---\n[color=gray]Error Code: 0xDEADBEEF[/color]"
-	_nest_data_uploaded = false
-	nest_data_uploaded = false
-
-
 # ─────────────────────────────────────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
-
-func _get_current_night() -> int:
-	var nm = get_node_or_null("/root/NightManager")
-	if nm and "current_night" in nm: return nm.current_night
-	return 1
 
 func _play_success_sound() -> void:
 	var stream = load("res://assets/audio/Echoes - Audio Super Kit/OGG (recommended)/SFX/Electronics/computer_beep_1.ogg")

@@ -35,7 +35,6 @@ var _peeker_vanish_toggle_btn: Button = null
 var _log_timer: float = 0.0
 const LOG_UPDATE_INTERVAL: float = 0.5
 var _log_buffer: Array[String] = []
-const MAX_LOG_LINES: int = 50
 
 
 ## Found by its group (the pause menu closes it on Escape).

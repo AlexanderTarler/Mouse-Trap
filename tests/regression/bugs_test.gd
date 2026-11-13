@@ -8,7 +8,7 @@ extends SceneTree
 ##   7. The side-track objectives tick off.
 ##   8. Fuel cans show their fuel in %; a dropped can keeps its fuel.
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/bugs_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/bugs_test.gd
 
 var _failures := 0
 var _scene: Node

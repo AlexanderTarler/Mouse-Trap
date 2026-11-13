@@ -90,10 +90,6 @@ const EMBER_COLOR := Color(1.0, 0.38, 0.08)
 ## The prompt text shown when the player looks at the totem.
 const INTERACT_PROMPT: String = "[E] Destroy Totem Anchor"
 
-## Maximum distance the player can be from the totem to continue purging.
-## Set to 8.0 to account for the interaction raycast range (typically 5-6m)
-## plus some leeway so the player doesn't accidentally break the hold.
-const MAX_PURGE_DISTANCE: float = 8.0
 
 ## ─── DAY/NIGHT ANIMATION ──────────────────────────────────────────────────
 ## The original Y position of the totem where it rests on the ground.
@@ -531,11 +527,8 @@ func _complete_purge() -> void:
 	# ─── DEFEAT THE ENTITY ──────────────────────────────────────────
 	_defeat_entity()
 	
-	# Advance the RoutineManager side-track to mark the anchor as destroyed.
-	# advance_step() is deprecated and does NOT set
-	# is_anchor_destroyed, which caused the Good Ending to never trigger.
-	# on_anchor_destroyed() sets is_anchor_destroyed = true (the flag
-	# EscapeVan reads when deciding between Good/Mediocre endings).
+	# The side-track's last step: is_anchor_destroyed is what EscapeVan reads
+	# to choose between the good and the mediocre ending.
 	var rm = get_node_or_null("/root/RoutineManager")
 	if rm and rm.has_method("on_anchor_destroyed"):
 		rm.on_anchor_destroyed()

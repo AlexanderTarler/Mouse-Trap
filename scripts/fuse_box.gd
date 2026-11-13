@@ -128,7 +128,6 @@ func _process_hold_interact(delta: float) -> void:
 ## The hold-to-interact system uses start/stop/_process instead, but quick-tap
 ## still works via _fire_interact() for players who prefer it.
 func interact() -> void:
-	print("[FuseBox] interact() called! Current state: ", BoxState.keys()[current_state])
 	
 	# ─── DAY 1 ONBOARDING: PHASE 2 — FUSE BOX INTERACTED ────────────────
 	# Notify RoutineManager that the player first interacted with the fuse box.

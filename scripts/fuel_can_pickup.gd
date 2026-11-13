@@ -30,7 +30,6 @@ func _ready() -> void:
 
 
 func interact() -> void:
-	print("[FuelCanPickup] interact() called! item_data=", item_data, " name=", item_data.item_name if item_data else "null")
 	if not item_data:
 		print("[FuelCanPickup] ERROR: item_data is null!")
 		return

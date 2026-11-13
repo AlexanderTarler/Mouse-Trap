@@ -29,22 +29,6 @@ enum EventName {
 	FINAL_CONFRONTATION,
 }
 
-## Maps EventName enum values to their string representations.
-const EVENT_STRINGS: Dictionary = {
-	EventName.DISTANT_SOUND: "distant_sound",
-	EventName.SHADOW_OUTSIDE: "shadow_outside",
-	EventName.ENTITY_GLIMPSE: "entity_glimpse",
-	EventName.DOOR_CREAK: "door_creak",
-	EventName.ENTITY_INSIDE: "entity_inside",
-	EventName.OBJECT_MOVED: "object_moved",
-	EventName.FOOTSTEPS: "footsteps",
-	EventName.ENTITY_APPEARS: "entity_appears",
-	EventName.LIGHTS_FLICKER: "lights_flicker",
-	EventName.ENTITY_CHARGE: "entity_charge",
-	EventName.ENTITY_CONSTANT: "entity_constant",
-	EventName.POLTERGEIST: "poltergeist",
-	EventName.FINAL_CONFRONTATION: "final_confrontation",
-}
 
 @export var is_dev_mode: bool = false
 ## Dev: the point of the story the game starts at (DevStart.Start; 0: none).
@@ -66,17 +50,6 @@ var night_progress: float = 0.0
 
 ## Whether the current night is active
 var is_night_active: bool = false
-
-## Returns true if the Entity is allowed to approach windows on the current night.
-## Night 1 is purely passive observation — the Entity stays in the treeline.
-## From Night 2 onward, window approaches are permitted.
-##
-## DEV MODE: Always returns true, allowing the Entity to approach windows
-## on any night for testing navigation and behavior immediately.
-func can_approach_windows() -> bool:
-	if is_dev_mode:
-		return true
-	return current_night > 1
 
 ## Whether the player has found Arvid's Note in the world.
 ## When true, the ComputerUI's RECOVER_DATA.EXE will auto-fill the
@@ -131,10 +104,6 @@ var _awaiting_door_lock: bool = false
 ## _awaiting_door_lock is active. Resets to 0 if the player leaves.
 var _door_lock_delay_timer: float = 0.0
 
-## Whether the Day 1 cabin setup tasks (Fuse, Generator, Computer) have
-## been completed. Set to true by RoutineManager when all tasks are done.
-## The bed checks this flag before allowing the player to sleep.
-var day1_onboarding_complete: bool = false
 
 ## Whether the Night 2.2 van sequence (car alarm → chase) is currently active.
 ## Set to true when the bed triggers the car alarm sequence (current_night 1→2).
@@ -160,8 +129,6 @@ var _peeker_timer: float = 0.0
 ## Prevents multiple spawns from the same night.
 var _peeker_spawned: bool = false
 
-## Delay in seconds before the Night 1 peeker spawns after the night starts.
-const PEEKER_SPAWN_DELAY: float = 5.0
 
 # --- POWER GRID ---
 var is_generator_on: bool = true
@@ -227,8 +194,6 @@ func _on_scene_ready() -> void:
 	_spawn_setup_done = false
 
 
-
-
 ## Sets the initial game time to mid-afternoon with time paused.
 ## The clock stays frozen until the player unlocks the cabin door.
 ##
@@ -274,8 +239,6 @@ func _set_initial_time() -> void:
 	
 	# Keep our own flag in sync with GameTime — time starts FROZEN at boot.
 	is_time_paused = true
-
-
 
 
 ## ─── TIME START (GAME LOADED) ──────────────────────────────────────────────
@@ -494,7 +457,6 @@ func _find_marker_recursive(root: Node, name: String) -> Marker3D:
 	return null
 
 
-
 ## Black over everything from the moment a new game is started (the main
 ## menu's Play) until the game is set up and the opening is on screen: the
 ## scene would otherwise show for a moment as it was saved (the player in
@@ -597,7 +559,6 @@ func start_onboarding_sequence() -> void:
 		print("[NightManager] RoutineManager not found or missing reset_all_phases().")
 
 
-
 func _set_objective(text: String) -> void:
 	var labels = get_tree().get_nodes_in_group("objective_label")
 	if not labels.is_empty():
@@ -633,7 +594,6 @@ func _apply_starting_fuel() -> void:
 		print("[NightManager] No Generator node found. Using default fuel: %.1f / %.1f" % [generator_fuel, max_fuel])
 
 
-
 func _find_game_time() -> void:
 	_find_gt_attempts += 1
 	if _find_gt_attempts > _MAX_FIND_GT_ATTEMPTS:
@@ -651,7 +611,6 @@ func _find_game_time() -> void:
 		print("NightManager: Connected to GameTime.")
 	else:
 		call_deferred("_find_game_time")
-
 
 
 func _process(delta: float) -> void:
@@ -769,7 +728,6 @@ func _process(delta: float) -> void:
 	# the Day 1 "Lock the door" objective completes, which forces the
 	# peeker specifically to the bedroom window (right of the bed) via
 	# PeekerManager.force_spawn_at_window("Bedroom_Right").
-
 
 
 func _on_game_night_started() -> void:
@@ -1052,15 +1010,6 @@ func _trigger_event(event_name: String) -> void:
 		print("Horror event: %s" % event_name)
 
 
-func _trigger_night_1_peeker() -> void:
-	var pm = get_node_or_null("/root/PeekerManager")
-	if pm and pm.has_method("spawn_night_1_peeker"):
-		pm.spawn_night_1_peeker()
-		print("[NightManager] Night 1 Peeker event triggered after %.1f seconds." % PEEKER_SPAWN_DELAY)
-	else:
-		print("[NightManager] PeekerManager not found! Cannot spawn Night 1 Peeker.")
-
-
 ## ─── DAY 1 ONBOARDING: UNPAUSE TIME ────────────────────────────────────────
 func unpause_time() -> void:
 	if not is_time_paused:
@@ -1076,7 +1025,6 @@ func unpause_time() -> void:
 		print("[NightManager] GameTime unpaused. Clock continues from current time.")
 	
 	print("[NightManager] Time unpaused! The Day 1 onboarding clock is now running.")
-
 
 
 func trigger_first_chase() -> void:
@@ -1710,8 +1658,3 @@ func _find_fuse_box_recursive(root: Node):
 			return found
 	return null
 
-
-func get_intensity() -> float:
-	var night_factor = float(current_night) / float(total_nights)
-	var time_factor = night_progress
-	return min(1.0, night_factor * 0.6 + time_factor * 0.4)

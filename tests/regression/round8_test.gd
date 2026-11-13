@@ -13,7 +13,7 @@ extends SceneTree
 ##   8 the microphone: a loud moment is a noise the Entity hears, and the
 ##     Entity may play it back
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/round8_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/round8_test.gd
 
 var _failures := 0
 var _scene: Node

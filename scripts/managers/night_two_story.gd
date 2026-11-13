@@ -68,10 +68,6 @@ func on_woke_to_alarm() -> void:
 		Monologue.think.bind("Why is the car alarm blaring?", null, WAKE_THOUGHT_TIME, "n22_wake"))
 
 
-func is_panicking() -> bool:
-	return _panic != null and _panic.active
-
-
 func _on_horror_event(event_name: String) -> void:
 	match event_name:
 		"car_alarm":

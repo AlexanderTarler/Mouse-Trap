@@ -413,7 +413,6 @@ func _input(event: InputEvent) -> void:
 # Layout: backdrop, paper, page numbers, page-turn sound
 # ============================================================
 
-const INK := Color("#1a1a1a")
 const PENCIL := Color("#6e655a")
 var _page_numbers: Array[Label] = []
 
@@ -521,8 +520,6 @@ func _play_toggle() -> void:
 	add_child(player)
 	player.play()
 	player.finished.connect(player.queue_free)
-
-
 
 
 # ============================================================
@@ -714,16 +711,6 @@ func _refresh_side_track() -> void:
 	# The side-track is rendered as part of the van checklist.
 	# Just refresh the entire todo display.
 	_refresh_van_checklist()
-
-
-func set_documentation(text: String) -> void:
-	# Deprecated single-doc mode — clear and populate
-	_all_pages = [text]
-	_current_page = 0
-	_nest_data_start_page = 0
-	_notes_start_page = 999999
-	if current_spread == 1:
-		_refresh_spread_1()
 
 
 ## Lore-friendly hint lines for each nest, mirroring RoutineManager's

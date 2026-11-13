@@ -8,7 +8,7 @@ extends SceneTree
 ##   4 broken windows leave their glass on the floor inside
 ##   + the game's forest sounds silent behind the main menu
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/round10_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/round10_test.gd
 
 var _failures := 0
 var _scene: Node

@@ -62,12 +62,6 @@ var _hand_marker: Marker3D = null
 ## Reference to the OmniLight3D child node for intensity control.
 @onready var lamp_light: OmniLight3D = $OmniLight3D
 
-## Reference to the LampMesh for visibility control.
-## Uses get_node_or_null to handle scenes where the LampMesh child
-## doesn't exist (e.g., if the model was re-imported with a different
-## structure). Falls back to finding the first MeshInstance3D child.
-@onready var lamp_mesh: MeshInstance3D = _find_lamp_mesh()
-
 
 ## Returns the LampMesh MeshInstance3D child, or null if it doesn't exist.
 func _find_lamp_mesh() -> MeshInstance3D:
@@ -197,7 +191,6 @@ func interact() -> void:
 			return
 
 
-
 ## Finds an active PowerCable in PLUGGED_TO_SOURCE state that the player
 ## is currently dragging (free end in hand).
 func _find_active_cable() -> Node:
@@ -210,7 +203,6 @@ func _find_active_cable() -> Node:
 			if state == 1:  # CableState.PLUGGED_TO_SOURCE == 1
 				return cable
 	return null
-
 
 
 ## Public API: Called by PhysicalGrab when the player picks up the lamp.
@@ -531,7 +523,6 @@ func _physics_process(delta: float) -> void:
 		global_rotation = global_rotation.lerp(_hand_marker.global_rotation, 0.3)
 
 
-
 ## Triggers the overload state on this lamp.
 ##
 ## Called by the computer terminal when the player executes the
@@ -651,7 +642,3 @@ func reset_overload() -> void:
 	
 	print("[PortableLamp] Overload reset complete. Drain rate restored to %.1f." % [energy_drain_rate])
 
-
-## Returns the world position of this lamp for Entity attraction targeting.
-func get_trap_position() -> Vector3:
-	return global_position

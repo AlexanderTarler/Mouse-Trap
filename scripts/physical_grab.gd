@@ -17,13 +17,8 @@ extends Node3D
 @export var max_grab_mass: float = 20.0
 
 # ─── INTERACTABLE COLLISION LAYER ─────────────────────────────────
-# Layer 2 ("Interactable") is dedicated to interactable targets. All
-# raycasts in this script mask to layer 2 only, so invisible environment
-# geometry (porch roof overhang, stairs, cabin bounding bodies) on the
-# default layer 1 can never absorb a hold/grab ray before it reaches the
-# door, generator, or grabbable item. Kept in sync with
-# interaction_manager.gd's INTERACTABLE_LAYER_MASK.
-const INTERACTABLE_LAYER_MASK: int = 2  # Layer 2 (name: "Interactable")
+# The interaction ray sees only the interaction layer (see Interactable).
+const INTERACTABLE_LAYER_MASK := Interactable.LAYER_MASK
 
 # How long E must be held before entering grab mode (seconds)
 @export var hold_threshold: float = 0.5

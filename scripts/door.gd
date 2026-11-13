@@ -150,22 +150,6 @@ func interact() -> void:
 	NoiseEvent.emit(self, global_position, &"door")
 	is_animating = true
 	
-	# ─── ENTITY DOOR OPEN DEBUG LOG ─────────────────────────────────
-	# Logs when the Entity opens the door (detected by checking if the
-	# caller is in the "entity" group). This helps debug whether the
-	# Entity is successfully opening the door during APPROACH_WINDOW
-	# or if it's getting stuck before reaching the door.
-	if is_open and get_tree():
-		var entity_nodes = get_tree().get_nodes_in_group("entity")
-		for entity in entity_nodes:
-			if entity and entity.global_position.distance_to(global_position) < 5.0:
-				print("[DOOR_DEBUG] Entity opened door! Entity pos=(%.2f, %.2f, %.2f), Door pos=(%.2f, %.2f, %.2f), Door is_locked=%s" % [
-					entity.global_position.x, entity.global_position.y, entity.global_position.z,
-					global_position.x, global_position.y, global_position.z,
-					is_locked
-				])
-				break
-	
 	# Play door audio with pitch randomization
 	# Priority 1: Use the exported open_sound / close_sound property if assigned.
 	# Priority 2: Fall back to the baseline stream cached from the DoorAudio node
@@ -276,27 +260,6 @@ func _has_key_in_inventory() -> bool:
 		if item != null and "item_name" in item and item.item_name == required_key_name:
 			return true
 	return false
-
-
-## Unlocks and opens the door. Key is NOT consumed.
-func _unlock_door() -> void:
-	print("[Door] Unlocking door with: ", required_key_name)
-	
-	# Play unlock sound via the shared helper (supports programmatic fallback)
-	_play_lock_unlock_sound(false)  # false = unlock sound
-	
-	# Unlock and open the door
-	is_locked = false
-	is_open = true
-	NoiseEvent.emit(self, global_position, &"door")
-	is_animating = true
-	
-	var target_angle = default_rotation_y + open_angle
-	var tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
-	tween.tween_property(self, "rotation_degrees:y", target_angle, swing_speed)
-	tween.tween_callback(func(): is_animating = false)
-	
-	print("[Door] Door unlocked and opened!")
 
 
 ## Plays the locked rattle sound to indicate the door won't open.
@@ -462,45 +425,6 @@ func break_door() -> void:
 		)
 	else:
 		print("[Door] Door was already open.")
-
-
-## Checks if the Night 1 bedtime routine should advance to Step 4.
-
-## Called when the player locks the door. Only advances if:
-##   - We're on Step 3 of the routine
-##   - All cabin lights are switched off
-func _check_routine_advance() -> void:
-	var rm = get_node_or_null("/root/RoutineManager")
-	if not rm or not rm.has_method("advance_step"):
-		return
-	
-	# Only advance if we're on Step 3 (lock door + turn off lights)
-	if rm.current_step != 3:
-		return
-	
-	# Check if all cabin lights are off
-	# IMPORTANT: Faulty lights (e.g. the permanently short-circuited porch light)
-	# are EXCLUDED from this check — they cannot be toggled off and would
-	# otherwise block progression forever.
-	var all_lights_off = true
-	var lights = get_tree().get_nodes_in_group("CabinLights")
-	for light in lights:
-		# Skip faulty lights — they are permanently stuck ON and cannot be toggled
-		if "is_faulty" in light and light.is_faulty:
-			print("[Door] Skipping faulty light '%s' (permanently stuck ON)." % light.light_name if "light_name" in light else "unknown faulty")
-			continue
-		if "is_switched_on" in light and light.is_switched_on:
-			all_lights_off = false
-			print("[Door] Light '%s' is still on. Cannot advance routine." % light.light_name if "light_name" in light else "unknown")
-			break
-	
-	if not all_lights_off:
-		print("[Door] Not all lights are off. Cannot advance routine yet.")
-		return
-	
-	# All conditions met — advance to Step 4
-	print("[Door] Door locked and all lights off! Advancing routine to Step 4.")
-	rm.advance_step()
 
 
 func get_interact_text() -> String:

@@ -10,7 +10,7 @@ extends SceneTree
 ##     totem makes its effects once ahead (warm_effects, for ShaderWarmup)
 ##     and keeps their materials, so their shaders stay compiled
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/playtest13_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/playtest13_test.gd
 
 const LEVEL := "res://scenes/cottage_horror.tscn"
 
