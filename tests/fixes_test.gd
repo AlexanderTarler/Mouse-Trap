@@ -121,7 +121,7 @@ func _test_search_speed() -> void:
 	var player: Node3D = get_first_node_in_group("player")
 	player.global_position = Vector3(40.0, 0.5, -20.0)
 	entity.activate()
-	entity._teleport(Vector3(20.0, 0.1, 4.0))
+	entity.teleport(Vector3(20.0, 0.1, 4.0))
 	entity.request_state(entity.State.SEARCH, {"target": Vector3(30.0, 0.1, 10.0)})
 	var state = entity.brain.current
 	var speeds := []
@@ -172,12 +172,12 @@ func _test_headroom() -> void:
 	# The eyes are its highest bone; the top of the skull is ~0.15 m above them.
 	var clear: bool = not ceiling.is_empty() and top + 0.15 < ceiling.position.y
 	_check("headroom: walking the ground floor its head stays under the ceiling", clear,
-		"head top ~%.2f, ceiling %.2f, size %.2f" % [top + 0.15, ceiling.position.y if ceiling else NAN, entity._size])
+		"head top ~%.2f, ceiling %.2f, size %.2f" % [top + 0.15, ceiling.position.y if ceiling else NAN, entity.animator.size])
 	for f in 90:
 		entity.cinematic_pose(Transform3D(Basis.IDENTITY, Vector3(20.0, 0.03, 4.0)), &"Stalk")
 		entity.perception.entity_inside = false
 		await process_frame
-	_check("headroom: outdoors it is back to full size", entity._size > 0.98, "size %.2f" % entity._size)
+	_check("headroom: outdoors it is back to full size", entity.animator.size > 0.98, "size %.2f" % entity.animator.size)
 	entity.deactivate()
 
 
@@ -186,7 +186,7 @@ func _test_indoor_shriek() -> void:
 	var player: Node3D = get_first_node_in_group("player")
 	player.global_position = Vector3(6.5, 0.8, 17.0)
 	entity.activate()
-	entity._teleport(Vector3(6.5, 0.8, 11.0))
+	entity.teleport(Vector3(6.5, 0.8, 11.0))
 	entity.request_state(entity.State.STUNNED)
 	for i in 5:
 		await physics_frame
@@ -234,7 +234,7 @@ func _stage(at: Vector3, ahead: float, player_looks: bool, entity_faces: bool) -
 	player.rotation.y = PI if player_looks else 0.0
 	entity.activate()
 	entity.request_state(entity.State.STUNNED)
-	entity._teleport(at + Vector3(0.0, -0.4, ahead))
+	entity.teleport(at + Vector3(0.0, -0.4, ahead))
 	entity.rotation.y = PI if entity_faces else 0.0
 
 

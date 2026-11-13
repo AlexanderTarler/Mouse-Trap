@@ -1,7 +1,7 @@
 class_name EntityStateLure
 extends EntityState
-## Drawing the player out of their room before breaking in (data {"entry":
-## the window it wants, "decoy": a window of another room}; see
+## Drawing the player out of their room before breaking in (data {ENTRY:
+## the window it wants, DECOY: a window of another room}; see
 ## EntityWorld.plan_entry). It would rather not come in under the player's
 ## nose:
 ##   1. it creeps to the decoy window and knocks on the glass a few times;
@@ -31,8 +31,8 @@ var _drawn_out := false
 
 
 func enter(_from: int, data: Dictionary) -> void:
-	_target = data.get("entry")
-	_decoy = data.get("decoy")
+	_target = data.get(ENTRY)
+	_decoy = data.get(DECOY)
 	brain.target_entry = _decoy
 	_target_room = world.entry_room(_target) if _target else ""
 	_phase = Phase.GO
@@ -73,8 +73,9 @@ func update(delta: float) -> void:
 
 
 func next_state() -> int:
-	if perception.player_outside:
-		return S.STALK if perception.can_see_player else S.OBSERVE
+	var left := player_left_cabin()
+	if left != NO_CHANGE:
+		return left
 	if not _target or not _decoy or not world.is_entry_viable(_target):
 		return S.OBSERVE
 	if _spotted:
@@ -84,7 +85,7 @@ func next_state() -> int:
 	if _phase != Phase.HIDE:
 		return NO_CHANGE
 	if _drawn_out:
-		return go(S.APPROACH, {"entry": _target, "rush": true})
+		return go(S.APPROACH, {ENTRY: _target, RUSH: true})
 	if _wait_left > 0.0:
 		return NO_CHANGE
 	_rounds += 1
@@ -95,7 +96,7 @@ func next_state() -> int:
 	# They won't budge: the least watched way in, then.
 	var entry := world.pick_entry()
 	if entry:
-		return go(S.APPROACH, {"entry": entry})
+		return go(S.APPROACH, {ENTRY: entry})
 	return S.OBSERVE
 
 

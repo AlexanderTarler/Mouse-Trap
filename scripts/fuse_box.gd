@@ -78,16 +78,12 @@ func _ready() -> void:
 	
 
 	print("[FuseBox] _ready() complete. State: ", BoxState.keys()[current_state])
+	Interactable.make_reachable(self)
 
 
 # ─── HOLD-TO-INTERACT: Fuse Repair ────────────────────────────────────────
 ## Called by PhysicalGrab when the player presses E while looking at the fuse box.
 ## Starts accumulating hold progress for inserting a fuse.
-	# BUG 1 FIX: Ensure Layer 2 ("Interactable") is active — must run AFTER any
-	# bare 'collision_layer = N' assignment in _ready so it cannot be overwritten.
-	set_collision_layer_value(1, true)
-	set_collision_layer_value(2, true)
-
 ## Repair progress for the crosshair's ring (-1: not repairing).
 func get_hold_progress() -> float:
 	return _repair_progress / REPAIR_TIME if _is_repairing else -1.0
@@ -209,7 +205,6 @@ func _throw_switch() -> void:
 	var rm = get_node_or_null("/root/RoutineManager")
 	if rm and rm.has_method("on_fuse_fixed"):
 		rm.on_fuse_fixed()
-
 
 
 ## Sets the NightManager generator state and emits the state change signal

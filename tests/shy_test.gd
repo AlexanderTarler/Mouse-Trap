@@ -62,7 +62,7 @@ func _run() -> void:
 	var holder: Node3D = _player.get_node("CameraHolder")
 	holder.rotation.x = deg_to_rad(-85.0)
 	_entity.activate()
-	_entity._teleport(_entity.world.snap_to_navmesh(Vector3(30.0, 0.3, 30.0)))
+	_entity.teleport(_entity.world.snap_to_navmesh(Vector3(30.0, 0.3, 30.0)))
 	_entity.request_state(_entity.State.OBSERVE)
 	await _frames(30)
 	_check("setup: the player is inside, in the computer room", _entity.perception.player_inside,
@@ -146,7 +146,7 @@ func _start_lure(wait: float, rounds: int) -> Dictionary:
 	target.entry.is_glass_shattered = true
 	_believe("ComputerRoom")
 	var plan: Dictionary = _entity.world.plan_entry()
-	_entity._teleport(_entity.world.snap_to_navmesh(Vector3(30.0, 0.3, 30.0)))
+	_entity.teleport(_entity.world.snap_to_navmesh(Vector3(30.0, 0.3, 30.0)))
 	_entity.request_state(_entity.State.LURE, plan)
 	return plan
 

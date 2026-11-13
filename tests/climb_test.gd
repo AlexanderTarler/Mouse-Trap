@@ -94,6 +94,8 @@ func _run() -> void:
 	_test_night_gate()
 	await _test_climb_in()
 	await _test_drop_off()
+	await _test_driven_off_mid_climb()
+	await _test_driven_off_mid_dive()
 	await _test_climb_down()
 	await _test_leave_through_upstairs_window()
 
@@ -119,7 +121,7 @@ func _place_player(floor_pos: Vector3) -> void:
 # ─── Scenarios ───────────────────────────────────────────────────────────────
 
 func _test_floor_aware() -> void:
-	_entity._teleport(_ground(LIVING))
+	_entity.teleport(_ground(LIVING))
 	await _frames(2)
 	var to_landing: float = _entity.move_to(_ground(LANDING), 2.0)
 	var to_living: float = _entity.move_to(_ground(LIVING + Vector3(0.3, 0.0, 0.0)), 2.0)
@@ -156,7 +158,7 @@ func _test_climb_in() -> void:
 	_states.clear()
 	_place_player(BEDROOM)
 	var link = _link("BedroomWindowLeft")
-	_entity._teleport(_ground(EAST_YARD))
+	_entity.teleport(_ground(EAST_YARD))
 	await _frames(2)
 	_entity.request_state(_entity.State.APPROACH, {"entry": link})
 	var perched: bool = await _wait_for(func(): return _entity.is_perched_at(link), 20.0)
@@ -172,12 +174,96 @@ func _test_climb_in() -> void:
 	_check("climb in: it left claw marks up the wall", _entity.traces.scratch_count() >= 4, "%d scratches" % _entity.traces.scratch_count())
 
 
+## Halfway up the wall (not yet at the window), the overcharged beam held on
+## it drives it off: its senses go on during the move, it lets go and drops.
+func _test_driven_off_mid_climb() -> void:
+	_states.clear()
+	_place_player(BEDROOM)
+	var link = _link("BedroomWindowRight")
+	_entity.teleport(_ground(EAST_YARD))
+	_entity.confidence.reset()
+	_entity.world._repelled_until.clear()
+	var config = _entity.config
+	var climb_speed: float = config.climb_speed
+	config.climb_speed = 0.25   # a long climb: the beam is on it mid-move
+	var driven_before: int = _entity.times_driven_off
+	await _frames(2)
+	_entity.request_state(_entity.State.APPROACH, {"entry": link})
+	var climbing: bool = await _wait_for(func(): return _entity.is_traversing() and _entity.global_position.y > 1.0, 20.0)
+	if not climbing:
+		config.climb_speed = climb_speed
+		_check("mid-climb: precondition (on the wall, climbing)", false, _history())
+		return
+	var clock_before: float = _entity.perception._clock
+	var reached_window := false
+	var seconds := 0.0
+	for i in 60 * 8:
+		_entity.on_flashlight(true, true, 1.0)
+		await physics_frame
+		seconds += 1.0 / 60.0
+		reached_window = reached_window or _entity.is_perched_at(link)
+		if not _entity.is_traversing():
+			break
+	_entity.on_flashlight(false, false)
+	config.climb_speed = climb_speed
+	_check("mid-climb: its senses run during the climb (the beam's time on it adds up)",
+		_entity.perception._clock > clock_before + 0.5, "clock +%.2f s" % (_entity.perception._clock - clock_before))
+	_check("mid-climb: the overcharge drives it off the wall before it reaches the window",
+		"FLEE" in _states and not reached_window and not "BREACH" in _states and not _entity.is_clinging() and _entity.global_position.y < 1.5
+		and not _entity.perception.entity_inside,
+		"after %.2f s at y %.2f, %s" % [seconds, _entity.global_position.y, _history()])
+	_check("mid-climb: it counts as driven off (it hardens), and it collides with the world again",
+		_entity.times_driven_off == driven_before + 1 and _entity.collision_mask == _entity.MOVE_MASK,
+		"driven off %d -> %d, mask %d" % [driven_before, _entity.times_driven_off, _entity.collision_mask])
+	await _frames(30)
+
+
+## Diving in through an open ground-floor window with the overcharged beam
+## on it: driven off mid-move, it ends up on its feet (outside where it
+## started, or inside if it was through already), never in the wall.
+func _test_driven_off_mid_dive() -> void:
+	_states.clear()
+	_place_player(LIVING)
+	var window = _scene.get_node("Windows/BottomFloorWindows/LivingRoomWindow")
+	var link = window._entry_link
+	window.is_glass_shattered = true
+	window.is_boarded = false
+	_entity.teleport(_ground(BACK_YARD))
+	_entity.confidence.reset()
+	_entity.world._repelled_until.clear()
+	_entity.times_driven_off = 0
+	await _frames(5)
+	_entity.request_state(_entity.State.ENTER, {"entry": link})
+	var diving: bool = await _wait_for(func(): return _entity.is_traversing(), 20.0)
+	if not diving:
+		_check("mid-dive: precondition (going in through the window)", false, _history())
+		return
+	for i in 60 * 8:
+		_entity.on_flashlight(true, true, 1.0)
+		await physics_frame
+		if "FLEE" in _states and not _entity.is_traversing():
+			break
+	_entity.on_flashlight(false, false)
+	await _frames(20)
+	var at: Vector3 = _entity.global_position
+	var near_out: bool = _entity.reach_distance(at, link.start_position) < 2.5
+	var near_in: bool = _entity.reach_distance(at, link.end_position) < 2.5
+	_check("mid-dive: the overcharge drives it off in the middle of the move",
+		"FLEE" in _states and _entity.times_driven_off == 1, _history())
+	_check("mid-dive: it lands on its feet at one end of the window (not in the wall), colliding again",
+		(near_out or near_in or _entity.get_state_name() == "FLEE") and _entity.collision_mask == _entity.MOVE_MASK and at.y > -0.5,
+		"at %s, state %s" % [at.snapped(Vector3.ONE * 0.1), _entity.get_state_name()])
+	window.is_glass_shattered = false
+	_entity.request_state(_entity.State.OBSERVE)
+	await _frames(30)
+
+
 ## Clinging outside a window, the overcharge makes it drop off and flee.
 func _test_drop_off() -> void:
 	_states.clear()
 	_place_player(BEDROOM)
 	var link = _link("BedroomWindowRight")
-	_entity._teleport(_ground(EAST_YARD))
+	_entity.teleport(_ground(EAST_YARD))
 	_entity.confidence.reset()
 	await _frames(2)
 	_entity.request_state(_entity.State.APPROACH, {"entry": link})
@@ -205,7 +291,7 @@ func _test_climb_down() -> void:
 	_states.clear()
 	_place_player(LANDING)
 	var link = _link("LandingWindow")
-	_entity._teleport(_ground(BACK_YARD))
+	_entity.teleport(_ground(BACK_YARD))
 	_entity.world._repelled_until.clear()
 	_entity.confidence.reset()
 	await _frames(2)
@@ -242,7 +328,7 @@ func _test_leave_through_upstairs_window() -> void:
 		_check("leave: precondition (bedroom window broken open)", false)
 		return
 	_place_player(Vector3(40.0, 0.3, -20.0))
-	_entity._teleport(_ground(BEDROOM))
+	_entity.teleport(_ground(BEDROOM))
 	await _frames(5)
 	_entity.request_state(_entity.State.FLEE, {"calm": true})
 	var out: bool = await _wait_for(func(): return not _entity.perception.entity_inside and not _entity.is_traversing() \

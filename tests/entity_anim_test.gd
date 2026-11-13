@@ -37,7 +37,7 @@ func _frames(n: int) -> void:
 
 
 func _anim() -> String:
-	return str(_entity._anim_playback.get_current_node())
+	return str(_entity.animator.playback.get_current_node())
 
 
 func _run() -> void:
@@ -69,7 +69,7 @@ func _run() -> void:
 
 func _start(at: Vector3) -> void:
 	_entity.activate()
-	_entity._teleport(at)
+	_entity.teleport(at)
 
 
 func _test_library() -> void:
@@ -77,7 +77,7 @@ func _test_library() -> void:
 	var machine: AnimationNodeStateMachine = tree.tree_root
 	var missing: Array[String] = []
 	for state in ["Crouch", "LookAround", "LowCrawl", "Roar", "Dying", "NeckBite", "Punch", "HitReact", "DropLand"]:
-		if not machine.has_node(state) or not _entity.ANIM_GROUND_OFFSET.has(StringName(state)):
+		if not machine.has_node(state) or not _entity.animator.ANIM_GROUND_OFFSET.has(StringName(state)):
 			missing.append(state)
 	_check("the nine new animations are states of the Entity's tree, each with a ground offset", missing.is_empty(), str(missing))
 
@@ -159,16 +159,16 @@ func _test_crawl() -> void:
 	# Stand still low, then crawl.
 	_entity._is_active = false
 	for i in 20:
-		_entity._gait = &"crawl"
-		_entity._anim_override = &""
-		_entity._update_animation(1.0 / 60.0)
+		_entity.animator.gait = &"crawl"
+		_entity.animator.override_anim = &""
+		_entity.animator.update(1.0 / 60.0)
 		await physics_frame
 	var still: String = _anim()
 	for i in 20:
 		_entity.velocity = Vector3(1.5, 0.0, 0.0)
 		_entity.move_and_slide()
-		_entity._gait = &"crawl"
-		_entity._update_animation(1.0 / 60.0)
+		_entity.animator.gait = &"crawl"
+		_entity.animator.update(1.0 / 60.0)
 		await physics_frame
 	var moving: String = _anim()
 	_entity.velocity = Vector3.ZERO
@@ -194,9 +194,9 @@ func _test_punch() -> void:
 
 
 func _test_drop() -> void:
-	var src := FileAccess.get_file_as_string("res://scripts/entity/entity.gd")
+	var src := FileAccess.get_file_as_string("res://scripts/entity/entity_traversal.gd")
 	_check("drop off a wall: Falling To Landing, landing before it moves on",
-		"_set_traversal_anim.bind(&\"DropLand\")" in src and "tween_interval(DROP_LAND_TIME)" in src)
+		"_set_anim.bind(&\"DropLand\")" in src and "tween_interval(DROP_LAND_TIME)" in src)
 
 
 func _test_bite() -> void:

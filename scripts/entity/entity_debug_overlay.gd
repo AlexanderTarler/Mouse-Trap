@@ -65,10 +65,10 @@ func debug_landing_breach() -> bool:
 	out.y = 0.0
 	var spot := entity.world.snap_to_navmesh(link.start_position + out.normalized() * 6.0)
 	entity.request_state(Entity.State.OBSERVE)
-	entity._teleport(spot)
+	entity.teleport(spot)
 	entity.debug_breach = true
 	_breach_states_seen = false
-	entity.request_state(Entity.State.APPROACH, {"entry": link})
+	entity.request_state(Entity.State.APPROACH, {EntityState.ENTRY: link})
 	print("[Entity debug] F4: climbing to the LandingRoom window from %s." % spot)
 	return true
 

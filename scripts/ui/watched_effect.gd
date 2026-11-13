@@ -33,7 +33,7 @@ const PLAY_WATCHED_AUDIO := false
 
 
 func _ready() -> void:
-	# ─── TASK 3: DARKNESS/BLINDNESS OVERLAY REMOVED ─────────────────────
+	# ─── DARKNESS/BLINDNESS OVERLAY REMOVED ─────────────────────
 	# The visual darkness/blindness screen effect has been COMPLETELY removed.
 	# Previously this applied a distortion.gdshader (vignette darkening,
 	# chromatic aberration, pixelation) and a full-screen BlindnessRect that
@@ -78,14 +78,14 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	# TASK 3: The shader-based darkness overlay is completely removed.
+	# The shader-based darkness overlay is completely removed.
 	# No shader material is created/assigned, so _shader_material is null
 	# and no darkness/vignette effect can render. Kept as a no-op.
 	pass
 
 
 func _on_watched_intensity_changed(intensity: float) -> void:
-	# TASK 3: Do NOT feed watched_intensity into any darkness shader.
+	# Do NOT feed watched_intensity into any darkness shader.
 	# The visual darkness overlay is gone — intensity is still used below
 	# to drive the watched/whisper audio cue.
 	
@@ -106,14 +106,14 @@ func _on_watched_intensity_changed(intensity: float) -> void:
 
 
 func _on_blindness_started() -> void:
-	# TASK 3: Blindness (full-screen black) COMPLETELY REMOVED.
+	# Blindness (full-screen black) COMPLETELY REMOVED.
 	# No-op — the player should NOT see the screen fade to black.
 	_is_blind = false
 	return
 
 
 func _on_blindness_ended() -> void:
-	# TASK 3: Blindness (full-screen black) COMPLETELY REMOVED.
+	# Blindness (full-screen black) COMPLETELY REMOVED.
 	# No-op — the player should NOT see the screen fade back from black.
 	_is_blind = false
 	return

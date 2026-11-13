@@ -233,7 +233,7 @@ func _test_post_stun() -> void:
 	entity.can_kill = false
 	player.global_position = Vector3(20.0, 0.5, 4.0)
 	entity.activate()
-	entity._teleport(Vector3(40.0, 0.5, 30.0))
+	entity.teleport(Vector3(40.0, 0.5, 30.0))
 	entity.request_state(entity.State.STUNNED, {"duration": 0.5})
 	await _frames(20)
 	var during: bool = entity.totem_defense_disabled

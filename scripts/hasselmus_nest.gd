@@ -176,7 +176,7 @@ func _ready() -> void:
 	if lock_type == "stillness":
 		_setup_whisper_audio()
 	
-	# BUG 1 FIX: Interactable Layer 2 — the interaction ray only raycasts
+	# Interactable Layer 2 — the interaction ray only raycasts
 	# against layer 2. Keep layer 1 (so the player/Entity still collide with
 	# the stump) AND add layer 2 (1|2 = 3) so the E-prompt can reach the nest.
 	set_collision_layer_value(1, true)

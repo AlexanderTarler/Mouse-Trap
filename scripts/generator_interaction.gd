@@ -84,7 +84,7 @@ var _refuel_notified: bool = false
 func _ready() -> void:
 	add_to_group("xray_generator")
 	_nm = get_node_or_null("/root/NightManager")
-	# BUG 1 FIX: Layer 2 ("Interactable") — the interaction ray only raycasts
+	# Layer 2 ("Interactable") — the interaction ray only raycasts
 	# against layer 2, so this Area must be ON layer 2 to be reachable.
 	collision_layer = 2
 	_setup_refuel_audio()
@@ -109,7 +109,7 @@ func _process(delta: float) -> void:
 		stop_refuel()
 		return
 	
-	# ─── TASK 1: PROPORTIONAL FUEL CAN DEPLETION ─────────────────────
+	# ─── PROPORTIONAL FUEL CAN DEPLETION ─────────────────────
 	# The generator consumes exactly `fuel_to_add` generator units this
 	# frame (clamped so it never exceeds the tank's remaining space OR
 	# the can's remaining fuel). For every 1 unit of generator fuel, the
@@ -268,7 +268,7 @@ func start_refuel() -> void:
 		print("[Generator] I need a Fuel Can to refill the generator.")
 		return
 	
-	# ─── BUG 2 FIX: CLEAR X-RAY HIGHLIGHT ON E PRESS ──────────────
+	# ─── CLEAR X-RAY HIGHLIGHT ON E PRESS ──────────────
 	# As soon as the player commits to refueling (holds E), the x-ray
 	# highlight on the generator (and its switch) should vanish so the
 	# player can see the physical interaction. Previously the highlight
@@ -347,7 +347,7 @@ func _refill_text() -> String:
 	if _nm and _nm.generator_fuel >= _nm.max_fuel:
 		return "Generator (full)"
 	if _is_refueling:
-		# ─── BUG 3 FIX: SHOW GENERATOR'S TOTAL FUEL PERCENTAGE ────────
+		# ─── SHOW GENERATOR'S TOTAL FUEL PERCENTAGE ────────
 		# Previously this used _can_progress (per-can progress) which
 		# restarted from 0% every time a new fuel can was selected or the
 		# player stopped and resumed. Now it shows the generator's actual
@@ -359,7 +359,7 @@ func _refill_text() -> String:
 
 
 ## Searches the player's inventory for a Fuel Can item.
-## TASK 1: Skips cans that have been fully drained (fuel_amount <= 0),
+## Skips cans that have been fully drained (fuel_amount <= 0),
 ## so only cans with remaining fuel are eligible for refueling.
 func _find_fuel_can_in_inventory():
 	for item in Inventory.items:

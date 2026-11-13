@@ -52,7 +52,7 @@ var alarm_active: bool = false
 ## night restart. This prevents the alarm sequence from playing twice.
 var van_investigated: bool = false
 
-# ─── TASK 8: SPRINT TUTORIAL ONE-SHOT GUARD ─────────────────────────
+# ─── SPRINT TUTORIAL ONE-SHOT GUARD ─────────────────────────
 ## True once the "Hold SHIFT to run" hint has been fired at the STALK
 ## transition (during the Night 2.2 van sequence). Prevents re-triggering
 ## if the chase sequence is ever re-run (e.g. scene reload).
@@ -320,7 +320,7 @@ func start_hold_interact() -> void:
 	_is_installing = true
 	_open_hood()
 	
-	# TASK 8: Start the repair sound the MOMENT the player holds E.
+	# Start the repair sound the MOMENT the player holds E.
 	# Previously the audio only played when the part reached 100% installation.
 	if _repair_audio:
 		_repair_audio.pitch_scale = 1.0
@@ -335,7 +335,7 @@ func stop_hold_interact() -> void:
 		return
 	_is_installing = false
 	
-	# TASK 8: Stop the repair sound if the player releases E before finishing.
+	# Stop the repair sound if the player releases E before finishing.
 	if _repair_audio:
 		_repair_audio.stop()
 	print("[Van Install] Released at progress %.1f/%.1fs" % [_install_progress, INSTALL_TIME])
@@ -372,7 +372,7 @@ func _process_hold_interact(delta: float) -> void:
 		print("[EscapeVan] Component installed via hold: %s (%d/%d)" % [_pending_part_name, components_collected, COMPONENTS_NEEDED])
 		_show_hud_message(_installed_line(_pending_part_name))
 		
-		# TASK 8: The repair audio is already playing from start_hold_interact() —
+		# The repair audio is already playing from start_hold_interact() —
 		# do NOT restart it here at completion.
 		var rm = get_node_or_null("/root/RoutineManager")
 		if rm and rm.has_method("on_van_part_installed"):

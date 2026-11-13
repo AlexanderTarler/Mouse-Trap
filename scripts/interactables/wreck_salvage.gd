@@ -20,7 +20,6 @@ var _searched_empty: bool = false
 var _monologue_shown: bool = false
 
 
-
 func _ready() -> void:
 	# Add to x-ray highlight group for the car part finding objective.
 	add_to_group("xray_car_wreck")
@@ -32,18 +31,14 @@ func _ready() -> void:
 		"car_wreck_2", "carwreck2", "wreck_2":
 			add_to_group("xray_wreck_2")
 		"car_wreck_3", "carwreck3", "wreck_3":	add_to_group("xray_wreck_3")
+	Interactable.make_reachable(self)
 
 
 ## Triggered when the player looks at the car and presses the interact key.
-	# BUG 1 FIX: Ensure Layer 2 ("Interactable") is active — must run AFTER any
-	# bare 'collision_layer = N' assignment in _ready so it cannot be overwritten.
-	set_collision_layer_value(1, true)
-	set_collision_layer_value(2, true)
-
 func interact(player: Node3D = null) -> void:
 	print("[Wreck] interact() CALLED — is_looted=", is_looted, " | item_resource=", item_resource)
 	
-	# ─── TASK 2.1: EXHAUSTED GATE ────────────────────────────────
+	# ─── EXHAUSTED GATE ────────────────────────────────
 	# When the player is exhausted (Day 3+), they are too tired to salvage
 	# car wrecks. The interaction is blocked with a greyed-out message.
 	# Standard doors/locks remain interactable — only resource-gathering
@@ -202,7 +197,7 @@ func get_interact_text() -> String:
 		return "Wreck (stripped)"
 	if _searched_empty:
 		return "Wreck (no parts)"
-	# ─── TASK 2.1: EXHAUSTED INTERACTION PROMPT ──────────────────
+	# ─── EXHAUSTED INTERACTION PROMPT ──────────────────
 	# When exhausted, grey out the interaction prompt instead of
 	# showing the normal "Press E" text. The player is too tired.
 	var player_ref = get_tree().get_first_node_in_group("player")

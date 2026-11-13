@@ -150,6 +150,16 @@ func has_fresh_noise(max_age: float = -1.0) -> bool:
 	return time_since_heard() < (config.memory_time if max_age < 0.0 else max_age)
 
 
+## Where to go looking for the player, from memory: the last sighting if
+## it's fresh, otherwise the last noise, otherwise Vector3.INF (no idea).
+func freshest_lead() -> Vector3:
+	if has_fresh_sighting():
+		return last_seen_position
+	if has_fresh_noise():
+		return last_heard_position
+	return Vector3.INF
+
+
 # ─── Hearing ─────────────────────────────────────────────────────────────────
 
 const FOOTSTEPS: Array[StringName] = [&"walk", &"sprint", &"crouch"]
@@ -178,6 +188,14 @@ func hear_noise(noise_position: Vector3, kind: StringName) -> void:
 
 	var ear := entity.global_position + Vector3.UP * config.eye_height
 	var source := noise_position + Vector3.UP * NOISE_HEIGHT
+	# Farther off than it carries in the open: no wall or opening brings it
+	# closer (every factor is at most 1, every way round is longer), so the
+	# rays aren't cast at all.
+	var straight := source.distance_to(ear)
+	if straight > radius:
+		last_noise = {"kind": kind, "distance": straight, "range": radius, "via": "too far",
+			"walls": 0, "obstacles": 0, "heard": false, "clock": _clock}
+		return
 	var path := _muffling(source, ear)
 	path["distance"] = source.distance_to(ear)
 	path["via"] = "direct"

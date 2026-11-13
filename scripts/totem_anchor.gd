@@ -32,7 +32,7 @@ class_name TotemAnchor
 ## Once true, the totem cannot be interacted with again.
 var is_purged: bool = false
 
-## ─── TASK 4: "FIND THE ANCHOR" ONE-SHOT TRIGGER ──────────────────────
+## ─── "FIND THE ANCHOR" ONE-SHOT TRIGGER ──────────────────────
 ## When the player approaches within ~5.0 meters, RoutineManager's
 ## on_anchor_located() fires exactly once (side-track "Locate anchor").
 var _anchor_located_notified: bool = false
@@ -103,7 +103,7 @@ const MAX_PURGE_DISTANCE: float = 8.0
 ## (which previously drifted the totem 2-3m above its planted position
 ## every night because the night tween targeted original_y + 3.0).
 ##
-## BUG FIX: The old code tweened night to `_original_y + raised_y` (3.0m
+## The old code tweened night to `_original_y + raised_y` (3.0m
 ## above ground). The correct behavior is: night → rise to `_original_y`
 ## (its planted, correct height), day → sink 5.0m below to `_original_y - 5.0`.
 @onready var _original_y: float = global_position.y
@@ -111,9 +111,9 @@ const MAX_PURGE_DISTANCE: float = 8.0
 ## How far below the original Y the totem sinks during the day.
 ## The willow tree model extends ~6.9m above its origin point, so burying
 ## 7.0m below + the tree's height fully submerges the canopy underground.
-## TASK 3.4: Changed from 5.0 → 7.0 to lower the totem anchor an extra
+## Changed from 5.0 → 7.0 to lower the totem anchor an extra
 ## 2 meters into the ground during the daytime.
-## ISSUE 2 FIX: Raised to 9.0 — the daytime hub was still sitting 2m too
+## Raised to 9.0 — the daytime hub was still sitting 2m too
 ## high, so the totem must sink an additional 2 meters below ground.
 const BURIED_OFFSET: float = 9.0
 
@@ -277,7 +277,7 @@ func get_interact_text() -> String:
 	if is_purged:
 		return ""  # No prompt if already destroyed
 	
-	# ─── TASK 2.1: EXHAUSTED INTERACTION PROMPT ──────────────────
+	# ─── EXHAUSTED INTERACTION PROMPT ──────────────────
 	# When exhausted, grey out the interaction prompt instead of
 	# showing the normal "Press E" text. The player is too tired.
 	var player_ref = get_tree().get_first_node_in_group("player")
@@ -309,7 +309,7 @@ func _process(delta: float) -> void:
 	if is_purged:
 		return
 
-	# ─── TASK 4: "FIND THE ANCHOR" DISTANCE TRIGGER ────────────────────
+	# ─── "FIND THE ANCHOR" DISTANCE TRIGGER ────────────────────
 	# If the player approaches within ~5.0 meters, fire the side-track
 	# "Locate anchor" objective exactly once.
 	if not _anchor_located_notified:
@@ -322,7 +322,7 @@ func _process(delta: float) -> void:
 			if rm_locate and rm_locate.has_method("on_anchor_located"):
 				rm_locate.on_anchor_located()
 				_anchor_located_notified = true
-				print("[TotemAnchor] TASK 4: Player near anchor — 'Locate anchor' objective fired.")
+				print("[TotemAnchor] Player near anchor — 'Locate anchor' objective fired.")
 
 	# ─── NIGHT-STATE COLLISION DEFENSE (Bug Fix) ────────────────────────
 	# If the NightManager reports an active Night 3+ but the totem's
@@ -383,7 +383,7 @@ func _process(delta: float) -> void:
 			_abort_purge()
 		return
 	
-	# ─── TASK 2.1: EXHAUSTED GATE ──────────────────────────────────────
+	# ─── EXHAUSTED GATE ──────────────────────────────────────
 	# When the player is exhausted (Day 3+), they are too tired to destroy
 	# the totem anchor. Show a greyed-out message and abort any purge.
 	var exhausted_player = get_tree().get_first_node_in_group("player")
@@ -532,7 +532,7 @@ func _complete_purge() -> void:
 	_defeat_entity()
 	
 	# Advance the RoutineManager side-track to mark the anchor as destroyed.
-	# BUG FIX (Task 3): advance_step() is deprecated and does NOT set
+	# advance_step() is deprecated and does NOT set
 	# is_anchor_destroyed, which caused the Good Ending to never trigger.
 	# on_anchor_destroyed() sets is_anchor_destroyed = true (the flag
 	# EscapeVan reads when deciding between Good/Mediocre endings).

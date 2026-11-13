@@ -196,7 +196,7 @@ func _test_microphone() -> void:
 	_check("8: off by default: not listening", GameSettings.DEFAULTS["audio/microphone"] == false and not PlayerVoice.enabled() and not voice.is_listening())
 	# A loud moment (as if the microphone picked one up).
 	_entity.activate()
-	_entity._teleport(_player.global_position + Vector3(4.0, 0.0, 0.0))
+	_entity.teleport(_player.global_position + Vector3(4.0, 0.0, 0.0))
 	await _frames(5)
 	voice.voice(PlayerVoice.threshold_db() + 20.0)
 	var noise: Dictionary = _entity.perception.last_noise

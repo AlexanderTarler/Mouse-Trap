@@ -69,20 +69,16 @@ func _ready() -> void:
 	# Deferred so all heaps have registered in the group before counting.
 
 	call_deferred("_maybe_add_cable_spool")
+	Interactable.make_reachable(self)
 
 
 # ─── INTERACTION PROMPT ────────────────────────────────────
 
 ## Returns the interaction prompt text shown in the HUD crosshair.
-	# BUG 1 FIX: Ensure Layer 2 ("Interactable") is active — must run AFTER any
-	# bare 'collision_layer = N' assignment in _ready so it cannot be overwritten.
-	set_collision_layer_value(1, true)
-	set_collision_layer_value(2, true)
-
 func get_interact_text() -> String:
 	if is_spent:
 		return "Scrap heap (picked clean)"
-	# ─── TASK 2.1: EXHAUSTED INTERACTION PROMPT ──────────────────
+	# ─── EXHAUSTED INTERACTION PROMPT ──────────────────
 	# When exhausted, grey out the interaction prompt instead of
 	# showing the normal "Press E" text. The player is too tired.
 	var player_ref = get_tree().get_first_node_in_group("player")

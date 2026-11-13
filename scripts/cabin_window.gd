@@ -506,7 +506,7 @@ func _update_nav_blocker() -> void:
 
 ## Returns true if the player is currently allowed to board THIS window.
 ##
-## TASK 3 STRICT PROGRESSION GATE: Boarding can ONLY begin when the
+## STRICT PROGRESSION GATE: Boarding can ONLY begin when the
 ## RoutineManager explicitly flags windows as unlocked for boarding
 ## (windows_unlocked_for_boarding). This flag is set when the Day 1
 ## "Board up the broken window" objective begins (after the computer
@@ -592,7 +592,7 @@ func start_hold_interact() -> void:
 	
 	# ─── START LOOPING HAMMER SOUND ────────────────────────────────────
 	# Play the hammer sound CONTINUOUSLY while the player holds E.
-	# BUG 7 FIX: The stream is duplicated and set to loop=true so the
+	# The stream is duplicated and set to loop=true so the
 	# hammering sound keeps playing throughout the ENTIRE board-up hold
 	# (previously it played once and ended before the last plank was
 	# placed). The stop() call in stop_hold_interact() / _process_hold_interact()
@@ -621,13 +621,13 @@ func stop_hold_interact() -> void:
 	_show_preview_plank = false
 	_update_plank_visuals()
 	
-	# ─── STOP LOOPING HAMMER SOUND (TASK 3.3: Fadeout to prevent pop) ──
+	# ─── STOP LOOPING HAMMER SOUND (fade out, so it doesn't pop) ──
 	_fadeout_hammer_sound()
 	
 	print("[Window Boarding] Released at progress %.1f/%.1fs" % [_boarding_progress, BOARD_PER_PLANK_TIME])
 
 
-## ─── TASK 3.3: HAMMER SOUND FADEOUT HELPER ─────────────────────────────
+## ─── HAMMER SOUND FADEOUT HELPER ─────────────────────────────
 ## Replaces all hard _hammer_sound.stop() calls. A hard stop() on a looping
 ## audio stream cuts the waveform mid-cycle, producing a distorted pop/buzz
 ## at the tail end. This helper tweens the volume to -80dB over 0.1 seconds,
@@ -685,7 +685,7 @@ func _process_hold_interact(delta: float) -> void:
 				_is_boarding = false
 				_boarding_progress = 0.0
 				_show_preview_plank = false
-				# ─── TASK 3.3: Fadeout instead of hard stop ──────────
+				# ─── Fadeout instead of hard stop ──────────
 				_fadeout_hammer_sound()
 				print("[Window Boarding] Window fully boarded!")
 				
@@ -707,7 +707,7 @@ func _process_hold_interact(delta: float) -> void:
 					_boarding_progress = 0.0
 					_show_preview_plank = false
 					_update_plank_visuals()
-					# ─── TASK 3.3: Fadeout instead of hard stop ──────────
+					# ─── Fadeout instead of hard stop ──────────
 					_fadeout_hammer_sound()
 				else:
 					# Has more planks — show preview for the next one
@@ -980,7 +980,7 @@ func _shatter_barricade() -> void:
 ## but the glass and crossbars are gone forever. ShatteredVisuals remains
 ## visible behind/between the planks.
 func interact() -> void:
-	# ─── TASK 3: INSTANT-PLANK EXPLOIT REMOVED ─────────────────────────
+	# ─── INSTANT-PLANK EXPLOIT REMOVED ─────────────────────────
 	# Legacy debug code previously consumed 1 plank and instantly set
 	# is_boarded = true with planks_remaining = 3, bypassing the inventory
 	# hold-to-interact pipeline AND the story unlock gate. Boarding now

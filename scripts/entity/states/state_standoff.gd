@@ -72,8 +72,7 @@ func update(delta: float) -> void:
 func next_state() -> int:
 	# The overcharged beam always wins, in any phase, if held long enough.
 	if perception.overcharge_time >= entity.repel_time():
-		entity.times_driven_off += 1
-		EntityJournal.learn(entity, "beam" if entity.times_driven_off <= 1 else "beam_harder")
+		entity.note_driven_off()
 		return S.FLEE
 	if perception.overcharged and perception.entity_inside != perception.player_inside:
 		return S.FLEE
@@ -91,7 +90,7 @@ func next_state() -> int:
 			elif _lost_time > config.standoff_release_time:
 				# Indoors a beam let go too soon is a chance, not a defeat.
 				if perception.entity_inside and perception.player_inside:
-					return go(S.CHARGE, {"no_roar": true})
+					return go(S.CHARGE, {NO_ROAR: true})
 				_start_back_off()
 		Phase.WINDUP:
 			if _lost_time > config.windup_release_time:

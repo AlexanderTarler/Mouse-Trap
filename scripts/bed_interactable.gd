@@ -136,7 +136,7 @@ func _interact(player: Node3D = null) -> void:
 	var phase2_done: bool = rm and rm.phase2_computer_used if rm else false
 	var phase3_done: bool = rm and rm.phase3_bed_used if rm else false
 	
-	# ─── PRIORITY FIX: BLOCK BED DURING INCOMPLETE DAY 2 ─────────
+	# ─── BLOCK BED DURING INCOMPLETE DAY 2 ─────────
 	# If the Day 2 nest-tutorial sequence is active (main_objective >= 99)
 	# but NOT yet fully complete (day2_step < 8), the player MUST NOT be
 	# able to sleep. Previously, when current_night advanced to 2 during
@@ -145,7 +145,7 @@ func _interact(player: Node3D = null) -> void:
 	# objectives. This guard runs BEFORE Conditioning 3/4 to hard-block.
 	var day2_nests_documented: int = rm.nests_documented if rm else 0
 	var day2_sequence_active: bool = rm and rm.main_objective >= 99 if rm else false
-	# ─── BUG 6 FIX: Allow day2_step == 7 through the gate ───────────
+	# ─── Allow day2_step == 7 through the gate ───────────
 	# Previously this checked `day2_step >= 8` (sequence COMPLETE). But step 7
 	# IS "Go to bed" — the very interaction this handler is supposed to
 	# perform. Blocking everything below step 8 created a deadlock: the player

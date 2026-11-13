@@ -118,8 +118,18 @@ func _open_line(length: float) -> Array:
 		var b := _ground(a + dir * length)
 		if a.distance_to(b) < length - 0.5 or _entity.world.is_inside_cabin(a) or _entity.world.is_inside_cabin(b):
 			continue
-		var n := _hear(a, b, &"click")
-		if n.walls == 0 and n.obstacles == 0:
+		# Clear all along: to the far end and to each point the tests listen
+		# from (the ground under them differs, so a tree or rock can be in
+		# the way of one and not the whole line).
+		var dir_ab := (b - a).normalized()
+		var clear := true
+		for d in [length, 5.0, 15.0, 17.0, 25.0]:
+			# (Sprinting carries 35 m: far enough that the rays are cast.)
+			var n := _hear(a, _ground(a + dir_ab * d), &"sprint")
+			if n.walls != 0 or n.obstacles != 0:
+				clear = false
+				break
+		if clear:
 			return [a, b]
 	return []
 

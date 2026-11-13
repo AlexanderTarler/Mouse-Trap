@@ -518,7 +518,7 @@ func _update_environment(p_day_factor: float, p_sun_height: float) -> void:
 			_environment.fog_enabled = fog_enabled
 			_cached_fog_enabled = fog_enabled
 		
-		# ─── BUG 6 FIX: NIGHT 3+ FOG INCREASE (+50%) ────────────────
+		# ─── NIGHT 3+ FOG INCREASE (+50%) ────────────────
 		# From Night 3 onward, every night has 50% more atmospheric fog
 		# than current. Night 1–2 keep the original density. This creates
 		# a progressive dread as the nights get later.

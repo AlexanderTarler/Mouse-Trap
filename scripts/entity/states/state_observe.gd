@@ -58,15 +58,15 @@ func next_state() -> int:
 		if perception.can_see_player:
 			return S.STALK
 		if perception.has_fresh_noise(3.0):
-			return go(S.SEARCH, {"target": perception.last_heard_position})
+			return go(S.SEARCH, {TARGET: perception.last_heard_position})
 		if perception.unseen_outside_time > config.outside_sense_time:
 			var guess := entity.get_player().global_position + _random_offset(config.outside_sense_error)
-			return go(S.SEARCH, {"target": guess})
+			return go(S.SEARCH, {TARGET: guess})
 		return NO_CHANGE
 
 	if not entity.can_approach_cabin():
 		return NO_CHANGE
-	if _blocked_time > config.frustration_time and entity.can_break_planks():
+	if _blocked_time > config.frustration_time and entity.can_use_tricks():
 		var box := world.fuse_box()
 		if box and box.is_powered():
 			return S.SABOTAGE
@@ -74,9 +74,9 @@ func next_state() -> int:
 		# The way in it would rather not be seen at, or, if that's the
 		# player's own room, a lure first (EntityWorld.plan_entry).
 		var plan := world.plan_entry()
-		if plan.has("decoy"):
+		if plan.has(DECOY):
 			return go(S.LURE, plan)
-		if plan.has("entry"):
+		if plan.has(ENTRY):
 			return go(S.APPROACH, plan)
 	return NO_CHANGE
 
@@ -114,7 +114,7 @@ func _start_watching() -> void:
 func _update_frustration(delta: float) -> void:
 	var wants_in := perception.player_inside and entity.can_approach_cabin() \
 		and entity.confidence.get_confidence() >= config.approach_threshold
-	if wants_in and world.pick_entry() == null:
+	if wants_in and not world.has_viable_entry():
 		_blocked_time += delta
 	else:
 		_blocked_time = maxf(_blocked_time - delta, 0.0)

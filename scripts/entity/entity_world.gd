@@ -195,20 +195,10 @@ func entry_score(link: CabinEntryLink, shy: bool = true) -> float:
 			score -= config.shy_spotted_penalty
 		# Far from where it last saw or heard the player (it doesn't know
 		# where they are otherwise).
-		var lead = _player_lead()
-		if lead != null:
+		var lead := entity.perception.freshest_lead()
+		if lead != Vector3.INF:
 			score += minf(Entity._flat_distance(lead, link.end_position) / 8.0, config.shy_distance_bonus)
 	return score
-
-
-## Where it last saw or heard the player, if that's fresh; else null.
-func _player_lead():
-	var p := entity.perception
-	if p.has_fresh_sighting():
-		return p.last_seen_position
-	if p.has_fresh_noise():
-		return p.last_heard_position
-	return null
 
 
 ## Chooses an entry to approach, or null if none is viable: the best
@@ -226,8 +216,16 @@ func pick_entry() -> CabinEntryLink:
 	return best
 
 
-## How it means to get in: {"entry": link} to go straight for one, or
-## {"entry": link, "decoy": other} to lure the player away from `entry`
+## Whether there is any way in it would consider (no scoring, no dice).
+func has_viable_entry() -> bool:
+	for link in entries():
+		if is_entry_viable(link):
+			return true
+	return false
+
+
+## How it means to get in: {EntityState.ENTRY: link} to go straight for one, or
+## {EntityState.ENTRY: link, EntityState.DECOY: other} to lure the player away from `entry`
 ## first. It lures when the best way in, judged without shyness, opens into
 ## the room it believes the player is in, and another room has a usable
 ## window it can make noise at (config.lure_chance). {} if no way in.
@@ -245,9 +243,9 @@ func plan_entry() -> Dictionary:
 		if target and entry_room(target) == room:
 			var decoy := _pick_decoy(target, room)
 			if decoy:
-				return {"entry": target, "decoy": decoy}
+				return {EntityState.ENTRY: target, EntityState.DECOY: decoy}
 	var entry := pick_entry()
-	return {"entry": entry} if entry else {}
+	return {EntityState.ENTRY: entry} if entry else {}
 
 
 ## A window of another room to make noise at: on the ground, not one the
@@ -522,7 +520,7 @@ func is_inside_cabin(pos: Vector3) -> bool:
 
 func _load_footprint() -> void:
 	_footprint_searched = true
-	var carve := _level_root().find_child("ExteriorNavCarve", true, false) as NavigationObstacle3D
+	var carve := level_root().find_child("ExteriorNavCarve", true, false) as NavigationObstacle3D
 	if not carve:
 		push_warning("EntityWorld: ExteriorNavCarve not found; using room volumes for inside/outside.")
 		return
@@ -596,7 +594,7 @@ func _light_sources() -> Array[Vector4]:
 
 ## The level scene (current_scene in game; the Entity's owner when the level
 ## is instanced some other way, e.g. by tests).
-func _level_root() -> Node:
+func level_root() -> Node:
 	var scene := get_tree().current_scene
 	if scene:
 		return scene
@@ -625,7 +623,7 @@ func fuse_box() -> Node:
 		return entity.fuse_box_node
 	if not is_instance_valid(_fuse_box) and not _fuse_box_searched:
 		_fuse_box_searched = true
-		for node in _level_root().find_children("*", "", true, false):
+		for node in level_root().find_children("*", "", true, false):
 			if node is FuseBox:
 				_fuse_box = node
 				break

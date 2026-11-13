@@ -111,9 +111,7 @@ var _knock_streams: Array[AudioStream] = []
 var _murmur_streams: Array[AudioStream] = []
 var _creak_left := 0.0
 var _murmur_left := 30.0
-var _mimic_left := 0.0
-var _mimic_night := -1
-var _mimics_tonight := 0
+var _mimic_left := randf_range(MIMIC_FIRST_MIN, MIMIC_FIRST_MAX)
 var last_mimic := ""   ## The last sound it copied (for tests and the overlay).
 
 
@@ -366,13 +364,13 @@ func play_thud_at(world_position: Vector3) -> void:
 ## another room, the notebook, a light switch, a knock on the front door.
 ## Only while the player is inside and can't see it, and not right after
 ## another of its tricks (EntityWorld.trick_ready).
+## A night starts: the first copied sound is a while off. (How many it has
+## made tonight is the Entity's: mimics_tonight, voices_tonight.)
+func night_started() -> void:
+	_mimic_left = randf_range(MIMIC_FIRST_MIN, MIMIC_FIRST_MAX)
+
+
 func update_mimicry(delta: float) -> void:
-	var night := entity.current_night()
-	if night != _mimic_night:
-		_mimic_night = night
-		_mimics_tonight = 0
-		_voices_tonight = 0
-		_mimic_left = randf_range(MIMIC_FIRST_MIN, MIMIC_FIRST_MAX)
 	_mimic_left -= delta
 	if _mimic_left > 0.0 or not can_mimic():
 		return
@@ -382,7 +380,7 @@ func update_mimicry(delta: float) -> void:
 
 func can_mimic() -> bool:
 	var p := entity.perception
-	return entity.can_break_planks() and _mimics_tonight < entity.config.mimic_per_night \
+	return entity.can_use_tricks() and entity.mimics_tonight < entity.config.mimic_per_night \
 			and p.player_inside and not p.in_player_view and entity.get_state() in MIMIC_STATES \
 			and entity.world.trick_ready()
 
@@ -401,7 +399,7 @@ func mimic(kind: String = "") -> bool:
 	if kind == "":
 		kind = MIMIC_KINDS.pick_random()
 		# Their own voice, now and then (the microphone: PlayerVoice).
-		if _voice_clip() and entity.current_night() >= VOICE_FROM_NIGHT and _voices_tonight < 1 and randf() < VOICE_CHANCE:
+		if _voice_clip() and entity.current_night() >= VOICE_FROM_NIGHT and entity.voices_tonight < 1 and randf() < VOICE_CHANCE:
 			kind = "voice"
 	var door := _front_door()
 	if kind == "knock" and door == null:
@@ -419,9 +417,9 @@ func mimic(kind: String = "") -> bool:
 		"knock":
 			play_knocks(door.entry.global_position + Vector3.UP * 1.2)
 		"voice":
-			_voices_tonight += 1
+			entity.voices_tonight += 1
 			_decoy_play(spot + Vector3.UP * 1.4, [_voice_clip()], MIMIC_PITCH)
-	_mimics_tonight += 1
+	entity.mimics_tonight += 1
 	last_mimic = kind
 	entity.world.note_trick()
 	# Written once it's sunk in (a few seconds on).
@@ -454,7 +452,6 @@ const MIMIC_PITCH := 0.89
 ## once a night, this likely when it copies something.
 const VOICE_FROM_NIGHT := 2
 const VOICE_CHANCE := 0.5
-var _voices_tonight := 0
 
 
 ## The player's last loud moment (PlayerVoice), or null.

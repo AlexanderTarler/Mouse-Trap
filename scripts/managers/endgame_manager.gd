@@ -172,7 +172,7 @@ func _play_ending_sequence(ending: Ending) -> void:
 	await _fade_screen_to_black()
 	
 	# ─── 4.5. REMOVE THE FADE OVERLAY ─────────────────────────────
-	# TASK 6: The fade-to-black CanvasLayer (layer 128) must be REMOVED
+	# The fade-to-black CanvasLayer (layer 128) must be REMOVED
 	# now that the fade is complete. Previously it was left in the tree
 	# permanently, rendering an opaque black rect ABOVE the ending screen
 	# (which lives in the default canvas, layer 0) — the Mediocre/Good
@@ -201,7 +201,7 @@ func _play_ending_sequence(ending: Ending) -> void:
 		_complete_ending_sequence(ending)
 		return
 	
-	# ─── TASK 6: PARENT UNDER HIGH-LAYER CANVAS (129) ──────────────
+	# ─── PARENT UNDER HIGH-LAYER CANVAS (129) ──────────────
 	# The ending screen is a plain Control node (default canvas layer 0).
 	# Adding it directly to current_scene would render BELOW the game
 	# HUD (and below the fading overlay). Parent it under its own
@@ -353,7 +353,7 @@ func _set_master_volume(volume_db: float, bus_idx: int) -> void:
 func _fade_screen_to_black() -> void:
 	# Create a full-screen black overlay as a CanvasLayer child so it
 	# renders above the 3D world and the HUD.
-	# TASK 6: Store the reference on _fade_canvas_layer so the caller can
+	# Store the reference on _fade_canvas_layer so the caller can
 	# free it after the fade completes.
 	var canvas_layer = CanvasLayer.new()
 	canvas_layer.name = "_EndgameFadeCanvas"

@@ -173,7 +173,7 @@ var _in_cinematic := false
 var _distant_monster_player: AudioStreamPlayer = null
 var _distant_monster_streams: Array[AudioStream] = []
 
-# ─── TASK 2: STALK CHASE AUDIO ──────────────────────────────────────────
+# ─── STALK CHASE AUDIO ──────────────────────────────────────────
 # Dedicated 2D chase track that plays while the Entity is in the STALK state
 # AND the player is within 30m. Uses tween-based fade so re-entry near the
 # player resumes the track cleanly instead of restarting from the beginning.
@@ -650,7 +650,7 @@ func set_watched_intensity(level: float) -> void:
 	if level > 0.7 and _monster_growl_streams.size() > 0:
 		_play_event_sound_3d(_get_random_stream(_monster_growl_streams), Vector3(0, 1, -4))
 
-## ─── TASK 2: STALK CHASE AUDIO SETUP ────────────────────────────────────
+## ─── STALK CHASE AUDIO SETUP ────────────────────────────────────
 ## Creates a dedicated 2D AudioStreamPlayer for the STALK chase track.
 ## Tries to load a dedicated `monster_stalk_mx.ogg`; falls back to the
 ## distant monster stream if the dedicated file is missing.

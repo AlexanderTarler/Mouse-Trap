@@ -1,7 +1,7 @@
 class_name EntityStatePeek
 extends EntityState
 
-## Standing at a window, staring in (data {"entry": CabinEntryLink}).
+## Standing at a window, staring in (data {ENTRY: CabinEntryLink}).
 ##
 ##   - While the player isn't looking, it taps on the glass now and then.
 ##   - When the player looks at the window it may duck out of sight, then
@@ -35,9 +35,9 @@ var _light_kill_left := 0.0   ## Waiting for a sabotaged light to finish flicker
 
 
 func enter(_from: int, data: Dictionary) -> void:
-	_entry = data.get("entry")
+	_entry = data.get(ENTRY)
 	brain.target_entry = _entry
-	_rattle = data.get("rattle", false)
+	_rattle = data.get(RATTLE, false)
 	_ducks = 0
 	_looks = 0
 	_leaving = false
@@ -90,8 +90,9 @@ func update(delta: float) -> void:
 
 
 func next_state() -> int:
-	if perception.player_outside:
-		return S.STALK if perception.can_see_player else S.OBSERVE
+	var left := player_left_cabin()
+	if left != NO_CHANGE:
+		return left
 	if _rattle:
 		if _stare_left > 0.0:
 			return NO_CHANGE
@@ -110,9 +111,9 @@ func next_state() -> int:
 		return NO_CHANGE
 	var window = _entry.entry
 	if window.is_passable():
-		return go(S.ENTER, {"entry": _entry})
+		return go(S.ENTER, {ENTRY: _entry})
 	if not (window.is_glass_shattered and window.is_boarded) or entity.can_break_planks():
-		return go(S.BREACH, {"entry": _entry})
+		return go(S.BREACH, {ENTRY: _entry})
 	world.mark_repelled(_entry)
 	return S.OBSERVE
 
@@ -120,15 +121,13 @@ func next_state() -> int:
 func _duck() -> void:
 	_ducks += 1
 	_duck_left = config.peek_duck_time
-	var across := _entry.end_position - _entry.start_position
-	var side := Vector3(-across.z, 0.0, across.x).normalized() * (DUCK_SIDESTEP if randf() < 0.5 else -DUCK_SIDESTEP)
-	_duck_position = world.snap_to_navmesh(_entry.start_position + side)
+	_duck_position = beside_entry(_entry, DUCK_SIDESTEP)
 	_stare_left += config.peek_duck_time
 
 
 ## From Night 3 it can reach the room light from outside: flicker, then dark.
 func _try_kill_light() -> bool:
-	if not entity.can_break_planks() or not world.can_sabotage_light():
+	if not entity.can_use_tricks() or not world.can_sabotage_light():
 		return false
 	var light = _entry.entry.get("room_light")
 	if light == null or not light.has_method("entity_sabotage"):

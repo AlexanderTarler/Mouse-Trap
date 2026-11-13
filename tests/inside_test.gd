@@ -79,7 +79,7 @@ func _test_glow() -> void:
 func _test_footsteps() -> void:
 	_entity.activate()
 	_player.global_position = COMPUTER_ROOM
-	_entity._teleport(_entity.world.snap_to_navmesh(COMPUTER_ROOM + Vector3(-4.0, 0.0, 0.0)))
+	_entity.teleport(_entity.world.snap_to_navmesh(COMPUTER_ROOM + Vector3(-4.0, 0.0, 0.0)))
 	await _frames(5)
 	var p = _entity.perception
 	var audio = _entity.audio
@@ -107,7 +107,7 @@ func _hunt_by_hand() -> Object:
 func _test_cover() -> void:
 	_player.global_position = COMPUTER_ROOM
 	await _frames(5)
-	_entity._teleport(_entity.world.snap_to_navmesh(HALL))
+	_entity.teleport(_entity.world.snap_to_navmesh(HALL))
 	await _frames(3)
 	var hunt = _hunt_by_hand()
 	var p = _entity.perception
@@ -133,7 +133,7 @@ func _test_siege() -> void:
 	light.is_switched_on = true
 	_player.global_position = HALL
 	await _frames(5)
-	_entity._teleport(_entity.world.snap_to_navmesh(COMPUTER_ROOM))
+	_entity.teleport(_entity.world.snap_to_navmesh(COMPUTER_ROOM))
 	await _frames(3)
 	var hunt = _hunt_by_hand()
 	var p = _entity.perception
@@ -158,7 +158,7 @@ func _test_siege() -> void:
 func _test_ambush() -> void:
 	_player.global_position = COMPUTER_ROOM
 	await _frames(5)
-	_entity._teleport(_entity.world.snap_to_navmesh(HALL))
+	_entity.teleport(_entity.world.snap_to_navmesh(HALL))
 	await _frames(3)
 	var hunt = _hunt_by_hand()
 	var p = _entity.perception
@@ -185,7 +185,7 @@ func _test_ambush() -> void:
 	_check("ambush: it keeps waiting (no giving up, no patrol) while nothing comes", waiting)
 
 	# The player walks right up to it.
-	_entity._teleport(spot)
+	_entity.teleport(spot)
 	_player.global_position = spot + Vector3(2.0, 0.0, 0.0)
 	await _frames(2)
 	p.distance_to_player = 2.0
@@ -213,7 +213,7 @@ func _test_fake_departure() -> void:
 	door.is_boarded = false
 	_player.global_position = COMPUTER_ROOM
 	await _frames(5)
-	_entity._teleport(_entity.world.snap_to_navmesh(HALL))
+	_entity.teleport(_entity.world.snap_to_navmesh(HALL))
 	await _frames(3)
 	var hunt = _hunt_by_hand()
 	var p = _entity.perception
@@ -223,7 +223,7 @@ func _test_fake_departure() -> void:
 	p.distance_to_player = 12.0
 	var chance: float = _entity.config.fake_departure_chance
 	_entity.config.fake_departure_chance = 1.0
-	hunt._faked_night = -1
+	_entity.faked_departure_tonight = false
 	hunt._since_contact = _entity.config.hunt_give_up_time + 1.0
 	hunt.next_state()
 	var faked: bool = _entity.get_state() == _entity.State.HUNT and hunt.is_ambushing() and hunt._leave_after_ambush
@@ -318,14 +318,13 @@ func _test_pacing() -> void:
 func _test_mimicry() -> void:
 	_player.global_position = COMPUTER_ROOM
 	await _frames(5)
-	_entity._teleport(_entity.world.snap_to_navmesh(HALL))
+	_entity.teleport(_entity.world.snap_to_navmesh(HALL))
 	var hunt = _hunt_by_hand()
 	var audio = _entity.audio
 	var p = _entity.perception
 	p.player_inside = true
 	p.in_player_view = false
-	audio._mimic_night = _entity.current_night()
-	audio._mimics_tonight = 0
+	_entity.mimics_tonight = 0
 	_entity.world._last_trick = -INF
 	var could: bool = audio.can_mimic()
 	var played: bool = audio.mimic("steps")
@@ -339,10 +338,10 @@ func _test_mimicry() -> void:
 	audio.mimic("knock")
 	_entity.world._last_trick = -INF
 	_check("mimicry: at most twice a night, and not right after another trick",
-		paced and audio._mimics_tonight == 2 and not audio.can_mimic())
+		paced and _entity.mimics_tonight == 2 and not audio.can_mimic())
 	var nm: Node = root.get_node("NightManager")
 	nm.current_night = 2
-	audio._mimics_tonight = 0
+	_entity.mimics_tonight = 0
 	_check("mimicry: not before Night 3", not audio.can_mimic())
 	nm.current_night = 3
 	_entity._is_active = true
@@ -359,7 +358,7 @@ func _test_light_trick() -> void:
 	light._update_light_state()
 	_player.global_position = HALL
 	await _frames(5)
-	_entity._teleport(_entity.world.snap_to_navmesh(COMPUTER_ROOM))
+	_entity.teleport(_entity.world.snap_to_navmesh(COMPUTER_ROOM))
 	await _frames(3)
 	var hunt = _hunt_by_hand()
 	var p = _entity.perception
@@ -423,17 +422,17 @@ func _test_props() -> void:
 	_player.global_position = COMPUTER_ROOM
 	await _frames(5)
 	var table := Vector3(5.6, 0.8, 11.6)
-	_entity._teleport(_entity.world.snap_to_navmesh(table))
+	_entity.teleport(_entity.world.snap_to_navmesh(table))
 	await _frames(3)
 	var hunt = _hunt_by_hand()
 	_entity.perception.in_player_view = false
 	_entity.world._last_trick = -INF
-	hunt._prop_night = -1
+	_entity.prop_knocked_tonight = false
 	hunt._prop_check = 0.0
 	var target = _entity.world.loose_prop_near(_entity.global_position, hunt.PROP_REACH)
 	hunt._knock_props(0.1)
 	await _frames(2)
-	var knocked: bool = target != null and target.linear_velocity.length() > 0.5 and hunt._prop_night == _entity.current_night()
+	var knocked: bool = target != null and target.linear_velocity.length() > 0.5 and _entity.prop_knocked_tonight
 	_check("marks: passing a loose prop unseen, it knocks it over (a thud somewhere); pickups too",
 		knocked and pickup_ok, "%s, speed %.2f, pickup %s" % [target.name if target else "none", target.linear_velocity.length() if target else 0.0, pickup_ok])
 	_entity._is_active = true
@@ -446,7 +445,7 @@ func _test_props() -> void:
 func _test_driven_off() -> void:
 	_player.global_position = COMPUTER_ROOM
 	await _frames(5)
-	_entity._teleport(_entity.world.snap_to_navmesh(COMPUTER_ROOM + Vector3(-3.0, 0.0, 0.0)))
+	_entity.teleport(_entity.world.snap_to_navmesh(COMPUTER_ROOM + Vector3(-3.0, 0.0, 0.0)))
 	await _frames(3)
 	_entity.times_driven_off = 0
 	var first: float = _entity.repel_time()

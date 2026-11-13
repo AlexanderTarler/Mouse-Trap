@@ -185,7 +185,7 @@ var phase2_computer_used: bool = false            # Logged into computer
 
 var phase2b_plank_picked_up: bool = false    # Picked up a Wooden Plank
 
-## ─── TASK 3: WINDOW BOARDING PROGRESSION LOCK ──────────────────────────
+## ─── WINDOW BOARDING PROGRESSION LOCK ──────────────────────────
 ## When true, windows are explicitly unlocked for boarding in the story.
 ## Set to true when the Day 1 "Board up the broken window" objective begins
 ## (on_computer_used()), and kept true from Night 2+ (on_day2_started(),
@@ -327,7 +327,7 @@ func _on_xray_timer_timeout(group_name: String) -> void:
 	_do_highlight_target(group_name)
 
 
-## ─── TASK 2.4: OBJECT HIGHLIGHT GLOBAL TOGGLE ──────────────────────────
+## ─── OBJECT HIGHLIGHT GLOBAL TOGGLE ──────────────────────────
 ## Static global setting controlling whether interactable objects receive
 ## the x-ray highlight material overlay. When false, the highlight is not
 ## applied — players with visual sensitivities (or those who prefer no
@@ -342,12 +342,12 @@ func set_highlights(on: bool) -> void:
 
 ## Internal: applies the x-ray highlight immediately to all nodes in the group.
 func _do_highlight_target(group_name: String) -> void:
-	# ─── TASK 2.4: HIGHLIGHT DISABLED GUARD ─────────────────────
+	# ─── HIGHLIGHT DISABLED GUARD ─────────────────────
 	# If the player disabled object highlights in Settings, skip applying
 	# the x-ray material entirely. Clear_highlight() still works normally
 	# (it's a no-op when nothing is highlighted), so no other logic breaks.
 	if not enable_object_highlights:
-		print("[RoutineManager] TASK 2.4: Object highlights disabled. Skipping highlight for group '%s'." % group_name)
+		print("[RoutineManager] Object highlights disabled. Skipping highlight for group '%s'." % group_name)
 		return
 	
 	var mat := _get_xray_material()
@@ -360,7 +360,7 @@ func _do_highlight_target(group_name: String) -> void:
 		push_warning("[RoutineManager] No nodes found in group '%s' for x-ray highlight." % group_name)
 		return
 	
-	# ─── ISSUE 1 FIX: EXPORTED HIGHLIGHT TARGET RESTRICTION ──────────
+	# ─── EXPORTED HIGHLIGHT TARGET RESTRICTION ──────────
 	# Some groups (e.g. xray_generator) declare an exported NodePath
 	# `highlight_target` on an interaction node in the group. When present,
 	# the x-ray overlay is restricted to THAT node's subtree only, so the
@@ -409,7 +409,7 @@ func _apply_xray_to_subtree(root: Node, mat: Material, group_name: String) -> vo
 	print("[RoutineManager] X-ray highlight restricted to target '%s' (%d meshes, group: %s)." % [root.name, applied_count, group_name])
 
 
-## ─── TASK 3.2: HIGHLIGHT TARGET FILTER ──────────────────────────────
+## ─── HIGHLIGHT TARGET FILTER ──────────────────────────────
 ## For the generator's xray_generator group, the interaction highlight must
 ## apply ONLY to the button box mesh (button_12), not the generator pipe
 ## (generator_1). This filter returns false for any mesh whose name matches
@@ -884,7 +884,7 @@ func enable_sandbox_mode() -> void:
 	if is_day3_sandbox:
 		return
 	is_day3_sandbox = true
-	# ─── TASK 3: SANDBOX UNLOCKS WINDOW BOARDING ──────────────────────
+	# ─── SANDBOX UNLOCKS WINDOW BOARDING ──────────────────────
 	# Day 3+ sandbox grants full exploration freedom — all windows must
 	# be boardable regardless of prior progression.
 	windows_unlocked_for_boarding = true
@@ -957,7 +957,7 @@ func on_cable_spool_found() -> void:
 	side_track_changed.emit()
 
 func on_fuel_can_found() -> void:
-	# ─── TASK 4: SIDE-TRACK ACTIVE GATE ──────────────────────────────
+	# ─── SIDE-TRACK ACTIVE GATE ──────────────────────────────
 	# The side-track's "Find fuel can" objective must only fire after the
 	# Unsanctioned Discoveries track is active (arvid_note_2_found).
 	# Fuel cans are picked up from Day 1 onward — without this gate, the
@@ -1206,7 +1206,7 @@ func on_fuel_can_picked_up() -> void:
 	# Without this guard, picking up a fuel can early (before fuse objective)
 	# or during dev mode startup would prematurely highlight the generator.
 	if phase2_fuse_box_interacted:
-		# ─── TASK 7 FIX: DELAYED GENERATOR HIGHLIGHT (10 SECONDS) ──
+		# ─── DELAYED GENERATOR HIGHLIGHT (10 SECONDS) ──
 		# The "Refill the generator" objective highlight should enable AFTER
 		# 10 seconds if the player hasn't interacted with the generator.
 		# Interacting with it prematurely (start_refuel → clear_highlight)
@@ -1277,13 +1277,13 @@ func on_computer_used() -> void:
 	_advance_main_objective(7)
 	print("[RoutineManager] Phase 2 COMPLETE! Player logged into the computer.")
 	
-	# ─── TASK 3: UNLOCK WINDOW BOARDING ──────────────────────────────
+	# ─── UNLOCK WINDOW BOARDING ──────────────────────────────
 	# The "Board up the broken window" objective (main 7) begins the moment
 	# the player logs into the computer. From this point on, windows are
 	# explicitly unlocked for boarding. CabinWindow refuses boarding until
 	# this flag is set — the strict story gate.
 	windows_unlocked_for_boarding = true
-	print("[RoutineManager] TASK 3: Windows unlocked for boarding (objective 7 begins).")
+	print("[RoutineManager] Windows unlocked for boarding (objective 7 begins).")
 	
 	_update_hud()
 	# ─── X-RAY HIGHLIGHT: Highlight planks after 10 seconds ──
@@ -1496,12 +1496,12 @@ func on_day2_started() -> void:
 		main_objective = 99
 		print("[RoutineManager] Day 2 sentinel set: main_objective = 99.")
 	
-	# ─── TASK 3: KEEP WINDOWS UNLOCKED FROM NIGHT 2+ ─────────────
+	# ─── KEEP WINDOWS UNLOCKED FROM NIGHT 2+ ─────────────
 	# Once Night 1 has passed, ALL windows are always boardable. If the
 	# player somehow skipped the Day 1 computer step (dev mode / debug),
 	# force the flag here so late-game boarding never soft-locks.
 	windows_unlocked_for_boarding = true
-	print("[RoutineManager] TASK 3: Windows permanently unlocked from Day 2 onward.")
+	print("[RoutineManager] Windows permanently unlocked from Day 2 onward.")
 	
 	_reset_day2_state()
 	# Lock the cabin door until the player reads the Nest Logs in the notebook.

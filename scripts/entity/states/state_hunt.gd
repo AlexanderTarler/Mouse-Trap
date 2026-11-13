@@ -49,7 +49,7 @@ var _patrol: Array[Vector3] = []
 var _patrol_index := 0
 var _scan_left := 0.0
 var _since_contact := 0.0
-var _lead = null   ## Vector3 or null: the position being investigated.
+var _lead := Vector3.INF   ## The position being investigated (INF: none).
 var _remember_cooldown := 0.0
 ## Hiding: where, and for how long yet.
 var _cover := Vector3.INF
@@ -63,12 +63,14 @@ var _ambush_cooldown := 0.0
 var _tell_left := -1.0
 ## After the fake departure's ambush: leave for real (quietly).
 var _leave_after_ambush := false
-var _faked_night := -1
 ## Waiting outside a lit room: for how long, and the next tap on the wall.
 var _siege_time := 0.0
 var _wall_tap_left := 0.0
 var _prop_check := 0.0
-var _prop_night := -1
+## After finding no cover: not looked for again until this runs out (it was
+## searched for every frame: 20 navmesh lookups and up to 40 rays each).
+var _cover_retry := 0.0
+const COVER_RETRY := 0.5
 
 
 func enter(_from: int, _data: Dictionary) -> void:
@@ -92,30 +94,24 @@ func enter(_from: int, _data: Dictionary) -> void:
 	_tell_left = -1.0
 	_leave_after_ambush = false
 	_siege_time = 0.0
+	_cover_retry = 0.0
 	_wall_tap_left = randf_range(3.0, 6.0)
 	entity.audio.play_voice("search")
 
 
+## What it is doing this frame, highest priority first.
+enum Activity { SPRINGING, AMBUSH, HIDING, LEAD, SCANNING, PATROL }
+
+
 func update(delta: float) -> void:
 	var player := entity.get_player()
-	if _tell_left >= 0.0:
-		_tell_left = maxf(_tell_left - delta, 0.0)
-		entity.stop()
-		entity.face(player.global_position)
+	if is_springing():
+		_spring_tell(delta, player)
 		return
-	if perception.can_see_player or perception.has_fresh_noise(1.0):
-		_since_contact = 0.0
-		if not is_ambushing():
-			_lead = _indoor_lead()
-	elif not is_ambushing():
-		_since_contact += delta
-	_remember_cooldown -= delta
-	if perception.can_see_player and perception.player_inside and _remember_cooldown <= 0.0:
-		_remember_cooldown = REMEMBER_INTERVAL
-		world.remember_hiding_spot(player.global_position)
-
+	_update_contact(delta, player)
 	var lit := _player_in_lit_room(player)
-	if lit and perception.has_fresh_sighting(SIEGE_MEMORY):
+	var sheltering := lit and perception.has_fresh_sighting(SIEGE_MEMORY)
+	if sheltering:
 		_update_siege(delta, player)
 	else:
 		_siege_time = 0.0
@@ -124,49 +120,108 @@ func update(delta: float) -> void:
 			return
 	else:
 		_ambush_cooldown -= delta
-	# Looked at from too far to lunge (or from the safety of a light): out
-	# of sight.
-	if perception.player_watching and _cover_left <= 0.0 and (perception.distance_to_player >= CHARGE_DISTANCE or lit):
+	if not _seek_cover(player, lit, sheltering):
+		return   # nowhere dark to wait outside the lit room: it holds, facing it
+	match activity():
+		Activity.HIDING:
+			_hide(delta, player)
+		Activity.LEAD:
+			_follow_lead()
+		Activity.SCANNING:
+			_scan(delta)
+		_:
+			_patrol_rooms(delta)
+
+
+## What it is doing (for the debug overlay and tests).
+func activity() -> Activity:
+	if is_springing():
+		return Activity.SPRINGING
+	if is_ambushing():
+		return Activity.AMBUSH
+	if is_hiding():
+		return Activity.HIDING
+	if _lead != Vector3.INF:
+		return Activity.LEAD
+	if _scan_left > 0.0:
+		return Activity.SCANNING
+	return Activity.PATROL
+
+
+## Seeing or hearing the player: a fresh lead (unless lying in wait), and a
+## note of where they hide.
+func _update_contact(delta: float, player: Node3D) -> void:
+	if perception.can_see_player or perception.has_fresh_noise(1.0):
+		_since_contact = 0.0
+		if not is_ambushing():
+			_lead = _indoor_lead()
+	elif not is_ambushing():
+		_since_contact += delta
+	_remember_cooldown -= delta
+	_cover_retry -= delta
+	if perception.can_see_player and perception.player_inside and _remember_cooldown <= 0.0:
+		_remember_cooldown = REMEMBER_INTERVAL
+		world.remember_hiding_spot(player.global_position)
+
+
+## Out of sight when it is looked at from too far to lunge (or from the safety
+## of a light), and in the dark near a lit room the player is sheltering in.
+## False when the player shelters and there is no dark spot to wait in.
+func _seek_cover(player: Node3D, lit: bool, sheltering: bool) -> bool:
+	if perception.player_watching and not is_hiding() and (perception.distance_to_player >= CHARGE_DISTANCE or lit):
 		_take_cover(entity.global_position, 1.5, 6.0, randf_range(2.5, 4.5))
-	# The player is sheltering in the light: it waits in the dark near the
-	# room, out of their view.
-	if lit and perception.has_fresh_sighting(SIEGE_MEMORY) and _cover_left <= 0.0:
+	if sheltering and not is_hiding():
 		if not _take_cover(player.global_position, 3.0, 8.0, 6.0):
 			entity.stop()
 			entity.face(player.global_position)
-			return
-	if _cover_left > 0.0:
-		_cover_left -= delta
-		if entity.move_to(_cover, config.hunt_alert_speed) < 0.7:
-			entity.crawl()
-			entity.face(player.global_position)
-		return
+			return false
+	return true
 
-	if _lead != null:
-		var remaining := entity.move_to(_lead, config.hunt_alert_speed)
-		if remaining < ARRIVE_DISTANCE:
-			_lead = null
-			_scan_left = config.room_scan_time
-		return
 
-	if _scan_left > 0.0:
-		_scan_left -= delta
-		entity.stop()
-		var sweep := Vector3(sin(time * 1.1), 0.0, cos(time * 1.1))
-		entity.face(entity.global_position + sweep)
-		# Done looking around: maybe wait here for them instead.
-		if _scan_left <= 0.0:
-			_maybe_ambush()
-		return
+func _hide(delta: float, player: Node3D) -> void:
+	_cover_left -= delta
+	if entity.move_to(_cover, config.hunt_alert_speed) < 0.7:
+		entity.crawl()
+		entity.face(player.global_position)
 
+
+## To where it last saw or heard them; there, it looks around.
+func _follow_lead() -> void:
+	if entity.move_to(_lead, config.hunt_alert_speed) < ARRIVE_DISTANCE:
+		_lead = Vector3.INF
+		_scan_left = config.room_scan_time
+
+
+## Standing, turning slowly; done, it may lie in wait here.
+func _scan(delta: float) -> void:
+	_scan_left -= delta
+	entity.stop()
+	var sweep := Vector3(sin(time * 1.1), 0.0, cos(time * 1.1))
+	entity.face(entity.global_position + sweep)
+	if _scan_left <= 0.0:
+		_maybe_ambush()
+
+
+## Room to room (remembered hiding spots first), looking around in each.
+func _patrol_rooms(delta: float) -> void:
 	if _patrol.is_empty():
 		entity.stop()
 		return
 	_knock_props(delta)
-	var remaining := entity.move_to(_patrol[_patrol_index], config.hunt_speed)
-	if remaining < ARRIVE_DISTANCE:
+	if entity.move_to(_patrol[_patrol_index], config.hunt_speed) < ARRIVE_DISTANCE:
 		_patrol_index = (_patrol_index + 1) % _patrol.size()
 		_scan_left = config.room_scan_time
+
+
+## The tell before springing from an ambush: still, facing them.
+func _spring_tell(delta: float, player: Node3D) -> void:
+	_tell_left = maxf(_tell_left - delta, 0.0)
+	entity.stop()
+	entity.face(player.global_position)
+
+
+func is_springing() -> bool:
+	return _tell_left >= 0.0
 
 
 ## Lying in wait. True while it is (this frame is handled).
@@ -199,7 +254,7 @@ func _spring() -> void:
 
 
 func _maybe_ambush() -> void:
-	if not entity.can_break_planks() or _ambush_cooldown > 0.0 or randf() >= config.ambush_chance:
+	if not entity.can_use_tricks() or _ambush_cooldown > 0.0 or randf() >= config.ambush_chance:
 		return
 	var watch: Vector3
 	if perception.has_fresh_noise(AMBUSH_NOISE_MEMORY) and world.is_inside_cabin(perception.last_heard_position):
@@ -226,8 +281,7 @@ func _lie_in_wait(watch: Vector3, min_radius: float, max_radius: float, seconds:
 
 ## Giving up: from Night 3, once a night, it only sounds like it leaves.
 func _fake_departure() -> bool:
-	var night := entity.current_night()
-	if not entity.can_break_planks() or _faked_night == night or randf() >= config.fake_departure_chance:
+	if not entity.can_use_tricks() or entity.faked_departure_tonight or randf() >= config.fake_departure_chance:
 		return false
 	var exit := world.nearest_exit()
 	if not exit:
@@ -235,7 +289,7 @@ func _fake_departure() -> bool:
 	var player := entity.get_player()
 	if not _lie_in_wait(player.global_position, 3.0, 8.0, randf_range(config.ambush_time_min, config.ambush_time_max) + 10.0):
 		return false
-	_faked_night = night
+	entity.faked_departure_tonight = true
 	_leave_after_ambush = true
 	world.note_trick()
 	entity.audio.play_departure(exit, world.outside_of(exit, 12.0))
@@ -245,7 +299,7 @@ func _fake_departure() -> bool:
 ## Outside a lit room (Night 3): taps on the wall from the dark side, then
 ## the light goes. Night 2 the light is a safe haven.
 func _update_siege(delta: float, player: Node3D) -> void:
-	if not entity.can_break_planks():
+	if not entity.can_use_tricks():
 		return
 	_siege_time += delta
 	if is_hiding():
@@ -278,8 +332,7 @@ func _knock_props(delta: float) -> void:
 	if _prop_check > 0.0:
 		return
 	_prop_check = 0.5
-	var night := entity.current_night()
-	if not entity.can_break_planks() or _prop_night == night or perception.in_player_view or not world.trick_ready():
+	if not entity.can_use_tricks() or entity.prop_knocked_tonight or perception.in_player_view or not world.trick_ready():
 		return
 	var prop := world.loose_prop_near(entity.global_position, PROP_REACH)
 	if prop == null:
@@ -288,18 +341,18 @@ func _knock_props(delta: float) -> void:
 	away.y = 0.0
 	prop.apply_central_impulse((away.normalized() * 1.5 + Vector3.UP * 0.8) * prop.mass)
 	entity.audio.play_thud_at(prop.global_position)
-	_prop_night = night
+	entity.prop_knocked_tonight = true
 	world.note_trick()
 
 
 func next_state() -> int:
 	if entity.is_traversing():
 		return NO_CHANGE
-	if _tell_left >= 0.0:
+	if is_springing():
 		if _tell_left > 0.0:
 			return NO_CHANGE
 		_tell_left = -1.0
-		return go(S.CHARGE, {"no_roar": true})
+		return go(S.CHARGE, {NO_ROAR: true})
 	if not perception.entity_inside:
 		return S.STALK if perception.can_see_player else S.OBSERVE
 	if is_ambushing():
@@ -309,14 +362,14 @@ func next_state() -> int:
 		return S.CHARGE
 	# The player got out: leave and pick up the trail outside.
 	if perception.player_outside and _since_contact > 2.0:
-		return go(S.FLEE, {"calm": true})
+		return go(S.FLEE, {CALM: true})
 	if _since_contact > config.hunt_give_up_time:
 		if _leave_after_ambush:
-			return go(S.FLEE, {"calm": true})
+			return go(S.FLEE, {CALM: true})
 		if _fake_departure():
 			return NO_CHANGE
 		entity.audio.play_grunt(0.9)
-		return go(S.FLEE, {"calm": true})
+		return go(S.FLEE, {CALM: true})
 	return NO_CHANGE
 
 
@@ -327,8 +380,11 @@ func can_catch() -> bool:
 ## Hides at a spot near `center` the player can't see, for `seconds`.
 ## False if there is none.
 func _take_cover(center: Vector3, min_radius: float, max_radius: float, seconds: float) -> bool:
+	if _cover_retry > 0.0:
+		return false
 	var spot := world.find_cover(center, min_radius, max_radius)
 	if spot == Vector3.INF:
+		_cover_retry = COVER_RETRY
 		return false
 	_cover = spot
 	_cover_left = seconds
@@ -346,10 +402,10 @@ func is_ambushing() -> bool:
 
 ## The freshest lead, ignoring leads outside the cabin while the player is
 ## known to be inside (a stale sighting from the yard shouldn't walk it out).
-func _indoor_lead():
-	var lead = freshest_lead()
-	if lead != null and perception.player_inside and not world.is_inside_cabin(lead):
-		return null
+func _indoor_lead() -> Vector3:
+	var lead := perception.freshest_lead()
+	if lead != Vector3.INF and perception.player_inside and not world.is_inside_cabin(lead):
+		return Vector3.INF
 	return lead
 
 

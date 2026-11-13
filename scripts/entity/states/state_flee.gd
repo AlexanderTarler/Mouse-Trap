@@ -10,8 +10,8 @@ extends EntityState
 ## It is done once it has arrived somewhere the player can't see it.
 ##
 ## data:
-##   {"calm": true}   leaving on its own: no confidence penalty, walks.
-##   {"vanish": true} end of the van chase: deactivates when done.
+##   {CALM: true}   leaving on its own: no confidence penalty, walks.
+##   {VANISH: true} end of the van chase: deactivates when done.
 
 const S := Entity.State
 const ARRIVE_DISTANCE := 1.5
@@ -22,12 +22,15 @@ var _vanish := false
 var _sealed_in := false
 var _destination := Vector3.ZERO
 var _arrived := false
+## Sealed in: the next look for a way to slip out (not every frame).
+var _slip_retry := 0.0
+const SLIP_RETRY := 0.5
 
 
 func enter(from: int, data: Dictionary) -> void:
-	_calm = data.get("calm", false)
+	_calm = data.get(CALM, false)
 	entity.cancel_oneshot()   # driven off mid-roar
-	_vanish = data.get("vanish", false)
+	_vanish = data.get(VANISH, false)
 	_arrived = false
 	if not _calm and not _vanish:
 		entity.confidence.repelled()
@@ -37,14 +40,17 @@ func enter(from: int, data: Dictionary) -> void:
 	_choose_destination()
 
 
-func update(_delta: float) -> void:
+func update(delta: float) -> void:
 	if _sealed_in:
+		entity.stop()
+		_slip_retry -= delta
+		if _slip_retry > 0.0:
+			return
+		_slip_retry = SLIP_RETRY
 		var spot := world.find_hidden_point(world.cabin_center(), 12.0, 20.0, Vector3.INF)
 		if spot != Vector3.INF and entity.try_teleport(spot):
 			_sealed_in = false
 			_destination = spot
-		else:
-			entity.stop()
 		return
 	var speed := config.hunt_speed if _calm else config.flee_speed
 	var remaining := entity.move_to(_destination, speed)
@@ -79,6 +85,7 @@ func reacts_to_lamp() -> bool:
 
 func _choose_destination() -> void:
 	_sealed_in = false
+	_slip_retry = 0.0
 	if perception.entity_inside:
 		var exit := world.nearest_exit()
 		if exit:

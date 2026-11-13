@@ -9,7 +9,7 @@ extends RigidBody3D
 
 
 func _ready() -> void:
-	# ─── BUG 1 FIX: INTERACTABLE COLLISION LAYER ────────────────────
+	# ─── INTERACTABLE COLLISION LAYER ────────────────────
 	# Layer 2 ("Interactable") — the interaction ray only raycasts against
 	# layer 2, so this pickup must opt in (keep layer 1 for physics: 1|2 = 3).
 	set_collision_layer_value(2, true)
@@ -25,13 +25,8 @@ func _ready() -> void:
 	if item_data and not item_data.scene_to_spawn:
 		item_data.scene_to_spawn = preload("res://scenes/cable_spool.tscn")
 		print("[CableSpoolPickup] Set scene_to_spawn for: ", item_data.item_name)
+	Interactable.make_reachable(self)
 
-
-
-	# BUG 1 FIX: Ensure Layer 2 ("Interactable") is active — must run AFTER any
-	# bare 'collision_layer = N' assignment in _ready so it cannot be overwritten.
-	set_collision_layer_value(1, true)
-	set_collision_layer_value(2, true)
 
 func set_item_data(data: ItemData) -> void:
 	item_data = data
