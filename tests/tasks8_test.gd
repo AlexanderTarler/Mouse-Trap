@@ -170,7 +170,7 @@ func _test_roof() -> void:
 	await _frames(30)
 	var low: float = cin._lowest_contact(entity)
 	var roof: float = cin._roof_at(entity.global_position)
-	var playback = entity._anim_tree.get("parameters/playback")
+	var playback = entity.animator.tree.get("parameters/playback")
 	var at: float = playback.get_current_play_position()
 	await _frames(20)
 	var still: bool = is_equal_approx(at, playback.get_current_play_position())

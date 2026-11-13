@@ -172,12 +172,12 @@ func _test_headroom() -> void:
 	# The eyes are its highest bone; the top of the skull is ~0.15 m above them.
 	var clear: bool = not ceiling.is_empty() and top + 0.15 < ceiling.position.y
 	_check("headroom: walking the ground floor its head stays under the ceiling", clear,
-		"head top ~%.2f, ceiling %.2f, size %.2f" % [top + 0.15, ceiling.position.y if ceiling else NAN, entity._size])
+		"head top ~%.2f, ceiling %.2f, size %.2f" % [top + 0.15, ceiling.position.y if ceiling else NAN, entity.animator.size])
 	for f in 90:
 		entity.cinematic_pose(Transform3D(Basis.IDENTITY, Vector3(20.0, 0.03, 4.0)), &"Stalk")
 		entity.perception.entity_inside = false
 		await process_frame
-	_check("headroom: outdoors it is back to full size", entity._size > 0.98, "size %.2f" % entity._size)
+	_check("headroom: outdoors it is back to full size", entity.animator.size > 0.98, "size %.2f" % entity.animator.size)
 	entity.deactivate()
 
 

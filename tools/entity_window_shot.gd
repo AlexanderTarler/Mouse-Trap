@@ -119,6 +119,6 @@ func _shot(path: String, entity: Node3D, link: CabinEntryLink) -> void:
 	root.get_viewport().get_texture().get_image().save_png(path)
 	var to_window: Vector3 = (link.entry.global_position - entity.global_position) * Vector3(1, 0, 1)
 	var facing: Vector3 = entity.global_basis.z * Vector3(1, 0, 1)
-	var anim: String = String(entity._anim_playback.get_current_node()) if entity._anim_playback else "?"
-	var anim_speed: float = entity._anim_player.speed_scale if entity._anim_player else -1.0
+	var anim: String = String(entity.animator.playback.get_current_node()) if entity.animator.playback else "?"
+	var anim_speed: float = entity.animator.player.speed_scale if entity.animator.player else -1.0
 	print("[ENTITY SHOT] %s: state %s, y %.2f, %.0f deg off facing the window, anim %s at %.2f" % [path.get_file(), entity.get_state_name(), entity.global_position.y, rad_to_deg(facing.angle_to(to_window)), anim, anim_speed])

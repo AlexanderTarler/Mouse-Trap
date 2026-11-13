@@ -201,7 +201,7 @@ func _react(delta: float) -> void:
 	if OS.get_environment("SIM_TRACE") != "" and charging:
 		print("[TRACE]   charge %.2fs dist=%.1f threat=%.2f beam=%s over=%s illuminated=%s overcharged=%s oneshot=%.2f" % [_clock,
 			_entity.global_position.distance_to(_player.global_position), _threat, _flashlight.is_on, _flashlight.is_overcharged,
-			_entity.perception.illuminated, _entity.perception.overcharged, _entity._oneshot_left])
+			_entity.perception.illuminated, _entity.perception.overcharged, _entity.animator._oneshot_left])
 	if _threat >= REACTION and _flashlight.battery_level > 0.0:
 		_cam.look_at(_entity.global_position + Vector3.UP * 1.2)
 		if not _flashlight.is_on:

@@ -77,7 +77,7 @@ func _test_perch() -> void:
 	await _frames(60)
 	var b: Transform3D = _skeleton_pose()
 	_check("6: clinging there its climb pose is frozen (not climbing on the spot)",
-		_entity._anim_player.speed_scale == 0.0 and a.is_equal_approx(b), "anim speed %.2f" % _entity._anim_player.speed_scale)
+		_entity.animator.player.speed_scale == 0.0 and a.is_equal_approx(b), "anim speed %.2f" % _entity.animator.player.speed_scale)
 
 
 ## A bone's pose (the first bone with any rotation), to see if it moves.
@@ -105,7 +105,7 @@ func _leave_through(window: Node, from_inside: float) -> Array:
 		await _frames(1)
 		if _entity.is_traversing():
 			crossed = true
-			if _entity._traversal_anim == _entity.EXIT_CRAWL_ANIM:
+			if _entity.traversal.anim == _entity.traversal.EXIT_CRAWL_ANIM:
 				crawled = true
 			var to_window: Vector3 = (window.global_position - _entity.global_position) * Vector3(1, 0, 1)
 			var facing: Vector3 = _entity.global_basis.z * Vector3(1, 0, 1)
