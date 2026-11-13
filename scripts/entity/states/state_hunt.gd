@@ -99,13 +99,58 @@ func enter(_from: int, _data: Dictionary) -> void:
 	entity.audio.play_voice("search")
 
 
+## What it is doing this frame, highest priority first.
+enum Activity { SPRINGING, AMBUSH, HIDING, LEAD, SCANNING, PATROL }
+
+
 func update(delta: float) -> void:
 	var player := entity.get_player()
-	if _tell_left >= 0.0:
-		_tell_left = maxf(_tell_left - delta, 0.0)
-		entity.stop()
-		entity.face(player.global_position)
+	if is_springing():
+		_spring_tell(delta, player)
 		return
+	_update_contact(delta, player)
+	var lit := _player_in_lit_room(player)
+	var sheltering := lit and perception.has_fresh_sighting(SIEGE_MEMORY)
+	if sheltering:
+		_update_siege(delta, player)
+	else:
+		_siege_time = 0.0
+	if is_ambushing():
+		if _update_ambush(delta, player, lit):
+			return
+	else:
+		_ambush_cooldown -= delta
+	if not _seek_cover(player, lit, sheltering):
+		return   # nowhere dark to wait outside the lit room: it holds, facing it
+	match activity():
+		Activity.HIDING:
+			_hide(delta, player)
+		Activity.LEAD:
+			_follow_lead()
+		Activity.SCANNING:
+			_scan(delta)
+		_:
+			_patrol_rooms(delta)
+
+
+## What it is doing (for the debug overlay and tests).
+func activity() -> Activity:
+	if is_springing():
+		return Activity.SPRINGING
+	if is_ambushing():
+		return Activity.AMBUSH
+	if is_hiding():
+		return Activity.HIDING
+	if _lead != Vector3.INF:
+		return Activity.LEAD
+	if _scan_left > 0.0:
+		return Activity.SCANNING
+	return Activity.PATROL
+
+
+## Seeing or hearing the player: a fresh lead (unless lying in wait), and a
+## note of where they hide.
+func _update_contact(delta: float, player: Node3D) -> void:
 	if perception.can_see_player or perception.has_fresh_noise(1.0):
 		_since_contact = 0.0
 		if not is_ambushing():
@@ -118,59 +163,65 @@ func update(delta: float) -> void:
 		_remember_cooldown = REMEMBER_INTERVAL
 		world.remember_hiding_spot(player.global_position)
 
-	var lit := _player_in_lit_room(player)
-	if lit and perception.has_fresh_sighting(SIEGE_MEMORY):
-		_update_siege(delta, player)
-	else:
-		_siege_time = 0.0
-	if is_ambushing():
-		if _update_ambush(delta, player, lit):
-			return
-	else:
-		_ambush_cooldown -= delta
-	# Looked at from too far to lunge (or from the safety of a light): out
-	# of sight.
-	if perception.player_watching and _cover_left <= 0.0 and (perception.distance_to_player >= CHARGE_DISTANCE or lit):
+
+## Out of sight when it is looked at from too far to lunge (or from the safety
+## of a light), and in the dark near a lit room the player is sheltering in.
+## False when the player shelters and there is no dark spot to wait in.
+func _seek_cover(player: Node3D, lit: bool, sheltering: bool) -> bool:
+	if perception.player_watching and not is_hiding() and (perception.distance_to_player >= CHARGE_DISTANCE or lit):
 		_take_cover(entity.global_position, 1.5, 6.0, randf_range(2.5, 4.5))
-	# The player is sheltering in the light: it waits in the dark near the
-	# room, out of their view.
-	if lit and perception.has_fresh_sighting(SIEGE_MEMORY) and _cover_left <= 0.0:
+	if sheltering and not is_hiding():
 		if not _take_cover(player.global_position, 3.0, 8.0, 6.0):
 			entity.stop()
 			entity.face(player.global_position)
-			return
-	if _cover_left > 0.0:
-		_cover_left -= delta
-		if entity.move_to(_cover, config.hunt_alert_speed) < 0.7:
-			entity.crawl()
-			entity.face(player.global_position)
-		return
+			return false
+	return true
 
-	if _lead != Vector3.INF:
-		var remaining := entity.move_to(_lead, config.hunt_alert_speed)
-		if remaining < ARRIVE_DISTANCE:
-			_lead = Vector3.INF
-			_scan_left = config.room_scan_time
-		return
 
-	if _scan_left > 0.0:
-		_scan_left -= delta
-		entity.stop()
-		var sweep := Vector3(sin(time * 1.1), 0.0, cos(time * 1.1))
-		entity.face(entity.global_position + sweep)
-		# Done looking around: maybe wait here for them instead.
-		if _scan_left <= 0.0:
-			_maybe_ambush()
-		return
+func _hide(delta: float, player: Node3D) -> void:
+	_cover_left -= delta
+	if entity.move_to(_cover, config.hunt_alert_speed) < 0.7:
+		entity.crawl()
+		entity.face(player.global_position)
 
+
+## To where it last saw or heard them; there, it looks around.
+func _follow_lead() -> void:
+	if entity.move_to(_lead, config.hunt_alert_speed) < ARRIVE_DISTANCE:
+		_lead = Vector3.INF
+		_scan_left = config.room_scan_time
+
+
+## Standing, turning slowly; done, it may lie in wait here.
+func _scan(delta: float) -> void:
+	_scan_left -= delta
+	entity.stop()
+	var sweep := Vector3(sin(time * 1.1), 0.0, cos(time * 1.1))
+	entity.face(entity.global_position + sweep)
+	if _scan_left <= 0.0:
+		_maybe_ambush()
+
+
+## Room to room (remembered hiding spots first), looking around in each.
+func _patrol_rooms(delta: float) -> void:
 	if _patrol.is_empty():
 		entity.stop()
 		return
 	_knock_props(delta)
-	var remaining := entity.move_to(_patrol[_patrol_index], config.hunt_speed)
-	if remaining < ARRIVE_DISTANCE:
+	if entity.move_to(_patrol[_patrol_index], config.hunt_speed) < ARRIVE_DISTANCE:
 		_patrol_index = (_patrol_index + 1) % _patrol.size()
 		_scan_left = config.room_scan_time
+
+
+## The tell before springing from an ambush: still, facing them.
+func _spring_tell(delta: float, player: Node3D) -> void:
+	_tell_left = maxf(_tell_left - delta, 0.0)
+	entity.stop()
+	entity.face(player.global_position)
+
+
+func is_springing() -> bool:
+	return _tell_left >= 0.0
 
 
 ## Lying in wait. True while it is (this frame is handled).
@@ -297,7 +348,7 @@ func _knock_props(delta: float) -> void:
 func next_state() -> int:
 	if entity.is_traversing():
 		return NO_CHANGE
-	if _tell_left >= 0.0:
+	if is_springing():
 		if _tell_left > 0.0:
 			return NO_CHANGE
 		_tell_left = -1.0
