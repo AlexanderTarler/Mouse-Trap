@@ -587,8 +587,14 @@ func _on_night_started(night: int) -> void:
 	# it now surfaces after the first computer interaction (on_computer_tried_no_power).
 
 
+## The flashlight objective stands in for Day 1's (the fuse box onwards) only:
+## a player who never picked it up isn't told to find it on Day 2.
+func _flashlight_objective_up() -> bool:
+	return flashlight_needed and main_objective < 99 and not is_day3_sandbox
+
+
 func get_current_objective() -> String:
-	if flashlight_needed:
+	if _flashlight_objective_up():
 		return "Find the flashlight."
 	# ─── DAY 3+ SANDBOX MODE OVERRIDE ─────────────────────────────
 	# Sandbox mode takes priority over the Night 2.2 car-alarm van
@@ -734,7 +740,7 @@ func _update_hud() -> void:
 	_update_bed_highlight(str(text))
 	var step: int = 0
 	
-	if flashlight_needed:
+	if _flashlight_objective_up():
 		step = 5
 	elif is_day3_sandbox:
 		if van_fully_repaired:

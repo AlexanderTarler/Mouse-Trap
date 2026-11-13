@@ -242,7 +242,7 @@ func _day1() -> bool:
 		await _go(Vector3(10.0, 1.0, 13.0)), "Log into the computer")
 	var pc: Node = _first("pc_interactable.gd")
 	var fuse_box: Node = _first("fuse_box.gd")
-	await _step("try the computer", func(): pc.interact(), "Check the fuse box")
+	await _step("try the computer", func(): pc.interact(), "Find the flashlight")
 	await _step("pick up the flashlight", func(): _first("flashlight_pickup.gd").interact(), "Check the fuse box")
 	await _step("look at the fuse box", func(): fuse_box.interact(), "Find a fuse")
 	await _step("pick up the fuse", func(): _first("fuse_pickup.gd").interact(), "Replace the broken fuse")
