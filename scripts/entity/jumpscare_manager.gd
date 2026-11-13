@@ -122,7 +122,7 @@ func _execute_jumpscare() -> void:
 		_gasp_player.play()
 	
 	if cam_holder:
-		# ─── TASK 1 FIX: PROPER LOOK_AT CAMERA LOCK ─────────────────
+		# ─── PROPER LOOK_AT CAMERA LOCK ─────────────────
 		# The old math computed the look direction from player.global_position
 		# (the body's FEET, y≈0) to a target at head height (1.8). That produced
 		# a wildly upward pitch (atan2(1.8, dist)) — the camera ended up looking
@@ -391,7 +391,7 @@ func _on_restart_night(death_canvas: CanvasLayer) -> void:
 	# Remove the death screen
 	death_canvas.queue_free()
 	
-	# FEATURE 1: Restart from the CURRENT CHECKPOINT via NightManager.
+	# Restart from the CURRENT CHECKPOINT via NightManager.
 	# restart_from_checkpoint() branches on the active phase:
 	#   - Night active → resets time/state to the exact start of the
 	#     current night (GameTime dusk + start_night(current_night)).

@@ -37,6 +37,11 @@ var peeker_vanish_on_sight: bool = true
 
 ## Reference to the currently active peeker instance, if any.
 var _active_peeker: WindowPeeker = null
+## The window the active peeker is at.
+var _active_window: Node3D = null
+## A scripted peeker for an upstairs window, asked for while the player was on
+## the ground floor: it comes when they go up ("" for none).
+var _pending_window_id := ""
 
 ## The window_id of the last window a peeker spawned at.
 ## Used to prevent the peeker from respawning at the same window twice in a row.
@@ -73,9 +78,19 @@ func _process(delta: float) -> void:
 	# A Peeker upstairs while the player is on the ground floor showed its
 	# legs through the ceiling: it despawns the moment the player is down.
 	if _active_peeker and is_instance_valid(_active_peeker):
-		if _is_upstairs(_active_peeker.global_position.y) and not _is_player_upstairs():
+		if _is_upstairs_window(_active_window) and not _is_player_upstairs():
 			print("[PeekerManager] Player on the ground floor with an upstairs peeker. Removing peeker.")
 			remove_active_peeker()
+	# A scripted upstairs peeker waiting for the player to come up (the Day 1
+	# bedroom one, asked for as they lock the front door downstairs).
+	if _pending_window_id != "":
+		var nm_pending = get_node_or_null("/root/NightManager")
+		if nm_pending and (nm_pending.get("van_sequence_started") == true or int(nm_pending.current_night) >= 3):
+			_pending_window_id = ""
+		elif _is_player_upstairs():
+			var pending := _pending_window_id
+			_pending_window_id = ""
+			force_spawn_at_window(pending)
 	
 	# ─── CABIN-EXIT CHECK ────────────────────────────────────────────
 	# If the peeker is active but the player has left the cabin,
@@ -89,7 +104,7 @@ func _process(delta: float) -> void:
 
 ## Returns true if RANDOM heartbeat spawns are allowed this night.
 ##
-## TASK 5: Night 1 random spawns are COMPLETELY DISABLED. The Night 1
+## Night 1 random spawns are COMPLETELY DISABLED. The Night 1
 ## peeker is now a scripted one-off event driven solely by
 ## RoutineManager.on_door_locked() → PeekerManager.force_spawn_at_window().
 ## Random heartbeat spawns remain active ONLY on Night 2.1 (Day 2 before
@@ -102,7 +117,7 @@ func _is_night_1_active() -> bool:
 	if not nm:
 		return false
 	
-	# TASK 5: Night 1 — RANDOM SPAWNS DISABLED (scripted one-off only)
+	# Night 1 — RANDOM SPAWNS DISABLED (scripted one-off only)
 	# The peeker must NEVER appear randomly during Night 1. Only the
 	# explicit forced spawn at the LivingRoom window (via
 	# force_spawn_at_window) may create a peeker on Night 1.
@@ -139,7 +154,7 @@ func _heartbeat() -> void:
 
 ## Spawns a WindowPeeker at a random cabin window that the player is NOT
 ## currently looking at.
-## TASK 5: Now refuses to run on Night 1 (except dev mode) so the scripted
+## Now refuses to run on Night 1 (except dev mode) so the scripted
 ## one-off LivingRoom peeker is the ONLY Night 1 spawn path. Any leftover
 ## caller (debug console, old triggers) can no longer produce a RANDOM
 ## Night 1 peeker.
@@ -150,11 +165,11 @@ func spawn_night_1_peeker() -> void:
 	
 	var nm_spawn_guard = get_node_or_null("/root/NightManager")
 	if nm_spawn_guard and nm_spawn_guard.current_night == 1 and nm_spawn_guard.is_night_active:
-		# TASK 5: OPT-IN ONLY on Night 1 — only intended for dev-mode testing.
+		# OPT-IN ONLY on Night 1 — only intended for dev-mode testing.
 		# The scripted forced spawn (force_spawn_at_window) is the ONLY
 		# sanctioned Night 1 path.
 		if not ("is_dev_mode" in nm_spawn_guard and nm_spawn_guard.is_dev_mode):
-			print("[PeekerManager] TASK 5: Random Night 1 peeker spawn blocked. Use force_spawn_at_window().")
+			print("[PeekerManager] Random Night 1 peeker spawn blocked. Use force_spawn_at_window().")
 			return
 	
 	if not _is_player_inside_cabin():
@@ -179,7 +194,7 @@ func remove_active_peeker() -> void:
 	_heartbeat_timer = 0.0
 
 
-## ─── TASK 6: FORCED SPAWN AT A SPECIFIC WINDOW ──────────────────────────
+## ─── FORCED SPAWN AT A SPECIFIC WINDOW ──────────────────────────
 ## Forces the peeker to appear at the given window by ID (e.g. "LivingRoom").
 ## Called when the Day 1 "Lock the door" objective completes — the peeker
 ## must always be visible at the LivingRoom window at that moment.
@@ -196,9 +211,12 @@ func force_spawn_at_window(window_id: String) -> void:
 		print("[PeekerManager] force_spawn_at_window: No window found with ID '%s'." % window_id)
 		return
 	# Hard rule: nothing upstairs while the player is on the ground floor.
-	if _is_upstairs(target_window.global_position.y) and not _is_player_upstairs():
-		print("[PeekerManager] force_spawn_at_window: '%s' is upstairs and the player is not. Skipping." % window_id)
+	# It waits for them to come up instead (_process).
+	if _is_upstairs_window(target_window) and not _is_player_upstairs():
+		print("[PeekerManager] force_spawn_at_window: '%s' is upstairs and the player is not: waiting for them to come up." % window_id)
+		_pending_window_id = window_id
 		return
+	_pending_window_id = ""
 	
 	# If a peeker is already active, check which window it is at.
 	if _active_peeker and is_instance_valid(_active_peeker):
@@ -216,13 +234,14 @@ func force_spawn_at_window(window_id: String) -> void:
 		return
 	
 	_active_peeker = peeker
+	_active_window = target_window
 	peeker.peeker_vanish_finished.connect(_on_peeker_vanish_finished)
 	_last_peeker_window_id = window_id
 	print("[PeekerManager] Forced Night 1 Peeker spawn at window: %s" % target_window.name)
 
 
 ## Finds a window node in the "WindowMarkers" group by its window_id or name.
-## TASK 5: Uses case-insensitive SUBSTRING matching so a generic target like
+## Uses case-insensitive SUBSTRING matching so a generic target like
 ## "LivingRoom" matches real window IDs such as "LivingRoom_Right" and node
 ## names like "LivingRoomWindow". Exact matches take priority.
 func _find_window_by_id(window_id: String) -> Node3D:
@@ -265,6 +284,7 @@ func _spawn_peeker() -> void:
 		return
 	
 	_active_peeker = peeker
+	_active_window = target_window
 	peeker.peeker_vanish_finished.connect(_on_peeker_vanish_finished)
 	
 	var window_id = target_window.get("window_id") if "window_id" in target_window else target_window.name
@@ -279,7 +299,7 @@ func _spawn_peeker() -> void:
 ##   - Is NOT in a room with the cabin light ON (Bug 8: lika lit rooms)
 ##   - Is NOT fully boarded up (the peeker cannot peek through a sealed wall)
 ##
-## BUG 8 FIX: Prioritises unboarded windows in unlit rooms. Boarded windows
+## Prioritises unboarded windows in unlit rooms. Boarded windows
 ## are only used as a fallback if no unboarded+unlit options exist. Windows
 ## in lit rooms are never selected since the peeker cannot appear where the
 ## player can clearly see the window.
@@ -290,13 +310,19 @@ const UPSTAIRS_HEIGHT := 2.4
 
 
 ## True when a world height (m) is on the upper floor.
-func _is_upstairs(y: float) -> bool:
-	return y > UPSTAIRS_HEIGHT
+## Whether a window is on the upper floor (its own flag: a ground-floor
+## window's centre is higher than UPSTAIRS_HEIGHT, which is for feet).
+func _is_upstairs_window(window: Node3D) -> bool:
+	if window == null or not is_instance_valid(window):
+		return false
+	if "is_upstairs_window" in window:
+		return bool(window.is_upstairs_window)
+	return window.global_position.y > UPSTAIRS_HEIGHT + 2.0
 
 
 func _is_player_upstairs() -> bool:
 	var player := get_tree().get_first_node_in_group("player") as Node3D
-	return player != null and _is_upstairs(player.global_position.y)
+	return player != null and player.global_position.y > UPSTAIRS_HEIGHT
 
 
 func _pick_valid_window() -> Node3D:
@@ -325,7 +351,7 @@ func _pick_valid_window() -> Node3D:
 		if wid == _last_peeker_window_id:
 			continue
 		
-		# ─── BUG 8: SKIP LIT ROOMS ────────────────────────────────
+		# ─── SKIP LIT ROOMS ────────────────────────────────
 		# If the window belongs to a room whose cabin light is actually
 		# emitting (room_light is set AND is_room_lit()), the peeker must
 		# NOT appear there — the player could see it clearly.
@@ -338,7 +364,7 @@ func _pick_valid_window() -> Node3D:
 		if room_lit:
 			continue
 		
-		# ─── BUG 8: SKIP FULLY BOARDED WINDOWS ───────────────────
+		# ─── SKIP FULLY BOARDED WINDOWS ───────────────────
 		# A fully boarded/sealed window (3 planks) cannot be peeked through.
 		var fully_boarded: bool = false
 		if "is_boarded" in window_node and window_node.is_boarded:

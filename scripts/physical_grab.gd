@@ -355,7 +355,7 @@ func _try_grab() -> void:
 	var query = PhysicsRayQueryParameters3D.create(from, to)
 	query.collide_with_areas = false
 	query.collide_with_bodies = true
-	# BUG 1 FIX: Raycast only against the dedicated "Interactable" layer
+	# Raycast only against the dedicated "Interactable" layer
 	# (Layer 2) so environment geometry can never block the grab ray.
 	# Grabbable pickups opt into layer 2 in their own scripts.
 	query.collision_mask = INTERACTABLE_LAYER_MASK
@@ -529,7 +529,7 @@ func _find_door_target() -> Node:
 	var query = PhysicsRayQueryParameters3D.create(from, to)
 	query.collide_with_areas = true
 	query.collide_with_bodies = true
-	# BUG 1 FIX: Raycast only against the dedicated "Interactable" layer
+	# Raycast only against the dedicated "Interactable" layer
 	# (Layer 2) so environment geometry can never block the hold ray.
 	query.collision_mask = INTERACTABLE_LAYER_MASK
 	
@@ -574,7 +574,7 @@ func _find_generator_target() -> Node:
 	var query = PhysicsRayQueryParameters3D.create(from, to)
 	query.collide_with_areas = true
 	query.collide_with_bodies = true
-	# BUG 1 FIX: Raycast only against the dedicated "Interactable" layer
+	# Raycast only against the dedicated "Interactable" layer
 	# (Layer 2) so environment geometry can never block the refuel ray.
 	query.collision_mask = INTERACTABLE_LAYER_MASK
 	
@@ -643,7 +643,7 @@ func _find_grabbable_target() -> Node:
 	var query = PhysicsRayQueryParameters3D.create(from, to)
 	query.collide_with_areas = false
 	query.collide_with_bodies = true
-	# BUG 1 FIX: Raycast only against the dedicated "Interactable" layer
+	# Raycast only against the dedicated "Interactable" layer
 	# (Layer 2) so environment geometry can never block the grab prompt ray.
 	query.collision_mask = INTERACTABLE_LAYER_MASK
 	

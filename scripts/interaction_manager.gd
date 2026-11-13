@@ -102,7 +102,7 @@ func _process(delta: float) -> void:
 	# Without this, Area3D-based interactables will never be detected by the raycast.
 	query.collide_with_areas = true
 	query.collide_with_bodies = true
-	# BUG 1 FIX: Restrict the interaction ray to the dedicated "Interactable"
+	# Restrict the interaction ray to the dedicated "Interactable"
 	# layer (Layer 2) only. Previously the ray hit EVERYTHING (default mask
 	# 0xFFFFFFFF), so invisible environment geometry on the porch (roof
 	# overhang, stair bodies, cabin bounding colliders) absorbed the ray

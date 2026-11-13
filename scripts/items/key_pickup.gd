@@ -9,7 +9,7 @@ extends RigidBody3D
 func _ready() -> void:
 	add_to_group("xray_key")
 	
-	# ─── BUG 1 FIX: INTERACTABLE COLLISION LAYER ────────────────────
+	# ─── INTERACTABLE COLLISION LAYER ────────────────────
 	# Layer 2 ("Interactable") is dedicated to interactable targets; the
 	# interaction ray only raycasts against layer 2. This key keeps its
 	# default layer 1 (so physics still works normally) AND adds layer 2
@@ -28,13 +28,8 @@ func _ready() -> void:
 	if item_data and not item_data.scene_to_spawn:
 		item_data.scene_to_spawn = preload("res://scenes/key.tscn")
 		print("[KeyPickup] Set scene_to_spawn for: ", item_data.item_name)
-	
+	Interactable.make_reachable(self)
 
-
-	# BUG 1 FIX: Ensure Layer 2 ("Interactable") is active — must run AFTER any
-	# bare 'collision_layer = N' assignment in _ready so it cannot be overwritten.
-	set_collision_layer_value(1, true)
-	set_collision_layer_value(2, true)
 
 func set_item_data(data: ItemData) -> void:
 	item_data = data

@@ -4,7 +4,7 @@ extends CanvasLayer
 ## Displays note content with a paper-like background and dark overlay.
 ## Opened by the inventory when the player "uses" a note item.
 ##
-## TASK 2.2 — NOTE PAGINATION:
+## NOTE PAGINATION:
 ## Long notes are split into pages of CHARS_PER_PAGE characters (word-wrap
 ## aware). The E key advances to the next page (or closes on the last page).
 ## The Q key goes back a page. A "Page X/Y" indicator is shown in the title.
@@ -19,7 +19,7 @@ signal note_closed
 
 var _is_open: bool = false
 
-# ─── TASK 2.2: PAGINATION STATE ────────────────────────────────────────
+# ─── PAGINATION STATE ────────────────────────────────────────
 ## Pages of note content. Populated by display_note() when the note is
 ## longer than one page. Each entry is rendered in note_text.
 var _pages: Array[String] = []
@@ -70,7 +70,7 @@ func _input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 				return
 			"next":
-				# ─── TASK 2.2: E = NEXT PAGE (or close on last) ─────
+				# ─── E = NEXT PAGE (or close on last) ─────
 				# If there are multiple pages and we're not on the last
 				# one, advance instead of closing.
 				if _current_page < _pages.size() - 1:
@@ -83,7 +83,7 @@ func _input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 				return
 			"prev":
-				# ─── TASK 2.2: Q = PREV PAGE ──────────────────────
+				# ─── Q = PREV PAGE ──────────────────────
 				# Only meaningful when on page 2+.
 				if _current_page > 0:
 					_current_page -= 1
@@ -98,7 +98,7 @@ func _input(event: InputEvent) -> void:
 
 
 ## Opens the note reader and displays the given content.
-## Splits long notes into multiple pages (TASK 2.2).
+## Splits long notes into multiple pages.
 func display_note(content: String, title: String = "Note") -> void:
 	_pages = _split_into_pages(content)
 	_current_page = 0

@@ -326,7 +326,7 @@ func _ready() -> void:
 		_password_input.text_submitted.connect(func(_text): _on_login_submit())
 	if _desktop_field_log_btn: _desktop_field_log_btn.pressed.connect(_on_field_log_open)
 	if _desktop_recycle_btn:   _desktop_recycle_btn.pressed.connect(_on_trash)
-	# ─── TASK 4 FIX: ENTER SUBMITS THE DECRYPTION KEY ──────────────
+	# ─── ENTER SUBMITS THE DECRYPTION KEY ──────────────
 	# The RECOVER_DATA.EXE key input must accept the Enter key to
 	# confirm, matching the login screen's LineEdit behavior.
 	# NOTE: _submit_key_btn.pressed is connected further below (avoid
@@ -438,7 +438,7 @@ func _show_login_screen() -> void:
 
 func _on_login_submit() -> void:
 	var user = _username_input.text.strip_edges().to_upper()
-	# ─── BUG 5 FIX: CASE-INSENSITIVE PASSWORD ──────────────────────
+	# ─── CASE-INSENSITIVE PASSWORD ──────────────────────
 	# Passwords are now normalized to UPPERCASE before comparison, so
 	# "passkey1", "PassKey1", and "PASSKEY1" all work.
 	var pw = _password_input.text.strip_edges().to_upper()
@@ -471,7 +471,7 @@ func _on_login_submit() -> void:
 			_eco_survey_completed = true
 			print("[ComputerUI] Eco-survey marked as completed on LUND login.")
 	elif user == "STENBERG":
-		# ─── ISSUE 3 FIX: UNSANCTIONED DISCOVERIES SIDE-TRACK ──────────
+		# ─── UNSANCTIONED DISCOVERIES SIDE-TRACK ──────────
 		# Logging in with Arvid's credentials must advance the side-track
 		# objective "Log in with Arvid's credentials". RoutineManager's
 		# on_arvid_logged_in() handler exists but was never called, so the
@@ -578,7 +578,7 @@ func _show_desktop() -> void:
 	if overload_btn:
 		overload_btn.visible = (current_user == "STENBERG" and is_arvid_log_2_unlocked)
 	
-	# ─── TASK 5: SHOW RESTORED_DATA.TXT IF LOGS WERE RESTORED ──────
+	# ─── SHOW RESTORED_DATA.TXT IF LOGS WERE RESTORED ──────
 	# Once Arvid's logs have been successfully restored, the persistent
 	# restored_data.txt icon stays on the STENBERG desktop so the player
 	# can re-read the notes without re-entering the password.
@@ -767,7 +767,7 @@ func _on_trash() -> void:
 	_recovery_panel.visible = false
 	$MainWindow/HBoxContainer/ContentPanel.visible = true
 	
-	# ─── ISSUE 3 FIX: MARK ARVID'S LOGS AS READ ────────────────────
+	# ─── MARK ARVID'S LOGS AS READ ────────────────────
 	# Opening the Recycle Bin (Arvid's recovered log entries) is the
 	# "Read logs" trigger for the Unsanctioned Discoveries side-track.
 	# RoutineManager's on_arvid_logs_read() handler exists but was never
@@ -1172,7 +1172,7 @@ func _on_recover_data_open() -> void:
 	_recovery_status.text = ""
 
 func _on_submit_decryption_key() -> void:
-	# ─── TASK 4 FIX: CASE-INSENSITIVE DECRYPTION KEY ────────────────
+	# ─── CASE-INSENSITIVE DECRYPTION KEY ────────────────
 	# The password is normalized to lowercase on both sides, so
 	# "linnea_and_sara", "Linnea_and_Sara" and "LINNEA_AND_SARA" all work.
 	var key = _key_input.text.strip_edges().to_lower()
@@ -1218,11 +1218,11 @@ func _show_arvid_restored_notes() -> void:
 	_desktop_view.visible = false
 	_status_label.text = "RESTORED_DATA.TXT — Arvid Stenberg's recovered logs"
 	
-	# ─── TASK 5: CREATE PERSISTENT RESTORED_DATA.TXT DESKTOP ICON ──
+	# ─── CREATE PERSISTENT RESTORED_DATA.TXT DESKTOP ICON ──
 	# Only create the icon once (guarded by is_arvid_log_1_unlocked).
 	_show_restored_data_icon()
 	
-	# ─── TASK 6: ADVANCE THE "READ LOGS" OBJECTIVE ──────────────────
+	# ─── ADVANCE THE "READ LOGS" OBJECTIVE ──────────────────
 	# This is the exact point where the restored notes are displayed to
 	# the player — the official "read" moment for the Unsanctioned
 	# Discoveries side-track. RoutineManager's on_arvid_logs_read()
@@ -1230,7 +1230,7 @@ func _show_arvid_restored_notes() -> void:
 	var rm := get_node_or_null("/root/RoutineManager")
 	if rm and rm.has_method("on_arvid_logs_read"):
 		rm.on_arvid_logs_read()
-		print("[ComputerUI] TASK 6: Restored Arvid logs read — RoutineManager notified on_arvid_logs_read().")
+		print("[ComputerUI] Restored Arvid logs read — RoutineManager notified on_arvid_logs_read().")
 
 
 ## Creates the restored_data.txt desktop button (idempotent).
@@ -1255,7 +1255,7 @@ func _show_restored_data_icon() -> void:
 			icon.pressed.connect(_play_ui_click)
 		_desktop_view.add_child(icon)
 		_reflow_desktop_icons()
-		print("[ComputerUI] TASK 5: restored_data.txt desktop icon created.")
+		print("[ComputerUI] restored_data.txt desktop icon created.")
 
 
 ## Opens the restored data directly (skips the password sequence entirely).
@@ -1313,7 +1313,7 @@ func _best_portable_lamp() -> Node:
 func _on_execute_overload() -> void:
 	print("[ComputerUI] EXECUTE OVERLOAD button pressed!")
 	
-	# ─── ISSUE 1 FIX: FIND THE LAMP IN BOTH GROUPS ────────────────
+	# ─── FIND THE LAMP IN BOTH GROUPS ────────────────
 	# The portable lamp registers itself in the "portable_trap" group
 	# (portable_lamp.gd _ready()), NOT "portable_lamp". Search both
 	# groups so the overload button always finds the deployed lamp.
@@ -1340,7 +1340,7 @@ func _on_execute_overload() -> void:
 		_show_access_denied("ERROR: Portable light source is not deployed. Place it on the ground first.")
 		return
 	
-	# ─── ISSUE 1 FIX: VERIFY THE LAMP IS POWERED ─────────────────
+	# ─── VERIFY THE LAMP IS POWERED ─────────────────
 	# The portable light must be physically connected to the generator
 	# via the PowerCable for the overload to actually drain fuel. If it
 	# isn't powered, the overload would "succeed" silently but do nothing.
@@ -1359,14 +1359,14 @@ func _on_execute_overload() -> void:
 		_play_success_sound()
 		_status_label.text = "OVERLOAD INITIATED — Grid at catastrophic draw."
 		
-		# ─── TASK 4: "TRIGGER TRAP" OBJECTIVE ─────────────────────────
+		# ─── "TRIGGER TRAP" OBJECTIVE ─────────────────────────
 		# The side-track's "Trigger trap" completes exactly when the
 		# EXECUTE OVERLOAD button is successfully clicked. Notify
 		# RoutineManager now that the grid override has been executed.
 		var rm_trap = get_node_or_null("/root/RoutineManager")
 		if rm_trap and rm_trap.has_method("on_trap_triggered"):
 			rm_trap.on_trap_triggered()
-			print("[ComputerUI] TASK 4: 'Trigger trap' objective fired.")
+			print("[ComputerUI] 'Trigger trap' objective fired.")
 		
 		# Show status in content display
 		_desktop_view.visible = false

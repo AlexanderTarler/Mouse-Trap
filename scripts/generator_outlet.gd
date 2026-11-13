@@ -82,7 +82,7 @@ func interact() -> void:
 	# Consume the cable spool from inventory
 	_consume_cable_spool()
 
-	# ─── TASK 4: "SET TRAP" — CABLE CONNECTED TO GENERATOR ────────────
+	# ─── "SET TRAP" — CABLE CONNECTED TO GENERATOR ────────────
 	# The side-track's "Set trap" objective requires both the generator
 	# and lamp cable ends. Notify RoutineManager the generator end is in.
 	var rm_gen = get_node_or_null("/root/RoutineManager")
@@ -155,7 +155,7 @@ func _try_auto_connect() -> void:
 
 	_active_cable = cable
 
-	# ─── TASK 4: "SET TRAP" — BOTH ENDS CONNECTED (auto flow) ─────────
+	# ─── "SET TRAP" — BOTH ENDS CONNECTED (auto flow) ─────────
 	# Here the cable is plugged into the generator AND the light at once,
 	# so both halves of "Set trap" are done (the light end was never
 	# reported in this flow, so the objective could not complete).

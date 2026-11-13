@@ -857,7 +857,7 @@ func hide_hint() -> void:
 	
 	print("[HorrorHUD] T+%s hide_hint — stopped: '%s'" % [_timestamp(), hint_label.text])
 	
-	# CRITICAL FIX: Stop the hint_timer to prevent _on_hint_timer_timeout()
+	# Stop the hint_timer to prevent _on_hint_timer_timeout()
 	# from re-tweening the hint back to alpha 1.0. Without this, when the
 	# hint's 0.5s fade-in delay timer fires AFTER hide_hint() was called
 	# (e.g., player opens the notebook during the delay), the timeout

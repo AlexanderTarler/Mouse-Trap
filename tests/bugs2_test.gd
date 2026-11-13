@@ -207,11 +207,22 @@ func _test_peeker_window() -> void:
 	var rm: Node = root.get_node("RoutineManager")
 	var pm: Node = root.get_node("PeekerManager")
 	var objective: int = rm.main_objective
+	var player := get_first_node_in_group("player") as Node3D
+	var was_at := player.global_position
+	# Locked downstairs: the bedroom is upstairs, so it waits for them there
+	# (never up there while they're down: its legs showed through the floor).
+	player.global_position = Vector3(6.0, 0.75, 17.4)
+	pm._last_peeker_window_id = ""
 	rm.main_objective = 8
 	rm.on_door_locked()
 	await _frames(2)
-	_check("#9 the Day 1 door-lock Peeker shows at the bedroom window", pm._last_peeker_window_id == "Bedroom_Right",
-		pm._last_peeker_window_id)
+	var waited: bool = pm._active_peeker == null and pm._pending_window_id == "Bedroom_Right"
+	player.global_position = Vector3(6.0, 3.73, 17.4)
+	await _frames(2)
+	_check("#9 the Day 1 door-lock Peeker shows at the bedroom window once the player is upstairs",
+		waited and pm._last_peeker_window_id == "Bedroom_Right" and pm._active_peeker != null,
+		"waited %s, at %s" % [waited, pm._last_peeker_window_id])
+	player.global_position = was_at
 	if pm.has_method("remove_active_peeker"):
 		pm.remove_active_peeker()
 	rm.main_objective = objective

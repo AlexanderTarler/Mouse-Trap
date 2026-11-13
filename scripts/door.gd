@@ -70,7 +70,7 @@ func _ready() -> void:
 	# Save the baseline rotation so we always return to a clean closed state
 	default_rotation_y = rotation_degrees.y
 	
-	# ─── BUG 1 FIX: INTERACTABLE COLLISION LAYER ────────────────────
+	# ─── INTERACTABLE COLLISION LAYER ────────────────────
 	# Layer 2 ("Interactable") is dedicated to interactable targets; the
 	# interaction ray only raycasts against layer 2. This door keeps its
 	# default layer 1 (so the player/Entity still collide with it) AND adds
@@ -110,17 +110,12 @@ func _ready() -> void:
 		_lock_sound_programmatic = load(LOCK_SOUND_PATH) as AudioStream
 	if ResourceLoader.exists(UNLOCK_SOUND_PATH):
 		_unlock_sound_programmatic = load(UNLOCK_SOUND_PATH) as AudioStream
-
+	Interactable.make_reachable(self)
 
 
 ## Quick tap E — opens/closes the door.
 ## If the door is locked, always plays the rattle sound (even with key).
 ## Lock/unlock is ONLY done via hold E for 2 seconds (toggle_lock).
-	# BUG 1 FIX: Ensure Layer 2 ("Interactable") is active — must run AFTER any
-	# bare 'collision_layer = N' assignment in _ready so it cannot be overwritten.
-	set_collision_layer_value(1, true)
-	set_collision_layer_value(2, true)
-
 func interact() -> void:
 	if is_animating:
 		return # Prevent input spam while the door is mid-swing
@@ -137,7 +132,7 @@ func interact() -> void:
 		return
 	
 	# If locked, always rattle — no quick unlock
-	# TASK 3 FIX: The locked condition must ONLY play a rattle sound.
+	# The locked condition must ONLY play a rattle sound.
 	# Do NOT change game state or call RoutineManager — that was a
 	# copy-paste error that reset objectives to "Day 1 complete."
 	if required_key_name != "" and is_locked:
@@ -273,7 +268,6 @@ func toggle_lock() -> void:
 		var rm = get_node_or_null("/root/RoutineManager")
 		if rm and rm.has_method("on_door_locked"):
 			rm.on_door_locked()
-
 
 
 ## Checks the player's inventory for an item matching required_key_name.

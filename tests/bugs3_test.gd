@@ -84,19 +84,22 @@ func _test_flashlight_hint() -> void:
 
 
 func _test_hints() -> void:
-	# Movement: moving and crouching (not every key).
+	# Movement: gone a little after the first step (crouching is taught at
+	# the second nest, where it matters).
 	var player: Node = get_first_node_in_group("player")
 	await _show("movement")
 	player._movement_tutorial_ready = true
 	player._enable_movement_tutorial()
-	for key in [KEY_W, KEY_CTRL]:
-		var event := InputEventKey.new()
-		event.keycode = key
-		event.physical_keycode = key
-		event.pressed = true
-		player._input(event)
+	var event := InputEventKey.new()
+	event.keycode = KEY_W
+	event.physical_keycode = KEY_W
+	event.pressed = true
+	player._input(event)
 	await _frames(2)
-	_check("#2 movement: gone after moving and crouching", _tm.is_learned("movement") and not "[W]" in _up(), _up())
+	var still_up: bool = "[W]" in _up()
+	await _frames(int(60 * (player.MOVEMENT_HINT_TIME + 0.5)))
+	_check("#2 movement: up while they take their first steps, gone a little after",
+		still_up and _tm.is_learned("movement") and not "[W]" in _up(), _up())
 
 	# PC login hint: opening the notebook is what it asks.
 	await _show("pc_login_hint")

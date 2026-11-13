@@ -185,7 +185,7 @@ func interact() -> void:
 			cable.connect_to_lamp(self)
 			print("[PortableLamp] Cable connected to lamp!")
 			
-			# ─── TASK 4: "SET TRAP" — LAMP END CONNECTED ──────────────
+			# ─── "SET TRAP" — LAMP END CONNECTED ──────────────
 			# The side-track's "Set trap" objective completes once BOTH
 			# cable ends are plugged (generator via generator_outlet.gd,
 			# lamp here). Notify RoutineManager when the free end snaps
@@ -193,7 +193,7 @@ func interact() -> void:
 			var rm_lamp = get_node_or_null("/root/RoutineManager")
 			if rm_lamp and rm_lamp.has_method("on_cable_connected_to_light"):
 				rm_lamp.on_cable_connected_to_light()
-				print("[PortableLamp] TASK 4: 'Set trap' lamp end notified to RoutineManager.")
+				print("[PortableLamp] 'Set trap' lamp end notified to RoutineManager.")
 			return
 
 
@@ -564,7 +564,7 @@ func trigger_overload() -> void:
 	# empties the generator tank in ~30 seconds (the target stun window).
 	# Added to the generator's base drain, the tank empties slightly faster.
 	var nm = get_node_or_null("/root/NightManager")
-	# TASK 1: Aggressive overload drain — exactly 3% of the generator's
+	# Aggressive overload drain — exactly 3% of the generator's
 	# max fuel per second. With max_fuel = 100.0, energy_drain_rate = 3.0
 	# means the generator loses 3 fuel units every second, emptying the
 	# tank in ~33 seconds. The overload stays active until fuel hits 0.

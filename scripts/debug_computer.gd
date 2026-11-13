@@ -20,12 +20,8 @@ func _ready() -> void:
 		queue_free()
 		return
 	add_to_group("debug_computer")
+	Interactable.make_reachable(self)
 
-
-	# BUG 1 FIX: Ensure Layer 2 ("Interactable") is active — must run AFTER any
-	# bare 'collision_layer = N' assignment in _ready so it cannot be overwritten.
-	set_collision_layer_value(1, true)
-	set_collision_layer_value(2, true)
 
 func get_interact_text() -> String:
 	return "[E] Open Debug Console"

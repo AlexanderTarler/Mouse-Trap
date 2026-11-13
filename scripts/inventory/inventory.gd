@@ -19,7 +19,7 @@ var items: Array = []
 ## starting items that get immediately removed.
 var _initialization_done: bool = false
 
-## ─── TASK 3: CHECKPOINT SNAPSHOT ──────────────────────────────────────
+## ─── CHECKPOINT SNAPSHOT ──────────────────────────────────────
 ## Deep-duplicated snapshot of `items` taken at the start of each night
 ## cycle (see NightManager.start_night() → Inventory.save_checkpoint()).
 ## When the player dies and restarts from the checkpoint, NightManager
@@ -45,7 +45,7 @@ func add_item(item) -> bool:
 		
 		return false
 	
-	# ─── TASK 1: FUEL CAN INSTANCE ISOLATION ──────────────────────────
+	# ─── FUEL CAN INSTANCE ISOLATION ──────────────────────────
 	# Fuel cans carry a per-instance fuel_amount that drains proportionally
 	# with the generator (2 can-units per 1 generator fuel unit). The shared
 	# fuel_can_resource.tres must NEVER be mutated in place, or every can in
@@ -203,7 +203,7 @@ func clear() -> void:
 	inventory_changed.emit()
 
 
-## ─── TASK 3: CHECKPOINT SNAPSHOT API ───────────────────────────────────
+## ─── CHECKPOINT SNAPSHOT API ───────────────────────────────────
 ## Captures a deep-duplicate snapshot of the current inventory.
 ## Called by NightManager.start_night() once per night cycle, so the
 ## exact item state (including quest items like the Cable Spool) can be

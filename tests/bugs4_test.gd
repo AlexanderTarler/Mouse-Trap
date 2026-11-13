@@ -87,8 +87,13 @@ func _test_peeker() -> void:
 	_rm.main_objective = 8
 	_rm.get_current_objective()
 	await _frames(3)
+	# The bedroom is upstairs: it shows once the player is up there.
+	var downstairs := player.global_position
+	player.global_position = Vector3(6.0, 3.73, 17.4)
+	await _frames(2)
 	_check("#2 the Day 1 Peeker is at the bedroom window (door locked before the objective)",
 		pm._last_peeker_window_id == "Bedroom_Right", pm._last_peeker_window_id)
+	player.global_position = downstairs
 	pm.remove_active_peeker()
 	_rm.main_objective = 99
 	_rm.day2_step = 6

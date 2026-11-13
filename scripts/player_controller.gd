@@ -171,7 +171,7 @@ var _environment_controller: Node = null
 # Sprint unlock — enabled by default for development convenience
 var sprint_unlocked: bool = true
 
-# ─── SPRINT TUTORIAL LEARNED GUARD (BUG 3 FIX) ────────────────────
+# ─── SPRINT TUTORIAL LEARNED GUARD ────────────────────
 # Tracks whether the sprint tutorial has been dismissed by actual use.
 # Prevents calling mark_learned("sprint") every physics frame while
 # running. Learning is only marked once the player genuinely sprints.
@@ -550,7 +550,7 @@ func unlock_sprint() -> void:
 ## Called by JumpscareManager after the jumpscare completes to fix
 ## the tilted camera issue on respawn.
 ##
-## BUG 4 FIX: The old implementation set `_camera_holder.global_transform.basis
+## The old implementation set `_camera_holder.global_transform.basis
 ## = Basis.IDENTITY`, which decoupled the camera holder from the player body's
 ## yaw — leaving the camera facing the wrong way after respawn, then causing
 ## upside-down/spin-out camera movement (gimbal lock) once the mouse moved.
@@ -573,7 +573,7 @@ func reset_camera() -> void:
 	_camera_holder.rotation = Vector3.ZERO
 	_camera_holder.rotation_degrees = Vector3.ZERO
 
-	# ─── TASK 2 FIX: HARD RESET OF GLOBAL ROTATION/BASIS ───────────
+	# ─── HARD RESET OF GLOBAL ROTATION/BASIS ───────────
 	# The jumpscare tween may have written a global rotation on the holder
 	# (via cam_holder.rotation:x). If the player body has a non-zero yaw at
 	# that moment, the holder's GLOBAL basis disagrees with the body's local
@@ -594,7 +594,7 @@ func reset_camera() -> void:
 	# The jumpscare shake modifies camera h_offset, v_offset, and FOV.
 	# Restore them all to defaults so the player doesn't see a tilted/zoomed view.
 	if _camera:
-		# ─── TASK 2 FIX: RESET CAMERA LOCAL ROTATION & POSITION ────
+		# ─── RESET CAMERA LOCAL ROTATION & POSITION ────
 		# The jumpscare tween could have left residual rotation on the Camera3D
 		# node itself (Camera3D is a child of the holder). Zeroing the camera's
 		# local rotation guarantees the view basis is perfectly clean. The head
@@ -622,7 +622,7 @@ func _toggle_flashlight() -> void:
 	# the day consumed the one_shot tutorial, so `_can_show()` returned
 	# false at the Night 1 trigger and the hint never appeared.
 	#
-	# TASK 2.3 FIX: SKIP mark_learned("flashlight") while the OVERCHARGE
+	# SKIP mark_learned("flashlight") while the OVERCHARGE
 	# tutorial is still active. Previously, pressing F at Nest Alpha (which
 	# calls _toggle_flashlight → mark_learned("flashlight") → hide_hint())
 	# instantly dismissed the "Hold [F] to OVERCHARGE" hint before the
@@ -1053,7 +1053,7 @@ func _process(delta: float) -> void:
 	# hold detection is smooth and independent of physics tick rate.
 	_update_flashlight_overcharge(delta)
 	
-	# ─── EXHAUSTION SPEED PENALTY REMOVED (TASK 2.1) ────────────────────
+	# ─── EXHAUSTION SPEED PENALTY REMOVED ────────────────────
 	# The Day 3+ exhaustion mechanic no longer slows the player down.
 	# This felt bad — the player was already punished enough by the night.
 	# Instead, exhaustion now DISABLES interaction with scrap heaps, car
@@ -1157,10 +1157,10 @@ func _process(delta: float) -> void:
 	elif look_timer > 0.0:
 		look_timer = maxf(look_timer - delta * 2.0, 0.0)  # Decays twice as fast as it builds
 	
-	# ─── COMBINED CAMERA SHAKE (TASK 3 AMPLIFIED) ────────────────
+	# ─── COMBINED CAMERA SHAKE ────────────────
 	# Takes the MAX of flashlight stare intensity and sanity gaze
 	# intensity, so both systems contribute independently.
-	# TASK 3: The shake now RAMP-UPS the longer the player stares at
+	# The shake now RAMP-UPS the longer the player stares at
 	# the Entity (up to 1.6x after 3 seconds) and adds a low-frequency
 	# rumble (~4Hz) for an increasingly violent feel. The darkness
 	# overlay was removed, so this camera shake is the primary visual
