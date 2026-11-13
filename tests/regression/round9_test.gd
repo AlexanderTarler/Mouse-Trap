@@ -13,7 +13,7 @@ extends SceneTree
 ## The player's own settings file is put back as it was afterwards, and the
 ## save goes to a test file.
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/round9_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/round9_test.gd
 
 var _failures := 0
 var _scene: Node

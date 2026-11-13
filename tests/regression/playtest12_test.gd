@@ -7,7 +7,7 @@ extends SceneTree
 ##   - the first launch: after the brightness, the microphone and the
 ##     objective highlights, both off; highlights off by default too
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/playtest12_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/playtest12_test.gd
 
 const LEVEL := "res://scenes/cottage_horror.tscn"
 const BREATHING := "res://assets/audio/objects/Player Breathing.ogg"

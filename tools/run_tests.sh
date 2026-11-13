@@ -4,6 +4,9 @@
 #   GODOT=/path/to/godot tools/run_tests.sh               # every *_test.gd
 #   GODOT=/path/to/godot tools/run_tests.sh climb_test ...  # just these
 #
+# tests/ holds the feature tests; tests/regression/ the suites written for
+# each round of playtest fixes (each checks that round's fixes still hold).
+#
 # Each test prints PASS/FAIL lines and exits non-zero on a failure; logs go
 # to $TEST_LOGS (default: a temporary folder). Exits 1 if any test failed.
 set -u
@@ -18,11 +21,15 @@ LOGS="${TEST_LOGS:-$(mktemp -d)}"
 mkdir -p "$LOGS"
 TIMEOUT="${TEST_TIMEOUT:-600}"
 
+tests=()
 if [ $# -gt 0 ]; then
-	tests=("$@")
+	for name in "$@"; do
+		found=$(find tests -name "$name.gd" | head -1)
+		if [ -z "$found" ]; then echo "No test named $name" >&2; exit 2; fi
+		tests+=("${found%.gd}")
+	done
 else
-	tests=()
-	for f in tests/*_test.gd; do tests+=("$(basename "$f" .gd)"); done
+	while IFS= read -r f; do tests+=("${f%.gd}"); done < <(find tests -name '*_test.gd' | sort)
 fi
 
 # The project must have been imported once (class names, resources).
@@ -32,9 +39,10 @@ if [ ! -d .godot ]; then
 fi
 
 failed=()
-for t in "${tests[@]}"; do
+for path in "${tests[@]}"; do
+	t=$(basename "$path")
 	log="$LOGS/$t.log"
-	timeout "$TIMEOUT" "$GODOT" --headless --path . --fixed-fps 60 --script "res://tests/$t.gd" >"$log" 2>&1
+	timeout "$TIMEOUT" "$GODOT" --headless --path . --fixed-fps 60 --script "res://$path.gd" >"$log" 2>&1
 	code=$?
 	passes=$(grep -c ' PASS ' "$log")
 	fails=$(grep -c ' FAIL ' "$log")

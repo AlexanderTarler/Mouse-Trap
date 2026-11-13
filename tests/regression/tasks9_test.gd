@@ -6,7 +6,7 @@ extends SceneTree
 ##      the knockable props and the night; "Play Again" after an ending
 ##      reloads the scene and puts it back to the last checkpoint
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/tasks9_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/tasks9_test.gd
 
 var _failures := 0
 var _scene: Node

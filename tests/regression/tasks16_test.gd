@@ -9,7 +9,7 @@ extends SceneTree
 ##      ~20 m off, and not back that day), the barn roof, the wreck yard,
 ##      the clear-cut
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/tasks16_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/tasks16_test.gd
 
 var _failures := 0
 var _scene: Node

@@ -6,7 +6,7 @@ extends SceneTree
 ##   3. The Peeker stays 1 s longer once seen.
 ##   4. The notebook: page numbers, index progress, no stray day label.
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/bugs3_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/bugs3_test.gd
 
 var _failures := 0
 var _scene: Node

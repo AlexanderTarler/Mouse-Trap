@@ -8,7 +8,7 @@ extends SceneTree
 ##   5 at the computer, Escape closes the notebook first (real key events)
 ##   6 the notebook's page hints sit 10% further in; one notebook only
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/tasks10_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/tasks10_test.gd
 
 var _failures := 0
 var _scene: Node

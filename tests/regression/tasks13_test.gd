@@ -12,7 +12,7 @@ extends SceneTree
 ##   15 back past the cabin afterwards: "It's actually gone. Thank you, Arvid."
 ##   19 the ending screens wrap on words
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/tasks13_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/tasks13_test.gd
 
 var _failures := 0
 var _scene: Node

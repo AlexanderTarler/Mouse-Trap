@@ -12,7 +12,7 @@ extends SceneTree
 ##  10. The car alarm light is brighter and has a beacon.
 ##  11. Dying in Night 2.2 restarts at the van, the alarm going.
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/bugs2_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/bugs2_test.gd
 
 var _failures := 0
 var _scene: Node

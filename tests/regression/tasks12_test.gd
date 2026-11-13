@@ -11,7 +11,7 @@ extends SceneTree
 ##   5 F4 (temporary): the Entity climbs to the LandingRoom's window and
 ##     tries to break in
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/tasks12_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/tasks12_test.gd
 
 var _failures := 0
 var _scene: Node

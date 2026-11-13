@@ -10,7 +10,7 @@ extends SceneTree
 ##   12 the notebook pages by what fits (checked rendered by
 ##      tools/journal_pages.gd; here: the measuring pieces are there)
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/tasks14_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/tasks14_test.gd
 
 var _failures := 0
 var _scene: Node

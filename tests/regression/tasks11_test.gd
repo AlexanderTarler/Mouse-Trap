@@ -13,7 +13,7 @@ extends SceneTree
 ##     the bark (or through the Entity)
 ##   (3, the dev starts: tests/dev_start_test.gd)
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/tasks11_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/tasks11_test.gd
 
 var _failures := 0
 var _scene: Node

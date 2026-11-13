@@ -104,6 +104,8 @@ the Inspector, including what it may do from which night.
 The `tests/` folder holds headless scene tests: the Entity's behaviour,
 hearing, climbing, checkpoints, the endings, the UI, a full playthrough and
 more. Each one loads the real level and checks what happens in it.
+`tests/regression/` holds the suites written with each round of playtest
+fixes, so those fixes stay fixed.
 
 Run them all:
 

@@ -8,7 +8,7 @@ extends SceneTree
 ##      middle, until they're inside
 ##   13 inside with the front door shut: it stays shut until Day 3
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/tasks7_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/tasks7_test.gd
 
 var _failures := 0
 var _scene: Node

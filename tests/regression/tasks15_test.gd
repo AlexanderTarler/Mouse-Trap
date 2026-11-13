@@ -7,7 +7,7 @@ extends SceneTree
 ##      over the sill), downstairs and up (then it turns to face the wall
 ##      and climbs down)
 ##
-## Run: godot --headless --path . --fixed-fps 60 --script res://tests/tasks15_test.gd
+## Run: godot --headless --path . --fixed-fps 60 --script res://tests/regression/tasks15_test.gd
 
 var _failures := 0
 var _scene: Node
