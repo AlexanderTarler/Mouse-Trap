@@ -60,24 +60,27 @@ func _run() -> void:
 
 func _test_flashlight_objective() -> void:
 	var rm: Node = root.get_node("RoutineManager")
-	var nm: Node = root.get_node("NightManager")
+	# With a flashlight already: the computer interaction goes straight to
+	# the fuse box (no flashlight step).
+	_player._has_flashlight = true
 	rm.main_objective = 2
 	rm.phase2_computer_tried_no_power = false
-	rm.on_computer_tried_no_power()
-	var no_step: bool = rm.main_objective == 4 and rm.get_current_objective() == "Check the fuse box."
-	_player._has_flashlight = false
 	rm.flashlight_needed = false
-	nm.night_started.emit(1)
+	rm.on_computer_tried_no_power()
+	var no_step: bool = rm.main_objective == 4 and rm.get_current_objective() == "Check the fuse box." and not rm.flashlight_needed
+	# Without a flashlight: the computer interaction surfaces the
+	# "Find the flashlight." objective; picking it up hands back to the
+	# fuse box.
+	_player._has_flashlight = false
+	rm.phase2_computer_tried_no_power = false
+	rm.flashlight_needed = false
+	rm.on_computer_tried_no_power()
 	var took_over: String = rm.get_current_objective()
 	rm.on_flashlight_picked_up()
 	var back: String = rm.get_current_objective()
-	_check("objective: no flashlight step after the computer; Night 1 without one, \"Find the flashlight.\" takes over, then hands back",
+	_check("objective: with a flashlight the computer goes straight to the fuse box; without one, \"Find the flashlight.\" takes over after the computer, then hands back",
 		no_step and took_over == "Find the flashlight." and back == "Check the fuse box." and not rm.flashlight_needed,
 		"%s -> %s -> %s" % ["fuse box" if no_step else str(rm.main_objective), took_over, back])
-	_player._has_flashlight = true
-	nm.night_started.emit(1)
-	_check("objective: with the flashlight already, Night 1 leaves the objective alone",
-		not rm.flashlight_needed and rm.get_current_objective() == "Check the fuse box.")
 
 
 func _test_road() -> void:

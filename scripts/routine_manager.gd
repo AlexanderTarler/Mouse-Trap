@@ -32,9 +32,10 @@ extends Node
 ## Mains 4 and 5 can be done in either order. Once BOTH are done,
 ## the system advances to main 6.
 ##
-## "Find the flashlight" isn't in the chain: when Night 1 falls and the
-## player has no flashlight, it takes over whatever the objective is
-## (flashlight_needed); finding the flashlight hands the objective back.
+## "Find the flashlight" isn't in the chain: after the first computer
+## interaction (on_computer_tried_no_power), if the player has no flashlight,
+## it takes over whatever the objective is (flashlight_needed); finding the
+## flashlight hands the objective back to the fuse box.
 
 signal routine_step_changed(step: int, objective_text: String)
 
@@ -567,8 +568,8 @@ func _check_power_restored() -> void:
 
 ## ─── OBJECTIVE TEXT ─────────────────────────────────────────────────
 
-## Night 1 fell and the player has no flashlight: "Find the flashlight."
-## stands in for the objective until they pick it up.
+## The player has no flashlight after the first computer interaction:
+## "Find the flashlight." stands in for the objective until they pick it up.
 var flashlight_needed := false
 
 
@@ -582,14 +583,8 @@ func _on_night_started(night: int) -> void:
 			_muse("Pitch black already. There was a flashlight around here somewhere.", "night1_dark", 1.0)
 	elif night >= 3:
 		_muse("Night again. It knows I'm still here.", "night3_falls", 1.0)
-	if night != 1 or is_day3_sandbox or main_objective >= 99:
-		return
-	if has_flashlight:
-		return
-	flashlight_needed = true
-	print("[RoutineManager] Night 1 and no flashlight: \"Find the flashlight.\" takes over the objective.")
-	highlight_target("xray_flashlight", 5.0)
-	_update_hud()
+	# The "Find the flashlight." objective no longer triggers at night fall —
+	# it now surfaces after the first computer interaction (on_computer_tried_no_power).
 
 
 func get_current_objective() -> String:
@@ -680,8 +675,6 @@ func get_current_objective() -> String:
 			return "Go to the cabin."
 		2:
 			return "Log into the computer."
-		3:
-			return "Find the flashlight."
 		4:
 			if phase2_fuse_fixed:
 				_advance_main_objective(5)
@@ -1222,54 +1215,33 @@ func on_computer_tried_no_power() -> void:
 		return
 	phase2_computer_tried_no_power = true
 	
-	# ─── EARLY FLASHLIGHT CHECK (Bug 2 Fix) ──────────────────────────────
-	# If the player already found the flashlight before reaching this point,
-	# skip objective 3 ("Find the flashlight") and go directly to objective 4
-	# ("Find the fuse box"). This prevents the player from getting stuck on an
-	# objective they've already completed.
-	# (The flashlight is no longer a step here: Night 1 asks for it if the
-	# player still hasn't found it, see flashlight_needed.)
 	_advance_main_objective(4)
 	print("[RoutineManager] Phase 2: Player tried computer without power. Advancing to the fuse box.")
-	highlight_target("xray_fuse_box", 5.0)
+	
+	# ─── FLASHLIGHT OBJECTIVE (moved from night fall) ──────────────────
+	# The "Find the flashlight." objective now surfaces after this first
+	# computer interaction, not when Night 1 falls. It stands in for the
+	# fuse box objective until the player picks up the flashlight.
+	var player := get_tree().get_first_node_in_group("player")
+	var has_flashlight: bool = player != null and player.get("_has_flashlight") == true
+	if has_flashlight:
+		highlight_target("xray_fuse_box", 5.0)
+	else:
+		flashlight_needed = true
+		highlight_target("xray_flashlight", 5.0)
 	_update_hud()
 
-## Tracks whether the player picked up the flashlight before reaching
-## the "Find the flashlight" objective (objective 3). When true,
-## on_computer_tried_no_power() will skip objective 3 and go directly
-## to objective 4 ("Find the fuse box").
-var phase2_flashlight_early: bool = false
-
 ## Called by flashlight_pickup.gd when the player picks up the flashlight.
-##
-## If the player is already on objective 3 ("Find the flashlight"), advance
-## to objective 4 ("Find the fuse box"). If the player picked it up early
-## (objective < 3), set a flag so on_computer_tried_no_power() can skip
-## objective 3 entirely when it arrives.
+## If the flashlight objective is currently showing (flashlight_needed), this
+## clears it so the fuse box objective it stood in for comes back.
 func on_flashlight_picked_up() -> void:
 	clear_highlight("xray_flashlight")
 	_muse("Initials scratched into the grip: A.S. Stenberg's flashlight.", "flashlight_found", 0.5)
 	if flashlight_needed:
-		# The objective it stood in for comes back.
+		# The objective it stood in for (the fuse box) comes back.
 		flashlight_needed = false
 		print("[RoutineManager] Flashlight found: back to \"%s\"" % get_current_objective())
 		_update_hud()
-		return
-	if phase2_flashlight_early:
-		return  # Already handled, prevent double-trigger
-	if main_objective == 3:
-		_advance_main_objective(4)
-		print("[RoutineManager] Phase 2: Player found the flashlight. Advancing to fuse objective.")
-		# ─── X-RAY HIGHLIGHT: Clear flashlight, highlight fuse box after 5s ──
-		clear_highlight("xray_flashlight")
-		highlight_target("xray_fuse_box", 5.0)
-		_update_hud()
-	else:
-		# Player picked up the flashlight before reaching objective 3.
-		# Set a flag so on_computer_tried_no_power() can skip objective 3.
-		phase2_flashlight_early = true
-		print("[RoutineManager] Phase 2: Player found the flashlight EARLY (objective %d). Will skip flashlight objective when reached." % main_objective)
-		clear_highlight("xray_flashlight")
 
 func on_computer_used() -> void:
 	if phase2_computer_used:

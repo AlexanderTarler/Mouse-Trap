@@ -52,7 +52,6 @@ var _refuel_audio_loaded: bool = false
 ## Cached reference to the NightManager.
 var _nm: Node = null
 
-
 ## Accumulated hold time for the current fuel can transfer (seconds).
 ## Resets to 0.0 when a new can is selected or refueling stops.
 var _hold_time: float = 0.0
@@ -244,8 +243,16 @@ func start_refuel() -> void:
 		print("[Generator] ERROR: NightManager not found!")
 		return
 	
-	# (Powering the portable lamp is the generator OUTLET's job:
-	# generator_outlet.gd. This is only the fuel.)
+	# ─── CONNECTION PUZZLE REMOVED (Request 3) ──────────────────────
+	# The legacy portable-light connection puzzle (consume Cable Spool +
+	# Portable Light + spawn lamp) has been moved OUT of this generator
+	# refuel interaction. The new flow (Request 3):
+	#   1. Player picks up the Portable Light into inventory (portable_lamp.gd).
+	#   2. Player interacts with the GENERATOR OUTLET node (generator_outlet.gd),
+	#      which consumes Cable Spool + Portable Light, spawns the lamp, and
+	#      physically grabs it for the player to carry.
+	#   3. The player drops the lamp and connects the free cable end.
+	# This generator refuel point no longer consumes those items.
 	
 	if _is_refueling:
 		return
