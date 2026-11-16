@@ -123,6 +123,21 @@ func _ready() -> void:
 	while FoliageBatcher.is_build_scheduled():
 		await get_tree().process_frame
 	scatter()
+	_grass_casts_no_shadow()
+
+
+## The terrain's grass (TerraBrush's foliage, GPU particles) casts no shadow.
+## Particles count as moving every frame, so they were drawn into the sun's
+## shadow map every frame and kept any lamp that reaches the yard (the porch
+## light) re-rendering its own; a blade of grass's shadow can't be seen at this
+## resolution. (The foliage definition's castShadow is false too, but the
+## particle foliage doesn't read it.)
+func _grass_casts_no_shadow() -> void:
+	var terrain := owner.find_child("TerraBrush", true, false) if owner else null
+	if not terrain:
+		return
+	for grass in terrain.find_children("*", "GPUParticles3D", true, false):
+		(grass as GPUParticles3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
 func scatter() -> void:
