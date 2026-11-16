@@ -3,7 +3,7 @@ extends RefCounted
 ## Graphics quality (Options > Video): Low, Medium or High. Medium is the
 ## game as it was made; Low is lighter for slow machines and the browser,
 ## High sharper for strong ones. What changes:
-##   shadows        the sun's and moon's shadow map, the lamps' shadow atlas,
+##   shadows        the sun's shadow map, the lamps' shadow atlas,
 ##                  how soft their edges are
 ##   detail         how soon meshes drop to their simpler LODs
 ##   ground fog     the volumetric fog's resolution (Forward+ only)

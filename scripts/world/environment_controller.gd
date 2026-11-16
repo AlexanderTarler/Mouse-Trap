@@ -152,7 +152,6 @@ var _cached_sun_color: Color = Color()
 var _cached_sun_shadow_enabled: bool = false
 var _cached_moon_energy: float = 0.0
 var _cached_moon_color: Color = Color()
-var _cached_moon_shadow_enabled: bool = false
 ## (Start "on": the level's environment has its fog on, and the first
 ## daytime update has to switch it off, or it stayed until the first night.)
 var _cached_fog_enabled: bool = true
@@ -673,10 +672,9 @@ func _update_light_appearance(p_day_factor: float, p_sun_height: float) -> void:
 			moon.light_color = moon_color
 			_cached_moon_color = moon_color
 		
-		var moon_shadow_enabled: bool = moon_energy > 0.02
-		if _cached_moon_shadow_enabled != moon_shadow_enabled:
-			moon.shadow_enabled = moon_shadow_enabled
-			_cached_moon_shadow_enabled = moon_shadow_enabled
-			if moon.shadow_enabled:
-				moon.shadow_bias = 0.1
-				moon.shadow_normal_bias = _shadow_normal_bias()
+		# No moon shadows: its light is faint (at most night_moon_energy_mult),
+		# so its shadows can't be seen in the dark (0.3% of pixels changed by
+		# a hair), yet they were a second full shadow pass of the forest every
+		# night frame, a quarter to half of its render time.
+		if moon.shadow_enabled:
+			moon.shadow_enabled = false

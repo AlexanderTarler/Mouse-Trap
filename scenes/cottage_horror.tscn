@@ -423,6 +423,7 @@ textureSets = Array[TextureSetResource]([SubResource("TextureSetResource_og0af")
 [sub_resource type="FoliageDefinitionResource" id="FoliageDefinitionResource_k4tl1"]
 strategy = 2
 mesh = ExtResource("27_q18r1")
+castShadow = false
 
 [sub_resource type="FoliageResource" id="FoliageResource_fgfdg"]
 definition = SubResource("FoliageDefinitionResource_k4tl1")
@@ -1130,7 +1131,6 @@ light_energy = 0.01
 light_indirect_energy = 0.01
 light_volumetric_fog_energy = 1.5
 light_specular = 0.1
-shadow_enabled = true
 directional_shadow_max_distance = 50.0
 
 [node name="EnvironmentController" type="Node" parent="." unique_id=1500000001 node_paths=PackedStringArray("world_environment", "sun", "moon", "ground_fog")]
