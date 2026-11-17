@@ -235,6 +235,64 @@ var _learned_mechanics: Dictionary = {}
 var _xray_timers: Dictionary = {}
 
 
+# ─── WRECK HINTS (finding the van's parts) ──────────────────────────────
+## WRECK_HINT_AFTER seconds after "Find parts to repair the van." comes up,
+## and again after each part found, a random wreck that still has a part is
+## highlighted (if objective highlights are on), until all three are found.
+const WRECK_HINT_AFTER := 120.0
+const WRECK_HINT_GROUP := "xray_wreck_hint"
+## Counting down to the next hint (-1: not counting).
+var _wreck_hint_left := -1.0
+
+
+func _process(delta: float) -> void:
+	_update_wreck_hint(delta)
+
+
+func _update_wreck_hint(delta: float) -> void:
+	if not (is_day3_sandbox and van_inspected) or _parts_still_needed() == 0:
+		_wreck_hint_left = -1.0
+		return
+	# One is lit already (until its part is found).
+	if not get_tree().get_nodes_in_group(WRECK_HINT_GROUP).is_empty():
+		return
+	if _wreck_hint_left < 0.0:
+		_wreck_hint_left = WRECK_HINT_AFTER
+	_wreck_hint_left -= delta
+	if _wreck_hint_left <= 0.0:
+		_wreck_hint_left = -1.0
+		_hint_a_wreck()
+
+
+## How many of the van's parts the player has yet to find.
+func _parts_still_needed() -> int:
+	var needed := 0
+	for found in [van_battery_collected or van_battery_installed, van_radiator_collected or van_radiator_installed,
+			van_wiring_collected or van_wiring_installed]:
+		if not found:
+			needed += 1
+	return needed
+
+
+## Lights up one of the wrecks that still has a part, at random.
+func _hint_a_wreck() -> void:
+	var with_parts := get_tree().get_nodes_in_group("xray_car_wreck").filter(
+		func(w): return w.get("item_resource") != null and not bool(w.get("is_looted")))
+	if with_parts.is_empty():
+		return
+	var wreck: Node = with_parts.pick_random()
+	wreck.add_to_group(WRECK_HINT_GROUP)
+	highlight_target(WRECK_HINT_GROUP)
+	print("[RoutineManager] Wreck hint: %s." % wreck.name)
+
+
+func _clear_wreck_hint() -> void:
+	clear_highlight(WRECK_HINT_GROUP)
+	for wreck in get_tree().get_nodes_in_group(WRECK_HINT_GROUP):
+		wreck.remove_from_group(WRECK_HINT_GROUP)
+	_wreck_hint_left = -1.0
+
+
 func _ready() -> void:
 	enable_object_highlights = bool(GameSettings.get_value("gameplay/objective_highlights"))
 	_night_manager = get_node_or_null("/root/NightManager")
@@ -819,6 +877,8 @@ func on_car_part_collected(part_name: String) -> void:
 			print("[RoutineManager] Car part collected with unknown name: '%s'" % part_name)
 	
 	if changed:
+		# The next wreck hint comes WRECK_HINT_AFTER from now.
+		_clear_wreck_hint()
 		print("[RoutineManager] Car part collected: %s (objective marked complete)" % part_name)
 		# Refresh the HUD objective text so "Find parts to repair the van."
 		# progresses as parts are collected.
@@ -838,7 +898,8 @@ func on_van_inspected() -> void:
 	var monologue := get_node_or_null("/root/Monologue")
 	var van := get_tree().current_scene.find_child("EscapeVan", true, false) as Node3D if get_tree().current_scene else null
 	if monologue:
-		monologue.think("Torn out. Not broken: torn out. I need parts, and the old wrecks are my best bet.", van, 5.0, "van_wrecked")
+		monologue.think("Torn out. Not broken: torn out.", van, 3.5, "van_wrecked")
+	_muse("I've seen some car wrecks around here. Perhaps they have the parts I need?", "van_wrecks_parts", 3.8)
 
 func on_van_part_installed(part_name: String) -> void:
 	match part_name:

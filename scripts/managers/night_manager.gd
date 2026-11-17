@@ -1226,6 +1226,28 @@ func restart_from_checkpoint() -> void:
 		_spawn_outside_cabin()
 	else:
 		_spawn_player_at("PlayerSpawnDev")
+	_restore_fair_minimum()
+
+
+## After a death the night (or day) comes back as it was, but never hopeless:
+## the flashlight at least RESTART_MIN_BATTERY charged and the generator at
+## least RESTART_MIN_FUEL full (more if they had more). A player who reached
+## the night with a dying light used to restart into the same dead end.
+## (Continue, from the menu, keeps everything exactly as saved.)
+const RESTART_MIN_BATTERY := 0.5   # of the flashlight's battery
+const RESTART_MIN_FUEL := 0.35     # of the generator's tank
+
+
+func _restore_fair_minimum() -> void:
+	var player := get_tree().get_first_node_in_group("player")
+	var flashlight := player.get_node_or_null("CameraHolder/Camera3D/Flashlight") if player else null
+	if flashlight and "battery_level" in flashlight and "max_battery" in flashlight:
+		var floor_level: float = flashlight.max_battery * RESTART_MIN_BATTERY
+		if flashlight.battery_level < floor_level and flashlight.has_method("set_battery_level"):
+			flashlight.set_battery_level(floor_level)
+	if generator_fuel < max_fuel * RESTART_MIN_FUEL:
+		generator_fuel = max_fuel * RESTART_MIN_FUEL
+		fuel_changed.emit(generator_fuel)
 
 
 ## ─── FAILSAFE (Day 1 until Day 3) ─────────────────────────────────────────
