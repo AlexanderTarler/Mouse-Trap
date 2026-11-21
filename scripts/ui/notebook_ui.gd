@@ -656,6 +656,8 @@ func _refresh_van_checklist() -> void:
 	bbcode += "  %s Battery (0/1)\n" % _checkbox_char(battery_done, battery_collected)
 	bbcode += "  %s Radiator (0/1)\n" % _checkbox_char(radiator_done, radiator_collected)
 	bbcode += "  %s Ignition Wiring (0/1)\n" % _checkbox_char(wiring_done, wiring_collected)
+	if not (battery_collected and radiator_collected and wiring_collected):
+		bbcode += "\n[i][color=#6e655a]I've seen some car wrecks around here. They might have the parts I need.[/color][/i]\n"
 	
 	# If all 3 parts are installed, show the escape objective
 	if rm.van_fully_repaired:

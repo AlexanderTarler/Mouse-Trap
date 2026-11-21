@@ -246,9 +246,11 @@ func _test_night_checkpoint() -> void:
 	nm.restart_from_checkpoint()
 	await _frames(10)
 	var glass_back: bool = broken.get_node_or_null("PristineVisuals/GlassPane") != null and not broken.is_glass_shattered
+	# (Fuel as at night start, but never under the fair minimum after a death.)
 	_check("#2/#6 night restart: windows, scrap heap, inventory, fuel and world items as at night start",
 		not boarded.is_boarded and glass_back and heap.contents.size() == heap_before
-		and inventory.items.size() == items_before and is_equal_approx(nm.generator_fuel, fuel_before)
+		and inventory.items.size() == items_before
+		and is_equal_approx(nm.generator_fuel, maxf(fuel_before, nm.max_fuel * nm.RESTART_MIN_FUEL))
 		and checkpoint._pickup_nodes(_scene).size() == pickups_before and nm.is_night_active,
 		"boarded=%s glass back=%s heap %d/%d items %d/%d fuel %.0f/%.0f pickups %d/%d night=%s" % [
 			boarded.is_boarded, glass_back, heap.contents.size(), heap_before, inventory.items.size(), items_before,
