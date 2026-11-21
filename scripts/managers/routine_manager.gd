@@ -293,11 +293,35 @@ func _clear_wreck_hint() -> void:
 	_wreck_hint_left = -1.0
 
 
+## Set up points-of-interest hint triggers in the world.
+func _setup_poi_hints() -> void:
+	var scene := get_tree().current_scene
+	if not scene:
+		return
+
+	# Arvid's Note 2 nudge: triggers when player enters the tunnel by Nest Gamma
+	var note_2: Node = scene.get_node_or_null("Arvid_Note_2")
+	if note_2:
+		var trigger := PoiHintTrigger.new()
+		trigger.position = note_2.global_position + Vector3(0, 0, 0)
+		trigger.hint_text = "Someone's left something in there…"
+		trigger.highlight_group = ""
+		var shape := CollisionShape3D.new()
+		var capsule := CapsuleShape3D.new()
+		capsule.radius = 3.0
+		capsule.height = 3.0
+		shape.shape = capsule
+		trigger.add_child(shape)
+		scene.add_child(trigger)
+		trigger.owner = scene
+
+
 func _ready() -> void:
 	enable_object_highlights = bool(GameSettings.get_value("gameplay/objective_highlights"))
 	_night_manager = get_node_or_null("/root/NightManager")
 	if _night_manager and _night_manager.has_signal("night_started"):
 		_night_manager.night_started.connect(_on_night_started)
+	_setup_poi_hints()
 	print("[RoutineManager] Initialized. Main-objective gating active. Waiting for Phase 1 triggers.")
 
 
