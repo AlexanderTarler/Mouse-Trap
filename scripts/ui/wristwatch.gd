@@ -81,6 +81,21 @@ func _place() -> void:
 	_face.visible = raised > 0.0
 
 
+## Draw compass needle pointing north, rotated by player heading.
+func _draw_compass(centre: Vector2, radius: float) -> void:
+	var player := get_tree().get_first_node_in_group("player")
+	if not player:
+		return
+	# Player's yaw: positive is counter-clockwise (looking right), negative is clockwise (looking left)
+	# Compass needle points north (negative Z); player facing north (yaw ~= 0) means needle points up
+	var player_yaw := player.rotation.y if "rotation" in player else 0.0
+	var needle_angle := -player_yaw  # Negate so north is always up when player faces north
+	var needle_tip := centre + Vector2(sin(needle_angle), -cos(needle_angle)) * radius * 0.65
+	# Red needle for north
+	_face.draw_line(centre, needle_tip, Color(0.9, 0.2, 0.1), 2.5)
+	_face.draw_circle(needle_tip, 3.0, Color(0.9, 0.2, 0.1))
+
+
 func _draw_face() -> void:
 	var centre := Vector2(SIZE, SIZE) * 0.5
 	var radius := SIZE * 0.5
@@ -99,6 +114,7 @@ func _draw_face() -> void:
 	var hour_angle := TAU * fmod(hours, 12.0) / 12.0
 	_face.draw_line(centre, centre + Vector2(sin(hour_angle), -cos(hour_angle)) * radius * 0.45, Color(0.08, 0.07, 0.06), 5.0)
 	_face.draw_line(centre, centre + Vector2(sin(minute_angle), -cos(minute_angle)) * radius * 0.7, Color(0.08, 0.07, 0.06), 3.0)
+	_draw_compass(centre, radius)
 	_face.draw_circle(centre, 4.0, Color(0.08, 0.07, 0.06))
 
 

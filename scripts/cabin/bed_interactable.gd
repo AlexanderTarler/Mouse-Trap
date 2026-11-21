@@ -374,6 +374,11 @@ func _trigger_exhaustion_sleep(player: Node3D) -> void:
 
 	await _sleep_cinematic().wake_up(player)
 
+	# ─── DAY PROGRESSION THOUGHTS ────────────────────────────────
+	# Add thoughts as the days progress toward the final night.
+	if rm_exh and rm_exh.has_method("on_day_started_sandbox"):
+		rm_exh.on_day_started_sandbox()
+
 	print("[Bed Scene] Exhaustion sleep complete. Player restored. Door unlocked. Time unpaused. Objective refreshed. Day label: %s" % (rm_exh.get_current_day_string() if rm_exh else "?"))
 
 
