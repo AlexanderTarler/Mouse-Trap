@@ -87,6 +87,15 @@ func toggle_light() -> void:
 		print("[%s] Short-circuited! The switch sparks but does nothing. This light cannot be toggled off." % light_name)
 		return
 
+	# ─── NIGHT 5 SIEGE: LIGHTS FAIL ─────────────────────────────────
+	# On the final night, the electrical system fails: lights won't turn on.
+	var nm := get_node_or_null("/root/NightManager")
+	if nm and nm.current_night >= 5 and is_switched_on:
+		print("[%s] The lights flicker and die — the electrical system is failing." % light_name)
+		is_switched_on = false
+		_update_light_state()
+		return
+
 	is_switched_on = !is_switched_on
 
 	if not is_generator_running():

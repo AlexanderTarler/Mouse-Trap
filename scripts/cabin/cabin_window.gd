@@ -508,6 +508,10 @@ func _can_board_this_window() -> bool:
 	var nm := get_node_or_null("/root/NightManager")
 	if nm and "is_dev_mode" in nm and nm.is_dev_mode:
 		return true
+	# ─── NIGHT 5 SIEGE: DEFENSES FAIL ───────────────────────────────
+	# On the final night, the player cannot board windows: the Entity is relentless.
+	if nm and nm.current_night >= 5:
+		return false
 	var rm := get_node_or_null("/root/RoutineManager")
 	if rm and "windows_unlocked_for_boarding" in rm:
 		return rm.windows_unlocked_for_boarding
