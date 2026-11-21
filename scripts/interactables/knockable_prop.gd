@@ -42,6 +42,10 @@ func _ready() -> void:
 	_let_entity_through.call_deferred()
 
 
+func get_interact_text() -> String:
+	return "[Hold E] Lift"
+
+
 ## The Entity walks through it (its navmesh doesn't know about loose things,
 ## and it knocks them over its own way: EntityWorld.loose_prop_near); the
 ## player still bumps into it.
