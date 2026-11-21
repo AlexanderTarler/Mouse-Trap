@@ -663,6 +663,9 @@ func _on_night_started(night: int) -> void:
 			_muse("Dark already. Not a single light for miles but mine.", "night1_dark", 1.0)
 		else:
 			_muse("Pitch black already. There was a flashlight around here somewhere.", "night1_dark", 1.0)
+	elif night == 5:
+		_muse("Night again. It knows I'm still here.", "night3_falls", 1.0)
+		_muse("Tonight it's coming in. I need to be gone.", "night5_final", 1.5)
 	elif night >= 3:
 		_muse("Night again. It knows I'm still here.", "night3_falls", 1.0)
 	# The "Find the flashlight." objective no longer triggers at night fall —
@@ -960,6 +963,20 @@ func enable_sandbox_mode() -> void:
 	print("[RoutineManager] DAY 3 SANDBOX MODE ACTIVATED! Windows unlocked for boarding.")
 	_update_hud()
 	_muse("Daylight. Load the van and get out of here. The survey can rot.", "day3_leave", 3.0)
+
+
+## Called when player wakes up in Day 3+ sandbox to add day progression thoughts.
+func on_day_started_sandbox() -> void:
+	var nm := get_node_or_null("/root/NightManager")
+	if not nm:
+		return
+	var current_night: int = nm.current_night
+	var current_day := current_night  # In sandbox, night N = day N
+
+	if current_day == 4:
+		_muse("One more night after this. Looks like the survey's taking longer than expected.", "day4_awareness", 2.0)
+	elif current_day == 5:
+		_muse("Last day. I need to be in that van before nightfall.", "day5_final_day", 2.0)
 
 
 # ═══════════════════════════════════════════════════════════════════════
